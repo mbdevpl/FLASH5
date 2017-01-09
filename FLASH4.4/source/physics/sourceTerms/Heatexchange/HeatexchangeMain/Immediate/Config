@@ -1,3 +1,0 @@
-D hx_applyToRadiation Does the Immediate Heatexchange implementation apply to radiation?
-PARAMETER hx_applyToRadiation    BOOLEAN FALSE
-
