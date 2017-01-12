@@ -99,7 +99,7 @@
 !!REORDER(4): solnData
 
 
-subroutine Eos_getData(axis,pos,vecLen,solnData,gridDataStruct,eosData,massFrac, eosMask)
+subroutine Eos_getData(range,vecLen,solnData,gridDataStruct,eosData,massFrac, eosMask)
 
   use Eos_data, ONLY: eos_eintSwitch, eos_smalle, eos_mapLookup
   use Driver_interface, ONLY : Driver_abortFlash
@@ -110,8 +110,8 @@ subroutine Eos_getData(axis,pos,vecLen,solnData,gridDataStruct,eosData,massFrac,
 #include "constants.h"
 #include "Flash.h"
   
-  integer, intent(in) :: axis, vecLen, gridDataStruct
-  integer, dimension(MDIM), intent(in) :: pos
+  integer, intent(in) :: vecLen, gridDataStruct
+  integer, dimension(LOW:HIGH,MDIM), intent(in) :: range
   real, dimension(:),intent(OUT) :: eosData
   real,dimension(:),optional,intent(OUT) :: massFrac
   logical, optional, INTENT(INOUT),dimension(EOS_VARS+1:) :: eosMask     
@@ -129,20 +129,20 @@ subroutine Eos_getData(axis,pos,vecLen,solnData,gridDataStruct,eosData,massFrac,
   ! Initializations:   grab the solution data from UNK and determine
   !   the length of the data being operated upon
   
-  ib=pos(IAXIS)
-  jb=pos(JAXIS)
-  kb=pos(KAXIS)
-  ie=pos(IAXIS)
-  je=pos(JAXIS)
-  ke=pos(KAXIS)
-  select case(axis)
-  case(IAXIS)
-     ie=ie+vecLen-1
-  case(JAXIS)
-     je=je+vecLen-1
-  case(KAXIS)
-     ke=ke+vecLen-1
-  end select
+  ib=range(LOW,IAXIS)
+  jb=range(LOW,JAXIS)
+  kb=range(LOW,KAXIS)
+  ie=range(HIGH,IAXIS)
+  je=range(HIGH,JAXIS)
+  ke=range(HIGH,KAXIS)
+!!$  select case(axis)
+!!$  case(IAXIS)
+!!$     ie=ie+vecLen-1
+!!$  case(JAXIS)
+!!$     je=je+vecLen-1
+!!$  case(KAXIS)
+!!$     ke=ke+vecLen-1
+!!$  end select
   ! These integers are indexes into the location in eosData just before the storage area for the appropriate variable.
   pres = (EOS_PRES-1)*vecLen
   dens = (EOS_DENS-1)*vecLen

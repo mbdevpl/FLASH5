@@ -91,10 +91,10 @@ Module Eos_interface
   end interface
 
   interface
-     subroutine Eos_getData(axis,pos,vecLen,solnData,gridDataStruct,eosData, massFrac,eosMask)
+     subroutine Eos_getData(range,vecLen,solnData,gridDataStruct,eosData, massFrac,eosMask)
        implicit none
-       integer, intent(in) :: axis, vecLen,gridDataStruct
-       integer, dimension(MDIM), intent(in) :: pos
+       integer, intent(in) :: vecLen,gridDataStruct
+       integer, dimension(LOW:HIGH,MDIM), intent(in) :: range
        real, dimension(:),intent(OUT) :: eosData
        real, pointer,dimension(:,:,:,:) :: solnData
        real,dimension(:),optional,intent(OUT) :: massFrac
@@ -128,9 +128,9 @@ Module Eos_interface
   end interface
 
   interface
-     subroutine Eos_putData(axis,pos,vecLen,solnData,gridDataStruct,eosData)
-       integer, intent(in) :: axis, vecLen, gridDataStruct
-       integer, dimension(MDIM), intent(in) :: pos
+     subroutine Eos_putData(range,vecLen,solnData,gridDataStruct,eosData)
+       integer, intent(in) :: vecLen, gridDataStruct
+       integer, dimension(LOW:HIGH,MDIM), intent(in) :: range
        real, dimension(:),intent(IN) :: eosData
        real, pointer,dimension(:,:,:,:) :: solnData
      end subroutine Eos_putData

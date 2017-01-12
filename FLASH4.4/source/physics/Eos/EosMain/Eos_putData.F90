@@ -5,8 +5,7 @@
 !! 
 !! SYNOPSIS
 !!
-!!  call Eos_putData(  integer(IN) :: axis,
-!!                     integer(IN) :: pos(MDIM),
+!!  call Eos_putData(  integer(IN) :: range(LOW:HIGH,MDIM),
 !!                     integer(IN) :: vecLen,
 !!                  real, pointer  :: solnData(:,:,:,:),
 !!                     integer(IN) :: gridDataStruct,
@@ -34,8 +33,7 @@
 !!  ARGUMENTS 
 !!
 !!   
-!!   axis : the dimension of the vector in the block's storage
-!!   pos  : the starting indices of the vector in the block. Note that the
+!!   range  : bounds for vector in the block. Note that the
 !!          vector has to provide the starting indices for all dimensions
 !!   vecLen : the length of the vector
 !!   solnData : the solution data for the current block;
@@ -93,7 +91,7 @@
 
 #define DEBUG_EOS
 
-subroutine Eos_putData(axis,pos,vecLen,solnData,gridDataStruct,eosData)
+subroutine Eos_putData(range,vecLen,solnData,gridDataStruct,eosData)
 
   use Driver_interface, ONLY : Driver_abortFlash
   use Logfile_interface, ONLY: Logfile_stampMessage 
@@ -106,8 +104,8 @@ subroutine Eos_putData(axis,pos,vecLen,solnData,gridDataStruct,eosData)
 #include "Flash.h"
 #include "Eos_map.h"
 
-  integer, intent(in) :: axis,vecLen, gridDataStruct
-  integer,dimension(MDIM), intent(in) :: pos
+  integer, intent(in) :: vecLen, gridDataStruct
+  integer,dimension(LOW:HIGH,MDIM), intent(in) :: range
   real,intent(IN) :: eosData(:)
   real, pointer:: solnData(:,:,:,:)
 
@@ -123,20 +121,20 @@ subroutine Eos_putData(axis,pos,vecLen,solnData,gridDataStruct,eosData)
 
   ! check for zero values before calculating gamma
   ! These integers are indexes into the location in eosData just before the storage area for the appropriate variable.
-  ib=pos(IAXIS)
-  jb=pos(JAXIS)
-  kb=pos(KAXIS)
-  ie=pos(IAXIS)
-  je=pos(JAXIS)
-  ke=pos(KAXIS)
-  select case(axis)
-  case(IAXIS)
-     ie=ie+vecLen-1
-  case(JAXIS)
-     je=je+vecLen-1
-  case(KAXIS)
-     ke=ke+vecLen-1
-  end select
+  ib=range(LOW,IAXIS)
+  jb=range(LOW,JAXIS)
+  kb=range(LOW,KAXIS)
+  ie=range(HIGH,IAXIS)
+  je=range(HIGH,JAXIS)
+  ke=range(HIGH,KAXIS)
+!!$  select case(axis)
+!!$  case(IAXIS)
+!!$     ie=ie+vecLen-1
+!!$  case(JAXIS)
+!!$     je=je+vecLen-1
+!!$  case(KAXIS)
+!!$     ke=ke+vecLen-1
+!!$  end select
   
   ! These integers are indexes into the location in eosData just before the storage area for the appropriate variable.
   pres = (EOS_PRES-1)*vecLen

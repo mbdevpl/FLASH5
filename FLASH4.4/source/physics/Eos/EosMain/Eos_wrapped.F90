@@ -241,17 +241,17 @@ subroutine Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
   integer, optional, intent(IN) :: gridDataStruct
 
 
-#ifndef FIXEDBLOCKSIZE
+!!#ifndef FIXEDBLOCKSIZE
   real, allocatable :: eosData(:),massFraction(:)
-#else
-  real, dimension(NSPECIES*MAXCELLS) :: massFraction
-  real, dimension(EOS_NUM*MAXCELLS) :: eosData
-#endif
+!!$#else
+!!$  real, dimension(NSPECIES*MAXCELLS) :: massFraction
+!!$  real, dimension(EOS_NUM*MAXCELLS) :: eosData
+!!$#endif
 
   logical,target,dimension(EOS_VARS+1:EOS_NUM) :: eosMask
 
-  integer :: ierr, istat, dataStruct
-  integer :: i,j,k, vecLen
+  integer :: ierr, dataStruct
+  integer :: i,j,k, vLen1D, vecLen,offset
   integer,dimension(MDIM) :: pos
 
 
@@ -287,7 +287,8 @@ subroutine Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
 
   if (mode==MODE_EOS_NOP) return ! * Return immediately for MODE_EOS_NOP! *
 
-  vecLen = range(HIGH,IAXIS)-range(LOW,IAXIS)+1
+  vLen1D = range(HIGH,IAXIS)-range(LOW,IAXIS)+1
+  vecLen=vLen1D*(range(HIGH,JAXIS)-range(LOW,JAXIS)+1)*(range(HIGH,KAXIS)-range(LOW,KAXIS)+1)
   if (vecLen==0) return ! * Return immediately for empty IAXIS range! (for efficiency and avoiding index range errors)
 
   ! solnData points to solution data in UNK (or other data structure).
@@ -307,66 +308,33 @@ subroutine Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
   !$omp private(j,k,massFraction,eosData,pos,eosMask)
 
 
-#ifndef FIXEDBLOCKSIZE
+!!#ifndef FIXEDBLOCKSIZE
   allocate(massFraction(NSPECIES*vecLen))
   allocate(eosData(EOS_NUM*vecLen))
-#endif
+!!#endif
 
   eosMask = .FALSE.
 
   pos(IAXIS)=range(LOW,IAXIS)
 
-#if NDIM==3
-  !$omp do schedule(static)
-#endif
-  do k = range(LOW,KAXIS), range(HIGH,KAXIS)
-#if defined(_OPENMP) && defined(DEBUG_THREADING) && NDIM==3
-     if (eos_threadWithinBlock) then
-        write (6,'(a,i3,a,i3,a,i3)') 'Thread', omp_get_thread_num(), &
-             " of", omp_get_num_threads(), " assigned k loop iteration", k
-     end if
-#endif
+!!$  offset=1
+!!$  do k = range(LOW,KAXIS), range(HIGH,KAXIS)
+!!$     do j = range(LOW,JAXIS), range(HIGH,JAXIS)
+!!$        pos(JAXIS)=j
+!!$        pos(KAXIS)=k
+  call Eos_getData(range,vecLen,solnData,dataStruct,eosData,massFraction)
+!!$     end do
+!!$  end do
+  call Eos(mode,vecLen,eosData,massFraction,mask=eosMask)
 
-#if NDIM==2
-     !$omp do schedule(static)
-#endif
-     do j = range(LOW,JAXIS), range(HIGH,JAXIS)
-#if defined(_OPENMP) && defined(DEBUG_THREADING) && NDIM==2
-     if (eos_threadWithinBlock) then
-        write (6,'(a,i3,a,i3,a,i3)') 'Thread', omp_get_thread_num(), &
-             " of", omp_get_num_threads(), " assigned j loop iteration", j
-     end if
-#endif
-
-        pos(JAXIS)=j
-        pos(KAXIS)=k
-        call Eos_getData(IAXIS,pos,vecLen,solnData,dataStruct,eosData,massFraction)
+  call Eos_putData(range,vecLen,solnData,dataStruct,eosData)
         
-        select case (mode)
-!!$        case(MODE_DENS_EI_EQUI)
-!!$           call Eos(MODE_DENS_EI_??    ,vecLen,eosData,massFraction,mask=eosMask)
-!!$           call Eos(MODE_DENS_TEMP_EQUI,vecLen,eosData,massFraction,mask=eosMask)
-!!$           call Eos(mode,vecLen,eosData,massFraction,mask=eosMask)
-        case default
-           call Eos(mode,vecLen,eosData,massFraction,mask=eosMask)
-        end select
-
-        call Eos_putData(IAXIS,pos,vecLen,solnData,dataStruct,eosData)
-
-     end do
-#if NDIM==2
-     !$omp end do nowait
-#endif
-
-  end do
-#if NDIM==3
-  !$omp end do nowait
-#endif
-
-#ifndef FIXEDBLOCKSIZE
+!!$     end do
+!!$  end do
+!!#ifndef FIXEDBLOCKSIZE
   deallocate(eosData)
   deallocate(massFraction)
-#endif
+!!#endif
 
   !$omp end parallel
 
