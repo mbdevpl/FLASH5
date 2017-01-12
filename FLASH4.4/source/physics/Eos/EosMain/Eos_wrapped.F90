@@ -93,7 +93,7 @@ subroutine Eos_wrapped(mode,range,blockID, gridDataStruct)
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Logfile_interface, ONLY: Logfile_stampMessage 
-  use Eos_interface, ONLY : Eos, Eos_putData, Eos_getData
+  use Eos_interface, ONLY : Eos, Eos_putData, Eos_getData, Eos_arrayWrapped
   use Eos_data, ONLY : eos_threadWithinBlock
   !$ use omp_lib
   implicit none
@@ -123,128 +123,11 @@ subroutine Eos_wrapped(mode,range,blockID, gridDataStruct)
   integer,dimension(MDIM) :: pos
 
 
-!! ---------------------------------------------------------------------------------
-  ! Test calling arguments
-#define DEBUG
-#ifdef DEBUG
-  ierr = 1
-  select case (mode)
-  case (MODE_DENS_PRES)
-     ierr = 0
-  case (MODE_DENS_TEMP)
-     ierr = 0
-  case (MODE_DENS_EI)
-     ierr = 0
-  case (MODE_EOS_NOP)
-     ierr = 0
-  case (MODE_DENS_TEMP_ALL,MODE_DENS_TEMP_EQUI)
-     ierr = 0
-  case (MODE_DENS_EI_ALL,MODE_DENS_EI_SCATTER,MODE_DENS_EI_GATHER)
-     ierr = 0
-  case (MODE_DENS_EI_SELE_GATHER)
-     ierr = 0
-  case (MODE_DENS_ENTR)
-     ierr = 0
-  end select
 
-  if(ierr /= 0) then
-     call Driver_abortFlash("[Eos_wrapped] "//&
-          "invalid mode: must be MODE_DENS_PRES, MODE_DENS_TEMP, MODE_DENS_EI, or variants thereof, or MODE_EOS_NOP")
-  end if
-#endif
+  call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
+  call Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
 
-  if (mode==MODE_EOS_NOP) return ! * Return immediately for MODE_EOS_NOP! *
-
-  vecLen = range(HIGH,IAXIS)-range(LOW,IAXIS)+1
-  if (vecLen==0) return ! * Return immediately for empty IAXIS range! (for efficiency and avoiding index range errors)
-
-  ! Initializations:   grab the solution data from UNK (or other data structure)
-  !   and determine the length of the data being operated upon
-
-  if(present(gridDataStruct))then
-     dataStruct=gridDataStruct
-  else
-     dataStruct=CENTER
-  end if
-  call Grid_getBlkPtr(blockID,solnData,dataStruct)
-
-
-  !$omp parallel if (eos_threadWithinBlock .and. NDIM > 1) &
-  !$omp default(none) &
-  !$omp shared(mode,range,blockID,solnData,eos_threadWithinBlock) &
-  !$omp firstprivate(dataStruct,vecLen) &
-  !$omp private(j,k,massFraction,eosData,pos,eosMask)
-
-
-#ifndef FIXEDBLOCKSIZE
-  allocate(massFraction(NSPECIES*vecLen))
-  allocate(eosData(EOS_NUM*vecLen))
-#endif
-
-  eosMask = .FALSE.
-
-  pos(IAXIS)=range(LOW,IAXIS)
-
-#if NDIM==3
-  !$omp do schedule(static)
-#endif
-  do k = range(LOW,KAXIS), range(HIGH,KAXIS)
-#if defined(_OPENMP) && defined(DEBUG_THREADING) && NDIM==3
-     if (eos_threadWithinBlock) then
-        write (6,'(a,i3,a,i3,a,i3)') 'Thread', omp_get_thread_num(), &
-             " of", omp_get_num_threads(), " assigned k loop iteration", k
-     end if
-#endif
-
-#if NDIM==2
-     !$omp do schedule(static)
-#endif
-     do j = range(LOW,JAXIS), range(HIGH,JAXIS)
-#if defined(_OPENMP) && defined(DEBUG_THREADING) && NDIM==2
-     if (eos_threadWithinBlock) then
-        write (6,'(a,i3,a,i3,a,i3)') 'Thread', omp_get_thread_num(), &
-             " of", omp_get_num_threads(), " assigned j loop iteration", j
-     end if
-#endif
-
-        pos(JAXIS)=j
-        pos(KAXIS)=k
-        call Eos_getData(IAXIS,pos,vecLen,solnData,dataStruct,eosData,massFraction)
-        
-        select case (mode)
-!!$        case(MODE_DENS_EI_EQUI)
-!!$           call Eos(MODE_DENS_EI_??    ,vecLen,eosData,massFraction,mask=eosMask)
-!!$           call Eos(MODE_DENS_TEMP_EQUI,vecLen,eosData,massFraction,mask=eosMask)
-!!$           call Eos(mode,vecLen,eosData,massFraction,mask=eosMask)
-        case default
-           call Eos(mode,vecLen,eosData,massFraction,mask=eosMask)
-        end select
-
-        call Eos_putData(IAXIS,pos,vecLen,solnData,dataStruct,eosData)
-
-        ! The following is now done in Eos_putData:
-!!$        solnData(GAME_VAR,range(LOW,IAXIS):range(HIGH,IAXIS),j,k) = &
-!!$             eosData(pres+1:pres+veclen)/&
-!!$             (eosData(eint+1:eint+veclen) *eosData(dens+1:dens+veclen)) +1
-
-     end do
-#if NDIM==2
-     !$omp end do nowait
-#endif
-
-  end do
-#if NDIM==3
-  !$omp end do nowait
-#endif
-
-#ifndef FIXEDBLOCKSIZE
-  deallocate(eosData)
-  deallocate(massFraction)
-#endif
-
-  !$omp end parallel
-
-  call Grid_releaseBlkPtr(blockID,solnData,dataStruct)
+  call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
 
   return
 end subroutine Eos_wrapped
