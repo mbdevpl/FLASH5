@@ -214,8 +214,8 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
 #endif
 
   call RuntimeParameters_get("useParticles",    hy_useParticles)
-  call RuntimeParameters_get("useCosmology",    hy_useCosmology)
-
+!!  call RuntimeParameters_get("useCosmology",    hy_useCosmology)
+  hy_useCosmology=.false.
   !! Gravity -------------------------------------------------------------------
   hy_useGravity = .false.
 #ifdef GRAVITY

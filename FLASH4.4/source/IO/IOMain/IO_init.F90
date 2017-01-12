@@ -42,7 +42,6 @@ subroutine IO_init()
   use Simulation_interface, ONLY : Simulation_mapStrToInt,&
                                    Simulation_mapIntToStr
   use IO_interface, ONLY : IO_readCheckpoint,IO_getPrevScalar
-  use Cosmology_interface, ONLY : Cosmology_getRedshift
   use io_ptInterface, ONLY : io_ptInit
   use Logfile_interface, ONLY:  Logfile_stamp
   use Grid_interface, only: Grid_formatNonRep
@@ -466,7 +465,6 @@ subroutine IO_init()
   
  
   
-  if(.not. io_restart) call Cosmology_getRedshift(currentRedshift)
   if(.not. io_restart )then !.or. (io_nextCheckpointZ >= currentRedshift) .or. &
        !(io_nextCheckpointZ < currentRedshift +io_checkpointFileIntervalZ)) then
      if(io_checkpointFileIntervalZ < HUGE(1.)) then

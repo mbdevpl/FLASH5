@@ -38,8 +38,6 @@ subroutine Driver_verifyInitDt()
     Grid_getBlkIndexLimits, Grid_getCellCoords, Grid_getDeltas, &
     Grid_getBlkPtr, Grid_releaseBlkPtr
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
-  use Cosmology_interface, ONLY: Cosmology_computeDt
-  use Heatexchange_interface, ONLY : Heatexchange_computeDt
   use Diffuse_interface, ONLY: Diffuse_computeDt
 
   implicit none       
@@ -190,11 +188,6 @@ subroutine Driver_verifyInitDt()
              solnData,      &
              dtCheck(2), dtMinLoc )
 
-        call Heatexchange_computeDt ( blockList(i),  &
-             blkLimits,blkLimitsGC,  &
-             solnData,      &
-             dtCheck(3), dtMinLoc)
-
         call Grid_releaseBlkPtr(blockList(i),solnData)
 
 #ifndef FIXEDBLOCKSIZE
@@ -253,7 +246,7 @@ subroutine Driver_verifyInitDt()
 
      dr_dtOld = dr_dt
      !print *, dr_dt, "dr_dt initial final"
-     call Cosmology_computeDt(dtCheck(1))
+!!     call Cosmology_computeDt(dtCheck(1))
 
   else
 

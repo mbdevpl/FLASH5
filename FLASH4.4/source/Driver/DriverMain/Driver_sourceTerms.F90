@@ -33,15 +33,10 @@ subroutine Driver_sourceTerms(blockCount, blockList, dt, pass)
   use Polytrope_interface, ONLY : Polytrope
   use Driver_data, ONLY: dr_simTime
   use Flame_interface, ONLY : Flame_step
-  use Stir_interface, ONLY : Stir
   use Heat_interface, ONLY : Heat
-  use Heatexchange_interface, ONLY : Heatexchange
   use Burn_interface, ONLY : Burn
-  use Cool_interface, ONLY : Cool
   use Ionize_interface, ONLY : Ionize
   use Flame_interface, ONLY : Flame_step
-  use Turb_interface, ONLY : Turb_calc
-  use EnergyDeposition_interface, ONLY : EnergyDeposition
   use Deleptonize_interface, ONLY : Deleptonize
 
   implicit none
@@ -51,21 +46,11 @@ subroutine Driver_sourceTerms(blockCount, blockList, dt, pass)
   integer, dimension(blockCount), intent(IN):: blockList
   integer, OPTIONAL, intent(IN):: pass
 
-#ifdef DRIVER_EDEARLY
-  call EnergyDeposition(blockCount, blockList, dt, dr_simTime, pass)
-#endif
   call Polytrope(blockCount, blockList, dt)
-  call Stir(blockCount, blockList, dt) 
-  call Turb_calc(blockCount, blockList)
   call Flame_step(blockCount, blockList, dt)
   call Burn(blockCount, blockList, dt) 
   call Heat(blockCount, blockList, dt, dr_simTime) 
-  call Heatexchange(blockCount, blockList, dt)
-  call Cool(blockCount, blockList, dt, dr_simTime)
   call Ionize(blockCount, blockList, dt, dr_simTime)
-#ifndef DRIVER_EDEARLY
-  call EnergyDeposition(blockCount, blockList, dt, dr_simTime, pass)
-#endif
   call Deleptonize(blockCount, blockList, dt, dr_simTime)
 
   return

@@ -34,7 +34,6 @@
 subroutine IO_updateScalars()
   use Hydro_interface, ONLY : Hydro_sendOutputData
   use Simulation_interface, ONLY : Simulation_sendOutputData
-  use Cosmology_interface, ONLY : Cosmology_sendOutputData
   use Driver_interface, ONLY : Driver_sendOutputData
   use Particles_interface, ONLY : Particles_sendOutputData
   use Grid_interface, ONLY : Grid_sendOutputData
@@ -53,7 +52,6 @@ implicit none
 
   !!call IO_outputScalars()
   
-  call Cosmology_sendOutputData()
 
   !! add in other calls to output
   call Simulation_sendOutputData()

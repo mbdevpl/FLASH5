@@ -67,9 +67,6 @@ subroutine Driver_evolveFlash()
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
   use IO_interface,        ONLY : IO_output,IO_outputFinal
-  use Cosmology_interface, ONLY : Cosmology_redshiftHydro, &
-                                  Cosmology_solveFriedmannEqn, &
-                                  Cosmology_getRedshift
   use RadTrans_interface,  ONLY : RadTrans
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
@@ -272,9 +269,6 @@ subroutine Driver_evolveFlash()
         !----
         
         ! 1. Cosmology-Friedmann Eqn.
-        call Timers_start("cosmology")
-        call Cosmology_solveFriedmannEqn(dr_simTime, dr_dt)
-        call Timers_stop("cosmology")
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
         
         dr_simTime = dr_simTime + dr_dt
@@ -350,10 +344,6 @@ subroutine Driver_evolveFlash()
 #endif
         end if
 
-        ! 7. Cosmology-Redshift
-        call Timers_start("cosmology")
-        call Cosmology_redshiftHydro( blockCount, blockList)
-        call Timers_stop("cosmology")
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 
         ! 8. Diagnostics
@@ -440,11 +430,6 @@ subroutine Driver_evolveFlash()
      !!  (iii) the wall clock time is greater than the maximum 
      !!        (wall_clock_time_max)
 
-
-     !!Update redshift from Driver's POV.  Need this for exit condition. -PR   
-     !!old redshift needed for accurate restarts.                              
-     dr_redshiftOld = dr_redshift
-     call Cosmology_getRedshift(dr_redshift)
 
      if (dr_simTime >= dr_tmax) then
         if(dr_globalMe == MASTER_PE) then

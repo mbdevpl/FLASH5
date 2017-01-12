@@ -32,12 +32,9 @@ subroutine Driver_finalizeFlash()
   use ProtonImaging_interface, ONLY : ProtonImaging_finalize
   use ProtonEmission_interface, ONLY : ProtonEmission_finalize
   use IO_interface, ONLY : IO_finalize
-  use Cosmology_interface, ONLY: Cosmology_finalize
   use Timers_interface, ONLY: Timers_finalize
   use Gravity_interface, ONLY: Gravity_finalize
   use IncompNS_interface, ONLY: IncompNS_finalize
-  use Imbound_interface, ONLY: Imbound_finalize
-  use SolidMechanics_interface, ONLY: SolidMechanics_finalize
 implicit none
 #include "mpif.h"
 
@@ -68,15 +65,9 @@ implicit none
 
   call ProtonEmission_finalize()  ! Proton Emission
 
-  call Cosmology_finalize()       ! Cosmology
-
   call Gravity_finalize()         ! Gravity
 
   call IncompNS_finalize()        ! INS 
-
-  call SolidMechanics_finalize()  ! Solid Mechanics
-
-  call ImBound_finalize()         ! Im Boundaries
 
   call IO_finalize()
 

@@ -70,17 +70,12 @@ subroutine Driver_computeDt(nbegin, nstep, &
     Grid_getBlkIndexLimits, Grid_getCellCoords, Grid_getDeltas, &
     Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getSingleCellCoords
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
-  use Stir_interface, ONLY: Stir_computeDt
-  use Cosmology_interface, ONLY: Cosmology_computeDt
-  use Cool_interface, ONLY : Cool_computeDt
   use Heat_interface, ONLY : Heat_computeDt
-  use Heatexchange_interface, ONLY : Heatexchange_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
   use Burn_interface, ONLY : Burn_computeDt
   use RadTrans_interface, ONLY: RadTrans_computeDt
   use Particles_interface, ONLY: Particles_computeDt
 
-  use SolidMechanics_interface, ONLY : SolidMechanics_computeDt
   use IncompNS_interface, ONLY : IncompNS_computeDt
 
   implicit none
@@ -299,11 +294,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
         extraHydroInfoApp = 0.0
      endif
 
-     call Stir_computeDt ( blockList(i),  &
-                           blkLimits,blkLimitsGC,  &
-                           solnData,               &
-                          dtLocal(1,STIR), lminloc(:,STIR) )
-   
 
 #ifdef DEBUG_DRIVER
      print*,'returned from hydro timestep'
@@ -331,18 +321,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
                            solnData,      &
                            dtLocal(1,HEAT), lminloc(:,HEAT) )
 
-     call Heatexchange_computeDt ( blockList(i),  &
-                           blkLimits,blkLimitsGC,  &
-                           solnData,      &
-                           dtLocal(1,HEATXCHG), lminloc(:,HEATXCHG) )
-
      call RadTrans_computeDt(blockList(i), blkLimits,blkLimitsGC, &
           solnData, dtLocal(1,RADTRANS), lminloc(:,RADTRANS) )
-
-     call Cool_computeDt ( blockList(i),  &
-                           blkLimits,blkLimitsGC,  &
-                           solnData,      &
-                           dtLocal(1,COOL), lminloc(:,COOL) )
 
      call Particles_computeDt &
           ( blockList(i), dtLocal(1,PART), lminloc(:,PART))
@@ -356,17 +336,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
                            solnData,      &
                            dtLocal(1,DIFF), lminloc(:,DIFF) )
      
-!!$     call Cosmo_timestep ( blockList(i),  &
-!!$                           xCenter,xLeft,xRight, dx, uxgrid, &
-!!$                           yCenter,yLeft,yRight, dy, uygrid, &
-!!$                           zCenter,zLeft,zRight, dz, uzgrid, &
-!!$                           blkLimits,blkLimitsGC,  &
-!!$                           solnData,      &
-!!$                           dtLocal(1,COSMO), lminloc(:,COSMO) )
-      call Cosmology_computeDt(dtLocal(1,COSMO))
-
-
-      
 
       !! Super time step
       if (dr_useSTS) then
@@ -405,10 +374,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
   ! IncompNS:
   call IncompNS_computeDt(dtLocal(1,INS),lminloc(:,INS))
-
-
-  ! SolidMechanics:
-  call SolidMechanics_computeDt(dtLocal(1,SOLID))
 
 
   ! DEV: we disabled temperature timestep limiter for now.  

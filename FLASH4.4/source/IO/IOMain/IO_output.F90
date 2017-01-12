@@ -123,7 +123,6 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
        io_nextCheckpointZ, io_nextPlotFileZ, io_checkpointFileIntervalZ, io_plotfileIntervalZ, &
        io_alwaysComputeUserVars, io_outputInStack,io_globalMe, io_globalComm, &
        io_wrotePlot, io_maxRSS, io_measRSS
-  use Cosmology_interface, ONLY : Cosmology_getRedshift
   use Driver_interface, ONLY : Driver_abortFlash,Driver_finalizeFlash
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_close
   use Timers_interface, ONLY : Timers_start, Timers_stop, &
@@ -159,7 +158,6 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
   logical :: rssMaxExceeded
   logical , intent(OUT) :: endRun 
 
-  real :: currentRedshift !current cosmological redshift value
 
   if(present(outputType)) then
      
@@ -190,7 +188,6 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
   endRun = .false.
  
   !have to get the current redshift
-  call Cosmology_getRedshift(currentRedshift)
 
   !------------------------------------------------------------------------------
   ! Dump out memory usage statistics if we are monitoring them
@@ -223,9 +220,7 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
   
   
   if (((nstep == io_nextCheckpointStep) .or. &
-       (io_checkpointFileIntervalTime > 0.e0  .and. simTime >= io_nextCheckpointTime) .or.& 
-       (io_checkpointFileIntervalZ < HUGE(1.) .and. currentRedshift <= io_nextCheckpointZ) &
-       .and. nstep /= nbegin) .and. outputCheckpoint) then 
+       (io_checkpointFileIntervalTime > 0.e0  .and. simTime >= io_nextCheckpointTime)) .and. outputCheckpoint) then 
      
      
      call Timers_start("checkpointing")  
@@ -252,12 +247,6 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
      end if
 
 
-     !Adjust cosmological redshift
-     if(io_checkpointFileIntervalZ < HUGE(1.)) then
-        do while(currentRedshift <= io_nextCheckpointZ)
-           io_nextCheckpointZ = io_nextCheckpointZ - io_checkpointFileIntervalZ
-        end do
-     end if
      
      call io_ptCorrectNextPartTime(simTime, sav_nextParticleFileTime)
      
@@ -363,8 +352,7 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
 
      
   if (((nstep == io_nextPlotFileStep) .OR. &
-       (io_plotFileIntervalTime > 0.e0 .AND. simTime >= io_nextPlotFileTime) .OR. &
-       (io_plotFileIntervalZ < HUGE(1.) .AND. currentRedshift <= io_nextPlotFileZ)) .and. outputPlotfile) then
+       (io_plotFileIntervalTime > 0.e0 .AND. simTime >= io_nextPlotFileTime) ) .and. outputPlotfile) then
      
      call Timers_start("plotfile")
      !call Grid_computeUserVars()
@@ -380,13 +368,13 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
         end if
      end if
 
-     if(io_plotFileIntervalZ < HUGE(1.)) then
-        if(currentRedshift <= io_nextPlotFIleZ) then
-           io_nextPlotFIleZ = io_nextPlotFileZ + &
-                (int((currentRedshift+io_nextPlotFileZ)/io_plotFIleIntervalZ) + 1)*io_plotFileIntervalZ
-
-        end if
-     end if
+!!$     if(io_plotFileIntervalZ < HUGE(1.)) then
+!!$        if(currentRedshift <= io_nextPlotFIleZ) then
+!!$           io_nextPlotFIleZ = io_nextPlotFileZ + &
+!!$                (int((currentRedshift+io_nextPlotFileZ)/io_plotFIleIntervalZ) + 1)*io_plotFileIntervalZ
+!!$
+!!$        end if
+!!$     end if
 
      call IO_writePlotfile()
 

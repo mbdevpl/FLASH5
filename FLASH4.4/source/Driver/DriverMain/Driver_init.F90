@@ -93,7 +93,6 @@ subroutine Driver_init()
   use Driver_interface, ONLY:  Driver_putTimeStamp, Driver_abortFlash
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
   use IO_interface, ONLY : IO_getScalar, IO_getPrevScalar
-  use Cosmology_interface, ONLY : Cosmology_redshiftToTime
   use Logfile_interface, ONLY : Logfile_stamp
 
   implicit none       
@@ -224,7 +223,6 @@ subroutine Driver_init()
      dr_simTime = dr_initialSimTime
      dr_nstep = dr_nbegin
      if(dr_useRedshift) then
-        call Cosmology_redshiftToTime(dr_redshiftInitial, dr_simTime)
         dr_redshift = dr_redshiftInitial
         dr_initialSimTime = dr_simTime
      else

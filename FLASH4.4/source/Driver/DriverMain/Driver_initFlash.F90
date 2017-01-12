@@ -65,7 +65,6 @@ subroutine Driver_initFlash()
   use Eos_interface, ONLY : Eos_init, Eos_logDiagnostics
   use Hydro_interface, ONLY : Hydro_init
   use Simulation_interface, ONLY : Simulation_init, Simulation_freeUserArrays
-  use Cosmology_interface, ONLY : Cosmology_init
   use IO_interface, ONLY :IO_init, IO_outputInitial
   use Opacity_interface, ONLY : Opacity_init
   use ProtonImaging_interface, ONLY : ProtonImaging_init
@@ -74,8 +73,6 @@ subroutine Driver_initFlash()
   use Profiler_interface, ONLY : Profiler_init
 
   use IncompNS_interface, ONLY : IncompNS_init
-  use ImBound_interface, ONLY : ImBound_init
-  use SolidMechanics_interface, ONLY : SolidMechanics_init
   implicit none
 
 #include "constants.h"
@@ -126,10 +123,6 @@ subroutine Driver_initFlash()
 
   call Logfile_init()
 
-! SolidMechanics Init:
-  call SolidMechanics_init(dr_restart)
-
-
   call Grid_init()
 
   call Driver_initMaterialProperties()
@@ -145,8 +138,6 @@ subroutine Driver_initFlash()
 
   if(.not. dr_restart) then
 
-     call Cosmology_init( dr_restart)
-     if(dr_globalMe==MASTER_PE)print*,'Cosmology initialized'
 
      call Driver_init()
 
@@ -168,8 +159,6 @@ subroutine Driver_initFlash()
   else if(dr_restart) then
 
      call IO_init()
-
-     call Cosmology_init( dr_restart)
 
      call Driver_init()
 
@@ -198,8 +187,6 @@ subroutine Driver_initFlash()
   ! INS init must go before Driver
   call IncompNS_init(dr_restart)
 
-  ! ImBound init
-  call ImBound_init(dr_restart)
 
   call Gravity_init()         ! Gravity
   if(dr_globalMe==MASTER_PE)print*,'Gravity initialized'
