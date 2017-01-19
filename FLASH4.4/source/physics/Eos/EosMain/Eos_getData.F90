@@ -5,12 +5,11 @@
 !! 
 !! SYNOPSIS
 !!
-!!  call Eos_getData(  integer(IN) :: axis,
-!!                     integer(IN) :: pos(MDIM),
+!!  call Eos_getData(  integer(IN) :: range(LOW:HIGH,MDIM),
 !!                     integer(IN) :: vecLen,
 !!                  real, pointer  :: solnData(:,:,:,:),
 !!                     integer(IN) :: gridDataStruct,
-!!                     real(OUT)   :: eosData(:),
+!!                     real(OUT),dimension(EOS_NUM*vecLen) :: eosData(*),
 !!            optional,real(OUT)   :: massFrac(:),
 !!         optional,logical(INOUT) :: eosMask(EOS_VARS+1:) )
 !!
@@ -36,9 +35,7 @@
 !!  ARGUMENTS 
 !!
 !!   
-!!   axis : the dimension of the vector in the block's storage
-!!   pos  : the starting indices of the vector in the block. Note that the
-!!          vector has to provide the starting indices for all dimensions
+!!   range  : the bounds of the section that we are flattening
 !!   vecLen : the length of the vector
 !!   solnData: data from the current block; unmodified on return.
 !!              various components (variables) of solnData will determine the
@@ -112,7 +109,7 @@ subroutine Eos_getData(range,vecLen,solnData,gridDataStruct,eosData,massFrac, eo
   
   integer, intent(in) :: vecLen, gridDataStruct
   integer, dimension(LOW:HIGH,MDIM), intent(in) :: range
-  real, dimension(:),intent(OUT) :: eosData
+  real, dimension(EOS_NUM*vecLen),intent(OUT) :: eosData
   real,dimension(:),optional,intent(OUT) :: massFrac
   logical, optional, INTENT(INOUT),dimension(EOS_VARS+1:) :: eosMask     
   real, pointer:: solnData(:,:,:,:)
