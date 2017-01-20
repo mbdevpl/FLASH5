@@ -6,15 +6,22 @@
 !! SYNOPSIS
 !!
 !!  Grid_makeVector(integer(IN)             :: maxSize
-!!                  real,dimension(:,:) (OUT) :: newVec)
+!!                  real,dimension(maxSize,numVec) (OUT) :: newVec,
+!!                  integer(INOUT)          :: numVec,
+!!                  OPTIONAL,integer(IN)    :: gridDataStruct)
 !!  
 !! DESCRIPTION 
 !!  
 !!
 !! ARGUMENTS 
 !!
-!!
-!!
+!!  maxSize - 
+!!            Used to declare the shape of newVec.
+!!  numVec  - number of 
+!!  newVec  - the repackaged data is returned here, ready to call Eos on.
+!!  gridDataStruct - Should be CENTER if present. FLASH does not require
+!!                   support for marshalling other datastructs (FACEX, etc.)
+!!                   for Eos calls.
 !!
 !! NOTES
 !!
@@ -57,9 +64,19 @@ subroutine Grid_makeVector(maxSize,newVec,numVec,gridDataStruct)
   range(LOW,KAXIS)=gr_klo
   range(HIGH,KAXIS)=gr_khi
 
-  oneBlkSize = NXB*NYB*NZB
-  numVEc = (maxSize+oneBlkSize-1)/oneBlkSize
-  nblks=(gr_blkCount+numVec-1)/numVec
+  ! Number of cells avalable:
+  !    M  =  gr_blkCount    *     oneBlksize
+  ! Number of cells processed in the loop below:
+  !    L  =  numVec(IN) * nblks * oneBlksize
+  !    L >=  gr_blkCount        * oneBlksize   since  numVec * nblks >= gr_blkCount
+  !    L >=               nblks * maxSize      since  numVec * oneBlksize >= maxSize
+
+  oneBlkSize = NXB*NYB*NZB      ! number of (interior) cells in each
+                                ! solution data block
+  numVEc = (maxSize+oneBlkSize-1)/oneBlkSize ! number of solution data blocks from
+                                             ! FLASH needed to provide one "vector's" worth of data 
+  nblks=(gr_blkCount+numVec-1)/numVec        ! total number of FLASH solution data blocks,
+                                             ! rounded up to ???
   blkID=1
   do j=1,numVec
      ptr=1
