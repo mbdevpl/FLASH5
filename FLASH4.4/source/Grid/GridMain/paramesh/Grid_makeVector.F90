@@ -5,16 +5,28 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_makeVector(integer(IN)             :: maxSize
-!!                  real,dimension(:,:) (OUT) :: newVec)
+!!  Grid_makeVector(integer(IN)               :: vecLen,
+!!                  real,dimension(:,:) (OUT) :: newVec,
+!!                  integer  (INOUT)          :: numVec,
+!!                  integer(IN)               :: gridDataStruct)
 !!  
 !! DESCRIPTION 
-!!  
+!!
+!!  This routine converts solution data organized as blocks into a collection of vectors
+!!  The length of the vector is an input "vecLen", which can be smaller or bigger in size than 
+!!  the data contained in one block. The value will typically be dictated by the constraints of
+!!  the target hardware. The value "numVec" is the number of vectors that will be generated from 
+!!  flattening of N blocks. Its value is N * oneBlockSize / vecLen. The newly generated vectors are
+!!  stored in newVec, which is at the moment a 2D array. Part of the exercise is to determine if it 
+!!  should be a 2D or 3D array and what should be the data layout for different variables. Should
+!!  variable be the leading dimension or should space be the leading dimension.
 !!
 !! ARGUMENTS 
 !!
-!!
-!!
+!!   vecLen     :  the length of vector into which solution data needs to be converted
+!!   newVect    : storage for newly generated vectors
+!!   numVec     : number of vectors to be generated from all that data contained in all blocks
+!!   gridDataStruct : whether cell centered, face centered etc. (may be deprecated later)
 !!
 !! NOTES
 !!
@@ -29,7 +41,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_makeVector(maxSize,newVec,numVec,gridDataStruct)
+subroutine Grid_makeVector(vecLen,newVec,numVec,gridDataStruct)
 
 #include "constants.h"
 #include "Flash.h"
@@ -41,9 +53,9 @@ subroutine Grid_makeVector(maxSize,newVec,numVec,gridDataStruct)
 
   implicit none
 
-  integer, intent(in) :: maxSize
+  integer, intent(in) :: vecLen
   integer,intent(INOUT) :: numVec
-  real, dimension(maxSize,numVec) :: newVec
+  real, dimension(vecLen,numVec),intent(OUT) :: newVec
   integer, optional,intent(in) :: gridDataStruct
 
   integer :: OneBlkSize, nblks,i,j,ptr,blkID
@@ -58,7 +70,7 @@ subroutine Grid_makeVector(maxSize,newVec,numVec,gridDataStruct)
   range(HIGH,KAXIS)=gr_khi
 
   oneBlkSize = NXB*NYB*NZB
-  numVec = (maxSize+oneBlkSize-1)/oneBlkSize
+  numVec = (vecLen+oneBlkSize-1)/oneBlkSize
   nblks=(gr_blkCount+numVec-1)/numVec
   blkID=1
   do j=1,numVec
@@ -66,7 +78,7 @@ subroutine Grid_makeVector(maxSize,newVec,numVec,gridDataStruct)
      do i=1,nblks
         if(blkID.le.gr_blkCount) then
            dataPtr => unk(:,:,:,:,blockid)
-           call Eos_getData(range,maxLen,ptr,dataPtr,gridDataStruct,newVec(ptr,j))
+           call Eos_getData(range,vecLen,ptr,dataPtr,gridDataStruct,newVec(ptr,j))
            nullify(dataPtr)
 !!           call Eos_getData(range,oneBlkSize,ptr,solnData,gridDataStruct,newVec(ptr,j))
            ptr=ptr+oneBlkSize
