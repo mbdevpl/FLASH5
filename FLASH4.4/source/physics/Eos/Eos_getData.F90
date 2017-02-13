@@ -9,7 +9,7 @@
 !!                     integer(IN) :: vecLen,
 !!                  real, pointer  :: solnData(:,:,:,:),
 !!                     integer(IN) :: gridDataStruct,
-!!                     real(OUT)   :: eosData(:),
+!!                     real(OUT),dimension(EOS_NUM*vecLen) :: eosData(*),
 !!            optional,real(OUT)   :: massFrac(:),
 !!         optional,logical(INOUT) :: eosMask(EOS_VARS+1:) )
 !!
@@ -107,7 +107,7 @@ subroutine Eos_getData(range,vecLen,solnData,gridDataStruct,eosData,massFrac, eo
   
   integer, intent(in) :: vecLen, gridDataStruct
   integer, dimension(LOW:HIGH,MDIM), intent(in) :: range
-  real, dimension(:),intent(OUT) :: eosData
+  real, dimension(EOS_NUM*vecLen),intent(OUT) :: eosData
   real,dimension(:),optional,intent(OUT) :: massFrac
   logical, optional, INTENT(INOUT),dimension(EOS_VARS+1:) :: eosMask     
   real,pointer,dimension(:,:,:,:) :: solnData

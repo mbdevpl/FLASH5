@@ -68,6 +68,7 @@ subroutine Grid_makeVector(maxSize,newVec,numVec,gridDataStruct)
            dataPtr => unk(:,:,:,:,blockid)
            call Eos_getData(range,maxLen,ptr,dataPtr,gridDataStruct,newVec(ptr,j))
            nullify(dataPtr)
+!!           call Eos_getData(range,oneBlkSize,ptr,solnData,gridDataStruct,newVec(ptr,j))
            ptr=ptr+oneBlkSize
            blkID=blkID+1
         end if
