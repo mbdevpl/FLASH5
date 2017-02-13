@@ -183,7 +183,7 @@ subroutine Eos_getData(range,vecLen,solnData,gridDataStruct,eosData,massFrac, eo
      end do
   end if
 
-  n = ptr
+!!  n = ptr
   do k = kb,ke
      do j = jb,je
         do i = ib,ie
