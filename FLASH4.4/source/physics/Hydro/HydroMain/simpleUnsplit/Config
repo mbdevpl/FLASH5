@@ -1,0 +1,138 @@
+# source/physics/Hydro/HydroMain/simpleUnsplit
+
+# Config file for simple unsplit Hydro solvers
+# Note: It requires an unsplit driver which is different from 
+#       the FLASH default split scheme.
+
+REQUESTS Driver/DriverMain/Unsplit
+REQUIRES physics/Eos
+
+REQUIRES physics/Hydro/localAPI
+
+DEFAULT HLL
+
+#Signal that the Hydro implementation is an unsplit implementation 
+# (used for flux handlings in paramesh_preprocessor.fh)
+PPDEFINE FLASH_HYDRO_UNSPLIT
+
+USESETUPVARS ThreeT
+
+IF ThreeT
+   SETUPERROR The simpleUnsplit Hydro solvers do not support 3T. Configure without ThreeT.
+ENDIF
+
+
+
+# Variables required by the unsplit solvers
+VARIABLE dens TYPE: PER_VOLUME 	EOSMAP:  DENS # density
+VARIABLE velx TYPE: PER_MASS   	EOSMAPIN:VELX # x-velocity
+VARIABLE vely TYPE: PER_MASS   	EOSMAPIN:VELY # y-velocity
+VARIABLE velz TYPE: PER_MASS   	EOSMAPIN:VELZ # z-velocity
+VARIABLE pres                  	EOSMAP:  PRES # pressure
+VARIABLE ener TYPE: PER_MASS   	EOSMAP:  ENER # specific total energy (T+U)
+#VARIABLE gamc                  	EOSMAP:  GAMC # sound-speed gamma
+#VARIABLE game               	EOSMAP:  GAME # internal energy gamma
+VARIABLE temp                  	EOSMAP:  TEMP # temperature
+VARIABLE eint TYPE: PER_MASS   	EOSMAP:  EINT # specific internal energy (U)
+
+
+D UnitSystem	System of Units, must be "none" for simpleUnsplit Hydro solver
+PARAMETER UnitSystem	STRING	 " "      # System of Units - NOTIMPLEMENTED OVERRIDE
+
+
+# Runtime parameters for the simple unsplit Hydro solver:
+# THESE ARE CURRENTLY ALL IGNORED!
+D order			1st order Godunov scheme, 2nd MUSCL-Hancock scheme, or 3rd PPM, 5th WENO
+D hy_3Torder		Reconstruction order for eint, eele, eion, erad in HEDP simulations
+D use_hybridOrder	Apply RH jump condition to check monotonicity of reconstructed values
+D hybridOrderKappa	A constant value to determine shock strengths for hybrid order
+D transOrder		order of approximating transeverse flux derivative in data reconstruction
+D slopeLimiter		mc, vanLeer, minmod, hybrid, limited
+D charLimiting		Apply limiting for characteristic variable
+D LimitedSlopeBeta	Any real value specific for the Limited Slope limiter
+D use_steepening	Switch for steepening contact discontinuities for 3rd order PPM
+D use_flattening	Switch for PPM flattening
+D use_cvisc		Turn on/off artificial viscosity
+D use_upwindTVD         Turn on/off upwinding TVD slopes
+
+D use_3dFullCTU		Turn on/off the full CTU scheme that gives CFL <= 1 for 3D
+
+D RiemannSolver		HLL, or LLF for local Lax-Friedrichs, others unsupported in simpleUnsplit.
+D entropy		Entropy Fix routine for the Roe Riemann solver
+D entropyFixMethod      Entropy fix method for the Roe Riemann solver: Harten or HartenHyman
+D shockDetect           Switch to use a strong compressive shock detection
+D EOSforRiemann		Call EOS to get gamc and game for the Riemann state calculations
+
+D use_gravHalfUpdate    Include gravitational accelerations to hydro coupling at n+1/2
+D use_gravConsv         Use conservative variables for gravity coupling at n+1/2
+D use_GravPotUpdate     Parameter for half timestep update of gravitational potential
+
+D irenorm		Renormalize abundances
+D tiny			A threshold value for an arbitrarily small number
+D conserveAngMom        Conservative formulation for cylindrical coordinates regarding the toroidal momentum
+
+
+# Runtime Parameters
+# (1) Interpolation, reconstruction, slope limiter:
+PARAMETER order		       INTEGER  2        	# Order of scheme: 1st/2nd/3rd/5th order
+PARAMETER hy_3Torder	       INTEGER  -1		# Default 3T reconstruction order is same as order
+PARAMETER use_hybridOrder      BOOLEAN  FALSE		# Apply RH jump condition to check monotonicity of reconstructed values
+PARAMETER hybridOrderKappa     REAL	0.		# A constant value to determine shock strengths for hybrid order
+PARAMETER transOrder	       INTEGER  1        	# Order of transverse flux: 1st order. 3rd order is experimental.
+PARAMETER slopeLimiter         STRING  "vanLeer" 	# Slope limiter for Riemann state
+PARAMETER charLimiting	       BOOLEAN  TRUE    	# Turn on/off characteristic/primitive limiting
+PARAMETER LimitedSlopeBeta     REAL     1.0      	# Any real value specific for the Limited Slope 
+					         	# limiter (e.g., 1.0 for minmod, 2.0 for superbee)
+PARAMETER use_steepening       BOOLEAN  FALSE           # Turn on/off PPM contact steepening
+PARAMETER use_flattening       BOOLEAN  FALSE   	# Turn on/off flattening
+PARAMETER use_avisc            BOOLEAN  FALSE   	# Turn on/off artificial viscosity
+PARAMETER cvisc                REAL     0.1      	# artificial viscosity constant
+PARAMETER use_upwindTVD        BOOLEAN  FALSE   	# Turn on/off upwinding TVD slopes
+PARAMETER conserveAngMom       BOOLEAN  FALSE           # Turn on/off alternate formulation for toroidal momentum  
+
+# (2) For 3D CTU
+PARAMETER use_3dFullCTU	       BOOLEAN  TRUE		# FALSE will give the simpler CTU without corner upwind coupling
+	  		       				# and will only provide CFL < 1/2
+# (3) Riemann solvers 
+PARAMETER RiemannSolver	       STRING  "LLF" ["LLF","HLL"]
+                                                        # Approximate Riemann solver:
+						      	# HLL, or LLF for local Lax-Friedrichs
+PARAMETER entropy              BOOLEAN  FALSE  		# Turn on/off an entropy fix routine
+PARAMETER entropyFixMethod     STRING  "HARTENHYMAN"  	# Entropy fix method for the Roe Riemann solver: 
+						      	# Harten or HartenHyman
+PARAMETER shockDetect          BOOLEAN  FALSE   	# Turn on/off a shock detecting switch
+PARAMETER EOSforRiemann        BOOLEAN  FALSE   	# Turn on/off EOS calls for the Riemann states
+
+PARAMETER addThermalFlux       BOOLEAN  CONSTANT FALSE  # Add/don't add thermal fluxes to hydro fluxes - NOTIMPLEMENTED
+
+# (4) Gravity updates
+PARAMETER use_gravHalfUpdate   BOOLEAN  FALSE   	# Include gravitational accelerations to hydro coupling at n+1/2
+PARAMETER use_gravConsv        BOOLEAN  FALSE   	# Use conservative variables for gravity coupling at n+1/2
+PARAMETER use_GravPotUpdate    BOOLEAN  FALSE           # Parameter for half timestep update of gravitational potential
+
+# (5) Abundances
+PARAMETER irenorm	       INTEGER  0        	# Renormalize abundances
+PARAMETER tiny		       REAL     1.e-16   	# An arbitrarily small number
+
+
+USESETUPVARS nDim
+
+# Use SCRATCHFACEnVAR for temporary storage for fluxes
+SCRATCHFACEXVAR dummyflux
+IF nDim >= 2
+SCRATCHFACEYVAR dummyflux
+ENDIF
+IF nDim == 3
+SCRATCHFACEZVAR dummyflux
+ENDIF
+
+
+# Number of guard cells at each boundary
+USESETUPVARS SupportWeno, SupportPpmUpwind
+IF SupportWeno
+   GUARDCELLS 6 # the Unsplit Hydro/MHD solver requires 6 guard cells to support WENO!
+ELSEIF SupportPpmUpwind
+   GUARDCELLS 6 # the Unsplit Hydro/MHD solver requires 6 guard cells to support PPM Upwind!
+ELSE
+   GUARDCELLS 4 # the Unsplit Hydro/MHD solver requires 4 guard cell layers!
+ENDIF
