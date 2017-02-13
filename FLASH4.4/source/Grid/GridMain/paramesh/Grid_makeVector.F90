@@ -58,7 +58,7 @@ subroutine Grid_makeVector(maxSize,newVec,numVec,gridDataStruct)
   range(HIGH,KAXIS)=gr_khi
 
   oneBlkSize = NXB*NYB*NZB
-  numVEc = (maxSize+oneBlkSize-1)/oneBlkSize
+  numVec = (maxSize+oneBlkSize-1)/oneBlkSize
   nblks=(gr_blkCount+numVec-1)/numVec
   blkID=1
   do j=1,numVec
@@ -66,7 +66,8 @@ subroutine Grid_makeVector(maxSize,newVec,numVec,gridDataStruct)
      do i=1,nblks
         if(blkID.le.gr_blkCount) then
            dataPtr => unk(:,:,:,:,blockid)
-           call Eos_getData(range,maxLen,ptr,solnData,gridDataStruct,newVec(ptr,j))
+           call Eos_getData(range,maxLen,ptr,dataPtr,gridDataStruct,newVec(ptr,j))
+           nullify(dataPtr)
            ptr=ptr+oneBlkSize
            blkID=blkID+1
         end if
