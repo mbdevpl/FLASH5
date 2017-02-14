@@ -241,12 +241,7 @@ subroutine Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
   integer, optional, intent(IN) :: gridDataStruct
 
 
-!!#ifndef FIXEDBLOCKSIZE
   real, allocatable :: eosData(:),massFraction(:)
-!!$#else
-!!$  real, dimension(NSPECIES*MAXCELLS) :: massFraction
-!!$  real, dimension(EOS_NUM*MAXCELLS) :: eosData
-!!$#endif
 
   logical,target,dimension(EOS_VARS+1:EOS_NUM) :: eosMask
 
@@ -300,41 +295,20 @@ subroutine Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
      dataStruct=CENTER
   end if
 
-
-  !$omp parallel if (eos_threadWithinBlock .and. NDIM > 1) &
-  !$omp default(none) &
-  !$omp shared(mode,range,solnData,eos_threadWithinBlock) &
-  !$omp firstprivate(dataStruct,vecLen) &
-  !$omp private(j,k,massFraction,eosData,pos,eosMask)
-
-
-!!#ifndef FIXEDBLOCKSIZE
   allocate(massFraction(NSPECIES*vecLen))
   allocate(eosData(EOS_NUM*vecLen))
-!!#endif
 
   eosMask = .FALSE.
 
   pos(IAXIS)=range(LOW,IAXIS)
 
-!!$  offset=1
-!!$  do k = range(LOW,KAXIS), range(HIGH,KAXIS)
-!!$     do j = range(LOW,JAXIS), range(HIGH,JAXIS)
-!!$        pos(JAXIS)=j
-!!$        pos(KAXIS)=k
   call Eos_getData(range,vecLen,solnData,dataStruct,eosData,massFraction)
-!!$     end do
-!!$  end do
   call Eos(mode,vecLen,eosData,massFraction,mask=eosMask)
 
   call Eos_putData(range,vecLen,solnData,dataStruct,eosData)
         
-!!$     end do
-!!$  end do
-!!#ifndef FIXEDBLOCKSIZE
   deallocate(eosData)
   deallocate(massFraction)
-!!#endif
 
   !$omp end parallel
 
