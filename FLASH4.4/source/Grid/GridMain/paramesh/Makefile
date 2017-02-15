@@ -14,3 +14,4 @@ Grid += Grid_data.o Grid_getBlkType.o \
 	gr_unmarkRefineByLogRadius.o gr_markDerefineByLogRadius.o gr_markDerefineByTime.o gr_enforceMaxRefine.o \
 	Grid_getMaxRefinement.o \
 	gr_setMaxRefineByTime.o 
+Grid += Grid_makeVector.o

@@ -183,7 +183,8 @@ subroutine Eos_getData(range,vecLen,solnData,gridDataStruct,eosData,massFrac, eo
      end do
   end if
 
-!!  n = ptr
+  n = 0
+  !! DEV: If / when we add a ptr dummy argument for passing in an offset, this will be n = ptr
   do k = kb,ke
      do j = jb,je
         do i = ib,ie
