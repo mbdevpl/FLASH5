@@ -65,25 +65,15 @@
 
 Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 
-  use Grid_interface, ONLY : GRID_DATAINIT_NEGINFINITY, &
-                             Grid_getListOfTiles,    &
-                             Grid_getDeltas,         &
+  use Grid_interface, ONLY : Grid_getDeltas,         &
                              Grid_getBlkIndexLimits, &
                              Grid_fillGuardCells,    &
                              Grid_getBlkPtr,         &
                              Grid_releaseBlkPtr,     &
-                             Grid_getBlkPtrPair,         &
-                             Grid_releaseBlkPtrPair,     &
+                             Grid_genGetBlkPtr,         &
+                             Grid_genReleaseBlkPtr,     &
                              Grid_getBlkData
 
-  use GridTilingModule, ONLY: Grid_tilingContext_t, &
-                              Grid_startLoopTiling, &
-                              Grid_addToLoopTiling, &
-                              Grid_endLoopTiling,   &
-                              Grid_getBlkVarPtrs,   &
-                              Grid_releaseBlkVarPtrs, &
-                              Grid_getTileVarPtrs,   &
-                              Grid_releaseTileVarPtrs
 
 #include "Flash.h"
 
@@ -101,14 +91,12 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
                          hy_updateHydroFluxes,&
                          hy_geometry,         &
                          hy_fluxCorVars,      &
-                         hy_threadTileList
+                         hy_threadBlockList
 #ifdef FLASH_USM_MHD
   use Hydro_data, ONLY : hy_E_upwind
 #endif
 
   use Driver_interface, ONLY : Driver_abortFlash
-
-  use hy_simpleInterface, ONLY : hy_hllUnsplitUpdate
 
   use Eos_interface, ONLY : Eos_wrapped
 
@@ -131,8 +119,7 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
   !! -----------------------------------------------------
 
 !!$  integer, dimension(MDIM) :: datasize
-!!$  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
-  integer, dimension(LOW:HIGH,MDIM) :: tileLimits
+  integer, dimension(LOW:HIGH,MDIM) :: tileLimits ,blkLimitsGC
   integer :: ib, i,j,k,blockID
   integer :: is,js,ks
   integer :: ix,iy,iz
@@ -149,7 +136,6 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 
   real, pointer, dimension(:,:,:,:) :: Uin,Uout
 
-  type(Grid_tilingContext_t),pointer :: tilingCtx
   integer :: tileCount
   integer :: tileList(1024)
 
@@ -204,24 +190,35 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
   !! Loop over the blocks
 
 
-  call Grid_startLoopTiling(CENTER,tilingCtx,&
-                  useInPtr=.TRUE.,  useInVarPtrs=.FALSE.,    &
-                  useOutPtr=.TRUE., useOutVarPtrs=.FALSE., outVarList=outVarList, &
-                  nAuxVars=1, nAuxGuard=1, blockList=blockList(1:blockCount))
-  call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEX,&
-                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
-                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
-  if (NDIM > 1) then
-     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEY,&
-                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
-                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
-  end if
-  if (NDIM > 2) then
-     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEZ,&
-                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
-                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
-  end if
+!!$  call Grid_startLoopTiling(CENTER,tilingCtx,&
+!!$                  useInPtr=.TRUE.,  useInVarPtrs=.FALSE.,    &
+!!$                  useOutPtr=.TRUE., useOutVarPtrs=.FALSE., outVarList=outVarList, &
+!!$                  nAuxVars=1, nAuxGuard=1, blockList=blockList(1:blockCount))
+!!$  call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEX,&
+!!$                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
+!!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
+!!$  if (NDIM > 1) then
+!!$     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEY,&
+!!$                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
+!!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
+!!$  end if
+!!$  if (NDIM > 2) then
+!!$     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEZ,&
+!!$                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
+!!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
+!!$  end if
 
+  !$omp parallel if (hy_threadBlockList) &
+  !$omp default(none) &
+  !$omp private(dtdx,dtdy,dtdz,blockID,i,j,k,del,tileLimits,blkLimitsGC,&
+  !$omp faceX,faceY,faceZ,Uin,Uout,auxC,&
+  !$omp c,sl,sr,srsl,vn,is,il,ir,vl,vr,js,jl,jr,ks,kl,kr,invNewDens) &
+  !$omp shared(blockCount,blockList,&
+  !$omp hy_unsplitEosMode,hy_useGravity,hy_gref,hy_fluxCorrect,&
+  !$omp hy_updateHydroFluxes,hy_eosModeAfter,hy_useGravHalfUpdate,&
+  !$omp hy_useGravPotUpdate,hy_geometry,hy_fluxCorVars)
+  
+  !$omp do schedule(static)
   do ib=1,blockCount
 
      blockID = blockList(ib)
@@ -232,25 +229,11 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
      if (NDIM > 1) dtdy = dt / del(JAXIS)
      if (NDIM > 2) dtdz = dt / del(KAXIS)
 
-!!$     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
+     call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC)
 
-     call Grid_getListOfTiles(blockID, tileList,tileCount)
+!!$     call Grid_getListOfTiles(blockID, tileList,tileCount)
 
 
-     !$omp parallel if (hy_threadTileList) &
-     !$omp default(none) &
-     !$omp firstprivate(dtdx,dtdy,dtdz,blockID) &
-     !$omp private(i,del,tileLimits,tileID,&
-     !$omp faceX,faceY,faceZ,Uin,Uout,auxC,&
-     !$omp c,sl,sr,srsl,vn,is,il,ir,vl,vr,js,jl,jr,ks,kl,kr,invNewDens) &
-     !$omp shared(tilingCtx,blockCount,blockList,tileCount,tileList,&
-     !$omp hy_unsplitEosMode,hy_useGravity,hy_gref,hy_fluxCorrect,&
-     !$omp hy_updateHydroFluxes,hy_eosModeAfter,hy_useGravHalfUpdate,&
-     !$omp hy_useGravPotUpdate,hy_geometry,hy_fluxCorVars)
-
-     !$omp do schedule(static)
-     do t=1,tileCount
-        tileID = tileList(t)
 
      !! NO call to Eos for guardcell regions - simplified! --------------------
      !! End of Eos call for guardcell regions ----------------------------------
@@ -260,24 +243,30 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 !!$     datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
 
-        call Grid_getTileVarPtrs(tileID,gridDataStruct=CENTER, &
-             inPtr=Uin, nInGuard=(/1,1,1/), &
-             outPtr=Uout,&
-             outLimits=tileLimits, &
-             dataInit=GRID_DATAINIT_NEGINFINITY,&
-             auxPtr=auxC,tilingContext=tilingCtx)
+!!$        call Grid_getTileVarPtrs(tileID,gridDataStruct=CENTER, &
+!!$             inPtr=Uin, nInGuard=(/1,1,1/), &
+!!$             outPtr=Uout,&
+!!$             outLimits=tileLimits, &
+!!$             dataInit=GRID_DATAINIT_NEGINFINITY,&
+!!$             auxPtr=auxC,tilingContext=tilingCtx)
+        call Grid_getBlkPtr(blockID,Uout,CENTER)
+        Uin => Uout
+        allocate(auxC(1,tileLimits(LOW,IAXIS)-1  :tileLimits(HIGH,IAXIS)+1  , &
+                        tileLimits(LOW,JAXIS)-K2D:tileLimits(HIGH,JAXIS)+K2D, &
+                        tileLimits(LOW,KAXIS)-K3D:tileLimits(HIGH,KAXIS)+K3D) )
 !!$        print*,'tile limits for',tileID,':',tileLimits
 
 
 
 
-        call Grid_getBlkVarPtrs(tileID,gridDataStruct=SCRATCH_FACEX,auxPtr=faceX,tilingContext=tilingCtx)
-        if (NDIM > 1) then 
-           call Grid_getBlkVarPtrs(tileID,gridDataStruct=SCRATCH_FACEY,auxPtr=faceY,tilingContext=tilingCtx)
-        end if
-        if (NDIM > 2) then 
-           call Grid_getBlkVarPtrs(tileID,gridDataStruct=SCRATCH_FACEZ,auxPtr=faceZ,tilingContext=tilingCtx)
-        end if
+!!$        call Grid_getBlkVarPtrs(tileID,gridDataStruct=SCRATCH_FACEX,auxPtr=faceX,tilingContext=tilingCtx)
+!!$        if (NDIM > 1) then 
+!!$           call Grid_getBlkVarPtrs(tileID,gridDataStruct=SCRATCH_FACEY,auxPtr=faceY,tilingContext=tilingCtx)
+!!$        end if
+!!$        if (NDIM > 2) then 
+!!$           call Grid_getBlkVarPtrs(tileID,gridDataStruct=SCRATCH_FACEZ,auxPtr=faceZ,tilingContext=tilingCtx)
+!!$        end if
+        call Grid_genGetBlkPtr(blockID,faceX,(/1,5,SCRATCH_FACES/), faceY,faceZ)
 
 !!$     print*,'lbound(faceX):', lbound(faceX)
 !!$     print*,'ubound(faceX):', ubound(faceX)
@@ -556,30 +545,30 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 #endif
 
      
-        deallocate(faceX)
-        if (NDIM > 1) then 
-           deallocate(faceY)
-        end if
-        if (NDIM > 2) then 
-           deallocate(faceZ)
-        end if
+!!$        deallocate(faceX)
+!!$        if (NDIM > 1) then 
+!!$           deallocate(faceY)
+!!$        end if
+!!$        if (NDIM > 2) then 
+!!$           deallocate(faceZ)
+!!$        end if
+        call Grid_genReleaseBlkPtr(blockID,faceX,(/1,5,SCRATCH_FACES/), faceY,faceZ)
 
         !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
         call Eos_wrapped(hy_eosModeAfter, tileLimits, Uout)
 
-        call Grid_releaseTileVarPtrs(tileID,gridDataStruct=CENTER, &
-             inPtr=Uin, &
-             outPtr=Uout,&
-             tilingContext=tilingCtx)
-     end do
-     !$omp end do
+!!$        call Grid_releaseTileVarPtrs(tileID,gridDataStruct=CENTER, &
+!!$             inPtr=Uin, &
+!!$             outPtr=Uout,&
+!!$             tilingContext=tilingCtx)
 
-     !$omp end parallel
 
   end do
+  !$omp end do
+  
+  !$omp end parallel
   !! End of leaf block do-loop - no flux conserve call
 
-  call Grid_endLoopTiling(tilingCtx)
 
 #ifdef DEBUG_GRID_GCMASK
   if (.NOT.gcMaskLogged) then

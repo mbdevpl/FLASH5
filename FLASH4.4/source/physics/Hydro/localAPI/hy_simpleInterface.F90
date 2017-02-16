@@ -276,35 +276,6 @@ Module hy_simpleInterface
 
 
 
-  interface
-     subroutine hy_hllUnsplitUpdate(blockID,dt,dtOld,del,dataSize,blkLimits,&
-                                     blkLimitsGC,xflux,yflux,zflux,gravX,gravY,gravZ,tilingCtx)
-       use GridTilingModule, ONLY: Grid_tilingContext_t
-       implicit none
-       integer,intent(IN) :: blockID
-       real, intent(IN)   :: dt,dtOld
-       real, intent(IN)   :: del(MDIM)
-       integer,dimension(MDIM),intent(IN) :: dataSize
-       integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
-       integer,intent(IN) :: blkLimitsGC(LOW:HIGH,MDIM)       
-#ifdef FIXEDBLOCKSIZE
-  real, intent(in) ::xflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-  real, intent(in) ::yflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-  real, intent(in) ::zflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-  real, dimension(3,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: gravX,gravY,gravZ
-
-#else
-  real, intent(in) :: xflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))  
-  real, intent(in) :: yflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))  
-  real, intent(in) :: zflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))
-  real, dimension(3,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)),& 
-                  intent(IN) :: gravX,gravY,gravZ
-#endif
-       type(Grid_tilingContext_t),intent(INOUT) :: tilingCtx
-     end subroutine hy_hllUnsplitUpdate
-  end interface
-
-
 
 
 

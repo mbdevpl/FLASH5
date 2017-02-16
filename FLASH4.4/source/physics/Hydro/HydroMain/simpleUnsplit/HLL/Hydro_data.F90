@@ -104,7 +104,6 @@ Module Hydro_data
 !#endif
 
   logical, save :: hy_threadBlockList = .false.
-  logical, save :: hy_threadTileList = .false.
   logical, save :: hy_threadWithinBlock = .false.
 
 
