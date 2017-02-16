@@ -1,4 +1,11 @@
 #	Runtime parameters for the Sod shock-tube problem.
+#       Version for testing simpleUnsplit Hydro  with PARAMESH Grid.
+#
+# To configure:
+# ./setup -auto Sod -unit=physics/Hydro/HydroMain/simpleUnsplit/LLF -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -debug -makefile=gnu # maybe
+# ./setup -auto Sod -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -debug -site=eugenia.asci.uchicago.edu
+# To run:
+# mpiexec -n 2 ./flash4
 
 #	Parameters for initial model
 
@@ -54,12 +61,12 @@ yr_boundary_type = "outflow"
 
 #	Simulation (grid, time, I/O) parameters
 
-cfl		= 0.8
+cfl		= 0.3
 basenm          = "sod_"
 restart         = .false.
 
 #	checkpoint file output parameters
-checkpointFileIntervalTime = 0.2
+checkpointFileIntervalTime = 0.005
 checkpointFileIntervalStep = 0
 checkpointFileNumber = 0
 
@@ -73,8 +80,8 @@ tmax            = .2
 
 run_comment     = "Sod problem, diagonal direction"
 log_file        = "sod.log"
-eintSwitch     = 1.e-4
-
+eintSwitch     = 0.0 # 1.e-4
+flux_correct = .FALSE.
 
 plot_var_1 = "dens"
 plot_var_2 = "pres"
@@ -87,10 +94,10 @@ refine_var_1    = "dens"
 # These parameters are used only for the uniform grid
 
 
-#iGridSize = 8   #defined as nxb * iprocs
-#jGridSize = 8
+#iGridSize = 256
+#jGridSize = 256
 #kGridSize = 1
-iProcs = 1	#number or procs in the i direction	
+iProcs = 2	#number or procs in the i direction	
 jProcs = 1
 kProcs = 1
 
@@ -124,7 +131,7 @@ use_steepening	= .false. # use contact steepening (originally for PPM)
 use_upwindTVD	= .false. # use upwind biased TVD slope for PPM (need nguard=6)
 
 #	II. RIEMANN SOLVERS:
-RiemannSolver	= "Roe"       # Roe, HLL, HLLC, LLF, Marquina
+RiemannSolver	= "HLL"       # Roe, HLL, HLLC, LLF, Marquina
 entropy         = .false.     # Entropy fix for the Roe solver
 
 hy_fPresInMomFlux = 1.0       # Part of pressure gradient term in momentum equation to include in momentum fluxes
