@@ -95,7 +95,7 @@ Module Eos_interface
        implicit none
        integer, intent(in) :: vecLen,gridDataStruct
        integer, dimension(LOW:HIGH,MDIM), intent(in) :: range
-       real, dimension(EOS_NUM*vecLen),intent(OUT) :: eosData
+       real, dimension(EOS_NUM*vecLen),intent(INOUT) :: eosData
        real, pointer,dimension(:,:,:,:) :: solnData
        real,dimension(:),optional,intent(OUT) :: massFrac
        logical, optional, INTENT(INOUT),dimension(EOS_VARS+1:) :: eosMask     
