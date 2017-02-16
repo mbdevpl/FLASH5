@@ -27,9 +27,9 @@
 !! ARGUMENTS 
 !!
 !!   vecLen     :  the length of vector into which solution data needs to be converted
-!!   numVars    :  number of variables per cell that are stored in newVect.
+!!   numVars    :  number of variables per cell that are stored in newVec.
 !!                 For use with the Eos unit as in this example, this should be = EOS_NUM.
-!!   newVect    : storage for newly generated vectors.
+!!   newVec     : storage for newly generated vectors.
 !!                The repackaged (and Eos_getData-preprocessed) data is returned here,
 !!                ready to call Eos on.
 !!   numVec     : number of vectors (of numVars variables each) to be generated
@@ -45,7 +45,7 @@
 !!                 If the argument is not present, no indication of incomplete vectors
 !!                 is provided to the caller.
 !!                 If returning all blockdata as vectors would overflow the available space
-!!                 in newVect, then vecLastFree (if present) will be set to -1 to indicate
+!!                 in newVec, then vecLastFree (if present) will be set to -1 to indicate
 !!                 this condition.
 !!   gridDataStruct : whether cell centered, face centered etc. (may be deprecated later).
 !!                    Should be CENTER if present. FLASH does not require
@@ -128,7 +128,7 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   ! Thus numVec*oneBlkSize :                 ! number of cells per vector,
                                              ! rounded up to a multiple of oneBlkSize
   ASSERT (numVecIn .GE. numVec)              ! ouput array must have enough space!
-  ASSERT (vecLen == numVec * oneBlkSize)     ! maxSize must be a multiple of oneBlkSize !
+!!$  ASSERT (vecLen == numVec * oneBlkSize)     ! vecLen need not be a multiple of oneBlkSize !
 
 
   ptr     = 1
@@ -297,7 +297,7 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   else if (associated(dataPtr)) then !vecFree SHOULD always be 0 in this case.
 99   format('PE',I6,': newVec(',I4,',:,',I4,') not large enough for',I6,' blocks, vecFree=',I5)
      print 99,gr_meshMe,vecLen,numVecIn,gr_blkCount,vecFree
-     call Driver_abortFlash("Grid_makeVector: newVect not large enough for block data")
+     call Driver_abortFlash("Grid_makeVector: newVec not large enough for block data")
   end if
 
   return
