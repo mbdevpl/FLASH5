@@ -73,6 +73,18 @@ subroutine Grid_genReleaseBlkPtr(blockID,dataPtr, varDesc,dataPtr2,dataPtr3)
         else
            call Driver_abortFlash('Grid_genReleaseBlkPtr: called with a "duration" that is not implemented!')
         end if
+     case(SCRATCH_FACES)
+        if (dur == VD_DUR_PERM) then
+           call Grid_releaseBlkPtr(blockID, dataPtr,  SCRATCH_FACEX)
+           if (NDIM>1) call Grid_releaseBlkPtr(blockID, dataPtr2, SCRATCH_FACEY)
+           if (NDIM>2) call Grid_releaseBlkPtr(blockID, dataPtr3, SCRATCH_FACEZ)
+        else if (dur == VD_DUR_GASC) then
+           call Grid_ascReleaseBlkPtr(blockID, dataPtr,  SCRATCH_FACEX)
+           if (NDIM>1) call Grid_ascReleaseBlkPtr(blockID, dataPtr2, SCRATCH_FACEY)
+           if (NDIM>2) call Grid_ascReleaseBlkPtr(blockID, dataPtr3, SCRATCH_FACEZ)
+        else
+           call Driver_abortFlash('Grid_genReleaseBlkPtr: called with a "duration" that is not implemented!')
+        end if
      case default
         if (dur == VD_DUR_PERM) then
            call Grid_releaseBlkPtr(blockID, dataPtr, gds)
