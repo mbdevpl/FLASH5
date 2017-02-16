@@ -108,6 +108,6 @@ Module Hydro_data
   logical, save :: hy_threadWithinBlock = .false.
 
 
-  real, save :: hy_3TMode = HY3T_NONE
+  integer, save :: hy_3TMode = HY3T_NONE
 
 End Module Hydro_data
