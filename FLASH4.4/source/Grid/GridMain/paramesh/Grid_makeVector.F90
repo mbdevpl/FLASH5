@@ -57,9 +57,8 @@
 !!  This won;t work it is just to show.
 !!***
 
-!!REORDER(5): unk, facevar[xyz], scratch_ctr, scratch_facevar[xyz]
+!!REORDER(5): unk
 !!REORDER(4): dataPtr
-!!FOR FUTURE: Add REORDER for unk, facevar[xyz]1, etc.?
 
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
@@ -86,14 +85,14 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   integer, optional,intent(OUT):: vecLastFree
   integer, optional,intent(in) :: gridDataStruct
 
-  integer :: OneBlkSize, nblks,i,j,ptr,blkID
-  integer :: numVecIn, vecLenOut !! needed? usedful?
+  integer :: oneBlkSize, i,ptr,blkID
+  integer :: numVecIn
   integer,dimension(LOW:HIGH,MDIM) :: range
   real,dimension(:,:,:,:),pointer :: dataPtr
 
   integer :: vecFree, ivec, subBlkSize
-  integer,dimension(LOW:HIGH,MDIM) :: r0, sr0, eosRange !,subRange
-  integer,dimension(         MDIM) :: blkSize,sublen,stride,npos !,step,fullstep
+  integer,dimension(LOW:HIGH,MDIM) :: r0, sr0, eosRange
+  integer,dimension(         MDIM) :: blkSize,sublen,stride,npos
   logical :: incomplete, doit
   integer :: axis, carryAxis
   integer,parameter :: hiAxis = IAXIS+NDIM-1
@@ -108,9 +107,6 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   blkSize (IAXIS:KAXIS) = range(HIGH,:)-range(LOW,:)+1
   r0(LOW,:)  = 0                !zero-based range
   r0(HIGH,:)  = blkSize(:)      !Python-like convention for end of range
-!!$  fullstep(IAXIS:KAXIS) = range(HIGH,:)-range(LOW,:)+1
-!!$  step    (IAXIS:KAXIS) = fullstep(IAXIS:KAXIS)
-!!$  subRange(:,:)         = range(:,:)
   sr0     (:,:)         = r0   (:,:) !zero-based subrange
   numVecIn = numVec
 
@@ -120,10 +116,6 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
 
   ! Number of cells avalable:
   !    M  =  gr_blkCount    *     oneBlksize
-  ! Number of cells processed in the loop below:
-  !    L  =  numVec(IN) * nblks * oneBlksize
-  !    L >=  gr_blkCount        * oneBlksize   since  numVec * nblks >= gr_blkCount
-  !    L >=               nblks * maxSize      since  numVec * oneBlksize >= maxSize
 
   oneBlkSize = NXB*NYB*NZB      ! number of (interior) cells in each
                                 ! solution data block
@@ -138,50 +130,6 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   ASSERT (numVecIn .GE. numVec)              ! ouput array must have enough space!
   ASSERT (vecLen == numVec * oneBlkSize)     ! maxSize must be a multiple of oneBlkSize !
 
-  nblks=(gr_blkCount+numVec-1)/numVec        ! max number of FLASH solution data blocks
-                                             ! per "vector"
-  ! Thus nblks*numVec :                      ! total number of FLASH solution data blocks,
-                                             ! rounded up to a multiple of numVec
-
-#if(0)
-  kmod = modulo(vecLen, oneBlkSize)
-  if (kmod == 0) then
-     jmod = 0
-     imod = 0
-  else
-     jmod = modulo(kmod, fullstep(IAXIS)*fullstep(JAXIS))
-     if (jmod == 0) then
-        if (modulo(fullstep(KAXIS),kmod/(fullstep(IAXIS)*fullstep(JAXIS)))==0) then
-           kstep = kmod/(fullstep(IAXIS)*fullstep(JAXIS))
-        else
-           kstep = 1
-        end if
-        imod = 0
-     else
-        kstep = 1
-        imod = modulo(jmod, fullstep(IAXIS))
-        if (imod == 0) then
-           if (modulo(fullstep(JAXIS),jmod/fullstep(IAXIS))==0) then
-              jstep = jmod/fullstep(IAXIS)
-           else
-              jstep = 1
-           end if
-        else
-           jstep = 1
-           if (modulo(fullstep(IAXIS),imod)==0) then
-              istep = imod
-           else
-              istep = 1
-           end if
-        end if
-     end if
-  end if
-
-
-  blkID=1
-  ivec = 0
-  prevVectFull = .TRUE.
-#endif
 
   ptr     = 1
   vecFree = vecLen
@@ -340,62 +288,6 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
      end do vf
   end do iv
 
-#if(0)
-  do ib=1,gr_blkCount
-     dataPtr => unk(:,:,:,:,ib)
-     do k=range(LOW,KAXIS),range(HIGH,KAXIS),step(KAXIS)
-        do j=range(LOW,JAXIS),range(HIGH,JAXIS),step(JAXIS)
-           do i=range(LOW,IAXIS),range(HIGH,IAXIS),step(IAXIS)
-              if (prevVectFull) then
-                 ivec = ivec + 1
-!                 if
-                 ptr = 1
-
-                 prevVectFull = .FALSE.
-              end if
-              subBlkSize = PRODUCT(step)
-              call Eos_getData(subRange,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,j))
-              ptr=ptr+subBlkSize
-              if (ptr > vecLen) then
-                 prevVectFull = .TRUE.
-              end if
-           end do
-        end do
-     end do
-
-  do j=1,numVec
-     ptr=1
-     do i=1,nblks
-        if(blkID.le.gr_blkCount) then
-           dataPtr => unk(:,:,:,:,blkID)
-           !! NOTE: the eosData dummy in Eos_getData has to become intent(INOUT) instead of IN!
-           call Eos_getData(range,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,j))
-           nullify(dataPtr)
-!!           call Eos_getData(range,oneBlkSize,ptr,solnData,gridDataStruct,newVec(ptr,j))
-           ptr=ptr+oneBlkSize
-           blkID=blkID+1
-        end if
-     end do
-  end do
-
-!ORIGINAL:
-  blkID=1
-  do j=1,numVec
-     ptr=1
-     do i=1,nblks
-        if(blkID.le.gr_blkCount) then
-           dataPtr => unk(:,:,:,:,blkID)
-           !! NOTE: the eosData dummy in Eos_getData has to become intent(INOUT) instead of IN!
-           call Eos_getData(range,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,j))
-           nullify(dataPtr)
-!!           call Eos_getData(range,oneBlkSize,ptr,solnData,gridDataStruct,newVec(ptr,j))
-           ptr=ptr+oneBlkSize
-           blkID=blkID+1
-        end if
-     end do
-  end do
-
-#endif
   if (present(vecLastFree)) then
      if (associated(dataPtr)) then !vecFree SHOULD always be 0 in this case.
         vecLastFree = -1
