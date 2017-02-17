@@ -104,10 +104,9 @@ Module Hydro_data
 !#endif
 
   logical, save :: hy_threadBlockList = .false.
-  logical, save :: hy_threadTileList = .false.
   logical, save :: hy_threadWithinBlock = .false.
 
 
-  real, save :: hy_3TMode = HY3T_NONE
+  integer, save :: hy_3TMode = HY3T_NONE
 
 End Module Hydro_data

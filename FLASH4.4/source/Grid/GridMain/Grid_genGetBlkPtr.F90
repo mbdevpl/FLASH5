@@ -74,6 +74,18 @@ subroutine Grid_genGetBlkPtr(blockID,dataPtr, varDesc,dataPtr2,dataPtr3)
         else
            call Driver_abortFlash('Grid_genGetBlkPtr: called with a "duration" that is not implemented!')
         end if
+     case(SCRATCH_FACES)
+        if (dur == VD_DUR_PERM) then
+           call Grid_getBlkPtr(blockID, dataPtr,  SCRATCH_FACEX)
+           if (NDIM>1) call Grid_getBlkPtr(blockID, dataPtr2, SCRATCH_FACEY)
+           if (NDIM>2) call Grid_getBlkPtr(blockID, dataPtr3, SCRATCH_FACEZ)
+        else if (dur == VD_DUR_GASC) then
+           call Grid_ascGetBlkPtr(blockID, dataPtr,  SCRATCH_FACEX)
+           if (NDIM>1) call Grid_ascGetBlkPtr(blockID, dataPtr2, SCRATCH_FACEY)
+           if (NDIM>2) call Grid_ascGetBlkPtr(blockID, dataPtr3, SCRATCH_FACEZ)
+        else
+           call Driver_abortFlash('Grid_genGetBlkPtr: called with a "duration" that is not implemented!')
+        end if
      case default
         if (dur == VD_DUR_PERM) then
            call Grid_getBlkPtr(blockID, dataPtr, gds)

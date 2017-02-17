@@ -356,8 +356,6 @@ Subroutine Hydro_init()
   call RuntimeParameters_get("threadBlockListBuild", threadBlockListBuild)
   call RuntimeParameters_get("threadHydroBlockList", hy_threadBlockList)
 
-  call RuntimeParameters_get("threadHydroTileList", hy_threadTileList)
-
   call RuntimeParameters_get("threadWithinBlockBuild", threadWithinBlockBuild)
   call RuntimeParameters_get("threadHydroWithinBlock", hy_threadWithinBlock)
 
@@ -370,18 +368,6 @@ Subroutine Hydro_init()
      call Logfile_stamp('WARNING! Turning off within block threading '//&
           'because FLASH is not built appropriately','[Hydro_init]')
      hy_threadWithinBlock = .false.
-  end if
-
-  if (.NOT. hy_threadTileList) then
-     if (hy_threadBlockList) then
-        hy_threadTileList = .TRUE.
-        call Logfile_stamp('INFO: Turning on tile list threading '//&
-             'in lieu of block list threading','[simpleUnsplit/Hydro_init]')
-     else if (hy_threadTileList) then
-        hy_threadTileList = hy_threadWithinBlock
-        call Logfile_stamp('INFO: Turning on tile list threading '//&
-             'as mechanism for within block threading','[simpleUnsplit/Hydro_init]')
-     end if
   end if
 
 

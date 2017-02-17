@@ -9,7 +9,7 @@
 !!                     integer(IN) :: vecLen,
 !!                  real, pointer  :: solnData(:,:,:,:),
 !!                     integer(IN) :: gridDataStruct,
-!!                     real(OUT),dimension(EOS_NUM*vecLen) :: eosData(*),
+!!                     real(INOUT),dimension(EOS_NUM*vecLen) :: eosData(*),
 !!            optional,real(OUT)   :: massFrac(:),
 !!         optional,logical(INOUT) :: eosMask(EOS_VARS+1:) )
 !!
@@ -109,7 +109,7 @@ subroutine Eos_getData(range,vecLen,solnData,gridDataStruct,eosData,massFrac, eo
   
   integer, intent(in) :: vecLen, gridDataStruct
   integer, dimension(LOW:HIGH,MDIM), intent(in) :: range
-  real, dimension(EOS_NUM*vecLen),intent(OUT) :: eosData
+  real, dimension(EOS_NUM*vecLen),intent(INOUT) :: eosData
   real,dimension(:),optional,intent(OUT) :: massFrac
   logical, optional, INTENT(INOUT),dimension(EOS_VARS+1:) :: eosMask     
   real, pointer:: solnData(:,:,:,:)
@@ -183,7 +183,8 @@ subroutine Eos_getData(range,vecLen,solnData,gridDataStruct,eosData,massFrac, eo
      end do
   end if
 
-!!  n = ptr
+  n = 0
+  !! DEV: If / when we add a ptr dummy argument for passing in an offset, this will be n = ptr
   do k = kb,ke
      do j = jb,je
         do i = ib,ie

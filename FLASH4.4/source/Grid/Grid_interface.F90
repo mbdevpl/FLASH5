@@ -378,6 +378,18 @@ Module Grid_interface
      end subroutine Grid_initDomain
   end interface
 
+  interface
+     subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStruct)
+       implicit none
+       integer, intent(in) :: vecLen
+       integer, intent(in) :: numVars
+       integer,intent(INOUT) :: numVec
+       real, dimension(vecLen,numVars,numVec),intent(OUT) :: newVec
+       integer, optional,intent(OUT):: vecLastFree
+       integer, optional,intent(in) :: gridDataStruct
+     end subroutine Grid_makeVector
+  end interface
+
   interface Grid_markBlkDerefine
      subroutine Grid_markBlkDerefine(block,mark)
        integer, intent(IN) :: block
