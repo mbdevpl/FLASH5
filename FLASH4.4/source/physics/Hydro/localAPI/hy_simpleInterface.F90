@@ -257,20 +257,22 @@ Module hy_simpleInterface
 
 
   interface
-     subroutine hy_hllUnsplit( blockCount, blockList, dt, dtOld )
+     subroutine hy_hllUnsplit(tileLimits, Uin, Uout, del, dt )
        implicit none
-       integer, INTENT(IN) :: blockCount  
-       integer, INTENT(IN), dimension(blockCount) :: blockList
-       real,    INTENT(IN) :: dt, dtOld
+       integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
+       real,pointer,dimension(:,:,:,:) :: Uin, Uout
+       real,dimension(MDIM), INTENT(IN) :: del
+       real,    INTENT(IN) :: dt
      end subroutine hy_hllUnsplit
   end interface
 
   interface
-     subroutine hy_llfUnsplit( blockCount, blockList, dt, dtOld )
+     subroutine hy_llfUnsplit(tileLimits, Uin, Uout, del, dt )
        implicit none
-       integer, INTENT(IN) :: blockCount  
-       integer, INTENT(IN), dimension(blockCount) :: blockList
-       real,    INTENT(IN) :: dt, dtOld
+       integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
+       real,pointer,dimension(:,:,:,:) :: Uin, Uout
+       real,dimension(MDIM), INTENT(IN) :: del
+       real,    INTENT(IN) :: dt
      end subroutine hy_llfUnsplit
   end interface
 
