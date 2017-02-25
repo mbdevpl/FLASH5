@@ -99,6 +99,7 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
   use Driver_interface, ONLY : Driver_abortFlash
 
   use Eos_interface, ONLY : Eos_wrapped
+  use Eos_interface, ONLY : Eos_everywhere
 
   use Logfile_interface, ONLY : Logfile_stampVarMask
 
@@ -254,6 +255,7 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
         allocate(auxC(1,tileLimits(LOW,IAXIS)-1  :tileLimits(HIGH,IAXIS)+1  , &
                         tileLimits(LOW,JAXIS)-K2D:tileLimits(HIGH,JAXIS)+K2D, &
                         tileLimits(LOW,KAXIS)-K3D:tileLimits(HIGH,KAXIS)+K3D) )
+        auxC = 0.0
 !!$        print*,'tile limits for',tileID,':',tileLimits
 
 
@@ -473,7 +475,7 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
               do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
                  Uout(VELX_VAR,i,j,k) = Uin(VELX_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
                  Uout(VELY_VAR,i,j,k) = Uin(VELY_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
-                 Uout(VELZ_VAR,i,j,k) = Uin(VELX_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
+                 Uout(VELZ_VAR,i,j,k) = Uin(VELZ_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
                  Uout(ENER_VAR,i,j,k) = Uin(ENER_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
                  Uout(DENS_VAR,i,j,k) = Uin(DENS_VAR,i,j,k) + faceX(HY_DENS_FLUX,i,j,k) - faceX(HY_DENS_FLUX,i+1,j,k)
                  if (NDIM > 1) Uout(DENS_VAR,i,j,k) = Uout(DENS_VAR,i,j,k) + faceY(HY_DENS_FLUX,i,j,k) - faceY(HY_DENS_FLUX,i,j+1,k)
@@ -555,12 +557,16 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
         call Grid_genReleaseBlkPtr(blockID,faceX,(/1,5,SCRATCH_FACES/), faceY,faceZ)
 
         !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
-        call Eos_wrapped(hy_eosModeAfter, tileLimits, Uout)
+        !! NOPE - do it all at ponce after the loop, for testing Grid_makeVector via Eos_everywhere!
+!!$        call Eos_wrapped(hy_eosModeAfter, tileLimits, Uout)
+
+
 
 !!$        call Grid_releaseTileVarPtrs(tileID,gridDataStruct=CENTER, &
 !!$             inPtr=Uin, &
 !!$             outPtr=Uout,&
 !!$             tilingContext=tilingCtx)
+        call Grid_releaseBlkPtr(blockID,Uout,CENTER)
 
 
   end do
@@ -575,5 +581,7 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
      gcMaskLogged = .TRUE.
   end if
 #endif
+
+  call Eos_everywhere(hy_eosModeAfter)
 
 End Subroutine hy_hllUnsplit
