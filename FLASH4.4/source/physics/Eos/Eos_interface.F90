@@ -134,6 +134,12 @@ Module Eos_interface
        real, dimension(:),intent(IN) :: eosData
        real, pointer,dimension(:,:,:,:) :: solnData
      end subroutine Eos_putData
+     subroutine Eos_putDataR2(range,vecLen,solnData,gridDataStruct,eosData)
+       integer, intent(in) :: vecLen, gridDataStruct
+       integer, dimension(LOW:HIGH,MDIM), intent(in) :: range
+       real, dimension(:,:),intent(IN) :: eosData
+       real, pointer,dimension(:,:,:,:) :: solnData
+     end subroutine Eos_putDataR2
   end interface
 
   interface

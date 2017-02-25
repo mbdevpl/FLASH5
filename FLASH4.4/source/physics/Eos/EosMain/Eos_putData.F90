@@ -209,5 +209,116 @@ subroutine Eos_putData(range,vecLen,solnData,gridDataStruct,eosData)
   return
 end subroutine Eos_putData
 
+! For testing: a variant of Eos_putData where eosData is declard as an array of rank 2.
+subroutine Eos_putDataR2(range,vecLen,solnData,gridDataStruct,eosData)
+
+  use Driver_interface, ONLY : Driver_abortFlash
+  use Logfile_interface, ONLY: Logfile_stampMessage
+  use Eos_data, ONLY : eos_mapLookup, eos_meshMe
+
+  implicit none
+
+#include "Eos.h"
+#include "constants.h"
+#include "Flash.h"
+#include "Eos_map.h"
+
+  integer, intent(in) :: vecLen, gridDataStruct
+  integer,dimension(LOW:HIGH,MDIM), intent(in) :: range
+  real,intent(IN) :: eosData(:,:)
+  real, pointer:: solnData(:,:,:,:)
+
+
+  integer :: i,j,k,n, pres,dens,gamc,temp,abar,zbar,eint,entr,ekin
+  integer :: ib,ie,jb,je,kb,ke
+
+  integer :: pres_map,entr_map,gamc_map,temp_map
+  integer :: eint_map,ener_map,game_map
+
+  integer,allocatable,dimension(:) :: iFlag
+
+
+  ! check for zero values before calculating gamma
+  ! These integers are indexes into the location in eosData just before the storage area for the appropriate variable.
+  ib=range(LOW,IAXIS)
+  jb=range(LOW,JAXIS)
+  kb=range(LOW,KAXIS)
+  ie=range(HIGH,IAXIS)
+  je=range(HIGH,JAXIS)
+  ke=range(HIGH,KAXIS)
+
+  ! These integers are indexes into the location in eosData just before the storage area for the appropriate variable.
+  pres = (EOS_PRES-1)*vecLen
+  dens = (EOS_DENS-1)*vecLen
+  temp = (EOS_TEMP-1)*vecLen
+  gamc = (EOS_GAMC-1)*vecLen
+  eint = (EOS_EINT-1)*vecLen
+  abar = (EOS_ABAR-1)*vecLen
+  zbar = (EOS_ZBAR-1)*vecLen
+  entr = (EOS_ENTR-1)*vecLen
+  ekin = (EOS_EKIN-1)*vecLen
+#ifdef DEBUG_EOS
+  allocate(iFlag(vecLen))
+  iFlag = 0
+  where ( (eosData(1:vecLen,EOS_EINT) .eq. 0.) .or. (eosData(1:vecLen,EOS_DENS) .eq. 0.))
+     iFlag(1:vecLen) = 1
+  end where
+
+  !maybe there was a wrong flag set
+  if (maxval(iFlag) .gt. 0) then
+     if (eos_meshMe .EQ. MASTER_PE) then
+        write(*,*) "ERROR After calling Eos, eosData(EOS_EINT) or eosData(EOS_DENS) are zero"
+        print*,'iflag=',iflag
+        print*,'solnData(EINT_VAR,ib:ie,jb,kb)=',solnData(EINT_VAR,ib:ie,jb,kb)
+        print*,'eosData (eint+1:eint+vecLen)  =',eosData(1:vecLen,EOS_EINT)
+        print*,'solnData(DENS_VAR,ib:ie,jb,kb)=',solnData(DENS_VAR,ib:ie,jb,kb)
+        print*,'eosData(dens+1:dens+vecLen)   =',eosData(1:vecLen,EOS_DENS)
+        write(*,*) "  Perhaps the initialization routine is wrong..... or"
+        write(*,*) "  perhaps the runtime parameter eosMode is wrong."
+        write(*,*) "     Check constants.h to determine value of MODE_DENS_??"
+     endif
+     call Logfile_stampMessage('[Eos_putDataR2] ERROR Density or Internal Energy are zero after a call to EOS!')
+     call Driver_abortFlash('[Eos_putDataR2] ERROR Density or Internal Energy are zero after a call to EOS!')
+  end if
+  deallocate(iFlag)
+#endif
+
+
+  ! Initializations:   grab the solution data from UNK and determine
+  !   the length of the data being operated upon
+  pres_map = eos_mapLookup(EOSMAP_PRES,EOS_OUT,gridDataStruct)
+  temp_map = eos_mapLookup(EOSMAP_TEMP,EOS_OUT,gridDataStruct)
+  gamc_map = eos_mapLookup(EOSMAP_GAMC,EOS_OUT,gridDataStruct)
+  game_map = eos_mapLookup(EOSMAP_GAME,EOS_OUT,gridDataStruct)
+  eint_map = eos_mapLookup(EOSMAP_EINT,EOS_OUT,gridDataStruct)
+  ener_map = eos_mapLookup(EOSMAP_ENER,EOS_OUT,gridDataStruct)
+  entr_map = eos_mapLookup(EOSMAP_ENTR,EOS_OUT,gridDataStruct)
+
+  if(gridDataStruct == SCRATCH) then
+     call Driver_abortFlash("Eos_getData : the use of SCRATCH is deprecated")
+  end if
+
+  n=0
+  do k = kb,ke
+     do j = jb,je
+        do i = ib,ie
+           n=n+1
+           solnData(pres_map,i,j,k) = eosData(n,EOS_PRES)
+           solnData(temp_map,i,j,k) = eosData(n,EOS_TEMP)
+           solnData(gamc_map,i,j,k) = eosData(n,EOS_GAMC)
+           if(eint_map /= NONEXISTENT)solnData(eint_map,i,j,k) = eosData(n,EOS_EINT)
+           if(ener_map /= NONEXISTENT)solnData(ener_map,i,j,k) = eosData(n,EOS_EINT)+eosData(n,EOS_EKIN)
+           if(entr_map /= NONEXISTENT)solnData(entr_map,i,j,k) = eosData(n,EOS_ENTR)
+
+           solnData(game_map,i,j,k) = eosData(n,EOS_PRES)/&
+                (eosData(n,EOS_EINT) *eosData(n,EOS_DENS)) +1
+
+        end do
+     end do
+  end do
+
+  return
+end subroutine Eos_putDataR2
+
 
 
