@@ -7,9 +7,10 @@
 !!
 !!  call Grid_makeVector(integer(IN)        :: vecLen,
 !!                       integer(IN)        :: numVars,
-!!                  real(OUT),dimension(vecLen,numVars,numVec) :: newVec,
+!!                  real(INOUT),dimension(vecLen,numVars,numVec) :: newVec,
 !!                  integer(INOUT)          :: numVec,
 !!                  OPTIONAL,integer(OUT)   :: vecLastFree,
+!!                  OPTIONAL,integer(IN)    :: copyDirection,
 !!                  OPTIONAL,integer(IN)    :: gridDataStruct)
 !!  
 !! DESCRIPTION 
@@ -47,6 +48,9 @@
 !!                 If returning all blockdata as vectors would overflow the available space
 !!                 in newVec, then vecLastFree (if present) will be set to -1 to indicate
 !!                 this condition.
+!!   copyDirection  : Direction of data transfer.
+!!                    Use GRID_COPYDIR_TO_VECT to tranfer data from Grid blocks to vectors (default);
+!!                    use GRID_COPYDIR_FROM_VECT to tranfer data from vectors back to Grid blocks.
 !!   gridDataStruct : whether cell centered, face centered etc. (may be deprecated later).
 !!                    Should be CENTER if present. FLASH does not require
 !!                    support for marshalling other datastructs (FACEX, etc.)
@@ -54,7 +58,16 @@
 !!
 !! NOTES
 !!
-!!  This won;t work it is just to show.
+!!  This is for demonstration, it may or may not work.
+!!
+!!  GRID_COPYDIR_TO_VECT and GRID_COPYDIR_FROM_VECT are defined in Grid_interface.F90 .
+!!
+!! SEE ALSO
+!!
+!!  Eos_getData
+!!  Eos_putData
+!!  Eos
+!!  Grid_interface
 !!***
 
 !!REORDER(5): unk
@@ -64,7 +77,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStruct)
+subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,copyDirection,gridDataStruct)
 
 #include "constants.h"
 #include "Flash.h"
@@ -72,7 +85,8 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   use physicaldata, ONLY : unk, facevarx, facevary, facevarz
   use tree,         ONLY : gr_blkCount => lnblocks ! there is no FLASH-owned reliable gr_blkCount...
   use Driver_interface, ONLY : Driver_abortFlash
-  use Eos_interface, ONLY : Eos_getData
+  use Eos_interface, ONLY : Eos_getData, Eos_putDataR2
+  use Grid_interface, ONLY: GRID_COPYDIR_TO_VECT, GRID_COPYDIR_FROM_VECT
   use Grid_data, ONLY :  gr_meshMe
   use Grid_data, ONLY :  gr_ilo, gr_ihi, gr_jlo, gr_jhi, gr_klo, gr_khi
 
@@ -81,10 +95,12 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   integer, intent(in) :: vecLen
   integer, intent(in) :: numVars
   integer,intent(INOUT) :: numVec
-  real, dimension(vecLen,numVars,numVec),intent(OUT) :: newVec
+  real, dimension(vecLen,numVars,numVec),intent(INOUT) :: newVec
   integer, optional,intent(OUT):: vecLastFree
+  integer, optional,intent(in) :: copyDirection
   integer, optional,intent(in) :: gridDataStruct
 
+  integer :: copyDir
   integer :: oneBlkSize, i,ptr,blkID
   integer :: numVecIn
   integer,dimension(LOW:HIGH,MDIM) :: range
@@ -97,7 +113,13 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   integer :: axis, carryAxis
   integer,parameter :: hiAxis = IAXIS+NDIM-1
 
-#define ASSERT(condition) if (condition) call Driver_abortFlash("Grid_makeVector: ASSERT failed!")
+#define ASSERT(condition) if (.NOT.(condition)) call Driver_abortFlash("Grid_makeVector: ASSERT failed! Not true: condition")
+
+  if (present(copyDirection)) then
+     copyDir = copyDirection
+  else
+     copyDir = GRID_COPYDIR_TO_VECT
+  end if
   range(LOW,IAXIS)=gr_ilo
   range(HIGH,IAXIS)=gr_ihi
   range(LOW,JAXIS)=gr_jlo
@@ -114,7 +136,7 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
      stride(i) = PRODUCT(blkSize(IAXIS:i-1))
   end do
 
-  ! Number of cells avalable:
+  ! Number of cells available:
   !    M  =  gr_blkCount    *     oneBlksize
 
   oneBlkSize = NXB*NYB*NZB      ! number of (interior) cells in each
@@ -127,7 +149,7 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
                                                     ! That is N * oneBlockSize / vecLen (rounded up)
   ! Thus numVec*oneBlkSize :                 ! number of cells per vector,
                                              ! rounded up to a multiple of oneBlkSize
-  ASSERT (numVecIn .GE. numVec)              ! ouput array must have enough space!
+!!$  ASSERT(numVecIn .GE. numVec)              ! ouput array must have enough space!
 !!$  ASSERT (vecLen == numVec * oneBlkSize)     ! vecLen need not be a multiple of oneBlkSize !
 
 
@@ -139,14 +161,14 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   if (blkID .LE. gr_blkCount) then
 #ifdef HAVE_PTRBNDREMAP
      dataPtr(1:,0:,0:,0:) => unk(PROP_VARS_BEGIN:,range(LOW,IAXIS):,range(LOW,JAXIS):,range(LOW,KAXIS):,blkID)
-##else
+#else
      dataPtr => unk(PROP_VARS_BEGIN:,:,:,:,blkID)
 #endif
   else
      nullify(dataPtr)
   end if
 
-  iv:do ivec=1,numVec
+  iv:do ivec=1,numVecIn
      ptr     = 1
      vecFree = vecLen
      vf:do while (vecFree > 0)
@@ -155,12 +177,13 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
            incomplete = ( npos(axis) > 0 .OR. vecFree < blkSize(axis)*stride(axis) )
            if (incomplete) then
               sr0(:,   :   ) = r0(:,:)
-              sr0(LOW, axis) = npos(axis)
+              sr0(LOW, axis:hiAxis) = npos(axis:hiAxis)
               sr0(HIGH,axis) = min(npos(axis)+vecFree/stride(axis),blkSize(axis))
               sublen(  :   ) = blkSize(:)
               sublen(  axis) = sr0(HIGH,axis) - sr0(LOW,axis)
               if (sublen(axis) == 0) EXIT pre
               sublen(axis+1:hiAxis) = 1
+              sr0(HIGH,axis+1:hiAxis) = sr0(LOW, axis+1:hiAxis) + 1 
 
 #ifdef HAVE_PTRBNDREMAP
               eosRange(LOW, :) = sr0(LOW, :)
@@ -170,7 +193,8 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
               eosRange(HIGH,:) = range(LOW, :) + sr0(HIGH,:)-1
 #endif
               subBlkSize = PRODUCT(sublen)
-              call Eos_getData(eosRange,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,ivec))
+              call transferData(eosRange,subBlkSize,vecLen,dataPtr, ptr,ivec, copyDir, gridDataStruct)
+!              call Eos_getData(eosRange,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,ivec))
               ptr=ptr+subBlkSize
               vecFree = vecFree - subBlkSize
               npos(axis) = npos(axis) + sublen(axis)
@@ -210,17 +234,19 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
               sr0(LOW, hiAxis) = npos(hiAxis)
               sr0(HIGH,hiAxis) = min(npos(hiAxis)+vecFree/stride(axis),blkSize(hiAxis))
               sublen(  :   ) = blkSize(:)
-              if (sublen(axis) == 0) EXIT hiAx
               sublen(  hiAxis) = sr0(HIGH,hiAxis) - sr0(LOW,hiAxis)
+              if (sublen(hiAxis) == 0) EXIT hiAx
 
 #ifdef HAVE_PTRBNDREMAP
               eosRange(LOW, :) = sr0(LOW, :)
               eosRange(HIGH,:) = sr0(HIGH,:)-1
 #else
-              eosRange(:  , :) = range(:, :)
+              eosRange(LOW, :) = range(LOW, :) + sr0(LOW, :)
+              eosRange(HIGH,:) = range(LOW, :) + sr0(HIGH,:)-1
 #endif
               subBlkSize = PRODUCT(sublen)
-              call Eos_getData(eosRange,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,ivec))
+              call transferData(eosRange,subBlkSize,vecLen,dataPtr, ptr,ivec, copyDir, gridDataStruct)
+!              call Eos_getData(eosRange,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,ivec))
               ptr=ptr+subBlkSize
               vecFree = vecFree - subBlkSize
            else
@@ -231,11 +257,11 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
               eosRange(LOW, :) = sr0(LOW, :)
               eosRange(HIGH,:) = sr0(HIGH,:)-1
 #else
-              eosRange(LOW, :) = range(LOW, :) + sr0(LOW, :)
-              eosRange(HIGH,:) = range(LOW, :) + sr0(HIGH,:)-1
+              eosRange(:  , :) = range(:, :)
 #endif
               subBlkSize = oneBlkSize
-              call Eos_getData(eosRange,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,ivec))
+              call transferData(eosRange,subBlkSize,vecLen,dataPtr, ptr,ivec, copyDir, gridDataStruct)
+!              call Eos_getData(eosRange,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,ivec))
               ptr=ptr+subBlkSize
               vecFree = vecFree - subBlkSize
            end if
@@ -265,11 +291,12 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
            doit = ( vecFree .GE. stride(axis) ) 
            if (doit) then
               sr0(:,   :   ) = r0(:,:)
-              sr0(LOW, axis) = npos(axis)
+              sr0(LOW, axis:hiAxis) = npos(axis:hiAxis)
               sr0(HIGH,axis) = min(npos(axis)+vecFree/stride(axis),blkSize(axis))
               sublen(  :   ) = blkSize(:)
               sublen(  axis) = sr0(HIGH,axis) - sr0(LOW,axis)
               sublen(axis+1:hiAxis) = 1
+              sr0(HIGH,axis+1:hiAxis) = sr0(LOW, axis+1:hiAxis) + 1 
 
 #ifdef HAVE_PTRBNDREMAP
               eosRange(LOW, :) = sr0(LOW, :)
@@ -279,9 +306,11 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
               eosRange(HIGH,:) = range(LOW, :) + sr0(HIGH,:)-1
 #endif
               subBlkSize = PRODUCT(sublen)
-              call Eos_getData(eosRange,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,ivec))
+
+              call transferData(eosRange,subBlkSize,vecLen,dataPtr, ptr,ivec, copyDir, gridDataStruct)
               ptr=ptr+subBlkSize
               vecFree = vecFree - subBlkSize
+              npos(axis) = npos(axis) + sublen(axis)
            end if
 
         end do post
@@ -301,6 +330,26 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStru
   end if
 
   return
+
+contains
+  subroutine transferData(eosRange,subBlkSize,vecLen,dataPtr, ptr,ivec, copyDir, gridDataStruct)
+    ! NOTE: newVec from above is used by host association.
+    integer, dimension(LOW:HIGH,MDIM), intent(in) :: eosRange
+    integer, intent(in) :: subBlkSize,vecLen
+    real, pointer,dimension(:,:,:,:) :: dataPtr
+    integer, intent(in) :: ptr,ivec,copyDir
+    integer, intent(in),OPTIONAL :: gridDataStruct
+
+    if (copyDir==GRID_COPYDIR_TO_VECT) then
+       call Eos_getData(eosRange,vecLen,dataPtr,gridDataStruct,newVec(ptr,1,ivec))
+    else if (copyDir==GRID_COPYDIR_FROM_VECT) then
+       call Eos_putDataR2(eosRange,subBlkSize,dataPtr,gridDataStruct,newVec(ptr:ptr+subBlkSize-1,:,ivec))
+    else
+       call Driver_abortFlash("Grid_makeVector: Invalid copyDirection!")
+    end if
+
+
+  end subroutine transferData
 end subroutine Grid_makeVector
 
 
