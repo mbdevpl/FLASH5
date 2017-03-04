@@ -55,11 +55,15 @@ Subroutine Hydro( blockCount, blockList, &
                              Grid_genReleaseBlkPtr,     &
                              Grid_getBlkData
 
+  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
+                                    famrex_mviter, famrex_mviter_build
+  use famrex_box_module,      ONLY: famrex_box
 
   use hy_simpleInterface, ONLY : hy_hllUnsplit, hy_llfUnsplit
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface, ONLY : Eos_wrapped
+  use Hydro_data, ONLY :hy_meshComm
   use Hydro_data, ONLY :hy_gcMaskSize,       &
                          hy_gcMask,           &
                          hy_unsplitEosMode,   &
@@ -85,10 +89,16 @@ Subroutine Hydro( blockCount, blockList, &
   logical,save :: gcMaskLogged =.TRUE.
 #endif
 
+  type(famrex_multivab),target :: phi
+  type(famrex_mviter) :: mvi
+  type(famrex_box) :: bx, tbx
+
 
   if (.not. hy_useHydro) return 
 
   call Timers_start("hydro_sUnsplit")
+
+  call famrex_multivab_build(phi, LEAF, CENTER, hy_meshComm, NUNK_VARS)
 
 !!ChageForAMRex -- Here is where we put in the iterator and extract the relevant metadata
 !!ChageForAMRex -- from the iterator and then use the case statement to transfer control to the
@@ -104,9 +114,18 @@ Subroutine Hydro( blockCount, blockList, &
   call Grid_fillGuardCells(CENTER,ALLDIR,&
        maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
 
-  do ib=1,blockCount
+  call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
+  do while(mvi%next())
+       bx = mvi%tilebox()
 
-     blockID = blockList(ib)
+       Uout => phi%dataptr(mvi)
+       Uin => Uout
+
+
+!!$  do ib=1,blockCount
+!!$
+!!$     blockID = blockList(ib)
+       blockID = mvi%localIndex() !Are we cheating here?
 
 !!ChageForAMRex -- this information should come from the interator as meta-data
      call Grid_getDeltas(blockID,del)
@@ -116,14 +135,16 @@ Subroutine Hydro( blockCount, blockList, &
 !!$     if (NDIM > 2) dtdz = dt / del(KAXIS)
 
 !!ChageForAMRex -- this information should come from the iterator as meta-data
-     call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC)
+!!     call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC)
+     tileLimits(LOW, :) = bx%lo
+     tileLimits(HIGH,:) = bx%hi
 
-     call Grid_getBlkPtr(blockID,Uout,CENTER)
-     Uin => Uout
+
+!!$     call Grid_getBlkPtr(blockID,Uout,CENTER)
 
      select case (hy_riemannSolver)
      case(HLL)
-        call hy_hllUnsplit(tileLimits, Uin, Uout, del, dt)
+        call hy_hllUnsplit(tileLimits, Uin, lbound(Uin), Uout, del, dt)
      case(LLF)
         call hy_llfUnsplit(tileLimits, Uin, Uout, del, dt)
      case default

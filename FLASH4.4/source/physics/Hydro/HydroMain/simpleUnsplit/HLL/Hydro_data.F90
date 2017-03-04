@@ -69,6 +69,7 @@ Module Hydro_data
   character(4), save :: hy_units
 
   ! Everybody should know these!
+  integer, save :: hy_meshComm
   integer, save :: hy_meshNumProcs, hy_meshMe
 
   ! Constants for non-dimensionalization
