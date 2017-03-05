@@ -211,7 +211,7 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,copyDirectio
 #ifdef HAVE_PTRBNDREMAP
                     dataPtr(1:,0:,0:,0:) => &
                          unk(PROP_VARS_BEGIN:,range(LOW,IAXIS):,range(LOW,JAXIS):,range(LOW,KAXIS):,blkID)
-##else
+#else
                     dataPtr => unk(PROP_VARS_BEGIN:,:,:,:,blkID)
 #endif
                  else
@@ -272,7 +272,7 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,copyDirectio
 #ifdef HAVE_PTRBNDREMAP
                  dataPtr(1:,0:,0:,0:) => &
                       unk(PROP_VARS_BEGIN:,range(LOW,IAXIS):,range(LOW,JAXIS):,range(LOW,KAXIS):,blkID)
-##else
+#else
                  dataPtr => unk(PROP_VARS_BEGIN:,:,:,:,blkID)
 #endif
               else
