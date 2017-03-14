@@ -44,6 +44,14 @@ Module Eos_interface
      end subroutine Eos
   end interface
   
+  interface
+     subroutine Eos_everywhere(mode,gridDataStruct)
+       implicit none
+       integer, intent(in) :: mode
+       integer, optional, intent(IN) :: gridDataStruct
+     end subroutine Eos_everywhere
+  end interface
+
   interface Eos_init
      subroutine Eos_init()
      end subroutine Eos_init
@@ -134,6 +142,12 @@ Module Eos_interface
        real, dimension(:),intent(IN) :: eosData
        real, pointer,dimension(:,:,:,:) :: solnData
      end subroutine Eos_putData
+     subroutine Eos_putDataR2(range,vecLen,solnData,gridDataStruct,eosData)
+       integer, intent(in) :: vecLen, gridDataStruct
+       integer, dimension(LOW:HIGH,MDIM), intent(in) :: range
+       real, dimension(:,:),intent(IN) :: eosData
+       real, pointer,dimension(:,:,:,:) :: solnData
+     end subroutine Eos_putDataR2
   end interface
 
   interface

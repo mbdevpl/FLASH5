@@ -27,6 +27,9 @@ Module Grid_interface
   integer,parameter :: GRID_PDE_BND_GIVENVAL  = 4
   integer,parameter :: GRID_PDE_BND_GIVENGRAD = 5
 
+  integer,parameter :: GRID_COPYDIR_TO_VECT   = 1
+  integer,parameter :: GRID_COPYDIR_FROM_VECT = 2
+
 #include "FortranLangFeatures.fh"
 
   interface Grid_ascGetBlkPtr
@@ -379,13 +382,14 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,gridDataStruct)
+     subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,copyDirection,gridDataStruct)
        implicit none
        integer, intent(in) :: vecLen
        integer, intent(in) :: numVars
        integer,intent(INOUT) :: numVec
-       real, dimension(vecLen,numVars,numVec),intent(OUT) :: newVec
+       real, dimension(vecLen,numVars,numVec),intent(INOUT) :: newVec
        integer, optional,intent(OUT):: vecLastFree
+       integer, optional,intent(in) :: copyDirection
        integer, optional,intent(in) :: gridDataStruct
      end subroutine Grid_makeVector
   end interface
