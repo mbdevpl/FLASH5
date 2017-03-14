@@ -63,7 +63,7 @@
 #endif
 #define DEBUG_GRID_GCMASK
 
-Subroutine hy_hllUnsplit ( tileLimits, Uin, Uout, del, dt )
+Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
 
 !!$  use Grid_interface, ONLY : Grid_genGetBlkPtr,         &
 !!$                             Grid_genReleaseBlkPtr
@@ -107,7 +107,9 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, Uout, del, dt )
 
   !! ---- Argument List ----------------------------------
   integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
-  real,pointer,dimension(:,:,:,:) :: Uin, Uout
+  integer, dimension(*),intent(in)             :: plo
+  real,intent(inout),target,dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: Uin
+  real,pointer,dimension(:,:,:,:) :: Uout
   real,dimension(MDIM), INTENT(IN) :: del
   real,    INTENT(IN) :: dt
   !! -----------------------------------------------------
@@ -140,6 +142,12 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, Uout, del, dt )
 
 
   !! End of data declaration ***********************************************
+#ifdef DEBUG_UHD
+99 format(A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
+  print 99,"Uin" ,(lbound(Uin ,i),ubound(Uin ,i),i=1,4)
+  print 99,"Uout",(lbound(Uout,i),ubound(Uout,i),i=1,4)
+  print*,'tileLim:',tileLimits
+#endif
 
 #ifdef FLASH_GRID_PARAMESH2
   call Driver_abortFlash("The unsplit Hydro solver only works with PARAMESH 3 or 4!")

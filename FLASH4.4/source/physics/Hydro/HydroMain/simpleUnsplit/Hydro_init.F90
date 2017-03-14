@@ -48,6 +48,7 @@ Subroutine Hydro_init()
   ! Everybody should know these
   call Driver_getMype(MESH_COMM,hy_meshMe)
   call Driver_getNumProcs(MESH_COMM,hy_meshNumProcs)
+  call Driver_getComm(MESH_COMM,hy_meshComm)
 
   call RuntimeParameters_get("useHydro",hy_useHydro)
 

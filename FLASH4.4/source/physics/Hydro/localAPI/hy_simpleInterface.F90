@@ -257,10 +257,12 @@ Module hy_simpleInterface
 
 
   interface
-     subroutine hy_hllUnsplit(tileLimits, Uin, Uout, del, dt )
+     subroutine hy_hllUnsplit(tileLimits, Uin, plo, Uout, del, dt )
        implicit none
        integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
-       real,pointer,dimension(:,:,:,:) :: Uin, Uout
+       integer, intent(in),dimension(*)             :: plo
+       real,intent(inout),target,dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: Uin
+       real,pointer,dimension(:,:,:,:) :: Uout
        real,dimension(MDIM), INTENT(IN) :: del
        real,    INTENT(IN) :: dt
      end subroutine hy_hllUnsplit
