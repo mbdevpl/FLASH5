@@ -50,7 +50,7 @@ FFLAGS_OPT = -ggdb -c -O2 -fdefault-real-8 -fdefault-double-8 \
 -Wuninitialized
 
 FFLAGS_DEBUG = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
--pedantic -Wall -Wextra -Wno-unused -Waliasing \
+-pedantic -Wall -Wno-unused -Waliasing \
 -Wsurprising -Wconversion -Wunderflow \
 -ffpe-trap=invalid,zero,overflow -fbounds-check \
 -fimplicit-none -fstack-protector-all
