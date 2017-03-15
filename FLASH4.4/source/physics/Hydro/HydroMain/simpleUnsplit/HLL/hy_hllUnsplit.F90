@@ -56,7 +56,7 @@
 !!  June  2013  - created KW, outer structure derived from hy_uhd_unsplit.F90 (Dongwook)
 !!***
 
-!!REORDER(4): U, fl[xyz]
+!!REORDER(4): Uin, Uout, fl[xyz]
 
 #ifdef DEBUG_ALL
 #define DEBUG_UHD
