@@ -874,6 +874,16 @@ Module Grid_interface
   end interface
 
   interface
+     function Grid_blockMatch(blkID,ntype,refinementLevel) result(match)
+       implicit none
+       logical               :: match
+       integer,intent(in   ) :: blkID
+       integer,intent(in   ) :: ntype
+       integer,intent(in   ),OPTIONAL :: refinementLevel
+     end function Grid_blockMatch
+  end interface
+
+  interface
      subroutine Grid_pfftGetIndexLimits(configLimits,phaseLimits)
        integer,dimension(LOW:HIGH,MDIM),intent(OUT) :: configLimits, phaseLimits
      end subroutine Grid_pfftGetIndexLimits
