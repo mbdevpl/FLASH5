@@ -110,7 +110,7 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
   !! ---- Argument List ----------------------------------
   integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
   integer, dimension(*),intent(in)             :: plo
-  real,intent(inout),target,dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: Uin
+  real,intent(inout),target,dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: UIN !CAPITALIZATION INTENTIONAL!
   real,pointer,dimension(:,:,:,:) :: Uout
   real,dimension(MDIM), INTENT(IN) :: del
   real,    INTENT(IN) :: dt
