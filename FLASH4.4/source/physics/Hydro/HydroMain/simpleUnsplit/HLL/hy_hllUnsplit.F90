@@ -56,7 +56,9 @@
 !!  June  2013  - created KW, outer structure derived from hy_uhd_unsplit.F90 (Dongwook)
 !!***
 
-!!REORDER(4): U, fl[xyz]
+! Note: the following arrays need to be spelled exactly like this in the code below,
+!       preserving case.
+!!REORDER(4): Uin, Uout, face[XYZ], auxC
 
 #ifdef DEBUG_ALL
 #define DEBUG_UHD
@@ -108,7 +110,7 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
   !! ---- Argument List ----------------------------------
   integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
   integer, dimension(*),intent(in)             :: plo
-  real,intent(inout),target,dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: Uin
+  real,intent(inout),target,dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: UIN !CAPITALIZATION INTENTIONAL!
   real,pointer,dimension(:,:,:,:) :: Uout
   real,dimension(MDIM), INTENT(IN) :: del
   real,    INTENT(IN) :: dt
@@ -143,7 +145,10 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
 
   !! End of data declaration ***********************************************
 #ifdef DEBUG_UHD
+98 format(A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
 99 format(A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
+  print *, "plo" ,plo(1:MDIM+1)
+  print 98,"Uin" ,(plo(i),i=1,4)
   print 99,"Uin" ,(lbound(Uin ,i),ubound(Uin ,i),i=1,4)
   print 99,"Uout",(lbound(Uout,i),ubound(Uout,i),i=1,4)
   print*,'tileLim:',tileLimits

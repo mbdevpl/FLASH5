@@ -1,85 +1,16 @@
-module Grid_extraInterface
-
-#include "constants.h"
-  implicit none
-contains
-  function Grid_blockMatch(blkID,ntype,refinementLevel) result(match)
-
-    use tree, ONLY : nodetype,lnblocks,neigh,lrefine
-    use Grid_data, ONLY : gr_oneBlock
-
-    logical               :: match
-    integer,intent(in   ) :: blkID
-    integer,intent(in   ) :: ntype
-    integer,intent(in   ),OPTIONAL :: refinementLevel
-
-    integer :: i
-    logical :: isBnd
-
-    i = blkID
-    if (i > lnblocks) then
-       match = .FALSE.
-       return                   !block number is not valid, return immediately!
-    end if
-
-    select case (ntype)
-    case (LEAF,PARENT_BLK,ANCESTOR)
-       match = (nodetype(i)==ntype)
-    case(ALL_BLKS)
-       match = .TRUE.
-    case (IBDRY_BLKS)
-       match = ((nodetype(i)==LEAF).or.(nodetype(i)==PARENT_BLK))
-       if (match) then
-          isBnd = (neigh(1,1,i) .LE. PARAMESH_PHYSICAL_BOUNDARY)
-          isBnd = isBnd.or.(neigh(1,2,i).LE.PARAMESH_PHYSICAL_BOUNDARY)
-          match = isBnd
-       end if
-    case (JBDRY_BLKS)
-       match = ((nodetype(i)==LEAF).or.(nodetype(i)==PARENT_BLK))
-       if (match) then
-          isBnd = (neigh(1,3,i) .LE. PARAMESH_PHYSICAL_BOUNDARY)
-          isBnd = isBnd.or.(neigh(1,4,i).LE.PARAMESH_PHYSICAL_BOUNDARY)
-          match = isBnd
-       end if
-    case(KBDRY_BLKS)
-       match = ((nodetype(i)==LEAF).or.(nodetype(i)==PARENT_BLK))
-       if (match) then
-          isBnd = (neigh(1,5,i) .LE. PARAMESH_PHYSICAL_BOUNDARY)
-          isBnd = isBnd.or.(neigh(1,6,i).LE.PARAMESH_PHYSICAL_BOUNDARY)
-          match = isBnd
-       end if
-    case(ANY_BDRY_BLKS)
-       match = ((nodetype(i)==LEAF).or.(nodetype(i)==PARENT_BLK))
-       if (match) then
-          match = ANY(neigh(1,1:6,i).LE.PARAMESH_PHYSICAL_BOUNDARY)
-       end if
-    case(ACTIVE_BLKS)
-       match = ((nodetype(i)==LEAF).or.(nodetype(i)==PARENT_BLK))
-    case(TRAVERSED)
-       match = (gr_oneBlock(i)%blockType==TRAVERSED) !DEV: What does this mean?
-    case(TRAVERSED_AND_ACTIVE)
-       match = (gr_oneBlock(i)%blockType==TRAVERSED_AND_ACTIVE) !DEV: What does this mean?
-    case(REFINEMENT)
-       if (present(refinementLevel)) then
-          match = (lrefine(i) == refinementLevel)
-       else
-          call Driver_abortFlash("[Grid_getListofBlocks] with ntype REFINEMENT optional argument refinementlevel must be present")
-       end if
-    case default
-       match = .FALSE.
-       call Driver_abortFlash("[Grid_blockMatch] ntype argument not recognized")
-    end select
-
-  end function Grid_blockMatch
-end module Grid_extraInterface
-
 module famrex_multivab_module
 
   use,intrinsic :: iso_c_binding
   use famrex_box_module
-  use tree,ONLY: lnblocks
+#include "Flash.h"
+#ifdef FLASH_GRID_PARAMESH
+  use tree,ONLY: lnblocks,lrefine,lrefine_max
+#else
+  use Grid_data, ONLY : lnblocks
+#endif
   use Grid_interface, ONLY: Grid_getBlkPtr
   use Grid_interface, ONLY: Grid_getBlkIndexLimits
+  use Grid_interface, ONLY: Grid_getBlkCornerID
 
   implicit none
 
@@ -104,6 +35,12 @@ module famrex_multivab_module
      integer               :: gds = CENTER
      integer               :: dur = VD_DUR_PERM
      integer               :: lev = -1
+     ! different variants for cell index numbering:
+     !  1 = normal FLASH convention:     per block, leftmost guard cell = 1
+     !  0 = zero-based FLASH convention: per block, leftmost guard cell = 0
+     ! -1 = global convention for a refinement level: leftmost guard cell = 1
+     ! -2 = global convention for a refinement level: leftmost inner cell = 1
+     integer               :: cellIdxBase = -2
      INTEGER :: dm
    contains
      generic   :: assignment(=) => famrex_multivab_assign
@@ -228,6 +165,7 @@ contains
     real(amrex_real), CONTIGUOUS_POINTER :: fp(:,:,:,:)
     integer, dimension(LOW:HIGH,MDIM) :: blkLim ,blkLimGC
     integer :: cur
+    integer :: cornerID(MDIM), strideUnused(MDIM)
     integer(c_int) :: n(4)
     type(famrex_box) :: bx
     cur = mvi%localIndex()
@@ -235,7 +173,23 @@ contains
     call Grid_getBlkPtr(cur,fp,this%gds)
 
     bx%lo = blkLimGC(LOW ,:)                   !DEV: or blkLimGC(LOW ,:) ?
+    if (this%cellIdxBase==-1) then
+       call Grid_getBlkCornerID(cur,cornerID,strideUnused)
+       cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(cur)) + 1
+       bx%lo(:) = bx%lo(:) - 1 + cornerID(:)
+    else if (this%cellIdxBase==-2) then
+       call Grid_getBlkCornerID(cur,cornerID,strideUnused)
+       cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(cur)) + 1
+       bx%lo(:) = bx%lo(:) - 1 + cornerID(:)
+       bx%lo(1:ndims) = bx%lo(1:ndims) - NGUARD
+    else if (this%cellIdxBase==0) then
+       bx%lo(:) = bx%lo(:) - 1
+    end if
+#ifdef INDEXREORDER
     dp(bx%lo(1):,bx%lo(2):,bx%lo(3):,1:) => fp
+#else
+    dp(1:,bx%lo(1):,bx%lo(2):,bx%lo(3):) => fp
+#endif
   end function famrex_multivab_dataPtr
 
 !------ imultivab routines removed ------!
@@ -282,7 +236,7 @@ contains
   end subroutine famrex_mviter_clear
 
   logical function famrex_mviter_next (this)
-    use Grid_extraInterface,ONLY: Grid_blockMatch
+    use Grid_interface,ONLY: Grid_blockMatch
     class(famrex_mviter),intent(inout) :: this
     integer(c_int) :: isvalid
     logical        :: fisvalid
@@ -304,10 +258,27 @@ contains
     type(famrex_box) :: bx
     integer, dimension(LOW:HIGH,MDIM) :: blkLim ,blkLimGC
     integer :: inodal(3)
+    integer :: cornerID(MDIM), strideUnused(MDIM)
     inodal = 0
     call Grid_getBlkIndexLimits(this%cur,blkLim,blkLimGC)
     bx%lo = blkLim(LOW ,:)                   !DEV: or blkLimGC(LOW ,:) ?
     bx%hi = blkLim(HIGH,:)                   !DEV: or blkLimGC(HIGH,:) ?
+    if (this%mvp%cellIdxBase==-1) then
+       call Grid_getBlkCornerID(this%cur,cornerID,strideUnused)
+       cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(this%cur)) + 1
+       bx%lo(:) = bx%lo(:) - 1 + cornerID(:)
+       bx%hi(:) = bx%hi(:) - 1 + cornerID(:)
+    else if (this%mvp%cellIdxBase==-2) then
+       call Grid_getBlkCornerID(this%cur,cornerID,strideUnused)
+       cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(this%cur)) + 1
+       bx%lo(:) = bx%lo(:) - 1 + cornerID(:)
+       bx%hi(:) = bx%hi(:) - 1 + cornerID(:)
+       bx%lo(1:ndims) = bx%lo(1:ndims) - NGUARD
+       bx%hi(1:ndims) = bx%hi(1:ndims) - NGUARD
+    else if (this%mvp%cellIdxBase==0) then
+       bx%lo(:) = bx%lo(:) - 1
+       bx%hi(:) = bx%hi(:) - 1
+    end if
     where (inodal .ne. 0) bx%nodal = .true.  ! note default is false
   end function famrex_mviter_tilebox
 
