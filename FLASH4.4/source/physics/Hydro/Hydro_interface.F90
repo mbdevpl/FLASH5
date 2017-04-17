@@ -42,12 +42,9 @@ Module Hydro_interface
   end interface
 
   interface Hydro
-     subroutine Hydro ( blockCount, blockList, &
-                        timeEndAdv, dt, dtOld,  &
+     subroutine Hydro ( timeEndAdv, dt, dtOld,  &
                         sweepOrder )
 
-       integer, INTENT(IN) :: blockCount
-       integer, INTENT(IN), dimension(blockcount) :: blockList
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
      end subroutine Hydro

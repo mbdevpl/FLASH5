@@ -41,8 +41,7 @@
 !!
 !!***
 
-Subroutine Hydro( blockCount, blockList, &
-                  timeEndAdv, dt,  dtOld,&
+Subroutine Hydro( timeEndAdv, dt,  dtOld,&
                   sweepOrder)
 
   use Hydro_data,       ONLY : hy_useHydro, hy_riemannSolver
@@ -69,13 +68,12 @@ Subroutine Hydro( blockCount, blockList, &
 
 #include "UHD.h"
 
-  integer, INTENT(IN) :: blockCount,sweepOrder
-  integer, INTENT(IN) :: blockList(blockCount)
+  integer, INTENT(IN) :: sweepOrder
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
 
   real,dimension(MDIM) :: del
   real, pointer, dimension(:,:,:,:) :: Uin,Uout
-  integer, dimension(LOW:HIGH,MDIM) :: tileLimits ,blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: tileLimits 
   integer :: ib,blockID
   logical :: gcMask(hy_gcMaskSize)
 #ifdef DEBUG_GRID_GCMASK
@@ -104,9 +102,6 @@ Subroutine Hydro( blockCount, blockList, &
        Uin => Uout
 
 
-!!$  do ib=1,blockCount
-!!$
-!!$     blockID = blockList(ib)
        blockID = mvi%localIndex() !Are we cheating here?
 
 !!ChageForAMRex -- this information should come from the interator as meta-data

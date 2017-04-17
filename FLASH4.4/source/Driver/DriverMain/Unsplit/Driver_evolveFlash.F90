@@ -60,9 +60,7 @@ subroutine Driver_evolveFlash()
                                   Timers_getSummary
   use Diffuse_interface,   ONLY : Diffuse
   use Particles_interface, ONLY : Particles_advance, Particles_dump
-  use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
-                                  Grid_getListOfBlocks, &
-                                  Grid_updateRefinement,&
+  use Grid_interface,      ONLY : Grid_updateRefinement,&
                                   Grid_fillGuardCells
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
@@ -81,8 +79,6 @@ subroutine Driver_evolveFlash()
 
   integer   :: localNumBlocks
 
-  integer :: blockCount
-  integer :: blockList(MAXBLOCKS)
   integer,save :: sweepDummy = SWEEP_ALL
 
   ! for logfile output
@@ -141,7 +137,7 @@ subroutine Driver_evolveFlash()
         
      end if
      
-     call Simulation_adjustEvolution(blockCount, blockList, dr_nstep, dr_dt, dr_simTime)
+!!     call Simulation_adjustEvolution(blockCount, blockList, dr_nstep, dr_dt, dr_simTime)
      
      ! 1. Cosmology-Friedmann Eqn.
      call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
@@ -169,8 +165,7 @@ subroutine Driver_evolveFlash()
           maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
      
      call Timers_start("Hydro")
-     call Hydro(blockCount, blockList,   &
-          dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+     call Hydro(dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
      call Timers_stop("Hydro")
      call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 #ifdef DEBUG_DRIVER
@@ -179,13 +174,13 @@ subroutine Driver_evolveFlash()
 #endif
      
      
-     ! 8. Diagnostics
-     call Timers_start("diagnostics")
-     call Driver_diagnostics(blockCount, blockList, dr_dt)
-     call Timers_stop("diagnostics")
-#ifdef DEBUG_DRIVER
-     print*, 'return from Diagnostics '  ! DEBUG
-#endif
+!!$     ! 8. Diagnostics
+!!$     call Timers_start("diagnostics")
+!!$     call Driver_diagnostics(blockCount, blockList, dr_dt)
+!!$     call Timers_stop("diagnostics")
+!!$#ifdef DEBUG_DRIVER
+!!$     print*, 'return from Diagnostics '  ! DEBUG
+!!$#endif
      
      !! save for old dt
      dr_dtOld = dr_dt

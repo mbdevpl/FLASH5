@@ -46,14 +46,11 @@
 !!***
 
 
-subroutine Hydro(  blockCount, blockList, &
-                   timeEndAdv, dt, dtOld, &
+subroutine Hydro(  timeEndAdv, dt, dtOld, &
                    sweepOrder )
 implicit none
 #include "Flash.h"
   
-  integer, INTENT(IN) :: blockCount
-  integer, dimension(blockCount), intent(IN) :: blockList
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
   integer, INTENT(IN) :: sweepOrder
   
