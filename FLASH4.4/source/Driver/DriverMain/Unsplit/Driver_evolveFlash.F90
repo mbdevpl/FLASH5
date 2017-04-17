@@ -70,8 +70,6 @@ subroutine Driver_evolveFlash()
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
-  use Hydro_data, ONLY :hy_gcMaskSize,       &
-                         hy_gcMask
   implicit none
 
 #include "constants.h"
@@ -156,13 +154,15 @@ subroutine Driver_evolveFlash()
 
 #ifdef DEBUG_GRID_GCMASK
      if (.NOT.gcMaskLogged) then
-        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
+!!        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
      end if
 #endif
      
      !! Guardcell filling routine
-     call Grid_fillGuardCells(CENTER,ALLDIR)
+!!$     call Grid_fillGuardCells(CENTER,ALLDIR,&
+!!$          maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
      
+     call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
      call Hydro(dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
      call Timers_stop("Hydro")

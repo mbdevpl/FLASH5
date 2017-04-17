@@ -75,12 +75,12 @@ Subroutine Hydro( timeEndAdv, dt,  dtOld,&
   real, pointer, dimension(:,:,:,:) :: Uin,Uout
   integer, dimension(LOW:HIGH,MDIM) :: tileLimits 
   integer :: ib,blockID
-  logical :: gcMask(hy_gcMaskSize)
-#ifdef DEBUG_GRID_GCMASK
-  logical,save :: gcMaskLogged =.FALSE.
-#else
-  logical,save :: gcMaskLogged =.TRUE.
-#endif
+!!$  logical :: gcMask(hy_gcMaskSize)
+!!$#ifdef DEBUG_GRID_GCMASK
+!!$  logical,save :: gcMaskLogged =.FALSE.
+!!$#else
+!!$  logical,save :: gcMaskLogged =.TRUE.
+!!$#endif
 
   type(famrex_multivab),target :: phi
   type(famrex_mviter) :: mvi
@@ -89,7 +89,7 @@ Subroutine Hydro( timeEndAdv, dt,  dtOld,&
 
   if (.not. hy_useHydro) return 
 
-  call Timers_start("hydro_sUnsplit")
+!!  call Timers_start("hydro_sUnsplit")
 
   call famrex_multivab_build(phi, LEAF, CENTER, hy_meshComm, NUNK_VARS)
 
@@ -134,11 +134,11 @@ Subroutine Hydro( timeEndAdv, dt,  dtOld,&
 
   end do
 
-#ifdef DEBUG_GRID_GCMASK
-  if (.NOT.gcMaskLogged) then
-     gcMaskLogged = .TRUE.
-  end if
-#endif
+!!$#ifdef DEBUG_GRID_GCMASK
+!!$  if (.NOT.gcMaskLogged) then
+!!$     gcMaskLogged = .TRUE.
+!!$  end if
+!!$#endif
 
 !!$  select case (hy_riemannSolver)
 !!$  case(HLL)
@@ -149,7 +149,7 @@ Subroutine Hydro( timeEndAdv, dt,  dtOld,&
 !!$     call Driver_abortFlash("Hydro: what?")
 !!$  end select
 
-  call Timers_stop("hydro_sUnsplit")
+!!  call Timers_stop("hydro_sUnsplit")
 
 
 End Subroutine Hydro
