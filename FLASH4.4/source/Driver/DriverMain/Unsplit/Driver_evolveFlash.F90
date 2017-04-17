@@ -61,7 +61,11 @@ subroutine Driver_evolveFlash()
   use Diffuse_interface,   ONLY : Diffuse
   use Particles_interface, ONLY : Particles_advance, Particles_dump
   use Grid_interface,      ONLY : Grid_updateRefinement,&
-                                  Grid_fillGuardCells
+                                  Grid_fillGuardCells,&
+                                  Grid_getListOfBlocks,&
+                                  Grid_getBlkPtr,&
+                                  Grid_getBlkIndexLimits,&
+                                  Grid_releaseBlkPtr
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
@@ -102,7 +106,12 @@ subroutine Driver_evolveFlash()
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
-
+  integer:: ib, blockID
+  integer, dimension(LOW:HIGH,MDIM) :: tileLimits,blkLimitsGC
+  integer :: blockCount
+  integer,dimension(MAXBLOCKS)::blks
+  real,pointer,dimension(:,:,:,:) :: Uout
+  real,dimension(MDIM) :: del
   endRunPl = .false.
   endRun = .false.
 
@@ -148,13 +157,13 @@ subroutine Driver_evolveFlash()
      print*,'going into Hydro/MHD'  ! DEBUG
      print*,'going into hydro myPE=',dr_globalMe
 #endif
-!!ChageForAMRex -- Here is where we put in the iterator and extract the relevant metadata
-!!ChageForAMRex -- from the iterator and then use the case statement to transfer control to the
-!!ChageForAMRex -- right implementation.
-
+     !!ChageForAMRex -- Here is where we put in the iterator and extract the relevant metadata
+     !!ChageForAMRex -- from the iterator and then use the case statement to transfer control to the
+     !!ChageForAMRex -- right implementation.
+     
 #ifdef DEBUG_GRID_GCMASK
      if (.NOT.gcMaskLogged) then
-!!        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
+        !!        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
      end if
 #endif
      
@@ -164,7 +173,16 @@ subroutine Driver_evolveFlash()
      
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
-     call Hydro(dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+     call Grid_getListOfBlocks(LEAF,blks,blockCount)
+     do ib=1,blockCount
+        blockID=blks(ib)
+        call Grid_getDeltas(blockID,del)
+        call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
+        call Grid_getBlkPtr(blockID,Uout,CENTER)
+
+        call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+        call Grid_releaseBlkPtr(blockID,Uout,CENTER)
+     end do
      call Timers_stop("Hydro")
      call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 #ifdef DEBUG_DRIVER

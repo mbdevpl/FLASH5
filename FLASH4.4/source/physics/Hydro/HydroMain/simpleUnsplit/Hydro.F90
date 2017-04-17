@@ -41,12 +41,14 @@
 !!
 !!***
 
-Subroutine Hydro( timeEndAdv, dt,  dtOld,&
+Subroutine Hydro( del, tileLimits, Uout, timeEndAdv, dt,  dtOld,&
                   sweepOrder)
 
   use Hydro_data,       ONLY : hy_useHydro, hy_riemannSolver
   use Grid_interface, ONLY : Grid_getDeltas,         &
-                             Grid_fillGuardCells,    &
+                             Grid_getListOfBlocks,    &
+                             Grid_getBlkPtr,          &
+                             Grid_getBlkIndexLimits,  &
                              Grid_releaseBlkPtr
 
   use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
@@ -71,68 +73,48 @@ Subroutine Hydro( timeEndAdv, dt,  dtOld,&
   integer, INTENT(IN) :: sweepOrder
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
 
-  real,dimension(MDIM) :: del
-  real, pointer, dimension(:,:,:,:) :: Uin,Uout
-  integer, dimension(LOW:HIGH,MDIM) :: tileLimits 
+  real,dimension(MDIM),intent(IN) :: del
+  real, pointer, dimension(:,:,:,:) :: Uout
+  integer, dimension(LOW:HIGH,MDIM),intent(IN) :: tileLimits
   integer :: ib,blockID
-!!$  logical :: gcMask(hy_gcMaskSize)
-!!$#ifdef DEBUG_GRID_GCMASK
-!!$  logical,save :: gcMaskLogged =.FALSE.
-!!$#else
-!!$  logical,save :: gcMaskLogged =.TRUE.
-!!$#endif
+  integer :: blockCount
+  integer,dimension(MAXBLOCKS)::blks
+  real, pointer, dimension(:,:,:,:) :: Uin
 
-  type(famrex_multivab),target :: phi
-  type(famrex_mviter) :: mvi
-  type(famrex_box) :: bx, tbx
 
 
   if (.not. hy_useHydro) return 
 
 !!  call Timers_start("hydro_sUnsplit")
 
-  call famrex_multivab_build(phi, LEAF, CENTER, hy_meshComm, NUNK_VARS)
-
-
-  call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
-  do while(mvi%next())
-       bx = mvi%tilebox()
-
-       Uout => phi%dataptr(mvi)
-       Uin => Uout
-
-
-       blockID = mvi%localIndex() !Are we cheating here?
+!!$       Uin => Uout
+!!$
+!!$
+!!$       blockID = mvi%localIndex() !Are we cheating here?
 
 !!ChageForAMRex -- this information should come from the interator as meta-data
-     call Grid_getDeltas(blockID,del)
 
 !!$     dtdx = dt / del(IAXIS)
 !!$     if (NDIM > 1) dtdy = dt / del(JAXIS)
 !!$     if (NDIM > 2) dtdz = dt / del(KAXIS)
 
 !!ChageForAMRex -- this information should come from the iterator as meta-data
-!!     call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC)
-     tileLimits(LOW, :) = bx%lo
-     tileLimits(HIGH,:) = bx%hi
 
 
-!!$     call Grid_getBlkPtr(blockID,Uout,CENTER)
+  Uin => Uout
+  
+  select case (hy_riemannSolver)
+  case(HLL)
+     call hy_hllUnsplit(tileLimits, Uin, lbound(Uin), Uout, del, dt)
+  case(LLF)
+     call hy_llfUnsplit(tileLimits, Uin, Uout, del, dt)
+  case default
+     call Driver_abortFlash("Hydro: what?")
+  end select
+  
+  !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
+  call Eos_wrapped(hy_eosModeAfter, tileLimits, Uout)
 
-     select case (hy_riemannSolver)
-     case(HLL)
-        call hy_hllUnsplit(tileLimits, Uin, lbound(Uin), Uout, del, dt)
-     case(LLF)
-        call hy_llfUnsplit(tileLimits, Uin, Uout, del, dt)
-     case default
-        call Driver_abortFlash("Hydro: what?")
-     end select
-
-        !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
-     call Eos_wrapped(hy_eosModeAfter, tileLimits, Uout)
-     call Grid_releaseBlkPtr(blockID,Uout,CENTER)
-
-  end do
 
 !!$#ifdef DEBUG_GRID_GCMASK
 !!$  if (.NOT.gcMaskLogged) then
