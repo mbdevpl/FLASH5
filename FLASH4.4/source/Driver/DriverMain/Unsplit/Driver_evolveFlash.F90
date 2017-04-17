@@ -161,8 +161,7 @@ subroutine Driver_evolveFlash()
 #endif
      
      !! Guardcell filling routine
-     call Grid_fillGuardCells(CENTER,ALLDIR,&
-          maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
+     call Grid_fillGuardCells(CENTER,ALLDIR)
      
      call Timers_start("Hydro")
      call Hydro(dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
