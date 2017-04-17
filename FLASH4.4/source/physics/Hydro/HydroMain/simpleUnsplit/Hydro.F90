@@ -47,13 +47,8 @@ Subroutine Hydro( blockCount, blockList, &
 
   use Hydro_data,       ONLY : hy_useHydro, hy_riemannSolver
   use Grid_interface, ONLY : Grid_getDeltas,         &
-                             Grid_getBlkIndexLimits, &
                              Grid_fillGuardCells,    &
-                             Grid_getBlkPtr,         &
-                             Grid_releaseBlkPtr,     &
-                             Grid_genGetBlkPtr,         &
-                             Grid_genReleaseBlkPtr,     &
-                             Grid_getBlkData
+                             Grid_releaseBlkPtr
 
   use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
                                     famrex_mviter, famrex_mviter_build
@@ -100,19 +95,6 @@ Subroutine Hydro( blockCount, blockList, &
 
   call famrex_multivab_build(phi, LEAF, CENTER, hy_meshComm, NUNK_VARS)
 
-!!ChageForAMRex -- Here is where we put in the iterator and extract the relevant metadata
-!!ChageForAMRex -- from the iterator and then use the case statement to transfer control to the
-!!ChageForAMRex -- right implementation.
-
-#ifdef DEBUG_GRID_GCMASK
-  if (.NOT.gcMaskLogged) then
-     call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
-  end if
-#endif
-
-  !! Guardcell filling routine
-  call Grid_fillGuardCells(CENTER,ALLDIR,&
-       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
 
   call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
   do while(mvi%next())

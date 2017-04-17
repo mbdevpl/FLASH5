@@ -62,7 +62,8 @@ subroutine Driver_evolveFlash()
   use Particles_interface, ONLY : Particles_advance, Particles_dump
   use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
                                   Grid_getListOfBlocks, &
-                                  Grid_updateRefinement
+                                  Grid_updateRefinement,&
+                                  Grid_fillGuardCells
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
@@ -71,7 +72,8 @@ subroutine Driver_evolveFlash()
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
-
+  use Hydro_data, ONLY :hy_gcMaskSize,       &
+                         hy_gcMask
   implicit none
 
 #include "constants.h"
@@ -101,6 +103,11 @@ subroutine Driver_evolveFlash()
   integer :: nstepTotalSTS_local 
 
   integer, parameter :: driftUnk_flags = DRIFT_NO_PARENTS
+#ifdef DEBUG_GRID_GCMASK
+  logical,save :: gcMaskLogged =.FALSE.
+#else
+  logical,save :: gcMaskLogged =.TRUE.
+#endif
 
   endRunPl = .false.
   endRun = .false.
@@ -110,12 +117,6 @@ subroutine Driver_evolveFlash()
   call Timers_start("evolution")
 
   do dr_nstep = dr_nBegin, dr_nend
-     
-     !!Step forward in time. See bottom of loop for time step calculation.
-     call Grid_getLocalNumBlks(localNumBlocks)
-     call Grid_getListOfBlocks(LEAF,blockList,blockCount)
-     
-     
      
      if (dr_globalMe == MASTER_PE) then
         
@@ -153,6 +154,20 @@ subroutine Driver_evolveFlash()
      print*,'going into Hydro/MHD'  ! DEBUG
      print*,'going into hydro myPE=',dr_globalMe
 #endif
+!!ChageForAMRex -- Here is where we put in the iterator and extract the relevant metadata
+!!ChageForAMRex -- from the iterator and then use the case statement to transfer control to the
+!!ChageForAMRex -- right implementation.
+
+#ifdef DEBUG_GRID_GCMASK
+     if (.NOT.gcMaskLogged) then
+        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
+     end if
+#endif
+     
+     !! Guardcell filling routine
+     call Grid_fillGuardCells(CENTER,ALLDIR,&
+          maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
+     
      call Timers_start("Hydro")
      call Hydro(blockCount, blockList,   &
           dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
@@ -163,31 +178,6 @@ subroutine Driver_evolveFlash()
      print*,'returning from hydro myPE=',dr_globalMe
 #endif
      
-     ! 4. Add source terms:
-     !    Stirring, flame, burning, heating, heat exchange, cooling, ionization,
-     !    energy deposition, & deleptonization
-     call Timers_start("sourceTerms")
-     call Driver_sourceTerms(blockCount, blockList, dr_dt)
-     call Timers_stop("sourceTerms")
-     call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
-#ifdef DEBUG_DRIVER
-     print*,'done source terms'  ! DEBUG
-     print*,'return from Driver_sourceTerms '  ! DEBUG
-#endif
-     
-     
-     ! 6. Calculate gravitational potentials
-     if (.NOT. Hydro_gravPotIsAlreadyUpdated()) then
-        call Timers_start("Gravity potential")
-        call Gravity_potentialListOfBlocks(blockCount,blockList)
-        call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
-        call Timers_stop("Gravity potential")
-#ifdef DEBUG_DRIVER
-        print*, 'return from Gravity_potential '  ! DEBUG
-#endif
-     end if
-     
-     call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
      
      ! 8. Diagnostics
      call Timers_start("diagnostics")
@@ -283,13 +273,6 @@ subroutine Driver_evolveFlash()
      if (endRunWallClock) then
         if(dr_globalMe == MASTER_PE) then
            print *, "exiting: reached max wall clock time"
-        endif
-        exit
-     end if
-     
-     if (dr_redshift < dr_redshiftfinal .and. dr_useRedshift) then
-        if(dr_globalMe == MASTER_PE) then
-           print *, "exiting: reached redshiftfinal"
         endif
         exit
      end if
