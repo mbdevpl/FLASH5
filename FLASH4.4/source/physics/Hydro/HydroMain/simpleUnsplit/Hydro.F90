@@ -51,10 +51,6 @@ Subroutine Hydro( del, tileLimits, Uout, timeEndAdv, dt,  dtOld,&
                              Grid_getBlkIndexLimits,  &
                              Grid_releaseBlkPtr
 
-  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
-                                    famrex_mviter, famrex_mviter_build
-  use famrex_box_module,      ONLY: famrex_box
-
   use hy_simpleInterface, ONLY : hy_hllUnsplit, hy_llfUnsplit
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Driver_interface, ONLY : Driver_abortFlash
@@ -76,9 +72,6 @@ Subroutine Hydro( del, tileLimits, Uout, timeEndAdv, dt,  dtOld,&
   real,dimension(MDIM),intent(IN) :: del
   real, pointer, dimension(:,:,:,:) :: Uout
   integer, dimension(LOW:HIGH,MDIM),intent(IN) :: tileLimits
-  integer :: ib,blockID
-  integer :: blockCount
-  integer,dimension(MAXBLOCKS)::blks
   real, pointer, dimension(:,:,:,:) :: Uin
 
 
@@ -86,20 +79,6 @@ Subroutine Hydro( del, tileLimits, Uout, timeEndAdv, dt,  dtOld,&
   if (.not. hy_useHydro) return 
 
 !!  call Timers_start("hydro_sUnsplit")
-
-!!$       Uin => Uout
-!!$
-!!$
-!!$       blockID = mvi%localIndex() !Are we cheating here?
-
-!!ChageForAMRex -- this information should come from the interator as meta-data
-
-!!$     dtdx = dt / del(IAXIS)
-!!$     if (NDIM > 1) dtdy = dt / del(JAXIS)
-!!$     if (NDIM > 2) dtdz = dt / del(KAXIS)
-
-!!ChageForAMRex -- this information should come from the iterator as meta-data
-
 
   Uin => Uout
   

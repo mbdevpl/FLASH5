@@ -49,7 +49,7 @@ subroutine Driver_evolveFlash()
                                   dr_dtAdvect, dr_dtDiffuse,             &
                                   dr_useSTSforDiffusion,                 &
                                   dr_tstepChangeFactor,                  &
-                                  dr_allowDtSTSDominate
+                                  dr_allowDtSTSDominate,dr_meshComm
   use Driver_interface,    ONLY : Driver_sourceTerms, Driver_computeDt, &
                                   Driver_superTimeStep, &
                                   Driver_logMemoryUsage, &
@@ -62,9 +62,6 @@ subroutine Driver_evolveFlash()
   use Particles_interface, ONLY : Particles_advance, Particles_dump
   use Grid_interface,      ONLY : Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
-                                  Grid_getListOfBlocks,&
-                                  Grid_getBlkPtr,&
-                                  Grid_getBlkIndexLimits,&
                                   Grid_releaseBlkPtr
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
@@ -75,7 +72,8 @@ subroutine Driver_evolveFlash()
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
   use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
-                                    famrex_mviter, famrex_mviter_build
+                                    famrex_mviter, famrex_mviter_build,&
+                                    famrex_mviter_destroy,famrex_multivab_destroy
   use famrex_box_module,      ONLY: famrex_box
 
 
@@ -118,9 +116,9 @@ subroutine Driver_evolveFlash()
   real,pointer,dimension(:,:,:,:) :: Uout
   real,dimension(MDIM) :: del
 
-!!$  type(famrex_multivab),target :: phi
-!!$  type(famrex_mviter) :: mvi
-!!$  type(famrex_box) :: bx, tbx
+  type(famrex_multivab),target :: phi
+  type(famrex_mviter) :: mvi
+  type(famrex_box) :: bx, tbx
 
 
   endRunPl = .false.
@@ -185,28 +183,31 @@ subroutine Driver_evolveFlash()
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
 
-!!$  call famrex_multivab_build(phi, LEAF, CENTER, hy_meshComm, NUNK_VARS)
-!!$  call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
-!!$  do while(mvi%next())
-!!$       bx = mvi%tilebox()
-!!$
-!!$       Uout => phi%dataptr(mvi)
-!!$     tileLimits(LOW, :) = bx%lo
-!!$     tileLimits(HIGH,:) = bx%hi
+  call famrex_multivab_build(phi, LEAF, CENTER, dr_meshComm, NUNK_VARS)
+  call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
+  do while(mvi%next())
+       bx = mvi%tilebox()
+
+       Uout => phi%dataptr(mvi)
+       tileLimits(LOW, :) = bx%lo
+       tileLimits(HIGH,:) = bx%hi
 
 
-     call Grid_getListOfBlocks(LEAF,blks,blockCount)
-     do ib=1,blockCount
-        blockID=blks(ib)
-        call Grid_getDeltas(blockID,del)
-        call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
-        call Grid_getBlkPtr(blockID,Uout,CENTER)
+!!$     call Grid_getListOfBlocks(LEAF,blks,blockCount)
+!!$     do ib=1,blockCount
+!!$        blockID=blks(ib)
+!!$        call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
+!!$        call Grid_getBlkPtr(blockID,Uout,CENTER)
 
-        call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
-        call Grid_releaseBlkPtr(blockID,Uout,CENTER)
-     end do
-     call Timers_stop("Hydro")
-     call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
+       blockID = mvi%localIndex() !Are we cheating here?
+     
+       call Grid_getDeltas(blockID,del)
+       
+       call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+       call Grid_releaseBlkPtr(blockID,Uout,CENTER)
+    end do
+    call Timers_stop("Hydro")
+    call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 #ifdef DEBUG_DRIVER
      print*, 'return from Hydro/MHD timestep'  ! DEBUG
      print*,'returning from hydro myPE=',dr_globalMe
@@ -221,6 +222,8 @@ subroutine Driver_evolveFlash()
 !!$     print*, 'return from Diagnostics '  ! DEBUG
 !!$#endif
      
+     call famrex_multivab_destroy(phi)
+     call famrex_mviter_destroy(mvi)
      !! save for old dt
      dr_dtOld = dr_dt
      
