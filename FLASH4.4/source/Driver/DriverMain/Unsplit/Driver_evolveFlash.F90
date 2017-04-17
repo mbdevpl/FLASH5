@@ -74,6 +74,11 @@ subroutine Driver_evolveFlash()
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
+  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
+                                    famrex_mviter, famrex_mviter_build
+  use famrex_box_module,      ONLY: famrex_box
+
+
   implicit none
 
 #include "constants.h"
@@ -112,6 +117,12 @@ subroutine Driver_evolveFlash()
   integer,dimension(MAXBLOCKS)::blks
   real,pointer,dimension(:,:,:,:) :: Uout
   real,dimension(MDIM) :: del
+
+!!$  type(famrex_multivab),target :: phi
+!!$  type(famrex_mviter) :: mvi
+!!$  type(famrex_box) :: bx, tbx
+
+
   endRunPl = .false.
   endRun = .false.
 
@@ -173,6 +184,17 @@ subroutine Driver_evolveFlash()
      
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
+
+!!$  call famrex_multivab_build(phi, LEAF, CENTER, hy_meshComm, NUNK_VARS)
+!!$  call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
+!!$  do while(mvi%next())
+!!$       bx = mvi%tilebox()
+!!$
+!!$       Uout => phi%dataptr(mvi)
+!!$     tileLimits(LOW, :) = bx%lo
+!!$     tileLimits(HIGH,:) = bx%hi
+
+
      call Grid_getListOfBlocks(LEAF,blks,blockCount)
      do ib=1,blockCount
         blockID=blks(ib)
