@@ -15,8 +15,8 @@ module famrex_box_module
      logical, dimension(3) :: nodal = .false.
    contains
      generic   :: grow     => famrex_box_grow_s, famrex_box_grow_v
-     procedure, private :: famrex_box_grow_s, &
-          famrex_box_grow_v
+     procedure, private :: famrex_box_grow_s
+     procedure, private :: famrex_box_grow_v
   end type famrex_box
 
   interface famrex_box
