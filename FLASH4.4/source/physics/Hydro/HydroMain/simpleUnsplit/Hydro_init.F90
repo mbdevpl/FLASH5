@@ -25,6 +25,7 @@ Subroutine Hydro_init()
 
   use Hydro_data
   use Driver_interface,            ONLY : Driver_abortFlash, Driver_getMype, &
+                                          Driver_getComm,                    &
                                           Driver_getNumProcs
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt

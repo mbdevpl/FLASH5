@@ -233,7 +233,7 @@ contains
     class(famrex_mviter) :: this
 !!    print*,'CALLED famrex_mviter_clear!'
     this%counter = -1
-    this%cur     = -1
+    this%cur     =  0
     this%p = c_null_ptr
   end subroutine famrex_mviter_clear
 

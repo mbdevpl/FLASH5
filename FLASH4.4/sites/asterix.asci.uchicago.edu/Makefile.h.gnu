@@ -3,9 +3,11 @@
 # Set the HDF5/MPI library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
 
+AMREX_PATH = /home/aladin/klaus/projects/amrex/tmp_install_dir
+
 MPI_PATH   = /opt/openmpi-1.8.6_gcc
 HDF4_PATH  =
-HDF5_PATH  = /opt/hdf5/gcc/1.8.16
+HDF5_PATH  = /opt/hdf5-1.8.10_ompi1.6.5_gcc
 HYPRE_PATH = /opt/hypre/gcc/2.9.0b
 
 ZLIB_PATH  =
@@ -27,7 +29,7 @@ MPE_PATH   =
 FCOMP   = ${MPI_PATH}/bin/mpif90
 CCOMP   = ${MPI_PATH}/bin/mpicc
 CPPCOMP = ${MPI_PATH}/bin/mpicxx
-LINK    = ${MPI_PATH}/bin/mpif90
+LINK    = ${MPI_PATH}/bin/mpif90 -std=c++11
 
 # pre-processor flag
 PP      = -D
@@ -64,11 +66,15 @@ FFLAGS_DEBUG = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
 -Wsurprising -Wconversion -Wunderflow \
 -ffpe-trap=invalid,zero,overflow -fbacktrace -fbounds-check \
 -fimplicit-none -fstack-protector-all
-
-FFLAGS_TEST = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8
+FFLAGS_TEST = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
+-fbounds-check -fbacktrace -Wuninitialized -Wunused -ffpe-trap=invalid,zero -finit-real=snan -finit-integer=2147483647 -ftrapv \
+-fno-range-check -fno-second-underscore
 
 FFLAGS_HYPRE = -I${HYPRE_PATH}/include
 CFLAGS_HYPRE = -I${HYPRE_PATH}/include
+FFLAGS_AMREX = -I${AMREX_PATH}/include
+FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
+
 
 
 F90FLAGS =
@@ -124,7 +130,7 @@ LIB_HDF5 = -L $(HDF5_PATH)/lib -lhdf5_fortran -lhdf5 -lz
 LIB_PAPI  =
 LIB_MATH  =
 
-LIB_MPI   =
+LIB_MPI   = -lmpi_cxx
 LIB_NCMPI = -L ${NCMPI_PATH}/lib -lpnetcdf
 LIB_MPE   =
 
@@ -132,6 +138,8 @@ LIB_MPE   =
 LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE -llapack -lblas -static
 LIB_LIBNBC = -L/home/cdaley/software/libNBC/1.1.1/mpich-1.4.1p1_gnu/lib -lnbc
 
+LIB_AMREX = -L${AMREX_PATH}/lib -lamrex
+LIB_AMREX2D = ${LIB_AMREX}
 LIB_STDCXX = -lstdc++
 
 # Uncomment (and change) the following line to use an external library file for double precision SPECFUN code.
@@ -217,5 +225,7 @@ Grid_advanceDiffusion.o : %.o : %.F90
 # to FORTRAN compilers internally, trigger unnecessary recompilation
 # of files that refer to the ISO_C_BINDING module.
 .SECONDARY: iso_c_binding.mod
+
+###include /home/aladin/klaus/projects/amrex/tmp_build_dir/d/2d.gnu.DEBUG.MPI.EXE/*.d
 
 endif
