@@ -64,6 +64,7 @@ module famrex_multivab_module
      integer ,private :: cur     = 0
      integer ,private :: nodetypes   = ALL_BLKS
      integer ,private :: gds     = CENTER
+     integer ,private :: lev=-1
    contains
      generic   :: assignment(=)    => famrex_mviter_assign  ! will abort if called
      procedure :: clear            => famrex_mviter_clear
@@ -212,6 +213,7 @@ contains
     mvi%mvp => mv
     mvi%nodetypes = mv%nodetypes
     mvi%gds = mv%gds
+    mvi%lev = mvi%lev
   end subroutine famrex_mviter_build_r
 
 
@@ -229,7 +231,7 @@ contains
 
   subroutine famrex_mviter_clear (this)
     class(famrex_mviter) :: this
-    print*,'CALLED famrex_mviter_clear!'
+!!    print*,'CALLED famrex_mviter_clear!'
     this%counter = -1
     this%cur     = -1
     this%p = c_null_ptr
@@ -245,7 +247,7 @@ contains
 
     cur = this%cur
     do i=cur+1,lnblocks
-       if (Grid_blockMatch(i,this%nodetypes)) EXIT !right nodetype?
+       if (Grid_blockMatch(i,this%nodetypes,this%lev)) EXIT !right nodetype?
     end do
     this%cur = i
     fisvalid = (i .LE. lnblocks)
