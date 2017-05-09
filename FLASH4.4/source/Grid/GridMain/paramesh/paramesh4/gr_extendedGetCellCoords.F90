@@ -95,7 +95,7 @@
 subroutine gr_extendedGetCellCoords(axis, blockID, pe, edge, guardcell, coordinates, size)
 
   use Grid_data, ONLY : gr_meshMe, &
-       gr_delta, gr_imin, gr_jmin, gr_kmin
+       gr_delta, gr_imin, gr_jmin, gr_kmin, gr_oneBlock
   use tree, ONLY: bnd_box, laddress, strt_buffer, last_buffer, lnblocks, lrefine, lrefine_max
   use Grid_interface, ONLY : Grid_getCellCoords
   use Driver_interface, ONLY : Driver_abortFlash
@@ -191,7 +191,8 @@ subroutine gr_extendedGetCellCoords(axis, blockID, pe, edge, guardcell, coordina
 #endif
 
   if (accessBlk.LE.lnblocks) then !if it is a local block on this PE...
-     call Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
+!!$     call Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
+     coordinates(:)=gr_oneBlock(blockID)%firstAxisCoords(CENTER,:)
 #ifndef DEBUG_GRID
      ! Return results of this call directly if NOT debugging.
      ! Otherwise, the response from this call is used for debugging.

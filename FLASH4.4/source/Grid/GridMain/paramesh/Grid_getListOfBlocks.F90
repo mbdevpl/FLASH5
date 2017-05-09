@@ -243,8 +243,15 @@ subroutine Grid_getListOfBlocks(blockType, listOfBlocks,count,refinementLevel,&
   case default
      do i = 1,lnblocks
         if(nodetype(i) == blockType) then
-           count = count+1
-           listOfBlocks(count) = i
+           if(present(refinementLevel)) then
+              if(lrefine(i)==refinementLevel) then
+                 count=count+1
+                 listOfBlocks(count)=i
+              end if
+           else
+              count = count+1
+              listOfBlocks(count) = i
+           end if
         end if
      end do
   end select
