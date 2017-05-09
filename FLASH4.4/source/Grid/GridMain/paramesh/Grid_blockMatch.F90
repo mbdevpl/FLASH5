@@ -78,6 +78,11 @@ function Grid_blockMatch(blkID,ntype,refinementLevel) result(match)
   select case (ntype)
   case (LEAF,PARENT_BLK,ANCESTOR)
      match = (nodetype(i)==ntype)
+     if (match .AND. present(refinementLevel)) then
+        if (refinementLevel > 0) then
+           match = (lrefine(i) == refinementLevel)
+        end if
+     end if
   case(ALL_BLKS)
      match = .TRUE.
   case (IBDRY_BLKS)
