@@ -213,7 +213,7 @@ contains
     mvi%mvp => mv
     mvi%nodetypes = mv%nodetypes
     mvi%gds = mv%gds
-    mvi%lev = mvi%lev
+    mvi%lev = mv%lev
   end subroutine famrex_mviter_build_r
 
 
