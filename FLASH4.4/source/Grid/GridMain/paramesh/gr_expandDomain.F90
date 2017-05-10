@@ -37,7 +37,7 @@ subroutine gr_expandDomain (particlesInitialized)
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_stampVarMask
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
-       Grid_getLocalNumBlks, Grid_getListOfBlocks, &
+       Grid_getLocalNumBlks, Grid_getListOfBlocks,Grid_getBlkCornerID, &
        Grid_markRefineDerefine, Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data, ONLY : gr_ihiGc,gr_jhiGc,gr_khiGc,gr_blkList
   use tree, ONLY : lrefine, lrefine_min, lrefine_max, grid_changed
@@ -70,8 +70,8 @@ subroutine gr_expandDomain (particlesInitialized)
 
   integer :: ntimes, i
 
-  integer, dimension(2,MDIM) :: blkLimits
-  integer, dimension(2,MDIM) :: blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(MDIM) :: cid,stride
   integer :: count, cur_treedepth, grid_changed_anytime
   logical :: restart = .false.
   logical :: particlesPosnsDone, retainParticles
@@ -163,11 +163,14 @@ subroutine gr_expandDomain (particlesInitialized)
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.
         call Grid_getBlkPtr(blkList(i), solnData)
+        call Grid_getBlkIndexLimits(blkList(i),blkLimits,blkLimitsGC)
+        call Grid_getBlkCornerID(blkList(i),cid,stride)
+        
         solnData = 0.0
-        call Grid_releaseBlkPtr(blkList(i), solnData)
         !      Now reinitialize the solution on the new grid so that it has
         !      the exact solution.
-        call Simulation_initBlock (blkList(i))
+        call Simulation_initBlock (solnData,cid,stride,blkLimits,blkLimitsGC)
+        call Grid_releaseBlkPtr(blkList(i), solnData)
      end do
 
 #ifdef ERAD_VAR

@@ -40,7 +40,7 @@
 !!
 !!***
 
-subroutine Simulation_initBlock(blockID)
+subroutine Simulation_initBlock(solnData,cid,stride,blkLimits,blkLimitsGC)
 
 #include "constants.h"
 #include "Flash.h"
@@ -57,8 +57,9 @@ subroutine Simulation_initBlock(blockID)
        sim_gammaIon, sim_gammaEle
 #endif
      
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits,Grid_getBlkPtr, Grid_releaseBlkPtr, &
-    Grid_getCellCoords, Grid_putPointData,Grid_getBlkCornerID
+  use Grid_interface, ONLY : Grid_getCellCoords
+!!$  Grid_putPointData,Grid_getBlkCornerID,Grid_getBlkIndexLimits,Grid_getBlkPtr, Grid_releaseBlkPtr
+    
   use Eos_interface, ONLY : Eos, Eos_wrapped
 
 
@@ -67,8 +68,9 @@ subroutine Simulation_initBlock(blockID)
   ! compute the maximum length of a vector in each coordinate direction 
   ! (including guardcells)
   
-  integer, intent(in) :: blockID
-  
+  real,dimension(:,:,:,:),pointer :: solnData
+  integer, dimension(LOW:HIGH,MDIM),intent(in) :: blkLimits, blkLimitsGC
+  integer, dimension(MDIM),intent(in) :: cid,stride
 
   integer :: i, j, k, n
   integer :: iMax, jMax, kMax
@@ -82,10 +84,7 @@ subroutine Simulation_initBlock(blockID)
 
   real,allocatable, dimension(:) ::xCenter,xLeft,xRight,yCoord,zCoord
 
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
   integer :: sizeX,sizeY,sizeZ
-  integer, dimension(MDIM) :: axis,cid,stride
-  real,dimension(:,:,:,:),pointer::solnData
   
   real :: rhoZone, velxZone, velyZone, velzZone, presZone, & 
        eintZone, enerZone, ekinZone, gameZone, gamcZone
@@ -112,12 +111,6 @@ subroutine Simulation_initBlock(blockID)
 !!$2    format (1X, 1P, 2(A7, E13.7, 1X), A7, I13)
 !!$     
 !!$  endif
-  
-  
-  ! get the integer index information for the current block
-  call Grid_getBlkIndexLimits(blockId,blkLimits,blkLimitsGC)
-  call Grid_getBlkCornerID(blockId,cid,stride)
-  call Grid_getBlkPtr(blockID,solnData)
   
   sizeX = blkLimitsGC(HIGH,IAXIS)
   sizeY = blkLimitsGC(HIGH,JAXIS)
@@ -242,10 +235,6 @@ subroutine Simulation_initBlock(blockID)
            presZone = peleZone + pionZone + pradZone
 #endif
 
-           axis(IAXIS) = i
-           axis(JAXIS) = j
-           axis(KAXIS) = k
-
            !put in default mass fraction values of all species
            if (NSPECIES > 0) then
               solnData(SPECIES_BEGIN,i,j,k)=1.0e0-(NSPECIES-1)*sim_smallX
@@ -356,7 +345,7 @@ subroutine Simulation_initBlock(blockID)
   enddo
 
 
-  call Grid_releaseBlkPtr(blockId,solnData)
+!!$  call Grid_releaseBlkPtr(blockId,solnData)
   deallocate(xLeft)
   deallocate(xRight)
   deallocate(xCenter)
