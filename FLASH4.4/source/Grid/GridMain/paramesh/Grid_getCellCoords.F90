@@ -116,9 +116,8 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
+subroutine Grid_getCellCoords(axis, cid,stride, edge, guardcell, coordinates, size)
 
-  use Grid_interface, ONLY : Grid_getBlkCornerID
   use Grid_data, ONLY : gr_oneBlock,gr_globalDomain,gr_delta
   use tree, ONLY :  lrefine_max
   use Driver_interface, ONLY : Driver_abortFlash
@@ -128,13 +127,13 @@ subroutine Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
 
   implicit none
 
-  integer, intent(in) :: axis,blockID, edge
+  integer, intent(in) :: axis, edge
+  integer, dimension(MDIM), intent(in)::cid,stride
   integer, intent(in) :: size
   logical, intent(in) :: guardcell
   real,intent(out), dimension(size) :: coordinates
 
 
-  integer,dimension(MDIM) :: cid,stride
   integer::first,i
 
   ! Do some error checking here
@@ -160,7 +159,6 @@ subroutine Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
 #endif
 
 
-  call Grid_getBlkCornerID(BlockID,cid,stride)
   first=cid(axis)-1
   if(guardcell) first=first-stride(axis)*NGUARD
   if((edge==CENTER).and.(stride(axis)==1))then

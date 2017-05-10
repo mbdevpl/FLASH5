@@ -66,7 +66,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Logfile_interface,ONLY : Logfile_stamp
   use IO_interface,     ONLY : IO_writeCheckpoint
-  use Grid_interface, ONLY : Grid_getListOfBlocks, &
+  use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_getBlkCornerID,&
     Grid_getBlkIndexLimits, Grid_getCellCoords, Grid_getDeltas, &
     Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getSingleCellCoords
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
@@ -157,6 +157,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   real :: extraHydroInfoMin
   real :: extraHydroInfoApp
   real :: dtNewComputed
+  integer,dimension(MDIM) :: cid,stride
 
   ! Initializing extraHydroInfo to zero:
   extraHydroInfo = 0.
@@ -211,6 +212,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   do i = 1, numLeafBlocks
      !!Get the coordinate information for all the
      call Grid_getBlkIndexLimits(blockList(i),blkLimits,blkLimitsGC)
+     call Grid_getBlkCornerID(blockList(i),cid,stride)
      isize = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
      jsize = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
      ksize = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
@@ -234,25 +236,25 @@ subroutine Driver_computeDt(nbegin, nstep, &
 #ifdef DEBUG_DRIVER
      print*,'before calling get coordinates',isize,gcell
 #endif
-     call Grid_getCellCoords(IAXIS,blockList(i),CENTER,gcell,xCenter,isize)
-     call Grid_getCellCoords(IAXIS,blockList(i),LEFT_EDGE,gcell,xLeft,isize)
-     call Grid_getCellCoords(IAXIS,blockList(i),RIGHT_EDGE,gcell,xRight,isize)
+     call Grid_getCellCoords(IAXIS,cid,stride,CENTER,gcell,xCenter,isize)
+     call Grid_getCellCoords(IAXIS,cid,stride,LEFT_EDGE,gcell,xLeft,isize)
+     call Grid_getCellCoords(IAXIS,cid,stride,RIGHT_EDGE,gcell,xRight,isize)
 
 #ifdef DEBUG_DRIVER
      print*,'before calling get coordinates',jsize,gcell
 #endif
      if (NDIM > 1) then
-        call Grid_getCellCoords(JAXIS,blockList(i),CENTER,gcell,yCenter,jsize)
-        call Grid_getCellCoords(JAXIS,blockList(i),LEFT_EDGE,gcell,yLeft,jsize)
-        call Grid_getCellCoords(JAXIS,blockList(i),RIGHT_EDGE,gcell,yRight,jsize)
+        call Grid_getCellCoords(JAXIS,cid,stride,CENTER,gcell,yCenter,jsize)
+        call Grid_getCellCoords(JAXIS,cid,stride,LEFT_EDGE,gcell,yLeft,jsize)
+        call Grid_getCellCoords(JAXIS,cid,stride,RIGHT_EDGE,gcell,yRight,jsize)
 
         if (NDIM > 2) then
 #ifdef DEBUG_DRIVER
            print*,'before calling get coordinates',ksize,gcell
 #endif
-           call Grid_getCellCoords(KAXIS,blockList(i),CENTER,gcell,zCenter,ksize)
-           call Grid_getCellCoords(KAXIS,blockList(i),LEFT_EDGE,gcell,zLeft,ksize)
-           call Grid_getCellCoords(KAXIS,blockList(i),RIGHT_EDGE,gcell,zRight,ksize)           
+           call Grid_getCellCoords(KAXIS,cid,stride,CENTER,gcell,zCenter,ksize)
+           call Grid_getCellCoords(KAXIS,cid,stride,LEFT_EDGE,gcell,zLeft,ksize)
+           call Grid_getCellCoords(KAXIS,cid,stride,RIGHT_EDGE,gcell,zRight,ksize)           
         endif
      endif
 

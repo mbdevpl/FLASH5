@@ -58,7 +58,7 @@ subroutine Simulation_initBlock(blockID)
 #endif
      
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
-    Grid_getCellCoords, Grid_putPointData
+    Grid_getCellCoords, Grid_putPointData,Grid_getBlkCornerID
   use Eos_interface, ONLY : Eos, Eos_wrapped
 
 
@@ -84,7 +84,7 @@ subroutine Simulation_initBlock(blockID)
 
   integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
   integer :: sizeX,sizeY,sizeZ
-  integer, dimension(MDIM) :: axis
+  integer, dimension(MDIM) :: axis,cid,stride
 
   
   real :: rhoZone, velxZone, velyZone, velzZone, presZone, & 
@@ -116,6 +116,7 @@ subroutine Simulation_initBlock(blockID)
   
   ! get the integer index information for the current block
   call Grid_getBlkIndexLimits(blockId,blkLimits,blkLimitsGC)
+  call Grid_getBlkCornerID(blockId,cid,stride)
   
   sizeX = blkLimitsGC(HIGH,IAXIS)
   sizeY = blkLimitsGC(HIGH,JAXIS)
@@ -132,13 +133,13 @@ subroutine Simulation_initBlock(blockID)
   zCoord = 0.0
 
   if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, blockId, CENTER,gcell, zCoord, sizeZ)
+                      (KAXIS, cid,stride, CENTER,gcell, zCoord, sizeZ)
   if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, blockId, CENTER,gcell, yCoord, sizeY)
+                      (JAXIS, cid,stride, CENTER,gcell, yCoord, sizeY)
 
-  call Grid_getCellCoords(IAXIS, blockId, LEFT_EDGE, gcell, xLeft, sizeX)
-  call Grid_getCellCoords(IAXIS, blockId, CENTER, gcell, xCenter, sizeX)
-  call Grid_getCellCoords(IAXIS, blockId, RIGHT_EDGE, gcell, xRight, sizeX)
+  call Grid_getCellCoords(IAXIS, cid,stride, LEFT_EDGE, gcell, xLeft, sizeX)
+  call Grid_getCellCoords(IAXIS, cid,stride, CENTER, gcell, xCenter, sizeX)
+  call Grid_getCellCoords(IAXIS, cid,stride, RIGHT_EDGE, gcell, xRight, sizeX)
 
 !------------------------------------------------------------------------------
 

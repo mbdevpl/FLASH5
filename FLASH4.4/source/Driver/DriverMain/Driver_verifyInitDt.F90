@@ -34,7 +34,7 @@ subroutine Driver_verifyInitDt()
        dr_dtSTS, dr_dtNew,                                                    &
        dr_globalComm,dr_dtDiffuse, dr_dtAdvect,dr_dtHeatExch,dr_useSTS,       &
        dr_tstepSlowStartFactor
-  use Grid_interface, ONLY : Grid_getListOfBlocks, &
+  use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_getBlkCornerID,&
     Grid_getBlkIndexLimits, Grid_getCellCoords, Grid_getDeltas, &
     Grid_getBlkPtr, Grid_releaseBlkPtr
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
@@ -77,6 +77,7 @@ subroutine Driver_verifyInitDt()
   integer :: isize,jsize,ksize
   logical :: runVerifyInitDt = .false.
   real :: extraHydroInfo
+  integer,dimension(MDIM)::cid,stride
 
 !!$  dr_dtSTS = 0.0     !First use is in a max(dr_dtSTS,...), see Driver_evolveFlash. - KW
 !!$  dr_dtNew = 0.0     !First use is in a max(dr_dtSTS,...), see Driver_evolveFlash. - KW
@@ -116,6 +117,7 @@ subroutine Driver_verifyInitDt()
         
         !!Get the coordinate information for all the
         call Grid_getBlkIndexLimits(blockList(i),blkLimits,blkLimitsGC)
+        call Grid_getBlkCornerID(blockList(i),cid,stride)
         isize = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
         jsize = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
         ksize = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
@@ -140,21 +142,21 @@ subroutine Driver_verifyInitDt()
 
 
         coordSize = isize
-        call Grid_getCellCoords(IAXIS,blockList(i),CENTER,gcell,xCoord,coordSize)
-        call Grid_getCellCoords(IAXIS,blockList(i),LEFT_EDGE,gcell,xLeft,isize)
-        call Grid_getCellCoords(IAXIS,blockList(i),RIGHT_EDGE,gcell,xRight,isize)
+        call Grid_getCellCoords(IAXIS,cid,stride,CENTER,gcell,xCoord,coordSize)
+        call Grid_getCellCoords(IAXIS,cid,stride,LEFT_EDGE,gcell,xLeft,isize)
+        call Grid_getCellCoords(IAXIS,cid,stride,RIGHT_EDGE,gcell,xRight,isize)
 
         if (NDIM > 1) then
            coordSize = jsize
-           call Grid_getCellCoords(JAXIS,blockList(i),CENTER,gcell,yCoord,coordSize)
-           call Grid_getCellCoords(JAXIS,blockList(i),LEFT_EDGE,gcell,yLeft,jsize)
-           call Grid_getCellCoords(JAXIS,blockList(i),RIGHT_EDGE,gcell,yRight,jsize)
+           call Grid_getCellCoords(JAXIS,cid,stride,CENTER,gcell,yCoord,coordSize)
+           call Grid_getCellCoords(JAXIS,cid,stride,LEFT_EDGE,gcell,yLeft,jsize)
+           call Grid_getCellCoords(JAXIS,cid,stride,RIGHT_EDGE,gcell,yRight,jsize)
 
            if (NDIM > 2) then
               coordSize = ksize
-              call Grid_getCellCoords(KAXIS,blockList(i),CENTER,gcell,zCoord,coordSize)
-              call Grid_getCellCoords(KAXIS,blockList(i),LEFT_EDGE,gcell,zLeft,ksize)
-              call Grid_getCellCoords(KAXIS,blockList(i),RIGHT_EDGE,gcell,zRight,ksize)              
+              call Grid_getCellCoords(KAXIS,cid,stride,CENTER,gcell,zCoord,coordSize)
+              call Grid_getCellCoords(KAXIS,cid,stride,LEFT_EDGE,gcell,zLeft,ksize)
+              call Grid_getCellCoords(KAXIS,cid,stride,RIGHT_EDGE,gcell,zRight,ksize)              
            endif
         endif
 
