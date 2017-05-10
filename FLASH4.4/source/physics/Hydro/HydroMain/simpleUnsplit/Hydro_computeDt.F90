@@ -60,7 +60,7 @@
 
 !!REORDER(4): U
 
-Subroutine Hydro_computeDt( blockID,  &
+Subroutine Hydro_computeDt( &
      x, dx, uxgrid, &
      y, dy, uygrid, &
      z, dz, uzgrid, &
@@ -80,7 +80,6 @@ Subroutine Hydro_computeDt( blockID,  &
   implicit none
 
   !! Arguments type declaration ------------------------------------------
-  integer, intent(IN) :: blockID 
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
 #ifdef FIXEDBLOCKSIZE
@@ -132,7 +131,7 @@ Subroutine Hydro_computeDt( blockID,  &
            temploc(1) = i
            temploc(2) = 1
            temploc(3) = 1
-           temploc(4) = blockID
+           temploc(4) = 1
            temploc(5) = hy_meshMe
         endif
 
@@ -161,7 +160,7 @@ Subroutine Hydro_computeDt( blockID,  &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = blockID
+                 temploc(4) = 1
                  temploc(5) = hy_meshMe
               endif
 
@@ -187,7 +186,7 @@ Subroutine Hydro_computeDt( blockID,  &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = blockID
+                 temploc(4) = 1
                  temploc(5) = hy_meshMe
               endif
            enddo
@@ -220,7 +219,7 @@ Subroutine Hydro_computeDt( blockID,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = 1
                     temploc(5) = hy_meshMe
                  endif
 
@@ -249,7 +248,7 @@ Subroutine Hydro_computeDt( blockID,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = 1
                     temploc(5) = hy_meshMe
                  endif
 
@@ -278,7 +277,7 @@ Subroutine Hydro_computeDt( blockID,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = 1
                     temploc(5) = hy_meshMe
                  endif
 

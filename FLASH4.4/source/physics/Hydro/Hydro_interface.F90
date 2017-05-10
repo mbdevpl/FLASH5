@@ -10,7 +10,7 @@ Module Hydro_interface
   implicit none
 
   interface Hydro_computeDt
-     subroutine Hydro_computeDt (block_no,  &
+     subroutine Hydro_computeDt ( &
           x, dx, uxgrid, &
           y, dy, uygrid, &
           z, dz, uzgrid, &
@@ -18,7 +18,6 @@ Module Hydro_interface
           solnData,   &
           dt_check, dt_minloc, extraInfo )
        implicit none
-       integer, intent(IN) :: block_no
        integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
 #ifdef FIXEDBLOCKSIZE
        real, dimension(GRID_ILO_GC:GRID_IHI_GC), intent(IN) :: x, dx, uxgrid

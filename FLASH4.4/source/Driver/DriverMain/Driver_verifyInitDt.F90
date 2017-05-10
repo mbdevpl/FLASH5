@@ -173,7 +173,7 @@ subroutine Driver_verifyInitDt()
         
         call Grid_getBlkPtr(blockList(i),solnData)
 
-        call Hydro_computeDt ( blockList(i), &
+        call Hydro_computeDt ( &
              xCoord, dx, uxgrid, &
              yCoord, dy, uygrid, &
              zCoord, dz, uzgrid, &
@@ -182,13 +182,13 @@ subroutine Driver_verifyInitDt()
              dtCheck(1), dtMinLoc, &
              extraInfo=extraHydroInfo)
 
-        call Diffuse_computeDt ( blockList(i), &
-             xCoord, xLeft,xRight, dx, uxgrid, &
-             yCoord, yLeft,yRight, dy, uygrid, &
-             zCoord, zLeft,zRight, dz, uzgrid, &
-             blkLimits,blkLimitsGC,  &
-             solnData,      &
-             dtCheck(2), dtMinLoc )
+!!$        call Diffuse_computeDt ( blockList(i), &
+!!$             xCoord, xLeft,xRight, dx, uxgrid, &
+!!$             yCoord, yLeft,yRight, dy, uygrid, &
+!!$             zCoord, zLeft,zRight, dz, uzgrid, &
+!!$             blkLimits,blkLimitsGC,  &
+!!$             solnData,      &
+!!$             dtCheck(2), dtMinLoc )
 
         call Grid_releaseBlkPtr(blockList(i),solnData)
 

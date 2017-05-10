@@ -274,7 +274,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
      print*,'going to call Hydro timestep'
 #endif
      !extraHydroInfo = 0.
-     call Hydro_computeDt (blockList(i), &
+     call Hydro_computeDt ( &
                            xCenter, dx, uxgrid, &
                            yCenter, dy, uygrid, &
                            zCenter, dz, uzgrid, &
@@ -288,7 +288,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
         if (extraHydroInfo <= extraHydroInfoMin) then
            extraHydroInfoMin = extraHydroInfo
         endif
-        if (lminloc(4,HYDRO) == blockList(i)) then
+        if (lminloc(4,HYDRO) == 1) then
            extraHydroInfoApp = extraHydroInfo
         endif
      else !if extraHydroInfo == 0.
@@ -301,10 +301,10 @@ subroutine Driver_computeDt(nbegin, nstep, &
      print*,'returned from hydro timestep'
 #endif
 
-     call Burn_computeDt ( blockList(i),  &
-                           blkLimits,blkLimitsGC,  &
-                           solnData,               &
-                           dtLocal(1,BURN), lminloc(:,BURN) )
+!!$     call Burn_computeDt ( blockList(i),  &
+!!$                           blkLimits,blkLimitsGC,  &
+!!$                           solnData,               &
+!!$                           dtLocal(1,BURN), lminloc(:,BURN) )
      
 !!$     call Gravity_computeDt ( blockList(i), dr_globalMe, &
 !!$                           xCenter,xLeft,xRight, dx, uxgrid, &
@@ -315,34 +315,34 @@ subroutine Driver_computeDt(nbegin, nstep, &
 !!$                           dtLocal(1,GRAV), lminloc(:,GRAV) )
      
      
-     call Heat_computeDt ( blockList(i),  &
-                           xCenter, dx, uxgrid, &
-                           yCenter, dy, uygrid, &
-                           zCenter, dz, uzgrid, &
-                           blkLimits,blkLimitsGC,  &
-                           solnData,      &
-                           dtLocal(1,HEAT), lminloc(:,HEAT) )
+!!$     call Heat_computeDt ( blockList(i),  &
+!!$                           xCenter, dx, uxgrid, &
+!!$                           yCenter, dy, uygrid, &
+!!$                           zCenter, dz, uzgrid, &
+!!$                           blkLimits,blkLimitsGC,  &
+!!$                           solnData,      &
+!!$                           dtLocal(1,HEAT), lminloc(:,HEAT) )
+!!$
+!!$     call RadTrans_computeDt(blockList(i), blkLimits,blkLimitsGC, &
+!!$          solnData, dtLocal(1,RADTRANS), lminloc(:,RADTRANS) )
+!!$
+!!$     call Particles_computeDt &
+!!$          ( blockList(i), dtLocal(1,PART), lminloc(:,PART))
+!!$
+!!$
+!!$     call Diffuse_computeDt ( blockList(i),  &
+!!$                           xCenter,xLeft,xRight, dx, uxgrid, &
+!!$                           yCenter,yLeft,yRight, dy, uygrid, &
+!!$                           zCenter,zLeft,zRight, dz, uzgrid, &
+!!$                           blkLimits,blkLimitsGC,  &
+!!$                           solnData,      &
+!!$                           dtLocal(1,DIFF), lminloc(:,DIFF) )
+!!$     
 
-     call RadTrans_computeDt(blockList(i), blkLimits,blkLimitsGC, &
-          solnData, dtLocal(1,RADTRANS), lminloc(:,RADTRANS) )
-
-     call Particles_computeDt &
-          ( blockList(i), dtLocal(1,PART), lminloc(:,PART))
-
-
-     call Diffuse_computeDt ( blockList(i),  &
-                           xCenter,xLeft,xRight, dx, uxgrid, &
-                           yCenter,yLeft,yRight, dy, uygrid, &
-                           zCenter,zLeft,zRight, dz, uzgrid, &
-                           blkLimits,blkLimitsGC,  &
-                           solnData,      &
-                           dtLocal(1,DIFF), lminloc(:,DIFF) )
-     
-
-      !! Super time step
-      if (dr_useSTS) then
-         dtLocal(1,STS) = dr_dtSTS
-      endif
+!!$      !! Super time step
+!!$      if (dr_useSTS) then
+!!$         dtLocal(1,STS) = dr_dtSTS
+!!$      endif
 
 #ifndef FIXEDBLOCKSIZE
      deallocate(xCenter)
@@ -374,8 +374,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
        FLASH_REAL, MPI_MIN, dr_globalComm, error)
 
 
-  ! IncompNS:
-  call IncompNS_computeDt(dtLocal(1,INS),lminloc(:,INS))
+!!$  ! IncompNS:
+!!$  call IncompNS_computeDt(dtLocal(1,INS),lminloc(:,INS))
 
 
   ! DEV: we disabled temperature timestep limiter for now.  
