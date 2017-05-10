@@ -77,6 +77,10 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Particles_interface, ONLY: Particles_computeDt
 
   use IncompNS_interface, ONLY : IncompNS_computeDt
+  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
+                                    famrex_mviter, famrex_mviter_build,&
+                                    famrex_mviter_destroy,famrex_multivab_destroy
+  use famrex_box_module,      ONLY: famrex_box
 
   implicit none
 
@@ -134,7 +138,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
 #endif
 
   !arrays which hold the starting and ending indicies of a block
-  integer,dimension(2,MDIM)::blkLimits,blkLimitsGC
+  integer,dimension(LOW:HIGH,MDIM)::blkLimits,blkLimitsGC
 
   !!coordinate infomration to be passed into physics  
   real, pointer :: solnData(:,:,:,:)
@@ -158,6 +162,11 @@ subroutine Driver_computeDt(nbegin, nstep, &
   real :: extraHydroInfoApp
   real :: dtNewComputed
   integer,dimension(MDIM) :: cid,stride
+  type(famrex_multivab),allocatable :: phi(:)
+  type(famrex_mviter) :: mvi
+  type(famrex_box) :: bx, tbx
+  integer:: ib, level, maxLev
+
 
   ! Initializing extraHydroInfo to zero:
   extraHydroInfo = 0.

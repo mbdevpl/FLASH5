@@ -51,7 +51,7 @@
 !!                   dtMinLoc(1) = i index
 !!                   dtMinLoc(2) = j index
 !!                   dtMinLoc(3) = k index
-!!                   dtMinLoc(4) = blockID
+!!                   dtMinLoc(4) = 1 if found to meet criterion, 0 otherwise
 !!                   dtMinLoc(5) = hy_meshMe
 !!  extraInfo     -  Driver_computeDt can provide extra info to the caller
 !!                   using this argument.
