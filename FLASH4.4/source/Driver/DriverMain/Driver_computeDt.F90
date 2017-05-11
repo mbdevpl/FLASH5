@@ -141,7 +141,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   integer,dimension(LOW:HIGH,MDIM)::blkLimits,blkLimitsGC
 
   !!coordinate infomration to be passed into physics  
-  real, pointer :: solnData(:,:,:,:)
+  real, pointer :: solnData(:,:,:,:),U(:,:,:,:)
   integer :: isize,jsize,ksize
 
   logical :: printTStepLoc
@@ -166,6 +166,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   type(famrex_mviter) :: mvi
   type(famrex_box) :: bx, tbx
   integer:: ib, level, maxLev
+  real :: err
 
 
   ! Initializing extraHydroInfo to zero:
@@ -215,7 +216,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   !            Loop over all local leaf-node blocks
 
   call Hydro_consolidateCFL()
-  
+
 !!$  do level=1,maxLev
      call famrex_multivab_build(phi, LEAF, CENTER, dr_meshComm, NUNK_VARS)
      call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
@@ -283,8 +284,15 @@ subroutine Driver_computeDt(nbegin, nstep, &
            uygrid(:) = 0
            uzgrid(:) = 0
            
-           call Grid_getBlkPtr(blockID,solnData)
-           
+           solnData(1:,1:,1:,1:)=>phi%dataptr(mvi)
+!!$           call Grid_getBlkPtr(blockID,solnData)
+!!$           if(associated(U,solnData))then
+!!$              print*,'they are the same'
+!!$           else
+!!$              print*,'for ',blockID,' they are not'
+!!$           end if
+!!$           err=maxval(abs(U(:,:,:,:)-solnData(:,:,:,:)))
+!!$           if(err/=0)print*,'error found in block',blockID
            ! hydro
 #ifdef DEBUG_DRIVER
            print*,'going to call Hydro timestep'
