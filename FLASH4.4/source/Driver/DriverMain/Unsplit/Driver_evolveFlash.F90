@@ -62,7 +62,10 @@ subroutine Driver_evolveFlash()
   use Particles_interface, ONLY : Particles_advance, Particles_dump
   use Grid_interface,      ONLY : Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
-                                  Grid_releaseBlkPtr
+                                  Grid_getDeltas,&
+                                  Grid_getBlkPtr,&
+                                  Grid_releaseBlkPtr,&
+                                  Grid_getMaxRefinement
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
@@ -108,16 +111,16 @@ subroutine Driver_evolveFlash()
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
-  integer:: ib, blockID
   integer, dimension(LOW:HIGH,MDIM) :: tileLimits,blkLimitsGC
   integer :: blockCount
   integer,dimension(MAXBLOCKS)::blks
   real,pointer,dimension(:,:,:,:) :: Uout
   real,dimension(MDIM) :: del
 
-  type(famrex_multivab),target :: phi
+  type(famrex_multivab),allocatable :: phi(:)
   type(famrex_mviter) :: mvi
   type(famrex_box) :: bx, tbx
+  integer:: ib, blockID, level, maxLev
 
 
   endRunPl = .false.
@@ -126,6 +129,8 @@ subroutine Driver_evolveFlash()
   call Logfile_stamp( 'Entering evolution loop' , '[Driver_evolveFlash]')
   call Profiler_start("FLASH_evolution")
   call Timers_start("evolution")
+
+  call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 
   do dr_nstep = dr_nBegin, dr_nend
      
@@ -156,7 +161,6 @@ subroutine Driver_evolveFlash()
      
 !!     call Simulation_adjustEvolution(blockCount, blockList, dr_nstep, dr_dt, dr_simTime)
      
-     ! 1. Cosmology-Friedmann Eqn.
      call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
      
      dr_simTime = dr_simTime + dr_dt
@@ -184,15 +188,17 @@ subroutine Driver_evolveFlash()
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
 
-  call famrex_multivab_build(phi, LEAF, CENTER, dr_meshComm, NUNK_VARS)
-  call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
-  do while(mvi%next())
-       bx = mvi%tilebox()
-
-       Uout => phi%dataptr(mvi)
-       tileLimits(LOW, :) = bx%lo
-       tileLimits(HIGH,:) = bx%hi
-
+     allocate(phi(maxLev))
+     do level=1,maxLev
+        call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
+        call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
+        do while(mvi%next())
+           bx = mvi%tilebox()
+           
+           Uout => phi(level)%dataptr(mvi)
+           tileLimits(LOW, :) = bx%lo
+           tileLimits(HIGH,:) = bx%hi
+           
 
 !!$     call Grid_getListOfBlocks(LEAF,blks,blockCount)
 !!$     do ib=1,blockCount
@@ -200,21 +206,20 @@ subroutine Driver_evolveFlash()
 !!$        call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
 !!$        call Grid_getBlkPtr(blockID,Uout,CENTER)
 
-       blockID = mvi%localIndex() !Are we cheating here?
-     
-       call Grid_getDeltas(blockID,del)
-       
-       call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
-       call Grid_releaseBlkPtr(blockID,Uout,CENTER)
-    end do
-    call Timers_stop("Hydro")
-    call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
+           blockID = mvi%localIndex() !Are we cheating here?
+           
+           call Grid_getDeltas(blockID,del)
+           
+           call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+!!$           call Grid_releaseBlkPtr(blockID,Uout,CENTER)
+        end do
+        call Timers_stop("Hydro")
 #ifdef DEBUG_DRIVER
-     print*, 'return from Hydro/MHD timestep'  ! DEBUG
-     print*,'returning from hydro myPE=',dr_globalMe
+        print*, 'return from Hydro/MHD timestep'  ! DEBUG
+        print*,'returning from hydro myPE=',dr_globalMe
 #endif
-     
-     
+        
+        
 !!$     ! 8. Diagnostics
 !!$     call Timers_start("diagnostics")
 !!$     call Driver_diagnostics(blockCount, blockList, dr_dt)
@@ -222,10 +227,15 @@ subroutine Driver_evolveFlash()
 !!$#ifdef DEBUG_DRIVER
 !!$     print*, 'return from Diagnostics '  ! DEBUG
 !!$#endif
-     
-     call famrex_multivab_destroy(phi)
-     call famrex_mviter_destroy(mvi)
-     !! save for old dt
+        
+        call famrex_mviter_destroy(mvi)
+        !! save for old dt
+     end do
+     do level=1,maxLev
+        call famrex_multivab_destroy(phi(level))
+     end do
+     deallocate(phi)
+
      dr_dtOld = dr_dt
      
      !----
