@@ -59,7 +59,8 @@
 !!***
 
 !!REORDER(4): U
-
+#include "Flash.h"
+#undef FIXEDBLOCKSIZE
 Subroutine Hydro_computeDt( &
      x, dx, uxgrid, &
      y, dy, uygrid, &
@@ -69,7 +70,6 @@ Subroutine Hydro_computeDt( &
      extraInfo)
 
 
-#include "Flash.h"
 #include "constants.h"
 
   use Hydro_data,       ONLY : hy_geometry, hy_cfl, hy_dref, hy_eref, &

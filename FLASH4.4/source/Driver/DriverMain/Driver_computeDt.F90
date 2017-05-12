@@ -66,9 +66,9 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Logfile_interface,ONLY : Logfile_stamp
   use IO_interface,     ONLY : IO_writeCheckpoint
-  use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_getBlkCornerID,&
-    Grid_getBlkIndexLimits, Grid_getCellCoords, Grid_getDeltas, &
-    Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getSingleCellCoords
+  use Grid_interface, ONLY :  Grid_getBlkCornerID,&
+       Grid_getCellCoords, Grid_getDeltas, &
+       Grid_releaseBlkPtr, Grid_getSingleCellCoords,Grid_getMaxRefinement
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Heat_interface, ONLY : Heat_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
@@ -149,6 +149,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   integer, parameter :: HYDRO=1,BURN=2,GRAV=3,HEAT=4,COOL=5,TEMP=6,&
                         PART=7,DIFF=8,COSMO=9,STIR=10,HEATXCHG=11, &
                         RADTRANS=12,STS=13,INS=14,SOLID=15
+  integer,parameter::IX=2,IY=3,IZ=4
   logical, save :: firstCall = .TRUE.
   logical :: limitersChanged
   logical :: printToScrn
@@ -162,7 +163,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   real :: extraHydroInfoApp
   real :: dtNewComputed
   integer,dimension(MDIM) :: cid,stride
-  type(famrex_multivab):: phi
+  type(famrex_multivab),allocatable :: phi(:)
   type(famrex_mviter) :: mvi
   type(famrex_box) :: bx, tbx
   integer:: ib, level, maxLev
@@ -214,142 +215,141 @@ subroutine Driver_computeDt(nbegin, nstep, &
   enddo
 
   !            Loop over all local leaf-node blocks
+  
+  call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 
   call Hydro_consolidateCFL()
-
-!!$  do level=1,maxLev
-     call famrex_multivab_build(phi, LEAF, CENTER, dr_meshComm, NUNK_VARS)
-     call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
+  allocate(phi(maxLev))
+  do level=1,maxLev
+     call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
+     call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
      do while(mvi%next())
-           blockID = mvi%localIndex() !Are we cheating here?
-           
-!!$  call Grid_getListOfBlocks(LEAF,blockList, numLeafBlocks)
-!!$  
-!!$  do i = 1, numLeafBlocks
-     !!Get the coordinate information for all the
-
-           call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
-           call Grid_getBlkCornerID(blockID,cid,stride)
-           isize = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
-           jsize = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
-           ksize = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
+        blockID = mvi%localIndex() !Are we cheating here?
+        bx = mvi%tilebox()
+        solnData=>phi(level)%dataptr(mvi)
+        
+        blkLimits(LOW,:)=bx%lo
+        blkLimits(HIGH,:)=bx%hi
+        blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
+        blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
+        
+        call Grid_getBlkCornerID(blockID,cid,stride)
+        
+        isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
+        jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
+        ksize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1+2*NGUARD*K3D
 #ifndef FIXEDBLOCKSIZE
-           allocate(xLeft(isize))
-           allocate(xRight(isize))
-           allocate(xCenter(isize))
-           allocate(dx(isize))
-           allocate(uxgrid(isize))
-           allocate(yLeft(jsize))
-           allocate(yRight(jsize))
-           allocate(yCenter(jsize))
-           allocate(dy(jsize))
-           allocate(uygrid(jsize))
-           allocate(zLeft(ksize))
-           allocate(zRight(ksize))
-           allocate(zCenter(ksize))
-           allocate(dz(ksize))
-           allocate(uzgrid(ksize))
+        allocate(xLeft(isize))
+        allocate(xRight(isize))
+        allocate(xCenter(isize))
+        allocate(dx(isize))
+        allocate(uxgrid(isize))
+        allocate(yLeft(jsize))
+        allocate(yRight(jsize))
+        allocate(yCenter(jsize))
+        allocate(dy(jsize))
+        allocate(uygrid(jsize))
+        allocate(zLeft(ksize))
+        allocate(zRight(ksize))
+        allocate(zCenter(ksize))
+        allocate(dz(ksize))
+        allocate(uzgrid(ksize))
 #endif
 #ifdef DEBUG_DRIVER
-           print*,'before calling get coordinates',isize,gcell
+        print*,'before calling get coordinates',isize,gcell
 #endif
-           call Grid_getCellCoords(IAXIS,cid,stride,CENTER,gcell,xCenter,isize)
-           call Grid_getCellCoords(IAXIS,cid,stride,LEFT_EDGE,gcell,xLeft,isize)
-           call Grid_getCellCoords(IAXIS,cid,stride,RIGHT_EDGE,gcell,xRight,isize)
+        call Grid_getCellCoords(IAXIS,cid,stride,CENTER,gcell,xCenter,isize)
+        call Grid_getCellCoords(IAXIS,cid,stride,LEFT_EDGE,gcell,xLeft,isize)
+        call Grid_getCellCoords(IAXIS,cid,stride,RIGHT_EDGE,gcell,xRight,isize)
+        
+#ifdef DEBUG_DRIVER
+        print*,'before calling get coordinates',jsize,gcell
+#endif
+        if (NDIM > 1) then
+           call Grid_getCellCoords(JAXIS,cid,stride,CENTER,gcell,yCenter,jsize)
+           call Grid_getCellCoords(JAXIS,cid,stride,LEFT_EDGE,gcell,yLeft,jsize)
+           call Grid_getCellCoords(JAXIS,cid,stride,RIGHT_EDGE,gcell,yRight,jsize)
            
+           if (NDIM > 2) then
 #ifdef DEBUG_DRIVER
-           print*,'before calling get coordinates',jsize,gcell
+              print*,'before calling get coordinates',ksize,gcell
 #endif
-           if (NDIM > 1) then
-              call Grid_getCellCoords(JAXIS,cid,stride,CENTER,gcell,yCenter,jsize)
-              call Grid_getCellCoords(JAXIS,cid,stride,LEFT_EDGE,gcell,yLeft,jsize)
-              call Grid_getCellCoords(JAXIS,cid,stride,RIGHT_EDGE,gcell,yRight,jsize)
-              
-              if (NDIM > 2) then
-#ifdef DEBUG_DRIVER
-                 print*,'before calling get coordinates',ksize,gcell
-#endif
-                 call Grid_getCellCoords(KAXIS,cid,stride,CENTER,gcell,zCenter,ksize)
-                 call Grid_getCellCoords(KAXIS,cid,stride,LEFT_EDGE,gcell,zLeft,ksize)
-                 call Grid_getCellCoords(KAXIS,cid,stride,RIGHT_EDGE,gcell,zRight,ksize)           
-              endif
+              call Grid_getCellCoords(KAXIS,cid,stride,CENTER,gcell,zCenter,ksize)
+              call Grid_getCellCoords(KAXIS,cid,stride,LEFT_EDGE,gcell,zLeft,ksize)
+              call Grid_getCellCoords(KAXIS,cid,stride,RIGHT_EDGE,gcell,zRight,ksize)           
            endif
-           
-           call Grid_getDeltas(blockID, del)
-           dx(:) = del(1)
-           dy(:) = del(2)
-           dz(:) = del(3)
-           
-           uxgrid(:) = 0
-           uygrid(:) = 0
-           uzgrid(:) = 0
-           
-           solnData(1:,1:,1:,1:)=>phi%dataptr(mvi)
-!!$           call Grid_getBlkPtr(blockID,solnData)
-!!$           if(associated(U,solnData))then
-!!$              print*,'they are the same'
-!!$           else
-!!$              print*,'for ',blockID,' they are not'
-!!$           end if
-!!$           err=maxval(abs(U(:,:,:,:)-solnData(:,:,:,:)))
-!!$           if(err/=0)print*,'error found in block',blockID
-           ! hydro
+        endif
+        
+        call Grid_getDeltas(blockID, del)
+        dx(:) = del(1)
+        dy(:) = del(2)
+        dz(:) = del(3)
+        
+        uxgrid(:) = 0
+        uygrid(:) = 0
+        uzgrid(:) = 0
+        
+        ! hydro
 #ifdef DEBUG_DRIVER
-           print*,'going to call Hydro timestep'
+        print*,'going to call Hydro timestep'
 #endif
-           !extraHydroInfo = 0.
-           call Hydro_computeDt ( &
-                xCenter, dx, uxgrid, &
-                yCenter, dy, uygrid, &
-                zCenter, dz, uzgrid, &
-                blkLimits,blkLimitsGC,  &
-                solnData,      &
-                dtLocal(1,HYDRO), lminloc(:,HYDRO), &
-                extraInfo=extraHydroInfo )
-           
-           !! Extra CFL information
-           if (extraHydroInfo .ne. 0.) then
-              if (extraHydroInfo <= extraHydroInfoMin) then
-                 extraHydroInfoMin = extraHydroInfo
-              endif
-              if (lminloc(4,HYDRO) == 1) then
-                 extraHydroInfoApp = extraHydroInfo
-              endif
-           else !if extraHydroInfo == 0.
-              extraHydroInfoMin = 0.0
-              extraHydroInfoApp = 0.0
+        !extraHydroInfo = 0.
+        call Hydro_computeDt ( &
+             xCenter, dx, uxgrid, &
+             yCenter, dy, uygrid, &
+             zCenter, dz, uzgrid, &
+             blkLimits,blkLimitsGC,  &
+             solnData,      &
+             dtLocal(1,HYDRO), lminloc(:,HYDRO), &
+             extraInfo=extraHydroInfo )
+        
+        !! Extra CFL information
+        if (extraHydroInfo .ne. 0.) then
+           if (extraHydroInfo <= extraHydroInfoMin) then
+              extraHydroInfoMin = extraHydroInfo
            endif
-           
-           
+           if (lminloc(4,HYDRO) == 1) then
+              extraHydroInfoApp = extraHydroInfo
+           endif
+        else !if extraHydroInfo == 0.
+           extraHydroInfoMin = 0.0
+           extraHydroInfoApp = 0.0
+        endif
+        
+        
 #ifdef DEBUG_DRIVER
-           print*,'returned from hydro timestep'
+        print*,'returned from hydro timestep'
 #endif
-           
+        
 #ifndef FIXEDBLOCKSIZE
-           deallocate(xCenter)
-           deallocate(xLeft)
-           deallocate(xRight)
-           deallocate(dx)
-           deallocate(uxgrid)
-           deallocate(yCenter)
-           deallocate(yLeft)
-           deallocate(yRight)
-           deallocate(dy)
-           deallocate(uygrid)
-           deallocate(zCenter)
-           deallocate(zLeft)
-           deallocate(zRight)
-           deallocate(dz)
-           deallocate(uzgrid)
+        deallocate(xCenter)
+        deallocate(xLeft)
+        deallocate(xRight)
+        deallocate(dx)
+        deallocate(uxgrid)
+        deallocate(yCenter)
+        deallocate(yLeft)
+        deallocate(yRight)
+        deallocate(dy)
+        deallocate(uygrid)
+        deallocate(zCenter)
+        deallocate(zLeft)
+        deallocate(zRight)
+        deallocate(dz)
+        deallocate(uzgrid)
 #endif
 #ifdef DEBUG_DRIVER
-           print*,'release blockpointer'
+        print*,'release blockpointer'
 #endif
-           
-           call Grid_releaseBlkPtr(blockID,solnData)
-        enddo
-        call famrex_mviter_destroy(mvi)
-        call famrex_multivab_destroy(phi)
+        
+        call Grid_releaseBlkPtr(blockID,solnData)
+     enddo
+     call famrex_mviter_destroy(mvi)
+  end do
+  do level=1,maxLev
+     call famrex_multivab_destroy(phi(level))
+  end do
+  deallocate(phi)
 !!$     end do
      
 !!$  !! Choose the smallest CFL for screen output - provisional, may change below
