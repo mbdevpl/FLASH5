@@ -53,7 +53,9 @@
 #ifdef DEBUG_ALL
 #define DEBUG_DRIVER
 #endif
-
+#include "constants.h"
+#include "Flash.h"
+#undef FIXEDBLOCKSIZE
 subroutine Driver_computeDt(nbegin, nstep, &
                     simTime, dtOld, dtNew)
 
@@ -66,9 +68,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Logfile_interface,ONLY : Logfile_stamp
   use IO_interface,     ONLY : IO_writeCheckpoint
-  use Grid_interface, ONLY :  Grid_getBlkCornerID,&
-       Grid_getCellCoords, Grid_getDeltas, &
-       Grid_releaseBlkPtr, Grid_getSingleCellCoords,Grid_getMaxRefinement
+  use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
+       Grid_getSingleCellCoords,Grid_getMaxRefinement
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Heat_interface, ONLY : Heat_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
@@ -84,8 +85,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
   implicit none
 
-#include "constants.h"
-#include "Flash.h"
   include "Flash_mpi.h"
 
   integer, intent(IN) :: nbegin, nstep
@@ -233,7 +232,9 @@ subroutine Driver_computeDt(nbegin, nstep, &
         blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
         blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
         
-        call Grid_getBlkCornerID(blockID,cid,stride)
+        stride=2**(maxLev-level)
+        cid=1
+        cid(1:NDIM)=blkLimits(LOW,1:NDIM)*stride(1:NDIM)
         
         isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
         jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
@@ -342,7 +343,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
         print*,'release blockpointer'
 #endif
         
-        call Grid_releaseBlkPtr(blockID,solnData)
+        nullify(solnData)
      enddo
      call famrex_mviter_destroy(mvi)
   end do
