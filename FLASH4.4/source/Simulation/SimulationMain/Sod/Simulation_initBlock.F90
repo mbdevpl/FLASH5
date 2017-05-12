@@ -40,7 +40,7 @@
 !!
 !!***
 
-subroutine Simulation_initBlock(solnData,cid,stride,blkLimits,blkLimitsGC)
+subroutine Simulation_initBlock(solnData,cid,stride,blkLimits)
 
 #include "constants.h"
 #include "Flash.h"
@@ -69,7 +69,7 @@ subroutine Simulation_initBlock(solnData,cid,stride,blkLimits,blkLimitsGC)
   ! (including guardcells)
   
   real,dimension(:,:,:,:),pointer :: solnData
-  integer, dimension(LOW:HIGH,MDIM),intent(in) :: blkLimits, blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM),intent(in) :: blkLimits
   integer, dimension(MDIM),intent(in) :: cid,stride
 
   integer :: i, j, k, n
@@ -112,9 +112,9 @@ subroutine Simulation_initBlock(solnData,cid,stride,blkLimits,blkLimitsGC)
 !!$     
 !!$  endif
   
-  sizeX = blkLimitsGC(HIGH,IAXIS)
-  sizeY = blkLimitsGC(HIGH,JAXIS)
-  sizeZ = blkLimitsGC(HIGH,KAXIS)
+  sizeX = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
+  sizeY = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
+  sizeZ = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1+2*NGUARD*K3D
   allocate(xLeft(sizeX))
   allocate(xRight(sizeX))
   allocate(xCenter(sizeX))

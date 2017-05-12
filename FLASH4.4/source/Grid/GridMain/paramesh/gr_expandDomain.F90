@@ -169,7 +169,7 @@ subroutine gr_expandDomain (particlesInitialized)
         solnData = 0.0
         !      Now reinitialize the solution on the new grid so that it has
         !      the exact solution.
-        call Simulation_initBlock (solnData,cid,stride,blkLimits,blkLimitsGC)
+        call Simulation_initBlock (solnData,cid,stride,blkLimits)
         call Grid_releaseBlkPtr(blkList(i), solnData)
      end do
 

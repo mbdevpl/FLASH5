@@ -110,8 +110,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
   logical :: gcell = .true.
   real, DIMENSION(MDIM) :: coords
 
-  integer, dimension(MAXBLOCKS) :: blockList
-
   real, dimension(nUnits) :: tstepOutput
   character (len=20), save, DIMENSION(nUnits) :: &
                          limiterName, limiterNameOutput
