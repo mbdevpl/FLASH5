@@ -183,7 +183,9 @@ subroutine gr_expandDomain (particlesInitialized)
      ! thermodynamically consistent in the initial state.- KW
      call Timers_start("eos")
      do i = 1, count
-        call Eos_wrapped(gr_eosModeInit,blkLimits,blkList(i))
+        call Grid_getBlkPtr(blkList(i), solnData)
+        call Eos_wrapped(gr_eosModeInit,blkLimits,solnData)
+        call Grid_releaseBlkPtr(blkList(i), solnData)
      end do
 
      call Timers_stop("eos")

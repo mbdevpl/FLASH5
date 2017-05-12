@@ -238,7 +238,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getListOfBlocks
+  use Grid_interface, ONLY : Grid_getListOfBlocks,Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_setGcFillNLayers
   use paramesh_dimensions, ONLY : l2p5d,ndim
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
@@ -267,6 +267,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   integer :: maxNodetype_gcWanted
   integer :: nlayers_transverse
   integer :: listBlockType
+  real,dimension(:,:,:,:),pointer::solnData
 
   logical :: lcc, lfc, lec, lnc, lguard, lprolong, lflux, ledge, lrestrict, lfulltree
   integer :: ierr
@@ -490,8 +491,10 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
         if ((gridDataStruct.NE.CENTER).AND.(gridDataStruct.NE.CENTER_FACES)) &
              call Grid_getListOfBlocks(listBlockType, gr_blkList, numLeafBlocks)
         do i = 1,numLeafBlocks
-           call Eos_guardCells(gcEosMode,gr_blkList(i),corners=.true.,layers=returnLayers,&
+           call Grid_getBlkPtr(gr_blkList(i),solnData)
+           call Eos_guardCells(gcEosMode,solnData,corners=.true.,layers=returnLayers,&
                 skipSrl=.TRUE.)
+           call Grid_releaseBlkPtr(gr_blkList(i),solnData)
         end do
         call Timers_stop("eos gc")
      end if

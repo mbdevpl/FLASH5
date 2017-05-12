@@ -62,7 +62,7 @@ subroutine gr_updateRefinement( gridChanged)
   use Grid_data, ONLY : gr_blkList, gr_convertToConsvdForMeshCalls,&
        gr_convertToConsvdInMeshInterp, gr_eosMode, gr_meshMe, gr_gcellsUpToDate
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getListOfBlocks,Grid_getBlkIndexLimits
+  use Grid_interface, ONLY : Grid_getListOfBlocks,Grid_getBlkIndexLimits,Grid_getBlkPtr,Grid_releaseBlkPtr
   use Simulation_interface, ONLY : Simulation_customizeProlong
   
   use tree, ONLY : newchild, nodetype, lnblocks, grid_changed
@@ -87,6 +87,7 @@ subroutine gr_updateRefinement( gridChanged)
   integer :: count, numLeafBlocks, numAncestorBlocks
   integer :: oldLocalNumBlocks !need this if running with particles
   integer, dimension(MDIM) :: layers
+  real,dimension(:,:,:,:),pointer :: solnData
 !=============================================================================
 
   call Timers_start("tree") !2 of 2 (split into 2 so valid to TAU)
@@ -214,7 +215,9 @@ subroutine gr_updateRefinement( gridChanged)
      call Grid_getListOfBlocks(LEAF, gr_blkList,count)
 
      do i = 1, count
-          call Eos_wrapped(gr_eosMode ,blkLimits, gr_blkList(i))
+        call Grid_getBlkPtr(gr_blkList(i),solnData)
+        call Eos_wrapped(gr_eosMode ,blkLimits, solnData)
+        call Grid_releaseBlkPtr(gr_blkList(i),solnData)
      end do
      call Timers_stop("eos")
   end if

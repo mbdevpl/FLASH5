@@ -10,8 +10,9 @@ Module Eos_interface
 #include "FortranLangFeatures.fh"
   
   interface
-     subroutine Eos_guardCells(eosMode, blockID,corners,layers,skipSrl)
-       integer,intent(IN) :: eosMode,blockID
+     subroutine Eos_guardCells(eosMode, solnData,corners,layers,skipSrl)
+       integer,intent(IN) :: eosMode
+       real,dimension(:,:,:,:),pointer::solnData
        logical,intent(IN) :: corners
        integer,dimension(MDIM),optional,intent(IN) :: layers
        logical,optional, intent(IN) :: skipSrl
@@ -19,18 +20,12 @@ Module Eos_interface
   end interface
   
   interface Eos_wrapped
-     subroutine Eos_wrapped(mode,range,blockNum,gridDataStruct)
-       integer, intent(in) :: mode
-       integer, dimension(2,MDIM), intent(in) :: range
-       integer,intent(IN) :: blockNum
-       integer,optional,intent(IN) :: gridDataStruct
-     end subroutine Eos_wrapped
-     subroutine Eos_arrayWrapped(mode,range,solnData,gridDataStruct)
+     subroutine Eos_wrapped(mode,range,solnData,gridDataStruct)
        integer, intent(in) :: mode
        integer, dimension(2,MDIM), intent(in) :: range
        real, POINTER_INTENT_IN :: solnData(:,:,:,:)
        integer,optional,intent(IN) :: gridDataStruct
-     end subroutine Eos_arrayWrapped
+     end subroutine Eos_wrapped
   end interface
   
   interface
