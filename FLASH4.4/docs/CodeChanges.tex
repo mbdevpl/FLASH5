@@ -1,0 +1,149 @@
+\documentclass{article}
+\usepackage{graphicx,color}
+\usepackage{framed}
+\usepackage{amsmath}
+\setlength{\FrameSep}{2pt}
+\usepackage[tight,footnotesize]{subfigure}
+\usepackage{color,linegoal}
+
+\usepackage{url}
+\usepackage{algorithmic}
+\usepackage[linesnumbered,ruled,commentsnumbered]{algorithm2e}
+
+\newcommand{\mynote}[1]{\textcolor{blue}{{\bf#1}}}
+\newcommand{\reply}[1]{\textcolor{green}{{\bf#1}}}
+
+\newcommand{\flash}{{\it FLASH}}
+\newcommand{\amrex}{{\it AMReX}}
+\newcommand{\paramesh}{{\it Paramesh}}
+\newcommand{\castro}{{\it Castro}}
+\newcommand{\clash}{{\it Clash}}
+\newcommand{\chimera}{{\it Chimera}}
+\newcommand{\grid}{{\it Grid}}
+\newcommand{\driver}{{\it Driver}}
+
+\title{Common Interfaces for CLASH and Code Changes Required in
+Component Codes}
+
+\begin{document}
+\maketitle
+
+
+\section{Interfaces}
+\label{sec:interfaces}
+
+\section{AMRex}
+\label{sec:amrex}
+\amrex~ will be the common underlying adaptive mesh management package
+for \clash. Thus, for the most part, the onus is on other involved
+codes to modify themselves to work with \amrex. However, there is one
+exception. \flash~ uses octree based AMR, and retaining that
+functionality is important for many of its solvers. Therefore, \amrex~
+will implement Fortran iterators that mimic octree like behavior,
+where the blocks are all the same size. \amrex~ will also provide
+interfaces with other solver libraries such as PETSc and hypre; the
+other codes will modify their access to these libraries accordingly.
+
+\section{Castro}
+\label{sec:castro}
+\castro~ needs relatively modest changes because its mesh is managed by
+precursor to \amrex, {\it BoxLib}. Hence it will not need fundamental
+changes to how it interacts with the mesh and state variables. Main
+changes needed in \castro~ are listed below.
+\begin{enumerate}
+\item Wrappers for calling \chimera  interfaces.
+\item For using physics solvers from \flash~ wrappers are needed for
+calling the initialization functions for the corresponding solvers,
+which can also transmit all the parameters and static data needed for
+the solver operation. For example, in order to use the Riemann solvers
+in \flash's {\it Hydro}, \chimera has to implement an equilvalent of
+\flash's {\it Hyrdo\_init} which initiliazes all runtime parameters, 
+scratch space and other unit scope scalar variables.
+\end{enumerate}
+
+\section{FLASH}
+\label{sec:flash}
+ In \flash~ some changes are trivial but pervasive, some others are
+modest and fairly extensive, and some are deep but not very
+extensive. The deepest change is enabling \amrex~ to manage mesh
+refinement and state variables instead of \paramesh. Even though
+\amrex~ will mimic the octree like behavior of \paramesh, there are
+fundamental differences in the way that state variables and metadata
+are managed and made available to other code units. Below we list the
+changes, the depth and extent of the changes, and the reasoning behind
+the design choice.
+
+\subsection{AMR Specific Modifications}
+\label{sec:amr}
+\begin{enumerate}
+\item Convert looping over blocks to {\it do while} loops using
+iterators -- change is trivial but pervasive.
+\begin{itemize}
+\item Current method fetches list of blocks and their count from the Grid Unit.
+\item This method is less flexible for scheduling individual blocks
+and precludes the possibility of working on sub-blocks as tiles.
+\item Iterators are more effective at hiding details of tiling or
+asynchronous runtime task management. 
+\end{itemize}
+\item Eliminate blockID as the method of identifying blocks and for
+fetching their meta information -- change is modest but pervasive.
+\begin{itemize}
+\item \paramesh~ knows its blocks through blockID, but \amrex~ does not.
+\item Currently all physics units use the blockID to fetch information
+such as physical coordinates, dx's etc from the \grid~ unit in a pull
+mode. 
+\item In the new mode this information comes as attached metadata with
+the iterator, which further abstracts mesh management details from physics.
+\end{itemize}
+\item Move looping over blocks from individual physics units to the
+\driver~ unit where timestepping is implemented -- change is trivial
+but pervasive.
+\begin{itemize}
+\item Any future changes to the method of looping over blocks will be localized instead
+of being pervasive.
+\item It lets us keep the possibility of time refinement open without
+having to make another pervasive change to the code.
+\item Currently the code employs operator splitting. If some model
+requires fusing two operators it would be impossible due to
+encapsulation in the current method which includes looping over blocks.
+\item Letting the iterators work in the drives allows operators fusion
+possibility while retaining the physics encapsulation intact because
+the encapsulation pertains to a single block/tile invocation of the physics.
+\end{itemize}
+\item Change the way that the intial mesh is generated and the initial
+conditions are applied -- change is local and modest.
+\begin{itemize}
+\item Small changes are needed in the current method for continuing
+to use \paramesh.
+\item A new implementation is needed for initializing with \amrex.
+\end{itemize}
+\item Create an \amrex~ equivalent iterator for \paramesh~ for backward
+compatibility -- change is local and modest.
+\item Several helper and accessor functions need new implementation within the
+\grid~ unit for interfacing with \amrex~ -- change is local but
+relatively deep in the form of an alternative implementation of the \grid~ unit functionality.
+\end{enumerate}
+
+\subsection{Other Modifications}
+\label{sec:other}
+\begin{enumerate}
+\item Implement {\it Unit\_init} methods for all new capabilities or
+alternative implementations being used from \castro~ and \chimera along
+with the necessary wrappers -- change is local and will vary in
+complexity from unit to unit.
+\item Implement functions to create arbitrarly sized vector for
+operating on -- function implementation is modest effort, but being
+able to use it is likely to require deep changes in many parts of the
+code.
+\begin{itemize}
+\item This ability is needed for utilizing hardware that requires
+vectorization such as accelerators.
+\item Initially we will use it for zero dimensional micro-physics, but
+eventually this may need to become embedded in the \amrex~
+infrastructure.
+\item One other major change is in I/O. Currently I/O in \flash~ gets
+direct access to all \grid~ data. This will now have to be obtained
+through the iterator.
+\end{itemize}
+\end{enumerate}
+\end{document}
