@@ -121,7 +121,10 @@ to use \paramesh.
 compatibility -- change is local and modest.
 \item Several helper and accessor functions need new implementation within the
 \grid~ unit for interfacing with \amrex~ -- change is local but
-relatively deep in the form of an alternative implementation of the \grid~ unit functionality.
+relatively deep in the form of an alternative implementation of the
+\grid~ unit functionality.
+\item Handling of flux conservation will change -- the change is local
+and modest.
 \end{enumerate}
 
 \subsection{Other Modifications}
@@ -145,5 +148,8 @@ infrastructure.
 direct access to all \grid~ data. This will now have to be obtained
 through the iterator.
 \end{itemize}
+\item \flash's new version will allow the iterator to loop over blocks
+per level. This is the default mode for \amrex, and it leaves open the
+possibility of refinement in time in \flash.
 \end{enumerate}
 \end{document}
