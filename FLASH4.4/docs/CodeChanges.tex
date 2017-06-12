@@ -29,8 +29,6 @@ Component Codes}
 \maketitle
 
 
-\section{Interfaces}
-\label{sec:interfaces}
 
 \section{AMRex}
 \label{sec:amrex}
@@ -43,6 +41,24 @@ will implement Fortran iterators that mimic octree like behavior,
 where the blocks are all the same size. \amrex~ will also provide
 interfaces with other solver libraries such as PETSc and hypre; the
 other codes will modify their access to these libraries accordingly.
+\mynote{how does ghost cell fill happen in AMReX, does this interface
+  change ?}
+\subsection{Interfaces}
+\label{sec:amrex-interfaces}
+The critical interfaces needed to obtain necessary services from the
+AMR packages are
+\begin{itemize}
+\itemize init\_prob\_data -- method to put initial conditions in a
+single box
+\itemize amr_regrid -- method to regrid the mesh
+\itemize amr_multifab_build -- build a union of boxes at a given level
+of refinement
+\itemize amr_..... \mynote{this is where the ghost cell filling
+  function goes}
+\itemize amr_octree_iter_build -- iterator for octree like behaviour
+\itemize amr_fluxes -- apply flux correction where needed
+\end{itemize}
+
 
 \section{Castro}
 \label{sec:castro}
@@ -51,15 +67,29 @@ precursor to \amrex, {\it BoxLib}. Hence it will not need fundamental
 changes to how it interacts with the mesh and state variables. Main
 changes needed in \castro~ are listed below.
 \begin{enumerate}
-\item Wrappers for calling \chimera  interfaces.
+%\item Wrappers for calling \chimera  interfaces.
 \item For using physics solvers from \flash~ wrappers are needed for
 calling the initialization functions for the corresponding solvers,
 which can also transmit all the parameters and static data needed for
 the solver operation. For example, in order to use the Riemann solvers
-in \flash's {\it Hydro}, \chimera has to implement an equilvalent of
+in \flash's {\it Hydro}, \castro has to implement an equilvalent of
 \flash's {\it Hyrdo\_init} which initiliazes all runtime parameters, 
 scratch space and other unit scope scalar variables.
 \end{enumerate}
+
+\section{Chimera}
+All of \chimera's code modules will be transformed into encapsulated
+components that are usable by both \castro and \flash. All the modules
+have pointwise computations which obviates the need to know any part of
+the physical mesh for them. They need runtime initializations and
+various interaction tables are tied to specific types of equations of
+state. Information about both runtime parameters and the dependent EOS
+implementation will be encoded in a meta-information file (Config for
+\flash) and ... for \castro.
+\subsection{Interfaces}
+\label{sec:chimera-interfaces}
+\begin{itemize}
+\end{itemize}
 
 \section{FLASH}
 \label{sec:flash}
@@ -152,4 +182,16 @@ through the iterator.
 per level. This is the default mode for \amrex, and it leaves open the
 possibility of refinement in time in \flash.
 \end{enumerate}
+
+\subsection{Interfaces}
+\label{sec:flash-interfaces}
+\begin{itemize}
+\item Simulation_initBlock -- called by init\_prob\_data
+\item Grid_getCellCoords -- fetch physical coordinates 
+\item Grid_makeVector --
+\item famrex_multivab_build --
+\item famerx_mviter_build -- 
+
+\end{itemize}
+
 \end{document}
