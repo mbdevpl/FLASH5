@@ -146,7 +146,11 @@ subroutine Driver_computeDt(nbegin, nstep, &
   integer, parameter :: HYDRO=1,BURN=2,GRAV=3,HEAT=4,COOL=5,TEMP=6,&
                         PART=7,DIFF=8,COSMO=9,STIR=10,HEATXCHG=11, &
                         RADTRANS=12,STS=13,INS=14,SOLID=15
+#ifdef INDEXREORDER
+  integer,parameter::IX=1,IY=2,IZ=3
+#else
   integer,parameter::IX=2,IY=3,IZ=4
+#endif  
   logical, save :: firstCall = .TRUE.
   logical :: limitersChanged
   logical :: printToScrn

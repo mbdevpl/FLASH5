@@ -59,9 +59,11 @@ subroutine Driver_verifyInitDt()
   integer :: coordSize
   logical :: gcell = .true.
   real, dimension(MDIM) :: del
+#ifdef INDEXREORDER
+  integer,parameter::IX=1,IY=2,IZ=3
+#else
   integer,parameter::IX=2,IY=3,IZ=4
-
-
+#endif  
 
 #ifdef FIXEDBLOCKSIZE
   real, dimension(GRID_ILO_GC:GRID_IHI_GC) :: xCoord, dx, uxgrid, xLeft, xRight

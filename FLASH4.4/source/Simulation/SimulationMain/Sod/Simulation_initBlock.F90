@@ -40,6 +40,7 @@
 !!
 !!***
 
+!!REORDER(4): solnData
 subroutine Simulation_initBlock(solnData,cid,stride,blkLimits)
 
 #include "constants.h"
