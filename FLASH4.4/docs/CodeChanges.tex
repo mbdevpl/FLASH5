@@ -4,11 +4,13 @@
 \usepackage{amsmath}
 \setlength{\FrameSep}{2pt}
 \usepackage[tight,footnotesize]{subfigure}
-\usepackage{color,linegoal}
+\usepackage{color}
 
 \usepackage{url}
 \usepackage{algorithmic}
 \usepackage[linesnumbered,ruled,commentsnumbered]{algorithm2e}
+
+\newcommand{\code}[1]{{\tt#1}}
 
 \newcommand{\mynote}[1]{\textcolor{blue}{{\bf#1}}}
 \newcommand{\reply}[1]{\textcolor{green}{{\bf#1}}}
@@ -16,19 +18,17 @@
 \newcommand{\flash}{{\it FLASH}}
 \newcommand{\amrex}{{\it AMReX}}
 \newcommand{\paramesh}{{\it Paramesh}}
-\newcommand{\castro}{{\it Castro}}
+\newcommand{\castro}{{\it Castro}\xspace}
 \newcommand{\clash}{{\it Clash}}
-\newcommand{\chimera}{{\it Chimera}}
+\newcommand{\chimera}{{\it Chimera}\xspace}
 \newcommand{\grid}{{\it Grid}}
-\newcommand{\driver}{{\it Driver}}
+\newcommand{\driver}{{\it Driver}\xspace}
 
 \title{Common Interfaces for CLASH and Code Changes Required in
 Component Codes}
 
 \begin{document}
 \maketitle
-
-
 
 \section{AMRex}
 \label{sec:amrex}
@@ -48,15 +48,15 @@ other codes will modify their access to these libraries accordingly.
 The critical interfaces needed to obtain necessary services from the
 AMR packages are
 \begin{itemize}
-\itemize init\_prob\_data -- method to put initial conditions in a
+\item \code{init\_prob\_data} -- method to put initial conditions in a
 single box
-\itemize amr_regrid -- method to regrid the mesh
-\itemize amr_multifab_build -- build a union of boxes at a given level
+\item \code{amr\_regrid} -- method to regrid the mesh
+\item \code{amr\_multifab\_build} -- build a union of boxes at a given level
 of refinement
-\itemize amr_..... \mynote{this is where the ghost cell filling
+\item \code{amr\_.....} \mynote{this is where the ghost cell filling
   function goes}
-\itemize amr_octree_iter_build -- iterator for octree like behaviour
-\itemize amr_fluxes -- apply flux correction where needed
+\item \code{amr\_octree\_iter\_build} -- iterator for octree like behaviour
+\item \code{amr\_fluxes} -- apply flux correction where needed
 \end{itemize}
 
 
@@ -72,8 +72,8 @@ changes needed in \castro~ are listed below.
 calling the initialization functions for the corresponding solvers,
 which can also transmit all the parameters and static data needed for
 the solver operation. For example, in order to use the Riemann solvers
-in \flash's {\it Hydro}, \castro has to implement an equilvalent of
-\flash's {\it Hyrdo\_init} which initiliazes all runtime parameters, 
+in \flash's {\it Hydro}, \castro has to implement an equivalent of
+\flash's {\it Hydro\_init} which initializes all runtime parameters, 
 scratch space and other unit scope scalar variables.
 \end{enumerate}
 
@@ -89,6 +89,7 @@ implementation will be encoded in a meta-information file (Config for
 \subsection{Interfaces}
 \label{sec:chimera-interfaces}
 \begin{itemize}
+\item
 \end{itemize}
 
 \section{FLASH}
@@ -126,7 +127,7 @@ mode.
 the iterator, which further abstracts mesh management details from physics.
 \end{itemize}
 \item Move looping over blocks from individual physics units to the
-\driver~ unit where timestepping is implemented -- change is trivial
+\driver unit where timestepping is implemented -- change is trivial
 but pervasive.
 \begin{itemize}
 \item Any future changes to the method of looping over blocks will be localized instead
@@ -136,7 +137,7 @@ having to make another pervasive change to the code.
 \item Currently the code employs operator splitting. If some model
 requires fusing two operators it would be impossible due to
 encapsulation in the current method which includes looping over blocks.
-\item Letting the iterators work in the drives allows operators fusion
+\item Letting the iterators work in the \driver allows operators fusion
 possibility while retaining the physics encapsulation intact because
 the encapsulation pertains to a single block/tile invocation of the physics.
 \end{itemize}
@@ -164,14 +165,14 @@ and modest.
 alternative implementations being used from \castro~ and \chimera along
 with the necessary wrappers -- change is local and will vary in
 complexity from unit to unit.
-\item Implement functions to create arbitrarly sized vector for
+\item Implement functions to create arbitrarily sized vectors for
 operating on -- function implementation is modest effort, but being
 able to use it is likely to require deep changes in many parts of the
 code.
 \begin{itemize}
 \item This ability is needed for utilizing hardware that requires
 vectorization such as accelerators.
-\item Initially we will use it for zero dimensional micro-physics, but
+\item Initially we will use it for zero-dimensional micro-physics, but
 eventually this may need to become embedded in the \amrex~
 infrastructure.
 \item One other major change is in I/O. Currently I/O in \flash~ gets
@@ -186,11 +187,11 @@ possibility of refinement in time in \flash.
 \subsection{Interfaces}
 \label{sec:flash-interfaces}
 \begin{itemize}
-\item Simulation_initBlock -- called by init\_prob\_data
-\item Grid_getCellCoords -- fetch physical coordinates 
-\item Grid_makeVector --
-\item famrex_multivab_build --
-\item famerx_mviter_build -- 
+\item \code{Simulation\_initBlock} -- called by init\_prob\_data
+\item \code{Grid\_getCellCoords} -- fetch physical coordinates 
+\item \code{Grid\_makeVector} --
+\item \code{famrex\_multivab\_build} --
+\item \code{famrex\_mviter\_build} -- 
 
 \end{itemize}
 
