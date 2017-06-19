@@ -111,6 +111,7 @@ contains
     mv%dm = dm
   end subroutine famrex_multivab_build
 
+  ! Not fully implemented:
   subroutine famrex_multivab_build_l (mv, blkList, gds, dm, nc, ng, nodal)
     type(famrex_multivab), intent(inout) :: mv
 
