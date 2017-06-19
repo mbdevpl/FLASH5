@@ -116,9 +116,10 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
+subroutine Grid_getCellCoords(axis, cid,stride, edge, guardcell, coordinates, size)
 
-  use Grid_data, ONLY : gr_oneBlock
+  use Grid_data, ONLY : gr_oneBlock,gr_globalDomain,gr_delta
+  use tree, ONLY :  lrefine_max
   use Driver_interface, ONLY : Driver_abortFlash
 
 #include "constants.h"
@@ -126,41 +127,19 @@ subroutine Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
 
   implicit none
 
-  integer, intent(in) :: axis,blockID, edge
+  integer, intent(in) :: axis, edge
+  integer, dimension(MDIM), intent(in)::cid,stride
   integer, intent(in) :: size
   logical, intent(in) :: guardcell
   real,intent(out), dimension(size) :: coordinates
 
-  integer :: bOffset,eOffset,factor,calcSize,numGuard
+
+  integer::first,i
 
   ! Do some error checking here
   
 
-  if(((NDIM==1).and.(axis/=IAXIS)).or.((NDIM==2).and.(axis==KAXIS))) then
-     bOffset = 0
-     eOffset = 0
-     numGuard = 0
-  else
-     if(guardcell) then
-        bOffset = 0
-        eOffset = 2*NGUARD
-        numGuard = NGUARD
-     else
-        boffset = NGUARD
-        eoffset = NGUARD
-        numGuard = 0
-     end if
-  end if
-  if(axis == IAXIS) then
-     calcSize = NXB+2*numGuard
-  else if(axis == JAXIS) then
-     calcSize = NYB+2*K2D*numGuard
-  else if(axis == KAXIS) then
-     calcSize = NZB+2*K3D*numGuard
-  end if
-
 #ifdef DEBUG_GRID
-  if (edge==FACES) calcSize = calcSize+1
   print*,' get coordinates', axis, blockID, edge, guardcell,size
   if((blockID<1).or.(blockID>MAXBLOCKS)) then
      call Driver_abortFlash("Grid_getCellCoords :invalid blockID ")
@@ -177,43 +156,23 @@ subroutine Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
      call Driver_abortFlash("Get Coords : invalid axis, must be IAXIS, JAXIS or KAXIS ")
   end if
   
-  if(size < calcSize)then
-     call Driver_abortFlash("Get Coords : size of output array too small")
-  end if
 #endif
 
-  if(axis==IAXIS) then
-     if(edge /= FACES) then
-        coordinates(:) = &
-             gr_oneBlock(BlockID)%firstAxisCoords&
-             (edge,bOffset+1:eOffset+NXB)
-     else
-        coordinates(1:size-1)= gr_oneBlock(BlockID)%firstAxisCoords&
-             (LEFT_EDGE,bOffset+1:eOffset+NXB)
-        coordinates(size)=gr_oneBlock(BlockID)%firstAxisCoords&
-             (RIGHT_EDGE,eOffset+NXB)
-     end if
-  elseif(axis==JAXIS) then
-     if(edge /= FACES) then
-        coordinates(:) = &
-             gr_oneBlock(BlockID)%secondAxisCoords&
-             (edge,bOffset+1:eOffset+NYB)
-     else
-        coordinates(1:size-1)= gr_oneBlock(BlockID)%secondAxisCoords&
-             (LEFT_EDGE,bOffset+1:eOffset+NYB)
-        coordinates(size)=gr_oneBlock(BlockID)%secondAxisCoords&
-             (RIGHT_EDGE,eOffset+NYB)
-     end if
+
+  first=cid(axis)-1
+  if(guardcell) first=first-stride(axis)*NGUARD
+  if((edge==CENTER).and.(stride(axis)==1))then
+     do i = 1,size
+        coordinates(i)= gr_globalDomain(LOW,axis) + (first+0.5)*gr_delta(axis,lrefine_max)
+        first=first+stride(axis)
+     end do
   else
-     if(edge /= FACES) then
-        coordinates(:) = &
-             gr_oneBlock(BlockID)%thirdAxisCoords(edge,bOffset+1:eOffset+NZB)
-     else
-        coordinates(1:size-1)= gr_oneBlock(BlockID)%thirdAxisCoords&
-             (LEFT_EDGE,bOffset+1:eOffset+NZB)
-        coordinates(size)=gr_oneBlock(BlockID)%thirdAxisCoords&
-             (RIGHT_EDGE,eOffset+NZB)
-     end if
+     if(edge==RIGHT_EDGE)first=first+stride(axis)
+     if((edge==CENTER).and.(stride(axis)>1))first=first+stride(axis)/2
+     do i = 1,size
+        coordinates(i)= gr_globalDomain(LOW,axis) + first*gr_delta(axis,lrefine_max)
+        first=first+stride(axis)
+     end do
   end if
   return
 end subroutine Grid_getCellCoords

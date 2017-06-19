@@ -40,9 +40,12 @@ Module Simulation_interface
   end interface
 
   interface
-     subroutine Simulation_initBlock(blockID)
+     subroutine Simulation_initBlock(solnData,cid,stride,blkLimits)
+
        implicit none
-       integer, intent(in) :: blockID
+       real,dimension(:,:,:,:),pointer :: solnData
+       integer, dimension(LOW:HIGH,MDIM),intent(in) :: blkLimits
+       integer, dimension(MDIM),intent(in) :: cid,stride
      end subroutine Simulation_initBlock
   end interface
 

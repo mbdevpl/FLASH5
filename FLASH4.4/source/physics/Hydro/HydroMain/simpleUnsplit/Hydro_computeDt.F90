@@ -51,7 +51,7 @@
 !!                   dtMinLoc(1) = i index
 !!                   dtMinLoc(2) = j index
 !!                   dtMinLoc(3) = k index
-!!                   dtMinLoc(4) = blockID
+!!                   dtMinLoc(4) = 1 if found to meet criterion, 0 otherwise
 !!                   dtMinLoc(5) = hy_meshMe
 !!  extraInfo     -  Driver_computeDt can provide extra info to the caller
 !!                   using this argument.
@@ -59,8 +59,9 @@
 !!***
 
 !!REORDER(4): U
-
-Subroutine Hydro_computeDt( blockID,  &
+#include "Flash.h"
+#undef FIXEDBLOCKSIZE
+Subroutine Hydro_computeDt( &
      x, dx, uxgrid, &
      y, dy, uygrid, &
      z, dz, uzgrid, &
@@ -69,7 +70,6 @@ Subroutine Hydro_computeDt( blockID,  &
      extraInfo)
 
 
-#include "Flash.h"
 #include "constants.h"
 
   use Hydro_data,       ONLY : hy_geometry, hy_cfl, hy_dref, hy_eref, &
@@ -80,7 +80,6 @@ Subroutine Hydro_computeDt( blockID,  &
   implicit none
 
   !! Arguments type declaration ------------------------------------------
-  integer, intent(IN) :: blockID 
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
 #ifdef FIXEDBLOCKSIZE
@@ -132,7 +131,7 @@ Subroutine Hydro_computeDt( blockID,  &
            temploc(1) = i
            temploc(2) = 1
            temploc(3) = 1
-           temploc(4) = blockID
+           temploc(4) = 1
            temploc(5) = hy_meshMe
         endif
 
@@ -161,7 +160,7 @@ Subroutine Hydro_computeDt( blockID,  &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = blockID
+                 temploc(4) = 1
                  temploc(5) = hy_meshMe
               endif
 
@@ -187,7 +186,7 @@ Subroutine Hydro_computeDt( blockID,  &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = blockID
+                 temploc(4) = 1
                  temploc(5) = hy_meshMe
               endif
            enddo
@@ -220,7 +219,7 @@ Subroutine Hydro_computeDt( blockID,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = 1
                     temploc(5) = hy_meshMe
                  endif
 
@@ -249,7 +248,7 @@ Subroutine Hydro_computeDt( blockID,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = 1
                     temploc(5) = hy_meshMe
                  endif
 
@@ -278,7 +277,7 @@ Subroutine Hydro_computeDt( blockID,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = 1
                     temploc(5) = hy_meshMe
                  endif
 

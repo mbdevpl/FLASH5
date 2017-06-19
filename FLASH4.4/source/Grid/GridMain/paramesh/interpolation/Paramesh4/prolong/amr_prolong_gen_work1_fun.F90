@@ -33,7 +33,7 @@ subroutine amr_prolong_gen_work1_fun &
   use Grid_interface, ONLY : Grid_getCellCoords
   use Driver_interface, ONLY : Driver_abortFlash
 
-  use Grid_data,ONLY: gr_dirGeom, gr_smallx, gr_intpol
+  use Grid_data,ONLY: gr_dirGeom, gr_smallx, gr_intpol,gr_oneBlock
   implicit none
 #include "constants.h"
 #include "Flash.h"
@@ -147,7 +147,8 @@ subroutine amr_prolong_gen_work1_fun &
   xoend = ib-ia+1
   xiend = (ib-ia+ref_ratio)/ref_ratio + min(1,mod(ib-ia,ref_ratio)*mod(ib+NGUARD,ref_ratio)) + twice_iguard
   
-  call Grid_getCellCoords(IAXIS,isg,CENTER,.true.,xi,GRID_IHI_GC)
+!!$  call Grid_getCellCoords(IAXIS,isg,CENTER,.true.,xi,GRID_IHI_GC)
+  xi(:)=gr_oneBlock(isg)%firstAxisCoords(CENTER,:)
   pdx = xi(2) - xi(1)
   cdx = 0.5e0*pdx
 
@@ -168,7 +169,8 @@ subroutine amr_prolong_gen_work1_fun &
   yoend = jb-ja+1
   yiend = (jb-ja+ref_ratio)/ref_ratio + min(1,mod(jb-ja,ref_ratio)*mod(jb+NGUARD,ref_ratio)) + twice_iguard
 
-  call Grid_getCellCoords(JAXIS,isg,CENTER,.true.,yi,GRID_JHI_GC)
+!!$  call Grid_getCellCoords(JAXIS,isg,CENTER,.true.,yi,GRID_JHI_GC)
+  yi(:)=gr_oneBlock(isg)%secondAxisCoords(CENTER,:)
   pdy = yi(2) - yi(1)
   cdy = 0.5e0*pdy
   
@@ -190,7 +192,8 @@ subroutine amr_prolong_gen_work1_fun &
   zoend = kb-ka+1
   ziend = (kb-ka+ref_ratio)/ref_ratio + min(1,mod(kb-ka,ref_ratio)*mod(kb+NGUARD,ref_ratio)) + twice_iguard
 
-  call Grid_getCellCoords(KAXIS,isg,CENTER,.true.,zi,GRID_KHI_GC)
+!!$  call Grid_getCellCoords(KAXIS,isg,CENTER,.true.,zi,GRID_KHI_GC)
+  zi(:)=gr_oneBlock(isg)%thirdAxisCoords(CENTER,:)
   pdz = zi(2) - zi(1)
   cdz = 0.5e0*pdz
   
