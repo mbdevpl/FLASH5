@@ -79,6 +79,11 @@ subroutine Driver_evolveFlash()
                                     famrex_mviter_destroy,famrex_multivab_destroy
   use famrex_box_module,      ONLY: famrex_box
 
+  use amrex_amr_module,    ONLY : amrex_real
+!!$  use amrex_box_module,    ONLY : amrex_box
+  use amrex_box_module
+  use amrex_fab_module
+  use amrex_multifab_module
 
   implicit none
 
@@ -121,6 +126,16 @@ subroutine Driver_evolveFlash()
   type(famrex_mviter) :: mvi
   type(famrex_box) :: bx, tbx
   integer:: ib, blockID, level, maxLev
+
+  real(amrex_real)  :: time     !testing...
+  logical :: nodal(3)
+  type(amrex_multifab), allocatable :: phiborder(:)
+!  type(amrex_octree_iter) :: oti
+  type(amrex_box) :: abx, atbx
+  real(amrex_real), contiguous, pointer, dimension(:,:,:,:) :: pin,pout,pux,puy,puz,pfx,pfy,pfz, &
+       pf, pfab
+  type(amrex_fab) :: uface(NDIM)
+  type(amrex_multifab), allocatable :: fluxes(:,:)
 
 
   endRunPl = .false.
@@ -194,6 +209,9 @@ subroutine Driver_evolveFlash()
         call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
         do while(mvi%next())
            bx = mvi%tilebox()
+           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
+           call amrex_print(abx)
+!!$           tbx = abx
            
            Uout => phi(level)%dataptr(mvi)
            tileLimits(LOW, :) = bx%lo
