@@ -99,6 +99,8 @@
 !!                   direction, and regionSize(THIRD_DIR) has the number of rows
 !!                   along the third direction. regionSize(GRID_DATASTRUCT) contains the
 !!                   number of variables in the data structure.
+!!  apply - Do it.
+!!          !DEV: This dummy arg is quite pointless and should go away. - KW
 !!
 !!  blockHandle - Handle for the block for which guardcells are to be filled.
 !!              In grid implementations other than Paramesh 4, this is always
@@ -194,11 +196,6 @@ subroutine Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,&
 
 #include "constants.h"
 #include "Flash.h"
-
-  use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getDeltas
-  use gr_bcInterface, ONLY : gr_bcMapBcType
-  use Grid_data, ONLY : gr_geometry, gr_dirGeom
 
   implicit none
   

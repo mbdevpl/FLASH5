@@ -7,6 +7,7 @@
 build/
 sites/ares/
 obj*
+sod_2d*
 
 # Specific files
 lib/ma28/Makefile.h

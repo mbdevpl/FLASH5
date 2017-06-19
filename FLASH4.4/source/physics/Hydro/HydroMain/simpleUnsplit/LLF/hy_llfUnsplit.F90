@@ -63,13 +63,10 @@
 #endif
 #define DEBUG_GRID_GCMASK
 
-Subroutine hy_llfUnsplit ( blockCount, blockList, dt, dtOld )
+Subroutine hy_llfUnsplit ( tileLimits, Uin, Uout, del, dt )
 
-  use Grid_interface, ONLY : GRID_DATAINIT_NEGINFINITY, &
-                             Grid_getListOfTiles,    &
-                             Grid_getDeltas,         &
-                             Grid_getBlkIndexLimits, &
-                             Grid_fillGuardCells
+  use Grid_interface, ONLY : Grid_genGetBlkPtr,         &
+                             Grid_genReleaseBlkPtr
 
   use GridTilingModule, ONLY: Grid_tilingContext_t, &
                               Grid_startLoopTiling, &
@@ -120,9 +117,10 @@ Subroutine hy_llfUnsplit ( blockCount, blockList, dt, dtOld )
 
 
   !! ---- Argument List ----------------------------------
-  integer, INTENT(IN) ::  blockCount
-  integer, INTENT(IN), dimension(blockCount) :: blockList
-  real,    INTENT(IN) :: dt, dtOld
+  integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
+  real,pointer,dimension(:,:,:,:) :: Uin, Uout
+  real,dimension(MDIM), INTENT(IN) :: del
+  real,    INTENT(IN) :: dt
   !! -----------------------------------------------------
 
 !!$  integer, dimension(MDIM) :: datasize
@@ -189,8 +187,8 @@ Subroutine hy_llfUnsplit ( blockCount, blockList, dt, dtOld )
   end if
 #endif
   !! Guardcell filling routine
-  call Grid_fillGuardCells(CENTER,ALLDIR,&
-       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
+!!$  call Grid_fillGuardCells(CENTER,ALLDIR,&
+!!$       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
 
 
   !! ***************************************************************************
@@ -199,47 +197,47 @@ Subroutine hy_llfUnsplit ( blockCount, blockList, dt, dtOld )
   !! Loop over the blocks
 
 
-  call Grid_startLoopTiling(CENTER,tilingCtx,&
-                  useInPtr=.TRUE.,  useInVarPtrs=.FALSE.,    &
-                  useOutPtr=.TRUE., useOutVarPtrs=.FALSE., outVarList=outVarList, &
-                  nAuxVars=1, nAuxGuard=1, blockList=blockList(1:blockCount))
-  call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEX,&
-                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
-                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
-  if (NDIM > 1) then
-     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEY,&
-                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
-                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
-  end if
-  if (NDIM > 2) then
-     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEZ,&
-                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
-                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
-  end if
+!!$  call Grid_startLoopTiling(CENTER,tilingCtx,&
+!!$                  useInPtr=.TRUE.,  useInVarPtrs=.FALSE.,    &
+!!$                  useOutPtr=.TRUE., useOutVarPtrs=.FALSE., outVarList=outVarList, &
+!!$                  nAuxVars=1, nAuxGuard=1, blockList=blockList(1:blockCount))
+!!$  call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEX,&
+!!$                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
+!!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
+!!$  if (NDIM > 1) then
+!!$     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEY,&
+!!$                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
+!!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
+!!$  end if
+!!$  if (NDIM > 2) then
+!!$     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEZ,&
+!!$                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
+!!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
+!!$  end if
 
-  do ib=1,blockCount
-
-     blockID = blockList(ib)
-
-     call Grid_getDeltas(blockID,del)
+!!$  do ib=1,blockCount
+!!$
+!!$     blockID = blockList(ib)
+!!$
+!!$     call Grid_getDeltas(blockID,del)
 
      dtdx = dt / del(IAXIS)
      if (NDIM > 1) dtdy = dt / del(JAXIS)
      if (NDIM > 2) dtdz = dt / del(KAXIS)
 
-     call Grid_getListOfTiles(blockID, tileList,tileCount)
+!!$     call Grid_getListOfTiles(blockID, tileList,tileCount)
 
 
-     !$omp parallel if (hy_threadTileList) &
-     !$omp default(none) &
-     !$omp firstprivate(dtdx,dtdy,dtdz,blockID) &
-     !$omp private(i,del,tileLimits,tileID,&
-     !$omp faceX,faceY,faceZ,Uin,Uout,auxC,&
-     !$omp c,sMax,a2Avg,cAvg,vn,is,il,ir,vl,vr,js,jl,jr,ks,kl,kr,invNewDens) &
-     !$omp shared(tilingCtx,blockCount,blockList,tileCount,tileList,&
-     !$omp hy_unsplitEosMode,hy_useGravity,hy_gref,hy_fluxCorrect,&
-     !$omp hy_updateHydroFluxes,hy_eosModeAfter,hy_useGravHalfUpdate,&
-     !$omp hy_useGravPotUpdate,hy_geometry,hy_fluxCorVars)
+!!$     !$omp parallel if (hy_threadTileList) &
+!!$     !$omp default(none) &
+!!$     !$omp firstprivate(dtdx,dtdy,dtdz,blockID) &
+!!$     !$omp private(i,del,tileLimits,tileID,&
+!!$     !$omp faceX,faceY,faceZ,Uin,Uout,auxC,&
+!!$     !$omp c,sMax,a2Avg,cAvg,vn,is,il,ir,vl,vr,js,jl,jr,ks,kl,kr,invNewDens) &
+!!$     !$omp shared(tilingCtx,blockCount,blockList,tileCount,tileList,&
+!!$     !$omp hy_unsplitEosMode,hy_useGravity,hy_gref,hy_fluxCorrect,&
+!!$     !$omp hy_updateHydroFluxes,hy_eosModeAfter,hy_useGravHalfUpdate,&
+!!$     !$omp hy_useGravPotUpdate,hy_geometry,hy_fluxCorVars)
 
      !$omp do schedule(static)
      do t=1,tileCount
