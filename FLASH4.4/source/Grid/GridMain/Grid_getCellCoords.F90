@@ -5,8 +5,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getCellCoords(integer(IN) :: axis,
-!!                      integer(IN):: blockID, 
+!!  Grid_getCellCoords(integer(IN)  :: axis,
+!!                      integer(IN) :: cid(LOW:HIGH,MDIM)
 !!                      integer(IN):: edge, 
 !!                      logical(IN):: guardcell, 
 !!                      real(OUT)  :: coordinates(size),
@@ -34,7 +34,9 @@
 !!          axis can have one of three different values, IAXIS, JAXIS or KAXIS 
 !!          (defined in constants.h as 1,2 and 3)
 !!
-!!   blockID - integer block number
+!!   cid - integer bounds for block corners
+!!
+!!   stride - depends on level
 !!
 !!   edge - integer value with one of four values, 
 !!          LEFT_EDGE, RIGHT_EDGE, CENTER or FACES
@@ -72,14 +74,10 @@
 !!      integer :: coordSize
 !!      integer :: xCoord(coordSize) !sized to be number of coords returned
 !!      
-!!      do i=1, localNumBlocks
-!!
-!!          !get the index limits of the block
-!!          call Grid_getBlkIndexLimits(i, blkLimits, blkLimitsGC)
-!!
+!!      
 !!          !holds the number of cells returned in idir
 !!          coordSize = blkLimitsGC(HIGH, IAXIS)
-!!          call Grid_getCellCoords(IAXIS, i, CENTER, .true., xCoord, coordSize) 
+!!          call Grid_getCellCoords(IAXIS, cid, stride, CENTER, .true., xCoord, coordSize) 
 !!
 !!     end do    
 !!
@@ -92,14 +90,9 @@
 !!      integer :: coordSize
 !!      integer :: xCoord(coordSize) !sized to be number of coords returned
 !!      
-!!      do i=1, localNumBlocks
-!!
-!!          !get the index limits of the block
-!!          call Grid_getBlkIndexLimits(i, blkLimits, blkLimitsGC)
-!!
 !!          !holds the number of cells returned in idir
 !!          coordSize = blkLimitsGC(HIGH, IAXIS)+1
-!!          call Grid_getCellCoords(IAXIS, i, FACES, .true., xCoord, coordSize) 
+!!          call Grid_getCellCoords(IAXIS, cid, stride, FACES, .true., xCoord, coordSize) 
 !!
 !!     end do    
 !!

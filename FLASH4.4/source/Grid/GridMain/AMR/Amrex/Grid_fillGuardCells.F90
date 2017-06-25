@@ -129,17 +129,13 @@
 subroutine Grid_fillGuardCells(gridDataStruct,idir,minLayers,eosMode,doEos&
      &, maskSize, mask, makeMaskConsistent, doLogMask,selectBlockType, &
      unitReadsMeshDataOnly)
+  use iso_c_binding
   use Grid_data, ONLY : gr_bndOrder, gr_allPeriodic, gr_justExchangedGC, &
-       gr_eosModeNow, gr_blkList
-#ifndef FLASH_GRID_UG
-  use Grid_data, ONLY : gr_convertToConsvdInMeshInterp
-#endif
+       gr_eosModeNow, gr_convertToConsvdInMeshInterp, gr_maxRefineLevel
   use gr_bcInterface, ONLY : gr_bcApplyToAllBlks
-  use chombo_f_c_interface, ONLY : ch_fill_guardcells
   use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface, ONLY : Eos_guardCells
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getListOfBlocks
 
   implicit none
   integer, intent(in) :: gridDataStruct
@@ -178,21 +174,27 @@ subroutine Grid_fillGuardCells(gridDataStruct,idir,minLayers,eosMode,doEos&
   needEos=.true.
   layersArray = NGUARD
 
+  call amrex_fillpatch(phi, t_old(lev), phi_old(lev), &
+            &                    t_new(lev), phi_new(lev), &
+            &               amrex_geom(lev), fill_physbc , &
+            &               time, src_comp, dst_comp, num_comp)
 
-#ifndef FLASH_GRID_UG
-  if((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
-    call Grid_getListOfBlocks(listBlockType, gr_blkList, numBlocks)
-    call gr_primitiveToConserve(gr_blkList,numBlocks)
-  end if
-#endif
-
-
-  call ch_fill_guardcells()
+  do lev=1,gr_maxRefineLevel
+     call amrex_fillpatch(phi, t_old(lev-1), phi_old(lev-1), &
+          &                    t_new(lev-1), phi_new(lev-1), &
+          &               amrex_geom(lev-1), fill_physbc   , &
+          &                    t_old(lev  ), phi_old(lev  ), &
+          &                    t_new(lev  ), phi_new(lev  ), &
+          &               amrex_geom(lev  ), fill_physbc   , &
+          &               time, src_comp, dst_comp, num_comp, &
+          &               amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+          &               lo_bc, hi_bc)
 
 
   if(.not.gr_allPeriodic) then
      do n = 0,NDIM-1
         axis = gr_bndOrder(NDIM-n)
+!!$     how to apply boundary conditions needs to be worked out here
         call gr_bcApplyToAllBlks(axis,isWork)
      end do
   end if

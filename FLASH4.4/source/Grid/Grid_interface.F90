@@ -250,8 +250,8 @@ Module Grid_interface
   end interface
 
   interface Grid_getDeltas
-     subroutine Grid_getDeltas(blockId, del)
-       integer, intent(in) :: blockId
+     subroutine Grid_getDeltas(lev, del)
+       integer, intent(in) :: lev
        real, dimension(MDIM), intent(out) :: del
      end subroutine Grid_getDeltas
   end interface

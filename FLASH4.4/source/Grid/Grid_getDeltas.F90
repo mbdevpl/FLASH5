@@ -5,23 +5,23 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getDeltas(integer(IN) :: blockId,
+!!  Grid_getDeltas(integer(IN) :: lev,
 !!                 real(OUT)   :: del(MDIM))
 !!  
 !! DESCRIPTION 
 !!  
-!!  Gets the grid spacing dx/dy/dz for a given blockId on the Grid.
+!!  Gets the grid spacing dx/dy/dz for a given lev on the Grid.
 !!  dx is the size of one cell in the x direction of a block.
 !!  
 !!  
 !! ARGUMENTS 
 !!
-!!  blockId - local block number
+!!  lev - local block number
 !!  del - array of size MDIM returned holding the dx, dy, and dz values
 !!
 !!***
 
-subroutine Grid_getDeltas(blockId, del)
+subroutine Grid_getDeltas(lev, del)
 
   implicit none
 

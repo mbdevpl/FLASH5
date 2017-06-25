@@ -6,23 +6,17 @@ USESETUPVARS ThreeT
 # Requires use of the Grid SetupVariable
 USESETUPVARS Grid
 
-IF Grid not in ["","PM4DEV","PM40","PM3","PM2","UG","Samrai","Chombo"]
-   SETUPERROR The variable Grid is not in ["","PM4DEV","PM40","PM3","PM2","UG","Samrai","Chombo"]
+IF Grid not in ["","PM4DEV","PM40","PM3","UG","Amrex"]
+   SETUPERROR The variable Grid is not in ["","PM4DEV","PM40","PM3","UG","Amrex"]
 ENDIF
 
 REQUIRES Grid/localAPI
 REQUESTS Grid/GridBoundaryConditions
 
-DEFAULT paramesh
+DEFAULT AMR
 
 IF Grid=='UG'
    DEFAULT UG
-ENDIF
-IF Grid=='Samrai'
-   DEFAULT Samrai
-ENDIF
-IF Grid=='Chombo'
-   DEFAULT Chombo
 ENDIF
 
 # Lines that begin with 'D' as in 'Description' will end up as
@@ -184,4 +178,4 @@ PARAMETER smalle	REAL	1.E-10
 D Attempt to reduce the number of guard cell fills
 PARAMETER reduceGcellFills BOOLEAN FALSE
 
-EXCLUSIVE paramesh UG Chombo
+EXCLUSIVE paramesh UG Amrex

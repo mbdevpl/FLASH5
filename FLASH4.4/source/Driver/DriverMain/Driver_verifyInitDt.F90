@@ -80,7 +80,7 @@ subroutine Driver_verifyInitDt()
 
   !!coordinate infomration to be passed into physics  
   real, pointer :: solnData(:,:,:,:)
-  integer :: isize,jsize,ksize,blockID
+  integer :: isize,jsize,ksize
   logical :: runVerifyInitDt = .false.
   real :: extraHydroInfo
   integer,dimension(MDIM)::cid,stride
@@ -125,7 +125,6 @@ subroutine Driver_verifyInitDt()
         call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
         call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
         do while(mvi%next())
-           blockID = mvi%localIndex() !Are we cheating here?
            bx = mvi%tilebox()
            solnData=>phi(level)%dataptr(mvi)
            
@@ -182,7 +181,7 @@ subroutine Driver_verifyInitDt()
            
            
            
-           call Grid_getDeltas(blockID, del)
+           call Grid_getDeltas(level, del)
            dx(:) = del(1)
            dy(:) = del(2)
            dz(:) = del(3)

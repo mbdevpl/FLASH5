@@ -21,18 +21,15 @@
 !!
 !!***
 
-subroutine Grid_getDeltas(blockId,del)
-
-  use tree, ONLY : lrefine
-  use Grid_data, ONLY : gr_delta
-
+subroutine Grid_getDeltas(lev,del)
+  use Grid_data, ONLY: gr_delta
   implicit none
 
 #include "constants.h"
-
-  integer, intent(IN)   :: blockId
-  real, dimension(MDIM), intent(out) :: del
   
-  del = gr_delta(1:MDIM,lrefine(blockId))
+  integer, intent(IN)   :: lev
+  real, dimension(MDIM), intent(out) :: del
+
+  del(1:MDIM) = gr_delta(1:MDIM,lev)
   return
 end subroutine Grid_getDeltas

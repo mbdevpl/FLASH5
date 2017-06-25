@@ -14,9 +14,9 @@
 !!                          real(IN)    :: ogravX(:,:,:),
 !!                          real(IN)    :: ogravY(:,:,:),
 !!                          real(IN)    :: ogravZ(:,:,:),
-!!                          real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,
-!!                          real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr,
-!!                          real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr,
+!!                          real, pointer, dimension (:,:,:,:) :: scrchFaceXPtr
+!!                          real, pointer, dimension (:,:,:,:) :: scrchFaceYPtr
+!!                          real, pointer, dimension (:,:,:,:) :: scrchFaceZPtr
 !!                          real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig,
 !!                          logical(IN), optional :: normalFieldUpdate)
 !!

@@ -125,7 +125,7 @@ subroutine Driver_evolveFlash()
   type(famrex_multivab),allocatable :: phi(:)
   type(famrex_mviter) :: mvi
   type(famrex_box) :: bx, tbx
-  integer:: ib, blockID, level, maxLev
+  integer:: level, maxLev
 
   real(amrex_real)  :: time     !testing...
   logical :: nodal(3)
@@ -210,7 +210,7 @@ subroutine Driver_evolveFlash()
         do while(mvi%next())
            bx = mvi%tilebox()
            abx = amrex_box(bx%lo, bx%hi, bx%nodal)
-           call amrex_print(abx)
+!!$           call amrex_print(abx)
 !!$           tbx = abx
            
            Uout => phi(level)%dataptr(mvi)
@@ -218,18 +218,9 @@ subroutine Driver_evolveFlash()
            tileLimits(HIGH,:) = bx%hi
            
 
-!!$     call Grid_getListOfBlocks(LEAF,blks,blockCount)
-!!$     do ib=1,blockCount
-!!$        blockID=blks(ib)
-!!$        call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
-!!$        call Grid_getBlkPtr(blockID,Uout,CENTER)
-
-           blockID = mvi%localIndex() !Are we cheating here?
-           
-           call Grid_getDeltas(blockID,del)
+           call Grid_getDeltas(level,del)
            
            call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
-!!$           call Grid_releaseBlkPtr(blockID,Uout,CENTER)
         end do
         call Timers_stop("Hydro")
 #ifdef DEBUG_DRIVER

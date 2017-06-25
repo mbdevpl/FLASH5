@@ -94,7 +94,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
  
 
   ! Local variables and functions
-  integer :: i, error, blockID, numLeafBlocks, iout
+  integer :: i, error, iout
 
   !! This is arbitrarily fixed. Users that add more units that influence the time
   !! should change this.
@@ -225,7 +225,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
      call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
      call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
      do while(mvi%next())
-        blockID = mvi%localIndex() !Are we cheating here?
         bx = mvi%tilebox()
         solnData=>phi(level)%dataptr(mvi)
         
@@ -283,7 +282,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
            endif
         endif
         
-        call Grid_getDeltas(blockID, del)
+        call Grid_getDeltas(level, del)
         dx(:) = del(1)
         dy(:) = del(2)
         dz(:) = del(3)

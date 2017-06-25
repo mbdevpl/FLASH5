@@ -15,67 +15,128 @@
 \newcommand{\mynote}[1]{\textcolor{blue}{{\bf#1}}}
 \newcommand{\reply}[1]{\textcolor{green}{{\bf#1}}}
 
-\newcommand{\flash}{{\it FLASH}}
-\newcommand{\amrex}{{\it AMReX}}
-\newcommand{\paramesh}{{\it Paramesh}}
+\newcommand{\flash}{{\it FLASH}\xspace}
+\newcommand{\amrex}{{\it AMReX}\xspace}
+\newcommand{\paramesh}{{\it Paramesh}\xspace}
 \newcommand{\castro}{{\it Castro}\xspace}
-\newcommand{\clash}{{\it Clash}}
+\newcommand{\clash}{{\it Clash}\xspace}
 \newcommand{\chimera}{{\it Chimera}\xspace}
-\newcommand{\grid}{{\it Grid}}
+\newcommand{\grid}{{\it Grid}\xspace}
 \newcommand{\driver}{{\it Driver}\xspace}
 
-\title{Common Interfaces for CLASH and Code Changes Required in
+\title{CLASH API and Code Changes Required in
 Component Codes}
 
 \begin{document}
 \maketitle
+\section{Introduction}
+\label{sec:introduction}
+This report documents modifications to the suite of codes that form
+the eco-system of simulation capabilities for running supernovae
+models. From the software perspective, the objective of the project is
+to bring together a group of codes that have existed in varying
+degrees of isolation to a state where they can utilize a union of
+capabilities available in all of them. The key aspect of this exercise
+is to convert individual capabilities into a set of composable
+components where all the commonly needed capabilities interoperate
+with one another. \amrex provides the common adaptive mesh refinement
+infrastructure that handles both the discretization and the runtime
+support for all configurations of the combined code eco-system. 
+\chimera brings microphysics capablities to the eco-system, while
+\flash and \castro provide two different ways of composing the
+capabilities into a whole application. \flash and \castro have some
+duplicated capabilities and some exclusive ones. Since they both have
+their own user bases already, we maintain backward compatibility with
+their own modes of configuring from the available capabilities. We
+achieve this by defining APIs and documenting data crossing
+boundaries along with any transformations needed for data format
+compatibility and implementing wrapper layers that do the needed
+transformations. By documenting the needed modifications and the APIs
+this report meets the requirements of the Q3 milestone of the ECP
+Astro project. 
 
 \section{AMRex}
 \label{sec:amrex}
-\amrex~ will be the common underlying adaptive mesh management package
-for \clash. Thus, for the most part, the onus is on other involved
-codes to modify themselves to work with \amrex. However, there is one
-exception. \flash~ uses octree based AMR, and retaining that
-functionality is important for many of its solvers. Therefore, \amrex~
-will implement Fortran iterators that mimic octree like behavior,
-where the blocks are all the same size. \amrex~ will also provide
-interfaces with other solver libraries such as PETSc and hypre; the
-other codes will modify their access to these libraries accordingly.
-\mynote{how does ghost cell fill happen in AMReX, does this interface
-  change ?}
+\amrex  will be the common underlying adaptive mesh management
+infrastructure for \clash. \amrex is derived from BoxLib \cite{boxlib}
+with a view to masking the impact of hyperparallelism and
+asynchronicity from the applications codes. Thus \amrex will
+provide high level interfaces for querying the mesh and interacting
+with it while shielding the client code from the details of managing
+the mesh for different computing platforms. Additionally, with the
+same underlying infrastructure \amrex will present different flavors
+of AMR formulations to the code. For example, \castro assumes that it
+is working with a patch-based meshing package with refinement in time.
+On the other hand \flash assumes octree based AMR, and retaining that
+functionality is important for many of its solvers. Therefore, \amrex
+will implement Fortran iterators that mimic both of these
+behaviors. \amrex will also provide interfaces with other solver
+libraries such as PETSc and hypre; the other codes will modify their
+access to these libraries accordingly. 
 \subsection{Interfaces}
 \label{sec:amrex-interfaces}
 The critical interfaces needed to obtain necessary services from the
 AMR packages are
 \begin{itemize}
-\item \code{init\_prob\_data} -- method to put initial conditions in a
-single box
-\item \code{amr\_regrid} -- method to regrid the mesh
-\item \code{amr\_multifab\_build} -- build a union of boxes at a given level
+\item \code{my\_amr\_init} -- generate the initial mesh
+\item \code{my\_amr\_finalize} -- deallocate all resources and terminate
+  the mesh
+\item \code{my\_make\_new\_level\_from\_scratch} -- create a new level
+  without having access to a coarse level, this will normally be the
+  coarsest level of the mesh
+\item \code{my\_make\_new\_level\_from\_coarse} -- create a new level when
+  a coarse level exists below it
+\item \code{my\_clear\_level} -- destroy a level
+\item \code{my\_error\_estimate} -- provide criterion for tagging cells
+  for refinement
+\item \code{amrex\_init\_from\_scratch} -- build the AMR mesh from
+  scratch
+\item \code{ amrex\_amrcore\_init} -- setup the core amr functionality
+\item \code{call amrex\_amrcore\_finalize} -- complete everything and
+  release all amrcore resources
+\item \code{amrex\_octree\_init} -- initialize \amrex in octree mode
+\item \code{amrex\_octree\_finalize} -- finalize the octree mode
+\item \code{amrex\_regrid} -- method to regrid the mesh
+\item \code{amrex\_multifab\_build} -- build a union of boxes at a given level
 of refinement
-\item \code{amr\_.....} \mynote{this is where the ghost cell filling
-  function goes}
-\item \code{amr\_octree\_iter\_build} -- iterator for octree like behaviour
-\item \code{amr\_fluxes} -- apply flux correction where needed
+\item \code{amrex\_multifab\_swap} -- allows evolution to have
+  not-in-place update without having to copy data, alternative
+  timesteps switch their source and destination data structures
+\item \code{amrex\_multifab\_destroy} -- release resources from multifab
+  and destroy
+\item \code{amrex\_fluxregister\_build} -- make provision for flux
+  registers at fine-coarse boundaries
+\item \code{amrex\_fluxregister\_destroy} -- release flux 
+  registers at fine-coarse boundaries
+\item \code{amrex\_mfiter\_build} -- build the iterator 
+\item \code{amrex\_octree\_iter\_build} -- build the iterator with octree like behaviour
+\item \code{amrex\_mfiter\_destroy} -- destroy the iterator
+\item \code{amrex\_data\_init} -- allocate space for state data
+\item \code{amrex\_data\_finalize} -- release state data space
+\item \code{amrex\_fillpatch} -- fill ghost cells with appropriate values
+  from neighbors at the same level or from the underlying coarser
+  level
+\item \code{amrex\_fillcoarsepatch} -- fill a coarse patch from fine values
+\item \code{flux\_register} -- update flux registers where needed
 \end{itemize}
 
 
 \section{Castro}
 \label{sec:castro}
-\castro~ needs relatively modest changes because its mesh is managed by
-precursor to \amrex, {\it BoxLib}. Hence it will not need fundamental
+\castro needs relatively modest changes because it was built on top
+of BoxLib. It will not need fundamental
 changes to how it interacts with the mesh and state variables. Main
-changes needed in \castro~ are listed below.
-\begin{enumerate}
-%\item Wrappers for calling \chimera  interfaces.
-\item For using physics solvers from \flash~ wrappers are needed for
+changes needed in \castro are listed below.
+\begin{itemize}
+\item Wrappers for calling \chimera  interfaces.
+\item For using physics solvers from \flash wrappers are needed for
 calling the initialization functions for the corresponding solvers,
 which can also transmit all the parameters and static data needed for
 the solver operation. For example, in order to use the Riemann solvers
 in \flash's {\it Hydro}, \castro has to implement an equivalent of
 \flash's {\it Hydro\_init} which initializes all runtime parameters, 
 scratch space and other unit scope scalar variables.
-\end{enumerate}
+\end{itemize}
 
 \section{Chimera}
 All of \chimera's code modules will be transformed into encapsulated
@@ -94,11 +155,11 @@ implementation will be encoded in a meta-information file (Config for
 
 \section{FLASH}
 \label{sec:flash}
- In \flash~ some changes are trivial but pervasive, some others are
+ In \flash some changes are trivial but pervasive, some others are
 modest and fairly extensive, and some are deep but not very
-extensive. The deepest change is enabling \amrex~ to manage mesh
+extensive. The deepest change is enabling \amrex to manage mesh
 refinement and state variables instead of \paramesh. Even though
-\amrex~ will mimic the octree like behavior of \paramesh, there are
+\amrex will mimic the octree like behavior of \paramesh, there are
 fundamental differences in the way that state variables and metadata
 are managed and made available to other code units. Below we list the
 changes, the depth and extent of the changes, and the reasoning behind
@@ -119,9 +180,9 @@ asynchronous runtime task management.
 \item Eliminate blockID as the method of identifying blocks and for
 fetching their meta information -- change is modest but pervasive.
 \begin{itemize}
-\item \paramesh~ knows its blocks through blockID, but \amrex~ does not.
+\item \paramesh knows its blocks through blockID, but \amrex does not.
 \item Currently all physics units use the blockID to fetch information
-such as physical coordinates, dx's etc from the \grid~ unit in a pull
+such as physical coordinates, dx's etc from the \grid unit in a pull
 mode. 
 \item In the new mode this information comes as attached metadata with
 the iterator, which further abstracts mesh management details from physics.
@@ -148,12 +209,12 @@ conditions are applied -- change is local and modest.
 to use \paramesh.
 \item A new implementation is needed for initializing with \amrex.
 \end{itemize}
-\item Create an \amrex~ equivalent iterator for \paramesh~ for backward
+\item Create an \amrex equivalent iterator for \paramesh for backward
 compatibility -- change is local and modest.
 \item Several helper and accessor functions need new implementation within the
-\grid~ unit for interfacing with \amrex~ -- change is local but
+\grid unit for interfacing with \amrex -- change is local but
 relatively deep in the form of an alternative implementation of the
-\grid~ unit functionality.
+\grid unit functionality.
 \item Handling of flux conservation will change -- the change is local
 and modest.
 \end{enumerate}
@@ -162,7 +223,7 @@ and modest.
 \label{sec:other}
 \begin{enumerate}
 \item Implement {\it Unit\_init} methods for all new capabilities or
-alternative implementations being used from \castro~ and \chimera along
+alternative implementations being used from \castro and \chimera along
 with the necessary wrappers -- change is local and will vary in
 complexity from unit to unit.
 \item Implement functions to create arbitrarily sized vectors for
@@ -171,12 +232,12 @@ able to use it is likely to require deep changes in many parts of the
 code.
 \begin{itemize}
 \item This ability is needed for utilizing hardware that requires
-vectorization such as accelerators.
+vectorization, e.g. accelerators.
 \item Initially we will use it for zero-dimensional micro-physics, but
-eventually this may need to become embedded in the \amrex~
+eventually this may need to become embedded in the \amrex
 infrastructure.
-\item One other major change is in I/O. Currently I/O in \flash~ gets
-direct access to all \grid~ data. This will now have to be obtained
+\item One other major change is in I/O. Currently I/O in \flash gets
+direct access to all \grid data. This will now have to be obtained
 through the iterator.
 \end{itemize}
 \item \flash's new version will allow the iterator to loop over blocks
@@ -186,13 +247,56 @@ possibility of refinement in time in \flash.
 
 \subsection{Interfaces}
 \label{sec:flash-interfaces}
-\begin{itemize}
-\item \code{Simulation\_initBlock} -- called by init\_prob\_data
-\item \code{Grid\_getCellCoords} -- fetch physical coordinates 
-\item \code{Grid\_makeVector} --
-\item \code{famrex\_multivab\_build} --
-\item \code{famrex\_mviter\_build} -- 
+In \flash the knowledge of {\it blockid} is pervasive across the
+entire code. \amrex, on the other hand, has no such notion. Thus many
+of existing interfaces have to be modified where information that came
+form querying the mesh for metadata about a block thought its identity
+is now either passed in, or acquired through some other means. Also,
+because the metadata transfer changes from a pull mode, where the mesh
+is queried for information, to push mode, where mesh hands over
+information with the iterator, many interfaces become redundant. Below
+we list new interfaces added to \flash and also the modified and
+eliminated interfaces. The list is not exhaustive, it ignores smaller
+helper functions, and may grow as more of combined capabilities
+undergo verification. We also do not list all local interfaces within
+a FLASH unit that need to change because they are too many, and are
+never exposed outside the unit.
 
+\subsubsection*{New interfaces}
+\begin{itemize}
+\item \code{Grid\_makeVector} -- turn either a subset of a block into
+  a flat vector or coalesce multiple blocks into a single vector, and
+  also the reverse
+\item \code{Grid\_multivab\_build} --mimic \amrex multifab behavior
+  over \paramesh
+\item \code{Grid\_mviter\_build} -- build iterator on top of the above
+  mimiced behavior in \paramesh 
+\end{itemize}
+\subsubsection*{Modified interfaces}
+\begin{itemize}
+\item \code{Grid\_getCellCoords} -- fetch physical coordinates 
+\item \code{Grid\_getDelta} -- fetch dx,dy,dz values
+\item \code{Unit} -- For all physics units, their main driver
+  interface, for example Hydro, Cool etc.
+\item \code{Unit\_computeDt} -- For all physics units that contribute
+  to determination of dt their compute dt interface
+\item \code{Simulation\_initBlock} -- apply initial conditions to one
+  block of data
+\item \code{Eos\_wrapped} -- apply equation of state to collection of data.
+\item \code{Eos\_guardCells} -- apply equation of state to ghost cells
+  filled at fine-coarse levels
+\end{itemize}
+\subsubsection*{Eliminated interfaces}
+\begin{itemize}
+\item \code{Grid\_getLocalNumBlks}
+\item \code{Grid\_getListofBlocks}
+\item \code{Grid\_getBlkIndexLimits}
+\item \code{Grid\_getBlkPtr}
+\item \code{Grid\_releaseBlkPtr}
+\item \code{Grid\_[get/put][point/row/plane/Blk]Data}
+\item \code{Grid\_BlkRefineLevel}
+\item \code{Grid\_getBlkCornerId}
+\item \code{Grid\_getBlkBoundBox}
 \end{itemize}
 
 \end{document}
