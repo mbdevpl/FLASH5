@@ -152,8 +152,6 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: yl_bcString,yr_bcString
   character(len=MAX_STRING_LENGTH) :: zl_bcString,zr_bcString
   character(len=MAX_STRING_LENGTH) :: eosModeString, grav_boundary_type
-  real :: dx, dy, dz
-  real, dimension(NDIM) :: rnb
   integer,save :: refVar
   integer :: countInComm, color, key, ierr
   integer :: nonrep
@@ -291,10 +289,6 @@ subroutine Grid_init()
 
 
 
-  !get the initial grid layout
-  call RuntimeParameters_get("nblockx", gr_nBlockX) !number of initial blks in x dir
-  call RuntimeParameters_get("nblocky", gr_nBlockY) !number of initial blks in y dir
-  call RuntimeParameters_get("nblockz", gr_nblockZ) !number of initial blks in z dir  
   call RuntimeParameters_get("refine_on_particle_count",gr_refineOnParticleCount)
 
   call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
@@ -322,7 +316,6 @@ subroutine Grid_init()
 #ifdef GRID_WITH_MONOTONIC
   gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
 #endif
-  call gr_initSpecific()
 
 
 !------------------------------------------------------------------------------
@@ -434,6 +427,8 @@ subroutine Grid_init()
      call Logfile_stampMessage("WARNING : Adaptive Grid did not find any variable to refine")
   end if
 
+  call gr_initSpecific()
+
   call RuntimeParameters_get("gr_restrictAllMethod", gr_restrictAllMethod)
 
   do i = UNK_VARS_BEGIN,UNK_VARS_END
@@ -444,68 +439,6 @@ subroutine Grid_init()
 
 
 
-  !! calculating deltas for each level of 
-  !! refinement and putting them in the
-  !! delta variable
-  dx = gr_imax - gr_imin
-  dy = gr_jmax - gr_jmin
-  dz = gr_kmax - gr_kmin
-  rnb = 0.0
-  rnb(1) = dx/(1.0*NXB*gr_nBlockX)
-#if NDIM > 1
-  rnb(2) = dy/(1.0*NYB*gr_nBlockY)
-#endif
-#if NDIM > 2
-  rnb(3) = dz/(1.0*NZB*gr_nBlockZ)
-#endif  
-  do i = 1,lrefine_max
-     gr_delta(1:NDIM,i) = rnb
-     gr_delta(NDIM+1:,i) = 0.0
-     rnb = rnb/2.0
-  end do
-
-      
-
-
-  gr_minCellSizes(IAXIS) = (gr_imax - gr_imin) / &
-       (gr_nblockX*NXB*2**(lrefine_max-1))
-  gr_minCellSize = gr_minCellSizes(IAXIS)
-
-
-  if (NDIM >= 2) then
-     gr_minCellSizes(JAXIS) = (gr_jmax - gr_jmin) / &
-          (gr_nblockY*NYB*2**(lrefine_max-1))
-     if (.not.gr_dirIsAngular(JAXIS)) then
-        gr_minCellSize = min(gr_minCellSize,gr_minCellSizes(JAXIS))
-     end if
-  end if
-
-  if (NDIM == 3) then
-     gr_minCellSizes(KAXIS) = (gr_kmax - gr_kmin) / &
-          (gr_nblockZ*NZB*2**(lrefine_max-1))
-     if (.not. gr_dirIsAngular(KAXIS)) then
-        gr_minCellSize = min(gr_minCellSize,gr_minCellSizes(KAXIS))
-     end if
-  end if
-
-
-
-
-#ifdef FL_NON_PERMANENT_GUARDCELLS
-  gr_blkPtrRefCount = 0 
-  gr_blkPtrRefCount_fc = 0
-  gr_lastBlkPtrGotten = 0 
-  gr_lastBlkPtrGotten_fc = 0
-#endif
-  call gr_setDataStructInfo()
-  call gr_bcInit()
-
-  !Initialize grid arrays used by IO
-  allocate(gr_nToLeft(0:gr_meshNumProcs-1))
-  allocate(gr_gid(nfaces+nchild+1, MAXBLOCKS))
-#ifdef FLASH_GRID_PARAMESH3OR4
-  allocate(gr_gsurr_blks(2,1+(K1D*2),1+(K2D*2),1+(K3D*2),MAXBLOCKS))
-#endif
 
   !Only call the particle initialization routines when
   !we are using particles.
@@ -521,65 +454,6 @@ subroutine Grid_init()
 
   gr_region=0.0
  
-#ifndef BSS_GRID_ARRAYS
-# if NSCRATCH_GRID_VARS > 0
-  allocate(scratch(SCRATCH_GRID_VARS_BEGIN:SCRATCH_GRID_VARS_END,&
-       gr_iLoGc:gr_iHiGc+1, gr_jLoGc:gr_jHiGc+1,&
-       gr_kLoGc:gr_kHiGc+1,MAXBLOCKS))
-# else
-  allocate(scratch(1,1,1,1,1))
-# endif
-
-# if NSCRATCH_CENTER_VARS > 0
-  allocate(scratch_ctr(SCRATCH_CENTER_VARS_BEGIN:SCRATCH_CENTER_VARS_END,&
-       gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc,&
-       gr_kLoGc:gr_kHiGc,MAXBLOCKS))
-# else
-  allocate(scratch_ctr(1,1,1,1,1))
-# endif
-
-# if(NSCRATCH_FACEX_VARS>0)  
-  allocate(scratch_facevarx( SCRATCH_FACEX_VARS_BEGIN:SCRATCH_FACEX_VARS_END,&
-       gr_iLoGc:gr_iHiGc+1, gr_jLoGc:gr_jHiGc,&
-       gr_kLoGc:gr_kHiGc,MAXBLOCKS))
-# else
-  allocate(scratch_facevarx(1,1,1,1,1))
-# endif
-
-# if(NSCRATCH_FACEY_VARS>0)  
-  allocate(scratch_facevary( SCRATCH_FACEY_VARS_BEGIN:SCRATCH_FACEY_VARS_END,&
-       gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc+K2D,&
-       gr_kLoGc:gr_kHiGc,MAXBLOCKS))
-# else
-  allocate(scratch_facevary(1,1,1,1,1))
-# endif  
-
-# if(NSCRATCH_FACEZ_VARS>0)
-  allocate(scratch_facevarz( SCRATCH_FACEZ_VARS_BEGIN:SCRATCH_FACEZ_VARS_END,&
-       gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc,&
-       gr_kLoGc:gr_kHiGc+K3D,MAXBLOCKS) )
-# else
-  allocate(scratch_facevarz(1,1,1,1,1))
-# endif
-
-  allocate(gr_xflx(NFLUXES,2,NYB,NZB,MAXBLOCKS))
-  allocate(gr_yflx(NFLUXES,NXB,2,NZB,MAXBLOCKS))
-  allocate(gr_zflx(NFLUXES,NXB,NYB,2,MAXBLOCKS))
-  
-# ifdef FLASH_HYDRO_UNSPLIT
-#  if NDIM >= 2
-  allocate(gr_xflx_yface(NFLUXES,2:NXB, 2   ,NZB  ,MAXBLOCKS))
-  allocate(gr_yflx_xface(NFLUXES,2    ,2:NYB,NZB  ,MAXBLOCKS))
-#   if NDIM == 3
-  allocate(gr_xflx_zface(NFLUXES,2:NXB,NYB  , 2   ,MAXBLOCKS))
-  allocate(gr_yflx_zface(NFLUXES,NXB,  2:NYB, 2   ,MAXBLOCKS))
-  allocate(gr_zflx_xface(NFLUXES, 2 ,NYB    ,2:NZB,MAXBLOCKS))
-  allocate(gr_zflx_yface(NFLUXES,NXB, 2     ,2:NZB,MAXBLOCKS))
-#   endif
-#  endif
-# endif
-
-#endif
 
   if(gr_meshMe == MASTER_PE) call printRefinementInfo()
 
