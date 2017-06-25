@@ -107,7 +107,7 @@ Module Grid_data
 
 #endif
 
-  integer,save :: gr_lrefineDel, gr_maxRefine
+  integer,save :: gr_lrefineDel, gr_maxRefine, gr_minRefine
   logical,save :: gr_enforceMaxRefinement
   logical,save :: gr_lrefineMaxRedDoByLogR, gr_lrefineMaxRedDoByTime
   real,save :: gr_lrefineMaxRedRadiusSq

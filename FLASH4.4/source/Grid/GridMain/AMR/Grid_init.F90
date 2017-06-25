@@ -131,7 +131,7 @@ subroutine Grid_init()
   use Logfile_interface, ONLY : Logfile_stampMessage
   use Simulation_interface, ONLY : Simulation_mapStrToInt, Simulation_getVarnameType
   use Grid_interface, only: Grid_getVarNonRep
-  use paramesh_comm_data, ONLY : amr_mpi_meshComm
+
 !  use gr_sbInterface, ONLY: gr_sbInit
   implicit none
 
@@ -177,7 +177,6 @@ subroutine Grid_init()
   call Driver_getNumProcs(MESH_ACROSS_COMM, gr_meshAcrossNumProcs)
   call Driver_getComm(MESH_ACROSS_COMM, gr_meshAcrossComm)
 
-  amr_mpi_meshComm=gr_meshComm
 
 #ifdef GRID_WITH_MONOTONIC
   if (NGUARD < 4) then
@@ -198,62 +197,56 @@ subroutine Grid_init()
   call RuntimeParameters_get('ymax', gr_jmax)
   call RuntimeParameters_get('zmin', gr_kmin)
   call RuntimeParameters_get('zmax', gr_kmax)
-
-  call Paramesh_init()
-!!  gr_meshComm = FLASH_COMM
-! The following renaming was done: "conserved_var" -> "convertToConsvdForMeshCalls". - KW
-  call RuntimeParameters_get("convertToConsvdForMeshCalls", gr_convertToConsvdForMeshCalls)
-  call RuntimeParameters_get("convertToConsvdInMeshInterp", gr_convertToConsvdInMeshInterp)
-  if (gr_convertToConsvdInMeshInterp) then
-#ifdef FLASH_GRID_PARAMESH2
-        ! For PARAMESH2, if the new way of conversion to conserved
-        ! form is requested, use the old way instead and generate
-        ! appropriate warnings. - KW
-     if (gr_convertToConsvdForMeshCalls) then
-        if(gr_meshMe == MASTER_PE) print*,'WARNING : convertToConsvdInMeshInterp is ignored in PARAMESH2'
-        call Logfile_stampMessage("WARNING : convertToConsvdInMeshInterp is ignored in PARAMESH2")
-     else
-        if(gr_meshMe == MASTER_PE) &
-             print*,'WARNING : convertToConsvdInMeshInterp is not implemented in PARAMESH2'// &
-               ', using convertToConsvdForMeshCalls logic instead.'
-        call Logfile_stampMessage( &
-             'WARNING : convertToConsvdInMeshInterp is not implemented in PARAMESH2'// &
-             ', using convertToConsvdForMeshCalls logic instead.')
-        gr_convertToConsvdForMeshCalls = .TRUE.
-     end if
-#else
-     if (gr_convertToConsvdForMeshCalls) then
-        ! For PARAMESH 4, if both ways of conversion to conserved form are requested,
-        ! Let the new mechanism win and try to make sure the old one is not used. - KW
-        if(gr_meshMe == MASTER_PE) &
-             print*,'WARNING: convertToConsvdForMeshCalls ignored since convertToConsvdInMeshInterp is requested'
-        call Logfile_stampMessage( &
-             "WARNING: convertToConsvdForMeshCalls ignored since convertToConsvdInMeshInterp is requested")
-        gr_convertToConsvdForMeshCalls = .FALSE.
-     end if
-#endif
-  end if
-
-#ifndef FLASH_GRID_PARAMESH2
-  call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
-  call RuntimeParameters_get("gr_sanitizeDataMode",  gr_sanitizeDataMode)
-  call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
-#endif
-
+  call RuntimeParameters_get('lrefine_min', gr_minRefine)
+  call RuntimeParameters_get('lrefine_max', gr_maxRefine)
   call RuntimeParameters_get("nrefs", gr_nrefs)
   call RuntimeParameters_get('lrefine_min_init', gr_lrefineMinInit)
-  call RuntimeParameters_get('lrefine_min', lrefine_min)
-  call RuntimeParameters_get('lrefine_max', lrefine_max)
+  lrefine_min=gr_minRefine
+  lrefine_max=gr_maxRefine
 
   call RuntimeParameters_get("smalle",gr_smalle)
   call RuntimeParameters_get("smlrho",gr_smallrho)
   call RuntimeParameters_get("smallx",gr_smallx) !
 !  call RuntimeParameters_get("grid_monotone_hack", gr_monotone) ! for "quadratic_cartesian" interpolation
   call RuntimeParameters_get("interpol_order",gr_intpol) ! for "monotonic" interpolation
-#ifdef GRID_WITH_MONOTONIC
-  gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
+
+#ifdef FLASH_PARTICLES
+  call RuntimeParameters_get('useParticles',gr_useParticles)
+  call RuntimeParameters_get('pt_maxPerProc',gr_maxParticlesPerProc)
+#else
+  gr_useParticles=.false.
 #endif
 
+#ifdef FLASH_EDEP
+  call RuntimeParameters_get('useEnergyDeposition', gr_useEnergyDeposition)
+  gr_useParticles = gr_useEnergyDeposition
+#else
+  gr_useEnergyDeposition = .false.
+#endif
+
+#ifdef FLASH_GRID_PARTICLES
+  call RuntimeParameters_get('useProtonImaging',useProtonImaging)
+  if (useProtonImaging) then
+      gr_useParticles=.true.
+  end if
+  call RuntimeParameters_get('useProtonEmission',useProtonEmission)
+  if (useProtonEmission) then
+      gr_useParticles=.true.
+  end if
+#endif
+
+  gr_allPeriodic = .true.
+  do i = 1,NDIM
+     if(gr_domainBC(LOW,i)/=PERIODIC)gr_allPeriodic=.false.
+     if(gr_domainBC(HIGH,i)/=PERIODIC)gr_allPeriodic=.false.
+  end do
+
+  !Check if there are gravitational isolated boundary conditions
+  !in order to determine which solvers to intialize.
+  call RuntimeParameters_get("grav_boundary_type", grav_boundary_type)
+  gr_isolatedBoundaries = (grav_boundary_type=="isolated")
+
+  gr_anyVarToConvert = .FALSE.
 
   !get the boundary conditions stored as strings in the flash.par file
   call RuntimeParameters_get("xl_boundary_type", xl_bcString)
@@ -275,30 +268,6 @@ subroutine Grid_init()
   call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
   call RuntimeParameters_get("bndPriorityThree",gr_bndOrder(3))
 
-  !get the initial grid layout
-  call RuntimeParameters_get("nblockx", gr_nBlockX) !number of initial blks in x dir
-  call RuntimeParameters_get("nblocky", gr_nBlockY) !number of initial blks in y dir
-  call RuntimeParameters_get("nblockz", gr_nblockZ) !number of initial blks in z dir  
-  call RuntimeParameters_get("refine_on_particle_count",gr_refineOnParticleCount)
-
-  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
-  call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
-
-#ifdef FLASH_GRID_PARAMESH2
-  call RuntimeParameters_get( "msgbuf",i)
-  gr_msgbuffer = (i==1)
-#endif
-
-!------------------------------------------------------------------------------
-! mesh geometry       (gr_geometry and gr_{i,j,k}{min,max} already set above)
-!------------------------------------------------------------------------------
-
-! Determine the geometries of the individual dimensions, and scale
-! angle value parameters that are expressed in degrees to radians.
-! This call must be made after gr_geometry, gr_domainBC, and gr_{j,k}{min,max}
-! have been set based on the corresponding runtime parameters.
-  call gr_initGeometry()
-
   !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
   gr_globalDomain(LOW,IAXIS) = gr_imin
   gr_globalDomain(LOW,JAXIS) = gr_jmin
@@ -319,6 +288,51 @@ subroutine Grid_init()
   call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
   gr_justExchangedGC = .false.
 
+
+
+
+  !get the initial grid layout
+  call RuntimeParameters_get("nblockx", gr_nBlockX) !number of initial blks in x dir
+  call RuntimeParameters_get("nblocky", gr_nBlockY) !number of initial blks in y dir
+  call RuntimeParameters_get("nblockz", gr_nblockZ) !number of initial blks in z dir  
+  call RuntimeParameters_get("refine_on_particle_count",gr_refineOnParticleCount)
+
+  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
+  call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
+
+!!  gr_meshComm = FLASH_COMM
+! The following renaming was done: "conserved_var" -> "convertToConsvdForMeshCalls". - KW
+  call RuntimeParameters_get("convertToConsvdForMeshCalls", gr_convertToConsvdForMeshCalls)
+  call RuntimeParameters_get("convertToConsvdInMeshInterp", gr_convertToConsvdInMeshInterp)
+  if (gr_convertToConsvdInMeshInterp) then
+     if (gr_convertToConsvdForMeshCalls) then
+        ! For PARAMESH 4, if both ways of conversion to conserved form are requested,
+        ! Let the new mechanism win and try to make sure the old one is not used. - KW
+        if(gr_meshMe == MASTER_PE) &
+             print*,'WARNING: convertToConsvdForMeshCalls ignored since convertToConsvdInMeshInterp is requested'
+        call Logfile_stampMessage( &
+             "WARNING: convertToConsvdForMeshCalls ignored since convertToConsvdInMeshInterp is requested")
+        gr_convertToConsvdForMeshCalls = .FALSE.
+     end if
+     
+  end if
+  
+
+
+#ifdef GRID_WITH_MONOTONIC
+  gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
+#endif
+  call gr_initSpecific()
+
+
+!------------------------------------------------------------------------------
+! mesh geometry       (gr_geometry and gr_{i,j,k}{min,max} already set above)
+!------------------------------------------------------------------------------
+
+! Determine the geometries of the individual dimensions, and scale
+! angle value parameters that are expressed in degrees to radians.
+! This call must be made after gr_geometry, gr_domainBC, and gr_{j,k}{min,max}
+! have been set based on the corresponding runtime parameters.
 
   !! This section of the code identifies the variables to used in
   !! the refinement criterion. If a variable is a refinement variable
@@ -422,43 +436,6 @@ subroutine Grid_init()
 
   call RuntimeParameters_get("gr_restrictAllMethod", gr_restrictAllMethod)
 
-#ifdef FLASH_PARTICLES
-  call RuntimeParameters_get('useParticles',gr_useParticles)
-  call RuntimeParameters_get('pt_maxPerProc',gr_maxParticlesPerProc)
-#else
-  gr_useParticles=.false.
-#endif
-
-#ifdef FLASH_EDEP
-  call RuntimeParameters_get('useEnergyDeposition', gr_useEnergyDeposition)
-  gr_useParticles = gr_useEnergyDeposition
-#else
-  gr_useEnergyDeposition = .false.
-#endif
-
-#ifdef FLASH_GRID_PARTICLES
-  call RuntimeParameters_get('useProtonImaging',useProtonImaging)
-  if (useProtonImaging) then
-      gr_useParticles=.true.
-  end if
-  call RuntimeParameters_get('useProtonEmission',useProtonEmission)
-  if (useProtonEmission) then
-      gr_useParticles=.true.
-  end if
-#endif
-
-  gr_allPeriodic = .true.
-  do i = 1,NDIM
-     if(gr_domainBC(LOW,i)/=PERIODIC)gr_allPeriodic=.false.
-     if(gr_domainBC(HIGH,i)/=PERIODIC)gr_allPeriodic=.false.
-  end do
-
-  !Check if there are gravitational isolated boundary conditions
-  !in order to determine which solvers to intialize.
-  call RuntimeParameters_get("grav_boundary_type", grav_boundary_type)
-  gr_isolatedBoundaries = (grav_boundary_type=="isolated")
-
-  gr_anyVarToConvert = .FALSE.
   do i = UNK_VARS_BEGIN,UNK_VARS_END
      gr_vars(i)=i
      call Simulation_getVarnameType(i, gr_vartypes(i))

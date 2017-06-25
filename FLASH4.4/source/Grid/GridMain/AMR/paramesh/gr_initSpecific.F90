@@ -119,5 +119,20 @@
 !!REORDER(5):gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 
 subroutine gr_initSpecific()
+  use Grid_data
+  use gr_specificData
+  use RuntimeParameters_interface, ONLY : RuntimeParameters_get
+  use paramesh_comm_data, ONLY : amr_mpi_meshComm
+
+  implicit none
+  
+  call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
+  call RuntimeParameters_get("gr_sanitizeDataMode",  gr_sanitizeDataMode)
+  call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
+
+  amr_mpi_meshComm=gr_meshComm
+  call Paramesh_init()
+  call gr_initGeometry()
+
 end subroutine gr_initSpecific
 
