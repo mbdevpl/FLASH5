@@ -140,6 +140,8 @@ subroutine gr_initSpecific()
   call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
   call RuntimeParameters_get("gr_sanitizeDataMode",  gr_sanitizeDataMode)
   call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
+  lrefine_min=gr_minRefine
+  lrefine_max=gr_maxRefine
 
   amr_mpi_meshComm=gr_meshComm
   call Paramesh_init()

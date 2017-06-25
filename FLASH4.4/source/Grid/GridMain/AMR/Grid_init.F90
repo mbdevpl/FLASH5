@@ -121,13 +121,10 @@
 subroutine Grid_init()
 
   use Grid_data
-  use gr_specificData
-  use tree, ONLY : lrefine_min, lrefine_max, nfaces, nchild
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
     RuntimeParameters_mapStrToInt
   use Driver_interface, ONLY : Driver_abortFlash, Driver_getMype, &
     Driver_getNumProcs, Driver_getComm
-  use Driver_interface, ONLY : Driver_getMype, Driver_getNumProcs, Driver_getComm
   use Logfile_interface, ONLY : Logfile_stampMessage
   use Simulation_interface, ONLY : Simulation_mapStrToInt, Simulation_getVarnameType
   use Grid_interface, only: Grid_getVarNonRep
@@ -199,8 +196,6 @@ subroutine Grid_init()
   call RuntimeParameters_get('lrefine_max', gr_maxRefine)
   call RuntimeParameters_get("nrefs", gr_nrefs)
   call RuntimeParameters_get('lrefine_min_init', gr_lrefineMinInit)
-  lrefine_min=gr_minRefine
-  lrefine_max=gr_maxRefine
 
   call RuntimeParameters_get("smalle",gr_smalle)
   call RuntimeParameters_get("smlrho",gr_smallrho)
@@ -378,8 +373,7 @@ subroutine Grid_init()
   gr_enforceMaxRefinement = .FALSE.
 
   call RuntimeParameters_get("lrefine_del", gr_lrefineDel)
-  gr_maxRefine=lrefine_max
-  allocate(gr_delta(MDIM,lrefine_max))
+  allocate(gr_delta(MDIM,gr_maxRefine))
 
   call RuntimeParameters_get("gr_lrefineMaxRedDoByLogR", gr_lrefineMaxRedDoByLogR)
   call RuntimeParameters_get("gr_lrefineMaxRedRadiusFact", gr_lrefineMaxRedRadiusSq)
@@ -454,35 +448,5 @@ subroutine Grid_init()
 
   gr_region=0.0
  
-
-  if(gr_meshMe == MASTER_PE) call printRefinementInfo()
-
-contains
-
-  subroutine printRefinementInfo()
-    implicit none
-    integer :: l,n
-    real    :: del(MDIM)
-    character(len=20) :: fmtStr
-    character(len=2)  :: colHdr(MDIM) = (/'dx', 'dy', 'dz'/)
-
-    write(*,*) 'Grid_init: resolution based on runtime params:'
-    write(*,'(A9,3(A12:4x))')  'lrefine', (colHdr(n),n=1,NDIM)
-    do l = lrefine_min, lrefine_max
-       del (IAXIS)               = (gr_imax - gr_imin) / (gr_nblockX*NXB*2.**(l-1))
-       if (NDIM > 1)  del(JAXIS) = (gr_jmax - gr_jmin) / (gr_nblockY*NYB*2.**(l-1))
-       if (NDIM == 3) del(KAXIS) = (gr_kmax - gr_kmin) / (gr_nblockZ*NZB*2.**(l-1))
-
-       if (maxval(del(IAXIS:NDIM)) .GT. 999999999999.999) then
-          fmtStr = '(I7,2x,1P,3G16.3)'
-       else if (minval(del(IAXIS:NDIM)) .LE. 0.0009) then
-          fmtStr = '(I7,2x,1P,3G16.3)'
-       else
-          fmtStr = '(I7,2x,3F16.3)'
-       end if
-
-       write(*,fmtStr) l, (del(n),n=1,NDIM)
-    end do
-  end subroutine printRefinementInfo
 
 end subroutine Grid_init
