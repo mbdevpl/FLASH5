@@ -48,7 +48,7 @@
 
 subroutine Grid_dump(var,num, blockID, gcell)
 
-  use Grid_data, ONLY : gr_ilo, gr_ihi, gr_jlo, gr_jhi, &
+  use gr_specificData, ONLY : gr_ilo, gr_ihi, gr_jlo, gr_jhi, &
        gr_klo, gr_khi, gr_iloGC, gr_ihiGC, gr_jloGC, gr_jhiGC, &
        gr_kloGC, gr_khiGC
 

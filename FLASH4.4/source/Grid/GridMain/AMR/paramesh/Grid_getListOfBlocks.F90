@@ -92,7 +92,7 @@ subroutine Grid_getListOfBlocks(blockType, listOfBlocks,count,refinementLevel,&
 
   use tree, ONLY : nodetype,lnblocks,neigh,lrefine,bnd_box
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_data, ONLY : gr_oneBlock
+  use gr_specificData, ONLY : gr_oneBlock
 
 #include "constants.h"
 #include "Flash.h"  

@@ -111,8 +111,7 @@
 
 subroutine Grid_getCellCoords(axis, cid,stride, edge, guardcell, coordinates, size)
 
-  use Grid_data, ONLY : gr_oneBlock,gr_globalDomain,gr_delta
-  use tree, ONLY :  lrefine_max
+  use Grid_data, ONLY : gr_globalDomain,gr_delta, gr_maxRefine
   use Driver_interface, ONLY : Driver_abortFlash
 
 #include "constants.h"
@@ -156,14 +155,14 @@ subroutine Grid_getCellCoords(axis, cid,stride, edge, guardcell, coordinates, si
   if(guardcell) first=first-stride(axis)*NGUARD
   if((edge==CENTER).and.(stride(axis)==1))then
      do i = 1,size
-        coordinates(i)= gr_globalDomain(LOW,axis) + (first+0.5)*gr_delta(axis,lrefine_max)
+        coordinates(i)= gr_globalDomain(LOW,axis) + (first+0.5)*gr_delta(axis,gr_maxRefine)
         first=first+stride(axis)
      end do
   else
      if(edge==RIGHT_EDGE)first=first+stride(axis)
      if((edge==CENTER).and.(stride(axis)>1))first=first+stride(axis)/2
      do i = 1,size
-        coordinates(i)= gr_globalDomain(LOW,axis) + first*gr_delta(axis,lrefine_max)
+        coordinates(i)= gr_globalDomain(LOW,axis) + first*gr_delta(axis,gr_maxRefine)
         first=first+stride(axis)
      end do
   end if

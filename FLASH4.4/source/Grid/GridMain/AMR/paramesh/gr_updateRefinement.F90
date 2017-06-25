@@ -59,8 +59,9 @@
 subroutine gr_updateRefinement( gridChanged)
 
 #include "Flash.h"
-  use Grid_data, ONLY : gr_blkList, gr_convertToConsvdForMeshCalls,&
+  use Grid_data, ONLY :  gr_convertToConsvdForMeshCalls,&
        gr_convertToConsvdInMeshInterp, gr_eosMode, gr_meshMe, gr_gcellsUpToDate
+  use gr_specificData, ONLY : gr_blkList
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_interface, ONLY : Grid_getListOfBlocks,Grid_getBlkIndexLimits,Grid_getBlkPtr,Grid_releaseBlkPtr
   use Simulation_interface, ONLY : Simulation_customizeProlong

@@ -39,12 +39,13 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,blockID,dataBlock)
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getDeltas
 #include "Flash.h"
-  use Grid_data, ONLY : gr_geometry,gr_iloGc,gr_ihiGc,&
-                         gr_jloGc,gr_jhiGc,gr_kloGc,gr_khiGc
+  use Grid_data, ONLY : gr_geometry
 #ifdef FLASH_GRID_UG
-  use Grid_data, ONLY : gr_iCoords,gr_jCoords,gr_kCoords
+  use Grid_data, ONLY : gr_iCoords,gr_jCoords,gr_kCoords,gr_iloGc,gr_ihiGc,&
+                         gr_jloGc,gr_jhiGc,gr_kloGc,gr_khiGc
 #else
-  use Grid_data, ONLY : gr_oneBlock
+  use gr_specificData, ONLY : gr_oneBlock,gr_iloGc,gr_ihiGc,&
+                         gr_jloGc,gr_jhiGc,gr_kloGc,gr_khiGc
 #endif
   implicit none
 #include "constants.h"

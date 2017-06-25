@@ -121,6 +121,7 @@
 subroutine Grid_init()
 
   use Grid_data
+  use gr_specificData
   use tree, ONLY : lrefine_min, lrefine_max, nfaces, nchild
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
     RuntimeParameters_mapStrToInt

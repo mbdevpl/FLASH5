@@ -230,11 +230,10 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
 #include "Flash.h"
 
-  use Grid_data, ONLY : gr_blkList, gr_justExchangedGC, &
-       gr_convertToConsvdInMeshInterp, &
-       gr_enableMaskedGCFill, gr_eosModeNow, gr_meshMe, gr_meshComm, &
-       gr_gcellsUpToDate
-
+  use Grid_data, ONLY :  gr_justExchangedGC, &
+        gr_eosModeNow, gr_meshMe, gr_meshComm, &
+       gr_gcellsUpToDate,gr_convertToConsvdInMeshInterp
+  use gr_specificData, ONLY : gr_blkList, gr_enableMaskedGCFill
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop

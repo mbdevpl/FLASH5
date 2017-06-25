@@ -51,9 +51,9 @@ subroutine gr_markRefineDerefine(&
   use paramesh_dimensions, ONLY: il_bnd1,iu_bnd1,jl_bnd1,ju_bnd1,kl_bnd1,ku_bnd1
   use physicaldata, ONLY : gcell_on_cc, unk, unk1, no_permanent_guardcells
   use tree
-  use Grid_data, ONLY: gr_geometry, gr_oneBlock, gr_maxRefine, &
+  use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
        gr_meshComm, gr_meshMe
-
+  use gr_specificData, ONLY : gr_oneBlock
   use paramesh_interfaces, ONLY: amr_1blk_guardcell
 
   implicit none

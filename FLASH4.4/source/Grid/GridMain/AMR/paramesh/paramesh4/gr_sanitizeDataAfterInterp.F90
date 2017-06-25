@@ -69,8 +69,8 @@
 
 subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
 
-  use Grid_data, ONLY : gr_smallrho,gr_smalle, gr_meshMe, &
-       gr_sanitizeDataMode, gr_sanitizeVerbosity
+  use Grid_data, ONLY : gr_smallrho,gr_smalle, gr_meshMe
+  use gr_specificData, ONLY : gr_sanitizeDataMode, gr_sanitizeVerbosity
   use Logfile_interface, ONLY : Logfile_stamp
   use physicaldata, ONLY:unk, gcell_on_cc
   use tree, ONLY:nodetype

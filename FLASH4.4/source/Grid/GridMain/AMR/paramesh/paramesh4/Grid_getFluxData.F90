@@ -92,12 +92,12 @@ subroutine Grid_getFluxData(blockID, axis, fluxes, dataSize, pressureSlots, area
 
   use physicaldata, ONLY : flux_x, flux_y, flux_z, nfluxes
   use tree, ONLY : surr_blks, nodetype
-  use Grid_data, ONLY : gr_xflx, gr_yflx, gr_zflx
+  use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx
 #ifdef FLASH_HYDRO_UNSPLIT
 #if NDIM >=2
-  use Grid_data, ONLY : gr_xflx_yface, gr_yflx_xface
+  use gr_specificData, ONLY : gr_xflx_yface, gr_yflx_xface
 #if NDIM == 3
-  use Grid_data, ONLY : gr_xflx_zface, gr_yflx_zface, gr_zflx_xface, gr_zflx_yface
+  use gr_specificData, ONLY : gr_xflx_zface, gr_yflx_zface, gr_zflx_xface, gr_zflx_yface
 #endif
 #endif
 #endif

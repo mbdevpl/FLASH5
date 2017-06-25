@@ -25,8 +25,8 @@
 subroutine gr_updateData()
 
   use tree, ONLY : bnd_box,lnblocks,lrefine,lrefine_max,nodetype
-  use Grid_data, ONLY:  gr_oneBlock, gr_delta, gr_imin, gr_jmin,gr_kmin
-  use Grid_data, ONLY:  gr_boxContainingLeafNodes
+  use gr_specificData, ONLY:  gr_oneBlock
+  use Grid_data, ONLY:  gr_delta, gr_imin, gr_jmin,gr_kmin, gr_boxContainingLeafNodes
 
   implicit none
 #include "constants.h"

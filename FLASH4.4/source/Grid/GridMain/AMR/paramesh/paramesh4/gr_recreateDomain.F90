@@ -54,8 +54,8 @@
 
 subroutine gr_recreateDomain
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_data, ONLY : gr_nBlockX, gr_nBlockY, gr_nBlockZ,&
-                        gr_imin,gr_imax,gr_jmin,gr_jmax,gr_kmin,gr_kmax
+  use gr_specificData, ONLY : gr_nBlockX, gr_nBlockY, gr_nBlockZ
+  use Grid_data,ONLY: gr_imin,gr_imax,gr_jmin,gr_jmax,gr_kmin,gr_kmax
   use Simulation_interface, ONLY : Simulation_defineDomain
 
   use tree, ONLY : boundary_box, boundary_index,mboundaries,nboundaries

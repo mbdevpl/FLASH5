@@ -95,7 +95,8 @@
 subroutine gr_extendedGetCellCoords(axis, blockID, pe, edge, guardcell, coordinates, size)
 
   use Grid_data, ONLY : gr_meshMe, &
-       gr_delta, gr_imin, gr_jmin, gr_kmin, gr_oneBlock
+       gr_delta, gr_imin, gr_jmin, gr_kmin
+  use gr_specificData, ONLY:  gr_oneBlock
   use tree, ONLY: bnd_box, laddress, strt_buffer, last_buffer, lnblocks, lrefine, lrefine_max
   use Grid_interface, ONLY : Grid_getCellCoords
   use Driver_interface, ONLY : Driver_abortFlash

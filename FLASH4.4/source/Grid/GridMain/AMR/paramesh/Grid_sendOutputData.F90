@@ -44,15 +44,13 @@ subroutine Grid_sendOutputData()
 #include "constants.h"
 #include "Flash.h"
 
-  use Grid_data, ONLY :gr_str_geometry, gr_globalNumBlocks, gr_nToLeft, gr_globalOffset, &
-       gr_gid, gr_meshComm, gr_meshMe, gr_meshNumProcs
+  use Grid_data, ONLY :gr_str_geometry, gr_globalNumBlocks, &
+        gr_meshComm, gr_meshMe, gr_meshNumProcs
   use Grid_interface, ONLY : Grid_getLocalNumBlks
 
   use tree, ONLY : neigh, child, parent, nchild, nfaces
-#ifdef FLASH_GRID_PARAMESH3OR4
-  use Grid_data, ONLY : gr_gsurr_blks
+  use gr_specificData, ONLY : gr_nToLeft,gr_gid,gr_gsurr_blks,  gr_globalOffset
   use tree, ONLY : surr_blks
-#endif
 
   use IO_interface, ONLY : IO_setScalar
 

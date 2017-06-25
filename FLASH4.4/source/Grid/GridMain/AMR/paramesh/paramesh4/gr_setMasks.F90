@@ -59,7 +59,7 @@ subroutine gr_setMasks(gridDataStruct,maskSize,mask)
 
 #include "Flash.h"
 
-  use Grid_data, ONLY : gr_enableMaskedGCFill
+  use gr_specificData, ONLY : gr_enableMaskedGCFill
 
   !! This section disabled for now, may become useful with non-permanent gc support
 !!$#ifdef FL_NON_PERMANENT_GUARDCELLS

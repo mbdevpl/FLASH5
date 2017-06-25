@@ -88,7 +88,7 @@ subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,copyDirectio
   use Eos_interface, ONLY : Eos_getData, Eos_putDataR2
   use Grid_interface, ONLY: GRID_COPYDIR_TO_VECT, GRID_COPYDIR_FROM_VECT
   use Grid_data, ONLY :  gr_meshMe
-  use Grid_data, ONLY :  gr_ilo, gr_ihi, gr_jlo, gr_jhi, gr_klo, gr_khi
+  use gr_specificData, ONLY :  gr_ilo, gr_ihi, gr_jlo, gr_jhi, gr_klo, gr_khi
 
   implicit none
 

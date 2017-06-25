@@ -24,7 +24,7 @@
 
 subroutine Grid_guardCellMaskHook(ccMask, needEos)
   use Burn_interface, ONLY: Burn_guardCellMaskHook
-  use Grid_data, ONLY: gr_enableMaskedGCFill
+  use gr_specificData, ONLY: gr_enableMaskedGCFill
   implicit none
   logical,intent(INOUT) :: ccMask(*)
   logical,intent(IN)    :: needEos

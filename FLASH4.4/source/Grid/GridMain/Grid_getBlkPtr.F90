@@ -65,7 +65,7 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct)
 
   use physicaldata, ONLY : unk, facevarx, facevary, facevarz
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_data, ONLY : scratch,scratch_ctr,&
+  use gr_specificData, ONLY : scratch,scratch_ctr,&
        scratch_facevarx,scratch_facevary,scratch_facevarz
 #ifdef FLASH_GRID_PARAMESH
   use workspace, ONLY : work

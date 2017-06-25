@@ -45,7 +45,7 @@
 
 subroutine Grid_getGlobalIndexLimits(globalIndexLimits)
 
-  use Grid_data, ONLY : gr_nblockX, gr_nblockY, gr_nblockZ
+  use gr_specificData, ONLY : gr_nblockX, gr_nblockY, gr_nblockZ
   use tree, ONLY : lrefine_max
 
   implicit none
