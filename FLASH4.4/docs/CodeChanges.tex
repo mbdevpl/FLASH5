@@ -78,17 +78,6 @@ access to these libraries accordingly.
 The critical interfaces needed to obtain necessary services from the
 AMR packages are
 \begin{itemize}
-\item \code{my\_amr\_init} -- generate the initial mesh
-\item \code{my\_amr\_finalize} -- deallocate all resources and terminate
-  the mesh
-\item \code{my\_make\_new\_level\_from\_scratch} -- create a new level
-  without having access to a coarse level, this will normally be the
-  coarsest level of the mesh
-\item \code{my\_make\_new\_level\_from\_coarse} -- create a new level when
-  a coarse level exists below it
-\item \code{my\_clear\_level} -- destroy a level
-\item \code{my\_error\_estimate} -- provide criterion for tagging cells
-  for refinement
 \item \code{amrex\_init\_from\_scratch} -- build the AMR mesh from
   scratch
 \item \code{ amrex\_amrcore\_init} -- setup the core amr functionality
