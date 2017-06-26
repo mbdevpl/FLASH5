@@ -129,12 +129,10 @@ changes to how it interacts with the mesh and state variables. Main
 changes needed in \castro are listed below.
 \begin{itemize}
 \item Wrappers for calling \chimera  interfaces.
-\item For using physics solvers from \flash wrappers are needed for
-calling the initialization functions for the corresponding solvers,
+\item For using any capability from \flash,  wrappers are needed for
+calling the initialization functions for the corresponding unit,
 which can also transmit all the parameters and static data needed for
-the solver operation. For example, in order to use the Riemann solvers
-in \flash's {\it Hydro}, \castro has to implement an equivalent of
-\flash's {\it Hydro\_init} which initializes all runtime parameters, 
+the solver operation. These functions initialize all runtime parameters, 
 scratch space and other unit scope scalar variables.
 \end{itemize}
 
