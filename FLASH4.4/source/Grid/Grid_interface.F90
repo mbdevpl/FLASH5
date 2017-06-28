@@ -395,20 +395,6 @@ Module Grid_interface
      end subroutine Grid_makeVector
   end interface
 
-  interface Grid_markBlkDerefine
-     subroutine Grid_markBlkDerefine(block,mark)
-       integer, intent(IN) :: block
-       logical, intent(IN) :: mark
-     end subroutine Grid_markBlkDerefine
-  end interface
-
-  interface Grid_markBlkRefine
-     subroutine Grid_markBlkRefine(block,mark)
-       integer, intent(IN) :: block
-       logical, intent(IN) :: mark
-     end subroutine Grid_markBlkRefine
-  end interface
-
   interface Grid_markRefineDerefine
      subroutine Grid_markRefineDerefine()
      end subroutine Grid_markRefineDerefine
