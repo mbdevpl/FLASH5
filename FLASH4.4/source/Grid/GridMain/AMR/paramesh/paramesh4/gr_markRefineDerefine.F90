@@ -52,15 +52,23 @@ subroutine gr_markRefineDerefine(&
   use tree
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
        gr_meshComm, gr_meshMe,gr_delta
-  use Grid_interface, ONLY : Grid_getblkIndexLimits
+  use Grid_interface, ONLY : Grid_getBlkIndexLimits
   use gr_specificData, ONLY : gr_oneBlock
+  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
+                                    famrex_mviter, famrex_mviter_build,&
+                                    famrex_mviter_destroy,famrex_multivab_destroy
+  use famrex_box_module,      ONLY: famrex_box
 
   implicit none
 
 #include "Flash_mpi.h"
 #include "Flash.h"
 #include "constants.h"  
-
+#ifdef INDEXREORDER
+  integer,parameter::IX=1,IY=2,IZ=3
+#else
+  integer,parameter::IX=2,IY=3,IZ=4
+#endif  
   integer, intent(IN) :: iref
   real, intent(IN) :: refine_cutoff, derefine_cutoff, refine_filter
   integer, parameter :: SQNDIM = NDIM*NDIM
@@ -84,10 +92,14 @@ subroutine gr_markRefineDerefine(&
   integer :: statr(MPI_STATUS_SIZE,MAXBLOCKS)
   integer :: stats(MPI_STATUS_SIZE,MAXBLOCKS*nchild)
 
-  real, pointer :: solnData(:,:,:)
+  real, pointer :: solnData(:,:,:,:)
   logical :: gcell_on_cc_backup(NUNK_VARS)
   integer :: idest, iopt, nlayers, icoord
   logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
+  type(famrex_multivab) :: phi
+  type(famrex_mviter) :: mvi
+  type(famrex_box) :: bx, tbx
+  integer:: ib, level, maxLev
 
 !==============================================================================
 
@@ -127,18 +139,36 @@ subroutine gr_markRefineDerefine(&
   refine(:)   = .FALSE.
   derefine(:) = .FALSE.
   stay(:)     = .FALSE.
+  maxLev=gr_maxRefine
 
+!!$  do lb = 1,lnblocks
+!!$
+!!$
+!!$     error(lb) = 0.
+!!$
+!!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
-  do lb = 1,lnblocks
+!!$        solnData => unk(:,:,:,:,lb)
+!!$        call Grid_getBlkIndexLimits(lb,blkLimits,blkLimitsGC)
+!!$  allocate(phi(maxLev))
 
-
-     error(lb) = 0.
-
+!!$  do level=1,maxLev
+  call famrex_multivab_build(phi, ALL_BLKS, CENTER, gr_meshComm, NUNK_VARS,lev=level)
+  call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
+  do while(mvi%next())
+     bx = mvi%tilebox()
+     lb=mvi%localIndex()
      if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
-        solnData => unk(iref,:,:,:,lb)
-        call Grid_getBlkIndexLimits(lb,blkLimits,blkLimitsGC)
-
+        error(lb)=0.0   
+        solnData => unk(:,:,:,:,lb)
+!!$        solnData=>phi%dataptr(mvi)
+        blkLimits(LOW,:)=bx%lo
+        blkLimits(HIGH,:)=bx%hi
+        blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
+        blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
+        
+        
         del=0.0
         ncell(:)=blkLimits(HIGH,:)-blkLimits(LOW,:)+1
         psize(:)=ncell(:)*gr_delta(:,lrefine(lb))
@@ -147,7 +177,7 @@ subroutine gr_markRefineDerefine(&
         allocate(delu(MDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
              blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
              blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
- 
+        
         allocate(delua(MDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
              blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
              blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
@@ -161,11 +191,11 @@ subroutine gr_markRefineDerefine(&
                       del(IAXIS) = 1.0/(XCOORD(i+1) - XCOORD(i-1))
                  
                  ! d/dx
-                 delu(1,i,j,k) = solnData(i+1,j,k) - solnData(i-1,j,k)
+                 delu(1,i,j,k) = solnData(iref,i+1,j,k) - solnData(iref,i-1,j,k)
                  delu(1,i,j,k) = delu(1,i,j,k)*del(IAXIS)
                  
-                 delua(1,i,j,k) = abs(solnData(i+1,j,k)) + &
-                      abs(solnData(i-1,j,k))
+                 delua(1,i,j,k) = abs(solnData(iref,i+1,j,k)) + &
+                      abs(solnData(iref,i-1,j,k))
                  delua(1,i,j,k) = delua(1,i,j,k)*del(IAXIS)
                  
 #if N_DIM >= 2
@@ -174,11 +204,11 @@ subroutine gr_markRefineDerefine(&
                     del_f(JAXIS) = del(JAXIS)/XCOORD(i)
                  end if
                  
-                 delu(2,i,j,k) = solnData(i,j+1,k) - solnData(i,j-1,k)
+                 delu(2,i,j,k) = solnData(iref,i,j+1,k) - solnData(iref,i,j-1,k)
                  delu(2,i,j,k) = delu(2,i,j,k)*del_f(JAXIS)
                  
-                 delua(2,i,j,k) = abs(solnData(i,j+1,k)) + &
-                      abs(solnData(i,j-1,k))
+                 delua(2,i,j,k) = abs(solnData(iref,i,j+1,k)) + &
+                      abs(solnData(iref,i,j-1,k))
                  delua(2,i,j,k) = delua(2,i,j,k)*del_f(JAXIS)
 #endif
                  
@@ -186,15 +216,15 @@ subroutine gr_markRefineDerefine(&
                  ! d/dz
                  if (gr_geometry == SPHERICAL) then
                     del_f(KAXIS) = del(KAXIS)/(  XCOORD(i) &
-                              &    * sin(YCOORD(j))  )
+                         &    * sin(YCOORD(j))  )
                  else if (gr_geometry == CYLINDRICAL) then
                     del_f(KAXIS) = del(KAXIS)/XCOORD(i)
                  end if
-                 delu(3,i,j,k) = solnData(i,j,k+1) -  solnData(i,j,k-1)
+                 delu(3,i,j,k) = solnData(iref,i,j,k+1) -  solnData(iref,i,j,k-1)
                  delu(3,i,j,k) = delu(3,i,j,k)*del_f(KAXIS)
                  
-                 delua(3,i,j,k) = abs(solnData(i,j,k+1)) + &
-                      abs(solnData(i,j,k-1))
+                 delua(3,i,j,k) = abs(solnData(iref,i,j,k+1)) + &
+                      abs(solnData(iref,i,j,k-1))
                  delua(3,i,j,k) = delua(3,i,j,k)*del_f(KAXIS)
 #endif
                  
@@ -246,7 +276,7 @@ subroutine gr_markRefineDerefine(&
                  
                  if (gr_geometry == SPHERICAL) &
                       del(IAXIS) = 1.0/(XCOORD(i+1) - XCOORD(i-1))
-
+                 
                  ! d/dxdx
                  delu2(1) = delu(1,i+1,j,k) - delu(1,i-1,j,k)
                  delu2(1) = delu2(1)*del(IAXIS)
@@ -261,7 +291,7 @@ subroutine gr_markRefineDerefine(&
                  if ((gr_geometry == SPHERICAL) .or. (gr_geometry == POLAR)) then
                     del_f(JAXIS) = del(JAXIS)/XCOORD(i)
                  end if
-
+                 
                  ! d/dydx
                  delu2(2) = delu(1,i,j+1,k) - delu(1,i,j-1,k)
                  delu2(2) = delu2(2)*del_f(JAXIS)
@@ -297,11 +327,11 @@ subroutine gr_markRefineDerefine(&
 #if N_DIM == 3
                  if (gr_geometry == SPHERICAL) then
                     del_f(KAXIS) = del(KAXIS)/(  XCOORD(i) &
-                              &    * sin(YCOORD(j))  )
+                         &    * sin(YCOORD(j))  )
                  else if (gr_geometry == CYLINDRICAL) then
                     del_f(KAXIS) = del(KAXIS)/XCOORD(i)
                  end if
-
+                 
                  ! d/dzdx
                  delu2(5) = delu(1,i,j,k+1) - delu(1,i,j,k-1)
                  delu2(5) = delu2(5)*del_f(KAXIS)
@@ -352,8 +382,8 @@ subroutine gr_markRefineDerefine(&
                  delu4(9) = delua(3,i,j,k+1) + delua(3,i,j,k-1)
                  delu4(9) = delu4(9)*del_f(KAXIS)
 #endif
-
-! compute the error
+                 
+                 ! compute the error
                  num = 0.
                  denom = 0.
                  
@@ -362,26 +392,30 @@ subroutine gr_markRefineDerefine(&
                     denom = denom + (delu3(kk) + &
                          (refine_filter*delu4(kk)))**2
                  end do
-                    
-                    ! mz -- compare the square of the error
+                 
+                 ! mz -- compare the square of the error
                  if (denom .eq. 0.0 .AND. num .ne. 0.0) then
                     error(lb) = HUGE(1.0)
                  else if (denom .ne. 0.0) then
                     error(lb) = max(error(lb),num/denom)
                  end if
-                    
+                 
               end do
            end do
         end do
-           
+        
            ! store the maximum error for the current block
         error(lb) = sqrt(error(lb))
         deallocate(delu)
         deallocate(delua)
      end if
-        
   end do
-     
+!!$  call famrex_mviter_destroy(mvi)
+!!$  end do
+!!$  do level=1,maxLev
+!!$     call famrex_multivab_destroy(phi)
+!!$  end do
+!!$     deallocate(phi)
   
 ! MARK FOR REFINEMENT OR DEREFINEMENT
 
