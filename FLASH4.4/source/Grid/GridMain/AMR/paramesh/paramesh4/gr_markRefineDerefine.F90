@@ -134,6 +134,11 @@ subroutine gr_markRefineDerefine(&
 
 #define XCOORD(I) (gr_oneBlock(lb)%firstAxisCoords(CENTER,I))
 #define YCOORD(I) (gr_oneBlock(lb)%secondAxisCoords(CENTER,I))
+  newchild(:) = .FALSE.
+  refine(:)   = .FALSE.
+  derefine(:) = .FALSE.
+  stay(:)     = .FALSE.
+
 
   do lb = 1,lnblocks
 
@@ -497,6 +502,13 @@ subroutine gr_markRefineDerefine(&
   end do
 
   !restore to the state when we came in
+  ! When the flag arrays are passed to Paramesh for processing, only leaf
+  ! blocks should be marked. - KW
+  where (nodetype(:) .NE. LEAF)
+     refine(:)   = .false.
+     derefine(:) = .false.
+  end where
+  
   if (no_permanent_guardcells) gcell_on_cc = gcell_on_cc_backup
   !=========================================================================
   return

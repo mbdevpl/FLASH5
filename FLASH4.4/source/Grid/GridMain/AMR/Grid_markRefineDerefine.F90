@@ -52,8 +52,7 @@ subroutine Grid_markRefineDerefine()
                         gr_lrefineMaxRedDoByLogR,&
                         gr_lrefineCenterI,gr_lrefineCenterJ,gr_lrefineCenterK,&
                         gr_eosModeNow
-  use tree, ONLY : newchild, refine, derefine, stay, nodetype
-!!$  use physicaldata, ONLY : force_consistency
+
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Grid_interface, ONLY : Grid_fillGuardCells
   use Particles_interface, only: Particles_sinkMarkRefineDerefine
@@ -107,11 +106,6 @@ subroutine Grid_markRefineDerefine()
      gcMaskArgsLogged = .TRUE.
 !!$  force_consistency = .TRUE.
 
-  newchild(:) = .FALSE.
-  refine(:)   = .FALSE.
-  derefine(:) = .FALSE.
-  stay(:)     = .FALSE.
-
   do l = 1,gr_numRefineVars
      iref = gr_refine_var(l)
      ref_cut = gr_refine_cutoff(l)
@@ -119,14 +113,6 @@ subroutine Grid_markRefineDerefine()
      ref_filter = gr_refine_filter(l)
      call gr_markRefineDerefine(iref,ref_cut,deref_cut,ref_filter)
   end do
-
-#ifdef FLASH_GRID_PARAMESH2
-  ! For PARAMESH2, call gr_markRefineDerefine here if it hasn't been called above.
-  ! This is necessary to make sure lrefine_min and lrefine_max are obeyed - KW
-  if (gr_numRefineVars .LE. 0) then
-     call gr_markRefineDerefine(-1, 0.0, 0.0, 0.0)
-  end if
-#endif
 
   if(gr_refineOnParticleCount)call gr_ptMarkRefineDerefine()
 
@@ -138,12 +124,6 @@ subroutine Grid_markRefineDerefine()
   
   call Particles_sinkMarkRefineDerefine()
 
-  ! When the flag arrays are passed to Paramesh for processing, only leaf
-  ! blocks should be marked. - KW
-  where (nodetype(:) .NE. LEAF)
-     refine(:)   = .false.
-     derefine(:) = .false.
-  end where
   
   return
 end subroutine Grid_markRefineDerefine
