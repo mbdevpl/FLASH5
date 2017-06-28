@@ -48,13 +48,12 @@
 subroutine gr_markRefineDerefine(&
                               iref,refine_cutoff,derefine_cutoff,refine_filter)
 
-  use paramesh_dimensions, ONLY: il_bnd1,iu_bnd1,jl_bnd1,ju_bnd1,kl_bnd1,ku_bnd1
   use physicaldata, ONLY : gcell_on_cc, unk, unk1, no_permanent_guardcells
   use tree
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
-       gr_meshComm, gr_meshMe
+       gr_meshComm, gr_meshMe,gr_delta
+  use Grid_interface, ONLY : Grid_getblkIndexLimits
   use gr_specificData, ONLY : gr_oneBlock
-  use paramesh_interfaces, ONLY: amr_1blk_guardcell
 
   implicit none
 
@@ -66,11 +65,10 @@ subroutine gr_markRefineDerefine(&
   real, intent(IN) :: refine_cutoff, derefine_cutoff, refine_filter
   integer, parameter :: SQNDIM = NDIM*NDIM
   
-  real,dimension(MDIM) ::  del, del_f
+  real,dimension(MDIM) ::  del, del_f, psize
   integer,dimension(MDIM) :: ncell
-  real dely_f, delz_f
-  real delu(mdim,il_bnd1:iu_bnd1,jl_bnd1:ju_bnd1,kl_bnd1:ku_bnd1)
-  real delua(mdim,il_bnd1:iu_bnd1,jl_bnd1:ju_bnd1,kl_bnd1:ku_bnd1)
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
+  real,allocatable,dimension(:,:,:,:)::delu,delua
 
   real delu2(SQNDIM), delu3(SQNDIM), delu4(SQNDIM)
 
@@ -139,21 +137,25 @@ subroutine gr_markRefineDerefine(&
      if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
         solnData => unk(iref,:,:,:,lb)
-        
+        call Grid_getBlkIndexLimits(lb,blkLimits,blkLimitsGC)
 
         del=0.0
-        ncell(IAXIS)=NXB
-        ncell(JAXIS)=NYB
-        ncell(KAXIS)=NZB
-
-        del(IAXIS:NDIM) = 0.5e0*float(ncell(IAXIS:NDIM))/bsize(IAXIS:NDIM,lb)
+        ncell(:)=blkLimits(HIGH,:)-blkLimits(LOW,:)+1
+        psize(:)=ncell(:)*gr_delta(:,lrefine(lb))
+        del(IAXIS:NDIM) = 0.5e0*float(ncell(IAXIS:NDIM))/psize(IAXIS:NDIM)
         del_f(JAXIS:NDIM) = del(JAXIS:NDIM)
-        
+        allocate(delu(MDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
+             blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
+             blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+ 
+        allocate(delua(MDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
+             blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
+             blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
         ! Compute first derivatives
         
-        do k = 1+K3D,ncell(KAXIS)+(K3D*((2*NGUARD)-1))
-           do j = 1+K2D,ncell(JAXIS)+(K2D*((2*NGUARD)-1))
-              do i = 2,ncell(IAXIS)+(2*NGUARD)-1
+        do k = blkLimitsGC(LOW,KAXIS)+K3D*1,blkLimitsGC(HIGH,KAXIS)-K3D*1
+           do j = blkLimitsGC(LOW,JAXIS)+K2D*1,blkLimitsGC(HIGH,JAXIS)-K2D*1
+              do i = blkLimitsGC(LOW,IAXIS)+1,blkLimitsGC(HIGH,IAXIS)-1
                  
                  if (gr_geometry == SPHERICAL) &
                       del(IAXIS) = 1.0/(XCOORD(i+1) - XCOORD(i-1))
@@ -171,7 +173,7 @@ subroutine gr_markRefineDerefine(&
                  if ((gr_geometry == SPHERICAL) .or. (gr_geometry == POLAR)) then
                     del_f(JAXIS) = del(JAXIS)/XCOORD(i)
                  end if
-
+                 
                  delu(2,i,j,k) = solnData(i,j+1,k) - solnData(i,j-1,k)
                  delu(2,i,j,k) = delu(2,i,j,k)*del_f(JAXIS)
                  
@@ -374,7 +376,8 @@ subroutine gr_markRefineDerefine(&
            
            ! store the maximum error for the current block
         error(lb) = sqrt(error(lb))
-           
+        deallocate(delu)
+        deallocate(delua)
      end if
         
   end do
