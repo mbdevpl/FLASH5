@@ -153,16 +153,17 @@ subroutine gr_markRefineDerefine(&
 !!$  allocate(phi(maxLev))
 
 !!$  do level=1,maxLev
-  call famrex_multivab_build(phi, ALL_BLKS, CENTER, gr_meshComm, NUNK_VARS,lev=level)
+  call famrex_multivab_build(phi, ACTIVE_BLKS, CENTER, gr_meshComm, NUNK_VARS,lev=level)
   call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
   do while(mvi%next())
      bx = mvi%tilebox()
      lb=mvi%localIndex()
-     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
+!!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
         error(lb)=0.0   
-        solnData => unk(:,:,:,:,lb)
-!!$        solnData=>phi%dataptr(mvi)
+
+        solnData=>phi%dataptr(mvi)
+
         blkLimits(LOW,:)=bx%lo
         blkLimits(HIGH,:)=bx%hi
         blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
@@ -237,12 +238,12 @@ subroutine gr_markRefineDerefine(&
         ! Test if at a block boundary
         
         ! Two guardcells
-        kstart = 2*K3D+1
-        kend   = ncell(KAXIS)+(K3D*((2*NGUARD)-2))
-        jstart = 2*K2D+1
-        jend   = ncell(JAXIS)+(K2D*((2*NGUARD)-2))
-        istart = 3
-        iend   = ncell(IAXIS)+(2*NGUARD)-2
+        kstart = 2*K3D+blkLimitsGC(LOW,KAXIS)
+        kend   = blkLimitsGC(HIGH,KAXIS)-2*K3D
+        jstart = 2*K2D+blkLimitsGC(LOW,JAXIS)
+        jend   = blkLimitsGC(HIGH,JAXIS)-2*K2D
+        istart = 2+blkLimitsGC(LOW,IAXIS)
+        iend   = blkLimitsGC(HIGH,IAXIS)-2
         ! One guardcell
         !            kstart = 2*K3D+1+K3D
         !            kend   = ncell(KAXIS)+(K3D*((2*NGUARD)-2))-K3D
@@ -258,16 +259,16 @@ subroutine gr_markRefineDerefine(&
         !            istart = NGUARD+1
         !            iend   = ncell(IAXIS)+NGUARD
         
-        if (neigh(1,1,lb).le.-20) istart = NGUARD+1
-        if (neigh(1,2,lb).le.-20) iend   = NGUARD+ncell(IAXIS)
+        if (neigh(1,1,lb).le.-20) istart = blkLimits(LOW,IAXIS)
+        if (neigh(1,2,lb).le.-20) iend   = blkLimits(HIGH,IAXIS)
         
 #if N_DIM >= 2
-        if (neigh(1,3,lb).le.-20) jstart = NGUARD*K2D+1
-        if (neigh(1,4,lb).le.-20) jend   = NGUARD*K2D+ncell(JAXIS)
+        if (neigh(1,3,lb).le.-20) jstart = blkLimits(LOW,JAXIS)
+        if (neigh(1,4,lb).le.-20) jend   = blkLimits(HIGH,JAXIS)
 #endif
 #if N_DIM == 3
-        if (neigh(1,5,lb).le.-20) kstart = NGUARD*K3D+1
-        if (neigh(1,6,lb).le.-20) kend   = NGUARD*K3D+ncell(KAXIS)
+        if (neigh(1,5,lb).le.-20) kstart = blkLimits(LOW,KAXIS)
+        if (neigh(1,6,lb).le.-20) kend   = blkLimits(HIGH,KAXIS)
 #endif
         
         do k = kstart,kend
@@ -408,14 +409,9 @@ subroutine gr_markRefineDerefine(&
         error(lb) = sqrt(error(lb))
         deallocate(delu)
         deallocate(delua)
-     end if
   end do
-!!$  call famrex_mviter_destroy(mvi)
-!!$  end do
-!!$  do level=1,maxLev
-!!$     call famrex_multivab_destroy(phi)
-!!$  end do
-!!$     deallocate(phi)
+  call famrex_mviter_destroy(mvi)
+  call famrex_multivab_destroy(phi)
   
 ! MARK FOR REFINEMENT OR DEREFINEMENT
 
