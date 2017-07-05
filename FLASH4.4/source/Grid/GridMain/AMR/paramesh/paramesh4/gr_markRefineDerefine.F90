@@ -48,11 +48,12 @@
 subroutine gr_markRefineDerefine(&
                               iref,refine_cutoff,derefine_cutoff,refine_filter)
 
-  use physicaldata, ONLY : gcell_on_cc, unk, unk1, no_permanent_guardcells
-  use tree
+
+  use tree, ONLY : neigh,lrefine,nchild
+
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
-       gr_meshComm, gr_meshMe,gr_delta
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits
+       gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
+  use Grid_interface, ONLY : Grid_getBlkBC
   use gr_specificData, ONLY : gr_oneBlock
   use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
                                     famrex_mviter, famrex_mviter_build,&
@@ -75,16 +76,16 @@ subroutine gr_markRefineDerefine(&
   
   real,dimension(MDIM) ::  del, del_f, psize
   integer,dimension(MDIM) :: ncell
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC,face,bdry
   real,allocatable,dimension(:,:,:,:)::delu,delua
 
   real delu2(SQNDIM), delu3(SQNDIM), delu4(SQNDIM)
 
-  real num,denom,error(MAXBLOCKS),error_par(MAXBLOCKS)
+  real num,denom,error(MAXBLOCKS)
 
   integer lb,i,j,k
-  integer ierr
-  integer kstart,kend,jstart,jend,istart,iend
+  integer ierr,grd
+  integer,dimension(MDIM)::bstart,bend 
   integer nsend,nrecv
   integer reqr(MAXBLOCKS),reqs(MAXBLOCKS*nchild)
 !
@@ -93,7 +94,6 @@ subroutine gr_markRefineDerefine(&
   integer :: stats(MPI_STATUS_SIZE,MAXBLOCKS*nchild)
 
   real, pointer :: solnData(:,:,:,:)
-  logical :: gcell_on_cc_backup(NUNK_VARS)
   integer :: idest, iopt, nlayers, icoord
   logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
   type(famrex_multivab) :: phi
@@ -103,9 +103,6 @@ subroutine gr_markRefineDerefine(&
 
 !==============================================================================
 
-  if (no_permanent_guardcells) gcell_on_cc_backup = gcell_on_cc
-
-  if (.not. no_permanent_guardcells) then
 ! A non-directional guardcell fill for CENTER (and also EOS calls for
 ! all block cells, including guardcells, if any refinement variables
 ! refine_var_# require this to be current) must have been performed
@@ -126,33 +123,14 @@ subroutine gr_markRefineDerefine(&
 ! We are using more cell layers, including guardcells, from unk.
 
      
-!     work(:,:,:,:,1)=unk(iref,:,:,:,:)
-
-  end if
   !==============================================================================
 
 
 
 #define XCOORD(I) (gr_oneBlock(lb)%firstAxisCoords(CENTER,I))
 #define YCOORD(I) (gr_oneBlock(lb)%secondAxisCoords(CENTER,I))
-  newchild(:) = .FALSE.
-  refine(:)   = .FALSE.
-  derefine(:) = .FALSE.
-  stay(:)     = .FALSE.
   maxLev=gr_maxRefine
 
-!!$  do lb = 1,lnblocks
-!!$
-!!$
-!!$     error(lb) = 0.
-!!$
-!!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
-
-!!$        solnData => unk(:,:,:,:,lb)
-!!$        call Grid_getBlkIndexLimits(lb,blkLimits,blkLimitsGC)
-!!$  allocate(phi(maxLev))
-
-!!$  do level=1,maxLev
   call famrex_multivab_build(phi, ACTIVE_BLKS, CENTER, gr_meshComm, NUNK_VARS,lev=level)
   call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
   do while(mvi%next())
@@ -234,46 +212,32 @@ subroutine gr_markRefineDerefine(&
         end do
         
         ! Compute second derivatives
-        
-        ! Test if at a block boundary
-        
+        bstart=1
+        bend=1
         ! Two guardcells
-        kstart = 2*K3D+blkLimitsGC(LOW,KAXIS)
-        kend   = blkLimitsGC(HIGH,KAXIS)-2*K3D
-        jstart = 2*K2D+blkLimitsGC(LOW,JAXIS)
-        jend   = blkLimitsGC(HIGH,JAXIS)-2*K2D
-        istart = 2+blkLimitsGC(LOW,IAXIS)
-        iend   = blkLimitsGC(HIGH,IAXIS)-2
+        grd=NGUARD-2
         ! One guardcell
-        !            kstart = 2*K3D+1+K3D
-        !            kend   = ncell(KAXIS)+(K3D*((2*NGUARD)-2))-K3D
-        !            jstart = 2*K2D+1+K2D
-        !            jend   = ncell(JAXIS)+(K2D*((2*NGUARD)-2))-K2D
-        !            istart = NGUARD
-        !            iend   = ncell(IAXIS)+(2*NGUARD)-3
+        !    grd=NGUARD-1
         ! No guardcells
-        !            kstart = K3D*NGUARD+1
-        !            kend   = ncell(KAXIS)+K3D*NGUARD
-        !            jstart = K2D*NGUARD+1
-        !            jend   = ncell(JAXIS)+K2D*NGUARD
-        !            istart = NGUARD+1
-        !            iend   = ncell(IAXIS)+NGUARD
+        !    grd=NGUARD
+        call Grid_getBlkBC(lb,face,bdry)
         
-        if (neigh(1,1,lb).le.-20) istart = blkLimits(LOW,IAXIS)
-        if (neigh(1,2,lb).le.-20) iend   = blkLimits(HIGH,IAXIS)
+        do i=1,NDIM
+           if (face(LOW,i) == NOT_BOUNDARY)then
+              bstart(i)=grd+blkLimitsGC(LOW,i)
+           else
+              bstart(i)=blkLimits(LOW,i)
+           end if
+           if(face(HIGH,i)==NOT_BOUNDARY) then
+              bend(i)  = blkLimitsGC(HIGH,i)-grd
+           else
+              bend(i)  = blkLimits(HIGH,i)
+           end if
+        end do
         
-#if N_DIM >= 2
-        if (neigh(1,3,lb).le.-20) jstart = blkLimits(LOW,JAXIS)
-        if (neigh(1,4,lb).le.-20) jend   = blkLimits(HIGH,JAXIS)
-#endif
-#if N_DIM == 3
-        if (neigh(1,5,lb).le.-20) kstart = blkLimits(LOW,KAXIS)
-        if (neigh(1,6,lb).le.-20) kend   = blkLimits(HIGH,KAXIS)
-#endif
-        
-        do k = kstart,kend
-           do j = jstart,jend
-              do i = istart,iend
+        do k = bstart(KAXIS),bend(KAXIS)
+           do j = bstart(JAXIS),bend(JAXIS)
+              do i = bstart(IAXIS),bend(IAXIS)
                  
                  if (gr_geometry == SPHERICAL) &
                       del(IAXIS) = 1.0/(XCOORD(i+1) - XCOORD(i-1))
@@ -412,101 +376,7 @@ subroutine gr_markRefineDerefine(&
   end do
   call famrex_mviter_destroy(mvi)
   call famrex_multivab_destroy(phi)
-  
-! MARK FOR REFINEMENT OR DEREFINEMENT
-
-! first communicate error of parent to its children
-! Children collect messages from parents.
-
-  error_par(1:lnblocks) = 0.
-  nrecv = 0
-  do lb = 1,lnblocks
-     if(parent(1,lb).gt.-1) then
-        if (parent(2,lb).ne.gr_meshMe) then
-           nrecv = nrecv + 1
-           call MPI_IRecv(error_par(lb),1, &
-                MPI_DOUBLE_PRECISION, &
-                parent(2,lb), &
-                lb, &
-                gr_meshComm, &
-                reqr(nrecv), &
-                ierr)
-        else
-           error_par(lb) = error(parent(1,lb))
-        end if
-     end if
-  end do
- 
-  ! parents send error to children
-
-  nsend = 0
-  do lb = 1,lnblocks
-     do j = 1,nchild
-        if(child(1,j,lb).gt.-1) then
-           if (child(2,j,lb).ne.gr_meshMe) then
-              nsend = nsend + 1
-              call MPI_ISend(error(lb), &
-                   1, &
-                   MPI_DOUBLE_PRECISION, &
-                   child(2,j,lb), &  ! PE TO SEND TO
-                   child(1,j,lb), &  ! THIS IS THE TAG
-                   gr_meshComm, &
-                   reqs(nsend), &
-                   ierr)
-           end if
-        end if
-     end do
-  end do
-
-  if (nsend.gt.0) then
-     call MPI_Waitall (nsend, reqs, stats, ierr)
-  end if
-  if (nrecv.gt.0) then
-     call MPI_Waitall (nrecv, reqr, statr, ierr)
-  end if
-
-  do lb = 1,lnblocks
-
-     if (nodetype(lb).eq.1 .or. nodetype(lb).eq.2) then
-        
-        ! test for derefinement
-        
-        if (nodetype(lb).eq.1 .and. .not.refine(lb).and..not.stay(lb) &
-             &          .and.error(lb).le.derefine_cutoff &
-             &          .and.error_par(lb).le.derefine_cutoff) then
-           derefine(lb) = .TRUE.
-        else
-           derefine(lb) = .FALSE.
-        end if
-        
-        ! test for refinement
-        if (error(lb).gt.refine_cutoff) then
-           derefine(lb) = .FALSE.
-           refine(lb) = .TRUE.
-        end if
-
-        if (nodetype(lb).eq.1 .and. &
-            error(lb).gt.derefine_cutoff.or.error_par(lb).gt.derefine_cutoff)  &
-             &           stay(lb) = .TRUE.
-
-        if (lrefine(lb).ge.gr_maxRefine)  &
-             &           refine(lb) = .FALSE.
-
-
-     end if
-     
-  end do
-
-  !restore to the state when we came in
-  ! When the flag arrays are passed to Paramesh for processing, only leaf
-  ! blocks should be marked. - KW
-  where (nodetype(:) .NE. LEAF)
-     refine(:)   = .false.
-     derefine(:) = .false.
-  end where
-  
-  if (no_permanent_guardcells) gcell_on_cc = gcell_on_cc_backup
-  !=========================================================================
+  call gr_markRefPM(error, refine_cutoff,derefine_cutoff,refine_filter)
   return
 end subroutine gr_markRefineDerefine
 
