@@ -71,6 +71,7 @@ module famrex_multivab_module
      procedure :: next             => famrex_mviter_next
      procedure :: tilebox          => famrex_mviter_tilebox
      procedure :: localIndex       => famrex_mviter_localIndex
+     procedure :: level            => famrex_mviter_level
      procedure, private :: famrex_mviter_assign
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
      final :: famrex_mviter_destroy
@@ -80,6 +81,7 @@ module famrex_multivab_module
   interface famrex_mviter_build
      module procedure famrex_mviter_build_r
   end interface famrex_mviter_build
+
 
 
 contains
@@ -253,6 +255,8 @@ contains
     this%cur = i
     fisvalid = (i .LE. lnblocks)
     famrex_mviter_next = fisvalid
+    !! DEVNOTE -- this should be done more cleanly, why store lev and gds in two places.
+    this%mvp%lev=lrefine(i)
 
   end function famrex_mviter_next
 
@@ -291,6 +295,12 @@ contains
     integer :: cidx
     cidx = this%cur
   end function famrex_mviter_localIndex
+
+  function famrex_mviter_level (this) result (cidx)
+    class(famrex_mviter), intent(in) :: this
+    integer :: cidx
+    cidx = this%mvp%lev
+  end function famrex_mviter_level
 
 end module famrex_multivab_module
 

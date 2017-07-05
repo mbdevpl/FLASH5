@@ -49,8 +49,6 @@ subroutine gr_markRefineDerefine(&
                               iref,refine_cutoff,derefine_cutoff,refine_filter)
 
 
-  use tree, ONLY : neigh,lrefine,nchild
-
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
        gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBC
@@ -87,11 +85,8 @@ subroutine gr_markRefineDerefine(&
   integer ierr,grd
   integer,dimension(MDIM)::bstart,bend 
   integer nsend,nrecv
-  integer reqr(MAXBLOCKS),reqs(MAXBLOCKS*nchild)
 !
   integer :: kk
-  integer :: statr(MPI_STATUS_SIZE,MAXBLOCKS)
-  integer :: stats(MPI_STATUS_SIZE,MAXBLOCKS*nchild)
 
   real, pointer :: solnData(:,:,:,:)
   integer :: idest, iopt, nlayers, icoord
@@ -150,7 +145,7 @@ subroutine gr_markRefineDerefine(&
         
         del=0.0
         ncell(:)=blkLimits(HIGH,:)-blkLimits(LOW,:)+1
-        psize(:)=ncell(:)*gr_delta(:,lrefine(lb))
+        psize(:)=ncell(:)*gr_delta(:,mvi%level())
         del(IAXIS:NDIM) = 0.5e0*float(ncell(IAXIS:NDIM))/psize(IAXIS:NDIM)
         del_f(JAXIS:NDIM) = del(JAXIS:NDIM)
         allocate(delu(MDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
