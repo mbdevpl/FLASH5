@@ -15,7 +15,7 @@ ELSE
 ENDIF
 
 USESETUPVARS withParticles
-LIBRARY amrex2d
+#LIBRARY amrex2d
 
 IF withParticles
    PARTICLETYPE passive INITMETHOD lattice MAPMETHOD quadratic ADVMETHOD rungekutta

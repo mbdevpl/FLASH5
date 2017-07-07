@@ -104,9 +104,9 @@ LIB_MPI   =
 #LIB_NCMPI = -L $(NCMPI_PATH)/lib -lpnetcdf
 LIB_MPE   =
 
-LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
-LIB_AMREX2D = ${LIB_AMREX}
-LIB_STDCXX = -lstdc++ 
+#LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
+#LIB_AMREX2D = ${LIB_AMREX}
+#LIB_STDCXX = -lstdc++ 
 
 
 #----------------------------------------------------------------------------
