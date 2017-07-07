@@ -45,8 +45,7 @@
 !!REORDER(5): unk, unk1
 
 
-subroutine gr_markRefineDerefine(&
-                              iref,refine_cutoff,derefine_cutoff,refine_filter)
+subroutine gr_markRefineDerefine(error,iref,refine_filter)
 
 
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
@@ -69,7 +68,8 @@ subroutine gr_markRefineDerefine(&
   integer,parameter::IX=2,IY=3,IZ=4
 #endif  
   integer, intent(IN) :: iref
-  real, intent(IN) :: refine_cutoff, derefine_cutoff, refine_filter
+  real, intent(IN) ::  refine_filter
+  real,intent(INOUT) :: error(MAXBLOCKS)
   integer, parameter :: SQNDIM = NDIM*NDIM
   
   real,dimension(MDIM) ::  del, del_f, psize
@@ -79,7 +79,7 @@ subroutine gr_markRefineDerefine(&
 
   real delu2(SQNDIM), delu3(SQNDIM), delu4(SQNDIM)
 
-  real num,denom,error(MAXBLOCKS)
+  real num,denom
 
   integer lb,i,j,k
   integer ierr,grd
@@ -133,7 +133,7 @@ subroutine gr_markRefineDerefine(&
      lb=mvi%localIndex()
 !!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
-        error(lb)=0.0   
+!!        error(lb)=0.0   
 
         solnData=>phi%dataptr(mvi)
 
@@ -371,7 +371,6 @@ subroutine gr_markRefineDerefine(&
   end do
   call famrex_mviter_destroy(mvi)
   call famrex_multivab_destroy(phi)
-  call gr_markRefPM(error, refine_cutoff,derefine_cutoff,refine_filter)
   return
 end subroutine gr_markRefineDerefine
 

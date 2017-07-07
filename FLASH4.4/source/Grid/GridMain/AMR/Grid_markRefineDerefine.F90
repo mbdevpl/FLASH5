@@ -69,6 +69,7 @@ subroutine Grid_markRefineDerefine()
   logical :: doEos=.true.
   integer,parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
   logical,dimension(maskSize) :: gcMask
+  real, dimension(MAXBLOCKS) :: err
 
   if(gr_lrefineMaxRedDoByTime) then
      call gr_markDerefineByTime()
@@ -103,16 +104,18 @@ subroutine Grid_markRefineDerefine()
   call Grid_fillGuardCells(CENTER_FACES,ALLDIR,doEos=.true.,&
        maskSize=maskSize, mask=gcMask, makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskArgsLogged,&
        selectBlockType=ACTIVE_BLKS)
-     gcMaskArgsLogged = .TRUE.
+  gcMaskArgsLogged = .TRUE.
 !!$  force_consistency = .TRUE.
+  err=0.0
 
   do l = 1,gr_numRefineVars
      iref = gr_refine_var(l)
      ref_cut = gr_refine_cutoff(l)
      deref_cut = gr_derefine_cutoff(l)
      ref_filter = gr_refine_filter(l)
-     call gr_markRefineDerefine(iref,ref_cut,deref_cut,ref_filter)
+     call gr_markRefineDerefine(err,iref,ref_filter)
   end do
+  call gr_markRefPM(err, ref_cut,deref_cut)
 
   if(gr_refineOnParticleCount)call gr_ptMarkRefineDerefine()
 

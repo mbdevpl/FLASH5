@@ -45,7 +45,7 @@
 !!REORDER(5): unk, unk1
 
 
-subroutine gr_markRefPM(error, refine_cutoff,derefine_cutoff,refine_filter)
+subroutine gr_markRefPM(error, refine_cutoff,derefine_cutoff)
 
   use tree
 
@@ -57,7 +57,7 @@ subroutine gr_markRefPM(error, refine_cutoff,derefine_cutoff,refine_filter)
 #include "Flash_mpi.h"
 #include "Flash.h"
 #include "constants.h"  
-  real, intent(IN) :: refine_cutoff, derefine_cutoff, refine_filter
+  real, intent(IN) :: refine_cutoff, derefine_cutoff
   real,intent(IN) :: error(MAXBLOCKS)
   
   integer ierr
