@@ -2,11 +2,13 @@
 #----------------------------------------------------------------------------
 # Set the HDF5/MPI library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
-#HDF4_PATH =
-HDF5_PATH = /usr/local
-#LIB_HDF5 = ${HDF5_PATH}/lib
+SPACK_GCC=${SPACK_ROOT}/opt/spack/darwin-sierra-x86_64/gcc-6.4.0
 
-HYPRE_PATH = /usr/local
+HDF5_PATH = ${SPACK_GCC}/hdf5-1.8.19-ssqe5xh5xgs5oxvng4wtmm243mxseclz
+LIB_HDF5 = ${HDF5_PATH}/lib
+AMREX_PATH = ${HOME}/Projects/lib_install
+
+HYPRE_PATH = ${SPACK_GCC}/hypre-2.11.2-w5g2jgzmgkizzdgghcgc4esqxpedkcxv
 ZLIB_PATH  =
 
 PAPI_PATH  =
@@ -14,7 +16,7 @@ PAPI_FLAGS =
 
 LIB_NCMPI = /usr/local
 MPE_PATH   =
-MPI_PATH = /usr/local/bin
+MPI_PATH = ${SPACK_GCC}/mpich-3.2-4oaofbxy3yq76r6zuvws4jnca3qzfb62/bin
 
 #----------------------------------------------------------------------------
 # Compiler and linker commands
@@ -28,7 +30,7 @@ MPI_PATH = /usr/local/bin
 FCOMP   = $(MPI_PATH)/mpif90
 CCOMP   = $(MPI_PATH)/mpicc
 CPPCOMP = $(MPI_PATH)/mpiCC
-LINK    = $(MPI_PATH)/mpif90
+LINK    = $(MPI_PATH)/mpif90 -std=c++11
 
 # pre-processor flag
 PP      = -D
@@ -45,9 +47,7 @@ PP      = -D
 #  (ex. FFLAGS) to the proper set of flags (ex. FFLAGS_OPT).
 #----------------------------------------------------------------------------
 
-FFLAGS_OPT = -ggdb -c -O2 -fdefault-real-8 -fdefault-double-8 \
--Wuninitialized
-
+FFLAGS_OPT = -c -O2 -fdefault-real-8 -fdefault-double-8 -Wuninitialized
 FFLAGS_DEBUG = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
 -pedantic -Wall -Wextra -Waliasing \
 -Wsurprising -Wconversion -Wunderflow \
@@ -57,30 +57,30 @@ FFLAGS_DEBUG = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
 FFLAGS_TEST = -ggdb -c -fdefault-real-8 -fdefault-double-8 \
 -ffree-line-length-none
 
+
 FFLAGS_HYPRE = -I${HYPRE_PATH}/include
+#FFLAGS_AMREX = -I${AMREX_PATH}/include
+#FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
 
-
-F90FLAGS = -I ~/Projects/lib_install/include
-
+#F90FLAGS = -I${HDF5_PATH}/include -DH5_USE_16_API
+F90FLAGS = -I${HDF5_PATH}/include
 
 #The macro _FORTIFY_SOURCE adds some lightweight checks for buffer
 #overflows at both compile time and run time (only active at -O1 or higher)
 #http://gcc.gnu.org/ml/gcc-patches/2004-09/msg02055.html
-CFLAGS_OPT = -ggdb -c -O2 -Wuninitialized -D_FORTIFY_SOURCE=2
+CFLAGS_OPT = -c -O2 -Wuninitialized -D_FORTIFY_SOURCE=2
 
 CFLAGS_DEBUG = -ggdb -c -O0 -Wno-div-by-zero -Wundef \
 -Wconversion -Wstrict-prototypes -Wunreachable-code \
 -pedantic -Wall -Wextra -Winit-self -ftree-vrp -Wfloat-equal \
 -Wunsafe-loop-optimizations -Wpadded -fstack-protector-all
 
-CFLAGS_TEST = -ggdb -c
+CFLAGS_TEST = -c
 
 # Platform symbol
 CDEFINES += -DDarwin
 
-# if we are using HDF5, we need to specify the path to the include files
-CFLAGS_HDF5 = -I ${HDF5_PATH}/include -DH5_USE_16_API
-
+CFLAGS_HDF5 = -I${HDF5_PATH}/include -DH5_USE_16_API
 CFLAGS_NCMPI = -I$(LIB_NCMPI)/include
 
 #----------------------------------------------------------------------------
@@ -90,9 +90,9 @@ CFLAGS_NCMPI = -I$(LIB_NCMPI)/include
 #  _DEBUG, and _TEST cases.
 #----------------------------------------------------------------------------
 
-LFLAGS_OPT   = -ggdb -o
-LFLAGS_DEBUG = -ggdb -O0 -o
-LFLAGS_TEST  = -ggdb -o
+LFLAGS_OPT   = -o
+LFLAGS_DEBUG = -g -O0 -o
+LFLAGS_TEST  = -o
 
 
 #----------------------------------------------------------------------------
@@ -110,8 +110,8 @@ LIB_OPT   =
 LIB_DEBUG =
 LIB_TEST  =
 
-#LIB_HDF5  = -L${HDF5_PATH}/lib -lhdf5 /usr/lib64/libz.a
-LIB_HDF5  = -L${HDF5_PATH}/lib -lhdf5 -DH5_USE_16_API
+#LIB_HDF5  = -L/usr/local/lib -lhdf5 /usr/lib64/libz.a
+LIB_HDF5  = -L${HDF5_PATH}/lib -lhdf5
 
 LIB_PAPI  =
 LIB_MATH  =
@@ -121,6 +121,11 @@ LIB_MPI   =
 LIB_MPE   =
 
 LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE
+
+LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
+LIB_AMREX2D = ${LIB_AMREX}
+LIB_STDCXX = -L/usr/lib -lc++
+
 
 # Uncomment the following line to use electic fence memory debugger.
 # Need the following environmental variable (see env.sh):
