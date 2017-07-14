@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/Amrex/AMR/gr_markRefineDerefine
+!!****if* source/Grid/localAPI/gr_markRefineDerefine
 !!
 !! NAME
 !!  gr_markRefineDerefine
@@ -39,25 +39,13 @@
 !!
 !!***
 
-#include "constants.h"
-#include "flash_bool.h"
-#include "Flash.h"
-
-!Just in case.  There should be no reference to these defines!
-#undef NXB
-#undef NYB
-#undef NZB
-
 subroutine gr_markRefineDerefine(iref, refine_cutoff, &
                                  derefine_cutoff, refine_filter)
   
   implicit none
-  include "Flash_mpi.h"
 
   integer, intent(IN) :: iref
   real,    intent(IN) :: refine_cutoff, derefine_cutoff, refine_filter
-
-  ! DEVNOTE: Implement for AMReX
 
 end subroutine gr_markRefineDerefine
 

@@ -3,7 +3,7 @@
 Grid += Grid_data.o Grid_getBlkType.o \
         gr_updateData.o gr_createDomain.o gr_recreateDomain.o \
         gr_createBlock.o gr_expandDomain.o \
-	gr_primitiveToConserve.o gr_markRefineDerefine.o \
+	gr_primitiveToConserve.o \
 	gr_conserveToPrimitive.o Paramesh_init.o   \
         Paramesh_finalize.o  gr_initParameshArrays.o \
 	gr_restrictTree.o \

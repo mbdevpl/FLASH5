@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_markRefineDerefine
+!!****if* source/Grid/GridMain/AMR/Grid_markRefineDerefine
 !!
 !! NAME
 !!  Grid_markRefineDerefine
@@ -113,9 +113,9 @@ subroutine Grid_markRefineDerefine()
      ref_cut = gr_refine_cutoff(l)
      deref_cut = gr_derefine_cutoff(l)
      ref_filter = gr_refine_filter(l)
-     call gr_markRefineDerefine(err,iref,ref_filter)
+     call gr_estimateError(err, iref, ref_filter)
   end do
-  call gr_markRefPM(err, ref_cut,deref_cut)
+  call gr_markRefineDerefine(err, ref_cut, deref_cut)
 
   if(gr_refineOnParticleCount)call gr_ptMarkRefineDerefine()
 
