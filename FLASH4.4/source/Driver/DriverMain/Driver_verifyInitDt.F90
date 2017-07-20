@@ -117,8 +117,8 @@ subroutine Driver_verifyInitDt()
         
      do level=1,maxLev
         itor = block_iterator_t(LEAF, CENTER, level=level)
-        do while(.NOT. itor%is_empty())
-           blkLimits = itor%blkLimits()
+        do while(itor%is_valid())
+           call itor%blkLimits(blkLimits)
            solnData => itor%blkDataPtr()
            
            blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)

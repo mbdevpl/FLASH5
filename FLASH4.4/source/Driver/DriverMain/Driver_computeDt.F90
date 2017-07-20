@@ -217,9 +217,9 @@ subroutine Driver_computeDt(nbegin, nstep, &
   call Hydro_consolidateCFL()
   do level=1,maxLev
      itor = block_iterator_t(LEAF, CENTER, level=level)
-     do while(.NOT. itor%is_empty())
-        blkLimits = itor%blkLimits()
+     do while(itor%is_valid())
         solnData => itor%blkDataPtr()
+        call itor%blkLimits(blkLimits)
         
         blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
         blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)

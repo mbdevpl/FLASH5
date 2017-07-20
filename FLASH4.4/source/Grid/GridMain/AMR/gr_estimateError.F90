@@ -114,11 +114,11 @@ subroutine gr_estimateError(error, iref, refine_filter)
   maxLev=gr_maxRefine
 
   itor = block_iterator_t(ACTIVE_BLKS, CENTER)
-  do while(.NOT. itor%is_empty())
+  do while(itor%is_valid())
      solnData => itor%blkDataPtr()
-     blkLimits = itor%blkLimits()
      blkLevel  = itor%blkLevel()
      blkID     = itor%blkID()
+     call itor%blkLimits(blkLimits)
 
 !!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 

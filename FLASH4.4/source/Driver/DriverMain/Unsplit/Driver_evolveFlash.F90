@@ -200,9 +200,9 @@ subroutine Driver_evolveFlash()
 
      do level=1,maxLev
         itor = block_iterator_t(LEAF, CENTER, level=level)
-        do while(.NOT. itor%is_empty())
-           tileLimits = itor%blkLimits() 
+        do while(itor%is_valid())
            Uout      => itor%blkDataPtr()
+           call itor%blkLimits(tileLimits) 
 !!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
 !!$           call amrex_print(abx)
 !!$           tbx = abx
