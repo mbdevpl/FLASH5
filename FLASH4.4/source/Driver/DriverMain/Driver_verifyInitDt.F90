@@ -41,10 +41,7 @@ subroutine Driver_verifyInitDt()
        Grid_getSingleCellCoords,Grid_getMaxRefinement
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
-  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
-                                    famrex_mviter, famrex_mviter_build,&
-                                    famrex_mviter_destroy,famrex_multivab_destroy
-  use famrex_box_module,      ONLY: famrex_box
+  use block_iterator, ONLY : block_iterator_t
 
   implicit none       
 
@@ -84,9 +81,7 @@ subroutine Driver_verifyInitDt()
   logical :: runVerifyInitDt = .false.
   real :: extraHydroInfo
   integer,dimension(MDIM)::cid,stride
-  type(famrex_multivab),allocatable :: phi(:)
-  type(famrex_mviter) :: mvi
-  type(famrex_box) :: bx, tbx
+  type(block_iterator_t) :: itor
   integer:: ib, level, maxLev
 
 !!$  dr_dtSTS = 0.0     !First use is in a max(dr_dtSTS,...), see Driver_evolveFlash. - KW
@@ -120,16 +115,12 @@ subroutine Driver_verifyInitDt()
         !routine, this is just initialization.  Getting the coordinates inside
         !Hydro_computeDt would be much more costly during the run
         
-     allocate(phi(maxLev))
      do level=1,maxLev
-        call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
-        call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
-        do while(mvi%next())
-           bx = mvi%tilebox()
-           solnData=>phi(level)%dataptr(mvi)
+        itor = block_iterator_t(LEAF, CENTER, level=level)
+        do while(.NOT. itor%is_empty())
+           blkLimits = itor%blkLimits()
+           solnData => itor%blkDataPtr()
            
-           blkLimits(LOW,:)=bx%lo
-           blkLimits(HIGH,:)=bx%hi
            blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
            blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
         
@@ -228,13 +219,9 @@ subroutine Driver_verifyInitDt()
            deallocate(zRight)
 #endif
            
+           call itor%next()
         end do
-        call famrex_mviter_destroy(mvi)
      end do
-     do level=1,maxLev
-        call famrex_multivab_destroy(phi(level))
-     end do
-     deallocate(phi)
      
      ! find the minimum across all processors, store it in dtCFL on MasterPE
      call MPI_AllReduce(dtCheck(1), dtCFL(1), 3, FLASH_REAL, MPI_MIN, &

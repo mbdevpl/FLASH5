@@ -71,3 +71,6 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_makeVector.o
 
 Grid += Grid_init.o Grid_coordTransfm.o
+
+Grid += block_iterator.o
+

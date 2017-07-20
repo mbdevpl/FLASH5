@@ -78,10 +78,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Particles_interface, ONLY: Particles_computeDt
 
   use IncompNS_interface, ONLY : IncompNS_computeDt
-  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
-                                    famrex_mviter, famrex_mviter_build,&
-                                    famrex_mviter_destroy,famrex_multivab_destroy
-  use famrex_box_module,      ONLY: famrex_box
+  use block_iterator, ONLY : block_iterator_t
 
   implicit none
 
@@ -164,9 +161,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   real :: extraHydroInfoApp
   real :: dtNewComputed
   integer,dimension(MDIM) :: cid,stride
-  type(famrex_multivab),allocatable :: phi(:)
-  type(famrex_mviter) :: mvi
-  type(famrex_box) :: bx, tbx
+  type(block_iterator_t) :: itor
   integer:: ib, level, maxLev
   real :: err
 
@@ -220,16 +215,12 @@ subroutine Driver_computeDt(nbegin, nstep, &
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 
   call Hydro_consolidateCFL()
-  allocate(phi(maxLev))
   do level=1,maxLev
-     call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
-     call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
-     do while(mvi%next())
-        bx = mvi%tilebox()
-        solnData=>phi(level)%dataptr(mvi)
+     itor = block_iterator_t(LEAF, CENTER, level=level)
+     do while(.NOT. itor%is_empty())
+        blkLimits = itor%blkLimits()
+        solnData => itor%blkDataPtr()
         
-        blkLimits(LOW,:)=bx%lo
-        blkLimits(HIGH,:)=bx%hi
         blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
         blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
         
@@ -345,13 +336,10 @@ subroutine Driver_computeDt(nbegin, nstep, &
 #endif
         
         nullify(solnData)
+
+        call itor%next()
      enddo
-     call famrex_mviter_destroy(mvi)
   end do
-  do level=1,maxLev
-     call famrex_multivab_destroy(phi(level))
-  end do
-  deallocate(phi)
 !!$     end do
      
 !!$  !! Choose the smallest CFL for screen output - provisional, may change below
