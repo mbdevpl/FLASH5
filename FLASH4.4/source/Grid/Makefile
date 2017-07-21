@@ -72,5 +72,5 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 
 Grid += Grid_init.o Grid_coordTransfm.o
 
-Grid += block_iterator.o
+Grid += block_metadata.o block_iterator.o
 

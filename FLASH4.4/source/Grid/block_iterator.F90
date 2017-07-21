@@ -19,7 +19,7 @@ module block_iterator
 #define CONTIGUOUS_POINTER pointer
 #include "constants.h"
     private
-  
+
     integer,parameter :: ndims=N_DIM
     integer,parameter :: amrex_real=kind(1.0)
 
@@ -44,12 +44,9 @@ module block_iterator
         procedure, public :: clear
         procedure, public :: is_valid
         procedure, public :: next
-        procedure, public :: blkLimits
-        procedure, public :: blkID
-        procedure, public :: blkCornerID
-        procedure, public :: blkStride
-        procedure, public :: blkLevel
+        procedure, public :: blkMetaData
         procedure, public :: blkDataPtr
+        ! DEVNOTE: Do we need a blkRealeaseDataPtr?
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         final             :: destroy_iterator
 #endif
@@ -199,118 +196,73 @@ contains
         this%cur = j
     end subroutine next
 
-    !!****m* block_iterator_t/blkLimits
+    !!****m* block_iterator_t/blkMetaData
     !!
     !! NAME
-    !!  blkLimits
+    !!  blkMetaData 
     !!
     !! SYNPOSIS
-    !!  call itor%blkLimits(integer(INOUT) :: limits(LOW:HIGH, MDIM))
+    !!  call itor%blkMetaData(block_metadata_t(OUT) : block)
     !!
     !! DESCRIPTION
-    !!  DEVNOTE: WRITE THIS AND EXPLAIN DIFFERENCES BY cellIdxBase
-    !!
-    !! ARGUMENTS
-    !!  limits - the limits
-    !!
-    !! SEE ALSO
-    !!  Grid_getBlkIndexLimits
-    !!  Grid_getBlkCornerID
+    !!  Obtain meta data that characterizes the block currently set in the
+    !!  iterator.
     !!
     !!****
-    subroutine blkLimits(this, limits)
-        use tree, ONLY : lrefine, lrefine_max
+    subroutine blkMetaData(this, mData)
+        use block_metadata, ONLY : block_metadata_t
 
-        class(block_iterator_t), intent(IN)    :: this
-        integer,                 intent(INOUT) :: limits(LOW:HIGH, MDIM)
-        
-        integer, dimension(MDIM)           :: cornerID, strideUnused
+        class(block_iterator_t), intent(IN)  :: this
+        type(block_metadata_t),  intent(OUT) :: mData
+
+        integer, dimension(MDIM)           :: cornerID, stride
         integer, dimension(LOW:HIGH, MDIM) :: blkLim, blkLimGC
+        
+        mData%ID = this%cur 
+        mData%level = lrefine(mData%id)
 
-        associate(lo => limits(LOW, :), hi => limits(HIGH, :), blkId => this%cur)
+        ! DEVNOTE: For this to work, all metadata must be determined here
+        ! without using any of the Grid_get* subroutines that take
+        ! blockId as an argument
+        call Grid_getBlkCornerID(mData%id, cornerID, stride)
+        mData%cid = cornerID
+        mData%stride = stride
+ 
+        associate(lo    => mData%limits(LOW, :), &
+                  hi    => mData%limits(HIGH, :), &
+                  loGC  => mData%limitsGC(LOW, :), &
+                  hiGC  => mData%limitsGC(HIGH, :), &
+                  blkId => mData%id)
             call Grid_getBlkIndexLimits(blkID, blkLim, blkLimGC)
-            lo = blkLim(LOW ,:)                   !DEV: or blkLimGC(LOW ,:) ?
-            hi = blkLim(HIGH,:)                   !DEV: or blkLimGC(HIGH,:) ?
+            lo(:) = blkLim(LOW, :)
+            hi(:) = blkLim(HIGH, :)
+            loGC(:) = blkLimGC(LOW, :)
+            hiGC(:) = blkLimGC(HIGH, :)
             if (this%cellIdxBase==-1) then
-               call Grid_getBlkCornerID(blkID, cornerID, strideUnused)
                cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
-               lo(:) = lo(:) - 1 + cornerID(:)
-               hi(:) = hi(:) - 1 + cornerID(:)
+               lo(:)   = lo(:)   - 1 + cornerID(:)
+               hi(:)   = hi(:)   - 1 + cornerID(:)
+               loGC(:) = loGC(:) - 1 + cornerID(:)
+               hiGC(:) = hiGC(:) - 1 + cornerID(:)
             else if (this%cellIdxBase==-2) then
-               call Grid_getBlkCornerID(blkID, cornerID, strideUnused)
                cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
-               lo(:) = lo(:) - 1 + cornerID(:)
-               hi(:) = hi(:) - 1 + cornerID(:)
-               lo(1:ndims) = lo(1:ndims) - NGUARD
-               hi(1:ndims) = hi(1:ndims) - NGUARD
+               lo(:)   = lo(:)   - 1 + cornerID(:)
+               hi(:)   = hi(:)   - 1 + cornerID(:)
+               loGC(:) = loGC(:) - 1 + cornerID(:)
+               hiGC(:) = hiGC(:) - 1 + cornerID(:)
+               lo(1:ndims)   = lo(1:ndims)   - NGUARD
+               hi(1:ndims)   = hi(1:ndims)   - NGUARD
+               loGC(1:ndims) = loGC(1:ndims) - NGUARD
+               hiGC(1:ndims) = hiGC(1:ndims) - NGUARD
             else if (this%cellIdxBase==0) then
-               lo(:) = lo(:) - 1
-               hi(:) = hi(:) - 1
+               lo(:)   = lo(:)   - 1
+               hi(:)   = hi(:)   - 1
+               loGC(:) = loGC(:) - 1
+               hiGC(:) = hiGC(:) - 1
             end if
         end associate
-    end subroutine blkLimits
-
-    !!****m* block_iterator_t/blkID
-    !!
-    !! NAME
-    !!  blkID
-    !!
-    !! SYNPOSIS
-    !!  integer id = itor%blkID()
-    !!
-    !! DESCRIPTION
-    !!  Obtain the paramesh-based integer that uniquely indexes the block
-    !!  currently set in the iterator.
-    !!
-    !! RETURN VALUES
-    !!  The integer index for the block
-    !!
-    !!****
-    integer function blkID(this)
-        class(block_iterator_t), intent(IN) :: this
-
-        blkID = this%cur
-    end function blkID
-
-    function blkCornerID(this) result(cid)
-        class(block_iterator_t), intent(IN) :: this
-        ! TODO: What is dimension of this
-        integer :: cid(MDIM)
-
-        cid = 0
-    end function blkCornerID
-
-    function blkStride(this) result(cid)
-        class(block_iterator_t), intent(IN) :: this
-        ! TODO: What is dimension of this
-        integer :: cid(MDIM)
-        
-        cid = 0
-    end function blkStride
-
-    !!****m* block_iterator_t/blkLevel
-    !!
-    !! NAME
-    !!  blkLevel
-    !!
-    !! SYNPOSIS
-    !!  integer level = itor%blkLevel()
-    !!
-    !! DESCRIPTION
-    !!  Obtain the octree level of the block currently set in the iterator.
-    !!
-    !! RETURN VALUE
-    !!  The octree level 
-    !!
-    !!****
-    integer function blkLevel(this)
-        use tree, ONLY : lrefine
-
-        class(block_iterator_t), intent(IN) :: this
-
-        blkLevel = lrefine(this%cur)
-    end function blkLevel 
-
+    end subroutine blkMetaData
+    
     !!****m* block_iterator_t/blkDataPtr 
     !!
     !! NAME
@@ -332,33 +284,18 @@ contains
     !!
     !!****
     function blkDataPtr(this) result(ptr)
+        use block_metadata, ONLY : block_metadata_t
         use tree, ONLY : lrefine, lrefine_max
 
         class(block_iterator_t), intent(IN)                      :: this
         real(amrex_real), CONTIGUOUS_POINTER, dimension(:,:,:,:) :: ptr
         
         real(amrex_real), CONTIGUOUS_POINTER, dimension(:,:,:,:) :: fp
-        integer, dimension(LOW:HIGH,MDIM)    :: blkLim ,blkLimGC
-        integer, dimension(MDIM)             :: cornerID, strideUnused
-        integer, dimension(MDIM)             :: lo, hi
-        
-        associate (blkID => this%cur)
-            call Grid_getBlkIndexLimits(blkID, blkLim, blkLimGC)
-            call Grid_getBlkPtr(blkID, fp, this%gds)
+        type(block_metadata_t) :: block
 
-            lo = blkLimGC(LOW ,:)                 !DEV: or blkLimGC(LOW ,:) ?
-            if (this%cellIdxBase==-1) then
-               call Grid_getBlkCornerID(blkID, cornerID, strideUnused)
-               cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
-               lo(:) = lo(:) - 1 + cornerID(:)
-            else if (this%cellIdxBase==-2) then
-               call Grid_getBlkCornerID(blkID,cornerID,strideUnused)
-               cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
-               lo(:) = lo(:) - 1 + cornerID(:)
-               lo(1:ndims) = lo(1:ndims) - NGUARD
-            else if (this%cellIdxBase==0) then
-               lo(:) = lo(:) - 1
-            end if
+        call this%blkMetaData(block)
+        call Grid_getBlkPtr(block%id, fp, this%gds)
+        associate (lo => block%limitsGC(LOW, :))
 #ifdef INDEXREORDER
             ptr(lo(1):, lo(2):, lo(3):, 1:) => fp
 #else
@@ -368,4 +305,3 @@ contains
     end function blkDataPtr
 
 end module block_iterator
-

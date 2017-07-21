@@ -42,6 +42,7 @@ subroutine Driver_verifyInitDt()
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
   use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none       
 
@@ -80,8 +81,10 @@ subroutine Driver_verifyInitDt()
   integer :: isize,jsize,ksize
   logical :: runVerifyInitDt = .false.
   real :: extraHydroInfo
-  integer,dimension(MDIM)::cid,stride
   type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
+  integer :: cid(MDIM)
+  integer :: stride(MDIM)
   integer:: ib, level, maxLev
 
 !!$  dr_dtSTS = 0.0     !First use is in a max(dr_dtSTS,...), see Driver_evolveFlash. - KW
@@ -118,16 +121,14 @@ subroutine Driver_verifyInitDt()
      do level=1,maxLev
         itor = block_iterator_t(LEAF, CENTER, level=level)
         do while(itor%is_valid())
-           call itor%blkLimits(blkLimits)
            solnData => itor%blkDataPtr()
-           
-           blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
-           blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
-        
-           stride=2**(maxLev-level)
-           cid=1
-           cid(1:NDIM)=blkLimits(LOW,1:NDIM)*stride(1:NDIM)
-           
+           call        itor%blkMetaData(block)
+          
+           cid         = block%cid
+           stride      = block%stride
+           blkLimits   = block%limits
+           blkLimitsGC = block%limitsGC
+
            isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
            jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
            ksize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1+2*NGUARD*K3D

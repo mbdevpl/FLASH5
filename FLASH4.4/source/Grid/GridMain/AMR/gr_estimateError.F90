@@ -44,6 +44,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
   use Grid_interface, ONLY : Grid_getBlkBC
   use gr_specificData, ONLY : gr_oneBlock
   use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -73,13 +74,14 @@ subroutine gr_estimateError(error, iref, refine_filter)
   integer ierr,grd
   integer,dimension(MDIM)::bstart,bend 
   integer nsend,nrecv
-!
+
   integer :: kk
 
   real, pointer :: solnData(:,:,:,:)
   integer :: idest, iopt, nlayers, icoord
   logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
   type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
   integer :: blkLevel, blkID
   integer:: ib, maxLev
 
@@ -116,18 +118,17 @@ subroutine gr_estimateError(error, iref, refine_filter)
   itor = block_iterator_t(ACTIVE_BLKS, CENTER)
   do while(itor%is_valid())
      solnData => itor%blkDataPtr()
-     blkLevel  = itor%blkLevel()
-     blkID     = itor%blkID()
-     call itor%blkLimits(blkLimits)
+     call itor%blkMetaData(block)
+
+     blkLevel    = block%level
+     blkID       = block%id
+     blkLimits   = block%limits
+     blkLimitsGC = block%limitsGC
 
 !!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
 !!        error(lb)=0.0   
 
-        blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
-        blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
-        
-        
         del=0.0
         ncell(:)=blkLimits(HIGH,:)-blkLimits(LOW,:)+1
         psize(:)=ncell(:)*gr_delta(:,blkLevel)
