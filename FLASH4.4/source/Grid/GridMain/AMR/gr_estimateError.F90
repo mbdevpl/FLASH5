@@ -201,7 +201,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
         !    grd=NGUARD-1
         ! No guardcells
         !    grd=NGUARD
-        call Grid_getBlkBC(blkID,face,bdry)
+        call Grid_getBlkBC(block,face,bdry)
         
         do i=1,NDIM
            if (face(LOW,i) == NOT_BOUNDARY)then

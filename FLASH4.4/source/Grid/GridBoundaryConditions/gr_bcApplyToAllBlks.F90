@@ -31,6 +31,8 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
        Grid_getBlkIndexLimits
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
   use Grid_data,ONLY : gr_numDataStruct,gr_gridDataStruct,gr_gridDataStructSize
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 #include "constants.h"
 #include "Flash.h"
@@ -43,11 +45,13 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
   integer,dimension(LOW:HIGH,MDIM) :: blkLimitsGC,blkLimits,blkBC
   integer :: varCount,gridDataStruct
   integer :: edge,struct
-  integer :: blkNum,blockID
   integer,dimension(MDIM) :: regionType
   integer :: idest=0
   integer,dimension(gr_numDataStruct) :: localDataStruct,localStructSize
   integer :: localNum
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
+  integer :: blockID
 
   if(isWork) then
      localNum=1
@@ -59,18 +63,19 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
      localStructSize=gr_gridDataStructSize(1:localNum)
   end if
 
-  if (localNum > 0) call Grid_getLocalNumBlks(blkNum)   !! Find the local number of blocks
-
   do struct=1,localNum
      gridDataStruct=localDataStruct(struct)
      varCount=localStructSize(struct)
      
      face(LOW)=LOW
      face(HIGH)=HIGH
-     
-     do blockID=1,blkNum                 !! and loop over them
-        
-        call Grid_getBlkBC(blockID,blkBC)  !! For the block find the faces on the boundary
+
+     itor = block_iterator_t(ALL_BLKS, gridDataStruct)
+     do while (itor%is_valid())
+        call itor%blkMetaData(block) 
+        blockID = block%id
+
+        call Grid_getBlkBC(block,blkBC)  !! For the block find the faces on the boundary
         loop(LOW)=blkBC(LOW,axis)/=NOT_BOUNDARY      !! along the specified dimension
         loop(HIGH)=blkBC(HIGH,axis)/=NOT_BOUNDARY
         
@@ -79,8 +84,8 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
            
            !! The next few statements are to get block information to 
            !! prepare for the calculation
-           call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC,&
-                gridDataStruct)
+            blkLimits = block%limits
+            blkLimitsGC = block%limitsGC
            !! Now that all preparatory work is done, call the routine
            !! that will repackage relevant parts of the block data
            !! to pass on the boundary condition routines that do actual

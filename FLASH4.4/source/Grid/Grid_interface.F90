@@ -169,8 +169,9 @@ Module Grid_interface
   end interface
 
   interface Grid_getBlkBC
-     subroutine Grid_getBlkBC(blockId, faces, onBoundary)
-       integer, intent(in) :: blockId
+     subroutine Grid_getBlkBC(block, faces, onBoundary)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
        integer, dimension(2,MDIM),intent(out):: faces
        integer, optional, dimension(2,MDIM), intent(out) :: onBoundary
      end subroutine Grid_getBlkBC
@@ -1074,9 +1075,10 @@ Module Grid_interface
        integer,optional,intent(IN) :: blockType
      end subroutine Grid_getBlkIDFromPosForListsOfBlocks
 
-     subroutine Grid_getBlkNeighBlkIDFromPos(blockID, pos, neghDir, ansBlockID, ansProcID)
+     subroutine Grid_getBlkNeighBlkIDFromPos(block, pos, neghDir, ansBlockID, ansProcID)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(IN) :: blockID
+       type(block_metadata_t), intent(IN) :: block
        real, dimension(1:MDIM), intent(IN) :: pos
        integer, dimension(1:MDIM), intent(IN) :: neghDir
        integer, intent(OUT) :: ansBlockID, ansProcID
