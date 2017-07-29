@@ -7,8 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call gr_sanitizeDataAfterInterp(integer(in)          :: blkList(count),
-!!                                  integer(in)          :: count,
+!!  call gr_sanitizeDataAfterInterp(integer(in)          :: ntype,
 !!                                  character(len=*)(in) :: info,
 !!                                  integer(in)          :: layers(MDIM))
 !!
@@ -16,9 +15,9 @@
 !!
 !! DESCRIPTION
 !!
-!!  Given a list of blocks of data, loop over all of the blocks and
-!!  check whether solution data in certain variables lie in a reasonable
-!!  range of values.
+!!  Given a block type specification and a class of data, loop over all of 
+!!  matching blocks and check whether matching solution data in certain
+!!  variableslie in a reasonable range of values.
 !!
 !!  Energies (ENER_VAR and EINT_VAR) are expected to be .ge. gr_smalle,
 !!  and the density (DENS_VAR) is expected to be .ge. gr_smallrho,
@@ -29,8 +28,8 @@
 !!  generated, but the offending data is not modified.
 !!
 !! ARGUMENTS
-!! 
-!!   blkList - integer list of blocks to be operated on
+!!
+!!   ntype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
 !!
 !!   count - number of blocks in the blkList
 !!
@@ -67,7 +66,7 @@
 
 #define DEBUG_CONSCONV
 
-subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
+subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
 
   use Grid_data, ONLY : gr_smallrho,gr_smalle, gr_meshMe
   use gr_specificData, ONLY : gr_sanitizeDataMode, gr_sanitizeVerbosity
@@ -75,6 +74,8 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
   use physicaldata, ONLY:unk, gcell_on_cc
   use tree, ONLY:nodetype
   use paramesh_dimensions, ONLY: il_bnd,iu_bnd,jl_bnd,ju_bnd,kl_bnd,ku_bnd, kl_bndi, ndim
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 #include "constants.h"
@@ -82,11 +83,10 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
 #define REAL_FORMAT "(1PG23.16)"
 #include "Flash.h"
 
-  integer,intent(IN) :: count
-  integer, dimension(count), intent(IN) :: blkList
+  integer, intent(IN) :: ntype
   character(len=*), intent(IN) :: info
   integer,dimension(MDIM), intent(IN):: layers
-  integer :: n, block
+  integer :: n, blockID
 
   integer ::  i,j
   integer :: iskip, jskip, kskip
@@ -94,6 +94,8 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
   integer :: kwrite,locs(3),kReorder(1:ku_bnd-kl_bnd+1),nReorder
   character(len=32), dimension(4,2) :: block_buff
   character(len=32)                 :: number_to_str
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
 
 111 format (a,a,a1,(1x,a18,'=',a),(1x,a2,'=',a5),(1x,a5,'=',a),(1x,a4,'=',a))
 112 format (i3,1x,24(1x,1G8.2))
@@ -112,25 +114,28 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
   ku = ku_bnd - kskip
 
   nReorder = 0
-
-  do n = 1,count
-     block=blkList(n)
+  
+  ! DEVNOTE: Is it *always* correct to use CENTER here?
+  itor = block_iterator_t(ntype, CENTER)
+  do while (itor%is_valid())
+     call itor%blkMetaData(block)
+     blockID = block%id
 
 #ifdef DENS_VAR
      if (gcell_on_cc(DENS_VAR) .OR. gr_sanitizeDataMode == 2) then
         ! small limits -- in case the interpolants are not monotonic
-        if (any(unk(DENS_VAR,il:iu,jl:ju,kl:ku,block) .LT. gr_smallrho)) then
+        if (any(unk(DENS_VAR,il:iu,jl:ju,kl:ku,blockID) .LT. gr_smallrho)) then
            kwrite = kl_bndi
            if (gr_sanitizeVerbosity .GE. 5 .AND. ndim==3) then
               call set_kReorder
 !              print*,'kReorder(1:nReorder)',kReorder(1:nReorder)
-              locs = minloc(unk(DENS_VAR,il:iu,jl:ju,kReorder(1:nReorder),block))
+              locs = minloc(unk(DENS_VAR,il:iu,jl:ju,kReorder(1:nReorder),blockID))
 !              print*,'LOCS:',locs
               kwrite = kReorder(locs(3))
            end if
            write (block_buff(1,1), '(a18)') 'min. unk(DENS_VAR)'
-           !        write (number_to_str, '('//REAL_FORMAT//',a1)') minval(unk(DENS_VAR,il:iu,jl:ju,kl:ku,block)), ','
-           write (number_to_str, '(G30.22)') minval(unk(DENS_VAR,il:iu,jl:ju,kl:ku,block))
+           !        write (number_to_str, '('//REAL_FORMAT//',a1)') minval(unk(DENS_VAR,il:iu,jl:ju,kl:ku,blockID)), ','
+           write (number_to_str, '(G30.22)') minval(unk(DENS_VAR,il:iu,jl:ju,kl:ku,blockID))
            write (block_buff(1,2), '(a)') trim(adjustl(number_to_str))
 
            write (block_buff(2,1), '(a)') 'PE'
@@ -138,11 +143,11 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
            write (block_buff(2,2), '(a)') trim(adjustl(number_to_str))
 
            write (block_buff(3,1), '(a)') 'block'
-           write (number_to_str, '(i7)') block
+           write (number_to_str, '(i7)') blockID
            write (block_buff(3,2), '(a)') trim(adjustl(number_to_str))
 
            write (block_buff(4,1), '(a)') 'type'
-           write (number_to_str, '(i7)') nodetype(block)
+           write (number_to_str, '(i7)') nodetype(blockID)
            write (block_buff(4,2), '(a)') trim(adjustl(number_to_str))
 
            if (gr_sanitizeVerbosity .GE. 1) call Logfile_stamp( block_buff, 4, 2, 'WARNING '//info)
@@ -152,15 +157,15 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
               do j=ju_bnd,jl_bnd,-1
                  if (kwrite==kl_bndi) then
                  ! For 3D, this prints a slice at the lowest k index that is interior - KW
-                    print 112, j, (unk(DENS_VAR,i,j,kwrite,block), i=il_bnd,iu_bnd)
+                    print 112, j, (unk(DENS_VAR,i,j,kwrite,blockID), i=il_bnd,iu_bnd)
                  else
-                    print 113, j,kwrite, (unk(DENS_VAR,i,j,kwrite,block), i=il_bnd,iu_bnd)
+                    print 113, j,kwrite, (unk(DENS_VAR,i,j,kwrite,blockID), i=il_bnd,iu_bnd)
                  end if
               end do
            end if
 
            if (gr_sanitizeDataMode == 3) then
-              unk(DENS_VAR,il:iu,jl:ju,kl:ku,block) = max(gr_smallrho,unk(DENS_VAR,il:iu,jl:ju,kl:ku,block))
+              unk(DENS_VAR,il:iu,jl:ju,kl:ku,blockID) = max(gr_smallrho,unk(DENS_VAR,il:iu,jl:ju,kl:ku,blockID))
            end if
            if (gr_sanitizeDataMode == 4) call Driver_abortFlash("DENS var below acceptable minimum")
         end if
@@ -171,15 +176,15 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
 #ifdef ENER_VAR               
      if (gcell_on_cc(ENER_VAR) .OR. gr_sanitizeDataMode == 2) then
         ! energy
-        if (any(unk(ENER_VAR,il:iu,jl:ju,kl:ku,block) .LT. gr_smalle*0.999999999)) then
+        if (any(unk(ENER_VAR,il:iu,jl:ju,kl:ku,blockID) .LT. gr_smalle*0.999999999)) then
            kwrite = kl_bndi
            if (gr_sanitizeVerbosity .GE. 5 .AND. ndim==3) then
               call set_kReorder
-              locs = minloc(unk(ENER_VAR,il:iu,jl:ju,kReorder(1:nReorder),block))
+              locs = minloc(unk(ENER_VAR,il:iu,jl:ju,kReorder(1:nReorder),blockID))
               kwrite = kReorder(locs(3))
            end if
            write (block_buff(1,1), '(a)') 'min. unk(ENER_VAR)'
-           write (number_to_str, '('//REAL_FORMAT//')') minval(unk(ENER_VAR,il:iu,jl:ju,kl:ku,block))
+           write (number_to_str, '('//REAL_FORMAT//')') minval(unk(ENER_VAR,il:iu,jl:ju,kl:ku,blockID))
            write (block_buff(1,2), '(a)') trim(adjustl(number_to_str))
 
            write (block_buff(2,1), '(a)') 'PE'
@@ -187,11 +192,11 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
            write (block_buff(2,2), '(a)') trim(adjustl(number_to_str))
 
            write (block_buff(3,1), '(a)') 'block'
-           write (number_to_str, '(i7)') block
+           write (number_to_str, '(i7)') blockID
            write (block_buff(3,2), '(a)') trim(adjustl(number_to_str))
 
            write (block_buff(4,1), '(a)') 'type'
-           write (number_to_str, '(i7)') nodetype(block)
+           write (number_to_str, '(i7)') nodetype(blockID)
            write (block_buff(4,2), '(a)') trim(adjustl(number_to_str))
 
            if (gr_sanitizeVerbosity .GE. 1) call Logfile_stamp( block_buff, 4, 2, 'WARNING '//info)
@@ -200,15 +205,15 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
            if (gr_sanitizeVerbosity .GE. 5) then
               do j=ju_bnd,jl_bnd,-1
                  if (kwrite==kl_bndi) then
-                    print 112, j, (unk(ENER_VAR,i,j,kwrite,block), i=il_bnd,iu_bnd) 
+                    print 112, j, (unk(ENER_VAR,i,j,kwrite,blockID), i=il_bnd,iu_bnd) 
                  else
-                    print 113, j,kwrite, (unk(ENER_VAR,i,j,kwrite,block), i=il_bnd,iu_bnd)
+                    print 113, j,kwrite, (unk(ENER_VAR,i,j,kwrite,blockID), i=il_bnd,iu_bnd)
                  end if
               end do
            end if
 
            if (gr_sanitizeDataMode == 3) then
-              unk(ENER_VAR,il:iu,jl:ju,kl:ku,block) = max(gr_smalle,unk(ENER_VAR,il:iu,jl:ju,kl:ku,block))
+              unk(ENER_VAR,il:iu,jl:ju,kl:ku,blockID) = max(gr_smalle,unk(ENER_VAR,il:iu,jl:ju,kl:ku,blockID))
            end if
            if (gr_sanitizeDataMode == 4) call Driver_abortFlash("ENER var below acceptable minimum")
         end if
@@ -216,15 +221,15 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
 #endif
 #ifdef EINT_VAR
      if (gcell_on_cc(EINT_VAR) .OR. gr_sanitizeDataMode == 2) then
-        if (any(unk(EINT_VAR,il:iu,jl:ju,kl:ku,block) .LT. gr_smalle*0.999999999)) then
+        if (any(unk(EINT_VAR,il:iu,jl:ju,kl:ku,blockID) .LT. gr_smalle*0.999999999)) then
            kwrite = kl_bndi
            if (gr_sanitizeVerbosity .GE. 5 .AND. ndim==3) then
               call set_kReorder
-              locs = minloc(unk(EINT_VAR,il:iu,jl:ju,kReorder(1:nReorder),block))
+              locs = minloc(unk(EINT_VAR,il:iu,jl:ju,kReorder(1:nReorder),blockID))
               kwrite = kReorder(locs(3))
            end if
            write (block_buff(1,1), '(a)') 'min. unk(EINT_VAR)'
-           write (number_to_str, '('//REAL_FORMAT//')') minval(unk(EINT_VAR,il:iu,jl:ju,kl:ku,block))
+           write (number_to_str, '('//REAL_FORMAT//')') minval(unk(EINT_VAR,il:iu,jl:ju,kl:ku,blockID))
            write (block_buff(1,2), '(a)') trim(adjustl(number_to_str))
 
            write (block_buff(2,1), '(a)') 'PE'
@@ -232,11 +237,11 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
            write (block_buff(2,2), '(a)') trim(adjustl(number_to_str))
 
            write (block_buff(3,1), '(a)') 'block'
-           write (number_to_str, '(i7)') block
+           write (number_to_str, '(i7)') blockID
            write (block_buff(3,2), '(a)') trim(adjustl(number_to_str))
 
            write (block_buff(4,1), '(a)') 'type'
-           write (number_to_str, '(i7)') nodetype(block)
+           write (number_to_str, '(i7)') nodetype(blockID)
            write (block_buff(4,2), '(a)') trim(adjustl(number_to_str))
 
            if (gr_sanitizeVerbosity .GE. 1) call Logfile_stamp( block_buff, 4, 2, 'WARNING '//info)
@@ -245,21 +250,22 @@ subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
            if (gr_sanitizeVerbosity .GE. 5) then
               do j=ju_bnd,jl_bnd,-1
                  if (kwrite==kl_bndi) then
-                    print 112, j, (unk(EINT_VAR,i,j,kwrite,block), i=il_bnd,iu_bnd) 
+                    print 112, j, (unk(EINT_VAR,i,j,kwrite,blockID), i=il_bnd,iu_bnd) 
                  else
-                    print 113, j,kwrite, (unk(EINT_VAR,i,j,kwrite,block), i=il_bnd,iu_bnd)
+                    print 113, j,kwrite, (unk(EINT_VAR,i,j,kwrite,blockID), i=il_bnd,iu_bnd)
                  end if
               end do
            end if
 
            if (gr_sanitizeDataMode == 3) then
-              unk(EINT_VAR,il:iu,jl:ju,kl:ku,block) = max(gr_smalle,unk(EINT_VAR,il:iu,jl:ju,kl:ku,block))
+              unk(EINT_VAR,il:iu,jl:ju,kl:ku,blockID) = max(gr_smalle,unk(EINT_VAR,il:iu,jl:ju,kl:ku,blockID))
            end if
            if (gr_sanitizeDataMode == 4) call Driver_abortFlash("EINT var below acceptable minimum")
         end if
      end if
 #endif
 
+     call itor%next()
   end do
 
   return 

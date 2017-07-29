@@ -7,19 +7,17 @@
 !!
 !! SYNOPSIS
 !!
-!!  gr_conserveToPrimitive(integer(in) :: blkList(count),
-!!                         integer(in) :: count,
-!!                         logical(in) :: allCells)
+!!  gr_conserveToPrimitive(block_metadata_t(in) :: block,
+!!                         logical(in)          :: allCells)
 !!
 !!
 !!
 !! DESCRIPTION
 !!
-!!  Given a list of blocks of data, loop over all of the blocks and
-!!  convert variables which are normally represented in PER_MASS
-!!  form (e.g., velocity) from the corresponding conservative form
-!!  (i.e., momentum) back to the normal PER_MASS form  if 
-!!  gr_convertToConsvdForMeshCalls is TRUE.
+!!  Given a block of data, convert variables which are normally
+!!  represented in PER_MASS form (e.g., velocity) from the 
+!!  corresponding conservative form (i.e., momentum) back to the normal
+!!  PER_MASS form  if gr_convertToConsvdForMeshCalls is TRUE.
 !!  Do nothing if gr_convertToConsvdForMeshCalls is FALSE.
 !!
 !!  Additionally,
@@ -30,9 +28,8 @@
 !!
 !! ARGUMENTS
 !! 
-!!   blkList - integer list of blocks to be operated on
-!!
-!!   count - number of blocks in the blkList
+!!   block - the metadata representation of block whose data shall be
+!!           transformed
 !!
 !!   allCells - act on all cells, including guardcells, if .TRUE.,
 !!              otherwise only modify interior cells.
@@ -70,7 +67,7 @@
 
 !!REORDER(5):unk
 
-subroutine gr_conserveToPrimitive(blkList,count,allCells)
+subroutine gr_conserveToPrimitive(block, allCells)
 
 #include "Flash.h"
 
@@ -78,6 +75,7 @@ subroutine gr_conserveToPrimitive(blkList,count,allCells)
                         gr_vartypes, gr_anyVarToConvert
   use physicaldata, ONLY:unk
   use tree, ONLY: nodetype
+  use block_metadata, ONLY : block_metadata_t
 #ifdef FLASH_GRID_PARAMESH2
   use tree, ONLY: il_bnd,iu_bnd,jl_bnd,ju_bnd,kl_bnd,ku_bnd
 #else
@@ -88,11 +86,10 @@ subroutine gr_conserveToPrimitive(blkList,count,allCells)
   implicit none
 #include "constants.h"
 
-  integer,intent(IN) :: count
-  integer, dimension(count), intent(IN) :: blkList
+  type(block_metadata_t), intent(IN) :: block
   logical, intent(IN):: allCells
   real :: dens_old_inv
-  integer :: i, j, k,n, block, ivar
+  integer :: i, j, k,n, blockID, ivar
   integer :: il,iu,jl,ju,kl,ku
   logical :: loc_allCells
 
@@ -124,60 +121,58 @@ subroutine gr_conserveToPrimitive(blkList,count,allCells)
 #endif
   end if
 
-  do n = 1,count
-     block=blkList(n)
+  blockID = block%id
 #ifdef DENS_VAR
-     do k = kl,ku
-        do j = jl,ju
-           do i = il,iu
-              if (gr_anyVarToConvert) then
-                 if (nodetype(block) .NE. ANCESTOR &
-                      .OR. unk(DENS_VAR,i,j,k,block) .NE. 0.0 &
-                      .OR. (iu - il) .EQ. (NXB - 1) &
-                      .OR. (i .GE. il_bnd+NGUARD .AND. i .LE. iu_bnd-NGUARD &
-                      .AND. j .GE. jl_bnd+NGUARD*K2D .AND. j .LE. ju_bnd-NGUARD*K2D &
-                      .AND. k .GE. kl_bnd+NGUARD*K3D .AND. k .LE. ku_bnd-NGUARD*K3D)) then
-                    if (unk(DENS_VAR,i,j,k,block) == 0.0) then
-                       ! If unk(dens)==0, assume that for all ivars of interest --- namely,
-                       ! the PER_MASS type ones --- unk(ivar)==0 held before the forward
-                       ! conversion to conserved form; otherwise, the program should have
-                       ! aborted already in the forward conversion. - KW
-                       dens_old_inv = 0.0
-                    else
-                       dens_old_inv = 1./unk(DENS_VAR,i,j,k,block)
-                    end if
+  do k = kl,ku
+     do j = jl,ju
+        do i = il,iu
+           if (gr_anyVarToConvert) then
+              if (nodetype(blockID) .NE. ANCESTOR &
+                   .OR. unk(DENS_VAR,i,j,k,blockID) .NE. 0.0 &
+                   .OR. (iu - il) .EQ. (NXB - 1) &
+                   .OR. (i .GE. il_bnd+NGUARD .AND. i .LE. iu_bnd-NGUARD &
+                   .AND. j .GE. jl_bnd+NGUARD*K2D .AND. j .LE. ju_bnd-NGUARD*K2D &
+                   .AND. k .GE. kl_bnd+NGUARD*K3D .AND. k .LE. ku_bnd-NGUARD*K3D)) then
+                 if (unk(DENS_VAR,i,j,k,blockID) == 0.0) then
+                    ! If unk(dens)==0, assume that for all ivars of interest --- namely,
+                    ! the PER_MASS type ones --- unk(ivar)==0 held before the forward
+                    ! conversion to conserved form; otherwise, the program should have
+                    ! aborted already in the forward conversion. - KW
+                    dens_old_inv = 0.0
                  else
-                    dens_old_inv = 1./max(unk(DENS_VAR,i,j,k,block), gr_smallrho)
+                    dens_old_inv = 1./unk(DENS_VAR,i,j,k,blockID)
                  end if
-
-                 ! small limits -- in case the interpolants are not monotonic
-                 unk(DENS_VAR,i,j,k,block) = &
-                      max(unk(DENS_VAR,i,j,k,block), gr_smallrho)
-
-                 do ivar = UNK_VARS_BEGIN, UNK_VARS_END
-                    if (gr_vartypes(ivar) .eq. VARTYPE_PER_MASS) then
-                       unk(ivar,i,j,k,block) = dens_old_inv*unk(ivar,i,j,k,block)
-                    end if
-                 end do
+              else
+                 dens_old_inv = 1./max(unk(DENS_VAR,i,j,k,blockID), gr_smallrho)
               end if
 
               ! small limits -- in case the interpolants are not monotonic
-              unk(DENS_VAR,i,j,k,block) = &
-                   max(unk(DENS_VAR,i,j,k,block), gr_smallrho)
+              unk(DENS_VAR,i,j,k,blockID) = &
+                   max(unk(DENS_VAR,i,j,k,blockID), gr_smallrho)
 
-           end do
+              do ivar = UNK_VARS_BEGIN, UNK_VARS_END
+                 if (gr_vartypes(ivar) .eq. VARTYPE_PER_MASS) then
+                    unk(ivar,i,j,k,blockID) = dens_old_inv*unk(ivar,i,j,k,blockID)
+                 end if
+              end do
+           end if
+
+           ! small limits -- in case the interpolants are not monotonic
+           unk(DENS_VAR,i,j,k,blockID) = &
+                max(unk(DENS_VAR,i,j,k,blockID), gr_smallrho)
+
         end do
      end do
+  end do
 #endif
 
 #ifdef ENER_VAR               
-     ! energy
-     unk(ENER_VAR,:,:,:,block) = max(unk(ENER_VAR,:,:,:,block), gr_smalle)
+  ! energy
+  unk(ENER_VAR,:,:,:,blockID) = max(unk(ENER_VAR,:,:,:,blockID), gr_smalle)
 #endif
 #ifdef EINT_VAR
-     unk(EINT_VAR,:,:,:,block) = max(unk(EINT_VAR,:,:,:,block), gr_smalle)
+  unk(EINT_VAR,:,:,:,blockID) = max(unk(EINT_VAR,:,:,:,blockID), gr_smalle)
 #endif
-  end do
 
   return 
 end subroutine gr_conserveToPrimitive

@@ -8,7 +8,7 @@ module block_iterator
 
 #include "Flash.h"
     use tree, ONLY : lnblocks, lrefine, lrefine_max
-    use Grid_interface, ONLY : Grid_getBlkPtr
+    use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
     use Grid_interface, ONLY : Grid_getBlkIndexLimits
     use Grid_interface, ONLY : Grid_getBlkCornerID
     use Grid_interface, ONLY : Grid_blockMatch
@@ -33,6 +33,7 @@ module block_iterator
         integer :: cur         = 1
         integer :: nodetype    = LEAF 
         integer :: gds         = CENTER
+        logical :: given_gds   = .FALSE.
         integer :: lev         = INVALID_LEVEL
         integer :: cellIdxBase = -2
         ! different variants for cell index numbering:
@@ -41,12 +42,12 @@ module block_iterator
         ! -1 = global convention for a refinement level: leftmost guard cell = 1
         ! -2 = global convention for a refinement level: leftmost inner cell = 1
     contains
-        procedure, public :: clear
+        procedure, public :: reset 
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
         procedure, public :: blkDataPtr
-        ! DEVNOTE: Do we need a blkRealeaseDataPtr?
+        procedure, public :: releaseBlkDataPtr
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         final             :: destroy_iterator
 #endif
@@ -86,20 +87,23 @@ contains
     !!****
     function init_iterator(nodetype, gds, level) result(this)
         integer, intent(IN)           :: nodetype
-        integer, intent(IN)           :: gds 
+        integer, intent(IN), optional :: gds 
         integer, intent(IN), optional :: level
         type(block_iterator_t)        :: this
  
         this%nodetype = nodetype
-        this%gds = gds
         this%lev = INVALID_LEVEL 
         if (present(level)) then
             this%lev = level
         end if
 
-        ! Search for the first valid block
-        this%cur = 0
-        call this%next()
+        this%given_gds = .FALSE.
+        if (present(gds)) then
+            this%given_gds = .TRUE.
+            this%gds = gds
+        end if
+
+        call this%reset()
     end function init_iterator
 
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
@@ -118,28 +122,29 @@ contains
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
         type(block_iterator_t), intent(INOUT) :: this
 
-        call this%clear()
+        call this%reset()
     end subroutine destroy_iterator
 #endif
 
-    !!****m* block_iterator_t/clear
+    !!****m* block_iterator_t/reset
     !!
     !! NAME
-    !!  clear 
+    !!  reset 
     !!
     !! SYNPOSIS
-    !!  call itor%clear() 
+    !!  call itor%reset() 
     !!
     !! DESCRIPTION
     !!  Reset iterator to the initial block managed by process
     !!
     !!****
-    subroutine clear(this)
+    subroutine reset(this)
         class(block_iterator_t), intent(INOUT) :: this
 
+        ! Search for the first valid block
         this%cur = 0
         call this%next()
-    end subroutine clear
+    end subroutine reset 
  
     !!****m* block_iterator_t/is_valid
     !!
@@ -294,7 +299,12 @@ contains
         type(block_metadata_t) :: block
 
         call this%blkMetaData(block)
-        call Grid_getBlkPtr(block%id, fp, this%gds)
+        if (this%given_gds) then
+            call Grid_getBlkPtr(block%id, fp, this%gds)
+        else
+            call Grid_getBlkPtr(block%id, fp)
+        end if
+
         associate (lo => block%limitsGC(LOW, :))
 #ifdef INDEXREORDER
             ptr(lo(1):, lo(2):, lo(3):, 1:) => fp
@@ -303,5 +313,35 @@ contains
 #endif
         end associate
     end function blkDataPtr
+
+    !!****m* block_iterator_t/releaseBlkDataPtr 
+    !!
+    !! NAME
+    !!  releaseBlkDataPtr
+    !!
+    !! SYNPOSIS
+    !!  call itor%releaseBlkDataPtr(ptr)
+    !!
+    !! DESCRIPTION
+    !!   DEVNOTE: Write this
+    !!
+    !! ARGUMENTS
+    !!   DEVNOTE: Write this
+    !!
+    !! NOTES
+    !!   DEVNOTE: Is it necessary that client code pass in the actual ptr?
+    !!
+    !!****
+    subroutine releaseBlkDataPtr(this, ptr)
+        use block_metadata, ONLY : block_metadata_t
+        
+        class(block_iterator_t), intent(IN) :: this
+        real(amrex_real), CONTIGUOUS_POINTER, dimension(:,:,:,:) :: ptr
+
+        type(block_metadata_t) :: block
+         
+        call this%blkMetaData(block)
+        call Grid_releaseBlkPtr(block%id, ptr)
+    end subroutine releaseBlkDataPtr
 
 end module block_iterator
