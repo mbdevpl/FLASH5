@@ -114,8 +114,8 @@ subroutine Grid_markRefineDerefine()
      deref_cut = gr_derefine_cutoff(l)
      ref_filter = gr_refine_filter(l)
      call gr_estimateError(err, iref, ref_filter)
+     call gr_markRefineDerefine(err, ref_cut, deref_cut)
   end do
-  call gr_markRefineDerefine(err, ref_cut, deref_cut)
 
   if(gr_refineOnParticleCount)call gr_ptMarkRefineDerefine()
 
