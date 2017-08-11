@@ -186,7 +186,7 @@ subroutine gr_expandDomain (particlesInitialized)
      ! This is here for safety, in case the user did not take care to make things
      ! thermodynamically consistent in the initial state.- KW
      call Timers_start("eos")
-     call itor%reset()
+     call itor%first()
      do while(itor%is_valid())
         solnData => itor%blkDataPtr()
         call itor%blkMetaData(block)

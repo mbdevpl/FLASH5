@@ -8,6 +8,7 @@ module block_iterator
 
 #include "Flash.h"
     use tree, ONLY : lnblocks, lrefine, lrefine_max
+    use gr_specificData, ONLY : gr_oneBlock
     use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
     use Grid_interface, ONLY : Grid_getBlkIndexLimits
     use Grid_interface, ONLY : Grid_getBlkCornerID
@@ -42,7 +43,7 @@ module block_iterator
         ! -1 = global convention for a refinement level: leftmost guard cell = 1
         ! -2 = global convention for a refinement level: leftmost inner cell = 1
     contains
-        procedure, public :: reset 
+        procedure, public :: first
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
@@ -103,7 +104,7 @@ contains
             this%gds = gds
         end if
 
-        call this%reset()
+        call this%first()
     end function init_iterator
 
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
@@ -122,29 +123,29 @@ contains
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
         type(block_iterator_t), intent(INOUT) :: this
 
-        call this%reset()
+        call this%first()
     end subroutine destroy_iterator
 #endif
 
-    !!****m* block_iterator_t/reset
+    !!****m* block_iterator_t/first
     !!
     !! NAME
-    !!  reset 
+    !!  first
     !!
     !! SYNPOSIS
-    !!  call itor%reset() 
+    !!  call itor%first() 
     !!
     !! DESCRIPTION
     !!  Reset iterator to the initial block managed by process
     !!
     !!****
-    subroutine reset(this)
+    subroutine first(this)
         class(block_iterator_t), intent(INOUT) :: this
 
         ! Search for the first valid block
         this%cur = 0
         call this%next()
-    end subroutine reset 
+    end subroutine first
  
     !!****m* block_iterator_t/is_valid
     !!
@@ -220,37 +221,37 @@ contains
         class(block_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: mData
 
-        integer, dimension(MDIM)           :: cornerID, stride
+        integer, dimension(MDIM)           :: cornerID
         integer, dimension(LOW:HIGH, MDIM) :: blkLim, blkLimGC
         
-        mData%ID = this%cur 
+        mData%id = this%cur 
         mData%level = lrefine(mData%id)
 
         ! DEVNOTE: For this to work, all metadata must be determined here
         ! without using any of the Grid_get* subroutines that take
         ! blockId as an argument
-        call Grid_getBlkCornerID(mData%id, cornerID, stride)
-        mData%cid = cornerID
-        mData%stride = stride
- 
+        mData%cid = gr_oneBlock(mData%id)%cornerID
+        mData%stride = 2**(lrefine_max - mData%level)
+
         associate(lo    => mData%limits(LOW, :), &
                   hi    => mData%limits(HIGH, :), &
                   loGC  => mData%limitsGC(LOW, :), &
                   hiGC  => mData%limitsGC(HIGH, :), &
-                  blkId => mData%id)
+                  blkId => mData%id, &
+                  cid   => mData%cid)
             call Grid_getBlkIndexLimits(blkID, blkLim, blkLimGC)
             lo(:) = blkLim(LOW, :)
             hi(:) = blkLim(HIGH, :)
             loGC(:) = blkLimGC(LOW, :)
             hiGC(:) = blkLimGC(HIGH, :)
             if (this%cellIdxBase==-1) then
-               cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
+               cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
                lo(:)   = lo(:)   - 1 + cornerID(:)
                hi(:)   = hi(:)   - 1 + cornerID(:)
                loGC(:) = loGC(:) - 1 + cornerID(:)
                hiGC(:) = hiGC(:) - 1 + cornerID(:)
             else if (this%cellIdxBase==-2) then
-               cornerID = (cornerID - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
+               cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
                lo(:)   = lo(:)   - 1 + cornerID(:)
                hi(:)   = hi(:)   - 1 + cornerID(:)
                loGC(:) = loGC(:) - 1 + cornerID(:)
