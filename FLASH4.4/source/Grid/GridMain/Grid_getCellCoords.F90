@@ -6,7 +6,7 @@
 !! SYNOPSIS
 !!
 !!  Grid_getCellCoords(integer(IN)  :: axis,
-!!                      integer(IN) :: cid(LOW:HIGH,MDIM)
+!!                      block_metadata_t(IN) :: block
 !!                      integer(IN):: edge, 
 !!                      logical(IN):: guardcell, 
 !!                      real(OUT)  :: coordinates(size),
@@ -34,9 +34,7 @@
 !!          axis can have one of three different values, IAXIS, JAXIS or KAXIS 
 !!          (defined in constants.h as 1,2 and 3)
 !!
-!!   cid - integer bounds for block corners
-!!
-!!   stride - depends on level
+!!   block - derived type containing metadata of block of interest
 !!
 !!   edge - integer value with one of four values, 
 !!          LEFT_EDGE, RIGHT_EDGE, CENTER or FACES
@@ -109,10 +107,11 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getCellCoords(axis, cid,stride, edge, guardcell, coordinates, size)
+subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
 
   use Grid_data, ONLY : gr_globalDomain,gr_delta, gr_maxRefine
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 
 #include "constants.h"
 #include "Flash.h"
@@ -120,14 +119,16 @@ subroutine Grid_getCellCoords(axis, cid,stride, edge, guardcell, coordinates, si
   implicit none
 
   integer, intent(in) :: axis, edge
-  integer, dimension(MDIM), intent(in)::cid,stride
+  type(block_metadata_t) :: block
   integer, intent(in) :: size
   logical, intent(in) :: guardcell
   real,intent(out), dimension(size) :: coordinates
 
-
+  integer, dimension(MDIM)::cid,stride
   integer::first,i
 
+  cid    = block%cid
+  stride = block%stride
   ! Do some error checking here
   
 

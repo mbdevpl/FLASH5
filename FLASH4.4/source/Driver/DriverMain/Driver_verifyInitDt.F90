@@ -83,8 +83,6 @@ subroutine Driver_verifyInitDt()
   real :: extraHydroInfo
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: block
-  integer :: cid(MDIM)
-  integer :: stride(MDIM)
   integer:: ib, level, maxLev
 
 !!$  dr_dtSTS = 0.0     !First use is in a max(dr_dtSTS,...), see Driver_evolveFlash. - KW
@@ -124,8 +122,6 @@ subroutine Driver_verifyInitDt()
            solnData => itor%blkDataPtr()
            call        itor%blkMetaData(block)
           
-           cid         = block%cid
-           stride      = block%stride
            blkLimits   = block%limits
            blkLimitsGC = block%limitsGC
 
@@ -153,21 +149,21 @@ subroutine Driver_verifyInitDt()
            
            
            coordSize = isize
-           call Grid_getCellCoords(IAXIS,cid,stride,CENTER,gcell,xCoord,coordSize)
-           call Grid_getCellCoords(IAXIS,cid,stride,LEFT_EDGE,gcell,xLeft,isize)
-           call Grid_getCellCoords(IAXIS,cid,stride,RIGHT_EDGE,gcell,xRight,isize)
+           call Grid_getCellCoords(IAXIS,block,CENTER,gcell,xCoord,coordSize)
+           call Grid_getCellCoords(IAXIS,block,LEFT_EDGE,gcell,xLeft,isize)
+           call Grid_getCellCoords(IAXIS,block,RIGHT_EDGE,gcell,xRight,isize)
            
            if (NDIM > 1) then
               coordSize = jsize
-              call Grid_getCellCoords(JAXIS,cid,stride,CENTER,gcell,yCoord,coordSize)
-              call Grid_getCellCoords(JAXIS,cid,stride,LEFT_EDGE,gcell,yLeft,jsize)
-              call Grid_getCellCoords(JAXIS,cid,stride,RIGHT_EDGE,gcell,yRight,jsize)
+              call Grid_getCellCoords(JAXIS,block,CENTER,gcell,yCoord,coordSize)
+              call Grid_getCellCoords(JAXIS,block,LEFT_EDGE,gcell,yLeft,jsize)
+              call Grid_getCellCoords(JAXIS,block,RIGHT_EDGE,gcell,yRight,jsize)
               
               if (NDIM > 2) then
                  coordSize = ksize
-                 call Grid_getCellCoords(KAXIS,cid,stride,CENTER,gcell,zCoord,coordSize)
-                 call Grid_getCellCoords(KAXIS,cid,stride,LEFT_EDGE,gcell,zLeft,ksize)
-                 call Grid_getCellCoords(KAXIS,cid,stride,RIGHT_EDGE,gcell,zRight,ksize)              
+                 call Grid_getCellCoords(KAXIS,block,CENTER,gcell,zCoord,coordSize)
+                 call Grid_getCellCoords(KAXIS,block,LEFT_EDGE,gcell,zLeft,ksize)
+                 call Grid_getCellCoords(KAXIS,block,RIGHT_EDGE,gcell,zRight,ksize)              
               endif
            endif
            

@@ -241,9 +241,10 @@ Module Grid_interface
   end interface
  
   interface
-     subroutine Grid_getCellCoords(axis, cid,stride, edge, guardcell, coordinates, size)
+     subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
+       use block_metadata, ONLY : block_metadata_t
        integer, intent(in) :: axis, edge
-       integer, dimension(MDIM), intent(in)::cid,stride
+       type(block_metadata_t), intent(in) :: block
        integer, intent(in) :: size
        logical, intent(in) :: guardcell
        real,intent(out), dimension(size) :: coordinates
