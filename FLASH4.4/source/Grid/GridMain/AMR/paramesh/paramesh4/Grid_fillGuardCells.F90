@@ -442,7 +442,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
      if((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
         if (.not. skipThisGcellFill) then
-           itor = block_iterator_t(listBlockType, gridDataStruct) 
+           itor = block_iterator_t(listBlockType) 
            do while (itor%is_valid())
               call itor%blkMetaData(block)
               call gr_primitiveToConserve(block)
@@ -474,7 +474,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
      if ((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
         if (.not. skipThisGcellFill) then
-            itor = block_iterator_t(listBlockType, gridDataStruct)
+            itor = block_iterator_t(listBlockType)
             do while (itor%is_valid())
                 call itor%blkMetaData(block)
                 call gr_conserveToPrimitive(block, .TRUE.)
@@ -506,7 +506,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
         call Timers_start("eos gc")
         if (      (gridDataStruct.NE.CENTER) &
             .AND. (gridDataStruct.NE.CENTER_FACES)) then
-            itor = block_iterator_t(listBlockType, gridDataStruct)
+            itor = block_iterator_t(listBlockType)
             do while (itor%is_valid())
                 call itor%blkMetaData(block)
                 

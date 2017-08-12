@@ -70,7 +70,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
      face(LOW)=LOW
      face(HIGH)=HIGH
 
-     itor = block_iterator_t(ALL_BLKS, gridDataStruct)
+     itor = block_iterator_t(ALL_BLKS)
      do while (itor%is_valid())
         call itor%blkMetaData(block) 
         blockID = block%id

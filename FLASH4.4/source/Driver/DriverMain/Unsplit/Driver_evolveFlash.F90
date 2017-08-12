@@ -201,7 +201,7 @@ subroutine Driver_evolveFlash()
      call Timers_start("Hydro")
 
      do level=1,maxLev
-        itor = block_iterator_t(LEAF, CENTER, level=level)
+        itor = block_iterator_t(LEAF, level=level)
         do while(itor%is_valid())
            call itor%blkMetaData(block)
 

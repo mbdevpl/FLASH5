@@ -33,8 +33,6 @@ module block_iterator
     type, public :: block_iterator_t
         integer :: cur         = 1
         integer :: nodetype    = LEAF 
-        integer :: gds         = CENTER
-        logical :: given_gds   = .FALSE.
         integer :: lev         = INVALID_LEVEL
         integer :: cellIdxBase = -2
         ! different variants for cell index numbering:
@@ -65,7 +63,6 @@ contains
     !!
     !! SYNOPOSIS
     !!  block_iterator_t itor = block_iterator_t(integer(IN)         :: nodetype,
-    !!                                           integer(IN)         :: gds,
     !!                                           level(IN), optional :: level)
     !!
     !! DESCRIPTION
@@ -75,8 +72,6 @@ contains
     !!
     !! ARGUMENTS
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-    !!  gds      - integer value specifying data structure.  The options are 
-    !!             defined in constants.h (e.g. CENTER, FACEX, SCRATCH_CTR)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
     !!             iterate only over blocks located at this level of 
     !!             octree structure
@@ -84,9 +79,8 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    function init_iterator(nodetype, gds, level) result(this)
+    function init_iterator(nodetype, level) result(this)
         integer, intent(IN)           :: nodetype
-        integer, intent(IN), optional :: gds 
         integer, intent(IN), optional :: level
         type(block_iterator_t)        :: this
  
@@ -94,12 +88,6 @@ contains
         this%lev = INVALID_LEVEL 
         if (present(level)) then
             this%lev = level
-        end if
-
-        this%given_gds = .FALSE.
-        if (present(gds)) then
-            this%given_gds = .TRUE.
-            this%gds = gds
         end if
 
         call this%first()

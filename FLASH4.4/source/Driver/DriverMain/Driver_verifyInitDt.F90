@@ -118,7 +118,7 @@ subroutine Driver_verifyInitDt()
         !Hydro_computeDt would be much more costly during the run
         
      do level=1,maxLev
-        itor = block_iterator_t(LEAF, CENTER, level=level)
+        itor = block_iterator_t(LEAF, level=level)
         do while(itor%is_valid())
            call itor%blkMetaData(block)
           

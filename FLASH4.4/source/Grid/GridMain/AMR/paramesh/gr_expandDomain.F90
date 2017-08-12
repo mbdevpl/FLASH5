@@ -155,7 +155,7 @@ subroutine gr_expandDomain (particlesInitialized)
      end if
 #endif
 
-     itor = block_iterator_t(whichBlocks, gridDataStruct)
+     itor = block_iterator_t(whichBlocks)
      do while(itor%is_valid())
         call itor%blkMetaData(block)
         

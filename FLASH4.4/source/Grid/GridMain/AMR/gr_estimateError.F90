@@ -116,7 +116,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
 #define YCOORD(I) (gr_oneBlock(blkID)%secondAxisCoords(CENTER,I))
   maxLev=gr_maxRefine
 
-  itor = block_iterator_t(ACTIVE_BLKS, CENTER)
+  itor = block_iterator_t(ACTIVE_BLKS)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
 
