@@ -203,9 +203,10 @@ subroutine Driver_evolveFlash()
      do level=1,maxLev
         itor = block_iterator_t(LEAF, CENTER, level=level)
         do while(itor%is_valid())
-           Uout => itor%blkDataPtr()
            call itor%blkMetaData(block)
+
            tileLimits = block%limits
+           call Grid_getBlkPtr(block, Uout)
 !!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
 !!$           call amrex_print(abx)
 !!$           tbx = abx
@@ -213,7 +214,9 @@ subroutine Driver_evolveFlash()
            call Grid_getDeltas(level,del)
            
            call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
-           
+           call Grid_releaseBlkPtr(block, Uout)
+           nullify(Uout)
+ 
            call itor%next()
         end do
         call Timers_stop("Hydro")

@@ -41,7 +41,8 @@ subroutine gr_estimateError(error, iref, refine_filter)
 
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
        gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
-  use Grid_interface, ONLY : Grid_getBlkBC
+  use Grid_interface, ONLY : Grid_getBlkBC, &
+                             Grid_getBlkPtr, Grid_releaseBlkPtr
   use gr_specificData, ONLY : gr_oneBlock
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
@@ -117,13 +118,13 @@ subroutine gr_estimateError(error, iref, refine_filter)
 
   itor = block_iterator_t(ACTIVE_BLKS, CENTER)
   do while(itor%is_valid())
-     solnData => itor%blkDataPtr()
      call itor%blkMetaData(block)
 
      blkLevel    = block%level
      blkID       = block%id
      blkLimits   = block%limits
      blkLimitsGC = block%limitsGC
+     call Grid_getBlkPtr(block, solnData, CENTER)
 
 !!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
@@ -191,6 +192,9 @@ subroutine gr_estimateError(error, iref, refine_filter)
               end do
            end do
         end do
+        
+        call Grid_releaseBlkPtr(block, solnData, CENTER)
+        nullify(solnData)
         
         ! Compute second derivatives
         bstart=1

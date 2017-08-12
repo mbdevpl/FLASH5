@@ -28,7 +28,8 @@
 subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   
   use Driver_interface, ONLY: Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkPhysicalSize
+  use Grid_interface, ONLY : Grid_getBlkPhysicalSize, &
+                             Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data, ONLY : gr_meshComm
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
@@ -71,12 +72,12 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
 
   itor = block_iterator_t(LEAF)
   do while (itor%is_valid())
-     solnData => itor%blkDataPtr()
      call itor%blkMetaData(block)
      
      blockID     = block%id
      blkLimits   = block%limits
      blkLimitsGC = block%limitsGC
+     call Grid_getBlkPtr(block, solnData)
 
      ! DEVNOTE: This appears to be for Cartesian only blocks/cells.
      !          Do we need to calculate physical volume or could cell/block
@@ -130,7 +131,8 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
 
      localSum = localSum + blockSum * cellVolume
 
-     call itor%releaseBlkDataPtr(solnData)
+     call Grid_releaseBlkPtr(block, solnData)
+     nullify(solnData)
 
      call itor%next()
   enddo

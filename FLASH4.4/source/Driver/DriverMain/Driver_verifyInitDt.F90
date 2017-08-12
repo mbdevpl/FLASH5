@@ -38,7 +38,8 @@ subroutine Driver_verifyInitDt()
        dr_globalComm,dr_dtDiffuse, dr_dtAdvect,dr_dtHeatExch,dr_useSTS,       &
        dr_tstepSlowStartFactor
   use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
-       Grid_getSingleCellCoords,Grid_getMaxRefinement
+       Grid_getSingleCellCoords, Grid_getMaxRefinement, &
+       Grid_getBlkPtr, Grid_releaseBlkPtr
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
   use block_iterator, ONLY : block_iterator_t
@@ -119,11 +120,11 @@ subroutine Driver_verifyInitDt()
      do level=1,maxLev
         itor = block_iterator_t(LEAF, CENTER, level=level)
         do while(itor%is_valid())
-           solnData => itor%blkDataPtr()
-           call        itor%blkMetaData(block)
+           call itor%blkMetaData(block)
           
            blkLimits   = block%limits
            blkLimitsGC = block%limitsGC
+           call Grid_getBlkPtr(block, solnData)
 
            isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
            jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
@@ -196,8 +197,9 @@ subroutine Driver_verifyInitDt()
 !!$             solnData,      &
 !!$             dtCheck(2), dtMinLoc )
            
+           call Grid_releaseBlkPtr(block, solnData)
            nullify(solnData)
-           
+ 
 #ifndef FIXEDBLOCKSIZE
            deallocate(xCoord)
            deallocate(dx)

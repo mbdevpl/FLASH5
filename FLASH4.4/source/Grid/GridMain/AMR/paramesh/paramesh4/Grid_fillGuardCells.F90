@@ -237,7 +237,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getListOfBlocks,Grid_getBlkPtr,Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_setGcFillNLayers
   use paramesh_dimensions, ONLY : l2p5d,ndim
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
@@ -508,10 +508,13 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
             .AND. (gridDataStruct.NE.CENTER_FACES)) then
             itor = block_iterator_t(listBlockType, gridDataStruct)
             do while (itor%is_valid())
-                solnData => itor%blkDataPtr()
+                call itor%blkMetaData(block)
+                
+                call Grid_getBlkPtr(block, solnData)
                 call Eos_guardCells(gcEosMode, solnData, corners=.true., &
                                     layers=returnLayers, skipSrl=.TRUE.)
-                call itor%releaseBlkDataPtr(solnData)
+                call Grid_releaseBlkPtr(block, solnData)
+                nullify(solnData)
 
                 call itor%next()
             end do

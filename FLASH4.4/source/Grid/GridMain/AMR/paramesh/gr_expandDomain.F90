@@ -169,6 +169,7 @@ subroutine gr_expandDomain (particlesInitialized)
         !      the exact solution.
         call Simulation_initBlock(solnData, block)
         call Grid_releaseBlkPtr(block, solnData)
+        nullify(solnData)
 
         call itor%next()
      end do
@@ -192,7 +193,8 @@ subroutine gr_expandDomain (particlesInitialized)
         call Grid_getBlkPtr(block, solnData)
         call Eos_wrapped(gr_eosModeInit, block%limits, solnData)
         call Grid_releaseBlkPtr(block, solnData)
-        
+        nullify(solnData)
+
         call itor%next()
      end do
 

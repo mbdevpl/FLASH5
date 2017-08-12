@@ -69,7 +69,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Logfile_interface,ONLY : Logfile_stamp
   use IO_interface,     ONLY : IO_writeCheckpoint
   use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
-       Grid_getSingleCellCoords,Grid_getMaxRefinement
+       Grid_getSingleCellCoords,Grid_getMaxRefinement, &
+       Grid_getBlkPtr, Grid_releaseBlkPtr
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Heat_interface, ONLY : Heat_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
@@ -219,11 +220,11 @@ subroutine Driver_computeDt(nbegin, nstep, &
   do level=1,maxLev
      itor = block_iterator_t(LEAF, CENTER, level=level)
      do while(itor%is_valid())
-        solnData => itor%blkDataPtr()
         call itor%blkMetaData(block)
 
         blkLimits   = block%limits
         blkLimitsGC = block%limitsGC
+        call Grid_getBlkPtr(block, solnData)
 
         isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
         jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
@@ -332,6 +333,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
         print*,'release blockpointer'
 #endif
         
+        call Grid_releaseBlkPtr(block, solnData)
         nullify(solnData)
 
         call itor%next()

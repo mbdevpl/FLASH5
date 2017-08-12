@@ -63,7 +63,7 @@ subroutine gr_updateRefinement( gridChanged)
        gr_convertToConsvdInMeshInterp, gr_eosMode, gr_meshMe, gr_gcellsUpToDate
   use gr_specificData, ONLY : gr_blkList
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getListOfBlocks,Grid_getBlkIndexLimits,Grid_getBlkPtr,Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Simulation_interface, ONLY : Simulation_customizeProlong
   use tree, ONLY : newchild, nodetype, lnblocks, grid_changed
 #ifndef FLASH_GRID_PARAMESH2
@@ -225,11 +225,12 @@ subroutine gr_updateRefinement( gridChanged)
      call Timers_start("eos")
      itor = block_iterator_t(LEAF)
      do while (itor%is_valid())
-        solnData => itor%blkDataPtr()
         call itor%blkMetaData(block)
 
+        call Grid_getBlkPtr(block, solnData)
         call Eos_wrapped(gr_eosMode, block%limits, solnData)
-        call itor%releaseBlkDataPtr(solnData)
+        call Grid_releaseBlkPtr(block, solnData)
+        nullify(solnData)
 
         call itor%next()
      end do
