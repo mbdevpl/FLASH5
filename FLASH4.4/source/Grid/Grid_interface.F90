@@ -225,12 +225,18 @@ Module Grid_interface
      end subroutine Grid_getBlkPhysicalSize
   end interface
 
-  interface
+  interface Grid_getBlkPtr
      subroutine Grid_getBlkPtr(blockId, dataPtr,gridDataStruct)
        integer, intent(in) :: blockId
        real,dimension(:,:,:,:), pointer :: dataPtr
        integer,optional, intent(in) :: gridDataStruct
      end subroutine Grid_getBlkPtr
+     subroutine Grid_getBlkPtr_Itor(block, dataPtr,gridDataStruct)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
+       real,dimension(:,:,:,:), pointer :: dataPtr
+       integer,optional, intent(in) :: gridDataStruct
+     end subroutine Grid_getBlkPtr_Itor
   end interface
 
   interface Grid_getBlkRefineLevel
@@ -496,12 +502,18 @@ Module Grid_interface
      end subroutine Grid_putRowData
   end interface
 
-  interface
+  interface Grid_releaseBlkPtr
      subroutine Grid_releaseBlkPtr(blockId, dataPtr, gridDataStruct)
        integer, intent(in) :: blockId
        real, pointer :: dataPtr(:,:,:,:)
        integer,optional, intent(in) :: gridDataStruct
      end subroutine Grid_releaseBlkPtr
+     subroutine Grid_releaseBlkPtr_Itor(block, dataPtr, gridDataStruct)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
+       real, pointer :: dataPtr(:,:,:,:)
+       integer,optional, intent(in) :: gridDataStruct
+     end subroutine Grid_releaseBlkPtr_Itor
   end interface
 
   interface Grid_restrictAllLevels

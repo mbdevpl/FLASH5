@@ -36,7 +36,8 @@ subroutine gr_expandDomain (particlesInitialized)
        gr_meshNumProcs, gr_lrefineMinInit, gr_gcellsUpToDate
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_stampVarMask
-  use Grid_interface, ONLY : Grid_getLocalNumBlks, Grid_markRefineDerefine 
+  use Grid_interface, ONLY :  Grid_getLocalNumBlks, Grid_markRefineDerefine, &
+                              Grid_getBlkPtr, Grid_releaseBlkPtr
   use gr_specificData, ONLY : gr_ihiGc,gr_jhiGc,gr_khiGc
   use tree, ONLY : lrefine, lrefine_min, lrefine_max, grid_changed
   use paramesh_interfaces, ONLY : amr_refine_derefine, amr_restrict
@@ -71,8 +72,6 @@ subroutine gr_expandDomain (particlesInitialized)
 
   integer :: ntimes, i
 
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
-  integer, dimension(MDIM) :: cid,stride
   integer :: count, cur_treedepth, grid_changed_anytime
   logical :: restart = .false.
   logical :: particlesPosnsDone, retainParticles
@@ -159,18 +158,18 @@ subroutine gr_expandDomain (particlesInitialized)
      itor = block_iterator_t(whichBlocks, gridDataStruct)
      do while(itor%is_valid())
         call itor%blkMetaData(block)
-        solnData => itor%blkDataPtr()
         
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.
+        call Grid_getBlkPtr(block, solnData)
         solnData = 0.0
         !      Now reinitialize the solution on the new grid so that it has
         !      the exact solution.
         call Simulation_initBlock(solnData, block)
+        call Grid_releaseBlkPtr(block, solnData)
 
-        call itor%releaseBlkDataPtr(solnData)
         call itor%next()
      end do
 
@@ -179,7 +178,7 @@ subroutine gr_expandDomain (particlesInitialized)
      ! needed for mesh replication.
 
      ! DEVNOTE: The interface of this function has not yet been changed
-     ! It should create its own iterator
+     ! It should create its own iterator.  How to get count?
      call RadTrans_sumEnergy(ERAD_VAR, count, whichBlocks)
 #endif
 
@@ -188,12 +187,12 @@ subroutine gr_expandDomain (particlesInitialized)
      call Timers_start("eos")
      call itor%first()
      do while(itor%is_valid())
-        solnData => itor%blkDataPtr()
         call itor%blkMetaData(block)
         
+        call Grid_getBlkPtr(block, solnData)
         call Eos_wrapped(gr_eosModeInit, block%limits, solnData)
+        call Grid_releaseBlkPtr(block, solnData)
         
-        call itor%releaseBlkDataPtr(solnData)
         call itor%next()
      end do
 

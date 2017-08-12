@@ -67,19 +67,6 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct)
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_specificData, ONLY : scratch,scratch_ctr,&
        scratch_facevarx,scratch_facevary,scratch_facevarz
-#ifdef FLASH_GRID_PARAMESH
-  use workspace, ONLY : work
-#ifdef FL_NON_PERMANENT_GUARDCELLS
-  use physicaldata, ONLY: unk1, facevarx1, facevary1, facevarz1,&
-                          gcell_on_cc, gcell_on_fc
-  use paramesh_interfaces, ONLY : amr_1blk_guardcell
-  use Grid_data, ONLY : gr_meshMe, gr_blkPtrRefCount, gr_lastBlkPtrGotten, &
-       gr_blkPtrRefCount_fc, gr_lastBlkPtrGotten_fc,gr_ccMask,gr_fcMask
-#endif 
-  ! end of ifdef FL_NON_PERMANENT_GUARDCELLS
-
-#endif 
-  ! end of #ifdef FLASH_GRID_PARAMESH
 
   implicit none
   integer, intent(in) :: blockID
@@ -110,9 +97,6 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct)
      validGridDataStruct= (gridDataStruct == SCRATCH_FACEX).or.validGridDataStruct
      validGridDataStruct= (gridDataStruct == SCRATCH_FACEY).or.validGridDataStruct
      validGridDataStruct= (gridDataStruct == SCRATCH_FACEZ).or.validGridDataStruct
-#ifdef FLASH_GRID_PARAMESH
-     validGridDataStruct= (gridDataStruct == WORK).or.validGridDataStruct
-#endif
      
      if(.not.validGridDataStruct) then
         print *, "Grid_getBlkPtr: gridDataStruct set to improper value"
@@ -221,10 +205,6 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct)
         dataPtr => scratch_facevarz(:,:,:,:,blockid)           
      case DEFAULT
         print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
-#ifdef FLASH_GRID_PARAMESH
-     case(WORK)
-        call Driver_abortFlash("work array cannot be got as pointer")
-#endif
      end select
 
 #ifdef FL_NON_PERMANENT_GUARDCELLS
