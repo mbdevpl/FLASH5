@@ -47,8 +47,6 @@ module block_iterator
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
-        procedure, public :: blkDataPtr
-        procedure, public :: releaseBlkDataPtr
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         final             :: destroy_iterator
 #endif
@@ -269,80 +267,4 @@ contains
         end associate
     end subroutine blkMetaData
     
-    !!****m* block_iterator_t/blkDataPtr 
-    !!
-    !! NAME
-    !!  blkDataPtr
-    !!
-    !! SYNPOSIS
-    !!  real ptr(:,:,:,:) = itor%blkDataPtr()
-    !!
-    !! DESCRIPTION
-    !!  Obtain a pointer to the full set of data defined on the block currently 
-    !!  set in the iterator.  The extent of the data is dependent on the gds
-    !!  value given to the iterator at instantiation.
-    !!
-    !! RETURN VALUE
-    !!  The pointer
-    !!
-    !! NOTES
-    !!  The array pointed to is subject to having its index order reordered.
-    !!
-    !!****
-    function blkDataPtr(this) result(ptr)
-        use block_metadata, ONLY : block_metadata_t
-        use tree, ONLY : lrefine, lrefine_max
-
-        class(block_iterator_t), intent(IN)                      :: this
-        real(amrex_real), CONTIGUOUS_POINTER, dimension(:,:,:,:) :: ptr
-        
-        real(amrex_real), CONTIGUOUS_POINTER, dimension(:,:,:,:) :: fp
-        type(block_metadata_t) :: block
-
-        call this%blkMetaData(block)
-        if (this%given_gds) then
-            call Grid_getBlkPtr(block%id, fp, this%gds)
-        else
-            call Grid_getBlkPtr(block%id, fp)
-        end if
-
-        associate (lo => block%limitsGC(LOW, :))
-#ifdef INDEXREORDER
-            ptr(lo(1):, lo(2):, lo(3):, 1:) => fp
-#else
-            ptr(1:, lo(1):, lo(2):, lo(3):) => fp
-#endif
-        end associate
-    end function blkDataPtr
-
-    !!****m* block_iterator_t/releaseBlkDataPtr 
-    !!
-    !! NAME
-    !!  releaseBlkDataPtr
-    !!
-    !! SYNPOSIS
-    !!  call itor%releaseBlkDataPtr(ptr)
-    !!
-    !! DESCRIPTION
-    !!   DEVNOTE: Write this
-    !!
-    !! ARGUMENTS
-    !!   DEVNOTE: Write this
-    !!
-    !! NOTES
-    !!   DEVNOTE: Is it necessary that client code pass in the actual ptr?
-    !!
-    !!****
-    subroutine releaseBlkDataPtr(this, ptr)
-        use block_metadata, ONLY : block_metadata_t
-        
-        class(block_iterator_t), intent(IN) :: this
-        real(amrex_real), CONTIGUOUS_POINTER, dimension(:,:,:,:) :: ptr
-
-        type(block_metadata_t) :: block
-         
-        call this%blkMetaData(block)
-        call Grid_releaseBlkPtr(block%id, ptr)
-    end subroutine releaseBlkDataPtr
-
 end module block_iterator
