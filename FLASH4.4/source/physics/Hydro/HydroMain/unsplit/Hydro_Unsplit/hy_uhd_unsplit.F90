@@ -61,7 +61,9 @@
 #define DEBUG_GRID_GCMASK
 
 #include "Flash.h"
-Subroutine hy_uhd_unsplit ( blockCount, blockList, dt, dtOld )
+Subroutine hy_uhd_unsplit (Uin,blkLimitGC,&
+                      Uout,blkLimits,&
+                      del,dt, dtOld )
 
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
@@ -105,14 +107,10 @@ Subroutine hy_uhd_unsplit ( blockCount, blockList, dt, dtOld )
                                hy_memGetBlkPtr,         &
                                hy_memReleaseBlkPtr
 
-  use Grid_interface, ONLY : Grid_getDeltas,         &
-                             Grid_getBlkIndexLimits, &
-                             Grid_fillGuardCells,    &
+  use Grid_interface, ONLY : Grid_fillGuardCells,    &
                              Grid_putFluxData,       &
                              Grid_getFluxData,       &
                              Grid_conserveFluxes,    &
-                             Grid_getBlkPtr,         &
-                             Grid_releaseBlkPtr,     &
                              Grid_getBlkData,        &
                              Grid_getBlkNeighLevels
 
@@ -130,43 +128,23 @@ Subroutine hy_uhd_unsplit ( blockCount, blockList, dt, dtOld )
 
 
   !! ---- Argument List ----------------------------------
-  integer, INTENT(IN) :: blockCount
-  integer, INTENT(IN), dimension(blockCount) :: blockList
   real,    INTENT(IN) :: dt, dtOld
-  !! -----------------------------------------------------
+  integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
+  real, dimension(:,:,:,:),pointer :: Uin
+  real,dimension(:,:,:,:), pointer :: Uout
+  real,dimension(MDIM),INTENT(IN) :: del
+ !! -----------------------------------------------------
 
   integer, dimension(MDIM) :: datasize
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   integer, parameter :: level=0
   integer :: i,blockID
   integer :: ix,iy,iz
-  real, dimension(MDIM) :: del
   logical :: gcMask(hy_gcMaskSize)
 
-#ifdef FIXEDBLOCKSIZE
-  real :: flx(NFLUXES,&
-              GRID_ILO_GC:GRID_IHI_GC,     &
-              GRID_JLO_GC:GRID_JHI_GC,     &
-              GRID_KLO_GC:GRID_KHI_GC)
-  real :: fly(NFLUXES,&
-              GRID_ILO_GC:GRID_IHI_GC,     &
-              GRID_JLO_GC:GRID_JHI_GC,     &
-              GRID_KLO_GC:GRID_KHI_GC)
-  real :: flz(NFLUXES,&
-              GRID_ILO_GC:GRID_IHI_GC,     &
-              GRID_JLO_GC:GRID_JHI_GC,     &
-              GRID_KLO_GC:GRID_KHI_GC)
-
-  real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC) :: &
-       gravX,gravY,gravZ
-  real :: faceAreas(GRID_ILO_GC:GRID_IHI_GC,     &
-                    GRID_JLO_GC:GRID_JHI_GC,     &
-                    GRID_KLO_GC:GRID_KHI_GC)
-#else
   real, allocatable, dimension(:,:,:,:)   :: flx,fly,flz
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
-#endif
+
 
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
   real, pointer, dimension(:,:,:,:) :: scrch_Ptr
@@ -224,58 +202,55 @@ Subroutine hy_uhd_unsplit ( blockCount, blockList, dt, dtOld )
      end if
 #endif
 
-     call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.false.,&
-          maskSize=NUNK_VARS, mask=gcMask,makeMaskConsistent=.false.,&
-          doLogMask=.NOT.gcMaskLogged)
+     call Grid_fillGuardCells(CENTER,ALLDIR)
+!!$     ,doEos=.false.,&
+!!$          maskSize=NUNK_VARS, mask=gcMask,makeMaskConsistent=.false.,&
+!!$          doLogMask=.NOT.gcMaskLogged)
 
      hy_cfl = hy_cfl_original
   end if
 
   if (hy_doUnsplitLoop0) then
 
-     do i=1,blockCount          !LOOP 0
-        blockID = blockList(i)
-
-        !! Detect shocks
-        if (hy_shockDetectOn) call hy_uhd_shockDetect(blockID)
+     
+     !! Detect shocks
+     if (hy_shockDetectOn) call hy_uhd_shockDetect(Uin,blkLimitGC,Uout,blkLimit,del)
 
         if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
-           call hy_uhd_unitConvert(blockID,FWDCONVERT)
+           call hy_uhd_unitConvert(Uin,FWDCONVERT)
         endif
 
 #if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)||defined(CFL_VAR)
         if (hy_updateHydroFluxes) then
-           call Grid_getBlkPtr(blockID,U,CENTER)
 #ifdef GPRO_VAR
            ! A tagging variable for Gaussian Process (GP) method.
-           U(GPRO_VAR,:,:,:) = 0.
+           Uin(GPRO_VAR,:,:,:) = 0.
 #endif
            !! -----------------------------------------------------------------------!
            !! Save old velocities ---------------------------------------------------!
            !! -----------------------------------------------------------------------!
 #ifdef VOLX_VAR
-           U(VOLX_VAR,:,:,:) = U(VELX_VAR,:,:,:)
+           Uin(VOLX_VAR,:,:,:) = Uin(VELX_VAR,:,:,:)
 #endif
 #ifdef VOLY_VAR
-           U(VOLY_VAR,:,:,:) = U(VELY_VAR,:,:,:)
+           Uin(VOLY_VAR,:,:,:) = Uin(VELY_VAR,:,:,:)
 #endif
 #ifdef VOLZ_VAR
-           U(VOLZ_VAR,:,:,:) = U(VELZ_VAR,:,:,:)
+           Uin(VOLZ_VAR,:,:,:) = Uin(VELZ_VAR,:,:,:)
 #endif
 #ifdef CFL_VAR
-           where (1.2*U(CFL_VAR,:,:,:) < hy_cfl_original)
+           where (1.2*Uin(CFL_VAR,:,:,:) < hy_cfl_original)
               !! Slow recover (of factor of 1.2) to the original CFL once it gets to
               !! reduced to a smaller one in the presence of strong shocks.
               !! This variable CFL takes place in the following three cases using:
               !! (1) use_hybridOrder = .true.,
               !! (2) use_hybridOrder = .true., or
               !! (3) BDRY_VAR is defined and used for stationary objects.
-              U(CFL_VAR,:,:,:) = 1.2*U(CFL_VAR,:,:,:)
+              Uin(CFL_VAR,:,:,:) = 1.2*U(CFL_VAR,:,:,:)
            elsewhere
-              U(CFL_VAR,:,:,:) = hy_cfl_original
+              Uin(CFL_VAR,:,:,:) = hy_cfl_original
            end where
 #endif
-           call Grid_releaseBlkPtr(blockID,U,CENTER)
         end if
 #endif
      enddo

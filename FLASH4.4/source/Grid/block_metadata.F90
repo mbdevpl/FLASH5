@@ -19,6 +19,7 @@ module block_metadata
         integer :: level
         integer :: limits(LOW:HIGH, MDIM)
         integer :: limitsGC(LOW:HIGH, MDIM)
+        real    :: del(MDIM)
     end type block_metadata_t
 
 end module block_metadata
