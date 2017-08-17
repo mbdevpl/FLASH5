@@ -11,7 +11,9 @@
 
 module block_iterator
 
-    use amrex_octree_module
+    use amrex_octree_module, ONLY : amrex_octree_iter, &
+                                    amrex_octree_iter_build, &
+                                    amrex_octree_iter_destroy
 
     implicit none
 
@@ -25,6 +27,7 @@ module block_iterator
     !!****
     type, public :: block_iterator_t
         type(amrex_octree_iter) :: oti
+        integer                 :: level    = INVALID_LEVEL
         logical                 :: is_valid = .FALSE.
     contains
         procedure, public :: is_valid
@@ -69,9 +72,16 @@ contains
         integer, intent(IN), optional :: level
         type(block_iterator_t)        :: this
 
-        ! Initial iterator is not primed.  Advance to first block.
+        if (present(level)) then
+            this%level = level
+        end if
+ 
+        ! DEVNOTE: the AMReX iterator is not built based on nodetype.
+        ! It appears that we get leaves every time.
+
+        ! Initial iterator is not primed.  Advance to first compatible block.
         call amrex_octree_iter_build(this%oti)
-        call this%oti%next()
+        call this%next()
     end function init_iterator
 
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
@@ -89,6 +99,8 @@ contains
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
         type(block_iterator_t), intent(INOUT) :: this
+
+        call amrex_octree_iter_destroy(this%oti)
     end subroutine destroy_iterator
 #endif
 
@@ -129,7 +141,18 @@ contains
     subroutine next(this)
         class(block_iterator_t), intent(INOUT) :: this
 
-        this%is_valid = this%next()
+        this%is_valid = this%oti%next()
+
+        if (this%level /= INVALID_LEVEL) then
+            ! Search for leaves on given level
+            do while (this%is_valid)
+                if (this%oti%level() == this%level) then
+                    exit
+                end if
+
+                this%is_valid = this%oti%next()
+            end do
+        end if
     end subroutine next
 
     !!****m* block_iterator_t/blkMetaData
@@ -151,9 +174,17 @@ contains
         class(block_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: block
 
-        block.grid_index = this%oti.grid_index()
-        block.level = this%oti.level()
-        block.box = this%oti.box()
+        type(amrex_box) :: box
+       
+        box = this%oti%box()
+
+        ! TODO: Determine if box contains GC or not and finalize limits/limitsGC
+        block.grid_index        = this%oti%grid_index()
+        block.level             = this%oti%level()
+        block.limits(LOW, :)    = box%lo
+        block.limits(HIGH, :)   = box%hi
+        block.limitsGC(LOW, :)  = box%lo
+        block.limitsGC(HIGH, :) = box%hi
     end subroutine blkMetaData
  
 end module block_iterator
