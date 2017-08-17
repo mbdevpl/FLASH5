@@ -1,10 +1,17 @@
-!!****ih* source/Grid/block_iterator
+!!****ih* source/Grid/GridMain/AMR/Amrex/block_iterator
 !!
+!! This module is a facade pattern that maps the AMReX Fortran iterator onto 
+!! the interface required presently by FLASH.
 !!
+!! Ideally, we will be able to use the AMReX iterator directly in the code 
+!! and client code will gain access to it through implementation-specific 
+!! code like Grid_getBlkIterator.
 !!
 !!****
 
 module block_iterator
+
+    use amrex_octree_module
 
     implicit none
 
@@ -17,11 +24,15 @@ module block_iterator
     !!
     !!****
     type, public :: block_iterator_t
+        type(amrex_octree_iter) :: oti
+        logical                 :: is_valid = .FALSE.
     contains
-        procedure, public :: first
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
+#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
+        final             :: destroy_iterator
+#endif
     end type block_iterator_t
 
     interface block_iterator_t
@@ -58,29 +69,29 @@ contains
         integer, intent(IN), optional :: level
         type(block_iterator_t)        :: this
 
-        write(*,*) "You are working with a useless block_iterator_t stub"
-        stop
+        ! Initial iterator is not primed.  Advance to first block.
+        call amrex_octree_iter_build(this%oti)
+        call this%oti%next()
     end function init_iterator
 
-    !!****m* block_iterator_t/first
+#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
+    !!****im* block_iterator_t/destroy_iterator
     !!
     !! NAME
-    !!  first
+    !!  destroy_iterator
     !!
     !! SYNPOSIS
-    !!  call itor%first() 
+    !!  Called automatically
     !!
     !! DESCRIPTION
-    !!  Reset iterator to the initial block managed by process
+    !!  Clean-up block interator object at destruction
     !!
     !!****
-    subroutine first(this)
-        class(block_iterator_t), intent(INOUT) :: this
+    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
+        type(block_iterator_t), intent(INOUT) :: this
+    end subroutine destroy_iterator
+#endif
 
-        write(*,*) "You are working with a useless block_iterator_t stub"
-        stop
-    end subroutine first
- 
     !!****m* block_iterator_t/is_valid
     !!
     !! NAME
@@ -99,8 +110,7 @@ contains
     logical function is_valid(this)
         class(block_iterator_t), intent(IN) :: this
 
-        write(*,*) "You are working with a useless block_iterator_t stub"
-        stop
+        return this%is_valid
     end function is_valid
 
     !!****m* block_iterator_t/next
@@ -119,8 +129,7 @@ contains
     subroutine next(this)
         class(block_iterator_t), intent(INOUT) :: this
 
-        write(*,*) "You are working with a useless block_iterator_t stub"
-        stop
+        this%is_valid = this%next()
     end subroutine next
 
     !!****m* block_iterator_t/blkMetaData
@@ -136,13 +145,16 @@ contains
     !!  iterator.
     !!
     !!****
-    subroutine blkMetaData(this, mData)
-        class(block_iterator_t), intent(IN)  :: this
-        type(block_metadata_t),  intent(OUT) :: mData
+    subroutine blkMetaData(this, block)
+        use block_metadata, ONLY : block_metadata_t
 
-        write(*,*) "You are working with a useless block_iterator_t stub"
-        stop
+        class(block_iterator_t), intent(IN)  :: this
+        type(block_metadata_t),  intent(OUT) :: block
+
+        block.grid_index = this%oti.grid_index()
+        block.level = this%oti.level()
+        block.box = this%oti.box()
     end subroutine blkMetaData
-    
+ 
 end module block_iterator
 
