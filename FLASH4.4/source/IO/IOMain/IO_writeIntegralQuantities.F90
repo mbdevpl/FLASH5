@@ -38,11 +38,13 @@
 subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
   use IO_data, ONLY : io_restart, io_statsFileName, io_globalComm
-  use Grid_interface, ONLY : Grid_getListOfBlocks, &
-    Grid_getBlkIndexLimits, Grid_getBlkPtr, Grid_getSingleCellVol, &
-    Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getSingleCellVol 
 
-   use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
+  use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
 
 #include "Flash_mpi.h"
@@ -54,17 +56,15 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
   integer, intent(in) :: isFirst
 
-  integer :: lb, count
-  
   integer :: funit = 99
   integer :: error
   integer :: nGlobalSumUsed, iSum
   
   character (len=MAX_STRING_LENGTH), save :: fname 
   
-  integer :: blockList(MAXBLOCKS)
-
   integer :: blkLimits(HIGH, MDIM), blkLimitsGC(HIGH, MDIM)
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
 
 #ifdef MAGP_VAR
   integer, parameter ::  nGlobalSumProp = 8              ! Number of globally-summed regular quantities
@@ -93,14 +93,16 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   gsum(1:nGlobalSumUsed) = 0.
   lsum(1:nGlobalSumUsed) = 0.
   
-  call Grid_getListOfBlocks(LEAF, blockList, count)
-  
-  do lb = 1, count
+  itor = block_iterator_t(LEAF)
+  do while (itor%is_valid())
+     call itor%blkMetaData(block)
+
      !get the index limits of the block
-     call Grid_getBlkIndexLimits(blockList(lb), blkLimits, blkLimitsGC)
+     blkLimits   = block%limits
+     blkLimitsGC = block%limitsGC
 
      ! get a pointer to the current block of data
-     call Grid_getBlkPtr(blockList(lb), solnData)
+     call Grid_getBlkPtr(block, solnData)
 
      ! Sum contributions from the indicated blkLimits of cells.
      do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
@@ -112,7 +114,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
               point(KAXIS) = k
 
 !! Get the cell volume for a single cell
-              call Grid_getSingleCellVol(blockList(lb), EXTERIOR, point, dvol)
+              call Grid_getSingleCellVol(block, EXTERIOR, point, dvol)
      
               ! mass   
 #ifdef DENS_VAR
@@ -193,11 +195,10 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
            enddo
         enddo
      enddo
-     call Grid_releaseBlkPtr(blockList(lb), solnData)
+     call Grid_releaseBlkPtr(block, solnData)
 
+     call itor%next()
   enddo
-  
-
   
   ! Now the MASTER_PE sums the local contributions from all of
   ! the processors and writes the total to a file.
