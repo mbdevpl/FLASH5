@@ -37,6 +37,7 @@
 subroutine Driver_evolveFlash()
 
   use Driver_data,         ONLY : dr_globalMe, dr_globalNumProcs, dr_nbegin, &
+                                  dr_meshMe, dr_meshNumProcs,            &
                                   dr_nend, dr_dt,                        &
                                   dr_tmax, dr_simTime, dr_redshift,      &
                                   dr_nstep, dr_dtOld, dr_dtNew,          &
@@ -60,7 +61,11 @@ subroutine Driver_evolveFlash()
                                   Timers_getSummary
   use Diffuse_interface,   ONLY : Diffuse
   use Particles_interface, ONLY : Particles_advance, Particles_dump
-  use Grid_interface,      ONLY : Grid_updateRefinement,&
+  use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
+                                  Grid_getListOfBlocks, &
+                                  Grid_getBlkIndexLimits, &
+                                  Grid_getBlkCornerID, &
+                                  Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
                                   Grid_getDeltas,&
                                   Grid_getBlkPtr,&
@@ -84,6 +89,8 @@ subroutine Driver_evolveFlash()
   use amrex_box_module
   use amrex_fab_module
   use amrex_multifab_module
+  use amrex_distromap_module
+  use amrex_boxarray_module
 
   implicit none
 
@@ -116,16 +123,23 @@ subroutine Driver_evolveFlash()
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
-  integer, dimension(LOW:HIGH,MDIM) :: tileLimits,blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: tileLimits,blkLimitsGC, cornerID
+  integer, dimension(LOW:HIGH,MDIM,MAXBLOCKS) :: allLimits
+  integer, dimension(LOW:HIGH,NDIM,MAXBLOCKS) :: dimLimits
+  integer, dimension(MDIM) :: stride
+  integer, dimension(MAXBLOCKS) :: procMapLoc
   integer :: blockCount
   integer,dimension(MAXBLOCKS)::blks
   real,pointer,dimension(:,:,:,:) :: Uout
   real,dimension(MDIM) :: del
 
   type(famrex_multivab),allocatable :: phi(:)
+  type(amrex_multifab),allocatable :: phi_mf(:)
   type(famrex_mviter) :: mvi
   type(famrex_box) :: bx, tbx
   integer:: ib, blockID, level, maxLev
+  integer:: ibLoc, blkLev
+  integer,allocatable :: bpl(:,:) ! array for blocks-per-level (and per proc)
 
   real(amrex_real)  :: time     !testing...
   logical :: nodal(3)
@@ -136,6 +150,8 @@ subroutine Driver_evolveFlash()
        pf, pfab
   type(amrex_fab) :: uface(NDIM)
   type(amrex_multifab), allocatable :: fluxes(:,:)
+  type(amrex_distromap), allocatable :: dm
+  type(amrex_boxarray) :: ba
 
 
   endRunPl = .false.
@@ -204,8 +220,38 @@ subroutine Driver_evolveFlash()
      call Timers_start("Hydro")
 
      allocate(phi(maxLev))
+     allocate(phi_mf(maxLev))
+     allocate(bpl(0:dr_meshNumProcs-1,maxLev))
+     bpl(:,:) = 0
      do level=1,maxLev
+        print*,' ***************   HYDRO LEVEL', level,'  **********************'
+        call Grid_getLocalNumBlks(localNumBlocks)
+        call Grid_getListOfBlocks(LEAF,blks,blockCount)
+        ibLoc = 0
+        do ib=1,blockCount
+           blockID=blks(ib)
+           call Grid_getBlkRefineLevel(blockID,blkLev)
+           if (blkLev == level) then
+              ibLoc = ibLoc + 1
+              procMapLoc(ibLoc) = dr_meshMe
+              call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
+              call Grid_getBlkCornerID(blockID,cornerID(LOW,:),stride,cornerID(HIGH,:))
+              tileLimits(LOW ,:NDIM) = (cornerID(LOW ,:NDIM)-1) / stride(:NDIM) + 1
+              tileLimits(HIGH,:NDIM) =  cornerID(HIGH,:NDIM) / stride(:NDIM)
+              dimLimits(LOW:HIGH,:,ibLoc) = tileLimits(LOW:HIGH,:NDIM)
+           end if
+        end do
+        bpl(dr_meshMe,level) = ibLoc  ! bpl(dr_meshMe,level) + ibLoc
+        allocate(dm)
+        call amrex_distromap_build(dm,procMapLoc(1:ibLoc))
+        call amrex_print(dm)
+        call amrex_boxarray_build(ba,dimLimits(LOW,:NDIM,1:ibLoc),dimLimits(HIGH,:NDIM,1:ibLoc) )!,ibLoc)
+        call amrex_print(ba)
+        call amrex_multifab_build(phi_mf(level), ba, dm, NUNK_VARS, ng=0)
+        deallocate(dm)
+
         call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
+
         call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
         do while(mvi%next())
            bx = mvi%tilebox()
@@ -251,8 +297,11 @@ subroutine Driver_evolveFlash()
      end do
      do level=1,maxLev
         call famrex_multivab_destroy(phi(level))
+        call amrex_multifab_destroy(phi_mf(level))
      end do
+     deallocate(bpl)
      deallocate(phi)
+     deallocate(phi_mf)
 
      dr_dtOld = dr_dt
      
