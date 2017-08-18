@@ -73,6 +73,9 @@ subroutine Driver_initFlash()
   use Profiler_interface, ONLY : Profiler_init
 
   use IncompNS_interface, ONLY : IncompNS_init
+
+  use amrex_base_module, ONLY : amrex_init
+
   implicit none
 
 #include "constants.h"
@@ -100,6 +103,9 @@ subroutine Driver_initFlash()
   !! Now set the parallel environment and introduce any communicators
   !! that might be needed during the simulation
   call Driver_setupParallelEnv()
+
+  call amrex_init(dr_globalComm,.FALSE.) !DEV: Should use dr_meshComm !?
+
 
   !! Initialize the code timers.  Ideally should be first thing in
   !! code but currently the timing package
