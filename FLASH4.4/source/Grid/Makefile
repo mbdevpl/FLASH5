@@ -39,8 +39,7 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_getMinCellSize.o \
 	Grid_getMinCellSizes.o \
 	Grid_subcellGeometry.o \
-	Grid_markBlkRefine.o \
-	Grid_markBlkDerefine.o Grid_getGeometry.o Grid_sortParticles.o \
+	Grid_getGeometry.o Grid_sortParticles.o \
 	Grid_mapMeshToParticles.o Grid_mapParticlesToMesh.o \
 	Grid_solvePoisson.o Grid_conserveField.o Grid_interface.o \
         Grid_bcApplyToRegion.o\
@@ -68,6 +67,10 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_getLocalBlkIDFromPos.o \
         Grid_getBoundboxCentroids.o \
 	Grid_receiveInputData.o \
-	Grid_getNeighProcList.o
+	Grid_getNeighProcList.o \
+	Grid_makeVector.o
 
 Grid += Grid_init.o Grid_coordTransfm.o
+
+Grid += block_metadata.o block_iterator.o
+

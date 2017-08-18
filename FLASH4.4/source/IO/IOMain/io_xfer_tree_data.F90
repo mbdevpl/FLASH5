@@ -59,7 +59,7 @@ subroutine io_xfer_tree_data(tree_data, fileID, &
   use tree, ONLY : nfaces, nchild, lrefine_max
 # ifdef FLASH_GRID_PARAMESH3OR4
   use tree, ONLY : MFLAGS
-  use Grid_data, ONLY : gr_is_gsurr_blks_initialized
+  use gr_specificData, ONLY : gr_is_gsurr_blks_initialized
 # endif
 #endif
 

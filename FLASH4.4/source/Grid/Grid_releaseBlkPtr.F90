@@ -35,3 +35,13 @@ subroutine Grid_releaseBlkPtr(blockId, dataPtr, gridDataStruct)
   integer,optional, intent(in) :: gridDataStruct
 
 end subroutine Grid_releaseBlkPtr
+
+subroutine Grid_releaseBlkPtr_Itor(block, dataPtr, gridDataStruct)
+  use block_metadata, ONLY : block_metadata_t
+
+  implicit none
+  type(block_metadata_t), intent(in) :: block
+  real, pointer :: dataPtr(:,:,:,:)
+  integer,optional, intent(in) :: gridDataStruct
+
+end subroutine Grid_releaseBlkPtr_Itor

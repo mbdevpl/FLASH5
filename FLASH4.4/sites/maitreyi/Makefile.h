@@ -6,6 +6,7 @@
 #HDF4_PATH =
 HDF5_PATH = /usr/local/hdf5
 #LIB_HDF5 = ${HDF5_PATH}/lib
+AMREX_PATH = /Users/dubey/FlashStuff/GIT-repo/AMReX/lib
 
 ZLIB_PATH  =
 
@@ -25,10 +26,10 @@ MPI_PATH =
 #   You need to edit mpif90 and add .F90 to the test of filename extensions,
 #   or upgrade your MPICH.
 #----------------------------------------------------------------------------
-FCOMP   = mpif90
+  FCOMP   = mpif90
 CCOMP   = mpicc
 CPPCOMP = mpiCC
-LINK    = mpif90
+LINK    = mpif90 -std=c++11 
 
 # pre-processor flag
 PP      = -D
@@ -48,6 +49,8 @@ PP      = -D
 FFLAGS_OPT = -c -O2 -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none
 FFLAGS_DEBUG = -g -c -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none
 FFLAGS_TEST = -c -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none
+FFLAGS_AMREX = -I${AMREX_PATH}/include
+FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
 
 F90FLAGS =
 
@@ -56,7 +59,7 @@ CFLAGS_DEBUG = -g -c
 CFLAGS_TEST = -c
 
 # Platform symbol
-CDEFINES += -DDarwin
+CDEFINES += -DDarwin 
 
 # if we are using HDF5, we need to specify the path to the include files
 CFLAGS_HDF5 = -I ${HDF5_PATH}/include -DH5_USE_16_API
@@ -100,6 +103,11 @@ LIB_PAPI  =
 LIB_MPI   = 
 #LIB_NCMPI = -L $(NCMPI_PATH)/lib -lpnetcdf
 LIB_MPE   =
+
+#LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
+#LIB_AMREX2D = ${LIB_AMREX}
+#LIB_STDCXX = -lstdc++ 
+
 
 #----------------------------------------------------------------------------
 # Additional machine-dependent object files

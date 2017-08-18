@@ -1,11 +1,11 @@
-!!****if* source/Grid/GridMain/Chombo/Grid_getBlkPtr
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_getBlkPtr
 !!
 !! NAME
 !!  Grid_getBlkPtr
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkPtr(integer(IN)            :: blockID,
+!!  Grid_getBlkPtr(block_metadata_t(IN)   :: block,
 !!                 real(pointer)(:,:,:,:) :: dataPtr,
 !!                 integer(IN),optional   :: gridDataStruct)
 !!  
@@ -23,7 +23,8 @@
 !!
 !! ARGUMENTS 
 !!
-!!  blockID : the local blockid
+!!  block : derived type containing metadata for block whose data we need to
+!!          access
 !!
 !!  dataPtr : Pointer to the data block
 !!
@@ -33,7 +34,11 @@
 !!                   FACEX  face centered variable on faces along IAXIS
 !!                   FACEY  face centered variable on faces along JAXIS
 !!                   FACEZ  face centered variable on faces along IAXIS
-!!                   SCRATCH space for saving previous timestep data if needed
+!!                   SCRATCH scratch space that can fit cell and face centered variables
+!!                   SCRATCH_CTR scratch space for cell centered variables
+!!                   SCRATCH_FACEX scratch space facex variables
+!!                   SCRATCH_FACEY scratch space facey variables
+!!                   SCRATCH_FACEZ scratch space facez variables
 !!
 !!
 !!
@@ -46,33 +51,45 @@
 !!
 !!***
 
+!!REORDER(4): dataPtr
+
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
 #endif
 
+subroutine Grid_getBlkPtr(blockID, dataPtr, gridDataStruct)
+  use Driver_interface, ONLY : Driver_abortFlash
+  
+  implicit none
+
+  integer, intent(in) :: blockID
+  real, dimension(:,:,:,:), pointer :: dataPtr
+  integer, optional,intent(in) :: gridDataStruct
+ 
+  call Driver_abortFlash("AMReX does *not* deal in block IDs")
+end subroutine Grid_getBlkPtr
+
+subroutine Grid_getBlkPtr_Itor(block, dataPtr, gridDataStruct)
+
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_getBlkPtr(blockID, dataPtr, gridDataStruct)
-  use iso_c_binding, only : c_ptr, c_int, c_f_pointer, c_associated
-  use flash_ftypes, ONLY : box_info_t
-  use chombo_f_c_interface, ONLY : ch_get_blk_ptr, ch_get_box_info
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
+  ! DEVNOTE:  Once we have mesh initialization done, we will need to get access
+  ! to AMReX owned physical data here
+!  use physicaldata, ONLY : unk, facevarx, facevary, facevarz
+!  use gr_specificData, ONLY : scratch,scratch_ctr,&
+!       scratch_facevarx,scratch_facevary,scratch_facevarz
+
   implicit none
-  integer, intent(in) :: blockID
 
-  !dataPtr should really have type real(c_double), but since we know we are
-  !promoting FLASH reals to double precision this is OK.
-  real, dimension(:,:,:,:), pointer :: dataPtr
-  integer, optional,intent(in) :: gridDataStruct
+  type(block_metadata_t), intent(in)            :: block
+  real,                   intent(out), pointer  :: dataPtr(:, :, :, :)
+  integer,                intent(in),  optional :: gridDataStruct
 
-  integer, dimension(MDIM) :: blkSizeInclGC
-  integer(c_int), dimension(MDIM) :: loIndex, hiIndex, gCells
-  integer(c_int) :: blkID, gds
-  integer :: nVar
-  type(c_ptr) :: dataMemoryAddress
+  integer :: gds
   logical :: validGridDataStruct
-  type(box_info_t) :: boxInfo
 
 #ifdef DEBUG_GRID
   if(present(gridDataStruct)) then
@@ -86,9 +103,7 @@ subroutine Grid_getBlkPtr(blockID, dataPtr, gridDataStruct)
      validGridDataStruct= (gridDataStruct == SCRATCH_FACEX).or.validGridDataStruct
      validGridDataStruct= (gridDataStruct == SCRATCH_FACEY).or.validGridDataStruct
      validGridDataStruct= (gridDataStruct == SCRATCH_FACEZ).or.validGridDataStruct
-#ifdef FLASH_GRID_PARAMESH
      validGridDataStruct= (gridDataStruct == WORK).or.validGridDataStruct
-#endif
      
      if(.not.validGridDataStruct) then
         print *, "Grid_getBlkPtr: gridDataStruct set to improper value"
@@ -97,62 +112,52 @@ subroutine Grid_getBlkPtr(blockID, dataPtr, gridDataStruct)
         call Driver_abortFlash("gridDataStruct must be one of CENTER,FACEX,FACEY,FACEZ,SCRATCH (see constants.h)")
      end if
   end if
+  ! TODO: Convert this into error checking of AMReX metadata
+!  if((blockid<1).or.(blockid>MAXBLOCKS)) then
+!     print *, 'Grid_getBlkPtr:  invalid blockid ',blockid
+!     call Driver_abortFlash("[Grid_getBlkPtr] invalid blockid ")
+!  end if
 #endif
 
-
-  !Convert to c_int type.
-  blkID = blockID
   if(present(gridDataStruct)) then
      gds = gridDataStruct
   else
      gds = CENTER
   end if
 
+  associate (lo   => block%limitsGC(LOW, :), &
+             ilev => block%level, &
+             igrd => block%grid_index)
+!#ifdef INDEXREORDER
+    ! TODO: Code up reordered indices once the normal way is finalized
+!#else
+    ! TODO: This is just an idea of how to get data.  Get data from the 
+    ! AMReX Multifabs correctly once the mesh initialization is done.
+    select case (gds)
+    case(CENTER)
+       dataPtr(1:, lo(1):, lo(2):, lo(3):) => unk(ilev)%dataptr(igrd)
+    case(FACEX)
+       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(ilev)%dataptr(igrd)
+    case(FACEY)
+       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(ilev)%dataptr(igrd)
+    case(FACEZ)
+       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(ilev)%dataptr(igrd)
+    case(SCRATCH)
+       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch(ilev)%dataptr(igrd)
+    case(SCRATCH_CTR)
+       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_ctr(ilev)%dataptr(igrd)
+    case(SCRATCH_FACEX)
+       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarx(ilev)%dataptr(igrd)
+    case(SCRATCH_FACEY)
+       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevary(ilev)%dataptr(igrd)
+    case(SCRATCH_FACEZ)
+       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarz(ilev)%dataptr(igrd)
+    case(WORK)
+       call Driver_abortFlash("work array cannot be got as pointer")
+    case DEFAULT
+       print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
+    end select
+!#endif
+  end associate
+end subroutine Grid_getBlkPtr_Itor
 
-  select case (gds)
-  case (CENTER)
-     nVar = NUNK_VARS
-  case (FACEX, FACEY, FACEZ)
-     nVar = NFACE_VARS
-  case (SCRATCH)
-     nVar = NSCRATCH_GRID_VARS
-  case (SCRATCH_CTR)
-     nVar = NSCRATCH_CENTER_VARS
-  case (SCRATCH_FACEX)
-     nVar = NSCRATCH_FACEX_VARS
-  case (SCRATCH_FACEY)
-     nVar = NSCRATCH_FACEY_VARS
-  case (SCRATCH_FACEZ)
-     nVar = NSCRATCH_FACEZ_VARS
-  case DEFAULT
-     call Driver_abortFlash("Grid data structure not yet handled")
-  end select
-
-
-  if (gds == CENTER .or. gds == SCRATCH_CTR) then
-     !Obtain a block's raw memory address.
-     call ch_get_blk_ptr(blkID, gds, dataMemoryAddress);
-     if (c_associated(dataMemoryAddress).eqv..true.) then
-
-        call ch_get_box_info(blkID, gds, boxInfo);
-        hiIndex = boxInfo % highLimits
-        loIndex = boxInfo % lowLimits
-        gcells = boxInfo % guardcells
-        blkSizeInclGC = (hiIndex - loIndex) + (2*gCells) + 1
-
-
-        !Construct a Fortran pointer object using raw memory address and shape argument.
-        call c_f_pointer(dataMemoryAddress, dataPtr, &
-             (/blkSizeInclGC(1),blkSizeInclGC(2),blkSizeInclGC(3),nVar/))
-     else
-        nullify(dataPtr)
-     end if
-
-     if (.not.associated(dataPtr)) then
-        call Driver_abortFlash("[Grid_getBlkPtr]: Cannot construct Fortran pointer")
-     end if
-  else
-     call Driver_abortFlash("[Grid_getBlkPtr]: Grid structure not supported")
-  end if
-
-end subroutine Grid_getBlkPtr

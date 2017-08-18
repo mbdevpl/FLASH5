@@ -79,15 +79,13 @@ subroutine Driver_evolveFlash()
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
-  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
-                                    famrex_mviter, famrex_mviter_build,&
-                                    famrex_mviter_destroy,famrex_multivab_destroy
-  use famrex_box_module,      ONLY: famrex_box
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
 
-  use amrex_amr_module,    ONLY : amrex_real
+!!$  use amrex_amr_module,    ONLY : amrex_real
 !!$  use amrex_box_module,    ONLY : amrex_box
-  use amrex_box_module
-  use amrex_fab_module
+!  use amrex_box_module
+!  use amrex_fab_module
   use amrex_multifab_module
   use amrex_distromap_module
   use amrex_boxarray_module
@@ -133,23 +131,23 @@ subroutine Driver_evolveFlash()
   real,pointer,dimension(:,:,:,:) :: Uout
   real,dimension(MDIM) :: del
 
-  type(famrex_multivab),allocatable :: phi(:)
   type(amrex_multifab),allocatable :: phi_mf(:)
-  type(famrex_mviter) :: mvi
-  type(famrex_box) :: bx, tbx
   integer:: ib, blockID, level, maxLev
   integer:: ibLoc, blkLev
   integer,allocatable :: bpl(:,:) ! array for blocks-per-level (and per proc)
 
-  real(amrex_real)  :: time     !testing...
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
+
+!!$  real(amrex_real)  :: time     !testing...
   logical :: nodal(3)
-  type(amrex_multifab), allocatable :: phiborder(:)
+!!$  type(amrex_multifab), allocatable :: phiborder(:)
 !  type(amrex_octree_iter) :: oti
-  type(amrex_box) :: abx, atbx
-  real(amrex_real), contiguous, pointer, dimension(:,:,:,:) :: pin,pout,pux,puy,puz,pfx,pfy,pfz, &
-       pf, pfab
-  type(amrex_fab) :: uface(NDIM)
-  type(amrex_multifab), allocatable :: fluxes(:,:)
+!!$  type(amrex_box) :: abx, atbx
+!!$  real(amrex_real), contiguous, pointer, dimension(:,:,:,:) :: pin,pout,pux,puy,puz,pfx,pfy,pfz, &
+!!$       pf, pfab
+!!$  type(amrex_fab) :: uface(NDIM)
+!!$  type(amrex_multifab), allocatable :: fluxes(:,:)
   type(amrex_distromap), allocatable :: dm
   type(amrex_boxarray) :: ba
 
@@ -219,7 +217,6 @@ subroutine Driver_evolveFlash()
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
 
-     allocate(phi(maxLev))
      allocate(phi_mf(maxLev))
      allocate(bpl(0:dr_meshNumProcs-1,maxLev))
      bpl(:,:) = 0
@@ -250,32 +247,23 @@ subroutine Driver_evolveFlash()
         call amrex_multifab_build(phi_mf(level), ba, dm, NUNK_VARS, ng=0)
         deallocate(dm)
 
-        call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
+        itor = block_iterator_t(LEAF, level=level)
+        do while(itor%is_valid())
+           call itor%blkMetaData(block)
 
-        call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
-        do while(mvi%next())
-           bx = mvi%tilebox()
-           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
-           call amrex_print(abx)
+           tileLimits = block%limits
+           call Grid_getBlkPtr(block, Uout)
+!!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
+!!$           call amrex_print(abx)
 !!$           tbx = abx
-           
-           Uout => phi(level)%dataptr(mvi)
-           tileLimits(LOW, :) = bx%lo
-           tileLimits(HIGH,:) = bx%hi
-           
 
-!!$     call Grid_getListOfBlocks(LEAF,blks,blockCount)
-!!$     do ib=1,blockCount
-!!$        blockID=blks(ib)
-!!$        call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
-!!$        call Grid_getBlkPtr(blockID,Uout,CENTER)
-
-           blockID = mvi%localIndex() !Are we cheating here?
-           
-           call Grid_getDeltas(blockID,del)
+           call Grid_getDeltas(level,del)
            
            call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
-!!$           call Grid_releaseBlkPtr(blockID,Uout,CENTER)
+           call Grid_releaseBlkPtr(block, Uout)
+           nullify(Uout)
+ 
+           call itor%next()
         end do
         call Timers_stop("Hydro")
 #ifdef DEBUG_DRIVER
@@ -292,15 +280,12 @@ subroutine Driver_evolveFlash()
 !!$     print*, 'return from Diagnostics '  ! DEBUG
 !!$#endif
         
-        call famrex_mviter_destroy(mvi)
         !! save for old dt
      end do
      do level=1,maxLev
-        call famrex_multivab_destroy(phi(level))
         call amrex_multifab_destroy(phi_mf(level))
      end do
      deallocate(bpl)
-     deallocate(phi)
      deallocate(phi_mf)
 
      dr_dtOld = dr_dt

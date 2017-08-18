@@ -38,13 +38,12 @@ subroutine Driver_verifyInitDt()
        dr_globalComm,dr_dtDiffuse, dr_dtAdvect,dr_dtHeatExch,dr_useSTS,       &
        dr_tstepSlowStartFactor
   use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
-       Grid_getSingleCellCoords,Grid_getMaxRefinement
+       Grid_getSingleCellCoords, Grid_getMaxRefinement, &
+       Grid_getBlkPtr, Grid_releaseBlkPtr
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
-  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
-                                    famrex_mviter, famrex_mviter_build,&
-                                    famrex_mviter_destroy,famrex_multivab_destroy
-  use famrex_box_module,      ONLY: famrex_box
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none       
 
@@ -80,13 +79,11 @@ subroutine Driver_verifyInitDt()
 
   !!coordinate infomration to be passed into physics  
   real, pointer :: solnData(:,:,:,:)
-  integer :: isize,jsize,ksize,blockID
+  integer :: isize,jsize,ksize
   logical :: runVerifyInitDt = .false.
   real :: extraHydroInfo
-  integer,dimension(MDIM)::cid,stride
-  type(famrex_multivab),allocatable :: phi(:)
-  type(famrex_mviter) :: mvi
-  type(famrex_box) :: bx, tbx
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
   integer:: ib, level, maxLev
 
 !!$  dr_dtSTS = 0.0     !First use is in a max(dr_dtSTS,...), see Driver_evolveFlash. - KW
@@ -120,24 +117,15 @@ subroutine Driver_verifyInitDt()
         !routine, this is just initialization.  Getting the coordinates inside
         !Hydro_computeDt would be much more costly during the run
         
-     allocate(phi(maxLev))
      do level=1,maxLev
-        call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
-        call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
-        do while(mvi%next())
-           blockID = mvi%localIndex() !Are we cheating here?
-           bx = mvi%tilebox()
-           solnData=>phi(level)%dataptr(mvi)
-           
-           blkLimits(LOW,:)=bx%lo
-           blkLimits(HIGH,:)=bx%hi
-           blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
-           blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
-        
-           stride=2**(maxLev-level)
-           cid=1
-           cid(1:NDIM)=blkLimits(LOW,1:NDIM)*stride(1:NDIM)
-           
+        itor = block_iterator_t(LEAF, level=level)
+        do while(itor%is_valid())
+           call itor%blkMetaData(block)
+          
+           blkLimits   = block%limits
+           blkLimitsGC = block%limitsGC
+           call Grid_getBlkPtr(block, solnData)
+
            isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
            jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
            ksize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1+2*NGUARD*K3D
@@ -162,27 +150,27 @@ subroutine Driver_verifyInitDt()
            
            
            coordSize = isize
-           call Grid_getCellCoords(IAXIS,cid,stride,CENTER,gcell,xCoord,coordSize)
-           call Grid_getCellCoords(IAXIS,cid,stride,LEFT_EDGE,gcell,xLeft,isize)
-           call Grid_getCellCoords(IAXIS,cid,stride,RIGHT_EDGE,gcell,xRight,isize)
+           call Grid_getCellCoords(IAXIS,block,CENTER,gcell,xCoord,coordSize)
+           call Grid_getCellCoords(IAXIS,block,LEFT_EDGE,gcell,xLeft,isize)
+           call Grid_getCellCoords(IAXIS,block,RIGHT_EDGE,gcell,xRight,isize)
            
            if (NDIM > 1) then
               coordSize = jsize
-              call Grid_getCellCoords(JAXIS,cid,stride,CENTER,gcell,yCoord,coordSize)
-              call Grid_getCellCoords(JAXIS,cid,stride,LEFT_EDGE,gcell,yLeft,jsize)
-              call Grid_getCellCoords(JAXIS,cid,stride,RIGHT_EDGE,gcell,yRight,jsize)
+              call Grid_getCellCoords(JAXIS,block,CENTER,gcell,yCoord,coordSize)
+              call Grid_getCellCoords(JAXIS,block,LEFT_EDGE,gcell,yLeft,jsize)
+              call Grid_getCellCoords(JAXIS,block,RIGHT_EDGE,gcell,yRight,jsize)
               
               if (NDIM > 2) then
                  coordSize = ksize
-                 call Grid_getCellCoords(KAXIS,cid,stride,CENTER,gcell,zCoord,coordSize)
-                 call Grid_getCellCoords(KAXIS,cid,stride,LEFT_EDGE,gcell,zLeft,ksize)
-                 call Grid_getCellCoords(KAXIS,cid,stride,RIGHT_EDGE,gcell,zRight,ksize)              
+                 call Grid_getCellCoords(KAXIS,block,CENTER,gcell,zCoord,coordSize)
+                 call Grid_getCellCoords(KAXIS,block,LEFT_EDGE,gcell,zLeft,ksize)
+                 call Grid_getCellCoords(KAXIS,block,RIGHT_EDGE,gcell,zRight,ksize)              
               endif
            endif
            
            
            
-           call Grid_getDeltas(blockID, del)
+           call Grid_getDeltas(level, del)
            dx(:) = del(1)
            dy(:) = del(2)
            dz(:) = del(3)
@@ -209,8 +197,9 @@ subroutine Driver_verifyInitDt()
 !!$             solnData,      &
 !!$             dtCheck(2), dtMinLoc )
            
+           call Grid_releaseBlkPtr(block, solnData)
            nullify(solnData)
-           
+ 
 #ifndef FIXEDBLOCKSIZE
            deallocate(xCoord)
            deallocate(dx)
@@ -229,13 +218,9 @@ subroutine Driver_verifyInitDt()
            deallocate(zRight)
 #endif
            
+           call itor%next()
         end do
-        call famrex_mviter_destroy(mvi)
      end do
-     do level=1,maxLev
-        call famrex_multivab_destroy(phi(level))
-     end do
-     deallocate(phi)
      
      ! find the minimum across all processors, store it in dtCFL on MasterPE
      call MPI_AllReduce(dtCheck(1), dtCFL(1), 3, FLASH_REAL, MPI_MIN, &

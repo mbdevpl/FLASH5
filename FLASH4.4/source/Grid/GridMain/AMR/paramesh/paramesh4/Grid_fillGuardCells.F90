@@ -230,21 +230,23 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
 #include "Flash.h"
 
-  use Grid_data, ONLY : gr_blkList, gr_justExchangedGC, &
-       gr_convertToConsvdInMeshInterp, &
-       gr_enableMaskedGCFill, gr_eosModeNow, gr_meshMe, gr_meshComm, &
-       gr_gcellsUpToDate
-
+  use Grid_data, ONLY :  gr_justExchangedGC, &
+        gr_eosModeNow, gr_meshMe, gr_meshComm, &
+       gr_gcellsUpToDate,gr_convertToConsvdInMeshInterp
+  use gr_specificData, ONLY : gr_enableMaskedGCFill
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getListOfBlocks,Grid_getBlkPtr,Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_setGcFillNLayers
   use paramesh_dimensions, ONLY : l2p5d,ndim
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
   use paramesh_interfaces, ONLY : amr_guardcell, amr_restrict
   use paramesh_mpi_interfaces, ONLY: mpi_amr_comm_setup
   use Eos_interface, ONLY : Eos_guardCells
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
+  
   implicit none
 
 #include "constants.h"
@@ -262,12 +264,14 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   integer, optional,intent(IN) :: selectBlockType
   logical, optional, intent(IN) :: unitReadsMeshDataOnly
   
-  integer :: iopt,guard, numLeafBlocks,i,offset,gcEosMode
+  integer :: iopt,guard, i,offset,gcEosMode
   integer,dimension(MDIM) :: layers, returnLayers
   integer :: maxNodetype_gcWanted
   integer :: nlayers_transverse
   integer :: listBlockType
   real,dimension(:,:,:,:),pointer::solnData
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
 
   logical :: lcc, lfc, lec, lnc, lguard, lprolong, lflux, ledge, lrestrict, lfulltree
   integer :: ierr
@@ -437,20 +441,25 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
      end if
 
      if((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
-        call Grid_getListOfBlocks(listBlockType, gr_blkList, numLeafBlocks)
         if (.not. skipThisGcellFill) then
-           call gr_primitiveToConserve(gr_blkList,numLeafBlocks)
+           itor = block_iterator_t(listBlockType) 
+           do while (itor%is_valid())
+              call itor%blkMetaData(block)
+              call gr_primitiveToConserve(block)
+
+              call itor%next()
+           end do
         end if
      end if
-     
+ 
 
      if (.not. skipThisGcellFill) then
         if (gr_convertToConsvdInMeshInterp) then
-           !   call gr_sanitizeDataAfterInterp(gr_blkList, numLeafBlocks, 'BEFORE gc filling', layers)
+           !   call gr_sanitizeDataAfterInterp(listBlockType, 'BEFORE gc filling', layers)
         end if
         !call amr_restrict(gr_meshMe, 1, 0, .true.)
         if (gr_convertToConsvdInMeshInterp) then
-           !   call gr_sanitizeDataAfterInterp(gr_blkList, numLeafBlocks, 'BEFORE gc filling, after restrict', layers)
+           !   call gr_sanitizeDataAfterInterp(listBlockType, 'BEFORE gc filling, after restrict', layers)
         end if
 
 #ifdef DEBUG_GRID
@@ -465,13 +474,20 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
      if ((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
         if (.not. skipThisGcellFill) then
-           call gr_conserveToPrimitive(gr_blkList,numLeafBlocks, .TRUE.)        
-           if (gr_convertToConsvdInMeshInterp) then
-              call gr_sanitizeDataAfterInterp(gr_blkList, numLeafBlocks, 'after gc filling', layers)
-           end if
+            itor = block_iterator_t(listBlockType)
+            do while (itor%is_valid())
+                call itor%blkMetaData(block)
+                call gr_conserveToPrimitive(block, .TRUE.)
+
+                call itor%next()
+            end do
+ 
+            if (gr_convertToConsvdInMeshInterp) then
+               call gr_sanitizeDataAfterInterp(listBlockType, 'after gc filling', layers)
+            end if
         end if
      end if
-     
+ 
      gr_justExchangedGC = .true.
      
   end if
@@ -488,14 +504,21 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   if(present(doEos)) then
      if(doEos.and.needEos) then
         call Timers_start("eos gc")
-        if ((gridDataStruct.NE.CENTER).AND.(gridDataStruct.NE.CENTER_FACES)) &
-             call Grid_getListOfBlocks(listBlockType, gr_blkList, numLeafBlocks)
-        do i = 1,numLeafBlocks
-           call Grid_getBlkPtr(gr_blkList(i),solnData)
-           call Eos_guardCells(gcEosMode,solnData,corners=.true.,layers=returnLayers,&
-                skipSrl=.TRUE.)
-           call Grid_releaseBlkPtr(gr_blkList(i),solnData)
-        end do
+        if (      (gridDataStruct.NE.CENTER) &
+            .AND. (gridDataStruct.NE.CENTER_FACES)) then
+            itor = block_iterator_t(listBlockType)
+            do while (itor%is_valid())
+                call itor%blkMetaData(block)
+                
+                call Grid_getBlkPtr(block, solnData)
+                call Eos_guardCells(gcEosMode, solnData, corners=.true., &
+                                    layers=returnLayers, skipSrl=.TRUE.)
+                call Grid_releaseBlkPtr(block, solnData)
+                nullify(solnData)
+
+                call itor%next()
+            end do
+        end if
         call Timers_stop("eos gc")
      end if
   end if

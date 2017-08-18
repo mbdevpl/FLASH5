@@ -36,10 +36,9 @@ subroutine gr_expandDomain (particlesInitialized)
        gr_meshNumProcs, gr_lrefineMinInit, gr_gcellsUpToDate
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_stampVarMask
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
-       Grid_getLocalNumBlks, Grid_getListOfBlocks,Grid_getBlkCornerID, &
-       Grid_markRefineDerefine, Grid_getBlkPtr, Grid_releaseBlkPtr
-  use Grid_data, ONLY : gr_ihiGc,gr_jhiGc,gr_khiGc,gr_blkList
+  use Grid_interface, ONLY :  Grid_getLocalNumBlks, Grid_markRefineDerefine, &
+                              Grid_getBlkPtr, Grid_releaseBlkPtr
+  use gr_specificData, ONLY : gr_ihiGc,gr_jhiGc,gr_khiGc
   use tree, ONLY : lrefine, lrefine_min, lrefine_max, grid_changed
   use paramesh_interfaces, ONLY : amr_refine_derefine, amr_restrict
   use Eos_interface, ONLY : Eos_wrapped
@@ -55,6 +54,9 @@ subroutine gr_expandDomain (particlesInitialized)
     Particles_updateRefinement
   use Driver_interface, ONLY : Driver_abortFlash
   use RadTrans_interface, ONLY: RadTrans_sumEnergy
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
 
 #include "constants.h"
@@ -70,16 +72,15 @@ subroutine gr_expandDomain (particlesInitialized)
 
   integer :: ntimes, i
 
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
-  integer, dimension(MDIM) :: cid,stride
   integer :: count, cur_treedepth, grid_changed_anytime
   logical :: restart = .false.
   logical :: particlesPosnsDone, retainParticles
   integer :: level = FINEST  !not yet implemented, 1 is a dummy value
-  integer ,dimension(MAXBLOCKS) :: blkList
   character(len=32), dimension(2,2) :: block_buff
   character(len=32)                 :: int_to_str
   integer :: gridDataStruct, whichBlocks
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
 
   !!============================================================================
 
@@ -98,7 +99,6 @@ subroutine gr_expandDomain (particlesInitialized)
   ! so we can check whether it is > t_cfl
 
   particlesInitialized=.false.
-  call Grid_getBlkIndexLimits(1, blkLimits, blkLimitsGC)
 
   call gr_initParameshArrays(restart,        &
        gr_domainBC(LOW,IAXIS),gr_domainBC(HIGH,IAXIS), &
@@ -148,8 +148,6 @@ subroutine gr_expandDomain (particlesInitialized)
      ! at refinement level 2 anyway, since PARENT blocks are then updated as a side
      ! effect by restriction.) - KW
      if (ntimes == 1) whichBlocks = ALL_BLKS
-     call Grid_getListOfBlocks(whichBlocks, blkList,count)
-
 
 #ifndef FLASH_GRID_PARAMESH2
      if (no_permanent_guardcells) then
@@ -157,35 +155,47 @@ subroutine gr_expandDomain (particlesInitialized)
      end if
 #endif
 
-     do i = 1, count
+     itor = block_iterator_t(whichBlocks)
+     do while(itor%is_valid())
+        call itor%blkMetaData(block)
+        
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.
-        call Grid_getBlkPtr(blkList(i), solnData)
-        call Grid_getBlkIndexLimits(blkList(i),blkLimits,blkLimitsGC)
-        call Grid_getBlkCornerID(blkList(i),cid,stride)
-        
+        call Grid_getBlkPtr(block, solnData)
         solnData = 0.0
         !      Now reinitialize the solution on the new grid so that it has
         !      the exact solution.
-        call Simulation_initBlock (solnData,cid,stride,blkLimits)
-        call Grid_releaseBlkPtr(blkList(i), solnData)
+        call Simulation_initBlock(solnData, block)
+        call Grid_releaseBlkPtr(block, solnData)
+        nullify(solnData)
+
+        call itor%next()
      end do
 
 #ifdef ERAD_VAR
      ! Sum radiation energy density over all meshes. This call is
      ! needed for mesh replication.
-     call RadTrans_sumEnergy(ERAD_VAR, count, blkList)
+
+     ! DEVNOTE: The interface of this function has not yet been changed
+     ! It should create its own iterator.  How to get count?
+     call RadTrans_sumEnergy(ERAD_VAR, count, whichBlocks)
 #endif
 
      ! This is here for safety, in case the user did not take care to make things
      ! thermodynamically consistent in the initial state.- KW
      call Timers_start("eos")
-     do i = 1, count
-        call Grid_getBlkPtr(blkList(i), solnData)
-        call Eos_wrapped(gr_eosModeInit,blkLimits,solnData)
-        call Grid_releaseBlkPtr(blkList(i), solnData)
+     call itor%first()
+     do while(itor%is_valid())
+        call itor%blkMetaData(block)
+        
+        call Grid_getBlkPtr(block, solnData)
+        call Eos_wrapped(gr_eosModeInit, block%limits, solnData)
+        call Grid_releaseBlkPtr(block, solnData)
+        nullify(solnData)
+
+        call itor%next()
      end do
 
      call Timers_stop("eos")

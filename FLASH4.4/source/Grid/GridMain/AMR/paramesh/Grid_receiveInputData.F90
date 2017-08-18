@@ -37,13 +37,14 @@ subroutine Grid_receiveInputData(localNumBlocks, alnblocks, xx)
 
   use tree, ONLY : nfaces, nchild, neigh, parent, child
 #ifdef FLASH_GRID_PARAMESH3OR4
-  use Grid_data, ONLY : gr_gsurr_blks, gr_is_gsurr_blks_initialized
+  use gr_specificData, ONLY : gr_gsurr_blks, gr_is_gsurr_blks_initialized
 #endif
 #ifdef FLASH_GRID_PARAMESH4DEV_SURR_BLKS_OPTION
   use tree, ONLY : surr_blks
   use physicaldata, ONLY : use_flash_surr_blks_fill, surr_blks_valid
 #endif
-  use Grid_data, ONLY : gr_gid, gr_globalMe, gr_meshNumProcs
+  use gr_specificData, ONLY : gr_gid
+  use Grid_Data, ONLY:  gr_globalMe, gr_meshNumProcs
 
   implicit none
   integer, intent(IN) :: localNumBlocks, alnblocks, xx

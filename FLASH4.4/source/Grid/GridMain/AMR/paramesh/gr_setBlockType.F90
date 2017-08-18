@@ -32,7 +32,7 @@
 #endif
 
 subroutine gr_setBlockType(blockID,type)
-  use Grid_data, ONLY : gr_oneBlock
+  use gr_specificData, ONLY : gr_oneBlock
   implicit none
 
   integer, intent(IN) :: blockID, type

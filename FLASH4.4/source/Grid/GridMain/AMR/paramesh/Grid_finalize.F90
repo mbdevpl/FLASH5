@@ -20,12 +20,8 @@ subroutine Grid_finalize()
 
   use gr_bcInterface, ONLY : gr_bcFinalize
   use gr_ptInterface, ONLY : gr_ptFinalize
-  use Grid_data, ONLY : gr_nToLeft, gr_gid
-#ifdef FLASH_GRID_PARAMESH3OR4
-  use Grid_data, ONLY : gr_gsurr_blks
-#endif
+  use gr_specificData, ONLY : gr_nToLeft, gr_gid, gr_gsurr_blks
   use gr_sbInterface, ONLY: gr_sbFinalize
-
   implicit none
 
   if(allocated(gr_gid))deallocate(gr_gid)

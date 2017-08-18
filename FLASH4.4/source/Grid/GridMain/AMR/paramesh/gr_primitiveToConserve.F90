@@ -7,24 +7,21 @@
 !!
 !! SYNOPSIS
 !!
-!!  gr_primitiveToConserve(integer(in) :: blkList(count),
-!!                         integer(in) :: count)
+!!  gr_primitiveToConserve(block_metadata_t(IN) :: block
 !!
 !!
 !! DESCRIPTION
 !!
-!!  Given a list of blocks of data, loop over all of the blocks and
-!!  convert variables which are normally represented in PER_MASS
-!!  form (e.g., velocity) to the corresponding conservative form
+!!  Given a block of data, convert variables which are normally represented in
+!!  PER_MASS form (e.g., velocity) to the corresponding conservative form
 !!  (i.e., momentum) if gr_convertToConsvdForMeshCalls is TRUE.
 !!  Do nothing if gr_convertToConsvdForMeshCalls is FALSE.
 !!
 !!
 !! ARGUMENTS
 !! 
-!!   blkList - integer list of blocks to be operated on
-!!
-!!   count - number of blocks in the blkList
+!!   block - the metadata representation of block whose data shall be
+!!           transformed
 !!
 !! NOTES
 !!
@@ -58,11 +55,12 @@
 
 #include "Flash.h"
 
-subroutine gr_primitiveToConserve(blkList,count)
+subroutine gr_primitiveToConserve(block)
 
   use Grid_data, ONLY: gr_meshMe, gr_convertToConsvdForMeshCalls, &
                         gr_vartypes, gr_anyVarToConvert
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 #ifdef FLASH_GRID_PARAMESH2
 #define INT_GCELL_ON_CC(IVAR) (.TRUE.)
   use physicaldata, ONLY: unk, nguard, &
@@ -80,9 +78,8 @@ subroutine gr_primitiveToConserve(blkList,count)
   implicit none
 #include "constants.h"
 
-  integer,intent(IN) :: count
-  integer,dimension(count),intent(IN) :: blkList 
-  integer :: i, j, k,n, block, ivar
+  type(block_metadata_t), intent(IN) :: block
+  integer :: i, j, k,n, blockID, ivar
 #ifdef FLASH_GRID_PARAMESH2
   integer,parameter :: npgs=1
 #endif
@@ -91,38 +88,35 @@ subroutine gr_primitiveToConserve(blkList,count)
 
 #ifdef DENS_VAR           
   if (gr_convertToConsvdForMeshCalls) then
-
-     do n = 1,count
-        block=blkList(n)
-        do k = kk1+nguard*npgs,kk2-nguard*npgs
-           do j = jj1+nguard*npgs,jj2-nguard*npgs
-              do i = ii1+nguard*npgs,ii2-nguard*npgs
-                 if (unk(DENS_VAR,i,j,k,block) == 0.0) then
-                    do ivar = UNK_VARS_BEGIN, UNK_VARS_END
-                       if (INT_GCELL_ON_CC(ivar).AND.(gr_vartypes(ivar).eq.VARTYPE_PER_MASS)) then
-                          if (unk(ivar,i,j,k,block) .ne. 0.0) then
-                             ! This situation would probably lead to division by zero errors in the
-                             ! unk(ivar)/unk(dens) operation when converting back from conserved form later,
-                             ! if we did no check. Abort if unk(ivar)!=0 and unk(dens)==0, but let
-                             ! unk(ivar)==unk(dens)==0 pass. - KW
+     blockID = block%id
+     do k = kk1+nguard*npgs,kk2-nguard*npgs
+        do j = jj1+nguard*npgs,jj2-nguard*npgs
+           do i = ii1+nguard*npgs,ii2-nguard*npgs
+              if (unk(DENS_VAR,i,j,k,blockID) == 0.0) then
+                 do ivar = UNK_VARS_BEGIN, UNK_VARS_END
+                    if (INT_GCELL_ON_CC(ivar).AND.(gr_vartypes(ivar).eq.VARTYPE_PER_MASS)) then
+                       if (unk(ivar,i,j,k,blockID) .ne. 0.0) then
+                          ! This situation would probably lead to division by zero errors in the
+                          ! unk(ivar)/unk(dens) operation when converting back from conserved form later,
+                          ! if we did no check. Abort if unk(ivar)!=0 and unk(dens)==0, but let
+                          ! unk(ivar)==unk(dens)==0 pass. - KW
 99                           format ('[gr_primitiveToConserve] PE=',I7,', ivar=',I3,', block=',I8)
-                             print 99,gr_meshMe,ivar,block
-                             print*,'Trying to convert non-zero mass-specific variable to per-volume form, but dens is zero!'
-                             call Driver_abortFlash &
-                                  ('Trying to convert non-zero mass-specific variable to per-volume form, but dens is zero!')
-                          end if
+                          print 99,gr_meshMe,ivar,blockID
+                          print*,'Trying to convert non-zero mass-specific variable to per-volume form, but dens is zero!'
+                          call Driver_abortFlash &
+                               ('Trying to convert non-zero mass-specific variable to per-volume form, but dens is zero!')
                        end if
-                    end do
-                 end if
-              end do
+                    end if
+                 end do
+              end if
            end do
         end do
-        do ivar = UNK_VARS_BEGIN, UNK_VARS_END
-           if (gr_vartypes(ivar) .eq. VARTYPE_PER_MASS) then
-              unk(ivar,:,:,:,block) &
-                   = unk(DENS_VAR,:,:,:,block)*unk(ivar,:,:,:,block)
-           end if
-        enddo
+     end do
+     do ivar = UNK_VARS_BEGIN, UNK_VARS_END
+        if (gr_vartypes(ivar) .eq. VARTYPE_PER_MASS) then
+           unk(ivar,:,:,:,blockID) &
+                = unk(DENS_VAR,:,:,:,blockID)*unk(ivar,:,:,:,blockID)
+        end if
      enddo
 
   end if

@@ -29,8 +29,8 @@ subroutine gr_xyzToBlockLevel(lev, xyz, ijk)
 #include "Flash.h"
   use Grid_data, only: &
     gr_imin, gr_jmin, gr_kmin, &
-    gr_imax, gr_jmax, gr_kmax, &
-    gr_nblockX, gr_nblockY, gr_nblockZ
+    gr_imax, gr_jmax, gr_kmax
+  use gr_specificData, only: gr_nblockX, gr_nblockY, gr_nblockZ
   implicit none
   
   integer, intent(in) :: lev

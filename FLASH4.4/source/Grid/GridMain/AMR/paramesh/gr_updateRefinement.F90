@@ -59,12 +59,12 @@
 subroutine gr_updateRefinement( gridChanged)
 
 #include "Flash.h"
-  use Grid_data, ONLY : gr_blkList, gr_convertToConsvdForMeshCalls,&
+  use Grid_data, ONLY :  gr_convertToConsvdForMeshCalls,&
        gr_convertToConsvdInMeshInterp, gr_eosMode, gr_meshMe, gr_gcellsUpToDate
+  use gr_specificData, ONLY : gr_blkList
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getListOfBlocks,Grid_getBlkIndexLimits,Grid_getBlkPtr,Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Simulation_interface, ONLY : Simulation_customizeProlong
-  
   use tree, ONLY : newchild, nodetype, lnblocks, grid_changed
 #ifndef FLASH_GRID_PARAMESH2
   use physicaldata, ONLY: mpi_pattern_id, no_permanent_guardcells
@@ -72,7 +72,10 @@ subroutine gr_updateRefinement( gridChanged)
   use paramesh_interfaces, ONLY : amr_refine_derefine, &
                                   amr_prolong
   use Eos_interface, ONLY : Eos_wrapped
-  use Particles_interface, ONLY : Particles_updateRefinement
+  use Particles_interface, ONLY : Particles_updateRefinement 
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
 
 
@@ -81,20 +84,18 @@ subroutine gr_updateRefinement( gridChanged)
   logical, intent(out),OPTIONAL :: gridChanged
 
   integer :: i, ivar
-  integer :: blkListAncestors(MAXBLOCKS)
-
-  integer,dimension(2,MDIM) :: blkLimitsGC, blklimits
-  integer :: count, numLeafBlocks, numAncestorBlocks
   integer :: oldLocalNumBlocks !need this if running with particles
   integer, dimension(MDIM) :: layers
+  integer :: blockID
   real,dimension(:,:,:,:),pointer :: solnData
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
 !=============================================================================
 
   call Timers_start("tree") !2 of 2 (split into 2 so valid to TAU)
   !store the local number of blocks before refinement
   oldLocalNumBlocks = lnblocks
   layers =0 
-  call Grid_getBlkIndexLimits(1,blkLimits,blkLimitsGC)
   
   grid_changed = 0              ! will be 1 after amr_refine_derefine if the grid actually changed
 
@@ -128,19 +129,18 @@ subroutine gr_updateRefinement( gridChanged)
   ! that were actually parents up to the amr_refine_derefine call.
   ! The prolonging will stuff the new children.
   if (gr_convertToConsvdForMeshCalls) then
-      count = 0
-      numAncestorBlocks = 0
-      do i = 1, lnblocks
-         if ((nodetype(i)==LEAF .AND. .not. newchild(i)) .OR. nodetype(i)==PARENT_BLK) then
-            count = count+1
-            gr_blkList(count)=i
-         else if (nodetype(i)==ANCESTOR) then
-            numAncestorBlocks = numAncestorBlocks+1
-            blkListAncestors(numAncestorBlocks)=i
-         endif
-      enddo
-     call gr_primitiveToConserve(gr_blkList,count)
-     call gr_primitiveToConserve(blkListAncestors,numAncestorBlocks)
+     itor = block_iterator_t(ALL_BLKS)
+     do while (itor%is_valid())
+        call itor%blkMetaData(block)
+        blockID = block%id
+        if (     (nodetype(blockID)==LEAF .AND. .not. newchild(blockID)) &
+            .OR. (nodetype(blockID)==PARENT_BLK) &
+            .OR. (nodetype(blockID)==ANCESTOR)) then
+            call gr_primitiveToConserve(block)
+        end if 
+
+        call itor%next()
+     end do
   endif
   
   
@@ -169,8 +169,7 @@ subroutine gr_updateRefinement( gridChanged)
 #ifndef FLASH_GRID_PARAMESH2
   ! the following condition should not be true for PM2 anyway
   if (gr_convertToConsvdInMeshInterp) then
-     call Grid_getListOfBlocks(ACTIVE_BLKS, gr_blkList, numLeafBlocks)
-     call gr_sanitizeDataAfterInterp(gr_blkList, numLeafBlocks, 'after amr_prolong', layers)
+     call gr_sanitizeDataAfterInterp(ACTIVE_BLKS, 'after amr_prolong', layers)
   end if
 
   if (.NOT. no_permanent_guardcells) then
@@ -184,9 +183,21 @@ subroutine gr_updateRefinement( gridChanged)
   ! even for blocks whose data won't have any impact on further propagation
   ! (but may still be written out to plotfiles etc.).
   if (gr_convertToConsvdForMeshCalls) then
-     call Grid_getListOfBlocks(ACTIVE_BLKS, gr_blkList, numLeafBlocks)
-     call gr_conserveToPrimitive(gr_blkList,numLeafBlocks, .FALSE.)
-     call gr_conserveToPrimitive(blkListAncestors,numAncestorBlocks, .TRUE.)
+     itor = block_iterator_t(ACTIVE_BLKS)
+     do while (itor%is_valid())
+        call itor%blkMetaData(block)
+        call gr_conserveToPrimitive(block, .FALSE.)
+
+        call itor%next()
+     end do
+
+     itor = block_iterator_t(ANCESTOR)
+     do while (itor%is_valid())
+        call itor%blkMetaData(block)
+        call gr_conserveToPrimitive(block, .TRUE.)
+
+        call itor%next()
+     end do
   endif
 
 #ifndef FLASH_GRID_PARAMESH2
@@ -212,12 +223,16 @@ subroutine gr_updateRefinement( gridChanged)
 
   if (grid_changed .NE. 0) then
      call Timers_start("eos")
-     call Grid_getListOfBlocks(LEAF, gr_blkList,count)
+     itor = block_iterator_t(LEAF)
+     do while (itor%is_valid())
+        call itor%blkMetaData(block)
 
-     do i = 1, count
-        call Grid_getBlkPtr(gr_blkList(i),solnData)
-        call Eos_wrapped(gr_eosMode ,blkLimits, solnData)
-        call Grid_releaseBlkPtr(gr_blkList(i),solnData)
+        call Grid_getBlkPtr(block, solnData)
+        call Eos_wrapped(gr_eosMode, block%limits, solnData)
+        call Grid_releaseBlkPtr(block, solnData)
+        nullify(solnData)
+
+        call itor%next()
      end do
      call Timers_stop("eos")
   end if

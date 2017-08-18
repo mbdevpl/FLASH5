@@ -40,9 +40,9 @@
 subroutine gr_createDomain()
   use tree, ONLY : lnblocks,neigh, mfaces,lrefine_max, bnd_box
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_data, ONLY : gr_nBlockX, gr_nBlockY, gr_nBlockZ,gr_domainBC,&
-                        gr_imin,gr_imax,gr_jmin,gr_jmax,gr_kmin,gr_kmax, &
-                        gr_meshMe, gr_meshNumProcs
+  use gr_specificData, ONLY : gr_nBlockX, gr_nBlockY, gr_nBlockZ
+  use Grid_data, ONLY : gr_meshMe, gr_meshNumProcs,gr_domainBC,&
+                        gr_imin,gr_imax,gr_jmin,gr_jmax,gr_kmin,gr_kmax
   use Simulation_interface, ONLY : Simulation_defineDomain
 
 #ifndef FLASH_GRID_PARAMESH2

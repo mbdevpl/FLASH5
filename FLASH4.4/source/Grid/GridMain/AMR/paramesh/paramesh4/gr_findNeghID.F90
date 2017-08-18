@@ -43,7 +43,7 @@
 !!
 !!***
 
-subroutine gr_findNeghID(blockID,pos,negh,neghID)
+subroutine gr_findNeghID(block,pos,negh,neghID)
 #include "constants.h"
 #include "Flash.h"
 
@@ -51,10 +51,10 @@ subroutine gr_findNeghID(blockID,pos,negh,neghID)
   use Grid_interface, ONLY : Grid_getBlkBoundBox,Grid_outsideBoundBox, Grid_getBlkBC
   use Grid_data, ONLY : gr_globalDomain, gr_meshMe
   use tree, ONLY : surr_blks,parent,child
-
+  use block_metadata, ONLY : block_metadata_t
   
   implicit none
-  integer,intent(IN) :: blockID
+  type(block_metadata_t), intent(IN) :: block
   real,dimension(MDIM),intent(IN) :: pos
   integer,dimension(MDIM),intent(IN) :: negh
   integer,dimension(BLKNO:PROCNO),intent(OUT) :: neghID
@@ -66,6 +66,7 @@ subroutine gr_findNeghID(blockID,pos,negh,neghID)
   logical :: outside
   real, dimension(MDIM) :: wpos, deltaDomain
   integer, dimension(LOW:HIGH, MDIM) :: faces, ignoreMe
+  integer :: blockID
 
   !It is possible that unused dimensions of neghInput are
   !uninitialized in the calling code.  We make gr_findNeghID more
@@ -82,7 +83,7 @@ subroutine gr_findNeghID(blockID,pos,negh,neghID)
   negh_prop(:)=surr_blks(:,negh(IAXIS),negh(JAXIS),negh(KAXIS),blockID)
 #endif
 
-
+  blockID = block%id
 
   if (negh_prop(PROCNO)==NONEXISTENT) then
 
@@ -103,7 +104,7 @@ subroutine gr_findNeghID(blockID,pos,negh,neghID)
      !These changes are both temporary and are local to this subroutine.
      !We don't need to adjust the Grid_outsideBoundBox call (above).
      !--------------------------------------------------------------------------
-     call Grid_getBlkBC(blockID, ignoreMe, faces)
+     call Grid_getBlkBC(block, ignoreMe, faces)
      call Grid_getBlkBoundBox(blockID, bndBox)
      wpos = pos
 

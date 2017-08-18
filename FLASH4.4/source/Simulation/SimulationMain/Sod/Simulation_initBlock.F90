@@ -41,7 +41,7 @@
 !!***
 
 !!REORDER(4): solnData
-subroutine Simulation_initBlock(solnData,cid,stride,blkLimits)
+subroutine Simulation_initBlock(solnData,block)
 
 #include "constants.h"
 #include "Flash.h"
@@ -62,6 +62,7 @@ subroutine Simulation_initBlock(solnData,cid,stride,blkLimits)
 !!$  Grid_putPointData,Grid_getBlkCornerID,Grid_getBlkIndexLimits,Grid_getBlkPtr, Grid_releaseBlkPtr
     
   use Eos_interface, ONLY : Eos, Eos_wrapped
+  use block_metadata, ONLY : block_metadata_t
 
 
   implicit none
@@ -70,13 +71,11 @@ subroutine Simulation_initBlock(solnData,cid,stride,blkLimits)
   ! (including guardcells)
   
   real,dimension(:,:,:,:),pointer :: solnData
-  integer, dimension(LOW:HIGH,MDIM),intent(in) :: blkLimits
-  integer, dimension(MDIM),intent(in) :: cid,stride
+  type(block_metadata_t), intent(in) :: block
 
   integer :: i, j, k, n
   integer :: iMax, jMax, kMax
-  
-
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
 
   real :: xx, yy,  zz, xxL, xxR
   
@@ -112,29 +111,32 @@ subroutine Simulation_initBlock(solnData,cid,stride,blkLimits)
 !!$2    format (1X, 1P, 2(A7, E13.7, 1X), A7, I13)
 !!$     
 !!$  endif
-  
-  sizeX = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
-  sizeY = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
-  sizeZ = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1+2*NGUARD*K3D
-  allocate(xLeft(sizeX))
-  allocate(xRight(sizeX))
-  allocate(xCenter(sizeX))
-  allocate(yCoord(sizeY))
-  allocate(zCoord(sizeZ))
+
+  blkLimits = block%limits
+  blkLimitsGC = block%limitsGC
+  allocate(xLeft(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
+  allocate(xRight(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
+  allocate(xCenter(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
+  allocate(yCoord(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
+  allocate(zCoord(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS)))
   xCenter = 0.0
   xLeft = 0.0
   xRight = 0.0
   yCoord = 0.0
   zCoord = 0.0
 
+  sizeX = SIZE(xLeft)
+  sizeY = SIZE(yCoord)
+  sizeZ = SIZE(zCoord)
+  
   if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, cid,stride, CENTER,gcell, zCoord, sizeZ)
+                      (KAXIS, block, CENTER, gcell, zCoord, sizeZ)
   if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, cid,stride, CENTER,gcell, yCoord, sizeY)
+                      (JAXIS, block, CENTER, gcell, yCoord, sizeY)
 
-  call Grid_getCellCoords(IAXIS, cid,stride, LEFT_EDGE, gcell, xLeft, sizeX)
-  call Grid_getCellCoords(IAXIS, cid,stride, CENTER, gcell, xCenter, sizeX)
-  call Grid_getCellCoords(IAXIS, cid,stride, RIGHT_EDGE, gcell, xRight, sizeX)
+  call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
+  call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCenter, sizeX)
+  call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xRight, sizeX)
 
 !------------------------------------------------------------------------------
 
@@ -142,7 +144,6 @@ subroutine Simulation_initBlock(solnData,cid,stride,blkLimits)
 ! its left and right edge and its center as well as its physical width.  
 ! Then decide which side of the initial discontinuity it is on and initialize 
 ! the hydro variables appropriately.
-
 
   do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
      

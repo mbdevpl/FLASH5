@@ -1,2 +1,2 @@
-Grid += GridAmrexMultivabModule.o
-Grid += GridAmrexBoxModule.o
+Grid += Grid_amrexMultivabModule.o
+Grid += Grid_amrexBoxModule.o

@@ -84,8 +84,8 @@
 !!***
 
 subroutine Grid_getBlkCornerID(blockId, cornerID, stride,cornerIDHigh, inRegion)
-  use Grid_data, ONLY : gr_oneBlock,gr_globalDomain, gr_meshMe, &
-       gr_nBlockX, gr_nBlockY, gr_nBlockZ,gr_region, gr_delta
+  use Grid_data, ONLY : gr_globalDomain, gr_meshMe,gr_region, gr_delta
+  use gr_specificData, ONLY : gr_oneBlock,gr_nBlockX, gr_nBlockY, gr_nBlockZ
   use tree, ONLY : lrefine, lrefine_max,bnd_box
   use Driver_interface, ONLY : Driver_abortFlash
   use Logfile_interface, ONLY : Logfile_open, Logfile_close

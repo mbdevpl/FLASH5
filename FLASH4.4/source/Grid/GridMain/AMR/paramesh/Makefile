@@ -3,7 +3,7 @@
 Grid += Grid_data.o Grid_getBlkType.o \
         gr_updateData.o gr_createDomain.o gr_recreateDomain.o \
         gr_createBlock.o gr_expandDomain.o \
-	gr_primitiveToConserve.o gr_markRefineDerefine.o \
+	gr_primitiveToConserve.o \
 	gr_conserveToPrimitive.o Paramesh_init.o   \
         Paramesh_finalize.o  gr_initParameshArrays.o \
 	gr_restrictTree.o \
@@ -13,5 +13,5 @@ Grid += Grid_data.o Grid_getBlkType.o \
 	gr_findWhichChildren.o \
 	gr_unmarkRefineByLogRadius.o gr_markDerefineByLogRadius.o gr_markDerefineByTime.o gr_enforceMaxRefine.o \
 	Grid_getMaxRefinement.o \
-	gr_setMaxRefineByTime.o 
-Grid += Grid_makeVector.o
+	gr_setMaxRefineByTime.o gr_specificData.o gr_initSpecific.o
+

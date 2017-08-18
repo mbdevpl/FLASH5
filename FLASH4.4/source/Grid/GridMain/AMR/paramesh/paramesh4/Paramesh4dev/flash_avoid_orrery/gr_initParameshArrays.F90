@@ -52,8 +52,8 @@ subroutine gr_initParameshArrays(restart,&
    use paramesh_interfaces, ONLY : amr_refine_derefine,amr_guardcell
    use Grid_data, ONLY : gr_meshMe, gr_meshNumProcs, &
                          gr_imin, gr_imax, gr_jmin, gr_jmax, &
-                         gr_kmin, gr_kmax, &
-                         gr_nblockX, gr_nblockY, gr_nblockZ
+                         gr_kmin, gr_kmax
+   use gr_specificData, ONLY : gr_nblockX, gr_nblockY, gr_nblockZ
 
    implicit none
 #include "constants.h"

@@ -449,6 +449,12 @@ They are also used in other directionally split solvers as well.
 #define BADVALUE -2
 
 #if 0
+  These constants are used to qualify if a level value is accetable.
+#endif
+
+#define INVALID_LEVEL -5
+
+#if 0
   IO_output has an argument that takes an integer quantity that denotes
   the type(s) of output files requested at that particular call.
 #endif
