@@ -213,13 +213,14 @@
 !!
 !!***
 
-subroutine Grid_getPointData(blockid, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getPointData(block, gridDataStruct, structIndex, beginCount, &
      position, datablock)
-
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
-
-  integer, intent(in) :: blockid, structIndex, beginCount, gridDataStruct
+  
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(in) :: position
   real, intent(out) :: datablock
 
