@@ -213,7 +213,7 @@ subroutine Driver_evolveFlash()
 
            call Grid_getDeltas(level,del)
            Uin => Uout
-           call Hydro(blkLimitsGC,Uin, blkLimits, Uout, del,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+           call Hydro(block,blkLimitsGC,Uin, blkLimits, Uout, del,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
            call Grid_releaseBlkPtr(block, Uout)
            nullify(Uout)
  

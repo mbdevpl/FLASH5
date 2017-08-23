@@ -41,7 +41,7 @@
 !!
 !!***
 
-Subroutine Hydro(blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,  dtOld, sweeporder )
+Subroutine Hydro(block, blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,  dtOld, sweeporder )
 
   use Hydro_data,       ONLY : hy_useHydro, hy_riemannSolver
   use Grid_interface, ONLY : Grid_getDeltas,         &
@@ -59,6 +59,7 @@ Subroutine Hydro(blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,  dtOld
                          hy_gcMask,           &
                          hy_unsplitEosMode,   &
                          hy_eosModeAfter
+  use block_metadata, ONLY : block_metadata_t
                         
 
   implicit none
@@ -72,7 +73,7 @@ Subroutine Hydro(blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,  dtOld
   real, pointer, dimension(:,:,:,:) :: Uout
   real,dimension(MDIM),intent(IN) :: del
   real, pointer, dimension(:,:,:,:) :: Uin
-
+  type(block_metadata_t) :: block
 
 
   if (.not. hy_useHydro) return 

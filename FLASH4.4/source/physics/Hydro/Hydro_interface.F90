@@ -6,7 +6,7 @@
 Module Hydro_interface
 #include "constants.h"
 #include "Flash.h"
-
+ 
   implicit none
 
   interface Hydro_computeDt
@@ -41,8 +41,10 @@ Module Hydro_interface
   end interface
 
   interface Hydro
-     subroutine Hydro (blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+     subroutine Hydro (block, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t) :: block
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
