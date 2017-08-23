@@ -61,7 +61,7 @@
 #define DEBUG_GRID_GCMASK
 
 #include "Flash.h"
-Subroutine hy_uhd_unsplit (Uin,blkLimitGC,&
+Subroutine hy_uhd_unsplit (block,Uin,blkLimitGC,&
                       Uout,blkLimits,&
                       del,dt, dtOld )
 
@@ -119,6 +119,7 @@ Subroutine hy_uhd_unsplit (Uin,blkLimitGC,&
   use Logfile_interface, ONLY : Logfile_stampVarMask
 
   use Timers_interface, ONLY : Timers_start, Timers_stop
+  use block_metadata,   ONLY : block_metadata_t
 
   implicit none
 
@@ -128,6 +129,7 @@ Subroutine hy_uhd_unsplit (Uin,blkLimitGC,&
 
 
   !! ---- Argument List ----------------------------------
+  type(block_metadata_t), intent(IN) :: block
   real,    INTENT(IN) :: dt, dtOld
   integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
   real, dimension(:,:,:,:),pointer :: Uin
@@ -321,29 +323,29 @@ Subroutine hy_uhd_unsplit (Uin,blkLimitGC,&
 
   call Timers_stop("Head")
 
-  do i=1,blockCount             !LOOP 1
+!!$  do i=1,blockCount             !LOOP 1
+!!$
+!!$     blockID = blockList(i)
 
-     blockID = blockList(i)
-
-     if (hy_fluxCorrect .AND. updateEarly) then
-        ! Test whether neighbors are at different refinement levels, and if so,
-        ! decide on what we have to do with this block for flux correction.
-        call Grid_getBlkNeighLevels(blockID,neighLev)
-        myRefine = neighLev(0,0,0)
-        blockNeedsFluxCorrect(blockID) = (neighLev(-1,0,0) < myRefine .OR. neighLev(1,0,0) < myRefine)
-        blockMustStoreFluxes (blockID) = (neighLev(-1,0,0) .NE. myRefine .OR. neighLev(1,0,0) .NE. myRefine)
-#if NDIM > 1
-        blockNeedsFluxCorrect(blockID) = blockNeedsFluxCorrect(blockID) &
-             .OR. (neighLev(0,-1,0) < myRefine .OR. neighLev(0,1,0) < myRefine)
-        blockMustStoreFluxes (blockID) = blockMustStoreFluxes(blockID) &
-             .OR. (neighLev(0,-1,0) .NE. myRefine .OR. neighLev(0,1,0) .NE. myRefine)
-#endif
-#if NDIM > 2
-        blockNeedsFluxCorrect(blockID) = blockNeedsFluxCorrect(blockID) &
-             .OR. (neighLev(0,0,-1) < myRefine .OR. neighLev(0,0,1) < myRefine)
-        blockMustStoreFluxes (blockID) = blockMustStoreFluxes(blockID) &
-             .OR. (neighLev(0,0,-1) .NE. myRefine .OR. neighLev(0,0,1) .NE. myRefine)
-#endif
+!!$     if (hy_fluxCorrect .AND. updateEarly) then
+!!$        ! Test whether neighbors are at different refinement levels, and if so,
+!!$        ! decide on what we have to do with this block for flux correction.
+!!$        call Grid_getBlkNeighLevels(blockID,neighLev)
+!!$        myRefine = neighLev(0,0,0)
+!!$        blockNeedsFluxCorrect(blockID) = (neighLev(-1,0,0) < myRefine .OR. neighLev(1,0,0) < myRefine)
+!!$        blockMustStoreFluxes (blockID) = (neighLev(-1,0,0) .NE. myRefine .OR. neighLev(1,0,0) .NE. myRefine)
+!!$#if NDIM > 1
+!!$        blockNeedsFluxCorrect(blockID) = blockNeedsFluxCorrect(blockID) &
+!!$             .OR. (neighLev(0,-1,0) < myRefine .OR. neighLev(0,1,0) < myRefine)
+!!$        blockMustStoreFluxes (blockID) = blockMustStoreFluxes(blockID) &
+!!$             .OR. (neighLev(0,-1,0) .NE. myRefine .OR. neighLev(0,1,0) .NE. myRefine)
+!!$#endif
+!!$#if NDIM > 2
+!!$        blockNeedsFluxCorrect(blockID) = blockNeedsFluxCorrect(blockID) &
+!!$             .OR. (neighLev(0,0,-1) < myRefine .OR. neighLev(0,0,1) < myRefine)
+!!$        blockMustStoreFluxes (blockID) = blockMustStoreFluxes(blockID) &
+!!$             .OR. (neighLev(0,0,-1) .NE. myRefine .OR. neighLev(0,0,1) .NE. myRefine)
+!!$#endif
      else if (hy_fluxCorrect) then
         blockNeedsFluxCorrect(blockID) = .TRUE.
         blockMustStoreFluxes (blockID) = .TRUE.
@@ -352,9 +354,8 @@ Subroutine hy_uhd_unsplit (Uin,blkLimitGC,&
         blockMustStoreFluxes (blockID) = .FALSE.
      end if
 
-     call Grid_getDeltas(blockID,del)
-     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
-
+!!$     call Grid_getDeltas(blockID,del)
+!!$     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
      datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
      if (hy_fullRiemannStateArrays) then
@@ -387,7 +388,7 @@ Subroutine hy_uhd_unsplit (Uin,blkLimitGC,&
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_uhd_putGravityUnsplit(blockID,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ)
+        call hy_uhd_putGravityUnsplit(blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
@@ -407,7 +408,7 @@ Subroutine hy_uhd_unsplit (Uin,blkLimitGC,&
         end if
 #endif
         call Timers_start("RiemannState")
-        call hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del, &
+        call hy_uhd_getRiemannState(block,Uin,blkLimits,blkLimitsGC,dt,del, &
                                     gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
                                     scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                     hy_SpcR,hy_SpcL,hy_SpcSig)
@@ -595,7 +596,7 @@ Subroutine hy_uhd_unsplit (Uin,blkLimitGC,&
         gravY = 0.
         gravZ = 0.
         if (hy_useGravity) then
-           call hy_uhd_putGravityUnsplit(blockID,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ)
+           call hy_uhd_putGravityUnsplit(block,Uout,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ)
            gravX = gravX/hy_gref
            gravY = gravY/hy_gref
            gravZ = gravZ/hy_gref

@@ -65,7 +65,7 @@
 
 !!REORDER(4):U, V0, scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr, B[xyz]
 
-Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
+Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                                   ogravX,ogravY,ogravZ,&
                                   scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                   hy_SpcR,hy_SpcL,hy_SpcSig,&
@@ -107,6 +107,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
   use Grid_interface,       ONLY : Grid_getBlkPtr,     &
                                    Grid_releaseBlkPtr, &
                                    Grid_getCellCoords
+  use block_metadata,       ONLY : block_metadata_t
 
   implicit none
 
@@ -114,17 +115,13 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 #include "UHD.h"
 
   !! Arguments type declaration ------------------------------------------------------------
-  integer, intent(IN)   :: blockID
+  type(block_metadata_t), intent(IN)   :: block
   integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
   real,    intent(IN)   :: dt
   real,    intent(IN),dimension(MDIM) :: del
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: &
-       ogravX,ogravY,ogravZ
-#else
   real, dimension(blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
        intent(IN) :: ogravX,ogravY,ogravZ
-#endif
+  real, pointer, dimension(:,:,:,:) :: U
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr, scrchFaceYPtr, scrchFaceZPtr
   real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
   logical, intent(IN), optional :: normalFieldUpdate
@@ -134,7 +131,6 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
   integer,dimension(MDIM) :: dataSize
   real    :: cellCfl,minCfl
   logical :: lowerCflAtBdry
-  real, pointer, dimension(:,:,:,:) :: U
   integer :: dir
   integer,parameter :: dirLast=DIR_X+(NDIM-1)
 
@@ -167,13 +163,8 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 #endif
   real :: Sp, dv1, dp1, dp2, presL,presR,hdt
 
-#ifdef FIXEDBLOCKSIZE  
-  real, dimension(GRID_IHI_GC) :: xCenter  
-  real, dimension(GRID_JHI_GC) :: yCenter  
-#else  
   real, dimension(blkLimitsGC(HIGH,IAXIS)) :: xCenter  
   real, dimension(blkLimitsGC(HIGH,JAXIS)) :: yCenter  
-#endif
 
   integer :: k2,k3,kGrav,kHydro,kUSM,order
   integer :: k4,im2,ip2,jm2,jp2,km2,kp2
@@ -212,15 +203,10 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 
   ! GLM fluxes & state updates
 #ifdef FLASH_UGLM_MHD
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC) :: &
-       GLMxStar,GLMyStar,GLMzStar,BxStar,ByStar,BzStar
-#else
   real, dimension(blkLimitsGC(HIGH,IAXIS),&
                   blkLimitsGC(HIGH,JAXIS),&
                   blkLimitsGC(HIGH,KAXIS)) :: &
        GLMxStar,GLMyStar,GLMzStar,BxStar,ByStar,BzStar
-#endif
 #endif /* FLASH_UGLM_MHD */
 
 
@@ -291,18 +277,18 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 !!$  sGeo_magp=0.
 
   !! Get block pointer to UNK data
-  call Grid_getBlkPtr(blockID,U,CENTER)
+!!  call Grid_getBlkPtr(blockID,U,CENTER)
 
 
-  ! MHD only-------------------------------------------------------------------------------
-#if defined(FLASH_USM_MHD) && (NFACE_VARS > 0) && (NDIM > 1)
-  if (hy_order > 1) then
-     call Grid_getBlkPtr(blockID,Bx,FACEX)
-     call Grid_getBlkPtr(blockID,By,FACEY)
-     if (NDIM == 3) call Grid_getBlkPtr(blockID,Bz,FACEZ)
-  endif
-#endif /* endif of if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1 */
-  ! MHD only-------------------------------------------------------------------------------
+!!$  ! MHD only-------------------------------------------------------------------------------
+!!$#if defined(FLASH_USM_MHD) && (NFACE_VARS > 0) && (NDIM > 1)
+!!$  if (hy_order > 1) then
+!!$     call Grid_getBlkPtr(blockID,Bx,FACEX)
+!!$     call Grid_getBlkPtr(blockID,By,FACEY)
+!!$     if (NDIM == 3) call Grid_getBlkPtr(blockID,Bz,FACEZ)
+!!$  endif
+!!$#endif /* endif of if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1 */
+!!$  ! MHD only-------------------------------------------------------------------------------
 
 
 
@@ -310,10 +296,10 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 
      if (hy_geometry /= CARTESIAN) then
         ! Grab cell x-coords for this block  
-        call Grid_getCellCoords(IAXIS,blockID, CENTER,.true.,xCenter, blkLimitsGC(HIGH,IAXIS))
+        call Grid_getCellCoords(IAXIS,block, CENTER,.true.,xCenter, blkLimitsGC(HIGH,IAXIS))
 #if NDIM > 1
         if (hy_geometry == SPHERICAL) &
-             call Grid_getCellCoords(JAXIS,blockID, CENTER,.true.,yCenter, blkLimitsGC(HIGH,JAXIS))
+             call Grid_getCellCoords(JAXIS,block, CENTER,.true.,yCenter, blkLimitsGC(HIGH,JAXIS))
 #endif
      endif
 

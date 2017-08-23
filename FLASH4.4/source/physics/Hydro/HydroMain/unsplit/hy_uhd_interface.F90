@@ -37,26 +37,23 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del, &
+     subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del, &
                                        ogravX,ogravY,ogravZ,&
                                        scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                        hy_SpcR,&
                                        hy_SpcL,hy_SpcSig,normalFieldUpdate)
 
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(IN)   :: blockID
+       type(block_metadata), intent(IN)   :: block
        integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
        real,    intent(IN)   :: dt
        real,    intent(IN),dimension(MDIM) :: del
-#ifdef FIXEDBLOCKSIZE
-       real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) &
-            :: ogravX,ogravY,ogravZ
-#else
        real, dimension(blkLimitsGC(HIGH,IAXIS),  &
                        blkLimitsGC(HIGH,JAXIS),  &
                        blkLimitsGC(HIGH,KAXIS)), &
                        intent(IN) :: ogravX,ogravY,ogravZ
-#endif
+       real,pointer,dimension(:,:,:,:)::U
        real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
        logical, intent(IN), optional :: normalFieldUpdate
@@ -448,11 +445,18 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_unsplit( blockCount, blockList, dt, dtOld )
+     subroutine hy_uhd_unsplit( block,Uin,blkLimitGC,&
+                      Uout,blkLimits,&
+                      del,dt, dtOld )
        implicit none
-       integer, INTENT(IN) :: blockCount  
-       integer, INTENT(IN), dimension(blockCount) :: blockList
+       use block_metadata,   ONLY : block_metadata_t
+
+       type(block_metadata_t), intent(IN) :: block
        real,    INTENT(IN) :: dt, dtOld
+       integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
+       real, dimension(:,:,:,:),pointer :: Uin
+       real,dimension(:,:,:,:), pointer :: Uout
+       real,dimension(MDIM),INTENT(IN) :: del
      end subroutine hy_uhd_unsplit
   end interface
 
@@ -978,9 +982,14 @@ Module hy_uhd_interface
        real,    INTENT(IN) :: dt
      end subroutine hy_uhd_biermannSource
   end interface
-
-
-  
+  interface
+     subroutine hy_uhd_putGravityUnsplit(blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+       integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
+       integer, dimension(MDIM), intent(IN) :: dataSize
+       real,    intent(IN) :: dt, dtOld
+       real,dimension(:,:,:,:),pointer :: Uin
+     end subroutine hy_uhd_putGravityUnsplit
+  end interface
 #endif 
 !endif #ifdef FLASH_USM_MHD
 

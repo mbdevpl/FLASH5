@@ -41,7 +41,7 @@
 !!
 !!***
 
-Subroutine Hydro(Uin,Uout,block,timeEndAdv,dt,dtold,sweepDummy)
+Subroutine Hydro(block, blkLimitsGC, Uin, blockLimits, Uout, del,timeEndAdv,dt,dtold,sweepDummy)
 
   use Hydro_data,       ONLY : hy_useHydro, hy_gpotAlreadyUpToDate
   use hy_uhd_interface, ONLY : hy_uhd_unsplit
@@ -55,13 +55,13 @@ Subroutine Hydro(Uin,Uout,block,timeEndAdv,dt,dtold,sweepDummy)
 
   integer, INTENT(IN) :: sweepOrder
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-  type(block_metadata_t), INTENT(IN) :: block
 
   real, pointer, dimension(:,:,:,:) :: Uout
   real, pointer, dimension(:,:,:,:) :: Uin
 
-  read,dimension(MDIM) :: del
-  integer,dimension(LOW:HIGH,MDIM)::blkLimits,blkLimitsGC
+  read,dimension(MDIM),intent(IN) :: del
+  integer,dimension(LOW:HIGH,MDIM),intent(IN) ::blkLimits,blkLimitsGC 
+  type(block_metadata_t), intent(IN) :: block
   
   hy_gpotAlreadyUpToDate = .FALSE. ! reset this flag, may be set .TRUE. below if warranted.
 
@@ -69,8 +69,7 @@ Subroutine Hydro(Uin,Uout,block,timeEndAdv,dt,dtold,sweepDummy)
 
   call Timers_start("hydro_unsplit")
   
-  del=block%del
-  call hy_uhd_unsplit(Uin,blkLimitGC,&
+<  call hy_uhd_unsplit(block, Uin,blkLimitGC,&
                       Uout,blkLimits,&
                       del,dt, dtOld )
 
