@@ -176,7 +176,6 @@ Module gr_specificData
   integer, save :: gr_sanitizeDataMode, gr_sanitizeVerbosity
   integer,save :: gr_globalOffset !stores beginning blk offset for a proc
 
-
   !A global surr_blks array (gsurr_blks) only makes sense for Paramesh 3 and 4
   !because surr_blks does not exist in Paramesh 2.  We write gsurr_blks
   !to file for Paramesh 3 and 4 and read gsurr_blks from file for Paramesh 4dev

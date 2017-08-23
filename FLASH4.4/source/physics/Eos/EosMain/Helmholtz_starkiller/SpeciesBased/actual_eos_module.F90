@@ -13,31 +13,31 @@ module actual_eos_module
     integer, parameter, public :: imax = 211, jmax = 71
 
     integer            :: itmax,jtmax
-    double precision, public   :: d(imax),t(jmax)
+    real, public   :: d(imax),t(jmax)
 
-    double precision, public :: tlo, thi, tstpp, tstpi
-    double precision, public :: dlo, dhi, dstpp, dstpi
+    real, public :: tlo, thi, tstpp, tstpi
+    real, public :: dlo, dhi, dstpp, dstpi
 
     !..for the helmholtz free energy tables
-    double precision, public :: f(imax,jmax),fd(imax,jmax),                     &
+    real, public :: f(imax,jmax),fd(imax,jmax),                     &
                         ft(imax,jmax),fdd(imax,jmax),ftt(imax,jmax),    &
                         fdt(imax,jmax),fddt(imax,jmax),fdtt(imax,jmax), &
                         fddtt(imax,jmax)
 
     !..for the pressure derivative with density ables
-    double precision, public :: dpdf(imax,jmax),dpdfd(imax,jmax),                &
+    real, public :: dpdf(imax,jmax),dpdfd(imax,jmax),                &
                         dpdft(imax,jmax),dpdfdt(imax,jmax)
 
     !..for chemical potential tables
-    double precision, public :: ef(imax,jmax),efd(imax,jmax),                    &
+    real, public :: ef(imax,jmax),efd(imax,jmax),                    &
                         eft(imax,jmax),efdt(imax,jmax)
 
     !..for the number density tables
-    double precision, public :: xf(imax,jmax),xfd(imax,jmax),                    &
+    real, public :: xf(imax,jmax),xfd(imax,jmax),                    &
                         xft(imax,jmax),xfdt(imax,jmax)
 
     !..for storing the differences
-    double precision, public :: dt_sav(jmax),dt2_sav(jmax),                      &
+    real, public :: dt_sav(jmax),dt2_sav(jmax),                      &
                         dti_sav(jmax),dt2i_sav(jmax),                    &
                         dd_sav(imax),dd2_sav(imax),                      &
                         ddi_sav(imax),dd2i_sav(imax)
@@ -45,63 +45,63 @@ module actual_eos_module
 
     integer          :: max_newton = 100
 
-    double precision :: ttol = 1.0d-8
-    double precision :: dtol = 1.0d-8
+    real :: ttol = 1.0d-8
+    real :: dtol = 1.0d-8
 
     ! 2006 CODATA physical constants
 public
     ! Math constants
-    double precision :: pi       = 3.1415926535897932384d0
-    double precision :: a2rad
-    double precision :: rad2a
+    real :: pi       = 3.1415926535897932384d0
+    real :: a2rad
+    real :: rad2a
 
     ! Physical constants
-    double precision :: h       = 6.6260689633d-27
-    double precision :: hbar
-    double precision :: qe      = 4.8032042712d-10
-    double precision :: avo_eos = 6.0221417930d23
-    double precision :: clight  = 2.99792458d10
-    double precision :: kerg    = 1.380650424d-16
-    double precision :: ev2erg_eos  = 1.60217648740d-12
-    double precision :: kev
-    double precision :: amu     = 1.66053878283d-24
-    double precision :: me_eos  = 9.1093821545d-28
-    double precision :: rbohr
-    double precision :: fine
+    real :: h       = 6.6260689633d-27
+    real :: hbar
+    real :: qe      = 4.8032042712d-10
+    real :: avo_eos = 6.0221417930d23
+    real :: clight  = 2.99792458d10
+    real :: kerg    = 1.380650424d-16
+    real :: ev2erg_eos  = 1.60217648740d-12
+    real :: kev
+    real :: amu     = 1.66053878283d-24
+    real :: me_eos  = 9.1093821545d-28
+    real :: rbohr
+    real :: fine
 
 #ifdef RADIATION
-    double precision :: ssol    = 0.0d0
+    real :: ssol    = 0.0d0
 #else
-    double precision :: ssol    = 5.67051d-5
+    real :: ssol    = 5.67051d-5
 #endif
-    double precision :: asol
-    double precision :: weinlam
-    double precision :: weinfre
+    real :: asol
+    real :: weinlam
+    real :: weinfre
 
     ! Astronomical constants
-    double precision :: ly      = 9.460528d17
-    double precision :: pc
+    real :: ly      = 9.460528d17
+    real :: pc
 
     ! Some other useful combinations of the constants
-    double precision :: sioncon
-    double precision :: forth
-    double precision :: forpi
-    double precision :: kergavo
-    double precision :: ikavo
-    double precision :: asoli3
-    double precision :: light2
+    real :: sioncon
+    real :: forth
+    real :: forpi
+    real :: kergavo
+    real :: ikavo
+    real :: asoli3
+    real :: light2
 
     ! Constants used for the Coulomb corrections
-    double precision :: a1    = -0.898004d0
-    double precision :: b1    =  0.96786d0
-    double precision :: c1    =  0.220703d0
-    double precision :: d1    = -0.86097d0
-    double precision :: e1    =  2.5269d0
-    double precision :: a2    =  0.29561d0
-    double precision :: b2    =  1.9885d0
-    double precision :: c2    =  0.288675d0
-    double precision :: onethird = 1.0d0/3.0d0
-    double precision :: esqu
+    real :: a1    = -0.898004d0
+    real :: b1    =  0.96786d0
+    real :: c1    =  0.220703d0
+    real :: d1    = -0.86097d0
+    real :: e1    =  2.5269d0
+    real :: a2    =  0.29561d0
+    real :: b2    =  1.9885d0
+    real :: c2    =  0.288675d0
+    real :: onethird = 1.0d0/3.0d0
+    real :: esqu
 
     !$acc declare &
     !$acc create(pi, a2rad, rad2a) &
@@ -162,7 +162,7 @@ contains
         type (eos_tp), intent(inout) :: state
 
         !..rows to store EOS data
-        double precision :: temp_row, &
+        real :: temp_row, &
                             den_row, &
                             abar_row, &
                             zbar_row, &
@@ -198,12 +198,12 @@ contains
 
         logical :: single_iter, double_iter, converged
         integer :: var, dvar, var1, var2, iter
-        double precision :: v_want
-        double precision :: v1_want, v2_want
-        double precision :: xnew, xtol, dvdx, smallx, error, v
-        double precision :: v1, v2, dv1dt, dv1dr, dv2dt,dv2dr, delr, error1, error2, told, rold, tnew, rnew, v1i, v2i
+        real :: v_want
+        real :: v1_want, v2_want
+        real :: xnew, xtol, dvdx, smallx, error, v
+        real :: v1, v2, dv1dt, dv1dr, dv2dt,dv2dr, delr, error1, error2, told, rold, tnew, rnew, v1i, v2i
 
-        double precision :: x,y,zz,zzi,deni,tempi,xni,dxnidd,dxnida, &
+        real :: x,y,zz,zzi,deni,tempi,xni,dxnidd,dxnida, &
                             dpepdt,dpepdd,deepdt,deepdd,dsepdd,dsepdt, &
                             dpraddd,dpraddt,deraddd,deraddt,dpiondd,dpiondt, &
                             deiondd,deiondt,dsraddd,dsraddt,dsiondd,dsiondt, &
@@ -215,7 +215,7 @@ contains
                             temp,den,abar,zbar,ytot1,ye
 
         !..for the abar derivatives
-        double precision :: dpradda,deradda,dsradda, &
+        real :: dpradda,deradda,dsradda, &
                             dpionda,deionda,dsionda, &
                             dpepda,deepda,dsepda,    &
                             dpresda,denerda,dentrda, &
@@ -223,7 +223,7 @@ contains
 
 
         !..for the zbar derivatives
-        double precision :: dpraddz,deraddz,dsraddz, &
+        real :: dpraddz,deraddz,dsraddz, &
                             dpiondz,deiondz,dsiondz, &
                             dpepdz,deepdz,dsepdz,    &
                             dpresdz,denerdz,dentrdz ,&
@@ -233,8 +233,8 @@ contains
 
         !..for the interpolations
         integer          :: iat,jat
-        double precision :: free,df_d,df_t,df_tt,df_dt
-        double precision :: xt,xd,mxt,mxd, &
+        real :: free,df_d,df_t,df_tt,df_dt
+        real :: xt,xd,mxt,mxd, &
                             si0t,si1t,si2t,si0mt,si1mt,si2mt, &
                             si0d,si1d,si2d,si0md,si1md,si2md, &
                             dsi0t,dsi1t,dsi2t,dsi0mt,dsi1mt,dsi2mt, &
@@ -243,13 +243,13 @@ contains
                             z,din,fi(36)
 
         !..for the coulomb corrections
-        double precision :: dsdd,dsda,lami,inv_lami,lamida,lamidd,     &
+        real :: dsdd,dsda,lami,inv_lami,lamida,lamidd,     &
                             plasg,plasgdd,plasgdt,plasgda,plasgdz,     &
                             ecoul,decouldd,decouldt,decoulda,decouldz, &
                             pcoul,dpcouldd,dpcouldt,dpcoulda,dpcouldz, &
                             scoul,dscouldd,dscouldt,dscoulda,dscouldz
 
-        double precision :: p_temp, e_temp
+        real :: p_temp, e_temp
 
 
         temp_row = state % T
@@ -1190,57 +1190,57 @@ contains
     ! psi0 and its derivatives
     function psi0(z)
     !$acc routine seq
-        double precision :: z, psi0
+        real :: z, psi0
         psi0 = z**3 * ( z * (-6.0d0*z + 15.0d0) -10.0d0) + 1.0d0
     end function
 
     function dpsi0(z)
     !$acc routine seq
-        double precision :: z, dpsi0
+        real :: z, dpsi0
         dpsi0 = z**2 * ( z * (-30.0d0*z + 60.0d0) - 30.0d0)
     end function
 
     function ddpsi0(z)
     !$acc routine seq
-        double precision :: z, ddpsi0
+        real :: z, ddpsi0
         ddpsi0 = z* ( z*( -120.0d0*z + 180.0d0) -60.0d0)
     end function
 
     ! psi1 and its derivatives
     function psi1(z)
     !$acc routine seq
-        double precision :: z, psi1
+        real :: z, psi1
         psi1 = z* ( z**2 * ( z * (-3.0d0*z + 8.0d0) - 6.0d0) + 1.0d0)
     end function
 
     function dpsi1(z)
     !$acc routine seq
-        double precision :: z, dpsi1
+        real :: z, dpsi1
         dpsi1 = z*z * ( z * (-15.0d0*z + 32.0d0) - 18.0d0) +1.0d0
     end function
 
     function ddpsi1(z)
     !$acc routine seq
-        double precision :: z, ddpsi1
+        real :: z, ddpsi1
         ddpsi1 = z * (z * (-60.0d0*z + 96.0d0) -36.0d0)
     end function
 
     ! psi2  and its derivatives
     function psi2(z)
     !$acc routine seq
-        double precision :: z, psi2
+        real :: z, psi2
         psi2 = 0.5d0*z*z*( z* ( z * (-z + 3.0d0) - 3.0d0) + 1.0d0)
     end function
 
     function dpsi2(z)
     !$acc routine seq
-        double precision :: z, dpsi2
+        real :: z, dpsi2
         dpsi2 = 0.5d0*z*( z*(z*(-5.0d0*z + 12.0d0) - 9.0d0) + 2.0d0)
     end function
 
     function ddpsi2(z)
     !$acc routine seq
-        double precision :: z, ddpsi2
+        real :: z, ddpsi2
         ddpsi2 = 0.5d0*(z*( z * (-20.0d0*z + 36.0d0) - 18.0d0) + 2.0d0)
     end function
 
@@ -1248,8 +1248,8 @@ contains
     ! biquintic hermite polynomial function
     function h5(fi,w0t,w1t,w2t,w0mt,w1mt,w2mt,w0d,w1d,w2d,w0md,w1md,w2md)
     !$acc routine seq
-        double precision :: fi(36)
-        double precision :: w0t,w1t,w2t,w0mt,w1mt,w2mt,w0d,w1d,w2d,w0md,w1md,w2md,h5
+        real :: fi(36)
+        real :: w0t,w1t,w2t,w0mt,w1mt,w2mt,w0d,w1d,w2d,w0md,w1md,w2md,h5
 
         h5 =   fi(1)  *w0d*w0t   + fi(2)  *w0md*w0t &
              + fi(3)  *w0d*w0mt  + fi(4)  *w0md*w0mt &
@@ -1276,13 +1276,13 @@ contains
     ! psi0 & derivatives
     function xpsi0(z)
     !$acc routine seq
-        double precision :: z, xpsi0
+        real :: z, xpsi0
         xpsi0 = z * z * (2.0d0*z - 3.0d0) + 1.0
     end function
 
     function xdpsi0(z)
     !$acc routine seq
-        double precision :: z, xdpsi0
+        real :: z, xdpsi0
         xdpsi0 = z * (6.0d0*z - 6.0d0)
     end function
 
@@ -1290,21 +1290,21 @@ contains
     ! psi1 & derivatives
     function xpsi1(z)
     !$acc routine seq
-        double precision :: z, xpsi1
+        real :: z, xpsi1
         xpsi1 = z * ( z * (z - 2.0d0) + 1.0d0)
     end function
 
     function xdpsi1(z)
     !$acc routine seq
-        double precision :: z, xdpsi1
+        real :: z, xdpsi1
         xdpsi1 = z * (3.0d0*z - 4.0d0) + 1.0d0
     end function
 
     ! bicubic hermite polynomial function
     function h3(fi,w0t,w1t,w0mt,w1mt,w0d,w1d,w0md,w1md)
     !$acc routine seq
-        double precision :: fi(36)
-        double precision :: w0t,w1t,w0mt,w1mt,w0d,w1d,w0md,w1md,h3
+        real :: fi(36)
+        real :: w0t,w1t,w0mt,w1mt,w0d,w1d,w0md,w1md,h3
         h3 =   fi(1)  *w0d*w0t   +  fi(2)  *w0md*w0t &
              + fi(3)  *w0d*w0mt  +  fi(4)  *w0md*w0mt &
              + fi(5)  *w0d*w1t   +  fi(6)  *w0md*w1t &

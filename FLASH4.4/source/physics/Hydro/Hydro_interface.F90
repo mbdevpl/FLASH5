@@ -41,16 +41,15 @@ Module Hydro_interface
   end interface
 
   interface Hydro
-     subroutine Hydro (del,tileLimits,Uout, timeEndAdv, dt, dtOld,  &
-                        sweepOrder )
-
+     subroutine Hydro (blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+          sweepOrder )
+       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
-       real, pointer, dimension(:,:,:,:) :: Uout
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: tileLimits
      end subroutine Hydro
-  end interface
+  end interface Hydro
 
   interface Hydro_init
      subroutine Hydro_init()

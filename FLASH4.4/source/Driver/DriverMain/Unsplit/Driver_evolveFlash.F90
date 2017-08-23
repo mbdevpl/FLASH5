@@ -114,10 +114,10 @@ subroutine Driver_evolveFlash()
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
-  integer, dimension(LOW:HIGH,MDIM) :: tileLimits,blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   integer :: blockCount
   integer,dimension(MAXBLOCKS)::blks
-  real,pointer,dimension(:,:,:,:) :: Uout
+  real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
   type(block_iterator_t) :: itor
@@ -205,15 +205,15 @@ subroutine Driver_evolveFlash()
         do while(itor%is_valid())
            call itor%blkMetaData(block)
 
-           tileLimits = block%limits
+           blkLimits = block%limits
            call Grid_getBlkPtr(block, Uout)
 !!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
 !!$           call amrex_print(abx)
 !!$           tbx = abx
 
            call Grid_getDeltas(level,del)
-           
-           call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+           Uin => Uout
+           call Hydro(blkLimitsGC,Uin, blkLimits, Uout, del,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
            call Grid_releaseBlkPtr(block, Uout)
            nullify(Uout)
  

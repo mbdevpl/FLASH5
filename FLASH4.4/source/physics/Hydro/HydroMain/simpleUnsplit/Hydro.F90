@@ -41,8 +41,7 @@
 !!
 !!***
 
-Subroutine Hydro( del, tileLimits, Uout, timeEndAdv, dt,  dtOld,&
-                  sweepOrder)
+Subroutine Hydro(blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,  dtOld, sweeporder )
 
   use Hydro_data,       ONLY : hy_useHydro, hy_riemannSolver
   use Grid_interface, ONLY : Grid_getDeltas,         &
@@ -66,12 +65,12 @@ Subroutine Hydro( del, tileLimits, Uout, timeEndAdv, dt,  dtOld,&
 
 #include "UHD.h"
 
-  integer, INTENT(IN) :: sweepOrder
+  integer, INTENT(IN),optional :: sweeporder
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
 
-  real,dimension(MDIM),intent(IN) :: del
+  integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits,blkLimitsGC
   real, pointer, dimension(:,:,:,:) :: Uout
-  integer, dimension(LOW:HIGH,MDIM),intent(IN) :: tileLimits
+  real,dimension(MDIM),intent(IN) :: del
   real, pointer, dimension(:,:,:,:) :: Uin
 
 
@@ -80,19 +79,18 @@ Subroutine Hydro( del, tileLimits, Uout, timeEndAdv, dt,  dtOld,&
 
 !!  call Timers_start("hydro_sUnsplit")
 
-  Uin => Uout
   
   select case (hy_riemannSolver)
   case(HLL)
-     call hy_hllUnsplit(tileLimits, Uin, lbound(Uin), Uout, del, dt)
+     call hy_hllUnsplit(blkLimits, Uin, lbound(Uin), Uout, del, dt)
   case(LLF)
-     call hy_llfUnsplit(tileLimits, Uin, Uout, del, dt)
+     call hy_llfUnsplit(blkLimits, Uin, Uout, del, dt)
   case default
      call Driver_abortFlash("Hydro: what?")
   end select
   
   !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
-  call Eos_wrapped(hy_eosModeAfter, tileLimits, Uout)
+  call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout)
 
 
 !!$#ifdef DEBUG_GRID_GCMASK
