@@ -9,6 +9,8 @@
 !!
 !!****
 
+#include "constants.h"
+
 module block_iterator
 
     use amrex_octree_module, ONLY : amrex_octree_iter, &
@@ -28,9 +30,10 @@ module block_iterator
     type, public :: block_iterator_t
         type(amrex_octree_iter) :: oti
         integer                 :: level    = INVALID_LEVEL
-        logical                 :: is_valid = .FALSE.
+        logical                 :: isValid = .FALSE.
     contains
         procedure, public :: is_valid
+        procedure, public :: first
         procedure, public :: next
         procedure, public :: blkMetaData
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
@@ -75,7 +78,7 @@ contains
         if (present(level)) then
             this%level = level
         end if
- 
+
         ! DEVNOTE: the AMReX iterator is not built based on nodetype.
         ! It appears that we get leaves every time.
 
@@ -104,6 +107,28 @@ contains
     end subroutine destroy_iterator
 #endif
 
+    !!****m* block_iterator_t/first
+    !!
+    !! NAME
+    !!  first
+    !!
+    !! SYNPOSIS
+    !!  call itor%first()
+    !!
+    !! DESCRIPTION
+    !!  Reset iterator to the initial block managed by process
+    !!
+    !!****
+    subroutine first(this)
+        class(block_iterator_t), intent(INOUT) :: this
+
+        ! reset to before first valid block
+        call this%oti%clear()   !method added to amrex_octree_iter - KW 2017-08-23
+        this%isValid = .FALSE.  !DEV: ??
+        ! Initial iterator is not primed.  Advance to first compatible block.
+        call this%next()
+    end subroutine first
+
     !!****m* block_iterator_t/is_valid
     !!
     !! NAME
@@ -119,10 +144,11 @@ contains
     !!  True if iterator is currently set to a valid block
     !!
     !!****
-    logical function is_valid(this)
+    function is_valid(this) result(ans)
         class(block_iterator_t), intent(IN) :: this
+        logical :: ans
 
-        return this%is_valid
+        ans = this%isValid
     end function is_valid
 
     !!****m* block_iterator_t/next
@@ -141,16 +167,16 @@ contains
     subroutine next(this)
         class(block_iterator_t), intent(INOUT) :: this
 
-        this%is_valid = this%oti%next()
+        this%isValid = this%oti%next()
 
         if (this%level /= INVALID_LEVEL) then
             ! Search for leaves on given level
-            do while (this%is_valid)
+            do while (this%isValid)
                 if (this%oti%level() == this%level) then
                     exit
                 end if
 
-                this%is_valid = this%oti%next()
+                this%isValid = this%oti%next()
             end do
         end if
     end subroutine next
@@ -169,6 +195,7 @@ contains
     !!
     !!****
     subroutine blkMetaData(this, block)
+        use amrex_box_module, ONLY : amrex_box
         use block_metadata, ONLY : block_metadata_t
 
         class(block_iterator_t), intent(IN)  :: this
@@ -179,12 +206,12 @@ contains
         box = this%oti%box()
 
         ! TODO: Determine if box contains GC or not and finalize limits/limitsGC
-        block.grid_index        = this%oti%grid_index()
-        block.level             = this%oti%level()
-        block.limits(LOW, :)    = box%lo
-        block.limits(HIGH, :)   = box%hi
-        block.limitsGC(LOW, :)  = box%lo
-        block.limitsGC(HIGH, :) = box%hi
+        block%grid_index        = this%oti%grid_index()
+        block%level             = this%oti%level()
+        block%limits(LOW, :)    = box%lo
+        block%limits(HIGH, :)   = box%hi
+        block%limitsGC(LOW, :)  = box%lo
+        block%limitsGC(HIGH, :) = box%hi
     end subroutine blkMetaData
  
 end module block_iterator

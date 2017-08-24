@@ -1,7 +1,7 @@
 REQUESTS Grid/GridBoundaryConditions/Chombo
 REQUIRES Grid/GridMain/Chombo/wrapper
 REQUESTS IO/IOMain/chombo
-LIBRARY chombo
+LIBRARY amrex
 
 # add pre-processor symbol FLASH_GRID_CHOMBO
 PPDEFINE FLASH_GRID_CHOMBO
