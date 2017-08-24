@@ -4,6 +4,9 @@
 REQUIRES Driver
 REQUIRES physics/Hydro
 
+REQUESTS Grid/GridMain/AMR/paramesh/AmrexTransition
+REQUESTS Grid/GridMain/AMR/paramesh/paramesh4/AmrexTransition
+
 USESETUPVARS ThreeT
 
 IF ThreeT
@@ -15,7 +18,6 @@ ELSE
 ENDIF
 
 USESETUPVARS withParticles
-LIBRARY amrex2d
 
 IF withParticles
    PARTICLETYPE passive INITMETHOD lattice MAPMETHOD quadratic ADVMETHOD rungekutta
