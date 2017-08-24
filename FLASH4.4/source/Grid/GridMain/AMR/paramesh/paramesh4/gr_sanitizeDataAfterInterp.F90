@@ -116,7 +116,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   nReorder = 0
   
   ! DEVNOTE: Is it *always* correct to use CENTER here?
-  itor = block_iterator_t(ntype, CENTER)
+  itor = block_iterator_t(ntype)
   do while (itor%is_valid())
      call itor%blkMetaData(block)
      blockID = block%id
