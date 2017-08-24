@@ -1,0 +1,11 @@
+USESETUPVARS nDim
+
+IF nDim==1
+LIBRARY amrex1d
+ELSEIF nDim==2
+LIBRARY amrex2d
+ELSEIF nDim==3
+LIBRARY amrex3d
+ELSE
+LIBRARY amrex2d
+ENDIF
