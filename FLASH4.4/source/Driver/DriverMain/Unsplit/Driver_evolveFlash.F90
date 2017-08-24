@@ -71,6 +71,7 @@ subroutine Driver_evolveFlash()
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
+  use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
@@ -134,7 +135,6 @@ subroutine Driver_evolveFlash()
   type(amrex_multifab),allocatable :: phi_mf(:)
   integer:: ib, blockID, level, maxLev
   integer:: ibLoc, blkLev
-  integer,allocatable :: bpl(:,:) ! array for blocks-per-level (and per proc)
 
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: block
@@ -218,34 +218,33 @@ subroutine Driver_evolveFlash()
      call Timers_start("Hydro")
 
      allocate(phi_mf(maxLev))
-     allocate(bpl(0:dr_meshNumProcs-1,maxLev))
-     bpl(:,:) = 0
+     call gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, LEAF)
      do level=1,maxLev
         print*,' ***************   HYDRO LEVEL', level,'  **********************'
-        call Grid_getLocalNumBlks(localNumBlocks)
-        call Grid_getListOfBlocks(LEAF,blks,blockCount)
-        ibLoc = 0
-        do ib=1,blockCount
-           blockID=blks(ib)
-           call Grid_getBlkRefineLevel(blockID,blkLev)
-           if (blkLev == level) then
-              ibLoc = ibLoc + 1
-              procMapLoc(ibLoc) = dr_meshMe
-              call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
-              call Grid_getBlkCornerID(blockID,cornerID(LOW,:),stride,cornerID(HIGH,:))
-              tileLimits(LOW ,:NDIM) = (cornerID(LOW ,:NDIM)-1) / stride(:NDIM) + 1
-              tileLimits(HIGH,:NDIM) =  cornerID(HIGH,:NDIM) / stride(:NDIM)
-              dimLimits(LOW:HIGH,:,ibLoc) = tileLimits(LOW:HIGH,:NDIM)
-           end if
-        end do
-        bpl(dr_meshMe,level) = ibLoc  ! bpl(dr_meshMe,level) + ibLoc
-        allocate(dm)
-        call amrex_distromap_build(dm,procMapLoc(1:ibLoc))
-        call amrex_print(dm)
-        call amrex_boxarray_build(ba,dimLimits(LOW,:NDIM,1:ibLoc),dimLimits(HIGH,:NDIM,1:ibLoc) )!,ibLoc)
-        call amrex_print(ba)
-        call amrex_multifab_build(phi_mf(level), ba, dm, NUNK_VARS, ng=0)
-        deallocate(dm)
+!!$        call Grid_getLocalNumBlks(localNumBlocks)
+!!$        call Grid_getListOfBlocks(LEAF,blks,blockCount)
+!!$        ibLoc = 0
+!!$        do ib=1,blockCount
+!!$           blockID=blks(ib)
+!!$           call Grid_getBlkRefineLevel(blockID,blkLev)
+!!$           if (blkLev == level) then
+!!$              ibLoc = ibLoc + 1
+!!$              procMapLoc(ibLoc) = dr_meshMe
+!!$              call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
+!!$              call Grid_getBlkCornerID(blockID,cornerID(LOW,:),stride,cornerID(HIGH,:))
+!!$              tileLimits(LOW ,:NDIM) = (cornerID(LOW ,:NDIM)-1) / stride(:NDIM) + 1
+!!$              tileLimits(HIGH,:NDIM) =  cornerID(HIGH,:NDIM) / stride(:NDIM)
+!!$              dimLimits(LOW:HIGH,:,ibLoc) = tileLimits(LOW:HIGH,:NDIM)
+!!$           end if
+!!$        end do
+!!$        bpl(dr_meshMe,level) = ibLoc  ! bpl(dr_meshMe,level) + ibLoc
+!!$        allocate(dm)
+!!$        call amrex_distromap_build(dm,procMapLoc(1:ibLoc))
+!!$        call amrex_print(dm)
+!!$        call amrex_boxarray_build(ba,dimLimits(LOW,:NDIM,1:ibLoc),dimLimits(HIGH,:NDIM,1:ibLoc) )!,ibLoc)
+!!$        call amrex_print(ba)
+!!$        call amrex_multifab_build(phi_mf(level), ba, dm, NUNK_VARS, ng=0)
+!!$        deallocate(dm)
 
         itor = block_iterator_t(LEAF, level=level)
         do while(itor%is_valid())
@@ -285,7 +284,6 @@ subroutine Driver_evolveFlash()
      do level=1,maxLev
         call amrex_multifab_destroy(phi_mf(level))
      end do
-     deallocate(bpl)
      deallocate(phi_mf)
 
      dr_dtOld = dr_dt
