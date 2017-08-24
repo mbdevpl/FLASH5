@@ -39,7 +39,7 @@ Subroutine hy_uhd_putGravityUnsplit(blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,grav
   use Gravity_interface, ONLY : Gravity_accelOneRow
 
   use Hydro_data, ONLY: hy_gpotVar, hy_extraAccelVars
-
+  
   implicit none
 
 #include "Flash.h"

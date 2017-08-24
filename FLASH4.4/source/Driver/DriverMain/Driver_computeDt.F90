@@ -285,7 +285,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
         print*,'going to call Hydro timestep'
 #endif
         !extraHydroInfo = 0.
-        call Hydro_computeDt ( &
+        call Hydro_computeDt (block, &
              xCenter, dx, uxgrid, &
              yCenter, dy, uygrid, &
              zCenter, dz, uzgrid, &

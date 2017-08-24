@@ -61,7 +61,7 @@
 !!REORDER(4): U
 #include "Flash.h"
 #undef FIXEDBLOCKSIZE
-Subroutine Hydro_computeDt( &
+Subroutine Hydro_computeDt(block, &
      x, dx, uxgrid, &
      y, dy, uygrid, &
      z, dz, uzgrid, &
@@ -77,9 +77,11 @@ Subroutine Hydro_computeDt( &
                                hy_useHydro, hy_updateHydroFluxes,     &
                                hy_useVaryingCFL
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
   !! Arguments type declaration ------------------------------------------
+  type(block_metadata_t), intent(IN) :: block
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
 #ifdef FIXEDBLOCKSIZE

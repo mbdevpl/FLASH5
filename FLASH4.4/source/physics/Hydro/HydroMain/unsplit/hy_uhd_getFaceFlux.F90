@@ -116,20 +116,6 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   integer, dimension(MDIM), intent(IN)         :: datasize
   real,    dimension(MDIM), intent(IN)         :: del
 
-#ifdef FIXEDBLOCKSIZE
-  real, intent(OUT) :: xflux (NFLUXES,&
-       GRID_ILO_GC:GRID_IHI_GC, &
-       GRID_JLO_GC:GRID_JHI_GC, &
-       GRID_KLO_GC:GRID_KHI_GC)
-  real, intent(OUT) :: yflux (NFLUXES,&
-       GRID_ILO_GC:GRID_IHI_GC, &
-       GRID_JLO_GC:GRID_JHI_GC, &
-       GRID_KLO_GC:GRID_KHI_GC)
-  real, intent(OUT) :: zflux (NFLUXES,&
-       GRID_ILO_GC:GRID_IHI_GC, &
-       GRID_JLO_GC:GRID_JHI_GC, &
-       GRID_KLO_GC:GRID_KHI_GC)
-#else
   real, intent(OUT) :: xflux (NFLUXES,&
       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
@@ -142,7 +128,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
-#endif
+
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
   real, pointer, dimension(:,:,:,:) :: scrch_Ptr
   real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig

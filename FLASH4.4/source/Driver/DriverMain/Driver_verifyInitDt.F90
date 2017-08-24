@@ -179,8 +179,8 @@ subroutine Driver_verifyInitDt()
            uygrid(:) = 0
            uzgrid(:) = 0
            
-           
-           call Hydro_computeDt ( &
+           print*,'about to call hydro compute dt'
+           call Hydro_computeDt (block, &
                 xCoord, dx, uxgrid, &
                 yCoord, dy, uygrid, &
                 zCoord, dz, uzgrid, &
@@ -188,7 +188,7 @@ subroutine Driver_verifyInitDt()
                 solnData,      &
                 dtCheck(1), dtMinLoc, &
                 extraInfo=extraHydroInfo)
-           
+           print*,'done with hydro compute dt'
 !!$        call Diffuse_computeDt ( blockList(i), &
 !!$             xCoord, xLeft,xRight, dx, uxgrid, &
 !!$             yCoord, yLeft,yRight, dy, uygrid, &
@@ -266,7 +266,7 @@ subroutine Driver_verifyInitDt()
      dr_dtDiffuse = dr_dt
      
   endif
-  
+  print*,'driver verify initdt'
   return
 end subroutine Driver_verifyInitDt
 

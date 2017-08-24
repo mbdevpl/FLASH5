@@ -10,14 +10,16 @@ Module Hydro_interface
   implicit none
 
   interface Hydro_computeDt
-     subroutine Hydro_computeDt ( &
+     subroutine Hydro_computeDt (block, &
           x, dx, uxgrid, &
           y, dy, uygrid, &
           z, dz, uzgrid, &
           blkLimits,blkLimitsGC,  &
           solnData,   &
           dt_check, dt_minloc, extraInfo )
+       use block_metadata, ONLY : block_metadata_t
        implicit none
+       type(block_metadata_t), intent(IN) :: block
        integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
 #ifdef FIXEDBLOCKSIZE
        real, dimension(GRID_ILO_GC:GRID_IHI_GC), intent(IN) :: x, dx, uxgrid

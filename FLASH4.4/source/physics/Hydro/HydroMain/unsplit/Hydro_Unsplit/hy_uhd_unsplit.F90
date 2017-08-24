@@ -216,10 +216,10 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      
      
      !! Detect shocks
-     if (hy_shockDetectOn) call hy_uhd_shockDetect(Uin,blkLimitGC,Uout,blkLimit,del)
+     if (hy_shockDetectOn) call hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del)
      
      if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
-        call hy_uhd_unitConvert(Uin,FWDCONVERT)
+        call hy_uhd_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
      endif
      
 #if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)||defined(CFL_VAR)
@@ -378,11 +378,9 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      end if
 #endif
 
-#ifndef FIXEDBLOCKSIZE
      allocate(gravX(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(gravY(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(gravZ(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-#endif
 
      !! ************************************************************************
      !! Get gravity
@@ -425,12 +423,10 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 
      endif !! End of if (hy_updateHydroFluxes) then
 
-#ifndef FIXEDBLOCKSIZE
      allocate(flx(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(fly(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(flz(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(  faceAreas(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-#endif
 
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
@@ -444,12 +440,11 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 
      call hy_uhd_getFaceFlux(block,blkLimits,blkLimitsGC,datasize,del,&
                              flx,fly,flz,&
-                             scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
-                             hy_SpcR,hy_SpcL)
+                             scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
      call Timers_stop("getFaceFlux")
      !! ************************************************************************
      !! Unsplit update for conservative variables from n to n+1 time step
-#ifndef FLASH_GRID_UG
+!!$#ifndef FLASH_GRID_UG
 !!$     if ((.not. hy_fullRiemannStateArrays) .OR. &
 !!$          (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0) .OR. &
 !!$          .not. blockNeedsFluxCorrect(blockID)) then
@@ -461,7 +456,7 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$        end if
      updateMode = UPDATE_ALL
      call Timers_start("unsplitUpdate")
-     call hy_uhd_unsplitUpdate(block,updateMode,dt,del,datasize,blkLimits,&
+     call hy_uhd_unsplitUpdate(block,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
      call Timers_stop("unsplitUpdate")
@@ -483,7 +478,7 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      
      if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
         !! Convert unit
-        call hy_uhd_unitConvert(Uout,BWDCONVERT)
+        call hy_uhd_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
      endif
      
      !#ifndef FLASH_EOS_GAMMA
@@ -516,14 +511,14 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$              endif
 !!$           endif
 !!$        else ! Cartesian geometry
-     call Grid_putFluxData(block,IAXIS,flx,datasize)
-     if (NDIM > 1) then
-        call Grid_putFluxData(block,JAXIS,fly,datasize)
-        if (NDIM > 2) then
-           call Grid_putFluxData(block,KAXIS,flz,datasize)
-        endif
-     endif
-     
+!!$     call Grid_putFluxData(block,IAXIS,flx,datasize)
+!!$     if (NDIM > 1) then
+!!$        call Grid_putFluxData(block,JAXIS,fly,datasize)
+!!$        if (NDIM > 2) then
+!!$           call Grid_putFluxData(block,KAXIS,flz,datasize)
+!!$        endif
+!!$     endif
+!!$     
      
      deallocate(flx)
      deallocate(fly)
@@ -552,85 +547,85 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      
      
      
-     !! ***************************************************************************
-     !! Third part of advancement                                                 *
-     !! ***************************************************************************
-     !! Do this part only if refining and flux correcting
-     if (hy_fluxCorrect) then
-        
-        !! ************************************************************************
-        !! Conservation of Fluxes at each block boundary
-        call Timers_start("conserveFluxes")
-        call Grid_conserveFluxes(ALLDIR,level)
-        call Timers_stop("conserveFluxes")
-        
-
-        datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
-        allocate(flx(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-        allocate(fly(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-        allocate(flz(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-        allocate(    gravX(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-        allocate(    gravY(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-        allocate(    gravZ(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-        allocate(  faceAreas(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-
-        !! *********************************************************************
-        !! Get gravity
-        gravX = 0.
-        gravY = 0.
-        gravZ = 0.
-        if (hy_useGravity) then
-           call hy_uhd_putGravityUnsplit(block,Uout,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ)
-           gravX = gravX/hy_gref
-           gravY = gravY/hy_gref
-           gravZ = gravZ/hy_gref
-        endif
-
-
-        !! Get modified conserved flux values at block interfaces:
-        !! This is important especially at the block interface at 
-        !! different refinement levels of neighboring blocks
-        flx = 0.
-        fly = 0.
-        flz = 0.
-
+!!$     !! ***************************************************************************
+!!$     !! Third part of advancement                                                 *
+!!$     !! ***************************************************************************
+!!$     !! Do this part only if refining and flux correcting
+!!$     if (hy_fluxCorrect) then
+!!$        
+!!$        !! ************************************************************************
+!!$        !! Conservation of Fluxes at each block boundary
+!!$        call Timers_start("conserveFluxes")
+!!$        call Grid_conserveFluxes(ALLDIR,level)
+!!$        call Timers_stop("conserveFluxes")
+!!$        
+!!$
+!!$        datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
+!!$        allocate(flx(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$        allocate(fly(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$        allocate(flz(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$        allocate(    gravX(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$        allocate(    gravY(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$        allocate(    gravZ(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$        allocate(  faceAreas(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$
+!!$        !! *********************************************************************
+!!$        !! Get gravity
+!!$        gravX = 0.
+!!$        gravY = 0.
+!!$        gravZ = 0.
+!!$        if (hy_useGravity) then
+!!$           call hy_uhd_putGravityUnsplit(block,Uout,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ)
+!!$           gravX = gravX/hy_gref
+!!$           gravY = gravY/hy_gref
+!!$           gravZ = gravZ/hy_gref
+!!$        endif
+!!$
+!!$
+!!$        !! Get modified conserved flux values at block interfaces:
+!!$        !! This is important especially at the block interface at 
+!!$        !! different refinement levels of neighboring blocks
+!!$        flx = 0.
+!!$        fly = 0.
+!!$        flz = 0.
+!!$
 !!$        if (hy_fullRiemannStateArrays) then
 !!$           call hy_memGetBlkPtr(blockID,scrchFaceXPtr,SCRATCH_FACEX)
 !!$           if (NDIM > 1) call hy_memGetBlkPtr(blockID,scrchFaceYPtr,SCRATCH_FACEY)
 !!$           if (NDIM > 2) call hy_memGetBlkPtr(blockID,scrchFaceZPtr,SCRATCH_FACEZ)
 !!$        endif
-
-        if (hy_fullRiemannStateArrays) then
-           flx(HY_DENS_FLUX:HY_END_FLUX,&
-                blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-                blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),&
-                blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))&
-              =scrchFaceXPtr(HY_P01_FACEXPTR_VAR:HY_P01_FACEXPTR_VAR+HY_SCRATCH_NUM-1,&
-                         blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-                         blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),&
-                         blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
-#if NDIM > 1
-           fly(HY_DENS_FLUX:HY_END_FLUX,&
-                blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-                blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,&
-                blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))&
-              =scrchFaceYPtr(HY_P01_FACEYPTR_VAR:HY_P01_FACEYPTR_VAR+HY_SCRATCH_NUM-1,&
-                         blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-                         blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,&
-                         blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
-#if NDIM == 3
-           flz(HY_DENS_FLUX:HY_END_FLUX,&
-                blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-                blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),&
-                blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)+1)&
-              =scrchFaceZPtr(HY_P01_FACEZPTR_VAR:HY_P01_FACEZPTR_VAR+HY_SCRATCH_NUM-1,&
-                         blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-                         blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),&
-                         blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)+1)
-#endif
-#endif
-        endif
-
+!!$
+!!$        if (hy_fullRiemannStateArrays) then
+!!$           flx(HY_DENS_FLUX:HY_END_FLUX,&
+!!$                blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
+!!$                blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),&
+!!$                blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))&
+!!$              =scrchFaceXPtr(HY_P01_FACEXPTR_VAR:HY_P01_FACEXPTR_VAR+HY_SCRATCH_NUM-1,&
+!!$                         blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
+!!$                         blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),&
+!!$                         blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
+!!$#if NDIM > 1
+!!$           fly(HY_DENS_FLUX:HY_END_FLUX,&
+!!$                blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!!$                blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,&
+!!$                blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))&
+!!$              =scrchFaceYPtr(HY_P01_FACEYPTR_VAR:HY_P01_FACEYPTR_VAR+HY_SCRATCH_NUM-1,&
+!!$                         blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!!$                         blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,&
+!!$                         blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
+!!$#if NDIM == 3
+!!$           flz(HY_DENS_FLUX:HY_END_FLUX,&
+!!$                blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!!$                blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),&
+!!$                blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)+1)&
+!!$              =scrchFaceZPtr(HY_P01_FACEZPTR_VAR:HY_P01_FACEZPTR_VAR+HY_SCRATCH_NUM-1,&
+!!$                         blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!!$                         blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),&
+!!$                         blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)+1)
+!!$#endif
+!!$#endif
+!!$        endif
+!!$
 !!$        if (hy_geometry /= CARTESIAN) then
 !!$           call Grid_getBlkData(blockID,CELL_FACEAREA,ILO_FACE, EXTERIOR, &
 !!$                                (/1,1,1/), faceAreas, datasize)
@@ -638,173 +633,173 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$           call Grid_getFluxData(blockID,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
 !!$
 !!$        else
-           call Grid_getFluxData(block,IAXIS,flx,datasize)
+!!$           call Grid_getFluxData(block,IAXIS,flx,datasize)
 !!$        endif
-
-#if NDIM > 1
+!!$
+!!$#if NDIM > 1
 !!$        if (hy_geometry /= CARTESIAN) then
 !!$           call Grid_getBlkData(blockID,CELL_FACEAREA,JLO_FACE, EXTERIOR, &
 !!$                                (/1,1,1/), faceAreas, datasize)
 !!$           call Grid_getFluxData(blockID,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
 !!$        else
-           call Grid_getFluxData(block,JAXIS,fly,datasize)
+!!$           call Grid_getFluxData(block,JAXIS,fly,datasize)
 !!$        endif
-#if NDIM > 2
-        if (hy_geometry /= CARTESIAN) then
-           call Grid_getBlkData(blockID,CELL_FACEAREA,KLO_FACE, EXTERIOR, &
-                                (/1,1,1/), faceAreas, datasize)
-           call Grid_getFluxData(blockID,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
-        else
-           call Grid_getFluxData(blockID,KAXIS,flz,datasize)
-        endif
-#endif
-#endif
-
-        if (hy_fullRiemannStateArrays) then
-           call hy_memReleaseBlkPtr(blockID,scrchFaceXPtr,SCRATCH_FACEX)
-           if (NDIM > 1) call hy_memReleaseBlkPtr(blockID,scrchFaceYPtr,SCRATCH_FACEY)
-           if (NDIM > 2) call hy_memReleaseBlkPtr(blockID,scrchFaceZPtr,SCRATCH_FACEZ)
-        endif
-
-        call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR)
-        !! *********************************************************************
-        !! Unsplit update for conservative variables from n to n+1 time step
-        if (.not. hy_fullRiemannStateArrays .OR. (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0)) then
-           updateMode=UPDATE_BOUND
-        else
-           updateMode=UPDATE_ALL
-        endif
-        call Timers_start("unsplitUpdate")
-        call hy_uhd_unsplitUpdate(block,updateMode,dt,del,datasize,blkLimits,&
-                                  blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
-                                  scrch_Ptr)
-        call Timers_stop("unsplitUpdate")
+!!$#if NDIM > 2
+!!$        if (hy_geometry /= CARTESIAN) then
+!!$           call Grid_getBlkData(blockID,CELL_FACEAREA,KLO_FACE, EXTERIOR, &
+!!$                                (/1,1,1/), faceAreas, datasize)
+!!$           call Grid_getFluxData(blockID,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
+!!$        else
+!!$           call Grid_getFluxData(blockID,KAXIS,flz,datasize)
+!!$        endif
+!!$#endif
+!!$#endif
+!!$
+!!$        if (hy_fullRiemannStateArrays) then
+!!$           call hy_memReleaseBlkPtr(blockID,scrchFaceXPtr,SCRATCH_FACEX)
+!!$           if (NDIM > 1) call hy_memReleaseBlkPtr(blockID,scrchFaceYPtr,SCRATCH_FACEY)
+!!$           if (NDIM > 2) call hy_memReleaseBlkPtr(blockID,scrchFaceZPtr,SCRATCH_FACEZ)
+!!$        endif
+!!$
+!!$        call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR)
+!!$        !! *********************************************************************
+!!$        !! Unsplit update for conservative variables from n to n+1 time step
+!!$        if (.not. hy_fullRiemannStateArrays .OR. (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0)) then
+!!$           updateMode=UPDATE_BOUND
+!!$        else
+!!$           updateMode=UPDATE_ALL
+!!$        endif
+!!$        call Timers_start("unsplitUpdate")
+!!$        call hy_uhd_unsplitUpdate(block,updateMode,dt,del,datasize,blkLimits,&
+!!$                                  blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
+!!$                                  scrch_Ptr)
+!!$        call Timers_stop("unsplitUpdate")
 !!$#ifdef FLASH_UHD_3T
 !!$        call Timers_start("unsplitUpdate 3T")
 !!$        call hy_uhd_unsplitUpdateMultiTemp&
 !!$             (blockID,updateMode,blkLimits, dataSize, dt, del, flx, fly, flz, scrch_Ptr)
 !!$        call Timers_stop("unsplitUpdate 3T")
 !!$#endif
-
-#ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
-        !! *********************************************************************
-        !! Correct energy if necessary
+!!$
+!!$#ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
+!!$        !! *********************************************************************
+!!$        !! Correct energy if necessary
 !!$        call hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
-
-        !! *********************************************************************
-        !! Convert units if necessary
-        if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
-           !! Convert units
-           call hy_uhd_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
-        endif
-
-
-        !! *********************************************************************
-        !! Call to Eos
-        call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
-#endif /* if gravity is included, we calculate gravity for n+1 in the below */
-
+!!$
+!!$        !! *********************************************************************
+!!$        !! Convert units if necessary
+!!$        if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
+!!$           !! Convert units
+!!$           call hy_uhd_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
+!!$        endif
+!!$
+!!$
+!!$        !! *********************************************************************
+!!$        !! Call to Eos
+!!$        call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
+!!$#endif /* if gravity is included, we calculate gravity for n+1 in the below */
+!!$
 !!$        call hy_memReleaseBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR)
-
-        deallocate(flx)
-        deallocate(fly)
-        deallocate(flz)
-        deallocate(gravX)
-        deallocate(gravY)
-        deallocate(gravZ)
-        deallocate(faceAreas)
-        
-     end if !! End of the flux conservation routine
-
-     call Timers_start("tail")
-     
+!!$
+!!$        deallocate(flx)
+!!$        deallocate(fly)
+!!$        deallocate(flz)
+!!$        deallocate(gravX)
+!!$        deallocate(gravY)
+!!$        deallocate(gravZ)
+!!$        deallocate(faceAreas)
+!!$        
+!!$     end if !! End of the flux conservation routine
+!!$
+!!$     call Timers_start("tail")
+!!$     
 !!$     if (hy_fullRiemannStateArrays) then
 !!$        call hy_memDeallocScratch(SCRATCH_FACEX)
 !!$        if (NDIM > 1) call hy_memDeallocScratch(SCRATCH_FACEY)
 !!$        if (NDIM > 2) call hy_memDeallocScratch(SCRATCH_FACEZ)
 !!$     endif
-
-
-#ifdef GRAVITY /* Perform this only when gravity is used */
-  !! ***************************************************************************
-  !! Fourth part of advancement to compute gravity at n+1 state                *
-  !! ***************************************************************************
-
-#ifdef GPOT_VAR
-  if (hy_useGravity) then
-     ! The following call invokes Gravity_potentialListOfBlocks and related stuff,
-     ! to prepare for retrieving updated accelerations below.
-     call hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
-  endif
-#endif
-
-
-  !! Proceed to couple the updated gravitational accelerations 
-  !! to energy and momenta on each block (see hy_uhd_addGravityUnsplit)
-  do i = 1,blockCount           !LOOP 5
-
-     blockID = blockList(i)
-     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
-     call Grid_getDeltas(blockID,del)
-
-     datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
-#ifndef FIXEDBLOCKSIZE
-     allocate(gravX(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-     allocate(gravY(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-     allocate(gravZ(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-#endif
-
-     !! *********************************************************************
-     !! Get and add gravity to hydro variables (momenta and energy)         *
-     !! *********************************************************************
-     gravX = 0.
-     gravY = 0.
-     gravZ = 0.
-     if (hy_useGravity) then
-
-        call hy_uhd_putGravityUnsplit(blockID,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ,&
-             lastCall=.TRUE.)
-        gravX = gravX/hy_gref
-        gravY = gravY/hy_gref
-        gravZ = gravZ/hy_gref
-
-        call hy_uhd_addGravityUnsplit(blockID,blkLimits,dataSize,dt,&
-             gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:))
-     endif
-
-     !! *********************************************************************
-     !! Correct energy if necessary
+!!$
+!!$
+!!$#ifdef GRAVITY /* Perform this only when gravity is used */
+!!$  !! ***************************************************************************
+!!$  !! Fourth part of advancement to compute gravity at n+1 state                *
+!!$  !! ***************************************************************************
+!!$
+!!$#ifdef GPOT_VAR
+!!$  if (hy_useGravity) then
+!!$     ! The following call invokes Gravity_potentialListOfBlocks and related stuff,
+!!$     ! to prepare for retrieving updated accelerations below.
+!!$     call hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
+!!$  endif
+!!$#endif
+!!$
+!!$
+!!$  !! Proceed to couple the updated gravitational accelerations 
+!!$  !! to energy and momenta on each block (see hy_uhd_addGravityUnsplit)
+!!$  do i = 1,blockCount           !LOOP 5
+!!$
+!!$     blockID = blockList(i)
+!!$     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
+!!$     call Grid_getDeltas(blockID,del)
+!!$
+!!$     datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
+!!$#ifndef FIXEDBLOCKSIZE
+!!$     allocate(gravX(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$     allocate(gravY(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$     allocate(gravZ(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+!!$#endif
+!!$
+!!$     !! *********************************************************************
+!!$     !! Get and add gravity to hydro variables (momenta and energy)         *
+!!$     !! *********************************************************************
+!!$     gravX = 0.
+!!$     gravY = 0.
+!!$     gravZ = 0.
+!!$     if (hy_useGravity) then
+!!$
+!!$        call hy_uhd_putGravityUnsplit(blockID,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ,&
+!!$             lastCall=.TRUE.)
+!!$        gravX = gravX/hy_gref
+!!$        gravY = gravY/hy_gref
+!!$        gravZ = gravZ/hy_gref
+!!$
+!!$        call hy_uhd_addGravityUnsplit(blockID,blkLimits,dataSize,dt,&
+!!$             gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:))
+!!$     endif
+!!$
+!!$     !! *********************************************************************
+!!$     !! Correct energy if necessary
 !!$     call hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
-
-     !! *********************************************************************
-     !! Convert units if necessary
-     if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
-        !! Convert units
-        call hy_uhd_unitConvert(blockID,BWDCONVERT)
-     endif
-
-     !! *********************************************************************
-     !! Call to Eos
-     call Eos_wrapped(hy_eosModeAfter, blkLimits, blockID)
-
-#ifndef FIXEDBLOCKSIZE
-     deallocate(gravX)
-     deallocate(gravY)
-     deallocate(gravZ)
-#endif
-
-  end do !! End of the loop over blocks
-#endif /* End of n+1 gravity coupling */
-
-
-
-
-  ! Do 3T update...
+!!$
+!!$     !! *********************************************************************
+!!$     !! Convert units if necessary
+!!$     if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
+!!$        !! Convert units
+!!$        call hy_uhd_unitConvert(blockID,BWDCONVERT)
+!!$     endif
+!!$
+!!$     !! *********************************************************************
+!!$     !! Call to Eos
+!!$     call Eos_wrapped(hy_eosModeAfter, blkLimits, blockID)
+!!$
+!!$#ifndef FIXEDBLOCKSIZE
+!!$     deallocate(gravX)
+!!$     deallocate(gravY)
+!!$     deallocate(gravZ)
+!!$#endif
+!!$
+!!$  end do !! End of the loop over blocks
+!!$#endif /* End of n+1 gravity coupling */
+!!$
+!!$
+!!$
+!!$
+!!$  ! Do 3T update...
 !!$#ifdef FLASH_UHD_3T
 !!$  call hy_uhd_multiTempAfter(blockCount, blockList, dt)
 !!$#endif
-
-  call hy_memDeallocScratch()
+!!$
+!!$  call hy_memDeallocScratch()
 
   call Driver_getSimTime(hy_simTime, hy_simGeneration)
 

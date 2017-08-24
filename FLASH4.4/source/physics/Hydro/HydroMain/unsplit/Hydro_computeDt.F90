@@ -60,7 +60,7 @@
 
 !!REORDER(4): U
 
-Subroutine Hydro_computeDt( blockID,       &
+Subroutine Hydro_computeDt( block,       &
                             x, dx, uxgrid, &
                             y, dy, uygrid, &
                             z, dz, uzgrid, &
@@ -80,10 +80,11 @@ Subroutine Hydro_computeDt( blockID,       &
        hy_geometry, hy_units, hy_useVaryingCFL
   use Grid_interface, ONLY : Grid_getBlkBC
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
   !! Arguments type declaration ------------------------------------------
-  integer, intent(IN) :: blockID 
+  type(block_metadata_t), intent(IN) :: block 
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
 #ifdef FIXEDBLOCKSIZE
@@ -112,7 +113,7 @@ Subroutine Hydro_computeDt( blockID,       &
   if ((.not. hy_useHydro) .or. (.not. hy_updateHydroFluxes)) return
 
   !! Case 2a: we pass the already computed dt information to Driver_computeDt
-  !!          if it appears valid and the saved location's block ID matches the blockID argument.
+  !!          if it appears valid and the saved location's block ID matches the block argument.
   !!         In this case, hydro dt gets computed in either 
   !!          (i) hy_uhd_energyFix (hy_hydroComputeDtOption=0), or 
   !!         (ii) hy_uhd_getFaceFlux (hy_hydroComputeDtOption=1)
@@ -121,7 +122,7 @@ Subroutine Hydro_computeDt( blockID,       &
        hy_dtminValid .and. &
       (.not. hy_hydroComputeDtFirstCall .OR. hy_restart)) then
      dtCflLoc = hy_cfl
-     if ( hy_dtmin < dtCheck .AND. hy_dtminloc(4) == blockID) then
+     if ( hy_dtmin < dtCheck .AND. hy_dtminloc(4) == block%id) then
         dtCheck  = hy_dtmin
         dtMinLoc = hy_dtminloc(1:5)
         dtCflLoc = hy_dtminCfl
@@ -200,7 +201,7 @@ Subroutine Hydro_computeDt( blockID,       &
                  if (hy_cflStencil<1) then
                     localCfl = U(CFL_VAR,i,j,k)
                  else
-                    call Grid_getBlkBC(blockID,bcs)
+                    call Grid_getBlkBC(block,bcs)
                     imS=max(blkLimitsGC(LOW,IAXIS), i-hy_cflStencil)
                     ipS=min(blkLimitsGC(HIGH,IAXIS),i+hy_cflStencil)
                     
@@ -273,7 +274,7 @@ Subroutine Hydro_computeDt( blockID,       &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = block%id
                     temploc(5) = hy_meshMe
                  endif
 #ifdef BDRY_VAR
