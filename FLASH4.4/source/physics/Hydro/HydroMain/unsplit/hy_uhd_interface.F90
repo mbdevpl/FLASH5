@@ -45,7 +45,7 @@ Module hy_uhd_interface
 
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata), intent(IN)   :: block
+       type(block_metadata_t), intent(IN)   :: block
        integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
        real,    intent(IN)   :: dt
        real,    intent(IN),dimension(MDIM) :: del
@@ -73,12 +73,13 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
+     subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                                      xflux, yflux,zflux,&
                                      scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                      hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(IN)  :: blockID
+       integer, intent(IN)  :: block
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        integer, dimension(MDIM), intent(IN)         :: datasize
        real,    dimension(MDIM), intent(IN)         :: del
@@ -119,7 +120,7 @@ Module hy_uhd_interface
 
 
   interface
-     Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
+     Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
                                           dt,del,ogravX,ogravY,ogravZ,&
                                           DivU,FlatCoeff,   &
                                           TransX_updateOnly,&
@@ -129,25 +130,21 @@ Module hy_uhd_interface
                                           lambda,leftEig,rghtEig,&
                                           cellCfl,&
                                           hy_SpcR,hy_SpcL,hy_SpcSig)
+       use block_metadata,   ONLY : block_metadata_t
 
        implicit none
-       integer,intent(IN) :: blockID
+       type(block_metadata_t),intent(IN) :: block
+       real,dimension(:,:,:,:),pointer :: U
        integer,intent(IN),dimension(LOW:HIGH,MDIM):: blkLimitsGC
        integer,intent(IN) :: order,ix,iy,iz
        real,   intent(IN) :: dt
        real,   intent(IN), dimension(MDIM) :: del
-#ifdef FIXEDBLOCKSIZE
-       real, dimension(     GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN), target :: ogravX,ogravY,ogravZ
-       real, dimension(NDIM,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: FlatCoeff
-       real, dimension(     GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: DivU
-#else
        real, dimension(blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
             intent(IN), target :: ogravX,ogravY,ogravZ
        real, dimension(NDIM,blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
             intent(IN) :: FlatCoeff
        real, dimension(blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
             intent(IN) :: DivU
-#endif
        logical, intent(IN) ::  TransX_updateOnly, TransY_updateOnly, TransZ_updateOnly
        real, dimension(HY_VARINUMMAX,           NDIM),intent(OUT) :: Wp, Wn
        real, dimension(HY_VARINUMMAX,           NDIM),intent(OUT) :: sig
@@ -377,9 +374,11 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_setMinTimeStep(blockID,i,j,k,delta,speed)
+     subroutine hy_uhd_setMinTimeStep(block,i,j,k,delta,speed)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, INTENT(in) :: blockID,i,j,k
+       type(block_metadata_t), intent(IN)   :: block
+       integer, INTENT(in) :: i,j,k
        real, INTENT(in) :: delta,speed
      end subroutine hy_uhd_setMinTimeStep
   end interface
@@ -445,11 +444,11 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_unsplit( block,Uin,blkLimitGC,&
+     subroutine hy_uhd_unsplit( block,Uin,blkLimitsGC,&
                       Uout,blkLimits,&
                       del,dt, dtOld )
-       implicit none
        use block_metadata,   ONLY : block_metadata_t
+       implicit none
 
        type(block_metadata_t), intent(IN) :: block
        real,    INTENT(IN) :: dt, dtOld
@@ -463,11 +462,12 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_unsplitUpdate(blockID,rangeSwitch,dt,del,dataSize,blkLimits,&    
+     subroutine hy_uhd_unsplitUpdate(block,rangeSwitch,dt,del,dataSize,blkLimits,&    
                                      blkLimitsGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                      scrch_Ptr)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer,intent(IN) :: blockID
+       type(block_metadata_t), intent(IN)   :: block
        integer,intent(IN) :: rangeSwitch
        real, intent(IN)   :: dt
        real, intent(IN)   :: del(MDIM)
@@ -497,13 +497,15 @@ Module hy_uhd_interface
 
     interface
        subroutine hy_uhd_unsplitUpdateMultiTemp&
-            (blockID,rangeSwitch,blkLimits,datasize,dt,del,xflux,yflux,zflux, scrch_Ptr)
-         implicit none
-         integer,intent(IN) :: blockID, rangeSwitch
-         integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
-         integer,intent(IN) :: datasize(MDIM)      
-         real, intent(IN) :: dt
-         real, intent(IN) :: del(MDIM)
+            (block,rangeSwitch,blkLimits,datasize,dt,del,xflux,yflux,zflux, scrch_Ptr)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN)   :: block
+       integer,intent(IN) :: rangeSwitch
+       integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
+       integer,intent(IN) :: datasize(MDIM)      
+       real, intent(IN) :: dt
+       real, intent(IN) :: del(MDIM)
 #ifdef FIXEDBLOCKSIZE
          real, intent(in) :: xflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
          real, intent(in) :: yflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
@@ -572,9 +574,12 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,eosMode)
+     subroutine hy_uhd_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
+
        implicit none
-       integer, intent(IN) :: blockID
+       
+       integer, intent(IN) :: block
+       real, pointer, dimension(:,:,:,:) :: U
        integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
        real, intent(IN) :: dt,dtOld
        real, dimension(MDIM), intent(IN) :: del
@@ -585,9 +590,11 @@ Module hy_uhd_interface
 
 
   interface 
-     subroutine hy_uhd_unitConvert(blockID,convertDir)
+     subroutine hy_uhd_unitConvert(Uin,blkLimitsGC,convertDir)
        implicit none
-       integer, intent(IN) :: blockID, convertDir
+       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC
+       integer, intent(IN) :: convertDir
+       real, dimension(:,:,:,:) :: Uin
      end subroutine hy_uhd_unitConvert
   end interface
   
@@ -595,9 +602,11 @@ Module hy_uhd_interface
 
   interface
      subroutine hy_uhd_addViscousFluxes&
-          (blockID,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
+          (block,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, INTENT(IN) :: blockID,ix,iy,iz
+       type(block_metadata_t), intent(IN)   :: block
+       integer, INTENT(IN) :: ix,iy,iz
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
 #ifdef FIXEDBLOCKSIZE 
@@ -618,9 +627,11 @@ Module hy_uhd_interface
 
   interface
      subroutine hy_uhd_addThermalFluxes&
-          (blockID,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
+          (block,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, INTENT(IN) :: blockID,ix,iy,iz
+       type(block_metadata_t), intent(IN)   :: block
+       integer, INTENT(IN) :: ix,iy,iz
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
 #ifdef FIXEDBLOCKSIZE 
@@ -693,10 +704,11 @@ Module hy_uhd_interface
 
     interface
        subroutine hy_uhd_putGravityUnsplit&
-            (blockID,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
+            (block,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
              lastCall)
+       use block_metadata, ONLY : block_metadata_t
          implicit none
-         integer, intent(IN) :: blockID
+         type(block_metadata_t), intent(IN)   :: block
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
          integer, dimension(MDIM), intent(IN) :: dataSize
          real,    intent(IN) :: dt, dtOld
@@ -716,9 +728,10 @@ Module hy_uhd_interface
 
     interface
        Subroutine hy_uhd_addGravityUnsplit&
-            (blockID,blkLimitsGC,dataSize,dt,gravX,gravY,gravZ)
+            (block,blkLimitsGC,dataSize,dt,gravX,gravY,gravZ)
+         use block_metadata, ONLY : block_metadata_t
          implicit none
-         integer, intent(IN) :: blockID
+         type(block_metadata_t), intent(IN)   :: block
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
          integer, dimension(MDIM), intent(IN) :: dataSize
          real,    intent(IN) :: dt
@@ -735,11 +748,14 @@ Module hy_uhd_interface
 
 
     interface
-       subroutine hy_uhd_shockDetect(blockID)
-         implicit none
-         integer, INTENT(IN) :: blockID
-       end subroutine hy_uhd_shockDetect
-    end interface
+       subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
+       implicit none
+       integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
+       real, dimension(:,:,:,:),INTENT(INOUT) :: Uin
+       real,dimension(:,:,:,:),INTENT(OUT) :: Uout
+       real,dimension(MDIM),INTENT(IN) :: del
+     end subroutine hy_uhd_shockDetect
+  end interface
 
 
 
@@ -789,9 +805,10 @@ Module hy_uhd_interface
 
 #ifdef FLASH_UGLM_MHD
     interface
-       Subroutine hy_uhd_updateSourceGLM(blockID,dt,del,blkLimits,blkLimitsGC,C_hyp,C_par)
+       Subroutine hy_uhd_updateSourceGLM(block,dt,del,blkLimits,blkLimitsGC,C_hyp,C_par)
+       use block_metadata, ONLY : block_metadata_t
          implicit none
-         integer, intent(IN) :: blockID
+         type(block_metadata_t), intent(IN)   :: block
          real,    intent(IN) :: dt
          real,    dimension(MDIM),   intent(IN) :: del
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
@@ -827,9 +844,11 @@ Module hy_uhd_interface
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
   interface
      subroutine hy_uhd_addResistiveFluxes&
-          (blockID,blkLimitsGC,ix,iy,iz,Flux,eta,sweepDir)
+          (block,blkLimitsGC,ix,iy,iz,Flux,eta,sweepDir)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, INTENT(IN) :: blockID,ix,iy,iz
+       type(block_metadata_t), intent(IN)   :: block
+       integer, INTENT(IN) :: block,ix,iy,iz
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
 #ifdef FIXEDBLOCKSIZE 
@@ -850,9 +869,11 @@ Module hy_uhd_interface
 
   interface
      subroutine hy_uhd_addOhmicHeating&
-          (blockID,blkLimits,ix,iy,iz,Qohm,eta)
+          (block,blkLimits,ix,iy,iz,Qohm,eta)
+       use block_metadata, ONLY : block_metadata_t
      implicit none
-     integer, INTENT(IN) :: blockID,ix,iy,iz
+     type(block_metadata_t), intent(IN)   :: block
+     integer, INTENT(IN) :: block,ix,iy,iz
      integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits
      real, intent(INOUT) :: Qohm
      real, intent(IN)    :: eta  
@@ -861,9 +882,11 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_staggeredDivb(blockID,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
+     subroutine hy_uhd_staggeredDivb(block,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(IN) :: blockID
+       type(block_metadata_t), intent(IN)   :: block
+       integer, intent(IN) :: block
        real,    intent(IN) :: dt
        real,    dimension(MDIM),   intent(IN) :: del
        integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
@@ -887,9 +910,10 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_getElectricFields( blockID,blkLimits,blkLimitsGC,del,flx,fly,flz)
+     subroutine hy_uhd_getElectricFields( block,blkLimits,blkLimitsGC,del,flx,fly,flz)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(IN)  :: blockID
+       type(block_metadata_t), intent(IN)   :: block
        integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
        real,    intent(IN), dimension(MDIM)  :: del  
 #ifdef FIXEDBLOCKSIZE
@@ -912,12 +936,14 @@ Module hy_uhd_interface
 
   interface
      subroutine hy_uhd_getCurrents( &
-        blockID, rangeSwitch, blkLimits,datasize, del, Jp, Jm, mode_switch,&
+        block, rangeSwitch, blkLimits,datasize, del, Jp, Jm, mode_switch,&
         scrch_Ptr,&
         ix,iy,iz)
+       use block_metadata, ONLY : block_metadata_t
         implicit none
         ! Arguments:
-        integer,intent(in) :: blockID, rangeSwitch
+         type(block_metadata_t), intent(IN)   :: block
+        integer,intent(in) :: block, rangeSwitch
         integer,intent(in) :: blkLimits  (LOW:HIGH,MDIM)
         integer,intent(in) :: datasize(MDIM), mode_switch
         real,   intent(in) :: del(MDIM)
@@ -965,9 +991,12 @@ Module hy_uhd_interface
 
 
   interface
-     Subroutine hy_uhd_addBiermannBatteryTerms(blockID,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
+     Subroutine hy_uhd_addBiermannBatteryTerms(block,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, INTENT(IN) :: blockID,ix,iy,iz
+       integer, INTENT(IN) :: ix,iy,iz
+       type(block_metadata_t), intent(IN)   :: block
+       
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
        integer, INTENT(IN) :: sweepDir

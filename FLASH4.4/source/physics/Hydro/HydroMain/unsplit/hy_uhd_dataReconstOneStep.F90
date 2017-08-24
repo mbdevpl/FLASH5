@@ -6,7 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_dataReconstOneStep(integer(IN) :: blockID,
+!!  hy_uhd_dataReconstOneStep(integer(IN) :: block,
 !!                            integer(IN) :: blkLimitsGC(:,:),
 !!                            integer(IN) :: order,
 !!                            integer(IN) :: ix,
@@ -34,7 +34,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockID     - local block ID
+!!  block     - local block ID
 !!  blkLimitsGC - block limits including guardcells
 !!  order       - order of reconstruction method
 !!  ix,iy,iz    - local indices
@@ -79,7 +79,7 @@
 #ifdef FLASH_USM_MHD
 !! REORDER(4): B[xyz]
 #endif
-Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
+Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
                                      dt,del,ogravX,ogravY,ogravZ,&
                                      DivU, FlatCoeff,  &
                                      TransX_updateOnly,&
@@ -117,6 +117,8 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
                                 WENO => hy_uhd_DataReconstructNormalDir_WENO,&
                                 GP   => hy_uhd_DataReconstructNormalDir_GP
 
+  use block_metadata,   ONLY : block_metadata_t
+
   implicit none
 
 #include "constants.h"
@@ -124,16 +126,12 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
 
 
   !!-----Arguments---------------------------------------------------------
-  integer, intent(IN) :: blockID
+  type(block_metadata_t), intent(IN) :: block
+  real, pointer, dimension(:,:,:,:) :: U
   integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimitsGC
   integer, intent(IN) :: order,ix,iy,iz
   real,    intent(IN) :: dt
   real,    intent(IN), dimension(MDIM) :: del
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(     GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN), target :: ogravX,ogravY,ogravZ
-  real, dimension(NDIM,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: FlatCoeff
-  real, dimension(     GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: DivU
-#else
   real, dimension(blkLimitsGC(HIGH,IAXIS),&
                   blkLimitsGC(HIGH,JAXIS),&
                   blkLimitsGC(HIGH,KAXIS)),intent(IN), target :: ogravX,ogravY,ogravZ
@@ -143,7 +141,7 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
   real, dimension(blkLimitsGC(HIGH,IAXIS),&
                   blkLimitsGC(HIGH,JAXIS),&
                   blkLimitsGC(HIGH,KAXIS)), intent(IN) :: DivU
-#endif
+
   logical, intent(IN) ::  TransX_updateOnly, TransY_updateOnly, TransZ_updateOnly
 
   real, dimension(HY_VARINUMMAX,           NDIM),intent(OUT) :: Wp, Wn
@@ -159,7 +157,6 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
   real, pointer, dimension(:)       :: DataGrav1D  
   real, pointer, dimension(:,:)     :: Data1D, LambdaArr
   real, pointer, dimension(:,:,:)   :: LeigArr, ReigArr
-  real, pointer, dimension(:,:,:,:) :: U
 
   real    :: Cs,dx,dy,dz,hdt,hdtx,hdty,hdtz,idx,idy,idz
   real    :: epsilon ! = 1.e-8, kappa
@@ -329,7 +326,7 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
   !!*************************************************************!
   !! First, get block pointer for cell-centered variables        !
   !!*************************************************************!
-  call Grid_getBlkPtr(blockID,U,CENTER)
+  call Grid_getBlkPtr(block,U,CENTER)
 
 
   !!*************************************************************!
@@ -338,10 +335,10 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
 #ifdef FLASH_USM_MHD /* extra definitions for MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1
-  call Grid_getBlkPtr(blockID,Bx,FACEX)
-  call Grid_getBlkPtr(blockID,By,FACEY)
+  call Grid_getBlkPtr(block,Bx,FACEX)
+  call Grid_getBlkPtr(block,By,FACEY)
 #if NDIM == 3
-  call Grid_getBlkPtr(blockID,Bz,FACEZ)
+  call Grid_getBlkPtr(block,Bz,FACEZ)
 #endif /* NDIM == 3      */
 #endif /* NDUM > 1       */
 #endif /* NFACE_VARS > 0 */
@@ -459,11 +456,11 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
      if (NDIM == 3) &
      kSizeGC = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
     
-     call Grid_getCellCoords(IAXIS,blockID, CENTER, .true.,xCenter,iSizeGC)
+     call Grid_getCellCoords(IAXIS,block, CENTER, .true.,xCenter,iSizeGC)
     if (NDIM > 1) &
-     call Grid_getCellCoords(JAXIS,blockID, CENTER, .true.,yCenter,jSizeGC)
+     call Grid_getCellCoords(JAXIS,block, CENTER, .true.,yCenter,jSizeGC)
      if (NDIM == 3) &
-     call Grid_getCellCoords(KAXIS,blockID, CENTER, .true.,zCenter,kSizeGC)
+     call Grid_getCellCoords(KAXIS,block, CENTER, .true.,zCenter,kSizeGC)
 
      x1 => xCenter(ix-radius:ix+radius)
      if (NDIM > 1) &
@@ -1128,7 +1125,7 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
          Wn(HY_PRES,iDim) < 0. .or. Wp(HY_PRES,iDim) < 0. ) then
 
         if (.NOT. Trans_updateOnly(iDim)) then
-!!$           print*,'[dR1St] fallback to order 1 for iDim=',iDim,'at ix,iy=',ix,iy,' in Block',blockID,'@',hy_meshMe
+!!$           print*,'[dR1St] fallback to order 1 for iDim=',iDim,'at ix,iy=',ix,iy,' in Block',block,'@',hy_meshMe
 !!$           print*,'[dR1St]',Wn(HY_DENS,iDim),Wp(HY_DENS,iDim), &
 !!$                Wn(HY_PRES,iDim), Wp(HY_PRES,iDim)
            if (present(cellCfl)) cellCfl = min(cellCfl,hy_cflFallbackFactor/real(NDIM))
@@ -1169,7 +1166,7 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
          Wn(HY_ERAD,iDim) < 0. .or. Wp(HY_ERAD,iDim) < 0. ) then
 
         if (.NOT. Trans_updateOnly(iDim)) then
-           print*,'[dR1St]+ fallback to order 1 for iDim=',iDim,'at ix,iy=',ix,iy,' in Block',blockID,'@',hy_meshMe
+           print*,'[dR1St]+ fallback to order 1 for iDim=',iDim,'at ix,iy=',ix,iy,' in Block',block,'@',hy_meshMe
            print*,'[dR1St]+',Wn(HY_EION,iDim),Wp(HY_EION,iDim), &
                 Wn(HY_EELE,iDim), Wp(HY_EELE,iDim), &
                 Wn(HY_ERAD,iDim), Wp(HY_ERAD,iDim)
@@ -1200,15 +1197,15 @@ Subroutine hy_uhd_dataReconstOneStep(blockID,blkLimitsGC,order,ix,iy,iz, &
   enddo
 #endif
 
-  call Grid_releaseBlkPtr(blockID,U,CENTER)
+  call Grid_releaseBlkPtr(block,U,CENTER)
 
 #ifdef FLASH_USM_MHD /* extra definitions for MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1
-  call Grid_releaseBlkPtr(blockID,Bx,FACEX)
-  call Grid_releaseBlkPtr(blockID,By,FACEY)
+  call Grid_releaseBlkPtr(block,Bx,FACEX)
+  call Grid_releaseBlkPtr(block,By,FACEY)
 #if NDIM == 3
-  call Grid_releaseBlkPtr(blockID,Bz,FACEZ)
+  call Grid_releaseBlkPtr(block,Bz,FACEZ)
 #endif /* NDIM == 3      */
 #endif /* NDUM > 1       */
 #endif /* NFACE_VARS > 0 */

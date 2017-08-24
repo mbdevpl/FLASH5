@@ -613,7 +613,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                  if (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0 &
                       .AND. present(hy_spcR)) then
                     call hy_uhd_dataReconstOnestep&
-                      (blockID,blkLimitsGC,    &
+                      (block,U,blkLimitsGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
                        DivU,FlatCoeff,         &
@@ -629,7 +629,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                        hy_SpcR,hy_SpcL,hy_SpcSig)
                  else
                     call hy_uhd_dataReconstOnestep&
-                      (blockID,blkLimitsGC,    &
+                      (block,U,blkLimitsGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
                        DivU,FlatCoeff,         &
@@ -803,7 +803,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                      Wn(HY_PRES,DIR_X) < 0. .or. Wp(HY_PRES,DIR_X) < 0.) then
                     if(.NOT.TransX_updateOnly) then
                        print*,'[gRSt] afterGeo fallback to order 1 for DIR_X at i,j=',i,j,&
-                            ' in Block',blockID,'@',hy_meshMe
+                            ' in Block''@',hy_meshMe
                        print*,'[dR1St] afterGeo',Wn(HY_DENS,DIR_X),Wp(HY_DENS,DIR_X), &
                             Wn(HY_PRES,DIR_X), Wp(HY_PRES,DIR_X)
                          call fallbackToFirstOrder(DIR_X,Wn(:,DIR_X),Wp(:,DIR_X),Vc,hy_SpcL,hy_SpcR,U,i,j,k)
@@ -814,7 +814,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                      Wn(HY_PRES,DIR_Y) < 0. .or. Wp(HY_PRES,DIR_Y) < 0.) then
                     if(.NOT.TransY_updateOnly) then
                        print*,'[gRSt] afterGeo fallback to order 1 for DIR_Y at i,j=',i,j,&
-                            ' in Block',blockID,'@',hy_meshMe
+                            ' in Block','@',hy_meshMe
                        print*,'[dR1St] afterGeo',Wn(HY_DENS,DIR_Y),Wp(HY_DENS,DIR_Y), &
                             Wn(HY_PRES,DIR_Y), Wp(HY_PRES,DIR_Y)
                          call fallbackToFirstOrder(DIR_Y,Wn(:,DIR_Y),Wp(:,DIR_Y),Vc,hy_SpcL,hy_SpcR,U,i,j,k)
@@ -1436,17 +1436,17 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 
 
   !! Release pointers
-  call Grid_releaseBlkPtr(blockID,U,CENTER)
+!!$  call Grid_releaseBlkPtr(blockID,U,CENTER)
 
-  ! MHD only-------------------------------------------------------------------------------
-#if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1
-  if (hy_order > 1) then
-     call Grid_releaseBlkPtr(blockID,Bx,FACEX)
-     call Grid_releaseBlkPtr(blockID,By,FACEY)
-     if (NDIM == 3) call Grid_releaseBlkPtr(blockID,Bz,FACEZ)
-  endif ! if (hy_order > 1) then
-#endif /* endif of if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1 */
-  ! MHD only-------------------------------------------------------------------------------
+!!$  ! MHD only-------------------------------------------------------------------------------
+!!$#if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1
+!!$  if (hy_order > 1) then
+!!$     call Grid_releaseBlkPtr(blockID,Bx,FACEX)
+!!$     call Grid_releaseBlkPtr(blockID,By,FACEY)
+!!$     if (NDIM == 3) call Grid_releaseBlkPtr(blockID,Bz,FACEZ)
+!!$  endif ! if (hy_order > 1) then
+!!$#endif /* endif of if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1 */
+!!$  ! MHD only-------------------------------------------------------------------------------
 
 
   !! Deallocate arrays
