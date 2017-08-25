@@ -23,10 +23,11 @@
 !!  gr_getInteriorBlkPtr
 !!***
 
-subroutine gr_releaseInteriorBlkPtr(blockID,dataPtr,gridDataStruct)
+subroutine gr_releaseInteriorBlkPtr(block,dataPtr,gridDataStruct)
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
-  integer,intent(in) :: blockID
+  type(block_metadata_t),intent(in) :: block
   real, pointer :: dataPtr(:,:,:,:)
   integer, intent(in) :: gridDataStruct
 

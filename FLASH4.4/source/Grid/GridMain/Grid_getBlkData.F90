@@ -276,28 +276,16 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(out) :: datablock
   real, pointer, dimension(:,:,:,:) :: solnData
 
-  integer :: blockID
   integer :: i, var, xb, xe, yb, ye, zb, ze
   integer,dimension(MDIM) :: begOffset
   integer :: imax, jmax, kmax
   logical :: isget
   logical :: getIntPtr
   
-  blockID = block%id
-
 #ifdef DEBUG_GRID
 
   isget = .true.
   call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
-
-
-  !verify we have a valid blockid
-  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,' Grid_getBlkData : invalid blockid ', blockid
-     call Driver_abortFlash("[Grid_getBlkData] : invalid blockid ")
-  end if
-  
-
 
 
   !verify beginCount is set to a valid value
@@ -472,9 +460,9 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   elseif (gridDataStruct == CELL_FACEAREA) then
      call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,dataBlock)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockId,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
      
      call Grid_getBlkPtr(block,solnData,gridDataStruct)

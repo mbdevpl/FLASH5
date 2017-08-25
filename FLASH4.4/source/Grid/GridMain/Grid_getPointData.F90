@@ -241,7 +241,6 @@ subroutine Grid_getPointData(block, gridDataStruct, structIndex, beginCount, &
   real,dimension(1,1,1) :: cellvalues
   real, pointer, dimension(:,:,:,:) :: solnData
 
-  integer :: blockID
   integer ::  var, i, j, k, ii
   integer,dimension(MDIM) :: begOffset,dataLen
   integer :: imax, jmax, kmax,xb,xe,yb,ye,zb,ze
@@ -249,8 +248,6 @@ subroutine Grid_getPointData(block, gridDataStruct, structIndex, beginCount, &
 
   logical :: isget
   logical :: getIntPtr
-
-  blockID = block%id
 
 #ifdef DEBUG_GRID
   isget = .true.
@@ -353,9 +350,9 @@ subroutine Grid_getPointData(block, gridDataStruct, structIndex, beginCount, &
      end if
      datablock=cellvalues(1,1,1)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      datablock = solnData(structIndex,i,j,k)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
      call Grid_getBlkPtr(block,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then

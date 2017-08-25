@@ -463,9 +463,11 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_putBlkData(blockID, gridDataStruct, variable, beginCount, &
+     subroutine Grid_putBlkData(block, gridDataStruct, variable, beginCount, &
           startingPos, datablock, dataSize)
-       integer, intent(in) :: blockID, variable, beginCount, gridDataStruct
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
+       integer, intent(in) :: variable, beginCount, gridDataStruct
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, dimension(3), intent(in) :: dataSize
        real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(in) :: datablock
