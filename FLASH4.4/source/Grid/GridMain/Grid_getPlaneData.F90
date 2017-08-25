@@ -297,7 +297,7 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
 
 #ifdef DEBUG_GRID
   isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
   
   !plane specific stuff
   if(NDIM == 1) then

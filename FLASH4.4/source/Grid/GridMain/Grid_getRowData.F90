@@ -276,7 +276,7 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
 
 #ifdef DEBUG_GRID
   isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
 
   !verify requested row is available given number of dims in problem
   if((row==KAXIS) .and. (NDIM < 3)) then

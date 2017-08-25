@@ -288,7 +288,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
 #ifdef DEBUG_GRID
 
   isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
 
 
   !verify we have a valid blockid
