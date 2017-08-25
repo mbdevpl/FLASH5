@@ -332,7 +332,7 @@ subroutine Grid_getPointData(block, gridDataStruct, structIndex, beginCount, &
   
 #endif
   dataLen=0
-  call gr_getDataOffsets(blockID,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(block,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
 
   k = 1
   if(NDIM > 2)k = position(KAXIS) + begOffset(KAXIS)

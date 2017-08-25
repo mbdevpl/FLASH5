@@ -54,12 +54,13 @@
 !!          the non permanent mode when using PARAMESH 4.
 !!
 !!***
-subroutine gr_getDataOffsets(blockID,gridDataStruct,startingPos,length,beginCount,begOffset,getIntPtr)
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits
+subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,begOffset,getIntPtr)
+  use block_metadata, ONLY : block_metadata_t
+
 #include "constants.h"
 #include "Flash.h"
   implicit none
-  integer, intent(IN)  :: blockID
+  type(block_metadata_t), intent(IN)  :: block
   integer, intent(IN)  :: gridDataStruct
   integer, intent(IN)  :: beginCount
   integer,dimension(MDIM),intent(IN) :: startingPos
@@ -67,7 +68,7 @@ subroutine gr_getDataOffsets(blockID,gridDataStruct,startingPos,length,beginCoun
   integer,dimension(MDIM),intent(OUT) :: begOffset
   logical,intent(OUT) :: getIntPtr
 
-  integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimits
   integer :: i
   logical :: formBlk
 
@@ -84,7 +85,7 @@ subroutine gr_getDataOffsets(blockID,gridDataStruct,startingPos,length,beginCoun
        (gridDataStruct == FACEZ).or.(gridDataStruct==WORK)) then
      formBlk=.false.
      if(beginCount == EXTERIOR) then
-        call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC,gridDataStruct)
+        blkLimits = block%limits
         do i = 1,NDIM
            formBlk = formBlk.or.(startingPos(i) < blkLimits(LOW,i))
            formBlk = formBlk.or.((startingPos(i)+length(i)-1)>blkLimits(HIGH,i))
@@ -100,7 +101,7 @@ subroutine gr_getDataOffsets(blockID,gridDataStruct,startingPos,length,beginCoun
 #endif
   !! If operating with permanent guardcells, then the interior implies offset by gcell
   if(beginCount == INTERIOR) then
-     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC,gridDataStruct)
+     blkLimits = block%limits
      begOffset(1:NDIM) = blkLimits(LOW,1:NDIM)-1
   end if
   

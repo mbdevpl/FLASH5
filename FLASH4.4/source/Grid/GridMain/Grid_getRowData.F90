@@ -446,7 +446,7 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
 #endif
   dataLen=0
   dataLen(row)=dataSize
-  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
 
   i=1
   j=1

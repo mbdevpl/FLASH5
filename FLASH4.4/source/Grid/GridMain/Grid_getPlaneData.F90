@@ -508,7 +508,7 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
      dataLen(IAXIS)=dataSize(1)
      dataLen(KAXIS)=dataSize(2)
   end if
-  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
   
   yb=1
   ye=1

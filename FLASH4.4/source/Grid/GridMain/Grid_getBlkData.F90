@@ -448,7 +448,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   xe = 1
 
 
-  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataSize,beginCount,&
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataSize,beginCount,&
        begOffset,getIntPtr)
 
 #if NDIM > 2
