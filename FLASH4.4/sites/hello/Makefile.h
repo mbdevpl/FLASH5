@@ -5,7 +5,6 @@
 SPACK_GCC=${SPACK_ROOT}/opt/spack/darwin-sierra-x86_64/gcc-6.4.0
 
 HDF5_PATH = ${SPACK_GCC}/hdf5-1.8.19-ssqe5xh5xgs5oxvng4wtmm243mxseclz
-LIB_HDF5 = ${HDF5_PATH}/lib
 AMREX_PATH = ${HOME}/Projects/lib_install
 
 HYPRE_PATH = ${SPACK_GCC}/hypre-2.11.2-w5g2jgzmgkizzdgghcgc4esqxpedkcxv
@@ -52,15 +51,15 @@ FFLAGS_DEBUG = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
 -pedantic -Wall -Wextra -Waliasing \
 -Wsurprising -Wconversion -Wunderflow \
 -ffpe-trap=invalid,zero,overflow -fbounds-check \
--fimplicit-none -fstack-protector-all
+-fimplicit-none -fstack-protector-all \
+-fbacktrace -fbounds-check
 
 FFLAGS_TEST = -ggdb -c -fdefault-real-8 -fdefault-double-8 \
 -ffree-line-length-none
 
-
 FFLAGS_HYPRE = -I${HYPRE_PATH}/include
-#FFLAGS_AMREX = -I${AMREX_PATH}/include
-#FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
+FFLAGS_AMREX = -I${AMREX_PATH}/include
+FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
 
 #F90FLAGS = -I${HDF5_PATH}/include -DH5_USE_16_API
 F90FLAGS = -I${HDF5_PATH}/include
@@ -124,7 +123,7 @@ LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE
 
 LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
 LIB_AMREX2D = ${LIB_AMREX}
-LIB_STDCXX = -L/usr/lib -lc++
+LIB_STDCXX = -L${SPACK_CLANG}/gcc-6.4.0-kxmur5jjl6fcfiy6zw5vm2rhttugi364/lib -lstdc++
 
 
 # Uncomment the following line to use electic fence memory debugger.
