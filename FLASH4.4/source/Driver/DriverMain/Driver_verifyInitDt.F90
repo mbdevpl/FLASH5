@@ -122,8 +122,10 @@ subroutine Driver_verifyInitDt()
         do while(itor%is_valid())
            call itor%blkMetaData(block)
           
-           blkLimits   = block%limits
-           blkLimitsGC = block%limitsGC
+           blkLimits(LOW,:)   = block%limits(LOW,:)-block%cid(:)
+           blkLimitsGC(LOW,:) = block%limitsGC(LOW,:)-block%cid(:)
+           blkLimits(HIGH,:)   = block%limits(HIGH,:)-block%cid(:)
+           blkLimitsGC(HIGH,:) = block%limitsGC(HIGH,:)-block%cid(:)
            call Grid_getBlkPtr(block, solnData)
 
            isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D

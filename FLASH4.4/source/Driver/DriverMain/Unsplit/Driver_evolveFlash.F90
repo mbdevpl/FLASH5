@@ -204,7 +204,11 @@ subroutine Driver_evolveFlash()
         do while(itor%is_valid())
            call itor%blkMetaData(block)
 
-           blkLimits = block%limits
+           blkLimits(LOW,:)   = block%limits(LOW,:)-block%cid(:)
+           blkLimitsGC(LOW,:) = block%limitsGC(LOW,:)-block%cid(:)
+           blkLimits(HIGH,:)   = block%limits(HIGH,:)-block%cid(:)
+           blkLimitsGC(HIGH,:) = block%limitsGC(HIGH,:)-block%cid(:)
+           
            call Grid_getBlkPtr(block, Uout)
 !!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
 !!$           call amrex_print(abx)
