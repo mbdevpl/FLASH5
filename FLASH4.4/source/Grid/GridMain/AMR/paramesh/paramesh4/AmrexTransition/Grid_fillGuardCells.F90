@@ -228,6 +228,8 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
      minLayers, eosMode, doEos, maskSize, mask, makeMaskConsistent,&
      doLogMask,selectBlockType,unitReadsMeshDataOnly)
 
+  use Grid_interface, ONLY : Grid_fillGuardCells_blkid
+
   implicit none
 
   integer, intent(in) :: gridDataStruct

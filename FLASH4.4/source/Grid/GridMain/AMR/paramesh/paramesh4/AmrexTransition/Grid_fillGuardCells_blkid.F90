@@ -241,7 +241,7 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_interface, ONLY : Grid_getListOfBlocks
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_setGcFillNLayers
+  use gr_interface, ONLY : gr_setGcFillNLayers, gr_sanitizeDataAfterInterp
   use paramesh_dimensions, ONLY : l2p5d,ndim
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
   use tree,         ONLY : lnblocks
