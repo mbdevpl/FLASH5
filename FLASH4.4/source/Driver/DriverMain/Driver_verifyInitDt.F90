@@ -179,7 +179,6 @@ subroutine Driver_verifyInitDt()
            uygrid(:) = 0
            uzgrid(:) = 0
            
-           print*,'about to call hydro compute dt'
            call Hydro_computeDt (block, &
                 xCoord, dx, uxgrid, &
                 yCoord, dy, uygrid, &
@@ -188,7 +187,6 @@ subroutine Driver_verifyInitDt()
                 solnData,      &
                 dtCheck(1), dtMinLoc, &
                 extraInfo=extraHydroInfo)
-           print*,'done with hydro compute dt'
 !!$        call Diffuse_computeDt ( blockList(i), &
 !!$             xCoord, xLeft,xRight, dx, uxgrid, &
 !!$             yCoord, yLeft,yRight, dy, uygrid, &

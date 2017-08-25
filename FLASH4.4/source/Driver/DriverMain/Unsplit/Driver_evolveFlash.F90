@@ -199,7 +199,6 @@ subroutine Driver_evolveFlash()
      
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
-
      do level=1,maxLev
         itor = block_iterator_t(LEAF, level=level)
         do while(itor%is_valid())

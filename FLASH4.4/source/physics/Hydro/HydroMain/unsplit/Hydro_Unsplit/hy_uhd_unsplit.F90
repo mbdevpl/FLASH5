@@ -217,7 +217,7 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      
      !! Detect shocks
      if (hy_shockDetectOn) call hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del)
-     
+
      if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
         call hy_uhd_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
      endif
@@ -381,7 +381,7 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      allocate(gravX(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(gravY(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(gravZ(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-
+     print*,'came upto this point'
      !! ************************************************************************
      !! Get gravity
      gravX = 0.
@@ -408,10 +408,12 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
         end if
 #endif
         call Timers_start("RiemannState")
+        print*,'going into RiemannState'
         call hy_uhd_getRiemannState(block,Uin,blkLimits,blkLimitsGC,dt,del, &
                                     gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
                                     scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                     hy_SpcR,hy_SpcL,hy_SpcSig)
+        print*,'returning from RiemannState'
         call Timers_stop("RiemannState")
         !! DEV: DL-This note seems to be outdated and wrong for the optimized code.
         ! Note: Two different ways of handling gravity:
@@ -437,10 +439,11 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      fly = 0.
      flz = 0.
      call Timers_start("getFaceFlux")
-
+     print*,'getting face flux'
      call hy_uhd_getFaceFlux(block,blkLimits,blkLimitsGC,datasize,del,&
                              flx,fly,flz,&
                              scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
+     print*,'got face flux'
      call Timers_stop("getFaceFlux")
      !! ************************************************************************
      !! Unsplit update for conservative variables from n to n+1 time step
@@ -456,9 +459,11 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$        end if
      updateMode = UPDATE_ALL
      call Timers_start("unsplitUpdate")
+     print*,'and now update'
      call hy_uhd_unsplitUpdate(block,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
+     print*,'done update'
      call Timers_stop("unsplitUpdate")
 !!$#ifdef FLASH_UHD_3T
 !!$        call Timers_start("unsplitUpdate 3T")

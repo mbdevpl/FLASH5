@@ -87,15 +87,10 @@ Subroutine Hydro_computeDt( block,       &
   type(block_metadata_t), intent(IN) :: block 
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC), intent(IN) :: x, dx, uxgrid
-  real, dimension(GRID_JLO_GC:GRID_JHI_GC), intent(IN) :: y, dy, uygrid
-  real, dimension(GRID_KLO_GC:GRID_KHI_GC), intent(IN) :: z, dz, uzgrid
-#else
   real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
   real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)), intent(IN) :: y, dy, uygrid
   real, dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)), intent(IN) :: z, dz, uzgrid
-#endif
+
 
   real, pointer         :: U(:,:,:,:)
   real,   intent(INOUT) :: dtCheck
@@ -186,7 +181,6 @@ Subroutine Hydro_computeDt( block,       &
      delyinv = 1.0/dy(blkLimits(LOW,JAXIS))
      if (NDIM > 2) &
      delzinv = 1.0/dz(blkLimits(LOW,KAXIS))
-
      if (hy_geometry == POLAR) & !Polar in 3D (that's a no no)
           call Driver_abortFlash("[Hydro_computeDt] ERROR: Polar geometry not supported in 3D")
 
@@ -267,7 +261,6 @@ Subroutine Hydro_computeDt( block,       &
                  dt_ltemp = (abs(U(VELX_VAR,i,j,k)-uxgrid(i))+sqrt(cfx2))*delxinv
                  if (NDIM > 1) dt_ltemp = max(dt_ltemp,(abs(U(VELY_VAR,i,j,k)-uygrid(j))+sqrt(cfy2))*delyinv)
                  if (NDIM > 2) dt_ltemp = max(dt_ltemp,(abs(U(VELZ_VAR,i,j,k)-uzgrid(k))+sqrt(cfz2))*delzinv)
-
                  if (dt_ltemp * tempCfl > dt_temp * localCfl) then
                     dt_temp    = dt_ltemp
                     tempCfl    = localCfl
@@ -327,7 +320,6 @@ Subroutine Hydro_computeDt( block,       &
   endif
 
   if(dtCheck <= 0.0) then
-     print*,'dtCheck=',dtCheck
      call Driver_abortFlash("[Hydro]: Computed dt is not positive! Aborting!")
   endif
   return

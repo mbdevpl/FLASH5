@@ -119,15 +119,14 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
   integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
   real,    intent(IN)   :: dt
   real,    intent(IN),dimension(MDIM) :: del
-  real, dimension(blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
-       intent(IN) :: ogravX,ogravY,ogravZ
+  real, dimension(:,:,:), intent(IN) :: ogravX,ogravY,ogravZ
   real, pointer, dimension(:,:,:,:) :: U
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr, scrchFaceYPtr, scrchFaceZPtr
   real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
   logical, intent(IN), optional :: normalFieldUpdate
   !! ---------------------------------------------------------------------------------------
 
-  integer :: i0,imax,j0,jmax,k0,kmax, i, j, k
+  integer :: i0,imax,j0,jmax,k0,kmax, i, j, k, i1,j1,k1
   integer,dimension(MDIM) :: dataSize
   real    :: cellCfl,minCfl
   logical :: lowerCflAtBdry
@@ -150,10 +149,6 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
   logical, parameter :: normalFieldUpdateOnly = .FALSE.
 #endif
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(NDIM,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC) :: FlatCoeff,FlatTilde
-  real, dimension(     GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC) :: DivU
-#else
   real, dimension(NDIM,blkLimitsGC(HIGH,IAXIS),&
                        blkLimitsGC(HIGH,JAXIS),&
                        blkLimitsGC(HIGH,KAXIS)) :: FlatCoeff, FlatTilde
@@ -296,10 +291,10 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 
      if (hy_geometry /= CARTESIAN) then
         ! Grab cell x-coords for this block  
-        call Grid_getCellCoords(IAXIS,block, CENTER,.true.,xCenter, blkLimitsGC(HIGH,IAXIS))
+        call Grid_getCellCoords(IAXIS,block, CENTER,.true.,xCenter,dataSize(IAXIS))
 #if NDIM > 1
         if (hy_geometry == SPHERICAL) &
-             call Grid_getCellCoords(JAXIS,block, CENTER,.true.,yCenter, blkLimitsGC(HIGH,JAXIS))
+             call Grid_getCellCoords(JAXIS,block, CENTER,.true.,yCenter, dataSize(JAXIS))
 #endif
      endif
 
@@ -315,7 +310,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
   !! (2) Compute divergence of velocity field      -------------------------!
   !! -----------------------------------------------------------------------!
   !if (hy_upwindTVD) kHydro = -1
-
+!! Note --- fix all these indices
   if (hy_useHybridOrder .AND. .NOT. normalFieldUpdateOnly) then
      k4 = hy_order - 1             !cf. hy_uhd_dataReconstOnestep
      if (k4 > 2) k4 = 2 !(i.e., assume order = 3)
@@ -340,14 +335,16 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
               !! We used to compute undivided divergence of velocity fields and (magneto)sonic speed
               !! and store local (magneto)sonic speeds for hybrid order. Now the latter are
               !! computed elsewhere.
-
-              DivU(i,j,k) = U(VELX_VAR,i+1,j,k)-U(VELX_VAR,i-1,j,k)
+              i1=i+blkLimits(LOW,IAXIS)-1
+              J1=i+blkLimits(LOW,JAXIS)-1
+              K1=i+blkLimits(LOW,KAXIS)-1
+              DivU(i,j,k) = U(VELX_VAR,i1+1,j,k)-U(VELX_VAR,i1-1,j,k)
               if (NDIM > 1) then
                  DivU(i,j,k) = DivU(i,j,k) &
-                      +U(VELY_VAR,i,j+1,k)-U(VELY_VAR,i,j-1,k)
+                      +U(VELY_VAR,i1,j1+1,k)-U(VELY_VAR,i1,j1-1,k)
                  if (NDIM > 2) then
                     DivU(i,j,k) = DivU(i,j,k) &
-                         +U(VELZ_VAR,i,j,k+1)-U(VELZ_VAR,i,j,k-1)
+                         +U(VELZ_VAR,i1,j1,k1+1)-U(VELZ_VAR,i1,j1,k1-1)
                  endif
               endif
               DivU(i,j,k) = 0.5*DivU(i,j,k)
@@ -372,28 +369,31 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
         do j=j0-2-min(NGUARD-4,kUSM)*k2,jmax+2+min(NGUARD-4,kUSM)*k2
            do i=i0-2-min(NGUARD-4,kUSM),imax+2+min(NGUARD-4,kUSM)
               do dir=1,NDIM
-
+                 i1=i+blkLimits(LOW,IAXIS)-1
+                 J1=i+blkLimits(LOW,JAXIS)-1
+                 K1=i+blkLimits(LOW,KAXIS)-1
+                 
                  select case (dir)
                  case (DIR_X)
-                    dp1   = (U(PRES_VAR,i+1,j,k)-U(PRES_VAR,i-1,j,k))
-                    dp2   = (U(PRES_VAR,i+2,j,k)-U(PRES_VAR,i-2,j,k))
-                    dv1   =  U(VELX_VAR,i+1,j,k)-U(VELX_VAR,i-1,j,k)
-                    presL =  U(PRES_VAR,i-1,j,k)
-                    presR =  U(PRES_VAR,i+1,j,k)
+                    dp1   = (U(PRES_VAR,i1+1,j1,k1)-U(PRES_VAR,i1-1,j1,k1))
+                    dp2   = (U(PRES_VAR,i1+2,j1,k1)-U(PRES_VAR,i1-2,j1,k1))
+                    dv1   =  U(VELX_VAR,i1+1,j1,k1)-U(VELX_VAR,i1-1,j1,k1)
+                    presL =  U(PRES_VAR,i1-1,j1,k1)
+                    presR =  U(PRES_VAR,i1+1,j1,k1)
 #if NDIM > 1
                  case (DIR_Y)
-                    dp1   = (U(PRES_VAR,i,j+1,k)-U(PRES_VAR,i,j-1,k))
-                    dp2   = (U(PRES_VAR,i,j+2,k)-U(PRES_VAR,i,j-2,k))
-                    dv1   =  U(VELY_VAR,i,j+1,k)-U(VELY_VAR,i,j-1,k)
-                    presL =  U(PRES_VAR,i,j-1,k)
-                    presR =  U(PRES_VAR,i,j+1,k)
+                    dp1   = (U(PRES_VAR,i1,j1+1,k1)-U(PRES_VAR,i1,j1-1,k1))
+                    dp2   = (U(PRES_VAR,i1,j1+2,k1)-U(PRES_VAR,i1,j1-2,k1))
+                    dv1   =  U(VELY_VAR,i1,j1+1,k1)-U(VELY_VAR,i1,j1-1,k1)
+                    presL =  U(PRES_VAR,i1,j1-1,k1)
+                    presR =  U(PRES_VAR,i1,j1+1,k1)
 #if NDIM > 2
                  case (DIR_Z)
-                    dp1   = (U(PRES_VAR,i,j,k+1)-U(PRES_VAR,i,j,k-1))
-                    dp2   = (U(PRES_VAR,i,j,k+2)-U(PRES_VAR,i,j,k-2))
-                    dv1   =  U(VELZ_VAR,i,j,k+1)-U(VELZ_VAR,i,j,k-1)
-                    presL =  U(PRES_VAR,i,j,k-1)
-                    presR =  U(PRES_VAR,i,j,k+1)
+                    dp1   = (U(PRES_VAR,i1,j1,k1+1)-U(PRES_VAR,i1,j1,k1-1))
+                    dp2   = (U(PRES_VAR,i1,j1,k1+2)-U(PRES_VAR,i1,j1,k1-2))
+                    dv1   =  U(VELZ_VAR,i1,j1,k1+1)-U(VELZ_VAR,i1,j1,k1-1)
+                    presL =  U(PRES_VAR,i1,j1,k1-1)
+                    presR =  U(PRES_VAR,i1,j1,k1+1)
 #endif
 #endif
                  end select
@@ -418,11 +418,14 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
      do k=k0-2+kHydro*k3,kmax+2-kHydro*k3
         do j=j0-2+kHydro*k2,jmax+2-kHydro*k2
            do i=i0-2+kHydro,imax+2-kHydro
+              i1=i+blkLimits(LOW,IAXIS)-1
+              J1=i+blkLimits(LOW,JAXIS)-1
+              K1=i+blkLimits(LOW,KAXIS)-1
               do dir=1,NDIM
 
                  select case (dir)
                  case (DIR_X)
-                    dp1   = (U(PRES_VAR,i+1,j,k)-U(PRES_VAR,i-1,j,k))
+                    dp1   = (U(PRES_VAR,i1+1,j1,k1)-U(PRES_VAR,i1-1,j1,k1))
 
                     if ( dp1 < 0.0 ) then
                        FlatCoeff(dir,i,j,k) = max(FlatTilde(dir,i,j,k),FlatTilde(dir,i+1,j,k))
@@ -433,7 +436,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                     endif
 #if NDIM > 1
                  case (DIR_Y)
-                    dp1   = (U(PRES_VAR,i,j+1,k)-U(PRES_VAR,i,j-1,k))
+                    dp1   = (U(PRES_VAR,i1,j1+1,k1)-U(PRES_VAR,i1,j1-1,k1))
 
                     if ( dp1 < 0.0 ) then
                        FlatCoeff(dir,i,j,k) = max(FlatTilde(dir,i,j,k),FlatTilde(dir,i,j+1,k))
@@ -444,7 +447,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                     endif
 #if NDIM > 2
                  case (DIR_Z)
-                    dp1   = (U(PRES_VAR,i,j,k+1)-U(PRES_VAR,i,j,k-1))
+                    dp1   = (U(PRES_VAR,i1,j1,k1+1)-U(PRES_VAR,i1,j1,k1-1))
 
                     if ( dp1 < 0.0 ) then
                        FlatCoeff(dir,i,j,k) = max(FlatTilde(dir,i,j,k),FlatTilde(dir,i,j,k+1))
@@ -481,25 +484,28 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
            do i=i0-2-(k3*kUSM-kHydro),imax+2+(k3*kUSM-kHydro)
            ! Extra stencil is needed for 3D to correctly calculate transverse fluxes 
            !(i.e., cross derivatives in x,y, & z)
-
+              i1=i+blkLimits(LOW,IAXIS)-1
+              J1=i+blkLimits(LOW,JAXIS)-1
+              K1=i+blkLimits(LOW,KAXIS)-1
+              
               !! save the cell center values for later use
               Vc(HY_DENS:HY_END_VARS-kGrav) = &
-                      (/U(DENS_VAR,i,j,k)&
-                       ,U(VELX_VAR:VELZ_VAR,i,j,k)&
-                       ,U(PRES_VAR,i,j,k)&
+                      (/U(DENS_VAR,i1,j1,k1)&
+                       ,U(VELX_VAR:VELZ_VAR,i1,j1,k1)&
+                       ,U(PRES_VAR,i1,j1,k1)&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
-                       ,U(MAGX_VAR:MAGZ_VAR,i,j,k)&
+                       ,U(MAGX_VAR:MAGZ_VAR,i1,j1,k1)&
 #endif
 #ifdef FLASH_UGLM_MHD
-                       ,U(GLMP_VAR,i,j,k) &
+                       ,U(GLMP_VAR,i1,j1,k1) &
 #endif
-                       ,U(GAMC_VAR,i,j,k) &
-                       ,U(GAME_VAR,i,j,k) &
-                       ,U(EINT_VAR,i,j,k) &
+                       ,U(GAMC_VAR,i1,j1,k1) &
+                       ,U(GAME_VAR,i1,j1,k1) &
+                       ,U(EINT_VAR,i1,j1,k1) &
 #ifdef FLASH_UHD_3T
-                       ,U(EELE_VAR,i,j,k) &
-                       ,U(EION_VAR,i,j,k) &
-                       ,U(ERAD_VAR,i,j,k) &
+                       ,U(EELE_VAR,i1,j1,k1) &
+                       ,U(EION_VAR,i1,j1,k1) &
+                       ,U(ERAD_VAR,i1,j1,k1) &
 #endif
                        /)
 
@@ -509,6 +515,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
               !! Reduce order in fluid cell near solid boundary if defined:
               !! Reduce order of spatial reconstruction depending on the distance to the solid boundary
               if (order > 2) then
+!!!!! fix this                 
                  im2=max(blkLimitsGC(LOW,IAXIS),i-2); ip2=min(blkLimitsGC(HIGH,IAXIS),i+2)
 #if NDIM > 1
                  jm2=max(blkLimitsGC(LOW,JAXIS),j-2); jp2=min(blkLimitsGC(HIGH,JAXIS),j+2)
@@ -526,12 +533,12 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                     order = 2
                  endif
               endif
-              if ((U(BDRY_VAR,i,j,k)*U(BDRY_VAR,i-1, j,   k   ) < 0.0) .or. &
-                  (U(BDRY_VAR,i,j,k)*U(BDRY_VAR,i+1, j,   k   ) < 0.0) .or. &
-                  (U(BDRY_VAR,i,j,k)*U(BDRY_VAR,i,   j-k2,k   ) < 0.0) .or. &
-                  (U(BDRY_VAR,i,j,k)*U(BDRY_VAR,i,   j+k2,k   ) < 0.0) .or. &
-                  (U(BDRY_VAR,i,j,k)*U(BDRY_VAR,i,   j,   k-k3) < 0.0) .or. &
-                  (U(BDRY_VAR,i,j,k)*U(BDRY_VAR,i,   j,   k+k3) < 0.0)) then
+              if ((U(BDRY_VAR,i1,j1,k1)*U(BDRY_VAR,i1-1, j1,   k1   ) < 0.0) .or. &
+                  (U(BDRY_VAR,i1,j1,k1)*U(BDRY_VAR,i1+1, j1,   k1   ) < 0.0) .or. &
+                  (U(BDRY_VAR,i1,j1,k1)*U(BDRY_VAR,i1,   j1-k2,k1   ) < 0.0) .or. &
+                  (U(BDRY_VAR,i1,j1,k1)*U(BDRY_VAR,i1,   j1+k2,k1   ) < 0.0) .or. &
+                  (U(BDRY_VAR,i1,j1,k1)*U(BDRY_VAR,i1,   j1,   k1-k3) < 0.0) .or. &
+                  (U(BDRY_VAR,i1,j1,k1)*U(BDRY_VAR,i1,   j1,   k1+k3) < 0.0)) then
                  order = 1
                  lowerCflAtBdry = .TRUE.
               endif
@@ -550,7 +557,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 #endif
 
 #ifdef CFL_VAR
-              cellCfl = U(CFL_VAR,i,j,k)
+              cellCfl = U(CFL_VAR,i1,j1,k1)
 #else
               cellCfl = hy_cfl
 #endif
