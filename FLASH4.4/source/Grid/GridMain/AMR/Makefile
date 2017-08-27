@@ -1,4 +1,5 @@
 # Makefile for [source/Grid/GridMain/AMR]   
 
-Grid += gr_estimateError.o
+Grid += Grid_data.o \
+		gr_estimateError.o
 

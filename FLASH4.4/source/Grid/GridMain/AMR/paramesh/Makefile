@@ -1,6 +1,6 @@
 # Makefile for [source/Grid/GridMain/paramesh]   
 
-Grid += Grid_data.o Grid_getBlkType.o \
+Grid += Grid_getBlkType.o \
         gr_updateData.o gr_createDomain.o gr_recreateDomain.o \
         gr_createBlock.o gr_expandDomain.o \
 	gr_primitiveToConserve.o \
