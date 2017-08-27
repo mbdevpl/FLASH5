@@ -125,6 +125,9 @@ subroutine Grid_getMaxRefinement(maxRefinement, mode, scope, inputComm)
 
   maxRefinement = 1
 
+#elif defined FLASH_GRID_AMREX
+  ! DEVNOTE: Code this
+  maxRefinement = 2
 #else
 
   if (myMode .LE. 2) then

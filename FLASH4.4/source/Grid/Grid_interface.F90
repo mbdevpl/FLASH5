@@ -221,8 +221,9 @@ Module Grid_interface
   end interface
 
   interface Grid_getBlkPhysicalSize
-     subroutine Grid_getBlkPhysicalSize(blockId, blockSize)
-       integer,intent(in) :: blockId
+     subroutine Grid_getBlkPhysicalSize(block, blockSize)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
        real,dimension(MDIM),intent(out) :: blockSize
      end subroutine Grid_getBlkPhysicalSize
   end interface
@@ -368,6 +369,14 @@ Module Grid_interface
        integer, intent(in) :: beginCount
        real, dimension(MDIM), intent(out) :: coords
      end subroutine Grid_getSingleCellCoords
+     subroutine Grid_getSingleCellCoords_Itor(ind, block,edge, beginCount,coords)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
+       integer,dimension(MDIM), intent(in) :: ind
+       integer, intent(in) :: edge
+       integer, intent(in) :: beginCount
+       real, dimension(MDIM), intent(out) :: coords
+     end subroutine Grid_getSingleCellCoords_Itor
   end interface
 
   interface Grid_getSingleCellVol

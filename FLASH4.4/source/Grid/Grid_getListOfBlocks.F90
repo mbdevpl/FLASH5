@@ -98,6 +98,9 @@ subroutine Grid_getListOfBlocks(blockType, listOfBlocks,count,refinementLevel,&
      region_bndBox, includePartialBlocks)
 
   implicit none
+
+#include "constants.h"
+
   integer, intent(in) :: blockType
   integer,dimension(MAXBLOCKS),intent(out) :: listOfBlocks
   integer,intent(out) :: count

@@ -48,7 +48,7 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   real :: numZonesInv
 
   real :: blockVolume, cellVolume, volume
-  integer :: blockID, i, j, k, ierr
+  integer :: i, j, k, ierr
   integer :: ili, iui, jli, jui, kli, kui
   integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
   real, dimension(MDIM) :: blockSize
@@ -74,7 +74,6 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   do while (itor%is_valid())
      call itor%blkMetaData(block)
      
-     blockID     = block%id
      blkLimits   = block%limits
      blkLimitsGC = block%limitsGC
      call Grid_getBlkPtr(block, solnData)
@@ -82,7 +81,7 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
      ! DEVNOTE: This appears to be for Cartesian only blocks/cells.
      !          Do we need to calculate physical volume or could cell/block
      !          count could be used?
-     call Grid_getBlkPhysicalSize(blockID, blockSize)
+     call Grid_getBlkPhysicalSize(block, blockSize)
 
      blockVolume = blockSize(IAXIS)
      nxbBlock = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
