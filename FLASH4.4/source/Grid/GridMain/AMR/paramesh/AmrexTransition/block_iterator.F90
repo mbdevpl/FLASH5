@@ -10,6 +10,7 @@
 !! This is a variant that uses type(amrex_mfiter) as underlying iterator.
 !!****
 
+#include "FortranLangFeatures.fh"
 #include "constants.h"
 
 module block_iterator
@@ -17,7 +18,7 @@ module block_iterator
     use amrex_multifab_module, ONLY : amrex_mfiter, &
                                     amrex_mfiter_build, &
                                     amrex_mfiter_destroy
-    use block_1lev_iterator, ONLY : block_1lev_iterator_t
+    use block_1lev_iterator !, ONLY : block_1lev_iterator_t
 
     implicit none
 
@@ -35,6 +36,7 @@ module block_iterator
         integer                 :: last_level    = INVALID_LEVEL
         integer                 :: level    = INVALID_LEVEL
         logical                 :: isValid = .FALSE.
+        real,POINTER            :: fp(:,:,:,:)
     contains
         procedure, public :: is_valid
         procedure, public :: first
@@ -42,6 +44,8 @@ module block_iterator
         procedure, public :: blkMetaData
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         final             :: destroy_iterator
+#else
+        procedure         :: destroy_iterator
 #endif
     end type block_iterator_t
 
@@ -49,6 +53,10 @@ module block_iterator
         procedure :: init_iterator
         procedure :: init_iterator_mfa
     end interface block_iterator_t
+
+    interface block_iterator_destroy
+       procedure :: destroy_iterator
+    end interface block_iterator_destroy
 
 contains
 
@@ -85,6 +93,7 @@ contains
         logical, intent(IN), optional :: tiling
 
         integer :: l, first, last
+        logical :: v
 
         if (present(level)) then
             first = level
@@ -96,15 +105,29 @@ contains
  
         allocate( this%li (first : last) )
 
+        this%first_level = first
+        this%last_level = last
+        this%level = first
+
+!!$        print*,'block_iterator_build: about to build 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
+
         do l=first,last
 !!$           call amrex_mfiter_build(this%li(l),mfArray(l),tiling=tiling)
             this%li(l) = block_1lev_iterator_t(nodetype, mfArray(l),l,tiling=tiling)
+!!$            call this%li( l )%first()
+            v = this%li( l )%is_valid()
+            if (v .AND. .NOT. this%isValid) then
+               this%isValid = .TRUE.
+               this%level   = l
+            end if
         end do
 
-        this%first_level = first
-        this%last_level = last
+        if (.NOT. this%isValid) then
+           call this%destroy_iterator()
+        end if
 
-        this%level = first
+!!$        print*,'block_iterator_build: done building 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
+!!$        call this%first()
       end function init_iterator_mfa
 
     function init_iterator(nodetype, level, tiling) result(this)
@@ -122,7 +145,7 @@ contains
         this = init_iterator_mfa(nodetype, gr_amrextUnkMFs, level, tiling)
     end function init_iterator
 
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
+!#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
     !!****im* block_iterator_t/destroy_iterator
     !!
     !! NAME
@@ -136,19 +159,22 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-        type(block_iterator_t), intent(INOUT) :: this
+      class (block_iterator_t), intent(INOUT) :: this
 
         integer :: l
 
-        do l = this%first_level, this%last_level
+        if (allocated(this%li)) then
+           do l = this%first_level, this%last_level
 
-           call this%li( this%level )%destroy_iterator()
+              call this%li( l )%destroy_iterator()
 
-        end do
-        deallocate(this%li)
+           end do
+           deallocate(this%li)
+        end if
+        this%isValid = .FALSE.
 
     end subroutine destroy_iterator
-#endif
+!#endif
 
     !!****m* block_iterator_t/first
     !!
@@ -168,9 +194,14 @@ contains
         integer :: l
         logical :: v
 
+        call Driver_abortFlash('block_iterator: Attempting first(), not implemented!')
+        print*,'block_iterator%first: about to do 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
+
         do l = this%first_level, this%last_level
-           call this%li( this%level )%first()
+           call this%li( l )%first()
         end do
+
+        print*,'block_iterator%first: done 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
 
         if (this%first_level .LE. this%last_level) then
            l = this%first_level
@@ -234,14 +265,16 @@ contains
         integer :: l
         logical :: v
 
+!!$        print*,'block_iterator%next: about to do 1lev%next on this=',this%isValid,this%level,allocated(this%li)
+
         l = this%level
 
         call this%li( l )%next()
         v = this%li( l )%is_valid()
 
-        do while (l .LE. this%last_level .AND. .NOT. v)
+        do while (l .LT. this%last_level .AND. .NOT. v)
            l = l+1
-           call this%li( l )%first()
+!!$           call this%li( l )%first()   ! not necessary now!
            v = this%li( l )%is_valid()
         end do
 
@@ -270,17 +303,28 @@ contains
         class(block_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: blockDesc
 
-        type(amrex_box) :: box
+        type(amrex_box) :: box, fabbox
        
         box = this%li( this%level )%tilebox()
+        fabbox=this%li(this%level )%fabbox()
 
         ! TODO: Determine if box contains GC or not and finalize limits/limitsGC
 !!$        blockDesc%grid_index        = this%oti%grid_index()
         blockDesc%level             = this%level
         blockDesc%limits(LOW, :)    = box%lo
         blockDesc%limits(HIGH, :)   = box%hi
-        blockDesc%limitsGC(LOW, :)  = box%lo
-        blockDesc%limitsGC(HIGH, :) = box%hi
+        blockDesc%limitsGC(LOW, :)  = fabbox%lo
+        blockDesc%limitsGC(HIGH, :) = fabbox%hi
+
+        blockDesc%localLimits(LOW, :)   = blockDesc%limits(LOW, :)   - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimits(HIGH, :)  = blockDesc%limits(HIGH, :)  - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimitsGC(LOW, :) = 1
+        blockDesc%localLimitsGC(HIGH, :)= blockDesc%limitsGC(HIGH, :)- blockDesc%limitsGC(LOW, :) + 1
+
+        blockDesc%fp => this%li( this%level )%dataPtr()
+
+        blockDesc%id = -999
+
     end subroutine blkMetaData
  
 end module block_iterator

@@ -241,10 +241,12 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_interface, ONLY : Grid_getListOfBlocks
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_copyF4DataToMultiFabs
   use gr_interface, ONLY : gr_setGcFillNLayers, gr_sanitizeDataAfterInterp
   use paramesh_dimensions, ONLY : l2p5d,ndim
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
   use tree,         ONLY : lnblocks
+  use gr_amrextData
   use paramesh_interfaces, ONLY : amr_guardcell, amr_restrict
   use paramesh_mpi_interfaces, ONLY: mpi_amr_comm_setup
   use Eos_interface, ONLY : Eos_guardCells
@@ -521,6 +523,15 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
   end if
   if (allocated(blkList)) deallocate(blkList)
 
+  if ((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
+     if (.not. skipThisGcellFill) then
+        call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ACTIVE_BLKS)
+     else if (present(doEos)) then
+        if (doEos .AND. needEos) then
+           call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ACTIVE_BLKS)
+        end if
+     end if
+  end if
 
   !We now test whether we can skip the next guard cell fill.
   skipNextGcellFill = .false.

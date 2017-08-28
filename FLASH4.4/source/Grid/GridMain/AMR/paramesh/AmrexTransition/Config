@@ -9,3 +9,13 @@ LIBRARY amrex3d
 ELSE
 LIBRARY amrex2d
 ENDIF
+
+USESETUPVARS Grid
+
+IF Grid not in ["","PM4DEV","PM40","Amrex"]
+   SETUPERROR The variable Grid is not in ["","PM4DEV","PM40","Amrex"]
+ENDIF
+
+# There is another AmrexTransition dir to also include...
+REQUIRES Grid/GridMain/AMR/paramesh/paramesh4/AmrexTransition
+

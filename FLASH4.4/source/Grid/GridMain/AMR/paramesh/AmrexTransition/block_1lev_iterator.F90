@@ -11,10 +11,12 @@
 !! It iterates only over block at the same, given refinement level.
 !!****
 
+#include "FortranLangFeatures.fh"
 #include "constants.h"
 
 module block_1lev_iterator
 
+    use amrex_multifab_module, ONLY : amrex_multifab
     use amrex_multifab_module, ONLY : amrex_mfiter, &
                                     amrex_mfiter_build, &
                                     amrex_mfiter_destroy
@@ -33,14 +35,20 @@ module block_1lev_iterator
         type(amrex_mfiter),POINTER :: mfi   => NULL()
         integer                 :: level    = INVALID_LEVEL
         logical                 :: isValid = .FALSE.
+        real,POINTER            :: fp(:,:,:,:)
+        type(amrex_multifab),POINTER :: mf  => NULL()
     contains
         procedure, public :: is_valid
         procedure, public :: first
         procedure, public :: next
         procedure, public :: tilebox
+        procedure, public :: fabbox
+        procedure, public :: dataPtr
         procedure, public :: blkMetaData
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         final             :: destroy_iterator
+#else
+        procedure, public :: destroy_iterator
 #endif
     end type block_1lev_iterator_t
 
@@ -80,7 +88,7 @@ contains
 
         type(block_1lev_iterator_t)        :: this
         integer, intent(IN)           :: nodetype
-        type(amrex_multifab),intent(IN) :: mf
+        type(amrex_multifab),intent(IN),TARGET :: mf
         integer, intent(IN), optional :: level
         logical, intent(IN), optional :: tiling
 
@@ -95,6 +103,9 @@ contains
 
         ! Initial iterator is not primed.  Advance to first compatible block.
         call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
+        this%mf => mf
+!!$        print*,'block_1lev_iterator: init_iterator_mf  on this=',this%isValid,this%level,associated(this%mfi)
+        this%isValid = .TRUE.
         call this%next()
   end function init_iterator_mf
 
@@ -103,7 +114,7 @@ contains
 
         type(block_1lev_iterator_t)        :: this
         integer, intent(IN)           :: nodetype
-        type(amrex_multifab),intent(IN) :: mfArray(*)
+        type(amrex_multifab),intent(IN),TARGET :: mfArray(*)
         integer, intent(IN), optional :: level
         logical, intent(IN), optional :: tiling
 
@@ -118,6 +129,9 @@ contains
 
         ! Initial iterator is not primed.  Advance to first compatible block.
         call amrex_mfiter_build(this%mfi,mfArray(level),tiling=tiling)
+        this%mf => mfArray(level)
+!!$        print*,'block_1lev_iterator: init_iterator_mfa on this=',this%isValid,this%level,associated(this%mfi)
+        this%isValid = .TRUE.
         call this%next()
      end function init_iterator_mfa
 
@@ -143,15 +157,24 @@ contains
 !!$        call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs,lrefine_max,LEAF)
         if (present(level)) then
            mfArray => gr_amrextUnkMFs
-           call amrex_mfiter_build(this%mfi,mfArray(level),tiling=tiling)
+           mf => gr_amrextUnkMFs(level)
+!!$           print*,'amrex_multifab_nghost(mf)=',mf%nghost()
+!!$           print*,'ABOUT TO call amrex_mfiter_build,size(mfArray)=',size(mfArray)
+!!$           call amrex_mfiter_build(this%mfi,mfArray(level),tiling=tiling)
+           call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
+!!$           print*,'amrex_multifab_nghost(mf)=',mf%nghost()
+           this%mf => mfArray(level)
         else
            mf => gr_amrextUnkMFs(1)
            call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
+           this%mf => mf
         end if
+!!$        print*,'block_1lev_iterator: init_iterator     on this=',this%isValid,this%level,associated(this%mfi)
+        this%isValid = .TRUE.
         call this%next()
     end function init_iterator
 
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
+!#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
     !!****im* block_1lev_iterator_t/destroy_iterator
     !!
     !! NAME
@@ -165,13 +188,17 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-        type(block_1lev_iterator_t), intent(INOUT) :: this
+      class(block_1lev_iterator_t), intent(INOUT) :: this
 
-        call amrex_mfiter_destroy(this%mfi)
-        deallocate(this%mfi)
-        nullify(this%mfi)
+      if (this%isValid) then
+         call amrex_mfiter_destroy(this%mfi)
+         deallocate(this%mfi)
+         nullify(this%mfi)
+         nullify(this%mf)
+         this%isValid = .FALSE.
+      end if
     end subroutine destroy_iterator
-#endif
+!#endif
 
     !!****m* block_1lev_iterator_t/first
     !!
@@ -188,11 +215,15 @@ contains
     subroutine first(this)
         class(block_1lev_iterator_t), intent(INOUT) :: this
 
-        ! reset to before first valid block
-        call this%mfi%clear()
-        this%isValid = .FALSE.  !DEV: ??
-        ! Initial iterator is not primed.  Advance to first compatible block.
-        call this%next()
+        print*,'block_1lev_%first: IGNORING ATTEMPT  on this=',this%isValid,this%level,associated(this%mfi)
+
+!!$        ! reset to before first valid block
+!!$        print*,'block_1lev_%first: about to do clear on this=',this%isValid,this%level,associated(this%mfi)
+!!$        call this%mfi%clear()
+!!$        this%isValid = .TRUE.
+!!$        ! Initial iterator is not primed.  Advance to first compatible block.
+!!$        print*,'block_1lev_%first: about to do next on this=',this%isValid,this%level,associated(this%mfi)
+!!$        call this%next()
     end subroutine first
  
     !!****m* block_1lev_iterator_t/is_valid
@@ -233,7 +264,20 @@ contains
     subroutine next(this)
         class(block_1lev_iterator_t), intent(INOUT) :: this
 
-        this%isValid = this%mfi%next()
+        logical :: v
+        if (this%isValid) then
+!!$           print*,'block_1lev_iterator: about to do next on this=',this%isValid,this%level,associated(this%mfi)
+           v = this%mfi%next()
+!!$           print*,'block_1lev_iterator:       done  next on this=',       v    ,this%level,associated(this%mfi)
+
+           if (.NOT. v) then
+              call this%destroy_iterator()
+           end if
+
+        else
+           print*,'block_1lev_iterator: no next, inValid! on this=',this%isValid,this%level,associated(this%mfi)
+           call Driver_abortFlash("block_1lev_iterator: attempting next() on invalid!")
+        end if
 
     end subroutine next
 
@@ -245,6 +289,22 @@ contains
       inodal = 0
       bx = this%mfi%tilebox()
     end function tilebox
+
+    function fabbox (this) result (bx)
+      use amrex_box_module, ONLY : amrex_box
+      class(block_1lev_iterator_t), intent(in) :: this
+      type(amrex_box) :: bx
+      integer :: inodal(3)
+      inodal = 0
+      bx = this%mfi%fabbox()
+    end function fabbox
+
+    function dataPtr (this) result (dp)
+      use amrex_multifab_module, ONLY : amrex_multifab
+      real, contiguous, pointer, dimension(:,:,:,:) :: dp
+      class(block_1lev_iterator_t), intent(in) :: this
+      dp => this%mf%dataPtr(this%mfi)
+    end function dataPtr
 
     !!****m* block_1lev_iterator_t/blkMetaData
     !!
@@ -266,17 +326,25 @@ contains
         class(block_1lev_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: blockDesc
 
-        type(amrex_box) :: box
+        type(amrex_box) :: box, fabbox
        
         box = this%mfi%tilebox()
+        fabbox = this%mfi%fabbox()
 
         ! TODO: Determine if box contains GC or not and finalize limits/limitsGC
 !!$        blockDesc%grid_index        = this%oti%grid_index()
         blockDesc%level             = this%level
         blockDesc%limits(LOW, :)    = box%lo
         blockDesc%limits(HIGH, :)   = box%hi
-        blockDesc%limitsGC(LOW, :)  = box%lo
-        blockDesc%limitsGC(HIGH, :) = box%hi
+        blockDesc%limitsGC(LOW, :)  = fabbox%lo
+        blockDesc%limitsGC(HIGH, :) = fabbox%hi
+
+        blockDesc%localLimits(LOW, :)   = blockDesc%limits(LOW, :)   - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimits(HIGH, :)  = blockDesc%limits(HIGH, :)  - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimitsGC(LOW, :) = 1
+        blockDesc%localLimitsGC(HIGH, :)= blockDesc%limitsGC(HIGH, :)- blockDesc%limitsGC(LOW, :) + 1
+
+        blockDesc%fp => this%dataPtr()
     end subroutine blkMetaData
  
 end module block_1lev_iterator

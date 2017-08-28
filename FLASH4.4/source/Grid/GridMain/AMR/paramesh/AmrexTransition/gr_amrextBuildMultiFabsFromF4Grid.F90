@@ -77,7 +77,10 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
      call Grid_getBlkRefineLevel(blockID,blkLev)
      ibLoc = lbpl(blkLev) + 1
      lbpl(blkLev) = ibLoc
+
+#ifdef DEBUG_GRID
      print*,'ib,blockID,blkLev,ibLoc:',ib,blockID,blkLev,ibLoc
+#endif
   end do
 
   allocate(disp(maxLev))
@@ -97,10 +100,10 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
      ibLoc = lbpl(blkLev) + 1
      lbpl(blkLev) = ibLoc
      newp(ib) = disp(blkLev) + ibLoc !new position of block ib
+#ifdef DEBUG_GRID
      print*,'ib,blockID,blkLev,ibLoc,disp(blkLev):',ib,blockID,blkLev,ibLoc,disp(blkLev)
-!!$     print*,'ib,blockID,blkLev,ibLoc,newp(ib):',ib,blockID,blkLev,ibLoc,newp(ib)
+#endif
      oldp(newp(ib)) = ib             !old position (in blks) of newp(ib)
-!!$     call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
      call Grid_getBlkCornerID(blockID,cornerID(LOW,:),stride,cornerID(HIGH,:))
      tileLimits(LOW ,:NDIM) = (cornerID(LOW ,:NDIM)-1) / stride(:NDIM) + 1
      tileLimits(HIGH,:NDIM) =  cornerID(HIGH,:NDIM) / stride(:NDIM)
@@ -118,7 +121,9 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
 
   globalNumBlocks = sum(gbpl)
   allocate(dimLimits(LOW:HIGH,NDIM,globalNumBlocks))
+#ifdef DEBUG_GRID
   print*,'SHAPE(dimLimits) is',SHAPE(dimLimits)
+#endif
 
   allocate(recvcount(0:gr_meshNumProcs))
   allocate(displs   (0:gr_meshNumProcs))
@@ -156,7 +161,9 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
 
 
   do level=1,maxLev
+#ifdef DEBUG_GRID
      print*,' ***************   Amrext-BUILD LEVEL', level,'  **********************'
+#endif
      levelBlocks = gbpl(level)
      allocate(procMap(levelBlocks))
      allocate(locLim(LOW:HIGH,NDIM,levelBlocks))
@@ -164,7 +171,9 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
      do iproc=1,gr_meshNumProcs
         offsGlob = displs(iproc) + sum(bpl(1:level-1,iproc))
         n = bpl(level,iproc)
+#ifdef DEBUG_GRID
         print*,'level,iproc,bpl(level,iproc):',level,iproc,bpl(level,iproc)
+#endif
         if (n>0) then
            locLim(LOW:HIGH,:NDIM,offsLoc+1:offsLoc+n) = dimLimits(:,:NDIM,offsGlob+1:offsGlob+n)
            procMap              (offsLoc+1:offsLoc+n) = iproc - 1
@@ -173,10 +182,14 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
      end do
 
      call amrex_distromap_build(dm,procMap(1:levelBlocks))
+#ifdef DEBUG_GRID
      call amrex_print(dm)
+#endif
      call amrex_boxarray_build(ba,locLim(LOW:HIGH,:NDIM,1:levelBlocks))
+#ifdef DEBUG_GRID
      call amrex_print(ba)
-     call amrex_multifab_build(phi_mf(level), ba, dm, NUNK_VARS, ng=0)
+#endif
+     call amrex_multifab_build(phi_mf(level), ba, dm, NUNK_VARS, ng=NGUARD)
 
      deallocate(locLim)
      deallocate(procMap)

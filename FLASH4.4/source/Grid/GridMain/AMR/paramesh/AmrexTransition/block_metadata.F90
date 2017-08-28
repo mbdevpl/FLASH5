@@ -17,6 +17,9 @@ module block_metadata
         integer :: grid_index
         integer :: limits(LOW:HIGH, MDIM)
         integer :: limitsGC(LOW:HIGH, MDIM)
+        integer :: localLimits(LOW:HIGH, MDIM)
+        integer :: localLimitsGC(LOW:HIGH, MDIM)
+        real,POINTER :: fp(:,:,:,:)
         integer :: id           !for now, only to allow compilation
         integer :: cid(MDIM)    !for now, only to allow compilation
         integer :: stride(MDIM) !for now, only to allow compilation
