@@ -255,20 +255,22 @@
 !!#define DEBUG_GRID
 
 
-subroutine Grid_getBlkData(blockID, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
      startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
 
-  integer, intent(in) :: blockID, structIndex, beginCount, gridDataStruct
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(MDIM), intent(in) :: dataSize
   real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(out) :: datablock
@@ -279,18 +281,11 @@ subroutine Grid_getBlkData(blockID, gridDataStruct, structIndex, beginCount, &
   integer :: imax, jmax, kmax
   logical :: isget
   logical :: getIntPtr
-#ifdef DEBUG_GRID
-  isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
-
-
-  !verify we have a valid blockid
-  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,' Grid_getBlkData : invalid blockid ', blockid
-     call Driver_abortFlash("[Grid_getBlkData] : invalid blockid ")
-  end if
   
+#ifdef DEBUG_GRID
 
+  isget = .true.
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
 
 
   !verify beginCount is set to a valid value
@@ -441,7 +436,7 @@ subroutine Grid_getBlkData(blockID, gridDataStruct, structIndex, beginCount, &
   xe = 1
 
 
-  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataSize,beginCount,&
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataSize,beginCount,&
        begOffset,getIntPtr)
 
 #if NDIM > 2
@@ -458,26 +453,26 @@ subroutine Grid_getBlkData(blockID, gridDataStruct, structIndex, beginCount, &
   xe = xb + dataSize(IAXIS) -1
 
   if(gridDataStruct == CELL_VOLUME) then
-     call gr_getCellVol(xb,xe,yb,ye,zb,ze,blockid,datablock)
+     call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,datablock)
 #ifdef DEBUG_GRID
      print*,'the volume calculated is',maxval(datablock)
 #endif
   elseif (gridDataStruct == CELL_FACEAREA) then
-     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,blockid,dataBlock)
+     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,dataBlock)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockId,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
      
-     call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct)
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        datablock(:,:,:)=solnData(xb:xe,yb:ye,zb:ze,structIndex)
 !!$     else
 !!$     end if
-     call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
-     
+     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+ 
   end if
   
   return

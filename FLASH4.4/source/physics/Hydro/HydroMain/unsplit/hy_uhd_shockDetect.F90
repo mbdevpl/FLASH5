@@ -31,13 +31,9 @@
 
 !!REORDER(4): U
 
-Subroutine hy_uhd_shockDetect( blockID )
+Subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
 
 
-  use Grid_interface,    ONLY : Grid_getBlkIndexLimits, &
-                                Grid_getBlkPtr,         &
-                                Grid_releaseBlkPtr,     &
-                                Grid_getDeltas
   use Hydro_data,        ONLY : hy_cfl, hy_cfl_original,&
                                 hy_RiemannSolver,       &
                                 hy_geometry,            &
@@ -54,22 +50,29 @@ Subroutine hy_uhd_shockDetect( blockID )
 #include "UHD.h"
 
   !! ---- Argument List ----------------------------------
-  integer, INTENT(IN) :: blockID
+  integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
+  real, dimension(:,:,:,:),INTENT(INOUT) :: Uin
+  real,dimension(:,:,:,:),INTENT(OUT) :: Uout
+  real,dimension(MDIM),INTENT(IN) :: del
   !! -----------------------------------------------------
 
-  integer :: i,j,k
+  integer :: i,j,k,ib,ie,jb,je,kb,ke
   logical :: SW1, SW2
   logical :: doLowerCFL
   integer :: k2,k3
 
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
 
   real :: divv,gradPx,gradPy,gradPz
   real :: minP,minC,beta,delta
   real :: localCfl,cflMax
   real, dimension(:,:,:), allocatable :: Vc
-  real, dimension(:,:,:,:), pointer   :: U
 
+  ib=blkLimitsGC(LOW,IAXIS)
+  ie=blkLimitsGC(HIGH,IAXIS)  
+  jb=blkLimitsGC(LOW,JAXIS)
+  je=blkLimitsGC(HIGH,JAXIS)  
+  kb=blkLimitsGC(LOW,KAXIS)
+  ke=blkLimitsGC(HIGH,KAXIS)  
 
   ! Two parameters that can be adjusted to detect shocks
   ! with different strengths:
@@ -88,12 +91,8 @@ Subroutine hy_uhd_shockDetect( blockID )
   if (NDIM > 1) k2=1
   if (NDIM > 2) k3=1
 
-
-  call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
-  call Grid_getBlkPtr(blockID,U,CENTER)
-
 #ifdef SHOK_VAR
-     U(SHOK_VAR,:,:,:)=0.
+     Uout(SHOK_VAR,ib:ie,jb:je,kb:ke)=0.
 #else
   if (hy_RiemannSolver == HYBR) then
      call Driver_abortFlash&
@@ -111,7 +110,7 @@ Subroutine hy_uhd_shockDetect( blockID )
   do k=blkLimits(LOW,KAXIS)-K3D,blkLimits(HIGH,KAXIS)+K3D
      do j=blkLimits(LOW,JAXIS)-K2D,blkLimits(HIGH,JAXIS)+K2D
         do i=blkLimits(LOW,IAXIS)-1,blkLimits(HIGH,IAXIS)+1
-           Vc(i,j,k) = sqrt(U(GAMC_VAR,i,j,k)*U(PRES_VAR,i,j,k)/U(DENS_VAR,i,j,k))
+           Vc(i,j,k) = sqrt(Uin(GAMC_VAR,i,j,k)*Uin(PRES_VAR,i,j,k)/Uin(DENS_VAR,i,j,k))
         enddo
      enddo
   enddo
@@ -128,28 +127,28 @@ Subroutine hy_uhd_shockDetect( blockID )
            SW1 = .false.
            SW2 = .false.
 
-           minP = minval(U(PRES_VAR,i-1:i+1,j-k2:j+k2,k-k3:k+k3))
+           minP = minval(Uin(PRES_VAR,i-1:i+1,j-k2:j+k2,k-k3:k+k3))
            minC = minval(        Vc(i-1:i+1,j-k2:j+k2,k-k3:k+k3))
 
            !! We do not need to include non-Cartesian geom factors here.
            !! Undivided divV
-           divv =        U(VELX_VAR,i+1,j,  k  ) - U(VELX_VAR,i-1,j,  k  )
+           divv =        Uin(VELX_VAR,i+1,j,  k  ) - Uin(VELX_VAR,i-1,j,  k  )
 #if NDIM > 1
-           divv = divv + U(VELY_VAR,i,  j+1,k  ) - U(VELY_VAR,i,  j-1,k  )
+           divv = divv + Uin(VELY_VAR,i,  j+1,k  ) - Uin(VELY_VAR,i,  j-1,k  )
 #if NDIM == 3
-           divv = divv + U(VELZ_VAR,i,  j,  k+1) - U(VELZ_VAR,i,  j,  k-1)
+           divv = divv + Uin(VELZ_VAR,i,  j,  k+1) - Uin(VELZ_VAR,i,  j,  k-1)
 #endif
 #endif
            divv = 0.5*divv  
 
            !! Undivided grad pres
-           gradPx = 0.5*(U(PRES_VAR,i+1,j,  k  ) - U(PRES_VAR,i-1,j,  k  ))
+           gradPx = 0.5*(Uin(PRES_VAR,i+1,j,  k  ) - Uin(PRES_VAR,i-1,j,  k  ))
            gradPy = 0.
            gradPz = 0.
 #if NDIM > 1
-           gradPy = 0.5*(U(PRES_VAR,i,  j+1,k  ) - U(PRES_VAR,i,  j-1,k  ))
+           gradPy = 0.5*(Uin(PRES_VAR,i,  j+1,k  ) - Uin(PRES_VAR,i,  j-1,k  ))
 #if NDIM == 3
-           gradPz = 0.5*(U(PRES_VAR,i,  j,  k+1) - U(PRES_VAR,i,  j,  k-1))
+           gradPz = 0.5*(Uin(PRES_VAR,i,  j,  k+1) - Uin(PRES_VAR,i,  j,  k-1))
 #endif
 #endif
            if ( abs(gradPx)+abs(gradPy)+abs(gradPz) .ge. beta*minP ) then
@@ -166,7 +165,7 @@ Subroutine hy_uhd_shockDetect( blockID )
               ! One use is for a local hybrid method in the Hydro unit which
               ! applies (a diffusive) HLL solver when SHOK_VAR = 1.
 #ifdef SHOK_VAR
-              U(SHOK_VAR,i,j,k) = 1.
+              Uout(SHOK_VAR,i,j,k) = 1.
 #endif
 
               if (hy_shockLowerCFL) then
@@ -189,14 +188,13 @@ Subroutine hy_uhd_shockDetect( blockID )
 
 #ifdef CFL_VAR
            if (hy_shockLowerCFL .OR. .NOT. hy_fallbackLowerCFL) &
-                U(CFL_VAR,i,j,k) = localCfl
+                Uout(CFL_VAR,i,j,k) = localCfl
 #endif
         enddo !enddo i-loop
      enddo !enddo j-loop
   enddo !enddo k-loop
 
   ! Release block pointer
-  call Grid_releaseBlkPtr(blockID,U,CENTER)
 
   ! Deallocate sound speed array
   deallocate(Vc)

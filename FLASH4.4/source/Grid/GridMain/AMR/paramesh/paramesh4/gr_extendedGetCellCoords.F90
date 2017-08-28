@@ -92,7 +92,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine gr_extendedGetCellCoords(axis, blockID, pe, edge, guardcell, coordinates, size)
+subroutine gr_extendedGetCellCoords(axis, block, pe, edge, guardcell, coordinates, size)
 
   use Grid_data, ONLY : gr_meshMe, &
        gr_delta, gr_imin, gr_jmin, gr_kmin
@@ -100,17 +100,20 @@ subroutine gr_extendedGetCellCoords(axis, blockID, pe, edge, guardcell, coordina
   use tree, ONLY: bnd_box, laddress, strt_buffer, last_buffer, lnblocks, lrefine, lrefine_max
   use Grid_interface, ONLY : Grid_getCellCoords
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 
 #include "constants.h"
 #include "Flash.h"
 
   implicit none
 
-  integer, intent(in) :: axis,blockID,pe, edge
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: axis,pe, edge
   integer, intent(in) :: size
   logical, intent(in) :: guardcell
   real,intent(out), dimension(size) :: coordinates
 
+  integer :: blockID
   integer :: bOffset,eOffset,calcSize,numGuard
 
   integer :: accessBlk, accessPE ! what we use here to access coordinate information
@@ -119,6 +122,8 @@ subroutine gr_extendedGetCellCoords(axis, blockID, pe, edge, guardcell, coordina
   real :: half_Delta, bnd_box_left, domain_left, indCenter
   real :: coordDeviation
   integer :: j
+
+  blockID = block%id
 
     ! The following logic copied from Tests/amr_1blk_bcset.F90 in Paramesh4 distribution. - KW
     ! This is heavily dependent on Paramesh internals.

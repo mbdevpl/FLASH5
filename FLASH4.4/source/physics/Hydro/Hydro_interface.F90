@@ -6,18 +6,20 @@
 Module Hydro_interface
 #include "constants.h"
 #include "Flash.h"
-
+ 
   implicit none
 
   interface Hydro_computeDt
-     subroutine Hydro_computeDt ( &
+     subroutine Hydro_computeDt (block, &
           x, dx, uxgrid, &
           y, dy, uygrid, &
           z, dz, uzgrid, &
           blkLimits,blkLimitsGC,  &
           solnData,   &
           dt_check, dt_minloc, extraInfo )
+       use block_metadata, ONLY : block_metadata_t
        implicit none
+       type(block_metadata_t), intent(IN) :: block
        integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
 #ifdef FIXEDBLOCKSIZE
        real, dimension(GRID_ILO_GC:GRID_IHI_GC), intent(IN) :: x, dx, uxgrid
@@ -41,16 +43,17 @@ Module Hydro_interface
   end interface
 
   interface Hydro
-     subroutine Hydro (del,tileLimits,Uout, timeEndAdv, dt, dtOld,  &
-                        sweepOrder )
-
+     subroutine Hydro (block, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+          sweepOrder )
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t) :: block
+       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
-       real, pointer, dimension(:,:,:,:) :: Uout
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: tileLimits
      end subroutine Hydro
-  end interface
+  end interface Hydro
 
   interface Hydro_init
      subroutine Hydro_init()

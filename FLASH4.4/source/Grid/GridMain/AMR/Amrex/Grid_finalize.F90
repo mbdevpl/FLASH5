@@ -18,15 +18,14 @@
 
 
 subroutine Grid_finalize()
-  use chombo_f_c_interface, ONLY : ch_finalize
-  use gr_bcInterface, ONLY : gr_bcFinalize
-  use gr_ptInterface, ONLY : gr_ptFinalize
-  implicit none
-
-#include "Flash.h"
-
-  call gr_solversFinalize()
-  call gr_ptFinalize()
-  call gr_bcFinalize()
-  call ch_finalize()
+    use gr_bcInterface, ONLY : gr_bcFinalize
+    use gr_ptInterface, ONLY : gr_ptFinalize
+    use amrex_interfaces, ONLY : gr_amrex_finalize
+    
+    implicit none
+     
+    call gr_solversFinalize()
+    call gr_ptFinalize()
+    call gr_bcFinalize()
+    call gr_amrex_finalize()
 end subroutine Grid_finalize

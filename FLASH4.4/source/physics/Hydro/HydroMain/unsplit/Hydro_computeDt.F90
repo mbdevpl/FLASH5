@@ -60,7 +60,7 @@
 
 !!REORDER(4): U
 
-Subroutine Hydro_computeDt( blockID,       &
+Subroutine Hydro_computeDt( block,       &
                             x, dx, uxgrid, &
                             y, dy, uygrid, &
                             z, dz, uzgrid, &
@@ -80,21 +80,17 @@ Subroutine Hydro_computeDt( blockID,       &
        hy_geometry, hy_units, hy_useVaryingCFL
   use Grid_interface, ONLY : Grid_getBlkBC
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
   !! Arguments type declaration ------------------------------------------
-  integer, intent(IN) :: blockID 
+  type(block_metadata_t), intent(IN) :: block 
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC), intent(IN) :: x, dx, uxgrid
-  real, dimension(GRID_JLO_GC:GRID_JHI_GC), intent(IN) :: y, dy, uygrid
-  real, dimension(GRID_KLO_GC:GRID_KHI_GC), intent(IN) :: z, dz, uzgrid
-#else
   real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
   real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)), intent(IN) :: y, dy, uygrid
   real, dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)), intent(IN) :: z, dz, uzgrid
-#endif
+
 
   real, pointer         :: U(:,:,:,:)
   real,   intent(INOUT) :: dtCheck
@@ -112,7 +108,7 @@ Subroutine Hydro_computeDt( blockID,       &
   if ((.not. hy_useHydro) .or. (.not. hy_updateHydroFluxes)) return
 
   !! Case 2a: we pass the already computed dt information to Driver_computeDt
-  !!          if it appears valid and the saved location's block ID matches the blockID argument.
+  !!          if it appears valid and the saved location's block ID matches the block argument.
   !!         In this case, hydro dt gets computed in either 
   !!          (i) hy_uhd_energyFix (hy_hydroComputeDtOption=0), or 
   !!         (ii) hy_uhd_getFaceFlux (hy_hydroComputeDtOption=1)
@@ -121,7 +117,7 @@ Subroutine Hydro_computeDt( blockID,       &
        hy_dtminValid .and. &
       (.not. hy_hydroComputeDtFirstCall .OR. hy_restart)) then
      dtCflLoc = hy_cfl
-     if ( hy_dtmin < dtCheck .AND. hy_dtminloc(4) == blockID) then
+     if ( hy_dtmin < dtCheck .AND. hy_dtminloc(4) == block%id) then
         dtCheck  = hy_dtmin
         dtMinLoc = hy_dtminloc(1:5)
         dtCflLoc = hy_dtminCfl
@@ -185,7 +181,6 @@ Subroutine Hydro_computeDt( blockID,       &
      delyinv = 1.0/dy(blkLimits(LOW,JAXIS))
      if (NDIM > 2) &
      delzinv = 1.0/dz(blkLimits(LOW,KAXIS))
-
      if (hy_geometry == POLAR) & !Polar in 3D (that's a no no)
           call Driver_abortFlash("[Hydro_computeDt] ERROR: Polar geometry not supported in 3D")
 
@@ -200,7 +195,7 @@ Subroutine Hydro_computeDt( blockID,       &
                  if (hy_cflStencil<1) then
                     localCfl = U(CFL_VAR,i,j,k)
                  else
-                    call Grid_getBlkBC(blockID,bcs)
+                    call Grid_getBlkBC(block,bcs)
                     imS=max(blkLimitsGC(LOW,IAXIS), i-hy_cflStencil)
                     ipS=min(blkLimitsGC(HIGH,IAXIS),i+hy_cflStencil)
                     
@@ -266,14 +261,13 @@ Subroutine Hydro_computeDt( blockID,       &
                  dt_ltemp = (abs(U(VELX_VAR,i,j,k)-uxgrid(i))+sqrt(cfx2))*delxinv
                  if (NDIM > 1) dt_ltemp = max(dt_ltemp,(abs(U(VELY_VAR,i,j,k)-uygrid(j))+sqrt(cfy2))*delyinv)
                  if (NDIM > 2) dt_ltemp = max(dt_ltemp,(abs(U(VELZ_VAR,i,j,k)-uzgrid(k))+sqrt(cfz2))*delzinv)
-
                  if (dt_ltemp * tempCfl > dt_temp * localCfl) then
                     dt_temp    = dt_ltemp
                     tempCfl    = localCfl
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = block%id
                     temploc(5) = hy_meshMe
                  endif
 #ifdef BDRY_VAR
@@ -326,7 +320,6 @@ Subroutine Hydro_computeDt( blockID,       &
   endif
 
   if(dtCheck <= 0.0) then
-     print*,'dtCheck=',dtCheck
      call Driver_abortFlash("[Hydro]: Computed dt is not positive! Aborting!")
   endif
   return

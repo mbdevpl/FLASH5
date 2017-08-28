@@ -41,12 +41,11 @@ subroutine gr_estimateError(error, iref, refine_filter)
 
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
        gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
-  use Grid_interface, ONLY : Grid_getBlkBC
+  use Grid_interface, ONLY : Grid_getBlkBC, &
+                             Grid_getBlkPtr, Grid_releaseBlkPtr
   use gr_specificData, ONLY : gr_oneBlock
-  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
-                                    famrex_mviter, famrex_mviter_build,&
-                                    famrex_mviter_destroy,famrex_multivab_destroy
-  use famrex_box_module,      ONLY: famrex_box
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -72,20 +71,20 @@ subroutine gr_estimateError(error, iref, refine_filter)
 
   real num,denom
 
-  integer lb,i,j,k
+  integer i,j,k
   integer ierr,grd
   integer,dimension(MDIM)::bstart,bend 
   integer nsend,nrecv
-!
+
   integer :: kk
 
   real, pointer :: solnData(:,:,:,:)
   integer :: idest, iopt, nlayers, icoord
   logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
-  type(famrex_multivab) :: phi
-  type(famrex_mviter) :: mvi
-  type(famrex_box) :: bx, tbx
-  integer:: ib, level, maxLev
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
+  integer :: blkLevel, blkID
+  integer:: ib, maxLev
 
 !==============================================================================
 
@@ -112,31 +111,28 @@ subroutine gr_estimateError(error, iref, refine_filter)
   !==============================================================================
 
 
-
-#define XCOORD(I) (gr_oneBlock(lb)%firstAxisCoords(CENTER,I))
-#define YCOORD(I) (gr_oneBlock(lb)%secondAxisCoords(CENTER,I))
+! DEVNOTE: gr_oneBlock is paramesh-specific.   Need to replace these macros.
+#define XCOORD(I) (gr_oneBlock(blkID)%firstAxisCoords(CENTER,I))
+#define YCOORD(I) (gr_oneBlock(blkID)%secondAxisCoords(CENTER,I))
   maxLev=gr_maxRefine
 
-  call famrex_multivab_build(phi, ACTIVE_BLKS, CENTER, gr_meshComm, NUNK_VARS,lev=level)
-  call famrex_mviter_build(mvi, phi, tiling=.true.) !tiling is currently ignored...
-  do while(mvi%next())
-     bx = mvi%tilebox()
-     lb=mvi%localIndex()
+  itor = block_iterator_t(ACTIVE_BLKS)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+
+     blkLevel    = block%level
+     blkID       = block%id
+     blkLimits   = block%limits
+     blkLimitsGC = block%limitsGC
+     call Grid_getBlkPtr(block, solnData, CENTER)
+
 !!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
 !!        error(lb)=0.0   
 
-        solnData=>phi%dataptr(mvi)
-
-        blkLimits(LOW,:)=bx%lo
-        blkLimits(HIGH,:)=bx%hi
-        blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
-        blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
-        
-        
         del=0.0
         ncell(:)=blkLimits(HIGH,:)-blkLimits(LOW,:)+1
-        psize(:)=ncell(:)*gr_delta(:,mvi%level())
+        psize(:)=ncell(:)*gr_delta(:,blkLevel)
         del(IAXIS:NDIM) = 0.5e0*float(ncell(IAXIS:NDIM))/psize(IAXIS:NDIM)
         del_f(JAXIS:NDIM) = del(JAXIS:NDIM)
         allocate(delu(MDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
@@ -197,6 +193,9 @@ subroutine gr_estimateError(error, iref, refine_filter)
            end do
         end do
         
+        call Grid_releaseBlkPtr(block, solnData, CENTER)
+        nullify(solnData)
+        
         ! Compute second derivatives
         bstart=1
         bend=1
@@ -206,7 +205,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
         !    grd=NGUARD-1
         ! No guardcells
         !    grd=NGUARD
-        call Grid_getBlkBC(lb,face,bdry)
+        call Grid_getBlkBC(block,face,bdry)
         
         do i=1,NDIM
            if (face(LOW,i) == NOT_BOUNDARY)then
@@ -346,9 +345,9 @@ subroutine gr_estimateError(error, iref, refine_filter)
                  
                  ! mz -- compare the square of the error
                  if (denom .eq. 0.0 .AND. num .ne. 0.0) then
-                    error(lb) = HUGE(1.0)
+                    error(blkID) = HUGE(1.0)
                  else if (denom .ne. 0.0) then
-                    error(lb) = max(error(lb),num/denom)
+                    error(blkID) = max(error(blkID), num/denom)
                  end if
                  
               end do
@@ -356,12 +355,11 @@ subroutine gr_estimateError(error, iref, refine_filter)
         end do
         
            ! store the maximum error for the current block
-        error(lb) = sqrt(error(lb))
+        error(blkID) = sqrt(error(blkID))
         deallocate(delu)
         deallocate(delua)
+
+        call itor%next()
   end do
-  call famrex_mviter_destroy(mvi)
-  call famrex_multivab_destroy(phi)
-  return
 end subroutine gr_estimateError
 

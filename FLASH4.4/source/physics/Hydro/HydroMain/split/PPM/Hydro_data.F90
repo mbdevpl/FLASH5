@@ -91,42 +91,6 @@ module Hydro_data
   integer, dimension(2,MDIM*2) :: neigh
   !!******** PPM KERNEL DATA STRUCTURES ************
 
-#ifdef FIXEDBLOCKSIZE  
-  real,save, DIMENSION(MAXCELLS) :: hy_dela  , &
-                                    hy_dp    , hy_du    , hy_dut   , hy_dutt  , &
-                                    hy_drho  , hy_dgame , hy_dgamc , hy_dgrav , &
-                                    hy_p6    , hy_u6    , hy_ut6   , hy_utt6  , &
-                                    hy_rho6  , hy_game6 , hy_gamc6 , hy_grav6 , &
-                                    hy_pwl, hy_pwr, hy_dpw, hy_pw6l, hy_pw6r, hy_pwcubic,&
-                                    hy_gravl , hy_gravr,                  &
-                                    hy_clft  , hy_plft  , hy_uttlft,         &
-                                    hy_ulft  , hy_vlft  , hy_utlft ,         &
-                                    hy_crght , hy_prght , hy_vrght ,         &
-                                    hy_urght , hy_utrght, hy_uttrgt,         &
-                                    hy_gmelft, hy_gmergt,                 &
-                                    hy_gmclft, hy_gmcrgt,                 &
-                                    hy_deint, hy_eint6, hy_eiLft, hy_eiRght
-
-!Ensure array is not zero sized.  This avoids the following 
-!link error when compiling with OpenMP on BG/P.
-!intrfc.F90:378: undefined reference to `$.TPK$.&&N&&hydro_data%hy_dxn'
-#if NSPECIES+NMASS_SCALARS > 0
-  real, save, DIMENSION(MAXCELLS,hy_numXN) :: hy_dxn, hy_xn6 ,hy_xnlft, hy_xnrght
-#else
-  real, save, DIMENSION(MAXCELLS,1) :: hy_dxn, hy_xn6 ,hy_xnlft, hy_xnrght
-#endif
-
-  real,save, dimension(2,NYB,NZB,MAXBLOCKS) :: hy_xarea,hy_xdtdx,&
-       hy_xgrav,hy_xngrav,hy_xfict
-  real,save, dimension(NXB,2,NZB,MAXBLOCKS) :: hy_yarea,hy_ydtdy,&
-       hy_ygrav,hy_yngrav,hy_yfict
-  real,save, dimension(NXB,NYB,2,MAXBLOCKS) :: hy_zarea,hy_zdtdz,&
-       hy_zgrav,hy_zngrav,hy_zfict
-  real,save, dimension(2,2,NYB,NZB,MAXBLOCKS) :: hy_xareaAtFaces
-  real,save, dimension(2,NXB,2,NZB,MAXBLOCKS) :: hy_yareaAtFaces
-  real,save, dimension(2,NXB,NYB,2,MAXBLOCKS) :: hy_zareaAtFaces
-
-#else
   integer, save :: numCells, iguard, jguard, kguard
   real,save,allocatable,dimension(:) :: hy_dela, &
                            hy_dp , hy_du , hy_dut, hy_dutt, &
@@ -142,19 +106,33 @@ module Hydro_data
                            hy_gmelft, hy_gmergt, &
                            hy_gmclft, hy_gmcrgt, &
                            hy_deint, hy_eint6, hy_eiLft, hy_eiRght
+!!$#if NSPECIES+NMASS_SCALARS > 0
+!!$  real, save, DIMENSION(MAXCELLS,hy_numXN) :: hy_dxn, hy_xn6 ,hy_xnlft, hy_xnrght
+!!$#else
+!!$  real, save, DIMENSION(MAXCELLS,1) :: hy_dxn, hy_xn6 ,hy_xnlft, hy_xnrght
+!!$#endif
+
+  real,save, dimension(2,NYB,NZB,MAXBLOCKS) :: hy_xarea,hy_xdtdx,&
+       hy_xgrav,hy_xngrav,hy_xfict
+  real,save, dimension(NXB,2,NZB,MAXBLOCKS) :: hy_yarea,hy_ydtdy,&
+       hy_ygrav,hy_yngrav,hy_yfict
+  real,save, dimension(NXB,NYB,2,MAXBLOCKS) :: hy_zarea,hy_zdtdz,&
+       hy_zgrav,hy_zngrav,hy_zfict
+  real,save, dimension(2,2,NYB,NZB,MAXBLOCKS) :: hy_xareaAtFaces
+  real,save, dimension(2,NXB,2,NZB,MAXBLOCKS) :: hy_yareaAtFaces
+  real,save, dimension(2,NXB,NYB,2,MAXBLOCKS) :: hy_zareaAtFaces
   
   real, save, allocatable,dimension(:,:) :: hy_dxn,hy_xn6,hy_xnlft, hy_xnrght
-  real,save, allocatable, dimension(:,:,:,:) :: hy_xarea,hy_xdtdx,&
-       hy_xgrav,hy_xngrav,hy_xfict
-  real,save, allocatable, dimension(:,:,:,:) :: hy_yarea,hy_ydtdy,&
-       hy_ygrav,hy_yngrav,hy_yfict
-  real,save, allocatable, dimension(:,:,:,:) :: hy_zarea,hy_zdtdz,&
-       hy_zgrav,hy_zngrav,hy_zfict
-  real,save, allocatable, dimension(:,:,:,:,:) :: hy_xareaAtFaces, &
-                                                  hy_yareaAtFaces, &
-                                                  hy_zareaAtFaces
-
-#endif
+!!$  real,save, allocatable, dimension(:,:,:,:) :: hy_xarea,hy_xdtdx,&
+!!$       hy_xgrav,hy_xngrav,hy_xfict
+!!$  real,save, allocatable, dimension(:,:,:,:) :: hy_yarea,hy_ydtdy,&
+!!$       hy_ygrav,hy_yngrav,hy_yfict
+!!$  real,save, allocatable, dimension(:,:,:,:) :: hy_zarea,hy_zdtdz,&
+!!$       hy_zgrav,hy_zngrav,hy_zfict
+!!$  real,save, allocatable, dimension(:,:,:,:,:) :: hy_xareaAtFaces, &
+!!$                                                  hy_yareaAtFaces, &
+!!$                                                  hy_zareaAtFaces
+!!$
 
   real,save,allocatable,dimension(:) :: hy_pstor
 

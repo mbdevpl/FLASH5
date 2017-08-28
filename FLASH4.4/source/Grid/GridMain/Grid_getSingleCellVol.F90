@@ -135,3 +135,85 @@ subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
 
   return
 end subroutine Grid_getSingleCellVol
+
+subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
+
+  use Grid_data, ONLY : gr_geometry
+  use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellCoords
+  use block_metadata, ONLY : block_metadata_t
+
+  implicit none
+
+#include "constants.h"
+#include "Flash.h"
+
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: beginCount
+  integer, intent(in) :: point(MDIM)
+  real, intent(out) :: cellvolume
+
+  integer :: blockID
+  real    :: del(MDIM)
+  real    :: centerCoords(MDIM), leftCoords(MDIM), rightCoords(MDIM)
+ 
+  blockID = block%id
+
+  del = 1.0
+
+  call Grid_getDeltas(block%level, del)
+
+  select case (gr_geometry)
+
+  case (CARTESIAN)
+     if(NDIM == 1) then
+        cellvolume = del(IAXIS)
+     else if(NDIM == 2) then
+        cellvolume = del(IAXIS) * del(JAXIS)
+     else
+        cellvolume = del(IAXIS) * del(JAXIS) * del(KAXIS)
+     end if
+
+  case (POLAR)
+     call Grid_getSingleCellCoords(point, blockID, CENTER, beginCount, centerCoords)
+
+     if(NDIM == 1) then
+        cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS)
+     else if(NDIM == 2) then
+        cellvolume = del(IAXIS) * del(JAXIS) * centerCoords(IAXIS)
+     else
+        cellvolume = del(IAXIS) * del(JAXIS) * centerCoords(IAXIS) * del(KAXIS)
+     end if
+
+  case (CYLINDRICAL)
+     call Grid_getSingleCellCoords(point, blockID, CENTER, beginCount, centerCoords)
+
+     if(NDIM == 1) then
+        cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS)
+     else if(NDIM == 2) then
+        cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS) * del(JAXIS)
+     else
+        cellvolume = del(IAXIS) * del(JAXIS) * centerCoords(IAXIS) * del(KAXIS)
+     end if
+
+  case (SPHERICAL)
+     call Grid_getSingleCellCoords(point, blockID, LEFT_EDGE, beginCount, leftCoords)
+     call Grid_getSingleCellCoords(point, blockID, RIGHT_EDGE, beginCount, rightCoords)
+
+     cellvolume = del(IAXIS) *  &
+          ( leftCoords(IAXIS)*  leftCoords(IAXIS)  +  &
+            leftCoords(IAXIS)* rightCoords(IAXIS)  +  &
+           rightCoords(IAXIS)* rightCoords(IAXIS) )
+     if(NDIM == 1) then
+        cellvolume = cellvolume * 4.*PI/3.
+     else if(NDIM == 2) then
+        cellvolume = cellvolume * ( cos(leftCoords(JAXIS)) - cos(rightCoords(JAXIS)) ) * 2.*PI/3.
+     else
+        cellvolume = cellvolume * ( cos(leftCoords(JAXIS)) - cos(rightCoords(JAXIS)) ) *  &
+             del(KAXIS) / 3.0
+     end if
+
+  end select
+
+  return
+end subroutine Grid_getSingleCellVol_Itor
+

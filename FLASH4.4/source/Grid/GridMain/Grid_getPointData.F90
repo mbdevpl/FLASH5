@@ -220,25 +220,26 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getPointData(blockid, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getPointData(block, gridDataStruct, structIndex, beginCount, &
      position, datablock)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr,gr_releaseInteriorBlkPtr
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, intent(in) :: blockid, structIndex, beginCount, gridDataStruct
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(in) :: position
   real, intent(out) :: datablock
   real,dimension(1,1,1) :: cellvalues
   real, pointer, dimension(:,:,:,:) :: solnData
-
 
   integer ::  var, i, j, k, ii
   integer,dimension(MDIM) :: begOffset,dataLen
@@ -250,7 +251,7 @@ subroutine Grid_getPointData(blockid, gridDataStruct, structIndex, beginCount, &
 
 #ifdef DEBUG_GRID
   isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
 
 
 
@@ -328,7 +329,7 @@ subroutine Grid_getPointData(blockid, gridDataStruct, structIndex, beginCount, &
   
 #endif
   dataLen=0
-  call gr_getDataOffsets(blockID,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(block,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
 
   k = 1
   if(NDIM > 2)k = position(KAXIS) + begOffset(KAXIS)
@@ -342,24 +343,24 @@ subroutine Grid_getPointData(blockid, gridDataStruct, structIndex, beginCount, &
      xb=i;xe=xb;yb=j;ye=yb;zb=k;ze=zb
      
      if(gridDataStruct==CELL_VOLUME) then
-        call gr_getCellVol(xb,xe,yb,ye,zb,ze,blockID,cellvalues)
+        call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues)
      else
         call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,&
-             structIndex,blockID,cellvalues)
+             structIndex,block,cellvalues)
      end if
      datablock=cellvalues(1,1,1)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      datablock = solnData(structIndex,i,j,k)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        datablock = solnData(i,j,k,structIndex)
 !!$     else
 !!$     end if
      datablock = solnData(structIndex,i,j,k)
-     call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
   end if
   return
 end subroutine Grid_getPointData

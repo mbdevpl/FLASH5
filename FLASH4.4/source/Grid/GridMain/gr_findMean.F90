@@ -28,10 +28,12 @@
 subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   
   use Driver_interface, ONLY: Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getListOfBlocks, &
-       Grid_getBlkPhysicalSize, Grid_getBlkIndexLimits, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkPhysicalSize, &
+                             Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data, ONLY : gr_meshComm
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
 
 #include "constants.h"
@@ -46,13 +48,14 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   real :: numZonesInv
 
   real :: blockVolume, cellVolume, volume
-  integer :: blkCount, lb, blockID, i, j, k, ierr
+  integer :: i, j, k, ierr
   integer :: ili, iui, jli, jui, kli, kui
   integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
-  integer, dimension(MAXBLOCKS) :: blkList
   real, dimension(MDIM) :: blockSize
   real, dimension(:,:,:,:), pointer :: solnData
   integer :: nxbBlock, nybBlock, nzbBlock
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
 !!==============================================================================
 
   mean = 0.0
@@ -67,16 +70,18 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   localVolume = 0.
   localSum = 0.
 
+  itor = block_iterator_t(LEAF)
+  do while (itor%is_valid())
+     call itor%blkMetaData(block)
+     
+     blkLimits   = block%limits
+     blkLimitsGC = block%limitsGC
+     call Grid_getBlkPtr(block, solnData)
 
-  call Grid_getListOfBlocks(LEAF,blkList,blkCount)
-
-  do lb = 1, blkCount
-
-     blockID = blkList(lb)
-
-     call Grid_getBlkPtr(blockID, solnData)
-     call Grid_getBlkPhysicalSize(blockID, blockSize)
-     call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC)
+     ! DEVNOTE: This appears to be for Cartesian only blocks/cells.
+     !          Do we need to calculate physical volume or could cell/block
+     !          count could be used?
+     call Grid_getBlkPhysicalSize(block, blockSize)
 
      blockVolume = blockSize(IAXIS)
      nxbBlock = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
@@ -125,8 +130,10 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
 
      localSum = localSum + blockSum * cellVolume
 
-     call Grid_releaseBlkPtr(blockID, solnData)
+     call Grid_releaseBlkPtr(block, solnData)
+     nullify(solnData)
 
+     call itor%next()
   enddo
 
   call mpi_allreduce ( localSum, sum, 1, FLASH_REAL, & 

@@ -69,7 +69,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Logfile_interface,ONLY : Logfile_stamp
   use IO_interface,     ONLY : IO_writeCheckpoint
   use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
-       Grid_getSingleCellCoords,Grid_getMaxRefinement
+       Grid_getSingleCellCoords,Grid_getMaxRefinement, &
+       Grid_getBlkPtr, Grid_releaseBlkPtr
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Heat_interface, ONLY : Heat_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
@@ -78,10 +79,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Particles_interface, ONLY: Particles_computeDt
 
   use IncompNS_interface, ONLY : IncompNS_computeDt
-  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
-                                    famrex_mviter, famrex_mviter_build,&
-                                    famrex_mviter_destroy,famrex_multivab_destroy
-  use famrex_box_module,      ONLY: famrex_box
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -163,10 +162,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   real :: extraHydroInfoMin
   real :: extraHydroInfoApp
   real :: dtNewComputed
-  integer,dimension(MDIM) :: cid,stride
-  type(famrex_multivab),allocatable :: phi(:)
-  type(famrex_mviter) :: mvi
-  type(famrex_box) :: bx, tbx
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
   integer:: ib, level, maxLev
   real :: err
 
@@ -220,23 +217,15 @@ subroutine Driver_computeDt(nbegin, nstep, &
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 
   call Hydro_consolidateCFL()
-  allocate(phi(maxLev))
   do level=1,maxLev
-     call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
-     call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
-     do while(mvi%next())
-        bx = mvi%tilebox()
-        solnData=>phi(level)%dataptr(mvi)
-        
-        blkLimits(LOW,:)=bx%lo
-        blkLimits(HIGH,:)=bx%hi
-        blkLimitsGC(LOW,:)=(/lbound(solnData,IX),lbound(solnData,IY),lbound(solnData,IZ) /)
-        blkLimitsGC(HIGH,:)=(/ubound(solnData,IX),ubound(solnData,IY),ubound(solnData,IZ) /)
-        
-        stride=2**(maxLev-level)
-        cid=1
-        cid(1:NDIM)=blkLimits(LOW,1:NDIM)*stride(1:NDIM)
-        
+     itor = block_iterator_t(LEAF, level=level)
+     do while(itor%is_valid())
+        call itor%blkMetaData(block)
+
+        blkLimits   = block%limits
+        blkLimitsGC = block%limitsGC
+        call Grid_getBlkPtr(block, solnData)
+
         isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
         jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
         ksize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1+2*NGUARD*K3D
@@ -260,25 +249,25 @@ subroutine Driver_computeDt(nbegin, nstep, &
 #ifdef DEBUG_DRIVER
         print*,'before calling get coordinates',isize,gcell
 #endif
-        call Grid_getCellCoords(IAXIS,cid,stride,CENTER,gcell,xCenter,isize)
-        call Grid_getCellCoords(IAXIS,cid,stride,LEFT_EDGE,gcell,xLeft,isize)
-        call Grid_getCellCoords(IAXIS,cid,stride,RIGHT_EDGE,gcell,xRight,isize)
+        call Grid_getCellCoords(IAXIS,block,CENTER,gcell,xCenter,isize)
+        call Grid_getCellCoords(IAXIS,block,LEFT_EDGE,gcell,xLeft,isize)
+        call Grid_getCellCoords(IAXIS,block,RIGHT_EDGE,gcell,xRight,isize)
         
 #ifdef DEBUG_DRIVER
         print*,'before calling get coordinates',jsize,gcell
 #endif
         if (NDIM > 1) then
-           call Grid_getCellCoords(JAXIS,cid,stride,CENTER,gcell,yCenter,jsize)
-           call Grid_getCellCoords(JAXIS,cid,stride,LEFT_EDGE,gcell,yLeft,jsize)
-           call Grid_getCellCoords(JAXIS,cid,stride,RIGHT_EDGE,gcell,yRight,jsize)
+           call Grid_getCellCoords(JAXIS,block,CENTER,gcell,yCenter,jsize)
+           call Grid_getCellCoords(JAXIS,block,LEFT_EDGE,gcell,yLeft,jsize)
+           call Grid_getCellCoords(JAXIS,block,RIGHT_EDGE,gcell,yRight,jsize)
            
            if (NDIM > 2) then
 #ifdef DEBUG_DRIVER
               print*,'before calling get coordinates',ksize,gcell
 #endif
-              call Grid_getCellCoords(KAXIS,cid,stride,CENTER,gcell,zCenter,ksize)
-              call Grid_getCellCoords(KAXIS,cid,stride,LEFT_EDGE,gcell,zLeft,ksize)
-              call Grid_getCellCoords(KAXIS,cid,stride,RIGHT_EDGE,gcell,zRight,ksize)           
+              call Grid_getCellCoords(KAXIS,block,CENTER,gcell,zCenter,ksize)
+              call Grid_getCellCoords(KAXIS,block,LEFT_EDGE,gcell,zLeft,ksize)
+              call Grid_getCellCoords(KAXIS,block,RIGHT_EDGE,gcell,zRight,ksize)           
            endif
         endif
         
@@ -296,7 +285,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
         print*,'going to call Hydro timestep'
 #endif
         !extraHydroInfo = 0.
-        call Hydro_computeDt ( &
+        call Hydro_computeDt (block, &
              xCenter, dx, uxgrid, &
              yCenter, dy, uygrid, &
              zCenter, dz, uzgrid, &
@@ -344,14 +333,12 @@ subroutine Driver_computeDt(nbegin, nstep, &
         print*,'release blockpointer'
 #endif
         
+        call Grid_releaseBlkPtr(block, solnData)
         nullify(solnData)
+
+        call itor%next()
      enddo
-     call famrex_mviter_destroy(mvi)
   end do
-  do level=1,maxLev
-     call famrex_multivab_destroy(phi(level))
-  end do
-  deallocate(phi)
 !!$     end do
      
 !!$  !! Choose the smallest CFL for screen output - provisional, may change below

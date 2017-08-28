@@ -263,20 +263,22 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
      plane, startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, intent(in) :: blockid, structIndex, beginCount, plane, gridDataStruct
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, plane, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(2), intent(in) :: dataSize
   real, dimension(datasize(1), dataSize(2)),intent(out) :: datablock
@@ -292,7 +294,7 @@ subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
 
 #ifdef DEBUG_GRID
   isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
   
   !plane specific stuff
   if(NDIM == 1) then
@@ -503,7 +505,7 @@ subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
      dataLen(IAXIS)=dataSize(1)
      dataLen(KAXIS)=dataSize(2)
   end if
-  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
   
   yb=1
   ye=1
@@ -531,27 +533,27 @@ subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
 
   if(gridDataStruct == CELL_VOLUME) then
      allocate(cellvalues(xb:xe,yb:ye,zb:ze))
-     call gr_getCellVol(xb,xe,yb,ye,zb,ze,blockID,cellvalues)
+     call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues)
      if(plane==XYPLANE)datablock(:,:)=cellvalues(xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:)=cellvalues(xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:)=cellvalues(xb,yb:ye,zb:ze)
      deallocate(cellvalues)
   elseif (gridDataStruct == CELL_FACEAREA)then
      allocate(cellvalues(xb:xe,yb:ye,zb:ze))
-     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,blockID,&
+     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,&
           cellvalues)
      if(plane==XYPLANE)datablock(:,:)=cellvalues(xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:)=cellvalues(xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:)=cellvalues(xb,yb:ye,zb:ze)
      deallocate(cellvalues)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      if(plane==XYPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:) = solnData(structIndex,xb,yb:ye,zb:ze)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        if(plane==XYPLANE)datablock(:,:) = solnData(xb:xe,yb:ye,zb,structIndex)
 !!$        if(plane==XZPLANE)datablock(:,:) = solnData(xb:xe,yb,zb:ze,structIndex)
@@ -561,7 +563,7 @@ subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
      if(plane==XYPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:) = solnData(structIndex,xb,yb:ye,zb:ze)
-     call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
   end if
   return
 end subroutine Grid_getPlaneData

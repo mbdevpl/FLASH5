@@ -5,12 +5,12 @@
 !!
 !! SYNOPSIS
 !! 
-!!  Grid_getCellCoords(integer(IN)  :: axis,
-!!                      integer(IN) :: blockID, 
-!!                      integer(IN) :: edge, 
-!!                      logical(IN) :: guardcell, 
-!!                      real(OUT)   :: coordinates(size),
-!!                      integer(IN) :: size)
+!!  Grid_getCellCoords(integer(IN)           :: axis,
+!!                      block_metadata_t(IN) :: block, 
+!!                      integer(IN)          :: edge, 
+!!                      logical(IN)          :: guardcell, 
+!!                      real(OUT)            :: coordinates(size),
+!!                      integer(IN)          :: size)
 !!  
 !!  
 !! DESCRIPTION
@@ -34,7 +34,7 @@
 !!          axis can have one of three different values, IAXIS, JAXIS or KAXIS 
 !!          (defined in constants.h as 1,2 and 3)
 !!
-!!   blockID - integer block number
+!!   block - derived type for accessing metadata of single given block
 !!
 !!   edge - integer value with one of four values, 
 !!          LEFT_EDGE, RIGHT_EDGE, CENTER or FACES
@@ -111,9 +111,13 @@
 !!   starting with gr_ are local varibles or arguments passed to the 
 !!   routine.
 
-subroutine Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
-implicit none
-  integer, intent(in) :: axis, blockID, edge
+subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
+  use block_metadata, ONLY : block_metadata_t 
+  
+  implicit none
+  
+  integer, intent(in) :: axis, edge
+  type(block_metadata_t), intent(in) :: block
   integer, intent(in) :: size
   logical, intent(in) :: guardcell
   real,intent(out), dimension(size) :: coordinates

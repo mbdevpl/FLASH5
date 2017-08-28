@@ -79,9 +79,10 @@ module gr_interface
   end interface
 
   interface
-     subroutine gr_findNeghID(blockID,pos,negh,neghID)
+     subroutine gr_findNeghID(block,pos,negh,neghID)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer,intent(IN) :: blockID
+       type(block_metadata_t), intent(IN) :: block
        real,dimension(MDIM), intent(IN) :: pos
        integer,dimension(MDIM),intent(IN) :: negh
        integer,dimension(BLKNO:PROCNO),intent(OUT) :: neghID
@@ -168,18 +169,20 @@ module gr_interface
   end interface
   
   interface 
-     subroutine gr_getInteriorBlkPtr(blockID,dataPtr,gridDataStruct)
+     subroutine gr_getInteriorBlkPtr(block,dataPtr,gridDataStruct)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(IN) :: blockID
+       type(block_metadata_t), intent(IN) :: block
        real,dimension(:,:,:,:),pointer :: dataPtr
        integer, intent(IN) :: gridDataStruct
      end subroutine gr_getInteriorBlkPtr
   end interface
 
   interface 
-     subroutine gr_releaseInteriorBlkPtr(blockID,dataPtr,gridDataStruct)
+     subroutine gr_releaseInteriorBlkPtr(block,dataPtr,gridDataStruct)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(IN) :: blockID
+       type(block_metadata_t), intent(IN) :: block
        real,dimension(:,:,:,:),pointer :: dataPtr
        integer, intent(IN) :: gridDataStruct
      end subroutine gr_releaseInteriorBlkPtr

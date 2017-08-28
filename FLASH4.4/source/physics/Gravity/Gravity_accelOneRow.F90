@@ -52,7 +52,7 @@
 !!  the potential variable given by potentialIndex.
 !!***
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
+subroutine Gravity_accelOneRow (pos, sweepDir, Uin, numCells, grav, &
                                 potentialIndex, extraAccelVars)
 
 !===============================================================================
@@ -60,9 +60,10 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
   implicit none
 #include "constants.h"
 
-  integer, intent(IN) :: sweepDir,blockID,numCells
+  integer, intent(IN) :: sweepDir,numCells
   integer, dimension(2),INTENT(in) ::pos
   real, dimension(numCells),INTENT(inout) :: grav
+  real,dimension(:,:,:,:) :: Uin
   integer,intent(IN),optional :: potentialIndex
   integer, intent(IN),OPTIONAL      :: extraAccelVars(MDIM)
 !======================================================================

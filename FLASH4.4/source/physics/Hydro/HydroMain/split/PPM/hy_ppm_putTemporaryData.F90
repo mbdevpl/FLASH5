@@ -65,7 +65,7 @@ subroutine hy_ppm_putTemporaryData(axis, blockID, size, &
 
   integer, intent(in) :: axis, blockID
   integer, intent(in), dimension(3) :: size
-  real, intent(in), dimension(size(1),size(2),size(3)) :: &
+  real, intent(in), dimension(1:size(1),1:size(2),1:size(3)) :: &
                     area,dtdx,grav,ngrav,fict,areaLeft
 
   integer :: sx,ex,sy,ey,sz,ez
@@ -82,7 +82,7 @@ subroutine hy_ppm_putTemporaryData(axis, blockID, size, &
   ex = size(1)-NGUARD
   ey = size(2)-NGUARD*K2D
   ez = size(3)-NGUARD*K3D
-
+  print*,'the values of ',sx,sy,sz,ex,ey,ez
   select case(axis)
 
   case(IAXIS)

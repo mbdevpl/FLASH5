@@ -41,30 +41,37 @@
 !!
 !!***
 
-Subroutine Hydro( blockCount, blockList, &
-                  timeEndAdv, dt,  dtOld,&
-                  sweepOrder)
+Subroutine Hydro(block, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtold,sweepOrder)
 
   use Hydro_data,       ONLY : hy_useHydro, hy_gpotAlreadyUpToDate
   use hy_uhd_interface, ONLY : hy_uhd_unsplit
   use Timers_interface, ONLY : Timers_start, Timers_stop
+  use block_metadata,   ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, INTENT(IN) :: blockCount,sweepOrder
-  integer, INTENT(IN) :: blockList(blockCount)
+  integer, INTENT(IN) :: sweepOrder
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
 
+  real, pointer, dimension(:,:,:,:) :: Uout
+  real, pointer, dimension(:,:,:,:) :: Uin
+
+  real,dimension(MDIM),intent(IN) :: del
+  integer,dimension(LOW:HIGH,MDIM),intent(IN) ::blkLimits,blkLimitsGC 
+  type(block_metadata_t), intent(IN) :: block
+  
   hy_gpotAlreadyUpToDate = .FALSE. ! reset this flag, may be set .TRUE. below if warranted.
 
   if (.not. hy_useHydro) return
 
   call Timers_start("hydro_unsplit")
-
-  call hy_uhd_unsplit(blockCount, blockList, dt, dtOld)
+  
+  call hy_uhd_unsplit(block, Uin,blkLimitsGC,&
+                      Uout,blkLimits,&
+                      del,dt, dtOld )
 
   call Timers_stop("hydro_unsplit")
 

@@ -54,21 +54,22 @@
 #define DEBUG_GRID
 #endif
 
-subroutine gr_extendedGetDeltas(blockID, pe, del)
+subroutine gr_extendedGetDeltas(block, pe, del)
 
   use Grid_data, ONLY : gr_meshMe
   use Grid_interface, ONLY : Grid_getDeltas
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 #include "constants.h"
 
-  integer, intent(in) :: blockID,pe
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: pe
   real, dimension(MDIM),intent(OUT) :: del
 
-
   if (pe.EQ.gr_meshMe) then
-     call Grid_getDeltas(blockID, del)
+     call Grid_getDeltas(block%level, del)
   else
      call Driver_abortFlash('Calling gr_extendedGetDeltas for uncached'// & 
              &      ' remote blocks is not supported in this Grid implementation.')

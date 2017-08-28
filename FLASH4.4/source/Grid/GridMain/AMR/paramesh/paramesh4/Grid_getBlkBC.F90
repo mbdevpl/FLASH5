@@ -49,18 +49,22 @@
 !!***
 
 
-subroutine Grid_getBlkBC(blockid, faces, onBoundary)
+subroutine Grid_getBlkBC(block, faces, onBoundary)
 
   use tree, ONLY : neigh,bnd_box
   use Grid_data,ONLY : gr_domainBC,gr_globalDomain,gr_minCellSizes
   use gr_interface, ONLY : gr_extractBCForDirection
+  use block_metadata, ONLY : block_metadata_t
 implicit none
 #include "constants.h"
-  integer, intent(in) :: blockid
+  type(block_metadata_t), intent(in) :: block
   integer, dimension(LOW:HIGH,MDIM),intent(out):: faces
   integer, optional, dimension(LOW:HIGH,MDIM),intent(out):: onBoundary
   integer :: idirf
   integer :: axis,face
+  integer :: blockid
+  
+  blockid = block%id
 
 #ifdef DEBUG_GRID
   do idirf=1,6

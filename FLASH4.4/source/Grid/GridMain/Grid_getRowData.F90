@@ -241,21 +241,22 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getRowData(blockID, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
      row, startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
-
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, intent(in) :: blockID, structIndex, beginCount, row, gridDataStruct
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, row, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, intent(in) :: dataSize
   real, dimension(datasize),intent(out) :: datablock
@@ -272,7 +273,7 @@ subroutine Grid_getRowData(blockID, gridDataStruct, structIndex, beginCount, &
 
 #ifdef DEBUG_GRID
   isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
 
   !verify requested row is available given number of dims in problem
   if((row==KAXIS) .and. (NDIM < 3)) then
@@ -442,7 +443,7 @@ subroutine Grid_getRowData(blockID, gridDataStruct, structIndex, beginCount, &
 #endif
   dataLen=0
   dataLen(row)=dataSize
-  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
 
   i=1
   j=1
@@ -460,23 +461,23 @@ subroutine Grid_getRowData(blockID, gridDataStruct, structIndex, beginCount, &
      if(row==KAXIS) ze=zb+datasize-1
      allocate(cellvalues(xb:xe,yb:ye,zb:ze))
      if(gridDataStruct==CELL_VOLUME) then
-        call gr_getCellVol(xb,xe,yb,ye,zb,ze,blockID,cellvalues)
+        call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues)
      else
         call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,&
-             structIndex,blockID,cellvalues)
+             structIndex,block,cellvalues)
      end if
      if(row==IAXIS) datablock(:)=cellvalues(xb:xe,yb,zb)
      if(row==JAXIS) datablock(:)=cellvalues(xb,yb:ye,zb)
      if(row==KAXIS) datablock(:)=cellvalues(xb,yb,zb:ze)
      deallocate(cellvalues)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      if(row==IAXIS)datablock(:) = solnData(structIndex,i:i+datasize-1,j,k)
      if(row==JAXIS)datablock(:) = solnData(structIndex,i,j:j+datasize-1,k)
      if(row==KAXIS)datablock(:) = solnData(structIndex,i,j,k:k+datasize-1)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        if(row==IAXIS)datablock(:) = solnData(i:i+datasize-1,j,k,structIndex)
 !!$        if(row==JAXIS)datablock(:) = solnData(i,j:j+datasize-1,k,structIndex)
@@ -486,7 +487,7 @@ subroutine Grid_getRowData(blockID, gridDataStruct, structIndex, beginCount, &
      if(row==IAXIS)datablock(:) = solnData(structIndex,i:i+datasize-1,j,k)
      if(row==JAXIS)datablock(:) = solnData(structIndex,i,j:j+datasize-1,k)
      if(row==KAXIS)datablock(:) = solnData(structIndex,i,j,k:k+datasize-1)
-     call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
 
   end if
   return

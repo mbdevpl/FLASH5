@@ -74,10 +74,8 @@ subroutine Driver_evolveFlash()
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
-  use famrex_multivab_module, ONLY: famrex_multivab, famrex_multivab_build, &
-                                    famrex_mviter, famrex_mviter_build,&
-                                    famrex_mviter_destroy,famrex_multivab_destroy
-  use famrex_box_module,      ONLY: famrex_box
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
 
 !!$  use amrex_amr_module,    ONLY : amrex_real
 !!$  use amrex_box_module,    ONLY : amrex_box
@@ -116,15 +114,14 @@ subroutine Driver_evolveFlash()
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
-  integer, dimension(LOW:HIGH,MDIM) :: tileLimits,blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   integer :: blockCount
   integer,dimension(MAXBLOCKS)::blks
-  real,pointer,dimension(:,:,:,:) :: Uout
+  real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
-  type(famrex_multivab),allocatable :: phi(:)
-  type(famrex_mviter) :: mvi
-  type(famrex_box) :: bx, tbx
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
   integer:: level, maxLev
 
 !!$  real(amrex_real)  :: time     !testing...
@@ -202,25 +199,28 @@ subroutine Driver_evolveFlash()
      
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
-
-     allocate(phi(maxLev))
      do level=1,maxLev
-        call famrex_multivab_build(phi(level), LEAF, CENTER, dr_meshComm, NUNK_VARS,lev=level)
-        call famrex_mviter_build(mvi, phi(level), tiling=.true.) !tiling is currently ignored...
-        do while(mvi%next())
-           bx = mvi%tilebox()
+        itor = block_iterator_t(LEAF, level=level)
+        do while(itor%is_valid())
+           call itor%blkMetaData(block)
+
+           blkLimits(LOW,:)   = block%limits(LOW,:)-block%cid(:)
+           blkLimitsGC(LOW,:) = block%limitsGC(LOW,:)-block%cid(:)
+           blkLimits(HIGH,:)   = block%limits(HIGH,:)-block%cid(:)
+           blkLimitsGC(HIGH,:) = block%limitsGC(HIGH,:)-block%cid(:)
+           
+           call Grid_getBlkPtr(block, Uout)
 !!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
 !!$           call amrex_print(abx)
 !!$           tbx = abx
-           
-           Uout => phi(level)%dataptr(mvi)
-           tileLimits(LOW, :) = bx%lo
-           tileLimits(HIGH,:) = bx%hi
-           
 
            call Grid_getDeltas(level,del)
-           
-           call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+           Uin => Uout
+           call Hydro(block,blkLimitsGC,Uin, blkLimits, Uout, del,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+           call Grid_releaseBlkPtr(block, Uout)
+           nullify(Uout)
+ 
+           call itor%next()
         end do
         call Timers_stop("Hydro")
 #ifdef DEBUG_DRIVER
@@ -237,13 +237,8 @@ subroutine Driver_evolveFlash()
 !!$     print*, 'return from Diagnostics '  ! DEBUG
 !!$#endif
         
-        call famrex_mviter_destroy(mvi)
         !! save for old dt
      end do
-     do level=1,maxLev
-        call famrex_multivab_destroy(phi(level))
-     end do
-     deallocate(phi)
 
      dr_dtOld = dr_dt
      

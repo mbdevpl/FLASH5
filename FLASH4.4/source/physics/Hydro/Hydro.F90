@@ -50,10 +50,11 @@ subroutine Hydro(del, tileLimits, Uout,  timeEndAdv, dt, dtOld, &
                    sweepOrder )
 implicit none
 #include "Flash.h"
+#include "constants.h"
   
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
   integer, INTENT(IN) :: sweepOrder
-  real,dimension(MDIM),intent(IN) :: del
+  real,dimension(NDIM),intent(IN) :: del
   real, pointer, dimension(:,:,:,:) :: Uout
   integer, dimension(LOW:HIGH,MDIM),intent(IN) :: tileLimits
   

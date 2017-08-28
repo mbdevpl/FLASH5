@@ -42,16 +42,20 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,blockID,dataBlock)
+subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getDeltas, Grid_getBlkIndexLimits, &
-       Grid_getCellCoords
-  use Grid_data, ONLY : gr_geometry
+  use Grid_interface,   ONLY : Grid_getDeltas, &
+                               Grid_getCellCoords
+  use Grid_data,        ONLY : gr_geometry
+  use block_metadata,   ONLY : block_metadata_t
+
   implicit none
 
-  integer,intent(IN) :: xb,xe,yb,ye,zb,ze,face,blockID
+  type(block_metadata_t), intent(IN) :: block
+  integer,                intent(IN) :: xb,xe,yb,ye,zb,ze,face
   real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
   real,dimension(MDIM) :: del
+
   real :: areaFactor_1, areaFactor_2, areaFactor_3
   integer :: i,j,k
   integer :: sizeX, sizeY, sizeZ
@@ -64,7 +68,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,blockID,dataBlock)
      if(NDIM==1) then
         dataBlock = 1.00
      else
-        call Grid_getDeltas(blockID,del)
+        call Grid_getDeltas(block%level, del)
         select case(face)
         case(ILO_FACE,IHI_FACE)
            dataBlock=del(JAXIS)
@@ -83,7 +87,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,blockID,dataBlock)
 
   else
 
-     call Grid_getBlkIndexLimits(blockId,blkLimits,blkLimitsGC)
+     blkLimitsGC = block%limitsGC
      sizeX = blkLimitsGC(HIGH,IAXIS) - blkLimitsGC(LOW,IAXIS) + 1
      sizeY = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
      sizeZ = blkLimitsGC(HIGH,KAXIS) - blkLimitsGC(LOW,KAXIS) + 1
@@ -92,12 +96,12 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,blockID,dataBlock)
      allocate(yCoordLeft(sizeY),yCoordRight(sizeY))
      allocate(zCoordLeft(sizeZ),zCoordRight(sizeZ))
 
-     call Grid_getCellCoords(IAXIS, blockId, LEFT_EDGE, gcell, xCoordLeft, sizeX)
-     call Grid_getCellCoords(IAXIS, blockId, RIGHT_EDGE, gcell, xCoordRight, sizeX)
-     call Grid_getCellCoords(JAXIS, blockId, LEFT_EDGE, gcell, yCoordLeft, sizeY)
-     call Grid_getCellCoords(JAXIS, blockId, RIGHT_EDGE, gcell, yCoordLeft, sizeY)
-     call Grid_getCellCoords(KAXIS, blockId, LEFT_EDGE, gcell, zCoordLeft, sizeZ)
-     call Grid_getCellCoords(KAXIS, blockId, RIGHT_EDGE, gcell, zCoordRight, sizeZ)
+     call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xCoordLeft, sizeX)
+     call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xCoordRight, sizeX)
+     call Grid_getCellCoords(JAXIS, block, LEFT_EDGE, gcell, yCoordLeft, sizeY)
+     call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, gcell, yCoordLeft, sizeY)
+     call Grid_getCellCoords(KAXIS, block, LEFT_EDGE, gcell, zCoordLeft, sizeZ)
+     call Grid_getCellCoords(KAXIS, block, RIGHT_EDGE, gcell, zCoordRight, sizeZ)
 
 #define ICOORD_LEFT(I)  xCoordLeft(I)
 #define ICOORD_RIGHT(I) xCoordRight(I)

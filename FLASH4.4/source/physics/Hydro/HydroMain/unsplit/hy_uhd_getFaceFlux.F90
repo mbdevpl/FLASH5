@@ -50,7 +50,7 @@
 !#define COMPUTE_DT_FLUX
 
 #include "Flash.h"
-subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
+subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                                 xflux,yflux,zflux,&
                                 scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                 hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
@@ -102,7 +102,7 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
                                             hy_uhd_addBiermannBatteryTerms
   use MagneticResistivity_interface, ONLY : MagneticResistivity
 #endif
-
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -111,25 +111,11 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
 #include "UHD.h"
 
   !! Arguments type declaration ------------------------------
-  integer, intent(IN)  :: blockID
+  type(block_metadata_t), intent(IN)  :: block
   integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
   integer, dimension(MDIM), intent(IN)         :: datasize
   real,    dimension(MDIM), intent(IN)         :: del
 
-#ifdef FIXEDBLOCKSIZE
-  real, intent(OUT) :: xflux (NFLUXES,&
-       GRID_ILO_GC:GRID_IHI_GC, &
-       GRID_JLO_GC:GRID_JHI_GC, &
-       GRID_KLO_GC:GRID_KHI_GC)
-  real, intent(OUT) :: yflux (NFLUXES,&
-       GRID_ILO_GC:GRID_IHI_GC, &
-       GRID_JLO_GC:GRID_JHI_GC, &
-       GRID_KLO_GC:GRID_KHI_GC)
-  real, intent(OUT) :: zflux (NFLUXES,&
-       GRID_ILO_GC:GRID_IHI_GC, &
-       GRID_JLO_GC:GRID_JHI_GC, &
-       GRID_KLO_GC:GRID_KHI_GC)
-#else
   real, intent(OUT) :: xflux (NFLUXES,&
       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
@@ -142,7 +128,7 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
-#endif
+
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
   real, pointer, dimension(:,:,:,:) :: scrch_Ptr
   real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
@@ -230,7 +216,7 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
 #endif
 
 
-  call Grid_getBlkPtr(blockID,U,CENTER)
+  call Grid_getBlkPtr(block,U,CENTER)
 
   i0   = blkLimits(LOW, IAXIS)
   imax = blkLimits(HIGH,IAXIS)
@@ -308,10 +294,10 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
   endif
 
   if (hy_geometry /= CARTESIAN) then
-     call Grid_getCellCoords(IAXIS,blockID, CENTER,    .true.,xCenter, dataSize(IAXIS))
-     call Grid_getCellCoords(JAXIS,blockID, CENTER,    .true.,yCenter, dataSize(JAXIS))
-     call Grid_getCellCoords(IAXIS,blockID, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-     call Grid_getCellCoords(IAXIS,blockID, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+     call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
+     call Grid_getCellCoords(JAXIS,block, CENTER,    .true.,yCenter, dataSize(JAXIS))
+     call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
+     call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
   endif
 
   !! Compute intercell fluxes using the updated left & right states
@@ -414,7 +400,7 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
 !#ifdef COMPUTE_DT_FLUX
               if (hy_hydroComputeDtOption == 1) then
                  !! Call for dt calculation
-                 call hy_uhd_setMinTimeStep(blockID,i,j,k,del(DIR_X),speed)
+                 call hy_uhd_setMinTimeStep(block,i,j,k,del(DIR_X),speed)
               endif
 !#endif
 
@@ -507,18 +493,18 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
            if (hy_useDiffuse) then
               if (hy_useViscosity) then
                  call hy_uhd_addViscousFluxes&
-                      (blockID,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),viscDynamic,DIR_X)
+                      (block,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),viscDynamic,DIR_X)
               endif
 
               if (hy_useConductivity .and. hy_addThermalFlux) then
                  call hy_uhd_addThermalFluxes&
-                      (blockID,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),cond,DIR_X)
+                      (block,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),cond,DIR_X)
               endif
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
               if (hy_useMagneticResistivity) then
                  call hy_uhd_addResistiveFluxes&
-                      (blockID,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),magResist,DIR_X)
+                      (block,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),magResist,DIR_X)
               endif
 #endif
            endif
@@ -526,7 +512,7 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
 #ifdef FLASH_USM_MHD           
            if ((hy_useBiermann .or. hy_useBiermann1T) .and. (.not. hy_biermannSource)) then
               call hy_uhd_addBiermannBatteryTerms &
-                   (blockID,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k), DIR_X)
+                   (block,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k), DIR_X)
            endif 
 #endif
            
@@ -719,7 +705,7 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
               else ! Angular coordinates in 2D: Spherical or Polar
                  dy = xCenter(i)*del(DIR_Y)
               endif
-              call hy_uhd_setMinTimeStep(blockID,i,j,k,dy,speed)
+              call hy_uhd_setMinTimeStep(block,i,j,k,dy,speed)
            endif
 !#endif
 
@@ -806,25 +792,25 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
            if (hy_useDiffuse) then
               if (hy_useViscosity) then
                  call hy_uhd_addViscousFluxes&
-                      (blockID,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),viscDynamic,DIR_Y)
+                      (block,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),viscDynamic,DIR_Y)
               endif
 
               if (hy_useConductivity .and. hy_addThermalFlux) then
                  call hy_uhd_addThermalFluxes&
-                      (blockID,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),cond,DIR_Y)
+                      (block,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),cond,DIR_Y)
               endif
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
               if (hy_useMagneticResistivity) then
                  call hy_uhd_addResistiveFluxes&
-                      (blockID,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),magResist,DIR_Y)
+                      (block,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),magResist,DIR_Y)
               endif
 #endif
            endif
 #ifdef FLASH_USM_MHD           
            if ((hy_useBiermann .or. hy_useBiermann1T) .and. (.not. hy_biermannSource)) then
               call hy_uhd_addBiermannBatteryTerms &
-                   (blockID,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k), DIR_Y)
+                   (block,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k), DIR_Y)
            endif 
 #endif
 
@@ -976,7 +962,7 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
               else ! Angular coordinates in 2D: Spherical or Polar
                  dz = xCenter(i)*sin(yCenter(j))*del(DIR_Z) ! z is phi
               endif
-              call hy_uhd_setMinTimeStep(blockID,i,j,k,dz,speed)
+              call hy_uhd_setMinTimeStep(block,i,j,k,dz,speed)
            endif
 !#endif
            !! Artificial viscosity as in PPM, Colella and Woodward, 1984.
@@ -1053,18 +1039,18 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
            if (hy_useDiffuse) then
               if (hy_useViscosity) then
                  call hy_uhd_addViscousFluxes&
-                      (blockID,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),viscDynamic,DIR_Z)
+                      (block,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),viscDynamic,DIR_Z)
               endif
 
               if (hy_useConductivity .and. hy_addThermalFlux) then
                  call hy_uhd_addThermalFluxes&
-                      (blockID,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),cond,DIR_Z)
+                      (block,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),cond,DIR_Z)
               endif
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
               if (hy_useMagneticResistivity) then
                  call hy_uhd_addResistiveFluxes&
-                      (blockID,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),magResist,DIR_Z)
+                      (block,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),magResist,DIR_Z)
               endif
 #endif
            endif
@@ -1072,7 +1058,7 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
            
            if ((hy_useBiermann .or. hy_useBiermann1T) .and. (.not. hy_biermannSource)) then
               call hy_uhd_addBiermannBatteryTerms &
-                   (blockID,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k), DIR_Z)
+                   (block,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k), DIR_Z)
            endif 
 #endif
 
@@ -1167,7 +1153,7 @@ subroutine hy_uhd_getFaceFlux ( blockID,blkLimits,blkLimitsGC,datasize,del,&
 !!$  endif ! end of if (hy_useAuxEintEqn) then
   
   !! Release pointer
-  call Grid_releaseBlkPtr(blockID,U,CENTER)
+  call Grid_releaseBlkPtr(block,U,CENTER)
 
 
 contains
@@ -1208,9 +1194,9 @@ contains
     allocate(ycent(blkLimitsGC(HIGH, JAXIS)))
     allocate(zcent(blkLimitsGC(HIGH, KAXIS)))
 
-    call Grid_getCellCoords(IAXIS, blockId, CENTER, .true., xcent, blkLimitsGC(HIGH, IAXIS)) 
-    call Grid_getCellCoords(JAXIS, blockId, CENTER, .true., ycent, blkLimitsGC(HIGH, JAXIS))
-    call Grid_getCellCoords(KAXIS, blockId, CENTER, .true., zcent, blkLimitsGC(HIGH, KAXIS))
+    call Grid_getCellCoords(IAXIS, block, CENTER, .true., xcent, blkLimitsGC(HIGH, IAXIS)) 
+    call Grid_getCellCoords(JAXIS, block, CENTER, .true., ycent, blkLimitsGC(HIGH, JAXIS))
+    call Grid_getCellCoords(KAXIS, block, CENTER, .true., zcent, blkLimitsGC(HIGH, KAXIS))
 
     print *, "NEIGBORING CELLS:"
 
