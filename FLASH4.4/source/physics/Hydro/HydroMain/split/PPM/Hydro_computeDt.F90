@@ -57,8 +57,7 @@
 ! solnData depends on the ordering on unk
 !!REORDER(4): solnData
 
-
-subroutine Hydro_computeDt (blockID,  &
+subroutine Hydro_computeDt (block,  &
                            x, dx, uxgrid, &
                            y, dy, uygrid, &
                            z, dz, uzgrid, &
@@ -73,24 +72,19 @@ subroutine Hydro_computeDt (blockID,  &
 
   use Hydro_data, ONLY : hy_useHydro, hy_geometry, hy_cfl, hy_meshMe
   use Driver_interface, ONLY : Driver_abortFlash
-
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
 
-  integer, intent(IN) :: blockID 
+  type(block_metadata_t), intent(IN) :: block
   integer, intent(IN),dimension(LOW:HIGH,MDIM)::blkLimits,blkLimitsGC
   real,INTENT(INOUT)    :: dtCheck
   integer,INTENT(INOUT)    :: dtMinLoc(5)
   real, pointer :: solnData(:,:,:,:) 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC), intent(IN) :: x, dx, uxgrid
-  real, dimension(GRID_JLO_GC:GRID_JHI_GC), intent(IN) :: y, dy, uygrid
-  real, dimension(GRID_KLO_GC:GRID_KHI_GC), intent(IN) :: z, dz, uzgrid
-#else
   real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
   real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)), intent(IN) :: y, dy, uygrid
   real, dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)), intent(IN) :: z, dz, uzgrid
-#endif
+
   real,OPTIONAL,intent(INOUT) :: extraInfo
   
   integer :: i, j, k, temploc(5)
@@ -139,7 +133,7 @@ subroutine Hydro_computeDt (blockID,  &
            temploc(1) = i
            temploc(2) = 1
            temploc(3) = 1
-           temploc(4) = blockID
+           temploc(4) = block%id
            temploc(5) = hy_meshMe
         endif
 
@@ -191,7 +185,7 @@ subroutine Hydro_computeDt (blockID,  &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = blockID
+                 temploc(4) = block%id
                  temploc(5) = hy_meshMe
               endif
 
@@ -239,7 +233,7 @@ subroutine Hydro_computeDt (blockID,  &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = blockID
+                 temploc(4) = block%id
                  temploc(5) = hy_meshMe
               endif
 
@@ -305,7 +299,7 @@ subroutine Hydro_computeDt (blockID,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = block%id
                     temploc(5) = hy_meshMe
                  endif
 
@@ -357,7 +351,7 @@ subroutine Hydro_computeDt (blockID,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = blockID
+                    temploc(4) = block%id
                     temploc(5) = hy_meshMe
                  endif
                  

@@ -56,15 +56,14 @@
 
 ! solnData depends on the ordering on unk
 !!REORDER(4): solnData, tempFlx
-
+#undef FIXEDBLOCKSIZE
 
 #ifdef DEBUG_ALL 
 #define DEBUG_HYDRO
 #endif
 #define DEBUG_GRID_GCMASK
 
-subroutine hy_ppm_sweep (  blockCount, blockList, &
-                         timeEndAdv, dt, dtOld,  &
+subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
                          sweepDir )
 
   use Hydro_data, ONLY : hy_updateHydroFluxes, hy_useDiffuse,    &
@@ -82,7 +81,7 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
     Grid_getBlkBC, Grid_getBlkIndexLimits, Grid_getCellCoords, &
     Grid_getBlkPtr, Grid_putBlkData, Grid_releaseBlkPtr, Grid_putFluxData, &
     Grid_conserveFluxes, Grid_getFluxData, Grid_renormAbundance, &
-    Grid_limitAbundance
+    Grid_limitAbundance, Grid_getMaxRefinement
   use Eos_interface, ONLY : Eos_wrapped, Eos_guardCells
   use Diffuse_interface, ONLY : Diffuse_therm, Diffuse_visc
   use Hydro_interface, ONLY : Hydro_detectShock, &
@@ -90,6 +89,9 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
   use hy_ppm_interface, ONLY : hy_ppm_block, hy_ppm_updateSoln,&
                            hy_ppm_getTemporaryData, hy_ppm_putTemporaryData
   use IO_interface, ONLY: IO_writeCheckpoint
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
 
 #include "constants.h"
@@ -100,11 +102,8 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
 
   !! ----------------------
   !! ---- INPUT ARGUMENTS
-  integer, INTENT(IN) :: blockCount
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
   integer, INTENT(IN) :: sweepDir
-  integer, INTENT(IN), dimension(blockCount) :: blockList
-
 
   real, pointer :: solnData(:,:,:,:)   
   integer isize,jsize,ksize,isizeGC,jsizeGC,ksizeGC
@@ -114,39 +113,6 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
   !! calculated fluxes.   They are used to update the solution, and
   !! given to Grid package to for flux matching routines. 
 
-#ifdef FIXEDBLOCKSIZE
-  real, DIMENSION(NFLUXES, GRID_ILO_GC:GRID_IHI_GC, &
-                             GRID_JLO_GC:GRID_JHI_GC, &
-                             GRID_KLO_GC:GRID_KHI_GC) :: tempFlx
-
-  !! These are used for a proper solution update.  We do not adjust
-  !! the actual solnData in the kernel, but, return these values to update.
-  real, DIMENSION(GRID_ILO_GC:GRID_IHI_GC,                   &
-                  GRID_JLO_GC:GRID_JHI_GC,                   &
-                  GRID_KLO_GC:GRID_KHI_GC) ::  tempArea,     &
-                                               tempGrav1d_o, &
-                                               tempGrav1d,   &
-                                               tempDtDx,     &
-                                               tempFict,     &
-                                               tempAreaLeft
-  real, DIMENSION(GRID_ILO_GC:GRID_IHI_GC,                   &
-                  GRID_JLO_GC:GRID_JHI_GC,                   &
-                  GRID_KLO_GC:GRID_KHI_GC) ::  shock
-
-  logical, DIMENSION(GRID_ILO_GC:GRID_IHI_GC,                   &
-                  GRID_JLO_GC:GRID_JHI_GC,                   &
-                  GRID_KLO_GC:GRID_KHI_GC) ::  isGc
-  real,DIMENSION(MAXCELLS) :: primaryLeftCoord , &
-                              primaryRghtCoord , &
-                              primaryDx        , &
-                              ugrid
-  real,DIMENSION(MAXCELLS),target :: jCoord      , &
-                                     kCoord      , &
-                                     radialCoord
- 
-  integer, parameter :: numCells = MAXCELLS
-                                
-#else
   real, allocatable, DIMENSION(:,:,:,:) :: tempFlx
 
   !! These are used for a proper solution update.  We do not adjust
@@ -170,13 +136,12 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
   integer :: numCells
   
 
-#endif
 
   real, pointer :: primaryCoord(:) , &
                    secondCoord(:)  , &
                    thirdCoord(:)
   integer :: i,j,k,blk
-  integer, dimension(2,MDIM) :: blkLimits,blkLimitsGC,bcs
+  integer, dimension(LOW:HIGH,MDIM) :: lim,limGC,bcs
   integer, dimension(MDIM)   :: eosGcLayers
   integer                    :: transverseEosLayers, transverseGcLayers
   integer, dimension(MDIM)   :: sDetectLayers
@@ -191,6 +156,9 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
 #ifdef DEBUG_GRID_GCMASK
   logical,save :: gcMaskLogged(MDIM) =.FALSE.
 #endif
+  integer :: lev, maxLev
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: block
 
 
 !!----------------------------
@@ -205,7 +173,7 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
   else
      updateMode = UPDATE_ALL
   end if
-
+  call Grid_getMaxRefinement(maxLev,mode=1)
   if(sweepDir==SWEEP_X)idir=IAXIS
   if(sweepDir==SWEEP_Y)idir=JAXIS
   if(sweepDir==SWEEP_Z)idir=KAXIS
@@ -227,7 +195,6 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
        eosMode=hy_eosMode,doEos=.FALSE.,       &
        maskSize=hy_gcMaskSize, mask=hy_gcMask, makeMaskConsistent=.true.,&
        selectBlockType=LEAF,doLogMask=.NOT.gcMaskLogged(idir))
-                                                                                                        !
 #ifdef DEBUG_GRID_GCMASK
   if (.NOT.gcMaskLogged(idir)) then
      gcMaskLogged(idir) = .TRUE.
@@ -241,62 +208,62 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
 
   call Timers_start("hy_ppm_sweep")
 
-  do blk=1,blockCount
-
-     call Grid_getDeltas(blockList(blk),del)
-     call Grid_getBlkBC(blockList(blk),bcs)
+  do lev=1,maxLev
+     itor = block_iterator_t(LEAF, level=lev)
+     do while(itor%is_valid())
+        call itor%blkMetaData(block)
+        
+        call Grid_getDeltas(lev,del)
+        call Grid_getBlkBC(block,bcs)
      if (bcs(LOW,idir) == HYDROSTATIC_NVREFL .OR. bcs(LOW,idir) == HYDROSTATIC_F2_NVREFL) &
           bcs(LOW,idir) = REFLECTING
      if (bcs(HIGH,idir) == HYDROSTATIC_NVREFL .OR. bcs(HIGH,idir) == HYDROSTATIC_F2_NVREFL) &
           bcs(HIGH,idir) = REFLECTING
-     call Grid_getBlkIndexLimits(blockList(blk),blkLimits,blkLimitsGC)
+     limGC=block%limitsGC
+     lim=block%limits
 
+
+     isizeGC=limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1
+     jsizeGC=limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1
+     ksizeGC=limGC(HIGH,KAXIS)-limGC(LOW,KAXIS)+1
      
 
+     isize=lim(HIGH,IAXIS)-lim(LOW,IAXIS)+1
+     jsize=lim(HIGH,JAXIS)-lim(LOW,JAXIS)+1
+     ksize=lim(HIGH,KAXIS)-lim(LOW,KAXIS)+1
 
-     isizeGC=blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
-     jsizeGC=blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
-     ksizeGC=blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
-     
-
-     isize=blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1
-     jsize=blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1
-     ksize=blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1
-
-#ifndef FIXEDBLOCKSIZE
 
      numCells = max(isizeGC,jsizeGC)
      numcells = max(numCells,ksizeGC)
 
-     allocate(tempFlx(NFLUXES,isizeGC,jsizeGC,ksizeGC))
+     allocate(tempFlx(NFLUXES,limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
 
-     allocate(tempArea(isizeGC,jsizeGC,ksizeGC))
-     allocate(tempGrav1d_o(isizeGC,jsizeGC,ksizeGC))
-     allocate(tempGrav1d(isizeGC,jsizeGC,ksizeGC))
-     allocate(tempDtDx(isizeGC,jsizeGC,ksizeGC))
-     allocate(tempFict(isizeGC,jsizeGC,ksizeGC))
-     allocate(tempAreaLeft(isizeGC,jsizeGC,ksizeGC))
+     allocate(tempArea(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+     allocate(tempGrav1d_o(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+     allocate(tempGrav1d(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+     allocate(tempDtDx(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+     allocate(tempFict(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+     allocate(tempAreaLeft(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
 
-     allocate(shock(isizeGC,jsizeGC,ksizeGC))
+     allocate(shock(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
 
-     allocate(primaryCoord(numCells))
-     allocate(primaryLeftCoord(numCells))
-     allocate(primaryRghtCoord(numCells))
-     allocate(primaryDx(numCells))
-     allocate(jCoord(numCells))
-     allocate(kCoord(numCells))
-     allocate(radialCoord(numCells))
-     allocate(ugrid(numCells))
-     allocate(isGc(isizeGC,jsizeGC,ksizeGC))
+     allocate(primaryCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+     allocate(primaryLeftCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+     allocate(primaryRghtCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+     allocate(primaryDx(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+     allocate(jCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+     allocate(kCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+     allocate(radialCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+     allocate(ugrid(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+     allocate(isGc(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
 
-#endif
      if (NDIM < MDIM .AND. hy_cvisc == 0.0) then 
      !! This logical array is the size of a single block
      !! Its values are true on guardcells, and false on the interior
         isGc=.true.
-        isGc(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),&
-             blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))=.false.
+        isGc(lim(LOW,IAXIS):lim(HIGH,IAXIS),&
+             lim(LOW,JAXIS):lim(HIGH,JAXIS),&
+             lim(LOW,KAXIS):lim(HIGH,KAXIS))=.false.
      end if
      sDetectLayers(:) = 0
      !!Note that this assumes that SWEEP_X == 1, SWEEP_Y == 2, SWEEP_Z == 3.
@@ -307,14 +274,14 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
      ugrid(:) = 0.0 !!FIX
 
      call Grid_getCellCoords&
-          (IAXIS,blockList(blk),CENTER,gcell,radialCoord,isizeGC)
+          (IAXIS,block,CENTER,gcell,radialCoord,isizeGC)
      if (NDIM .GE. 2) then
-        call Grid_getCellCoords(JAXIS,blockList(blk),CENTER,gcell,jCoord,jsizeGC)
+        call Grid_getCellCoords(JAXIS,block,CENTER,gcell,jCoord,jsizeGC)
      else
         jCoord(:) = 0.0
      end if
      if (NDIM == 3) then
-        call Grid_getCellCoords(KAXIS,blockList(blk),CENTER,gcell,kCoord,ksizeGC)
+        call Grid_getCellCoords(KAXIS,block,CENTER,gcell,kCoord,ksizeGC)
      else
         kCoord(:) = 0.0
      end if
@@ -324,38 +291,38 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
         primaryCoord => radialCoord
         secondCoord  => jCoord
         thirdCoord   => kCoord
-        call Grid_getCellCoords(IAXIS,blockList(blk),&
+        call Grid_getCellCoords(IAXIS,block,&
              LEFT_EDGE,gcell,primaryLeftCoord,isizeGC)
-        call Grid_getCellCoords(IAXIS,blockList(blk),&
+        call Grid_getCellCoords(IAXIS,block,&
              RIGHT_EDGE,gcell,primaryRghtCoord,isizeGC)
-        numGuard = blkLimits(LOW,IAXIS)-1
+        numGuard = lim(LOW,IAXIS)-1
      else if (sweepDir == SWEEP_Y) then
         igeom = hy_dirGeom(JAXIS)
         secondCoord  => radialCoord
         primaryCoord => jCoord
         thirdCoord   => kCoord
-        call Grid_getCellCoords(JAXIS,blockList(blk),&
+        call Grid_getCellCoords(JAXIS,block,&
              LEFT_EDGE,gcell,primaryLeftCoord,jsizeGC)
-        call Grid_getCellCoords(JAXIS,blockList(blk),&
+        call Grid_getCellCoords(JAXIS,block,&
              RIGHT_EDGE,gcell,primaryRghtCoord,jsizeGC)
-        numGuard = blkLimits(LOW,JAXIS)-1
+        numGuard = lim(LOW,JAXIS)-1
      else 
         igeom = hy_dirGeom(KAXIS)
         secondCoord  => radialCoord
         primaryCoord => kCoord
         thirdCoord   => jCoord
-        call Grid_getCellCoords(KAXIS,blockList(blk),&
+        call Grid_getCellCoords(KAXIS,block,&
              LEFT_EDGE,gcell,primaryLeftCoord,ksizeGC)
-        call Grid_getCellCoords(KAXIS,blockList(blk),&
+        call Grid_getCellCoords(KAXIS,block,&
              RIGHT_EDGE,gcell,primaryRghtCoord,ksizeGC)
-        numGuard = blkLimits(LOW,KAXIS)-1
+        numGuard = lim(LOW,KAXIS)-1
      end if
         
      !! Restore later when implemented, this is meant for moving grid.
-     !! call Grid_getCellCoords(iugrid, iXCOORD, blockList(blk), ugrid)
+     !! call Grid_getCellCoords(iugrid, iXCOORD, block, ugrid)
 
 
-     call Grid_getBlkPtr(blockList(blk),solnData)
+     call Grid_getBlkPtr(block,solnData)
 
      if (hy_cvisc .ne. 0.0) then !! zero all velocities in transverse directions
         if (NDIM == 1) then
@@ -365,17 +332,17 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
         end if
      else   !! zero velocities in transverse directions on guardcells
         if (NDIM == 1) then
-           do k = blkLimitsGC(LOW,KAXIS),blkLimitsGC(HIGH,KAXIS)
-              do j = blkLimitsGC(LOW,JAXIS),blkLimitsGC(HIGH,JAXIS)
-                 do i = blkLimitsGC(LOW,IAXIS),blkLimitsGC(HIGH,IAXIS)
+           do k = limGC(LOW,KAXIS),limGC(HIGH,KAXIS)
+              do j = limGC(LOW,JAXIS),limGC(HIGH,JAXIS)
+                 do i = limGC(LOW,IAXIS),limGC(HIGH,IAXIS)
                     if(isGc(i,j,k))solnData(VELY_VAR:VELZ_VAR,i,j,k)=0.0
                  end do
               end do
            end do
         else if (NDIM == 2) then
-           do k = blkLimitsGC(LOW,KAXIS),blkLimitsGC(HIGH,KAXIS)
-              do j = blkLimitsGC(LOW,JAXIS),blkLimitsGC(HIGH,JAXIS)
-                 do i = blkLimitsGC(LOW,IAXIS),blkLimitsGC(HIGH,IAXIS)
+           do k = limGC(LOW,KAXIS),limGC(HIGH,KAXIS)
+              do j = limGC(LOW,JAXIS),limGC(HIGH,JAXIS)
+                 do i = limGC(LOW,IAXIS),limGC(HIGH,IAXIS)
                     if(isGc(i,j,k))solnData(VELZ_VAR,i,j,k)=0.0
                  end do
               end do
@@ -383,12 +350,12 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
         end if
      end if
 
-!! ---------Setting up blkLimits to call EOS
+!! ---------Setting up lim to call EOS
      call Timers_start("eos gc")
      eosGcLayers(1:MDIM) = transverseEosLayers
      eosGcLayers(sweepDir) = numGuard
 
-     call Eos_guardCells(hy_eosMode,blockList(blk), &
+     call Eos_guardCells(hy_eosMode,solnData, &
           corners=.TRUE.,layers=eosGcLayers,skipSrl=.TRUE.)
      call Timers_stop("eos gc")
 
@@ -399,11 +366,11 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
      size(JAXIS)=jsize
      size(KAXIS)=ksize
      startingPos=1
-     call Grid_putBlkData(blockList(blk),SCRATCH,OTMP_SCRATCH_GRID_VAR,&
+     call Grid_putBlkData(block,SCRATCH,OTMP_SCRATCH_GRID_VAR,&
                           INTERIOR, startingPos, &
-          solnData(TEMP_VAR, blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-                        blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-                        blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)),size)
+          solnData(TEMP_VAR, lim(LOW,IAXIS):lim(HIGH,IAXIS), &
+                        lim(LOW,JAXIS):lim(HIGH,JAXIS), &
+                        lim(LOW,KAXIS):lim(HIGH,KAXIS)),size)
 #endif
 !!--------- DO HYDRO ON A BLOCK
 
@@ -412,31 +379,32 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
         shock(:,:,:) = 0.0
         if ((hy_hybridRiemann .AND. hy_updateHydroFluxes).OR.hy_alwaysCallDetectShock) then
 #ifdef SHKS_VAR
-           call Hydro_shockStrength(solnData, shock,blkLimits,blkLimitsGC, sDetectLayers, &
+           call Hydro_shockStrength(solnData, shock,lim,limGC, sDetectLayers, &
                 radialCoord,jCoord,kCoord,&
                 threshold=0.01, mode=1)
-           do k = blkLimitsGC(LOW,KAXIS),blkLimitsGC(HIGH,KAXIS)
-              do j = blkLimitsGC(LOW,JAXIS),blkLimitsGC(HIGH,JAXIS)
-                 do i = blkLimitsGC(LOW,IAXIS),blkLimitsGC(HIGH,IAXIS)
+           do k = limGC(LOW,KAXIS),limGC(HIGH,KAXIS)
+              do j = limGC(LOW,JAXIS),limGC(HIGH,JAXIS)
+                 do i = limGC(LOW,IAXIS),limGC(HIGH,IAXIS)
                     solnData(SHKS_VAR,i,j,k)=shock(i,j,k)
                  end do
               end do
            end do
 #endif
-           call Hydro_detectShock(solnData, shock,blkLimits,blkLimitsGC, sDetectLayers, &
+           call Hydro_detectShock(solnData, shock,lim,limGC, sDetectLayers, &
                 radialCoord,jCoord,kCoord)
 #ifdef SHOK_VAR
-           do k = blkLimitsGC(LOW,KAXIS),blkLimitsGC(HIGH,KAXIS)
-              do j = blkLimitsGC(LOW,JAXIS),blkLimitsGC(HIGH,JAXIS)
-                 do i = blkLimitsGC(LOW,IAXIS),blkLimitsGC(HIGH,IAXIS)
+           do k = limGC(LOW,KAXIS),limGC(HIGH,KAXIS)
+              do j = limGC(LOW,JAXIS),limGC(HIGH,JAXIS)
+                 do i = limGC(LOW,IAXIS),limGC(HIGH,IAXIS)
                     solnData(SHOK_VAR,i,j,k)=shock(i,j,k)
                  end do
               end do
            end do
 #endif
         end if
-        call hy_ppm_block(hy_meshMe, blockList(blk),sweepDir, dt, dtOld, &
-                          blkLimits,blkLimitsGC,bcs,          &
+        print*,'calling block'
+        call hy_ppm_block(hy_meshMe, block,sweepDir, dt, dtOld, &
+                          lim,limGC,bcs,          &
                           numCells,numGuard,      &
                           primaryCoord ,     &
                           primaryLeftCoord , &
@@ -454,6 +422,7 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
                           tempAreaLeft,               &
                           tempFlx,       & 
                           shock, solnData)
+        print*,'return from block'
      else
         tempFlx = 0.0
 
@@ -482,16 +451,16 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
 
 !! FORFUTURE: Diffuse Unit not fully implemented
 
-     call Diffuse_therm(sweepDir, igeom, blockList(blk), numCells,&
-                        blkLimits, blkLimitsGC, primaryLeftCoord, &
+     call Diffuse_therm(sweepDir, igeom, block%id, numCells,&
+                        lim, limGC, primaryLeftCoord, &
                         primaryRghtCoord, tempFlx, tempAreaLeft)
 
-     call Diffuse_visc (sweepDir, igeom, blockList(blk), numCells,&
-                        blkLimits, blkLimitsGC, primaryLeftCoord,primaryRghtCoord,&
+     call Diffuse_visc (sweepDir, igeom, block%id, numCells,&
+                        lim, limGC, primaryLeftCoord,primaryRghtCoord,&
                         tempFlx, tempAreaLeft,secondCoord,thirdCoord)
      
-!!$     call Diffuse_species(sweepDir, igeom, blockList(blk), numCells,&
-!!$                        blkLimits, blkLimitsGC, primaryLeftCoord,primaryRghtCoord,&
+!!$     call Diffuse_species(sweepDir, igeom, block, numCells,&
+!!$                        lim, limGC, primaryLeftCoord,primaryRghtCoord,&
 !!$                        tempFlx, tempFly, tempFlz)
 
 !!--------- Updating the solution for this one block 
@@ -502,32 +471,32 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
         call Timers_start("hy_ppm_updateSoln")
         call hy_ppm_updateSoln(updateMode, &
                         sweepDir, dt,&
-                        blkLimits,blkLimitsGC,numCells, &
+                        lim,limGC,numCells, &
                         tempArea, tempGrav1d_o, tempGrav1d, &
                         tempDtDx, tempFict,   &
                         tempFlx,       &
                         solnData )
         call Timers_stop("hy_ppm_updateSoln")
      end if
-
+     print*,'updated'
 
      if(.not. (doFluxCorrect)) then
         if(hy_irenorm==1) then
-           call Grid_renormAbundance(blockList(blk),blkLimits,solnData)
+           call Grid_renormAbundance(block%id,lim,solnData)
         else
-           call Grid_limitAbundance(blkLimits,solnData)
+           call Grid_limitAbundance(lim,solnData)
         end if
 
-!!!        call Hydro_recalibrateEints(blkLimits, blockList(blk))
+!!!        call Hydro_recalibrateEints(lim, block)
 
         call Timers_start("eos")
-        call Eos_wrapped(hy_eosModeAfter, blkLimits, blockList(blk))
+        call Eos_wrapped(hy_eosModeAfter, lim, solnData)
         call Timers_stop("eos")
      end if
 
-     call Grid_releaseBlkPtr(blockList(blk),solnData)
+     call Grid_releaseBlkPtr(block,solnData)
 
-
+     print*,'release block'
 !!--------- FLUX CONSERVATION
      if (doFluxCorrect) then
 
@@ -535,13 +504,13 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
         size(2) = jsizeGC
         size(3) = ksizeGC
 
-        call Grid_putFluxData(blockList(blk),sweepDir,tempFlx,size, hy_specialFluxVars, tempAreaLeft)
-        call hy_ppm_putTemporaryData(sweepDir,blockList(blk),size,&
+        call Grid_putFluxData(block%id,sweepDir,tempFlx,size, hy_specialFluxVars, tempAreaLeft)
+        print*,'flux put data'
+        call hy_ppm_putTemporaryData(sweepDir,block%id,size,&
              tempArea, tempDtDx, tempGrav1d, tempGrav1d_o, tempFict, tempAreaLeft)
-
+        print*,'temporary data'
      end if
 
-#ifndef FIXEDBLOCKSIZE
      deallocate(tempFlx)
      
      deallocate(tempArea)
@@ -560,12 +529,11 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
      deallocate(radialCoord)
      deallocate(ugrid)
      deallocate(isGc)
-#endif
-
+     call itor%next()
   end do
+end do
 
-
-
+print*,'first stage done'
 
 ! Do this part only if refining and flux correcting
 
@@ -578,65 +546,65 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
      updateMode = UPDATE_BOUND
 
 
-     do blk = 1,blockCount
+     do lev=1,maxLev
+        itor = block_iterator_t(LEAF, level=lev)
+        do while(itor%is_valid())
+           call itor%blkMetaData(block)
+           
+           lim   = block%limits
+           limGC = block%limitsGC
+           
+           isizeGC=limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1
+           jsizeGC=limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1
+           ksizeGC=limGC(HIGH,KAXIS)-limGC(LOW,KAXIS)+1
+           
+           
+           numCells = max(isizeGC,jsizeGC)
+           numcells = max(numCells,ksizeGC)
+           
+           allocate(tempFlx(NFLUXES,limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           
+           allocate(tempArea(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(tempGrav1d_o(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(tempGrav1d(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(tempDtDx(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(tempFict(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(tempAreaLeft(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           
+           call hy_ppm_getTemporaryData(sweepDir,block%id,size,&
+                tempArea,tempDtDx,tempGrav1d,tempGrav1d_o,tempFict, tempAreaLeft)
+           call Grid_getFluxData(block%id,sweepDir, tempFlx,size, hy_specialFluxVars, tempAreaLeft)
+           
+           
+           call Grid_getBlkPtr(block,solnData)
+           
+           call Timers_start("hy_ppm_updateSoln")
+           
+           call hy_ppm_updateSoln(updateMode, &
+                sweepDir, dt,&
+                lim,limGC,numCells, &
+                tempArea, tempGrav1d_o, tempGrav1d, &
+                tempDtDx, tempFict,   &
+                tempFlx,   &
+                solnData )
+           call Timers_stop("hy_ppm_updateSoln")
+           
+           if(hy_irenorm==1) then
+              call Grid_renormAbundance(block%id,lim,solnData)
+           else
+              call Grid_limitAbundance(lim,solnData)
+           end if
+           
+           !        call IO_writeCheckpoint()
+           
+!!!        call Hydro_recalibrateEints(lim, block)
+           
+           call Timers_start("eos")
+           call Eos_wrapped(hy_eosModeAfter, lim, solnData)
+           call Timers_stop("eos")
+        
+        call Grid_releaseBlkPtr(block,solnData)
 
-
-        call Grid_getBlkIndexLimits(blockList(blk),blkLimits,blkLimitsGC)
-        
-        isizeGC=blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
-        jsizeGC=blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
-        ksizeGC=blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
-        
-#ifndef FIXEDBLOCKSIZE
-        
-        numCells = max(isizeGC,jsizeGC)
-        numcells = max(numCells,ksizeGC)
-        
-        allocate(tempFlx(NFLUXES,isizeGC,jsizeGC,ksizeGC))
-        
-        allocate(tempArea(isizeGC,jsizeGC,ksizeGC))
-        allocate(tempGrav1d_o(isizeGC,jsizeGC,ksizeGC))
-        allocate(tempGrav1d(isizeGC,jsizeGC,ksizeGC))
-        allocate(tempDtDx(isizeGC,jsizeGC,ksizeGC))
-        allocate(tempFict(isizeGC,jsizeGC,ksizeGC))
-        allocate(tempAreaLeft(isizeGC,jsizeGC,ksizeGC))
-#endif
-        
-        call hy_ppm_getTemporaryData(sweepDir,blockList(blk),size,&
-             tempArea,tempDtDx,tempGrav1d,tempGrav1d_o,tempFict, tempAreaLeft)
-        call Grid_getFluxData(blockList(blk),sweepDir, tempFlx,size, hy_specialFluxVars, tempAreaLeft)
-
-        
-        call Grid_getBlkPtr(blockList(blk),solnData)
-        
-        call Timers_start("hy_ppm_updateSoln")
-        
-        call hy_ppm_updateSoln(updateMode, &
-             sweepDir, dt,&
-             blkLimits,blkLimitsGC,numCells, &
-             tempArea, tempGrav1d_o, tempGrav1d, &
-             tempDtDx, tempFict,   &
-             tempFlx,   &
-             solnData )
-        call Timers_stop("hy_ppm_updateSoln")
-        
-        if(hy_irenorm==1) then
-           call Grid_renormAbundance(blockList(blk),blkLimits,solnData)
-        else
-           call Grid_limitAbundance(blkLimits,solnData)
-        end if
-        
-!        call IO_writeCheckpoint()
-
-!!!        call Hydro_recalibrateEints(blkLimits, blockList(blk))
-
-        call Timers_start("eos")
-        call Eos_wrapped(hy_eosModeAfter, blkLimits, blockList(blk))
-        call Timers_stop("eos")
-        
-        call Grid_releaseBlkPtr(blockList(blk),solnData)
-
-#ifndef FIXEDBLOCKSIZE
         deallocate(tempFlx)
         deallocate(tempArea)
         deallocate(tempGrav1d_o)
@@ -644,12 +612,13 @@ subroutine hy_ppm_sweep (  blockCount, blockList, &
         deallocate(tempDtDx)
         deallocate(tempFict)
         deallocate(tempAreaLeft)
-#endif
+     call itor%next()
 
      end do !!END LOOP OVER BLOCKS
 
-  end if
-  
+  end do
+end if
+  print*,'second round done'
   call Timers_stop("hy_ppm_sweep")
 
 !  call IO_writeCheckpoint()
@@ -661,31 +630,31 @@ end subroutine hy_ppm_sweep
 
 !!$     call Timers_start("eos gc")
 !!$
-!!$     eosRange = blkLimits
+!!$     eosRange = lim
 !!$
 !!$     if(sweepDir==SWEEP_X) then
-!!$        eosRange(LOW,IAXIS) = blkLimitsGC(LOW,IAXIS)
-!!$        eosRange(HIGH,IAXIS) = blkLimits(LOW,IAXIS)-1
+!!$        eosRange(LOW,IAXIS) = limGC(LOW,IAXIS)
+!!$        eosRange(HIGH,IAXIS) = lim(LOW,IAXIS)-1
 !!$     else if(sweepDir==SWEEP_Y) then
-!!$        eosRange(LOW,JAXIS) = blkLimitsGC(LOW,JAXIS)
-!!$        eosRange(HIGH,JAXIS) = blkLimits(LOW,JAXIS)-1
+!!$        eosRange(LOW,JAXIS) = limGC(LOW,JAXIS)
+!!$        eosRange(HIGH,JAXIS) = lim(LOW,JAXIS)-1
 !!$     else if(sweepDir==SWEEP_Z) then
-!!$        eosRange(LOW,KAXIS) = blkLimitsGC(LOW,KAXIS)
-!!$        eosRange(HIGH,KAXIS) = blkLimits(LOW,KAXIS)-1
+!!$        eosRange(LOW,KAXIS) = limGC(LOW,KAXIS)
+!!$        eosRange(HIGH,KAXIS) = lim(LOW,KAXIS)-1
 !!$     end if
 
-!!$     call Eos_wrapped(hy_eosMode,eosRange,blockList(blk))
+!!$     call Eos_wrapped(hy_eosMode,eosRange,block)
 
 
 !!$     if(sweepDir==SWEEP_X) then
-!!$        eosRange(LOW,IAXIS) = blkLimits(HIGH,IAXIS)+1
-!!$        eosRange(HIGH,IAXIS) = blkLimitsGC(HIGH,IAXIS)
+!!$        eosRange(LOW,IAXIS) = lim(HIGH,IAXIS)+1
+!!$        eosRange(HIGH,IAXIS) = limGC(HIGH,IAXIS)
 !!$     else if(sweepDir==SWEEP_Y) then
-!!$        eosRange(LOW,JAXIS) = blkLimits(HIGH,JAXIS)+1
-!!$        eosRange(HIGH,JAXIS) = blkLimitsGC(HIGH,JAXIS)
+!!$        eosRange(LOW,JAXIS) = lim(HIGH,JAXIS)+1
+!!$        eosRange(HIGH,JAXIS) = limGC(HIGH,JAXIS)
 !!$     else if(sweepDir==SWEEP_Z) then
-!!$        eosRange(LOW,KAXIS) = blkLimits(HIGH,KAXIS)+1
-!!$        eosRange(HIGH,KAXIS) = blkLimitsGC(HIGH,KAXIS)
+!!$        eosRange(LOW,KAXIS) = lim(HIGH,KAXIS)+1
+!!$        eosRange(HIGH,KAXIS) = limGC(HIGH,KAXIS)
 !!$     end if
 !!$
 !!$     if (hy_cvisc .eq. 0.0) then
@@ -701,6 +670,6 @@ end subroutine hy_ppm_sweep
 !!$                eosRange(LOW,KAXIS):eosRange(HIGH,KAXIS)) = 0.0
 !!$        end if
 !!$     end if
-!!$     call Eos_wrapped(hy_eosMode,eosRange,blockList(blk))
+!!$     call Eos_wrapped(hy_eosMode,eosRange,block)
 
 !!$     call Timers_stop("eos gc")

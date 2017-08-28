@@ -24,7 +24,7 @@ Module hy_ppm_interface
 #include "Flash.h"
   
   interface
-     subroutine hy_ppm_block ( hy_meshMe,blockID,sweepDir, dt, dtOld, &
+     subroutine hy_ppm_block ( hy_meshMe,block,sweepDir, dt, dtOld, &
           blkLimits,blkLimitsGC,bcs, &
           numCells,numguard, &
           primaryCoord     , &
@@ -39,12 +39,13 @@ Module hy_ppm_interface
           tempDtDx, tempFict, tempAreaLeft,   &
           tempFlx,           & 
           shock, solnData )
-
+       use block_metadata, ONLY : block_metadata_t
        implicit none
 
        !! ------------
        !! ---- ARGUMENTS
-       integer, intent(IN) :: hy_meshMe, blockID
+       integer, intent(IN) :: hy_meshMe
+       type(block_metadata_t),intent(IN) :: block
        integer, intent(IN) :: sweepDir
        real,    intent(IN) :: dt, dtOld
        integer, intent(IN) :: numCells,numguard
@@ -177,18 +178,15 @@ Module hy_ppm_interface
   end interface
 
   interface
-     subroutine hy_ppm_sweep ( blockCount, blockList, &
-                               timeEndAdv, dt, dtOld, &
+     subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld, &
                                sweepDir )
 
 
        !! ----------------------
        !! ---- INPUT ARGUMENTS
-       integer, INTENT(IN) :: blockCount
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepDir
-       integer, INTENT(IN), dimension(blockCount) :: blockList
-     end subroutine hy_ppm_sweep
+      end subroutine hy_ppm_sweep
   end interface
 
 

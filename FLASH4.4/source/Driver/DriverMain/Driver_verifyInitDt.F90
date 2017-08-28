@@ -64,18 +64,12 @@ subroutine Driver_verifyInitDt()
   integer,parameter::IX=2,IY=3,IZ=4
 #endif  
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC) :: xCoord, dx, uxgrid, xLeft, xRight
-  real, dimension(GRID_JLO_GC:GRID_JHI_GC) :: yCoord, dy, uygrid, yLeft, yRight
-  real, dimension(GRID_KLO_GC:GRID_KHI_GC) :: zCoord, dz, uzgrid, zLeft, zRight
-#else
   real, allocatable,dimension(:)::&
        xCoord,dx,uxgrid,yCoord,dy,uygrid,zCoord,dz,uzgrid,&
        xLeft,xRight,yLeft,yRight,zLeft,zRight
-#endif
 
   !arrays which hold the starting and ending indicies of a block
-  integer,dimension(2,MDIM)::blkLimits,blkLimitsGC
+  integer,dimension(2,MDIM)::lim,limGC
 
   !!coordinate infomration to be passed into physics  
   real, pointer :: solnData(:,:,:,:)
@@ -122,33 +116,29 @@ subroutine Driver_verifyInitDt()
         do while(itor%is_valid())
            call itor%blkMetaData(block)
           
-           blkLimits(LOW,:)   = block%limits(LOW,:)-block%cid(:)
-           blkLimitsGC(LOW,:) = block%limitsGC(LOW,:)-block%cid(:)
-           blkLimits(HIGH,:)   = block%limits(HIGH,:)-block%cid(:)
-           blkLimitsGC(HIGH,:) = block%limitsGC(HIGH,:)-block%cid(:)
+           lim=block%Limits
+           limGC=block%LimitsGC
            call Grid_getBlkPtr(block, solnData)
 
-           isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
-           jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
-           ksize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1+2*NGUARD*K3D
+           isize = limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1
+           jsize = limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1
+           ksize = limGC(HIGH,KAXIS)-limGC(LOW,KAXIS)+1
            
-#ifndef FIXEDBLOCKSIZE
-           allocate(xCoord(isize))
-           allocate(dx(isize))
-           allocate(uxgrid(isize))
-           allocate(yCoord(jsize))
-           allocate(dy(jsize))
-           allocate(uygrid(jsize))
-           allocate(zCoord(ksize))
-           allocate(dz(ksize))
-           allocate(uzgrid(ksize))
-           allocate(xLeft(isize))
-           allocate(xRight(isize))
-           allocate(yLeft(jsize))
-           allocate(yRight(jsize))
-           allocate(zLeft(ksize))
-           allocate(zRight(ksize))
-#endif
+           allocate(xCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+           allocate(dx(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+           allocate(uxgrid(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+           allocate(yCoord(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
+           allocate(dy(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
+           allocate(uygrid(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
+           allocate(zCoord(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(dz(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(uzgrid(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(xLeft(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+           allocate(xRight(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+           allocate(yLeft(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
+           allocate(yRight(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
+           allocate(zLeft(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(zRight(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
            
            
            coordSize = isize
@@ -185,7 +175,7 @@ subroutine Driver_verifyInitDt()
                 xCoord, dx, uxgrid, &
                 yCoord, dy, uygrid, &
                 zCoord, dz, uzgrid, &
-                blkLimits,blkLimitsGC,  &
+                lim,limGC,  &
                 solnData,      &
                 dtCheck(1), dtMinLoc, &
                 extraInfo=extraHydroInfo)
@@ -193,14 +183,13 @@ subroutine Driver_verifyInitDt()
 !!$             xCoord, xLeft,xRight, dx, uxgrid, &
 !!$             yCoord, yLeft,yRight, dy, uygrid, &
 !!$             zCoord, zLeft,zRight, dz, uzgrid, &
-!!$             blkLimits,blkLimitsGC,  &
+!!$             lim,limGC,  &
 !!$             solnData,      &
 !!$             dtCheck(2), dtMinLoc )
            
            call Grid_releaseBlkPtr(block, solnData)
            nullify(solnData)
  
-#ifndef FIXEDBLOCKSIZE
            deallocate(xCoord)
            deallocate(dx)
            deallocate(uxgrid)
@@ -216,7 +205,6 @@ subroutine Driver_verifyInitDt()
            deallocate(yRight)
            deallocate(zLeft)
            deallocate(zRight)
-#endif
            
            call itor%next()
         end do
