@@ -51,12 +51,6 @@
 !!
 !!***
 
-!!REORDER(4): dataPtr
-
-#ifdef DEBUG_ALL
-#define DEBUG_GRID
-#endif
-
 subroutine Grid_getBlkPtr(blockID, dataPtr, gridDataStruct)
   use Driver_interface, ONLY : Driver_abortFlash
   
@@ -69,95 +63,4 @@ subroutine Grid_getBlkPtr(blockID, dataPtr, gridDataStruct)
   call Driver_abortFlash("AMReX does *not* deal in block IDs")
 end subroutine Grid_getBlkPtr
 
-subroutine Grid_getBlkPtr_Itor(block, dataPtr, gridDataStruct)
-
-#include "constants.h"
-#include "Flash.h"
-
-  use Driver_interface, ONLY : Driver_abortFlash
-  use block_metadata, ONLY : block_metadata_t
-  ! DEVNOTE:  Once we have mesh initialization done, we will need to get access
-  ! to AMReX owned physical data here
-!  use physicaldata, ONLY : unk, facevarx, facevary, facevarz
-!  use gr_specificData, ONLY : scratch,scratch_ctr,&
-!       scratch_facevarx,scratch_facevary,scratch_facevarz
-
-  implicit none
-
-  type(block_metadata_t), intent(in)            :: block
-  real,                   intent(out), pointer  :: dataPtr(:, :, :, :)
-  integer,                intent(in),  optional :: gridDataStruct
-
-  integer :: gds
-  logical :: validGridDataStruct
-
-#ifdef DEBUG_GRID
-  if(present(gridDataStruct)) then
-     validGridDataStruct = .false.
-     validGridDataStruct= (gridDataStruct == CENTER).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == FACEX).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == FACEY).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == FACEZ).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH_CTR).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH_FACEX).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH_FACEY).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH_FACEZ).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == WORK).or.validGridDataStruct
-     
-     if(.not.validGridDataStruct) then
-        print *, "Grid_getBlkPtr: gridDataStruct set to improper value"
-        print *, "gridDataStruct must = CENTER,FACEX,FACEY,FACEZ," // &
-             "WORK or SCRATCH (defined in constants.h)"
-        call Driver_abortFlash("gridDataStruct must be one of CENTER,FACEX,FACEY,FACEZ,SCRATCH (see constants.h)")
-     end if
-  end if
-  ! TODO: Convert this into error checking of AMReX metadata
-!  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-!     print *, 'Grid_getBlkPtr:  invalid blockid ',blockid
-!     call Driver_abortFlash("[Grid_getBlkPtr] invalid blockid ")
-!  end if
-#endif
-
-  if(present(gridDataStruct)) then
-     gds = gridDataStruct
-  else
-     gds = CENTER
-  end if
-
-  associate (lo   => block%limitsGC(LOW, :), &
-             ilev => block%level, &
-             igrd => block%grid_index)
-!#ifdef INDEXREORDER
-    ! TODO: Code up reordered indices once the normal way is finalized
-!#else
-    ! TODO: This is just an idea of how to get data.  Get data from the 
-    ! AMReX Multifabs correctly once the mesh initialization is done.
-    select case (gds)
-    case(CENTER)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => unk(ilev)%dataptr(igrd)
-    case(FACEX)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(ilev)%dataptr(igrd)
-    case(FACEY)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(ilev)%dataptr(igrd)
-    case(FACEZ)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(ilev)%dataptr(igrd)
-    case(SCRATCH)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch(ilev)%dataptr(igrd)
-    case(SCRATCH_CTR)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_ctr(ilev)%dataptr(igrd)
-    case(SCRATCH_FACEX)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarx(ilev)%dataptr(igrd)
-    case(SCRATCH_FACEY)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevary(ilev)%dataptr(igrd)
-    case(SCRATCH_FACEZ)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarz(ilev)%dataptr(igrd)
-    case(WORK)
-       call Driver_abortFlash("work array cannot be got as pointer")
-    case DEFAULT
-       print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
-    end select
-!#endif
-  end associate
-end subroutine Grid_getBlkPtr_Itor
 

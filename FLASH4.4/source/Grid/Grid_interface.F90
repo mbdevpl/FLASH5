@@ -102,6 +102,17 @@ Module Grid_interface
      end subroutine Grid_applyBCEdgeAllUnkVars
   end interface
 
+  interface
+     subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
+       use amrex_multifab_module, ONLY : amrex_multifab
+       implicit none
+       integer,intent(IN),OPTIONAL :: gds
+       type(amrex_multifab),intent(INOUT) :: phi(:)
+       integer,intent(IN),OPTIONAL :: nodetype
+       logical,intent(IN),OPTIONAL :: reverse
+     end subroutine Grid_copyF4DataToMultiFabs
+  end interface
+
   interface Grid_computeUserVars
      subroutine Grid_computeUserVars()
      end subroutine Grid_computeUserVars
@@ -269,12 +280,13 @@ Module Grid_interface
        real,dimension(:,:,:,:), pointer :: dataPtr
        integer,optional, intent(in) :: gridDataStruct
      end subroutine Grid_getBlkPtr
-     subroutine Grid_getBlkPtr_Itor(block, dataPtr,gridDataStruct)
+     subroutine Grid_getBlkPtr_desc(block, dataPtr,gridDataStruct,localFlag)
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t), intent(in) :: block
        real,dimension(:,:,:,:), pointer :: dataPtr
        integer,optional, intent(in) :: gridDataStruct
-     end subroutine Grid_getBlkPtr_Itor
+       logical,optional, intent(in) :: localFlag
+     end subroutine Grid_getBlkPtr_desc
   end interface
 
   interface Grid_getBlkRefineLevel
