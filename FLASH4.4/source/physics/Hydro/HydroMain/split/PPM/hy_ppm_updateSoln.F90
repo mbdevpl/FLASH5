@@ -144,7 +144,7 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
 ! Calculate local block indices limits:
   blkLimitsGC(LOW,:)=1
   blkLimitsGC(HIGH,:)=limGC(HIGH,:)-limGC(LOW,:)+1
-  blkLimits(LOW,:)=blkLimitsGC(LOW,:)-NGUARD
+  blkLimits(LOW,:)=blkLimitsGC(LOW,:)+NGUARD
   blkLimits(HIGH,:)=blkLimitsGC(HIGH,:)-NGUARD
 ! update in x direction
   if (xyzswp == SWEEP_X) then

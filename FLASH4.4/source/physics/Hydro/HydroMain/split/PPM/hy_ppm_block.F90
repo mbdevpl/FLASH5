@@ -223,6 +223,7 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
                                tmp, gamc, game,  &
                                uttp, utbt, utlt, utrt
   real, DIMENSION(numCells, NSPECIES+NMASS_SCALARS) :: xn, xnflx
+  integer :: len
 
   allocate(hy_dela(numCells),stat = istat) 
   if (istat==0)allocate(hy_dp(numCells),stat = istat) 
@@ -301,8 +302,9 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
 ! subroutine in the shock_multid array, if necessary.
   blkLimitsGC(LOW,:)=1
   blkLimitsGC(HIGH,:)=limGC(HIGH,:)-limGC(LOW,:)+1
-  blkLimits(LOW,:)=blkLimitsGC(LOW,:)-NGUARD
+  blkLimits(LOW,:)=blkLimitsGC(LOW,:)+NGUARD
   blkLimits(HIGH,:)=blkLimitsGC(HIGH,:)-NGUARD
+  len=blkLimitsGC(HIGH,IAXIS)
   tempFlx(:,:,:,:) = 0.0
   select case (sweepDir)
   case (SWEEP_X)
@@ -339,7 +341,7 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
 !!$              areaLeft(1:ihi+1) = faceAreas(:,j,k)
 !!$              cvol(1:ihi) = cellVolumes(:,j,k)
 !!$           end if
-           shock_multid(iloGc:ihiGc) = shock(iloGc:ihiGc,j,k)
+           shock_multid(1:len) = shock(1:len,j,k)
            u(:)    = solnData( VELX_VAR,iloGc:ihiGc, j, k )
            ut(:)   = solnData( VELY_VAR, iloGc:ihiGc, j, k )
            utt(:)  = solnData( VELZ_VAR, iloGc:ihiGc, j, k )
