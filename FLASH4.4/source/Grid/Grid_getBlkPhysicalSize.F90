@@ -50,10 +50,13 @@
 !!
 !!***
 
-subroutine Grid_getBlkPhysicalSize(blockId, blockSize)
-implicit none
+subroutine Grid_getBlkPhysicalSize(block, blockSize)
+  use block_metadata, ONLY : block_metadata_t
+  
+  implicit none
+
 #include "constants.h"
-  integer,intent(in) :: blockId
+  type(block_metadata_t),intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockSize
   blockSize=0.0
   return

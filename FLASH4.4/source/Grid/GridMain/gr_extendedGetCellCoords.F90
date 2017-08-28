@@ -95,22 +95,24 @@
 #define DEBUG_GRID
 #endif
 
-subroutine gr_extendedGetCellCoords(axis, blockID, pe, edge, guardcell, coordinates, size)
+subroutine gr_extendedGetCellCoords(axis, block, pe, edge, guardcell, coordinates, size)
 
   use Grid_data, ONLY : gr_meshMe
   use Grid_interface, ONLY : Grid_getCellCoords
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
-  integer, intent(in) :: axis,blockID,pe, edge
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: axis, pe, edge
   integer, intent(in) :: size
   logical, intent(in) :: guardcell
   real,intent(out), dimension(size) :: coordinates
 
 
   if (pe.EQ.gr_meshMe) then
-     call Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
+     call Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
   else
      call Driver_abortFlash('Calling gr_extendedGetCellCoords for'// & 
              &      ' remote blocks is not supported in this Grid implementation.')

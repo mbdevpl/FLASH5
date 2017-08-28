@@ -50,28 +50,32 @@
 #define DEBUG_GRID
 #endif
 
-subroutine gr_getInteriorBlkPtr(blockID,dataPtr, gridDataStruct)
+subroutine gr_getInteriorBlkPtr(block,dataPtr, gridDataStruct)
 
 #include "constants.h"
 #include "Flash.h"
 
   use physicaldata, ONLY : unk, facevarx, facevary, facevarz
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 
 #ifdef FLASH_GRID_PARAMESH
   use workspace, ONLY : work
 #endif 
 
   implicit none
-  integer, intent(in) :: blockID
+  type(block_metadata_t), intent(in) :: block
   real, dimension(:,:,:,:), pointer :: dataPtr
   integer, intent(in) :: gridDataStruct
 
   logical :: validGridDataStruct
 
+  integer :: blockID
   integer :: idest, iopt, nlayers, icoord
   logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
   logical,dimension(NUNK_VARS) :: save_ccMask
+
+  blockID = block%ID
 
 #ifndef FL_NON_PERMANENT_GUARDCELLS
   call Driver_abortFlash("interior of blocks can be got only in non permanent gc mode")

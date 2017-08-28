@@ -149,9 +149,11 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
   use physicaldata, ONLY: unk1,facevarx1, facevary1, facevarz1, gcell_on_cc, gcell_on_fc
   use workspace, ONLY : work1
 #endif
-
 #ifdef FLASH_GRID_PARAMESH2
   use workspace, ONLY : work
+  use physicaldata, ONLY : unk
+#endif
+#ifdef FLASH_GRID_AMREX
   use physicaldata, ONLY : unk
 #endif
 
@@ -211,6 +213,8 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
   elseif(gridDataStruct==FACEZ) then
      mask(1:varCount)=gcell_on_fc(3,1:varCount)
   end if
+#elif defined FLASH_GRID_AMREX
+  !DEVNOTE: Code this once the data structures are fixed
 #endif
   if(axis==IAXIS) then
      do k=endPoints(LOW,KAXIS),endPoints(HIGH,KAXIS)
@@ -231,6 +235,8 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
                  region(1:bcVecEnd,n,m,var)=facevarz1(var,strt:fin,j,k,idest)
               case(WORK)
                  region(1:bcVecEnd,n,m,varCount)=work1(strt:fin,j,k,idest)
+#elif defined FLASH_GRID_AMREX
+  !DEVNOTE: Code this once the data structures are fixed
 #else
                  !! this section in play if the grid is UG or PM2
               case(CENTER)
@@ -272,6 +278,8 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
                  region(1:bcVecEnd,n,m,var)=facevarz1(var,i,strt:fin,k,idest)
               case(WORK)
                  region(1:bcVecEnd,n,m,varCount)=work1(i,strt:fin,k,idest)
+#elif defined FLASH_GRID_AMREX
+  !DEVNOTE: Code this once the data structures are fixed
 #else
                  !! this section in play if the grid is UG or PM2
               case(CENTER)
@@ -312,6 +320,8 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
                  region(1:bcVecEnd,n,m,var)=facevarz1(var,i,j,strt:fin,idest)
               case(WORK)
                  region(1:bcVecEnd,n,m,varCount)=work1(i,j,strt:fin,idest)
+#elif defined FLASH_GRID_AMREX
+  !DEVNOTE: Code this once the data structures are fixed
 #else
                  !! this section in play if the grid is UG or PM2
               case(CENTER)
@@ -406,9 +416,11 @@ subroutine gr_bcGetRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoi
   use physicaldata, ONLY: unk1,facevarx1, facevary1, facevarz1, gcell_on_cc, gcell_on_fc
   use workspace, ONLY : work1
 #endif
-
 #ifdef FLASH_GRID_PARAMESH2
   use workspace, ONLY : work
+  use physicaldata, ONLY : unk
+#endif
+#ifdef FLASH_GRID_AMREX
   use physicaldata, ONLY : unk
 #endif
 
@@ -468,6 +480,8 @@ subroutine gr_bcGetRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoi
   pFaceVarX => facevarx1(:,:,:,:,idest)
   pFaceVarY => facevary1(:,:,:,:,idest)
   pFaceVarZ => facevarz1(:,:,:,:,idest)
+#elif defined FLASH_GRID_AMREX
+  ! DEVNOTE: Code this once the data structures are fixed
 #else
   pUnk => unk(:,:,:,:,blockID)
 #if NFACE_VARS>0

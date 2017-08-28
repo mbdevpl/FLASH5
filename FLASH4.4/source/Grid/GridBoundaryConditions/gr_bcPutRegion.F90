@@ -98,9 +98,11 @@ subroutine gr_bcPutRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
   use physicaldata, ONLY: unk1,facevarx1, facevary1, facevarz1
   use workspace, ONLY : work1
 #endif
-
 #ifdef FLASH_GRID_PARAMESH2
   use workspace, ONLY : work
+  use physicaldata, ONLY : unk
+#endif
+#ifdef FLASH_GRID_AMREX
   use physicaldata, ONLY : unk
 #endif
 
@@ -167,6 +169,8 @@ subroutine gr_bcPutRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
                  facevarz1(var,strt:fin,j,k,idest)=region(1:bcVecEnd,n,m,var)
               case(WORK)
                  work1(strt:fin,j,k,idest)=region(1:bcVecEnd,n,m,varCount)
+#elif defined FLASH_GRID_AMREX
+  ! DEVNOTE: Code this once data structures fixed
 #else
                  !! this section in play if the grid is UG or PM2
               case(CENTER)
@@ -208,6 +212,8 @@ subroutine gr_bcPutRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
                  facevarz1(var,i,strt:fin,k,idest)=region(1:bcVecEnd,n,m,var)
               case(WORK)
                  work1(i,strt:fin,k,idest)=region(1:bcVecEnd,n,m,varCount)
+#elif defined FLASH_GRID_AMREX
+  ! DEVNOTE: Code this once data structures fixed
 #else
                  !! this section in play if the grid is UG or PM2
               case(CENTER)
@@ -248,6 +254,8 @@ subroutine gr_bcPutRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
                  facevarz1(var,i,j,strt:fin,idest)=region(1:bcVecEnd,n,m,var)
               case(WORK)
                  work1(i,j,strt:fin,idest)=region(1:bcVecEnd,n,m,varCount)
+#elif defined FLASH_GRID_AMREX
+  ! DEVNOTE: Code this once data structures fixed
 #else
                  !! this section in play if the grid is UG or PM2
               case(CENTER)
@@ -354,9 +362,11 @@ subroutine gr_bcPutRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoi
   use physicaldata, ONLY: unk1,facevarx1, facevary1, facevarz1, gcell_on_cc, gcell_on_fc
   use workspace, ONLY : work1
 #endif
-
 #ifdef FLASH_GRID_PARAMESH2
   use workspace, ONLY : work
+  use physicaldata, ONLY : unk
+#endif
+#ifdef FLASH_GRID_AMREX
   use physicaldata, ONLY : unk
 #endif
 
@@ -415,12 +425,14 @@ subroutine gr_bcPutRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoi
 #else
   doFaces = .FALSE.
 #endif
-
+  ! DEVNOTE: Code this once data structures fixed
 #ifdef FLASH_GRID_PARAMESH3OR4
   pUnk => unk1(:,:,:,:,idest)
   pFaceVarX => facevarx1(:,:,:,:,idest)
   pFaceVarY => facevary1(:,:,:,:,idest)
   pFaceVarZ => facevarz1(:,:,:,:,idest)
+#elif defined FLASH_GRID_AMREX
+  ! DEVNOTE: Code once data structures fixed
 #else
   pUnk => unk(:,:,:,:,blockID)
 #if NFACE_VARS>0

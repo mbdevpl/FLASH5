@@ -236,12 +236,13 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_putBlkData(blockID, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_putBlkData(block, gridDataStruct, structIndex, beginCount, &
      startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
+  use block_metadata, ONLY : block_metadata_t
 
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
 
@@ -250,7 +251,8 @@ subroutine Grid_putBlkData(blockID, gridDataStruct, structIndex, beginCount, &
 #include "constants.h"
 #include "Flash.h"
 
-  integer, intent(in) :: blockID, structIndex, beginCount, gridDataStruct
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(3), intent(in) :: dataSize
   real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(in) :: datablock
@@ -265,16 +267,7 @@ subroutine Grid_putBlkData(blockID, gridDataStruct, structIndex, beginCount, &
 
 #ifdef DEBUG_GRID
   isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
-
-
-  !verify we have a valid blockid
-  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,' Grid_putBlkData : invalide blockid '
-     call Driver_abortFlash("Put Data : invalid blockid ")
-  end if
-  
-
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
 
 
   !verify beginCount is set to a valid value
@@ -414,7 +407,7 @@ subroutine Grid_putBlkData(blockID, gridDataStruct, structIndex, beginCount, &
 
 #endif
 
-  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataSize,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataSize,beginCount,begOffset,getIntPtr)
 
   zb = 1
   ze = 1
@@ -455,18 +448,18 @@ subroutine Grid_putBlkData(blockID, gridDataStruct, structIndex, beginCount, &
 !!$#endif
 !!$     end select
      
-     call gr_getInteriorBlkPtr(blockId,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      solnData(structIndex,xb:xe,yb:ye,zb:ze)=datablock(:,:,:)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
      
-     call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct)
      solnData(structIndex,xb:xe,yb:ye,zb:ze)=datablock(:,:,:)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        solnData(xb:xe,yb:ye,zb:ze,structIndex)=datablock(:,:,:)
 !!$     else
 !!$     end if
-     call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
   end if
   
   return

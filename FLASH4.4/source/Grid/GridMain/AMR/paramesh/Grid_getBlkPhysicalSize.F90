@@ -52,18 +52,19 @@
 !!***
 
 
-subroutine Grid_getBlkPhysicalSize(blockId, blockSize)
+subroutine Grid_getBlkPhysicalSize(block, blockSize)
 
   use tree, ONLY : bsize
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 
-  integer,intent(in) :: blockId
+  type(block_metadata_t),intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockSize
 
-  blockSize = bsize(:,blockId)
+  blockSize = bsize(:,block%id)
 
   return
 end subroutine Grid_getBlkPhysicalSize

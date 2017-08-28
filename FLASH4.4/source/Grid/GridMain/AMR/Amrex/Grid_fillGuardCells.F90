@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/Chombo/Grid_fillGuardCells
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_fillGuardCells
 !!
 !! NAME
 !!  Grid_fillGuardCells
@@ -118,45 +118,69 @@
 !!  
 !!***
 
-
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
 #endif
 
+subroutine Grid_fillGuardCells(gridDataStruct, idir, &
+                               minLayers, &
+                               eosMode, doEos, &
+                               maskSize, mask, makeMaskConsistent, doLogMask, &
+                               selectBlockType, &
+                               unitReadsMeshDataOnly)
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_fillGuardCells(gridDataStruct,idir,minLayers,eosMode,doEos&
-     &, maskSize, mask, makeMaskConsistent, doLogMask,selectBlockType, &
-     unitReadsMeshDataOnly)
-  use iso_c_binding
-  use Grid_data, ONLY : gr_bndOrder, gr_allPeriodic, gr_justExchangedGC, &
-       gr_eosModeNow, gr_convertToConsvdInMeshInterp, gr_maxRefineLevel
+  use, INTRINSIC :: iso_c_binding
+  use amrex_amrcore_module,   ONLY : amrex_get_finest_level
+  use amrex_fillpatch_module, ONLY : amrex_fillpatch
+  use Grid_data, ONLY : gr_justExchangedGC, gr_eosModeNow, &
+                        gr_convertToConsvdInMeshInterp
+!  use Grid_data, ONLY : gr_bndOrder, gr_allPeriodic, gr_justExchangedGC, &
+!       gr_eosModeNow, gr_convertToConsvdInMeshInterp, gr_maxRefineLevel
   use gr_bcInterface, ONLY : gr_bcApplyToAllBlks
   use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface, ONLY : Eos_guardCells
   use Timers_interface, ONLY : Timers_start, Timers_stop
 
   implicit none
-  integer, intent(in) :: gridDataStruct
-  integer, intent(in) :: idir
-  integer, optional,intent(in) :: minLayers
-  integer, optional,intent(in) :: eosMode
-  logical, optional,intent(in) :: doEos
-  integer, optional, intent(IN) :: maskSize
-  logical, optional, dimension(:),intent(IN) :: mask
-  logical, optional,intent(IN) :: makeMaskConsistent
-  logical, optional,intent(IN) :: doLogMask  ! ignored in this implementation
-  integer,optional,intent(in) :: selectBlockType
-  logical, optional, intent(IN) :: unitReadsMeshDataOnly
 
-  integer :: n, axis
-  logical :: isWork=.false.
+  integer, intent(in)           :: gridDataStruct
+  integer, intent(in)           :: idir
+  integer, intent(in), optional :: minLayers
+  integer, intent(in), optional :: eosMode
+  logical, intent(in), optional :: doEos
+  integer, intent(in), optional :: maskSize
+  logical, intent(in), optional :: mask(:)
+  logical, intent(in), optional :: makeMaskConsistent
+  logical, intent(in), optional :: doLogMask
+  integer, intent(in), optional :: selectBlockType
+  logical, intent(in), optional :: unitReadsMeshDataOnly
+
+  integer :: axis
+  logical :: isWork = .FALSE.
   integer :: listBlockType = ALL_BLKS
-  integer,dimension(MDIM) :: layersArray
-  integer :: gcEosMode, i
+  integer :: finest_level = -1
+  integer :: layersArray(MDIM)
+  integer :: gcEosMode
   integer :: numBlocks
   logical :: needEos
+  integer :: ierr = 0
+
+! TODO: Implement once code finalized
+!#ifdef DEBUG_GRID
+!  logical:: validDataStructure,validMaskSize
+!  validDataStructure = (gridDataStruct==CENTER).or.&
+!                       (gridDataStruct==FACES).or.&
+!                       (gridDataStruct==FACEX).or.&
+!                       (gridDataStruct==FACEY).or.&
+!                       (gridDataStruct==FACEZ).or.&
+!                       (gridDataStruct==WORK).or.&
+!                       (gridDataStruct==CENTER_FACES)
+!  if(.not.validDataStructure)then
+!     call Driver_abortFlash("GCfill: invalid data structure")
+!  end if
+!#endif
 
   if (gridDataStruct /= CENTER .and. gridDataStruct /= CENTER_FACES) then
      !DEV CD.  I am accepting CENTER_FACES for the time being because it
@@ -165,63 +189,122 @@ subroutine Grid_fillGuardCells(gridDataStruct,idir,minLayers,eosMode,doEos&
      call Driver_abortFlash("[Grid_fillGuardCells]: Non-center not yet coded")
   end if
 
+  ! TODO: Implement code for optional parameters.
+  if (present(mask)) then
+     call Driver_abortFlash("[Grid_fillGuardCells]: No guard cell masks yet")
+  elseif (present(selectBlockType)) then
+     call Driver_abortFlash("[Grid_fillGuardCells]: No block selection yet")
+  elseif (present(unitReadsMeshDataOnly)) then
+     call Driver_abortFlash("[Grid_fillGuardCells]: No support for unitReadsMeshData yet")
+  end if
+
+  ! TODO: From paramesh.  Do we need this?
+!  !We can skip this guard cell fill if the guard cells are up to date.
+!  if (gridDataStruct /= WORK) then
+!     skipThisGcellFill = gr_gcellsUpToDate
+!  else
+!     skipThisGcellFill = .false.
+!  end if
+
   if(present(eosMode)) then
      gcEosMode=eosMode
   else
      gcEosMode=gr_eosModeNow
   end if
 
+  !! If masking is not done then Eos should be applied since it is not known
+  !! which variables are of interest
   needEos=.true.
   layersArray = NGUARD
+  ! TODO: Paramesh uses ACTIVE_BLKS, which means leaves and their parents.  
+  ! By doing this, a parent block is ready for use if its child is removed.
+  ! The AMReX iterator is just going over leaves.  Is that acceptable?
+  listBlockType = ACTIVE_BLKS
 
-  call amrex_fillpatch(phi, t_old(lev), phi_old(lev), &
-            &                    t_new(lev), phi_new(lev), &
-            &               amrex_geom(lev), fill_physbc , &
-            &               time, src_comp, dst_comp, num_comp)
+  ! TODO: From paramesh version.  Necessary here?
+!  if (ndim<2) gcell_on_fc(KAXIS,:) = .false.
+ 
+  ! GC data could be managed by other processor.
+  ! Wait for work on all data structures across full mesh to finish 
+  ! before GC filling
+!  call Timers_start("guardcell Barrier")
+!  call MPI_BARRIER(gr_meshComm, ierr)
+!  call Timers_stop("guardcell Barrier")
 
-  do lev=1,gr_maxRefineLevel
-     call amrex_fillpatch(phi, t_old(lev-1), phi_old(lev-1), &
-          &                    t_new(lev-1), phi_new(lev-1), &
-          &               amrex_geom(lev-1), fill_physbc   , &
-          &                    t_old(lev  ), phi_old(lev  ), &
-          &                    t_new(lev  ), phi_new(lev  ), &
-          &               amrex_geom(lev  ), fill_physbc   , &
-          &               time, src_comp, dst_comp, num_comp, &
-          &               amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-          &               lo_bc, hi_bc)
+  call Timers_start("guardcell internal")
 
+  ! Transform center-based data from primitive to conserved form
+  ! TODO: Check if this is being done automatically by AMReX
+!  if((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
+!      ! TODO: Can we uncomment these?
+!!     if (.NOT. skipThisGcellFill) then
+!        itor = block_iterator_t(listBlockType) 
+!        do while (itor%is_valid())
+!           call itor%blkMetaData(block)
+!           call gr_primitiveToConserve(block)
+!
+!           call itor%next()
+!        end do
+!!     end if
+!
+!      ! TODO: These are commented out in paramesh version.  Same here?
+!      if (gr_convertToConsvdInMeshInterp) then
+!        ! TODO: Update interface of gr_sanitizeDataAfterInterp
+!        itor = block_iterator_t(listBlockType) 
+!        do while (itor%is_valid())
+!           call itor%blkMetaData(block)
+!           call gr_sanitizeDataAfterInterp(block, 'after gc filling', layersArray)
+!
+!           call itor%next()
+!        end do
+!      end if
+!  end if
 
-  if(.not.gr_allPeriodic) then
-     do n = 0,NDIM-1
-        axis = gr_bndOrder(NDIM-n)
-!!$     how to apply boundary conditions needs to be worked out here
-        call gr_bcApplyToAllBlks(axis,isWork)
-     end do
-  end if
-
-
-#ifndef FLASH_GRID_UG
-  if ((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
-    call gr_conserveToPrimitive(gr_blkList,numBlocks, .TRUE.)
-    if (gr_convertToConsvdInMeshInterp) then
-      call gr_sanitizeDataAfterInterp(gr_blkList, numBlocks, 'after gc filling', layersArray)
-     end if
-  end if
+#ifdef DEBUG_GRID
+  print*, 'amrex_fillpatch(PE', iopt, guard, layers,')'
 #endif
+  call Timers_start("amr_guardcell")
 
-  gr_justExchangedGC = .true.
+!  finest_level = amrex_get_finest_level()
+!  do lev=0, finest_level
+!      ! Do not use interpolation in time
+!      call amrex_fillpatch(mf(lev)%p, 0.0_wp, smf(lev), 0.0_wp, ns, &
+!                           0, 0, NUNK_VARS, gr_fillPhysBc)
+!  end do
+  call Timers_stop("amr_guardcell")
 
+  gr_justExchangedGC = .TRUE.
 
   if(present(doEos)) then
-     if(doEos.and.needEos) then
+     if(doEos .AND. needEos) then
         call Timers_start("eos gc")
-        call Grid_getListOfBlocks(listBlockType, gr_blkList, numBlocks)
-        do i = 1,numBlocks
-           call Eos_guardCells(gcEosMode, gr_blkList(i), corners=.true., &
-                layers=layersArray)
-        end do
+
+        ! TODO: Paramesh version disallows CENTER and CENTER_FACES.
+        ! Implement same here?
+!        itor = block_iterator_t(listBlockType)
+!        do while (itor%is_valid())
+!            call itor%blkMetaData(block)
+! 
+!            call Grid_getBlkPtr(block, solnData)
+!            ! TODO: Has Eos_guardCells been impolemented to take data ptr?
+!            ! TODO: Paramesh version specifies skipSrl=.TRUE.
+!            call Eos_guardCells(gcEosMode, solnData, corners=.TRUE., &
+!                                layers=layersArray)
+!            call Grid_releaseBlkPtr(block, solnData)
+!            nullify(solnData)
+!
+!            call itor%next()
+!        end do
+!
         call Timers_stop("eos gc")
      end if
   end if
 
+  ! TODO: Paramesh has code to detect if we can skip the next GC fill.
+  ! Implement same here?
+  ! TODO: Is AMReX managing this logical?
+!  gr_gcellsUpToDate = .FALSE.
+
+  call Timers_stop("guardcell internal")
 end subroutine Grid_fillGuardCells
+
