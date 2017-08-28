@@ -59,15 +59,3 @@ implicit none
   return
 end subroutine Grid_getBlkPtr
 
-subroutine Grid_getBlkPtr_Itor(block,dataPtr, gridDataStruct)
-  use block_metadata, ONLY : block_metadata_t
-
-  implicit none
-  
-  type(block_metadata_t), intent(in) :: block
-  real, dimension(:,:,:,:), pointer :: dataPtr
-  integer, optional,intent(in) :: gridDataStruct
-
-  return
-end subroutine Grid_getBlkPtr_Itor
-
