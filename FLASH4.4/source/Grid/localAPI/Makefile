@@ -76,7 +76,5 @@ Grid += gr_xyzToBlockLevel.o gr_xyzToBlock.o
 
 Grid += gr_markRefineDerefine.o
 
-Grid += gr_amrextInterface.o
-
 gr_interface.o     : gr_interfaceTypeDecl.o
 gr_pfftInterface.o : gr_pfftInterfaceTypeDecl.o
