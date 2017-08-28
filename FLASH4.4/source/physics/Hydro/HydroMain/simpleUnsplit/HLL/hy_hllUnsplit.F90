@@ -56,24 +56,19 @@
 !!  June  2013  - created KW, outer structure derived from hy_uhd_unsplit.F90 (Dongwook)
 !!***
 
-!!REORDER(4): U, fl[xyz]
+! Note: the following arrays need to be spelled exactly like this in the code below,
+!       preserving case.
+!!REORDER(4): Uin, Uout, face[XYZ], auxC
 
 #ifdef DEBUG_ALL
 #define DEBUG_UHD
 #endif
 #define DEBUG_GRID_GCMASK
 
-Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
+Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
 
-  use Grid_interface, ONLY : Grid_getDeltas,         &
-                             Grid_getBlkIndexLimits, &
-                             Grid_fillGuardCells,    &
-                             Grid_getBlkPtr,         &
-                             Grid_releaseBlkPtr,     &
-                             Grid_genGetBlkPtr,         &
-                             Grid_genReleaseBlkPtr,     &
-                             Grid_getBlkData
-
+!!$  use Grid_interface, ONLY : Grid_genGetBlkPtr,         &
+!!$                             Grid_genReleaseBlkPtr
 
 #include "Flash.h"
 
@@ -98,8 +93,7 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 
   use Driver_interface, ONLY : Driver_abortFlash
 
-  use Eos_interface, ONLY : Eos_wrapped
-  use Eos_interface, ONLY : Eos_everywhere
+!!$  use Eos_interface, ONLY : Eos_wrapped
 
   use Logfile_interface, ONLY : Logfile_stampVarMask
 
@@ -114,37 +108,32 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 
 
   !! ---- Argument List ----------------------------------
-  integer, INTENT(IN) ::  blockCount
-  integer, INTENT(IN), dimension(blockCount) :: blockList
-  real,    INTENT(IN) :: dt, dtOld
+  integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
+  integer, dimension(*),intent(in)             :: plo
+  real,intent(inout),target,dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: UIN !CAPITALIZATION INTENTIONAL!
+  real,pointer,dimension(:,:,:,:) :: Uout
+  real,dimension(MDIM), INTENT(IN) :: del
+  real,    INTENT(IN) :: dt
   !! -----------------------------------------------------
 
 !!$  integer, dimension(MDIM) :: datasize
-  integer, dimension(LOW:HIGH,MDIM) :: tileLimits ,blkLimitsGC
   integer :: ib, i,j,k,blockID
   integer :: is,js,ks
   integer :: ix,iy,iz
   integer :: iL,iR, jL, jR, kL, kR
-  real, dimension(MDIM) :: del
   real :: dtdx, dtdy, dtdz, vn, invNewDens
   real :: c, sL, sR
   real :: sRsL, vL, vR
-  logical :: gcMask(hy_gcMaskSize)
   integer, dimension(2,MDIM) :: eosRange
   integer :: t, tileID
 
   real, pointer, dimension(:,:,:,:)   :: faceX, faceY, faceZ, auxC
 
-  real, pointer, dimension(:,:,:,:) :: Uin,Uout
+!!$  real, pointer, dimension(:,:,:,:) :: Uin,Uout
 
   integer :: tileCount
   integer :: tileList(1024)
 
-#ifdef DEBUG_GRID_GCMASK
-  logical,save :: gcMaskLogged =.FALSE.
-#else
-  logical,save :: gcMaskLogged =.TRUE.
-#endif
 
   integer,parameter,dimension(HY_VARINUM4) :: &
        outVarList=(/DENS_VAR,&
@@ -155,6 +144,15 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 
 
   !! End of data declaration ***********************************************
+#ifdef DEBUG_UHD
+98 format(A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
+99 format(A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
+  print *, "plo" ,plo(1:MDIM+1)
+  print 98,"Uin" ,(plo(i),i=1,4)
+  print 99,"Uin" ,(lbound(Uin ,i),ubound(Uin ,i),i=1,4)
+  print 99,"Uout",(lbound(Uout,i),ubound(Uout,i),i=1,4)
+  print*,'tileLim:',tileLimits
+#endif
 
 #ifdef FLASH_GRID_PARAMESH2
   call Driver_abortFlash("The unsplit Hydro solver only works with PARAMESH 3 or 4!")
@@ -175,15 +173,15 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
      return
   end if
 
-#ifdef DEBUG_GRID_GCMASK
-  if (.NOT.gcMaskLogged) then
-     call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
-  end if
-#endif
-  !! Guardcell filling routine
-  call Grid_fillGuardCells(CENTER,ALLDIR,&
-       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
-
+!!$#ifdef DEBUG_GRID_GCMASK
+!!$  if (.NOT.gcMaskLogged) then
+!!$     call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
+!!$  end if
+!!$#endif
+!!$  !! Guardcell filling routine
+!!$  call Grid_fillGuardCells(CENTER,ALLDIR,&
+!!$       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
+!!$
 
   !! ***************************************************************************
   !! There is only one overall loop in this simplified advancement             *
@@ -209,28 +207,31 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 !!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
 !!$  end if
 
-  !$omp parallel if (hy_threadBlockList) &
-  !$omp default(none) &
-  !$omp private(dtdx,dtdy,dtdz,blockID,i,j,k,del,tileLimits,blkLimitsGC,&
-  !$omp faceX,faceY,faceZ,Uin,Uout,auxC,&
-  !$omp c,sl,sr,srsl,vn,is,il,ir,vl,vr,js,jl,jr,ks,kl,kr,invNewDens) &
-  !$omp shared(blockCount,blockList,&
-  !$omp hy_unsplitEosMode,hy_useGravity,hy_gref,hy_fluxCorrect,&
-  !$omp hy_updateHydroFluxes,hy_eosModeAfter,hy_useGravHalfUpdate,&
-  !$omp hy_useGravPotUpdate,hy_geometry,hy_fluxCorVars)
+!!$  !$omp parallel if (hy_threadBlockList) &
+!!$  !$omp default(none) &
+!!$  !$omp private(dtdx,dtdy,dtdz,blockID,i,j,k,del,tileLimits,blkLimitsGC,&
+!!$  !$omp faceX,faceY,faceZ,Uin,Uout,auxC,&
+!!$  !$omp c,sl,sr,srsl,vn,is,il,ir,vl,vr,js,jl,jr,ks,kl,kr,invNewDens) &
+!!$  !$omp shared(blockCount,blockList,&
+!!$  !$omp hy_unsplitEosMode,hy_useGravity,hy_gref,hy_fluxCorrect,&
+!!$  !$omp hy_updateHydroFluxes,hy_eosModeAfter,hy_useGravHalfUpdate,&
+!!$  !$omp hy_useGravPotUpdate,hy_geometry,hy_fluxCorVars)
   
   !$omp do schedule(static)
-  do ib=1,blockCount
+!!ChageForAMRex -- this is the outermost loop that will be replaced by the iterator
+!!$  do ib=1,blockCount
+!!$
+!!$     blockID = blockList(ib)
 
-     blockID = blockList(ib)
-
-     call Grid_getDeltas(blockID,del)
-
+!!ChageForAMRex -- this information should come from the interator as meta-data
+!!$     call Grid_getDeltas(blockID,del)
+!!$
      dtdx = dt / del(IAXIS)
      if (NDIM > 1) dtdy = dt / del(JAXIS)
      if (NDIM > 2) dtdz = dt / del(KAXIS)
 
-     call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC)
+!!ChageForAMRex -- this information should come from the iterator as meta-data
+!!$     call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC)
 
 !!$     call Grid_getListOfTiles(blockID, tileList,tileCount)
 
@@ -250,25 +251,40 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 !!$             outLimits=tileLimits, &
 !!$             dataInit=GRID_DATAINIT_NEGINFINITY,&
 !!$             auxPtr=auxC,tilingContext=tilingCtx)
-        call Grid_getBlkPtr(blockID,Uout,CENTER)
-        Uin => Uout
+
+!!ChageForAMRex -- this explicit getting of pointer should be decided whether it comes in or remains explit fetching
+!!ChageForAMRex -- and the follwing scratch array sizing parameters should also be a part of the metadata
+!!$        call Grid_getBlkPtr(blockID,Uout,CENTER)
+!!$        Uin => Uout
         allocate(auxC(1,tileLimits(LOW,IAXIS)-1  :tileLimits(HIGH,IAXIS)+1  , &
                         tileLimits(LOW,JAXIS)-K2D:tileLimits(HIGH,JAXIS)+K2D, &
                         tileLimits(LOW,KAXIS)-K3D:tileLimits(HIGH,KAXIS)+K3D) )
-        auxC = 0.0
 !!$        print*,'tile limits for',tileID,':',tileLimits
 
 
 
+!!ChageForAMRex -- If we un-comment the following, then dimensionality is taken care of. We may want
+!!ChageForAMRex -- up to two more of the above allocate statements
 
-!!$        call Grid_getBlkVarPtrs(tileID,gridDataStruct=SCRATCH_FACEX,auxPtr=faceX,tilingContext=tilingCtx)
-!!$        if (NDIM > 1) then 
-!!$           call Grid_getBlkVarPtrs(tileID,gridDataStruct=SCRATCH_FACEY,auxPtr=faceY,tilingContext=tilingCtx)
-!!$        end if
-!!$        if (NDIM > 2) then 
-!!$           call Grid_getBlkVarPtrs(tileID,gridDataStruct=SCRATCH_FACEZ,auxPtr=faceZ,tilingContext=tilingCtx)
-!!$        end if
-        call Grid_genGetBlkPtr(blockID,faceX,(/1,5,SCRATCH_FACES/), faceY,faceZ)
+        allocate(faceX(5,tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)+1  , &
+                        tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS), &
+                        tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)) )
+
+        if (NDIM > 1) then 
+        allocate(faceY(5,tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)  , &
+                        tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS)+1, &
+                        tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)) )
+
+        end if
+        if (NDIM > 2) then 
+        allocate(faceZ(5,tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)  , &
+                        tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS), &
+                        tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)+1) )
+
+        end if
+
+!!ChageForAMRex -- this just gets more temporary array from a general pool, this could change
+!!$        call Grid_genGetBlkPtr(blockID,faceX,(/1,5,SCRATCH_FACES/), faceY,faceZ)
 
 !!$     print*,'lbound(faceX):', lbound(faceX)
 !!$     print*,'ubound(faceX):', ubound(faceX)
@@ -278,6 +294,8 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 
      !  No equivalent really to  call hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del)
 
+!!ChageForAMRex -- calculate sound speed, the loop limits will change to reflect metadata sent by the iterator
+!!ChageForAMRex --  this applies everywhere "tileLimits" or "blkLimits" show up
         do k = tileLimits(LOW,KAXIS)-K3D,tileLimits(HIGH,KAXIS)+K3D
            do j = tileLimits(LOW,JAXIS)-K2D,tileLimits(HIGH,JAXIS)+K2D
               do i = tileLimits(LOW,IAXIS)-1,tileLimits(HIGH,IAXIS)+1
@@ -313,6 +331,8 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
                     if (vn>0.0) is = is-1
                  end if
                  vL = Uin(VELX_VAR,iL,j,k);  vR = Uin(VELX_VAR,iR,j,k)
+!!ChageForAMRex -- The index names for flux array are explicitly enumerated in uhd.h or some similar file
+!!ChageForAMRex -- the treatment is likely to need change for AMReX
                  if (iL==iR) then
                     faceX(HY_DENS_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k)
                     faceX(HY_XMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k) * Uin(VELX_VAR,is,j,k)
@@ -437,6 +457,7 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
                     faceZ(HY_ENER_FLUX,i,j,k) = faceZ(HY_ENER_FLUX,i,j,k) &
                          + vn * Uin(PRES_VAR,i,j,ks)
                  else
+
                     faceZ(HY_DENS_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL) - sL * vR * Uin(DENS_VAR,i,j,kR) &
                          + sR*sL*(Uin(DENS_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL))) / sRsL
                     faceZ(HY_XMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL)*Uin(VELX_VAR,i,j,kL) &
@@ -464,12 +485,14 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 
         deallocate(auxC)
 
+!!ChageForAMRex -- flux calculation is done
+
 
      !! ************************************************************************
      !! Unsplit update for conservative variables from n to n+1 time step
 
      !  instead of  call hy_hllUnsplitUpdate(blockID,dt,dtOld,del,datasize,blkLimits, ...)
-
+!!ChageForAMRex -- this section starts the update
         do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
            do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
               do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
@@ -547,41 +570,29 @@ Subroutine hy_hllUnsplit ( blockCount, blockList, dt, dtOld )
 #endif
 
      
-!!$        deallocate(faceX)
-!!$        if (NDIM > 1) then 
-!!$           deallocate(faceY)
-!!$        end if
-!!$        if (NDIM > 2) then 
-!!$           deallocate(faceZ)
-!!$        end if
-        call Grid_genReleaseBlkPtr(blockID,faceX,(/1,5,SCRATCH_FACES/), faceY,faceZ)
+        deallocate(faceX)
+        if (NDIM > 1) then 
+           deallocate(faceY)
+        end if
+        if (NDIM > 2) then 
+           deallocate(faceZ)
+        end if
+!!$        call Grid_genReleaseBlkPtr(blockID,faceX,(/1,5,SCRATCH_FACES/), faceY,faceZ)
 
         !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
-        !! NOPE - do it all at ponce after the loop, for testing Grid_makeVector via Eos_everywhere!
 !!$        call Eos_wrapped(hy_eosModeAfter, tileLimits, Uout)
-
-
 
 !!$        call Grid_releaseTileVarPtrs(tileID,gridDataStruct=CENTER, &
 !!$             inPtr=Uin, &
 !!$             outPtr=Uout,&
 !!$             tilingContext=tilingCtx)
-        call Grid_releaseBlkPtr(blockID,Uout,CENTER)
 
 
-  end do
-  !$omp end do
-  
-  !$omp end parallel
-  !! End of leaf block do-loop - no flux conserve call
+!!$  !$omp end do
+!!$  
+!!$  !$omp end parallel
+!!$  !! End of leaf block do-loop - no flux conserve call
 
 
-#ifdef DEBUG_GRID_GCMASK
-  if (.NOT.gcMaskLogged) then
-     gcMaskLogged = .TRUE.
-  end if
-#endif
-
-  call Eos_everywhere(hy_eosModeAfter)
 
 End Subroutine hy_hllUnsplit

@@ -14,10 +14,10 @@
 !!                      real(OUT)   :: xflux(:,:,:,:),
 !!                      real(OUT)   :: yflux(:,:,:,:),
 !!                      real(OUT)   :: zflux(:,:,:,:),
-!!                      real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,
-!!                      real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr,
-!!                      real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr,
-!!                      real, pointer, dimension(:,:,:,:) :: scrch_Ptr,
+!!                      real, pointer, dimension (:,:,:,:) :: scrchFaceXPtr
+!!                      real, pointer, dimension (:,:,:,:) :: scrchFaceYPtr
+!!                      real, pointer, dimension (:,:,:,:) :: scrchFaceZPtr
+!!                      real, pointer, dimension (:,:,:,:) :: scrch_Ptr,
 !!                      real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig,
 !!                      logical,optional(IN) :: lastCall )
 !!

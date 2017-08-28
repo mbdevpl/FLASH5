@@ -79,9 +79,10 @@ module gr_interface
   end interface
 
   interface
-     subroutine gr_findNeghID(blockID,pos,negh,neghID)
+     subroutine gr_findNeghID(block,pos,negh,neghID)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer,intent(IN) :: blockID
+       type(block_metadata_t), intent(IN) :: block
        real,dimension(MDIM), intent(IN) :: pos
        integer,dimension(MDIM),intent(IN) :: negh
        integer,dimension(BLKNO:PROCNO),intent(OUT) :: neghID
@@ -127,12 +128,18 @@ module gr_interface
   end interface
 
   interface
-     subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
+     subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
+       implicit none
+       integer, intent(IN) :: ntype
+       character(len=*), intent(IN) :: info
+       integer, dimension(MDIM), intent(IN):: layers
+     end subroutine gr_sanitizeDataAfterInterp
+     subroutine gr_sanitizeDataAfterInterp_blklst(blkList,count, info, layers)
        integer,intent(IN) :: count
        integer, dimension(count), intent(IN) :: blkList
        character(len=*), intent(IN) :: info
        integer, dimension(MDIM), intent(IN):: layers
-     end subroutine gr_sanitizeDataAfterInterp
+     end subroutine gr_sanitizeDataAfterInterp_blklst
   end interface
 
 

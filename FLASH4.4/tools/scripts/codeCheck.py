@@ -356,8 +356,8 @@ simply prevents this violation / fix from being applied to any file.
        # Note that the next line allows cheating by putting a '!' right before the ",ONLY".
        "useOnlyLine" : r"^\s*\buse\s+\b([A-Za-z][A-Za-z0-9_]*\s*!?,\s*ONLY\s*:|[A-Z][A-Za-z0-9]*_interface\s*$)",
        "contains"    : r"^\s*contains\s*$",
-       "begSub"      : r"^\s*\b(?:recursive\s+)?(?:subroutine|(?P<type>\S+)\s+function)\s+(?P<subname>[-\w]*)\s*\(",
-       "fullSub"     : r"^\s*\b(?:recursive\s+)?(?:subroutine|\S+\s+function)\s+(?P<subname>[\w]*)\s*[(](?P<arglist>[^)]*)[)].*$", 
+       "begSub"      : r"^\s*\b(?:(?:recursive|pure|impure|elemental)\s+)?(?:subroutine|(?:(?P<type>\S+)\s+)?function)\s+(?P<subname>[-\w]*)\s*\(",
+       "fullSub"     : r"^\s*\b(?:(?:recursive|pure|impure|elemental)\s+)?(?:subroutine|(?:\S+\s+)?function)\s+(?P<subname>[\w]*)\s*[(](?P<arglist>[^)]*)[)].*$",
        # to completely parse subroutine decl call parseSubDecl
        "endSub"      : r"^\s*\bend\s+(?:subroutine|function)",
        "endMod"      : r"^\s*\bend\s+(?:module)",

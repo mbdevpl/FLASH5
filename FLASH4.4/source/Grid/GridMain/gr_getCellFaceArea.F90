@@ -35,31 +35,38 @@
 !!
 !!
 !!***
-subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,blockID,dataBlock)
+subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getDeltas
+  use block_metadata, ONLY : block_metadata_t
 #include "Flash.h"
-  use Grid_data, ONLY : gr_geometry,gr_iloGc,gr_ihiGc,&
-                         gr_jloGc,gr_jhiGc,gr_kloGc,gr_khiGc
+  use Grid_data, ONLY : gr_geometry
 #ifdef FLASH_GRID_UG
-  use Grid_data, ONLY : gr_iCoords,gr_jCoords,gr_kCoords
+  use Grid_data, ONLY : gr_iCoords,gr_jCoords,gr_kCoords,gr_iloGc,gr_ihiGc,&
+                         gr_jloGc,gr_jhiGc,gr_kloGc,gr_khiGc
 #else
-  use Grid_data, ONLY : gr_oneBlock
+  use gr_specificData, ONLY : gr_oneBlock,gr_iloGc,gr_ihiGc,&
+                         gr_jloGc,gr_jhiGc,gr_kloGc,gr_khiGc
 #endif
   implicit none
 #include "constants.h"
 
-  integer,intent(IN) :: xb,xe,yb,ye,zb,ze,face,blockID
+  type(block_metadata_t),intent(IN) :: block
+  integer,intent(IN) :: xb,xe,yb,ye,zb,ze,face
   real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
   real,dimension(MDIM) :: del
+
   real :: areaFactor_1, areaFactor_2, areaFactor_3
+  integer :: blockID
   integer :: i,j,k
+
+  blockID = block%id
 
   if (gr_geometry==CARTESIAN) then
      if(NDIM==1) then
         dataBlock = 1.00
      else
-        call Grid_getDeltas(blockID,del)
+        call Grid_getDeltas(block%level,del)
         select case(face)
         case(ILO_FACE,IHI_FACE)
            dataBlock=del(JAXIS)

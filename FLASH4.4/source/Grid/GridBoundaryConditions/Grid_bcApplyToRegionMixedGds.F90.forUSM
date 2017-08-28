@@ -10,14 +10,18 @@
 !!                            integer(IN)  :: guard,
 !!                            integer(IN)  :: bcDir,
 !!                            integer(IN)  :: face,
-!!                            real(INOUT)  :: regionData(:,:,:,:),
-!!                            integer(IN)  :: regionSize(:),
+!!                    real,POINTER(INOUT)  :: regionDataC(:,:,:,:),
+!!                    real,POINTER(INOUT)  :: regionDataFN(:,:,:,:),
+!!                    real,POINTER(INOUT)  :: regionDataFT1(:,:,:,:),
+!!                    real,POINTER(INOUT)  :: regionDataFT2(:,:,:,:),
+!!                            integer(IN)  :: regionSizeC(REGION_DIM),
 !!                            logical(INOUT) :: apply,
 !!                            integer(IN)  :: blockHandle,
 !!                            integer(IN)  :: secondDir,
 !!                            integer(IN)  :: thirdDir,
 !!                            integer(IN)  :: endPoints(LOW:HIGH,MDIM),
 !!                            integer(IN)  :: blkLimitsGC(LOW:HIGH,MDIM),
+!!                            logical(IN)  :: rightHanded,
 !!                   OPTIONAL,integer(IN)  :: idest)
 !!
 !!
@@ -35,8 +39,7 @@
 !!
 !!  This routine applies the boundary conditions on a given face (lowerface
 !!  or upperface) normal to a given BC direction bcDir, by using and setting
-!!  values for all variables in the gridDataStruct that are not masked out.
-!!  The argument "mask" has the information about the masked variables.
+!!  values for all or some variables in the gridDataStruct.
 !! 
 !!     If (face=LOW)  
 !!       regionData(1:guard,:,:,masked(variables) =  boundary values
@@ -44,7 +47,7 @@
 !!       regionData(regionSize(BC_DIR)-guard+1:regionSize(BC_DIR),:,:,masked(variables) =  boundary values
 !!
 !!  One reason why information about direction and variable is
-!!  included in this interface is because Velocities need to be
+!!  included in this interface is because velocities need to be
 !!  treated specially for REFLECTING boundary conditions. if
 !!  bcDir=IAXIS, then the variable VELX_VAR is treated differently,
 !!  same with VELY_VAR if bcDir=JAXIS and VELZ_VAR if
@@ -79,7 +82,7 @@
 !!  gridDataStruct - the Grid dataStructure, should be given as
 !!                   one of the constants CENTER, FACEX, FACEY, FACEZ
 !!                   (or, with some Grid implementations, WORK).
-!!  guard -    number of guardcells
+!!  guard -    number of guard cells
 !!  bcDir  - the dimension along which to apply boundary conditions,
 !!          can take values of IAXIS, JAXIS and KAXIS
 !!  face    -  can take values LOW and HIGH, defined in constants.h,
@@ -96,7 +99,6 @@
 !!                   direction, and regionSize(THIRD_DIR) has the number of rows
 !!                   along the third direction. regionSize(GRID_DATASTRUCT) contains the
 !!                   number of variables in the data structure.
-!!  mask - if present applies boundary conditions to only selected variables
 !!  apply - Do it.
 !!          !DEV: This dummy arg is quite pointless and should go away. - KW
 !!

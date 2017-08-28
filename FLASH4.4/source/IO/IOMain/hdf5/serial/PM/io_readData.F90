@@ -61,16 +61,15 @@ subroutine io_readData()
   use IO_interface, ONLY : IO_getScalar
       
   
-  use Grid_data, ONLY : gr_gid, gr_nToLeft, gr_globalOffset, &
-       gr_globalNumBlocks
-
+  use gr_specificData, ONLY : gr_gid, gr_nToLeft, gr_globalOffset
 #ifdef FLASH_GRID_PARAMESH
   use tree, ONLY : maxblocks_tr, nfaces, nchild, nodetype, &
        lrefine, bnd_box, coord, bsize, neigh, parent, child, &
        lrefine_max
 #ifdef FLASH_GRID_PARAMESH3OR4
   use tree, ONLY : MFLAGS, which_child, bflags
-  use Grid_data, ONLY : gr_gsurr_blks, gr_is_gsurr_blks_initialized
+  use gr_specificData, ONLY : gr_gsurr_blks, gr_is_gsurr_blks_initialized
+  use Grid_data, ONLY : gr_globalNumBlocks
 #endif
 #endif
 

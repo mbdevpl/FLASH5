@@ -73,6 +73,9 @@ subroutine Driver_initFlash()
   use Profiler_interface, ONLY : Profiler_init
 
   use IncompNS_interface, ONLY : IncompNS_init
+
+  use amrex_base_module, ONLY : amrex_init
+
   implicit none
 
 #include "constants.h"
@@ -101,6 +104,9 @@ subroutine Driver_initFlash()
   !! that might be needed during the simulation
   call Driver_setupParallelEnv()
 
+  call amrex_init(dr_globalComm,.FALSE.) !DEV: Should use dr_meshComm !?
+
+
   !! Initialize the code timers.  Ideally should be first thing in
   !! code but currently the timing package
   !! uses MPI_WTime(), so Driver_initParallel() must go first, and
@@ -122,8 +128,9 @@ subroutine Driver_initFlash()
   call Multispecies_init()
 
   call Logfile_init()
-
+  print*,'grid initialization'
   call Grid_init()
+  print*,'done'
 
   call Driver_initMaterialProperties()
   if(dr_globalMe==MASTER_PE)print*,'MaterialProperties initialized'

@@ -263,32 +263,37 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
      plane, startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, intent(in) :: blockid, structIndex, beginCount, plane, gridDataStruct
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, plane, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(2), intent(in) :: dataSize
   real, dimension(datasize(1), dataSize(2)),intent(out) :: datablock
   real,allocatable,dimension(:,:,:) :: cellvalues
   real, pointer, dimension(:,:,:,:) :: solnData
 
+  integer :: blockID
   integer :: i, var, xb, xe, yb, ye, zb, ze, x, y, z
   integer,dimension(MDIM) :: begOffset,dataLen
 
   logical :: isget 
   integer :: imax, jmax, kmax
   logical :: getIntPtr
+
+  blockID = block%id
 
 #ifdef DEBUG_GRID
   isget = .true.
@@ -531,14 +536,14 @@ subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
 
   if(gridDataStruct == CELL_VOLUME) then
      allocate(cellvalues(xb:xe,yb:ye,zb:ze))
-     call gr_getCellVol(xb,xe,yb,ye,zb,ze,blockID,cellvalues)
+     call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues)
      if(plane==XYPLANE)datablock(:,:)=cellvalues(xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:)=cellvalues(xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:)=cellvalues(xb,yb:ye,zb:ze)
      deallocate(cellvalues)
   elseif (gridDataStruct == CELL_FACEAREA)then
      allocate(cellvalues(xb:xe,yb:ye,zb:ze))
-     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,blockID,&
+     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,&
           cellvalues)
      if(plane==XYPLANE)datablock(:,:)=cellvalues(xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:)=cellvalues(xb:xe,yb,zb:ze)
@@ -551,7 +556,7 @@ subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
      if(plane==YZPLANE)datablock(:,:) = solnData(structIndex,xb,yb:ye,zb:ze)
      call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        if(plane==XYPLANE)datablock(:,:) = solnData(xb:xe,yb:ye,zb,structIndex)
 !!$        if(plane==XZPLANE)datablock(:,:) = solnData(xb:xe,yb,zb:ze,structIndex)
@@ -561,7 +566,7 @@ subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
      if(plane==XYPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:) = solnData(structIndex,xb,yb:ye,zb:ze)
-     call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
   end if
   return
 end subroutine Grid_getPlaneData

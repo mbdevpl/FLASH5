@@ -40,9 +40,11 @@ Module Simulation_interface
   end interface
 
   interface
-     subroutine Simulation_initBlock(blockID)
+     subroutine Simulation_initBlock(solnData,block)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(in) :: blockID
+       real,dimension(:,:,:,:),pointer :: solnData
+       type(block_metadata_t), intent(in) :: block
      end subroutine Simulation_initBlock
   end interface
 

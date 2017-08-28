@@ -58,10 +58,13 @@ def makeregexp():
     for suf,lst in ArrayNames.items():
         if lst:
            rlist.append(r"(?P<%s>%s)" % (suf,"|".join([r"(?:%s)"%x for x in lst])))
-    nameregexp = r"(?P<name>%s)\s*[(]" % "|".join(rlist) 
-
-    # make the regular expression
-    regexp = re.compile(nameregexp)
+    if (rlist):
+        nameregexp = r"(?P<name>%s)\s*[(]" % "|".join(rlist)
+        # make the regular expression
+        regexp = re.compile(nameregexp)
+    else:
+        regexp = None
+        print >> sys.stderr, "Warning: setup_reorder.py was invoked without any arrays to reorder."
 
 def replfunc(mobj):
     d = mobj.groupdict()
@@ -88,7 +91,9 @@ def Array(inlines):
     makeregexp()
 
     for line in inlines:
-        if comment.match(line):
+        if regexp==None:
+           yield line
+        elif comment.match(line):
            yield line
         else: 
            yield regexp.sub(replfunc,line)

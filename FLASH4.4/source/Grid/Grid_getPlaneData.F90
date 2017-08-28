@@ -255,12 +255,13 @@
 !!
 !!***
 
-subroutine Grid_getPlaneData(blockid, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
      plane, startingPos, datablock, dataSize)
-
-  implicit none
-
-  integer, intent(in) :: blockid, structIndex, beginCount, plane, gridDataStruct
+  use block_metadata, ONLY : block_metadata_t 
+  
+  implicit none 
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, plane, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(2), intent(in) :: dataSize
   real, dimension(datasize(1), dataSize(2)),intent(out) :: datablock

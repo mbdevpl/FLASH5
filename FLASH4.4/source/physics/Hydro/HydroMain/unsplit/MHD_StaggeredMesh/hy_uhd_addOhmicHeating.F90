@@ -62,7 +62,8 @@ Subroutine hy_uhd_addOhmicHeating(blockID,blkLimits,ix,iy,iz,Qohm,eta)
   real :: dxBy, dxBz, dyBx, dyBz, dzBx, dzBy
   real    :: Jx,Jy,Jz,idx,idy,idz
   real, dimension(MDIM) :: del
-  real, pointer, dimension(:,:,:,:) :: U !,bx,by
+  real, pointer, dimension(:,:,:,:) :: U 
+!  real, pointer, dimension(:,:,:,:) :: bx,by
   real :: inv_r 
 #ifdef FIXEDBLOCKSIZE  
   real, dimension(GRID_ILO:GRID_IHI) :: xCenter  

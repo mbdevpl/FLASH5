@@ -33,26 +33,32 @@
 !!
 !!***
 
-subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,blockID,dataBlock)
+subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock)
 
   use Grid_data, ONLY : gr_geometry
   use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellVol
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 #include "Flash.h"
 #include "constants.h"
 
-  integer,intent(IN) :: xb,xe,yb,ye,zb,ze,blockID
+  type(block_metadata_t),intent(IN) :: block
+  integer,intent(IN) :: xb,xe,yb,ye,zb,ze
   real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
+  
+  integer :: blockID
   integer,dimension(MDIM) :: point
   real,dimension(MDIM) :: del
   integer :: i, j, k
+
+  blockID = block%id
 
 #ifdef DEBUG_GRID
   print*,xb,xe,yb,ye,zb,ze
 #endif
   if (gr_geometry==CARTESIAN) then
-     call Grid_getDeltas(blockID,del)
+     call Grid_getDeltas(block%level, del)
      dataBlock=del(IAXIS)
      do i = 2,NDIM
         dataBlock = dataBlock*del(i)
@@ -67,7 +73,7 @@ subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,blockID,dataBlock)
            point(JAXIS) = j
            do i=xb,xe
               point(IAXIS) = i
-              call Grid_getSingleCellVol(blockID, EXTERIOR, point, &
+              call Grid_getSingleCellVol(block, EXTERIOR, point, &
                    dataBlock(i,j,k))
            end do
         end do

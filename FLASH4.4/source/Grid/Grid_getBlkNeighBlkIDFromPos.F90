@@ -61,12 +61,13 @@
 !!   Grid_outsideBoundBox
 !!***
 
-subroutine Grid_getBlkNeighBlkIDFromPos(blockID,pos,neghDir,ansBlockID,ansProcID)
+subroutine Grid_getBlkNeighBlkIDFromPos(block,pos,neghDir,ansBlockID,ansProcID)
 #include "constants.h"
-
+ 
+  use block_metadata, ONLY : block_metadata_t
   
   implicit none
-  integer,intent(IN) :: blockID
+  type(block_metadata_t), intent(IN) :: block
   real,dimension(MDIM),intent(IN) :: pos
   integer,dimension(MDIM),intent(IN) :: neghDir
   integer,intent(OUT) :: ansBlockID, ansProcID
