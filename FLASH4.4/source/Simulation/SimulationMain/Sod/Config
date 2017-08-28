@@ -4,9 +4,6 @@
 REQUIRES Driver
 REQUIRES physics/Hydro
 
-REQUESTS Grid/GridMain/AMR/paramesh/AmrexTransition
-REQUESTS Grid/GridMain/AMR/paramesh/paramesh4/AmrexTransition
-
 USESETUPVARS ThreeT
 
 IF ThreeT
