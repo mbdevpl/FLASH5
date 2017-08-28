@@ -66,7 +66,19 @@ subroutine Grid_getSingleCellCoords(ind, blockId,edge, beginCount,coords)
   return
 end subroutine Grid_getSingleCellCoords
 
+subroutine Grid_getSingleCellCoords_Itor(ind, block,edge, beginCount,coords)
+  use block_metadata, ONLY : block_metadata_t
+  
+  implicit none
 
+#include "constants.h"
 
-
+  type(block_metadata_t), intent(in) :: block
+  integer,dimension(MDIM), intent(in) :: ind
+  integer, intent(in) :: edge
+  integer, intent(in) :: beginCount
+  real, dimension(MDIM), intent(out) :: coords
+  coords = 0.0
+  return
+end subroutine Grid_getSingleCellCoords_Itor
 

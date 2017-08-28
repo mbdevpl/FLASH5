@@ -49,18 +49,20 @@
 !!
 !!  Don't forget to call Grid_releaseBlkPtr when you are finished with it!
 !!
+!!  This implementations stops with an error message. That is because calling
+!!  Grid_getBlkPtr with a blockID as first argument is a leftover from FLASH4
+!!  Grid implementations that is not supported any more when the Grid implementation
+!!  is purely based on AMReX!
 !!***
 
-subroutine Grid_getBlkPtr(blockID, dataPtr, gridDataStruct)
-  use Driver_interface, ONLY : Driver_abortFlash
-  
+subroutine Grid_getBlkPtr(blockID, blkPtr, gridDataStruct)
   implicit none
 
-  integer, intent(in) :: blockID
-  real, dimension(:,:,:,:), pointer :: dataPtr
-  integer, optional,intent(in) :: gridDataStruct
- 
-  call Driver_abortFlash("AMReX does *not* deal in block IDs")
-end subroutine Grid_getBlkPtr
+  integer, intent(IN)            :: blockID
+  real,    intent(OUT), pointer  :: blkPtr(:, :, :, :)
+  integer, intent(IN),  optional :: gridDataStruct
 
+  write(*,*) "AMReX does *not* deal in block IDs"
+  stop
+end subroutine Grid_getBlkPtr
 

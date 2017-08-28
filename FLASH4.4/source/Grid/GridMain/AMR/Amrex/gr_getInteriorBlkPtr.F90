@@ -47,22 +47,28 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine gr_getInteriorBlkPtr(blockID, dataPtr, gridDataStruct)
+subroutine gr_getInteriorBlkPtr(block, dataPtr, gridDataStruct)
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-       Grid_getBlkIndexLimits, Grid_getNumVars
+                             Grid_getNumVars
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata,   ONLY : block_metadata_t
+  
   implicit none
-  integer, intent(in) :: blockID
+  
+  type(block_metadata_t), intent(in) :: block
   real, dimension(:,:,:,:), pointer :: dataPtr
   integer, intent(in) :: gridDataStruct
 
   real, dimension(:,:,:,:), pointer :: tmpPtr
   integer, dimension(MDIM) :: sizeMinusGC
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits
   integer :: nVar
 
+  ! DEVNOTE: Can we implement this directly to avoid the calls to
+  ! getBlkPtr?
+  blkLimits = block%limits
+
   call Grid_getNumVars(gridDataStruct,nVar)
-  call Grid_getBlkIndexLimits(blockId, blkLimits, blkLimitsGC)
   sizeMinusGC(1:MDIM) = blkLimits(HIGH,1:MDIM) - blkLimits(LOW,1:MDIM) + 1
   if (any(SizeMinusGC(1:MDIM) < 1) .or. (nVar < 1)) then
      call Driver_abortFlash("[gr_getInteriorBlkPtr]: Invalid size")
@@ -75,12 +81,13 @@ subroutine gr_getInteriorBlkPtr(blockID, dataPtr, gridDataStruct)
        sizeMinusGC(JAXIS), &
        sizeMinusGC(KAXIS)))
 
-  call Grid_getBlkPtr(blockID, tmpPtr, gridDataStruct)
+  call Grid_getBlkPtr(block, tmpPtr, gridDataStruct)
   dataPtr = tmpPtr( &
        1:nVar, &
        blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
        blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
        blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
-  call Grid_releaseBlkPtr(blockID, tmpPtr, gridDataStruct)
+  call Grid_releaseBlkPtr(block, tmpPtr, gridDataStruct)
 
 end subroutine gr_getInteriorBlkPtr
+

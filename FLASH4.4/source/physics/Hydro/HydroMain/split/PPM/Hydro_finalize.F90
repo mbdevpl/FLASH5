@@ -25,23 +25,22 @@ subroutine Hydro_finalize()
   use Hydro_data, ONLY : hy_fluxCorrect
   implicit none
 #include "Flash.h"
-#ifndef FIXEDBLOCKSIZE
   if(hy_fluxCorrect) then
-!!     deallocate(hy_xarea)
-!!     deallocate(hy_xngrav)
-!!    deallocate(hy_xgrav)
-!!     deallocate(hy_xdtdx)
-!!     deallocate(hy_xfict)
-!!     deallocate(hy_yarea)
-!!     deallocate(hy_yngrav)
-!!     deallocate(hy_ygrav)
-!!     deallocate(hy_ydtdy)
-!!     deallocate(hy_yfict)
-!!     deallocate(hy_zarea)
-!!     deallocate(hy_zngrav)
-!!     deallocate(hy_zgrav)
-!!     deallocate(hy_zdtdz)
-!!     deallocate(hy_zfict)
+!!$     deallocate(hy_xarea)
+!!$     deallocate(hy_xngrav)
+!!$     deallocate(hy_xgrav)
+!!$     deallocate(hy_xdtdx)
+!!$     deallocate(hy_xfict)
+!!$     deallocate(hy_yarea)
+!!$     deallocate(hy_yngrav)
+!!$     deallocate(hy_ygrav)
+!!$     deallocate(hy_ydtdy)
+!!$     deallocate(hy_yfict)
+!!$     deallocate(hy_zarea)
+!!$     deallocate(hy_zngrav)
+!!$     deallocate(hy_zgrav)
+!!$     deallocate(hy_zdtdz)
+!!$     deallocate(hy_zfict)
   end if
-#endif
+
 end subroutine Hydro_finalize

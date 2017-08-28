@@ -64,7 +64,6 @@ subroutine Driver_evolveFlash()
   use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
                                   Grid_getListOfBlocks, &
                                   Grid_getBlkIndexLimits, &
-                                  Grid_getBlkCornerID, &
                                   Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
                                   Grid_getDeltas,&
@@ -130,14 +129,10 @@ subroutine Driver_evolveFlash()
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
-  integer, dimension(LOW:HIGH,MDIM) :: tileLimits,blkLimitsGC, cornerID
-  integer, dimension(LOW:HIGH,MDIM,MAXBLOCKS) :: allLimits
-  integer, dimension(LOW:HIGH,NDIM,MAXBLOCKS) :: dimLimits
-  integer, dimension(MDIM) :: stride
-  integer, dimension(MAXBLOCKS) :: procMapLoc
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   integer :: blockCount
   integer,dimension(MAXBLOCKS)::blks
-  real,pointer,dimension(:,:,:,:) :: Uout
+  real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
 #ifdef FLASH_GRID_ANYAMREX
@@ -245,15 +240,19 @@ subroutine Driver_evolveFlash()
         do while(itor%is_valid())
            call itor%blkMetaData(block)
 
-           tileLimits = block%limits
+           blkLimits(LOW,:)   = block%limits(LOW,:)-block%cid(:)
+           blkLimitsGC(LOW,:) = block%limitsGC(LOW,:)-block%cid(:)
+           blkLimits(HIGH,:)   = block%limits(HIGH,:)-block%cid(:)
+           blkLimitsGC(HIGH,:) = block%limitsGC(HIGH,:)-block%cid(:)
+           
            call Grid_getBlkPtr(block, Uout)
 !!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
 !!$           call amrex_print(abx)
 !!$           tbx = abx
 
            call Grid_getDeltas(level,del)
-           
-           call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+           Uin => Uout
+           call Hydro(block,blkLimitsGC,Uin, blkLimits, Uout, del,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
            call Grid_releaseBlkPtr(block, Uout)
            nullify(Uout)
  

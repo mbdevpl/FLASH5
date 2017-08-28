@@ -6,7 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_putGravityUnsplit( integer(IN) :: blockID,
+!!  hy_uhd_putGravityUnsplit( integer(IN) :: Uin,
 !!                            integer(IN) :: blkLimitsGC(2,MDIM),
 !!                            integer(IN) :: dataSize(MDIM),
 !!                            real   (IN) :: dt,
@@ -34,13 +34,12 @@
 !!
 !!*** 
 
-Subroutine hy_uhd_putGravityUnsplit&
-     (blockID,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
+Subroutine hy_uhd_putGravityUnsplit(blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
 
   use Gravity_interface, ONLY : Gravity_accelOneRow
 
   use Hydro_data, ONLY: hy_gpotVar, hy_extraAccelVars
-
+  
   implicit none
 
 #include "Flash.h"
@@ -48,18 +47,14 @@ Subroutine hy_uhd_putGravityUnsplit&
 #include "UHD.h"
 
   !! ---- Argument List ----------------------------------
-  integer, intent(IN) :: blockID
   integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
   integer, dimension(MDIM), intent(IN) :: dataSize
   real,    intent(IN) :: dt, dtOld
+  real,dimension(:,:,:,:),pointer :: Uin
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(OUT) :: &
-       gravX,gravY,gravZ
-#else
   real, dimension(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)), intent(OUT) :: &
        gravX,gravY,gravZ
-#endif
+
   integer, intent(IN), OPTIONAL :: potentialIndex
   logical, intent(IN), OPTIONAL :: lastCall
   !! -----------------------------------------------------
@@ -86,23 +81,23 @@ Subroutine hy_uhd_putGravityUnsplit&
               potVar = hy_gpotVar
            end if
            if (hy_extraAccelVars(1)>0) then
-              call Gravity_accelOneRow(gravPos,DIR_X,blockID,dataSize(IAXIS),gravX(:,iy,iz),potVar,&
+              call Gravity_accelOneRow(gravPos,DIR_X,Uin,dataSize(IAXIS),gravX(:,iy,iz),potVar,&
                                        extraAccelVars=hy_extraAccelVars)
            else
-              call Gravity_accelOneRow(gravPos,DIR_X,blockID,dataSize(IAXIS),gravX(:,iy,iz),potVar)
+              call Gravity_accelOneRow(gravPos,DIR_X,Uin,dataSize(IAXIS),gravX(:,iy,iz),potVar)
            end if
         else if (present(potentialIndex)) then
-           call Gravity_accelOneRow(gravPos,DIR_X,blockID,dataSize(IAXIS),gravX(:,iy,iz),potentialIndex)
+           call Gravity_accelOneRow(gravPos,DIR_X,Uin,dataSize(IAXIS),gravX(:,iy,iz),potentialIndex)
         else
 #if defined(GPOT_VAR) && defined(FLASH_GRAVITY_TIMEDEP)
         ! Gravity implementation defines FLASH_GRAVITY_TIMEDEP -> time-dependent gravity field
         ! gravity at time step n
-           call Gravity_accelOneRow(gravPos,DIR_X,blockID,dataSize(IAXIS),gravX(:,iy,iz),GPOT_VAR)
+           call Gravity_accelOneRow(gravPos,DIR_X,Uin,dataSize(IAXIS),gravX(:,iy,iz),GPOT_VAR)
 #else
         ! FLASH_GRAVITY_TIMEDEP not defined -> assume time-independent gravity field.
         ! Also if GPOT_VAR is defined -> use current accel without time
         ! interpolation, i.e., handle like time-independent gravity field - KW
-           call Gravity_accelOneRow(gravPos,DIR_X,blockID,dataSize(IAXIS),gravX(:,iy,iz))
+           call Gravity_accelOneRow(gravPos,DIR_X,Uin,dataSize(IAXIS),gravX(:,iy,iz))
 #endif
         endif
      enddo
@@ -121,19 +116,19 @@ Subroutine hy_uhd_putGravityUnsplit&
                  potVar = hy_gpotVar
               end if
               if (hy_extraAccelVars(2)>0) then
-                 call Gravity_accelOneRow(gravPos,DIR_Y,blockID,dataSize(JAXIS),gravY(ix,:,iz),potVar,&
+                 call Gravity_accelOneRow(gravPos,DIR_Y,Uin,dataSize(JAXIS),gravY(ix,:,iz),potVar,&
                                           extraAccelVars=hy_extraAccelVars)
               else
-                 call Gravity_accelOneRow(gravPos,DIR_Y,blockID,dataSize(JAXIS),gravY(ix,:,iz),potVar)
+                 call Gravity_accelOneRow(gravPos,DIR_Y,Uin,dataSize(JAXIS),gravY(ix,:,iz),potVar)
               end if
            else if (present(potentialIndex)) then
-              call Gravity_accelOneRow(gravPos,DIR_Y,blockID,dataSize(JAXIS),gravY(ix,:,iz),potentialIndex)
+              call Gravity_accelOneRow(gravPos,DIR_Y,Uin,dataSize(JAXIS),gravY(ix,:,iz),potentialIndex)
            else
 #if defined(GPOT_VAR) && defined(FLASH_GRAVITY_TIMEDEP)
            ! gravity at time step n
-              call Gravity_accelOneRow(gravPos,DIR_Y,blockID,dataSize(JAXIS),gravY(ix,:,iz),GPOT_VAR)
+              call Gravity_accelOneRow(gravPos,DIR_Y,Uin,dataSize(JAXIS),gravY(ix,:,iz),GPOT_VAR)
 #else
-              call Gravity_accelOneRow(gravPos,DIR_Y,blockID,dataSize(JAXIS),gravY(ix,:,iz))
+              call Gravity_accelOneRow(gravPos,DIR_Y,Uin,dataSize(JAXIS),gravY(ix,:,iz))
 #endif
            end if
         enddo
@@ -152,19 +147,19 @@ Subroutine hy_uhd_putGravityUnsplit&
                     potVar = hy_gpotVar
                  end if
                  if (hy_extraAccelVars(3)>0) then
-                    call Gravity_accelOneRow(gravPos,DIR_Z,blockID,dataSize(KAXIS),gravZ(ix,iy,:),potVar,&
+                    call Gravity_accelOneRow(gravPos,DIR_Z,Uin,dataSize(KAXIS),gravZ(ix,iy,:),potVar,&
                                              extraAccelVars=hy_extraAccelVars)
                  else
-                    call Gravity_accelOneRow(gravPos,DIR_Z,blockID,dataSize(KAXIS),gravZ(ix,iy,:),potVar)
+                    call Gravity_accelOneRow(gravPos,DIR_Z,Uin,dataSize(KAXIS),gravZ(ix,iy,:),potVar)
                  end if
               else if (present(potentialIndex)) then
-                 call Gravity_accelOneRow(gravPos,DIR_Z,blockID,dataSize(KAXIS),gravZ(ix,iy,:),potentialIndex)
+                 call Gravity_accelOneRow(gravPos,DIR_Z,Uin,dataSize(KAXIS),gravZ(ix,iy,:),potentialIndex)
               else
 #if defined(GPOT_VAR) && defined(FLASH_GRAVITY_TIMEDEP)
               ! gravity at time step n
-                 call Gravity_accelOneRow(gravPos,DIR_Z,blockID,dataSize(KAXIS),gravZ(ix,iy,:),GPOT_VAR)
+                 call Gravity_accelOneRow(gravPos,DIR_Z,Uin,dataSize(KAXIS),gravZ(ix,iy,:),GPOT_VAR)
 #else
-                 call Gravity_accelOneRow(gravPos,DIR_Z,blockID,dataSize(KAXIS),gravZ(ix,iy,:))
+                 call Gravity_accelOneRow(gravPos,DIR_Z,Uin,dataSize(KAXIS),gravZ(ix,iy,:))
 #endif
               end if
            enddo

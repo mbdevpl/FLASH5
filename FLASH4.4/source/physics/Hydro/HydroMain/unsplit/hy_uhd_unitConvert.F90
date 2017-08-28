@@ -23,7 +23,7 @@
 
 !!REORDER(4): U,B[xyz]
 
-Subroutine hy_uhd_unitConvert(Uin,blkLimitsGC,convertDir)
+Subroutine hy_uhd_unitConvert(U,blkLimitsGC,convertDir)
 
   use Hydro_data,     ONLY : hy_dref, hy_eref, hy_pref, &
                              hy_vref, hy_bref
@@ -36,11 +36,11 @@ Subroutine hy_uhd_unitConvert(Uin,blkLimitsGC,convertDir)
 #include "UHD.h"
 
   !! Argument list -------------------------
-  integer, dimension(MDIM) :: intent(IN) :: blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC
   integer, intent(IN) :: convertDir
+  real, dimension(:,:,:,:) :: U
   !! ---------------------------------------
 
-  real, dimension(:,:,:,:) :: Uin
   integer :: ib,ie,jb,je,kb,ke
 
   ib=blkLimitsGC(LOW,IAXIS)

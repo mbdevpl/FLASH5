@@ -12,12 +12,12 @@ Module Gravity_interface
 
   interface
      subroutine Gravity_accelAtCoords (numPoints, iCoords,jCoords,kCoords, accelDir,&
-          accel, blockID, &
+          accel, Uin, &
           potentialIndex)
        integer, intent(IN) :: accelDir, numPoints
+       real,dimension(:,:,:,:) :: Uin
        real, dimension(:),INTENT(in) :: iCoords,jCoords,kCoords
        real, dimension(numPoints),INTENT(OUT) :: accel
-       integer, intent(IN),optional :: blockID
        integer, intent(IN),optional :: potentialIndex
      end subroutine Gravity_accelAtCoords
   end interface
@@ -34,10 +34,11 @@ Module Gravity_interface
   end interface
 
   interface
-     subroutine Gravity_accelOneRow (pos,sweepDir,blockID, numCells, grav, &
+     subroutine Gravity_accelOneRow (pos,sweepDir,Uin, numCells, grav, &
            varIndex, extraAccelVars)
        implicit none
-       integer, intent(IN) :: sweepDir,blockID,numCells
+       integer, intent(IN) :: sweepDir,numCells
+       real,dimension(:,:,:,:) :: Uin       
        integer, dimension(2),INTENT(in) ::pos
        real, dimension(numCells),INTENT(inout) :: grav
        integer, intent(IN), optional :: varIndex 
@@ -46,18 +47,19 @@ Module Gravity_interface
   end interface
 
   interface Gravity_accelOneBlock
-     subroutine Gravity_accelOneBlock ( blockID, ngcellcomp, gvec, potentialIndex)
-        integer, intent(in)             :: blockID,  ngcellcomp
-        real, dimension(:,:,:,:),intent(out)  :: gvec
-        integer, intent(in),optional    :: potentialIndex
+     subroutine Gravity_accelOneBlock ( Uin, ngcellcomp, gvec, potentialIndex)
+       integer, intent(in)             :: ngcellcomp
+       real,dimension(:,:,:,:) :: Uin
+       real, dimension(:,:,:,:),intent(out)  :: gvec
+       integer, intent(in),optional    :: potentialIndex
      end subroutine Gravity_accelOneBlock
   end interface
 
 
   interface Gravity_computeDt
-     subroutine Gravity_computeDt (blockID, dt_grav, dt_minloc)
+     subroutine Gravity_computeDt (Uin, dt_grav, dt_minloc)
        real,intent(OUT)       ::  dt_grav
-       integer, intent(IN)    ::  blockID
+       real,dimension(:,:,:,:) :: Uin
        integer, intent(INOUT) :: dt_minloc(5)
      end subroutine Gravity_computeDt
   end interface
