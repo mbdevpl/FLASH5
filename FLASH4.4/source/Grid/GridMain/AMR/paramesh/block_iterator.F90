@@ -4,6 +4,9 @@
 !!
 !!****
 
+!! defines IMPURE_ELEMENTAL:
+#include "FortranLangFeatures.fh"
+
 module block_iterator
 
 #include "Flash.h"
@@ -16,7 +19,6 @@ module block_iterator
 
     implicit none
 
-#define IMPURE_ELEMENTAL
 #define CONTIGUOUS_POINTER pointer
 #include "constants.h"
     private
@@ -47,6 +49,8 @@ module block_iterator
         procedure, public :: blkMetaData
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         final             :: destroy_iterator
+#else
+        procedure         :: destroy_iterator
 #endif
     end type block_iterator_t
 
@@ -93,7 +97,6 @@ contains
         call this%first()
     end function init_iterator
 
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
     !!****im* block_iterator_t/destroy_iterator
     !!
     !! NAME
@@ -107,11 +110,14 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
+#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         type(block_iterator_t), intent(INOUT) :: this
+#else
+      class (block_iterator_t), intent(INOUT) :: this
+#endif
 
         call this%first()
     end subroutine destroy_iterator
-#endif
 
     !!****m* block_iterator_t/first
     !!

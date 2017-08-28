@@ -7,7 +7,7 @@
 !! and client code will gain access to it through implementation-specific 
 !! code like Grid_getBlkIterator.
 !!
-!! This is a variant that uses type(amrex_mfiter) as underlying iterator.
+!! This is a variant that uses type(block_1lev_iterator_t) as underlying iterator.
 !!****
 
 #include "FortranLangFeatures.fh"

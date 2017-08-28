@@ -74,7 +74,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   use physicaldata, ONLY:unk, gcell_on_cc
   use tree, ONLY:nodetype
   use paramesh_dimensions, ONLY: il_bnd,iu_bnd,jl_bnd,ju_bnd,kl_bnd,ku_bnd, kl_bndi, ndim
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator !, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -267,6 +267,8 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
 
      call itor%next()
   end do
+
+  call itor%destroy_iterator()
 
   return 
 
