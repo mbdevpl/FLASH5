@@ -1,6 +1,6 @@
 Grid += gr_ptInterface.o gr_ptInit.o gr_ptMove.o\
         gr_ptFinalize.o gr_ptMarkRefineDerefine.o \
-	gr_ptMoveOffBlk.o\
+        gr_ptMoveOffBlk.o\
         gr_ptFillBlkParticleInfo.o gr_ensureValidNeighborInfo.o \
         gr_solversInit.o gr_solversFinalize.o gr_solversTestInit.o \
 	gr_bcInterface.o gr_bcHseInit.o gr_bcApplyToAllBlks.o gr_bcApplyToOneFace.o \
@@ -73,6 +73,10 @@ Grid += gr_sbInterface.o gr_sbInit.o gr_sbSendBoundBox.o\
 Grid += gr_bhInterface.o gr_bhInit.o gr_bhFinalize.o
 
 Grid += gr_xyzToBlockLevel.o gr_xyzToBlock.o
+
+Grid += gr_markRefineDerefine.o
+
+Grid += gr_amrextInterface.o
 
 gr_interface.o     : gr_interfaceTypeDecl.o
 gr_pfftInterface.o : gr_pfftInterfaceTypeDecl.o

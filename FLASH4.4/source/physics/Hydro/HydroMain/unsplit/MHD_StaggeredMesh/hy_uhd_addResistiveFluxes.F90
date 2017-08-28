@@ -79,7 +79,8 @@ Subroutine hy_uhd_addResistiveFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,eta,sweep
   real :: dxBy, dxBz, dyBx, dyBz, dzBx, dzBy
   real    :: jx,jy,jz,idx,idy,idz,eta_loc
   real, dimension(MDIM) :: del
-  real, pointer, dimension(:,:,:,:) :: U !,bx,by
+  real, pointer, dimension(:,:,:,:) :: U
+!  real, pointer, dimension(:,:,:,:) :: bx,by
   real :: inv_dVr !2/(rp*abs(rp) - rm*abs(rm))
 #ifdef FIXEDBLOCKSIZE  
   real, dimension(GRID_IHI_GC) :: xCenter  

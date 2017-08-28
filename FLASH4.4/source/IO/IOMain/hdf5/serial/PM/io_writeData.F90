@@ -72,13 +72,13 @@ subroutine io_writeData (fileID)
        io_fileFormatVersion, tree_data_t
   use Grid_interface, ONLY : Grid_getLocalNumBlks
 
-  use Grid_data, ONLY : gr_globalNumBlocks, gr_gid, scratch
-
+  use gr_specificData, ONLY :  gr_gid, scratch
+  use Grid_data, ONLY : gr_globalNumBlocks
 #ifdef FLASH_GRID_PARAMESH
   use tree, ONLY : maxblocks_tr, nfaces, nchild, nodetype, &
        lrefine, bnd_box, coord, bsize
 #ifdef FLASH_GRID_PARAMESH3OR4
-  use Grid_data, ONLY : gr_gsurr_blks
+  use gr_specificData, ONLY : gr_gsurr_blks
   use tree, ONLY : MFLAGS, which_child, bflags
 #endif
 #endif

@@ -233,13 +233,14 @@
 !!
 !!***
 
-subroutine Grid_getRowData(blockID, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
      row, startingPos, datablock, dataSize)
-
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
-  integer, intent(in) :: blockID, structIndex, beginCount, row, gridDataStruct
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, row, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, intent(in) :: dataSize
   real, dimension(datasize),intent(out) :: datablock

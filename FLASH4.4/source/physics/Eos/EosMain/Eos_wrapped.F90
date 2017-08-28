@@ -88,58 +88,58 @@
 !!REORDER(4): solnData
 
 
-subroutine Eos_wrapped(mode,range,blockID, gridDataStruct)
-
-  use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-  use Logfile_interface, ONLY: Logfile_stampMessage 
-  use Eos_interface, ONLY : Eos, Eos_putData, Eos_getData, Eos_arrayWrapped
-  use Eos_data, ONLY : eos_threadWithinBlock
-  !$ use omp_lib
-  implicit none
-
+!!$subroutine Eos_wrapped(mode,range,blockID, gridDataStruct)
+!!$
+!!$  use Driver_interface, ONLY : Driver_abortFlash
+!!$  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+!!$  use Logfile_interface, ONLY: Logfile_stampMessage 
+!!$  use Eos_interface, ONLY : Eos, Eos_putData, Eos_getData, Eos_arrayWrapped
+!!$  use Eos_data, ONLY : eos_threadWithinBlock
+!!$  !$ use omp_lib
+!!$  implicit none
+!!$
 #include "Eos.h"
 #include "constants.h"
 #include "Flash.h"
+!!$
+!!$  integer, intent(in) :: mode
+!!$  integer, dimension(2,MDIM), intent(in) :: range
+!!$  integer,intent(in) :: blockID
+!!$  integer, optional, intent(IN) :: gridDataStruct
+!!$
+!!$  real, pointer:: solnData(:,:,:,:)
+!!$
+!!$#ifndef FIXEDBLOCKSIZE
+!!$  real, allocatable :: eosData(:),massFraction(:)
+!!$#else
+!!$  real, dimension(NSPECIES*MAXCELLS) :: massFraction
+!!$  real, dimension(EOS_NUM*MAXCELLS) :: eosData
+!!$#endif
+!!$
+!!$  logical,target,dimension(EOS_VARS+1:EOS_NUM) :: eosMask
+!!$
+!!$  integer :: ierr, dataStruct
+!!$  integer :: i,j,k, vecLen
+!!$  integer,dimension(MDIM) :: pos
+!!$
+!!$
+!!$
+!!$  call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
+!!$  call Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
+!!$
+!!$  call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
+!!$
+!!$  return
+!!$end subroutine Eos_wrapped
 
-  integer, intent(in) :: mode
-  integer, dimension(2,MDIM), intent(in) :: range
-  integer,intent(in) :: blockID
-  integer, optional, intent(IN) :: gridDataStruct
-
-  real, pointer:: solnData(:,:,:,:)
-
-#ifndef FIXEDBLOCKSIZE
-  real, allocatable :: eosData(:),massFraction(:)
-#else
-  real, dimension(NSPECIES*MAXCELLS) :: massFraction
-  real, dimension(EOS_NUM*MAXCELLS) :: eosData
-#endif
-
-  logical,target,dimension(EOS_VARS+1:EOS_NUM) :: eosMask
-
-  integer :: ierr, dataStruct
-  integer :: i,j,k, vecLen
-  integer,dimension(MDIM) :: pos
-
-
-
-  call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
-  call Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
-
-  call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
-
-  return
-end subroutine Eos_wrapped
-
-!!****if* source/physics/Eos/EosMain/Eos_arrayWrapped
+!!****if* source/physics/Eos/EosMain/Eos_Wrapped
 !! NAME
 !!
-!!  Eos_arrayWrapped
+!!  Eos_Wrapped
 !! 
 !! SYNOPSIS
 !!
-!!  call Eos_arrayWrapped(  integer(IN) :: mode,
+!!  call Eos_Wrapped(  integer(IN) :: mode,
 !!                          integer(IN) :: range(HIGH, MDIM),
 !!                     real,pointer(IN) :: solnData,
 !!                 optional,integer(IN) :: gridDataStruct )
@@ -224,7 +224,7 @@ end subroutine Eos_wrapped
 !!REORDER(4): solnData
 
 
-subroutine Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
+subroutine Eos_wrapped(mode,range,solnData, gridDataStruct)
 
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
@@ -313,4 +313,4 @@ subroutine Eos_arrayWrapped(mode,range,solnData, gridDataStruct)
   !$omp end parallel
 
   return
-end subroutine Eos_arrayWrapped
+end subroutine Eos_wrapped

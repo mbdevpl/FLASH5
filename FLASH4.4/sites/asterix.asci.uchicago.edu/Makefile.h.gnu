@@ -3,7 +3,7 @@
 # Set the HDF5/MPI library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
 
-AMREX_PATH = /home/aladin/klaus/projects/amrex/tmp_install_dir
+AMREX_PATH = $(HOME)/amrex/2d.gnu.DEBUG.MPI
 
 MPI_PATH   = /opt/openmpi-1.8.6_gcc
 HDF4_PATH  =
@@ -72,7 +72,7 @@ FFLAGS_TEST = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
 
 FFLAGS_HYPRE = -I${HYPRE_PATH}/include
 CFLAGS_HYPRE = -I${HYPRE_PATH}/include
-FFLAGS_AMREX = -I${AMREX_PATH}/include
+FFLAGS_AMREX = -I${AMREX_PATH}/include -DSKIP_PROBLEMATIC_CODE_FOR_NOW
 FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
 
 

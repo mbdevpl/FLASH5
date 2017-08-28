@@ -93,7 +93,6 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
 
   use Driver_interface, ONLY : Driver_abortFlash
 
-  use Eos_interface, ONLY : Eos_everywhere
 !!$  use Eos_interface, ONLY : Eos_wrapped
 
   use Logfile_interface, ONLY : Logfile_stampVarMask
@@ -260,7 +259,6 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
         allocate(auxC(1,tileLimits(LOW,IAXIS)-1  :tileLimits(HIGH,IAXIS)+1  , &
                         tileLimits(LOW,JAXIS)-K2D:tileLimits(HIGH,JAXIS)+K2D, &
                         tileLimits(LOW,KAXIS)-K3D:tileLimits(HIGH,KAXIS)+K3D) )
-        auxC = 0.0
 !!$        print*,'tile limits for',tileID,':',tileLimits
 
 
@@ -588,7 +586,6 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
 !!$             inPtr=Uin, &
 !!$             outPtr=Uout,&
 !!$             tilingContext=tilingCtx)
-        call Grid_releaseBlkPtr(blockID,Uout,CENTER)
 
 
 !!$  !$omp end do
@@ -597,7 +594,5 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
 !!$  !! End of leaf block do-loop - no flux conserve call
 
 
-
-  call Eos_everywhere(hy_eosModeAfter)
 
 End Subroutine hy_hllUnsplit

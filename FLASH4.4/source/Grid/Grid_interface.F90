@@ -102,6 +102,17 @@ Module Grid_interface
      end subroutine Grid_applyBCEdgeAllUnkVars
   end interface
 
+  interface
+     subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
+       use amrex_multifab_module, ONLY : amrex_multifab
+       implicit none
+       integer,intent(IN),OPTIONAL :: gds
+       type(amrex_multifab),intent(INOUT) :: phi(:)
+       integer,intent(IN),OPTIONAL :: nodetype
+       logical,intent(IN),OPTIONAL :: reverse
+     end subroutine Grid_copyF4DataToMultiFabs
+  end interface
+
   interface Grid_computeUserVars
      subroutine Grid_computeUserVars()
      end subroutine Grid_computeUserVars
@@ -161,6 +172,21 @@ Module Grid_interface
        integer,optional,intent(in) :: selectBlockType
        logical, optional, intent(IN) :: unitReadsMeshDataOnly
      end subroutine Grid_fillGuardCells
+     subroutine Grid_fillGuardCells_blkid( gridDataStruct,idir,&
+          minLayers,eosMode,doEos,maskSize,mask,makeMaskConsistent,&
+          doLogMask,selectBlockType,unitReadsMeshDataOnly)
+       integer, intent(in) :: gridDataStruct
+       integer, intent(in) :: idir
+       integer,optional,intent(in) :: minLayers
+       integer,optional,intent(in) :: eosMode
+       logical,optional,intent(IN) :: doEos
+       integer,optional,intent(in) :: maskSize
+       logical,optional,dimension(:), intent(IN) :: mask
+       logical,optional, intent(IN) :: makeMaskConsistent
+       logical,optional,intent(IN) :: doLogMask
+       integer,optional,intent(in) :: selectBlockType
+       logical, optional, intent(IN) :: unitReadsMeshDataOnly
+     end subroutine Grid_fillGuardCells_blkid
   end interface
 
   interface Grid_finalize
@@ -169,11 +195,17 @@ Module Grid_interface
   end interface
 
   interface Grid_getBlkBC
-     subroutine Grid_getBlkBC(blockId, faces, onBoundary)
-       integer, intent(in) :: blockId
+     subroutine Grid_getBlkBC(blockID, faces, onBoundary)
+       integer, intent(in) :: blockID
        integer, dimension(2,MDIM),intent(out):: faces
        integer, optional, dimension(2,MDIM), intent(out) :: onBoundary
      end subroutine Grid_getBlkBC
+     subroutine Grid_getBlkBC_desc(blockDesc, faces, onBoundary)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: blockDesc
+       integer, dimension(2,MDIM),intent(out):: faces
+       integer, optional, dimension(2,MDIM), intent(out) :: onBoundary
+     end subroutine Grid_getBlkBC_desc
   end interface
 
   interface Grid_getBlkBoundBox
@@ -181,6 +213,12 @@ Module Grid_interface
        integer, intent(in) :: blockId
        real, dimension(2, MDIM), intent(out) :: boundBox
      end subroutine Grid_getBlkBoundBox
+     subroutine Grid_getBlkBoundBox_desc(blockDesc,boundBox)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(in) :: blockDesc
+       real, dimension(2, MDIM), intent(out) :: boundBox
+     end subroutine Grid_getBlkBoundBox_desc
   end interface
 
   interface Grid_getBlkCenterCoords
@@ -202,11 +240,23 @@ Module Grid_interface
   interface
      subroutine Grid_getBlkData(blockID, dataType, structIndex, beginCount, &
           startingPos, datablock, dataSize)
-       integer, intent(in) :: blockID, structIndex, beginCount, dataType
+       implicit none
+       integer, intent(in) :: blockID
+       integer, intent(in) :: structIndex, beginCount, dataType
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, dimension(3), intent(in) :: dataSize
        real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(out) :: datablock
      end subroutine Grid_getBlkData
+     subroutine Grid_getBlkData_desc(block, dataType, structIndex, beginCount, &
+          startingPos, datablock, dataSize)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(in) :: block
+       integer, intent(in) :: structIndex, beginCount, dataType
+       integer, dimension(MDIM), intent(in) :: startingPos
+       integer, dimension(3), intent(in) :: dataSize
+       real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(out) :: datablock
+     end subroutine Grid_getBlkData_desc
   end interface
 
   interface
@@ -224,12 +274,19 @@ Module Grid_interface
      end subroutine Grid_getBlkPhysicalSize
   end interface
 
-  interface
+  interface Grid_getBlkPtr
      subroutine Grid_getBlkPtr(blockId, dataPtr,gridDataStruct)
        integer, intent(in) :: blockId
        real,dimension(:,:,:,:), pointer :: dataPtr
        integer,optional, intent(in) :: gridDataStruct
      end subroutine Grid_getBlkPtr
+     subroutine Grid_getBlkPtr_desc(block, dataPtr,gridDataStruct,localFlag)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
+       real,dimension(:,:,:,:), pointer :: dataPtr
+       integer,optional, intent(in) :: gridDataStruct
+       logical,optional, intent(in) :: localFlag
+     end subroutine Grid_getBlkPtr_desc
   end interface
 
   interface Grid_getBlkRefineLevel
@@ -238,10 +295,19 @@ Module Grid_interface
        integer,intent(out) :: refineLevel
      end subroutine Grid_getBlkRefineLevel
   end interface
-
+ 
   interface
-     subroutine Grid_getCellCoords(axis, blockID, edge, guardcell, coordinates, size)
-       integer, intent(in) :: axis, blockID, edge
+     subroutine Grid_getCellCoords_blkid(axis, blockID, edge, guardcell, coordinates, size)
+       integer, intent(in) :: axis, edge
+       integer, intent(in) :: blockID
+       integer, intent(in) :: size
+       logical, intent(in) :: guardcell
+       real,intent(out), dimension(size) :: coordinates
+     end subroutine Grid_getCellCoords_blkid
+     subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
+       use block_metadata, ONLY : block_metadata_t
+       integer, intent(in) :: axis, edge
+       type(block_metadata_t), intent(in) :: block
        integer, intent(in) :: size
        logical, intent(in) :: guardcell
        real,intent(out), dimension(size) :: coordinates
@@ -249,8 +315,8 @@ Module Grid_interface
   end interface
 
   interface Grid_getDeltas
-     subroutine Grid_getDeltas(blockId, del)
-       integer, intent(in) :: blockId
+     subroutine Grid_getDeltas(lev, del)
+       integer, intent(in) :: lev
        real, dimension(MDIM), intent(out) :: del
      end subroutine Grid_getDeltas
   end interface
@@ -316,32 +382,64 @@ Module Grid_interface
   end interface
 
   interface Grid_getPlaneData
-     subroutine Grid_getPlaneData(blockid, gridDataStruct, variable, beginCount, &
+     subroutine Grid_getPlaneData(blockID, gridDataStruct, variable, beginCount, &
           plane, startingPos, datablock, dataSize)
-       integer, intent(IN) :: blockid, variable, beginCount, plane, gridDataStruct
+       implicit none
+       integer, intent(IN) :: blockID
+       integer, intent(IN) :: variable, beginCount, plane, gridDataStruct
        integer, dimension(MDIM), intent(IN) :: startingPos
        integer, dimension(2), intent(IN) :: dataSize
        real, dimension(datasize(1), dataSize(2)),intent(OUT) :: datablock
      end subroutine Grid_getPlaneData
+     subroutine Grid_getPlaneData_desc(block, gridDataStruct, variable, beginCount, &
+          plane, startingPos, datablock, dataSize)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(IN) :: block
+       integer, intent(IN) :: variable, beginCount, plane, gridDataStruct
+       integer, dimension(MDIM), intent(IN) :: startingPos
+       integer, dimension(2), intent(IN) :: dataSize
+       real, dimension(datasize(1), dataSize(2)),intent(OUT) :: datablock
+     end subroutine Grid_getPlaneData_desc
   end interface
 
   interface Grid_getPointData
      subroutine Grid_getPointData(blockID, gridDataStruct, variable, beginCount, &
           position, datablock)
-       integer, intent(in) :: blockID, variable, beginCount, gridDataStruct
+       implicit none
+       integer, intent(in) :: blockID
+       integer, intent(in) :: variable, beginCount, gridDataStruct
        integer, dimension(MDIM), intent(in) :: position
        real, intent(out) :: datablock
      end subroutine Grid_getPointData
+     subroutine Grid_getPointData_desc(blockDesc, gridDataStruct, variable, beginCount, &
+          position, datablock)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: blockDesc
+       integer, intent(in) :: variable, beginCount, gridDataStruct
+       integer, dimension(MDIM), intent(in) :: position
+       real, intent(out) :: datablock
+     end subroutine Grid_getPointData_desc
   end interface
 
   interface Grid_getRowData
-     subroutine Grid_getRowData(blockid, gridDataStruct, variable, beginCount, &
+     subroutine Grid_getRowData(blockID, gridDataStruct, variable, beginCount, &
           row, startingPos, datablock, dataSize)
-       integer, intent(in) :: blockid, variable, beginCount, row, gridDataStruct
+       implicit none
+       integer, intent(in) :: blockID
+       integer, intent(in) :: variable, beginCount, row, gridDataStruct
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, intent(in) :: dataSize
        real, dimension(datasize),intent(out) :: datablock
      end subroutine Grid_getRowData
+     subroutine Grid_getRowData_desc(block, gridDataStruct, variable, beginCount, &
+          row, startingPos, datablock, dataSize)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
+       integer, intent(in) :: variable, beginCount, row, gridDataStruct
+       integer, dimension(MDIM), intent(in) :: startingPos
+       integer, intent(in) :: dataSize
+       real, dimension(datasize),intent(out) :: datablock
+     end subroutine Grid_getRowData_desc
   end interface
 
   interface Grid_getSingleCellCoords
@@ -355,10 +453,18 @@ Module Grid_interface
 
   interface Grid_getSingleCellVol
      subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
-       integer, intent(in) :: blockID, beginCount
+       integer, intent(in) :: blockID
+       integer, intent(in) :: beginCount
        integer, intent(in) :: point(MDIM)
        real, intent(out)   :: cellvolume
      end subroutine Grid_getSingleCellVol
+     subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
+       integer, intent(in) :: beginCount
+       integer, intent(in) :: point(MDIM)
+       real, intent(out)   :: cellvolume
+     end subroutine Grid_getSingleCellVol_Itor
   end interface
 
   interface
@@ -392,20 +498,6 @@ Module Grid_interface
        integer, optional,intent(in) :: copyDirection
        integer, optional,intent(in) :: gridDataStruct
      end subroutine Grid_makeVector
-  end interface
-
-  interface Grid_markBlkDerefine
-     subroutine Grid_markBlkDerefine(block,mark)
-       integer, intent(IN) :: block
-       logical, intent(IN) :: mark
-     end subroutine Grid_markBlkDerefine
-  end interface
-
-  interface Grid_markBlkRefine
-     subroutine Grid_markBlkRefine(block,mark)
-       integer, intent(IN) :: block
-       logical, intent(IN) :: mark
-     end subroutine Grid_markBlkRefine
   end interface
 
   interface Grid_markRefineDerefine
@@ -487,6 +579,15 @@ Module Grid_interface
        integer, dimension(2), intent(in) :: dataSize
        real, dimension(datasize(1), dataSize(2)),intent(in) :: datablock
      end subroutine Grid_putPlaneData
+     subroutine Grid_putPlaneData_desc(blockDesc, gridDataStruct, variable, beginCount, &
+          plane, startingPos, datablock, dataSize)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: blockDesc
+       integer, intent(in) :: variable, beginCount, plane, gridDataStruct
+       integer, dimension(MDIM), intent(in) :: startingPos
+       integer, dimension(2), intent(in) :: dataSize
+       real, dimension(datasize(1), dataSize(2)),intent(in) :: datablock
+     end subroutine Grid_putPlaneData_desc
   end interface
 
   interface Grid_putPointData
@@ -495,6 +596,13 @@ Module Grid_interface
        integer, dimension(MDIM), intent(in) :: position
        real, intent(in) :: datablock
      end subroutine Grid_putPointData
+     subroutine Grid_putPointData_desc(blockDesc, gridDataStruct, variable, beginCount, position, datablock)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: blockDesc
+       integer, intent(in) :: variable, beginCount, gridDataStruct
+       integer, dimension(MDIM), intent(in) :: position
+       real, intent(in) :: datablock
+     end subroutine Grid_putPointData_desc
   end interface
 
   interface
@@ -507,12 +615,18 @@ Module Grid_interface
      end subroutine Grid_putRowData
   end interface
 
-  interface
+  interface Grid_releaseBlkPtr
      subroutine Grid_releaseBlkPtr(blockId, dataPtr, gridDataStruct)
        integer, intent(in) :: blockId
        real, pointer :: dataPtr(:,:,:,:)
        integer,optional, intent(in) :: gridDataStruct
      end subroutine Grid_releaseBlkPtr
+     subroutine Grid_releaseBlkPtr_Itor(block, dataPtr, gridDataStruct)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
+       real, pointer :: dataPtr(:,:,:,:)
+       integer,optional, intent(in) :: gridDataStruct
+     end subroutine Grid_releaseBlkPtr_Itor
   end interface
 
   interface Grid_restrictAllLevels
@@ -1087,9 +1201,10 @@ Module Grid_interface
        integer,optional,intent(IN) :: blockType
      end subroutine Grid_getBlkIDFromPosForListsOfBlocks
 
-     subroutine Grid_getBlkNeighBlkIDFromPos(blockID, pos, neghDir, ansBlockID, ansProcID)
+     subroutine Grid_getBlkNeighBlkIDFromPos(block, pos, neghDir, ansBlockID, ansProcID)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(IN) :: blockID
+       type(block_metadata_t), intent(IN) :: block
        real, dimension(1:MDIM), intent(IN) :: pos
        integer, dimension(1:MDIM), intent(IN) :: neghDir
        integer, intent(OUT) :: ansBlockID, ansProcID

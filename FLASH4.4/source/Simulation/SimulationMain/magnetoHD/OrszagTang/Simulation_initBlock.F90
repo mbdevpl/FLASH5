@@ -28,7 +28,7 @@
 !!
 !!***
 
-!!REORDER(4): solnData, face[xy]Data
+!!REORDER(4): solnData, face[xyz]Data
 
 subroutine Simulation_initBlock(blockID)
 

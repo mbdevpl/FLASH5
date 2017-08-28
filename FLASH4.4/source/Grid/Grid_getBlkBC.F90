@@ -51,11 +51,13 @@
 !!***
 
 
-subroutine Grid_getBlkBC(blockId, faces,onBoundary)
-implicit none
-#include "constants.h"
+subroutine Grid_getBlkBC(block, faces,onBoundary)
+  use block_metadata, ONLY : block_metadata_t
 
-  integer, intent(in) :: blockId
+  implicit none
+#include "constants.h"
+  
+  type(block_metadata_t), intent(in) :: block
   integer, dimension(2,MDIM),intent(out):: faces
   integer, optional, dimension(LOW:HIGH,MDIM),intent(out):: onBoundary
 
