@@ -104,10 +104,14 @@ Module Grid_interface
 
   interface
      subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
+#ifdef FLASH_GRID_ANYAMREX
        use amrex_multifab_module, ONLY : amrex_multifab
        implicit none
-       integer,intent(IN),OPTIONAL :: gds
        type(amrex_multifab),intent(INOUT) :: phi(:)
+#else
+       type(*) :: phi
+#endif
+       integer,intent(IN),OPTIONAL :: gds
        integer,intent(IN),OPTIONAL :: nodetype
        logical,intent(IN),OPTIONAL :: reverse
      end subroutine Grid_copyF4DataToMultiFabs

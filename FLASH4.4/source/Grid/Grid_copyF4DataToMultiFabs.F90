@@ -1,11 +1,14 @@
+#include "Flash.h"
+
 subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
 
-  use Grid_data, ONLY : gr_meshMe, gr_meshNumProcs, gr_meshComm
-  use tree,      ONLY : lrefine_max, lrefine
-
+#ifdef FLASH_GRID_ANYAMREX
   use amrex_multifab_module
-
+  implicit none
   type(amrex_multifab),intent(INOUT) :: phi(:)
+#else
+  type(*) :: phi
+#endif
   integer,intent(IN),OPTIONAL :: gds
   integer,intent(IN),OPTIONAL :: nodetype
   logical,intent(IN),OPTIONAL :: reverse

@@ -16,3 +16,6 @@ PPDEFINE USE_IO_C_INTERFACE
 
 D How much output is written out. Higher number is more verbose.
 PARAMETER verbosity INTEGER 0 [ 0 ... ]
+
+# The following is defined for AMR/Amrex and .../AmrexTransition as well
+PPDEFINE FLASH_GRID_ANYAMREX

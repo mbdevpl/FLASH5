@@ -188,7 +188,11 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
      
   loUse => block%limitsGC(LOW, :)
   if (present(localFlag)) then
+#ifdef FLASH_GRID_AMREXTRANSITION     
      if (localFlag) loUse => block%localLimitsGC(LOW, :)
+#else
+     if (localFlag) call Driver_abortFlash('Grid_getBlkPtr_desc: localFlag=.TRUE. is not supported!')
+#endif
   end if
 
      associate (lo => loUse)

@@ -19,3 +19,7 @@ ENDIF
 # There is another AmrexTransition dir to also include...
 REQUIRES Grid/GridMain/AMR/paramesh/paramesh4/AmrexTransition
 
+# define preprocessor symbol FLASH_GRID_AMREXTRANSITION
+PPDEFINE FLASH_GRID_AMREXTRANSITION
+# The following is defined for AMR/Amrex and .../AmrexTransition as well
+PPDEFINE FLASH_GRID_ANYAMREX

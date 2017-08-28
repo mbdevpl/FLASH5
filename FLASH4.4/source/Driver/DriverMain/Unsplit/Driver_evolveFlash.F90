@@ -71,7 +71,11 @@ subroutine Driver_evolveFlash()
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
+  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+#ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
+  use gr_amrextData
+#endif
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
@@ -83,6 +87,7 @@ subroutine Driver_evolveFlash()
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
+#ifdef FLASH_GRID_ANYAMREX
 !!$  use amrex_amr_module,    ONLY : amrex_real
 !!$  use amrex_box_module,    ONLY : amrex_box
 !  use amrex_box_module
@@ -90,6 +95,9 @@ subroutine Driver_evolveFlash()
   use amrex_multifab_module
   use amrex_distromap_module
   use amrex_boxarray_module
+#else
+  use Driver_data, ONLY : gr_amrextUnkMFs => dr_simGeneration
+#endif
 
   implicit none
 
@@ -132,7 +140,9 @@ subroutine Driver_evolveFlash()
   real,pointer,dimension(:,:,:,:) :: Uout
   real,dimension(MDIM) :: del
 
+#ifdef FLASH_GRID_ANYAMREX
   type(amrex_multifab),allocatable :: phi_mf(:)
+#endif
   integer:: ib, blockID, level, maxLev
   integer:: ibLoc, blkLev
 
@@ -148,8 +158,10 @@ subroutine Driver_evolveFlash()
 !!$       pf, pfab
 !!$  type(amrex_fab) :: uface(NDIM)
 !!$  type(amrex_multifab), allocatable :: fluxes(:,:)
+#ifdef FLASH_GRID_ANYAMREX
   type(amrex_distromap), allocatable :: dm
   type(amrex_boxarray) :: ba
+#endif
 
 
   endRunPl = .false.
@@ -217,34 +229,17 @@ subroutine Driver_evolveFlash()
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
 
+#ifdef FLASH_GRID_ANYAMREX
      allocate(phi_mf(maxLev))
-     call gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, LEAF)
+#endif
+!!$     call gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, LEAF)
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+#endif
+     call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=LEAF)
+
      do level=1,maxLev
         print*,' ***************   HYDRO LEVEL', level,'  **********************'
-!!$        call Grid_getLocalNumBlks(localNumBlocks)
-!!$        call Grid_getListOfBlocks(LEAF,blks,blockCount)
-!!$        ibLoc = 0
-!!$        do ib=1,blockCount
-!!$           blockID=blks(ib)
-!!$           call Grid_getBlkRefineLevel(blockID,blkLev)
-!!$           if (blkLev == level) then
-!!$              ibLoc = ibLoc + 1
-!!$              procMapLoc(ibLoc) = dr_meshMe
-!!$              call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
-!!$              call Grid_getBlkCornerID(blockID,cornerID(LOW,:),stride,cornerID(HIGH,:))
-!!$              tileLimits(LOW ,:NDIM) = (cornerID(LOW ,:NDIM)-1) / stride(:NDIM) + 1
-!!$              tileLimits(HIGH,:NDIM) =  cornerID(HIGH,:NDIM) / stride(:NDIM)
-!!$              dimLimits(LOW:HIGH,:,ibLoc) = tileLimits(LOW:HIGH,:NDIM)
-!!$           end if
-!!$        end do
-!!$        bpl(dr_meshMe,level) = ibLoc  ! bpl(dr_meshMe,level) + ibLoc
-!!$        allocate(dm)
-!!$        call amrex_distromap_build(dm,procMapLoc(1:ibLoc))
-!!$        call amrex_print(dm)
-!!$        call amrex_boxarray_build(ba,dimLimits(LOW,:NDIM,1:ibLoc),dimLimits(HIGH,:NDIM,1:ibLoc) )!,ibLoc)
-!!$        call amrex_print(ba)
-!!$        call amrex_multifab_build(phi_mf(level), ba, dm, NUNK_VARS, ng=0)
-!!$        deallocate(dm)
 
         itor = block_iterator_t(LEAF, level=level)
         do while(itor%is_valid())
@@ -281,10 +276,18 @@ subroutine Driver_evolveFlash()
         
         !! save for old dt
      end do
+#ifdef FLASH_GRID_ANYAMREX
      do level=1,maxLev
         call amrex_multifab_destroy(phi_mf(level))
      end do
      deallocate(phi_mf)
+#endif
+
+     call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=LEAF, reverse=.TRUE.)
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
+#endif
+     call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ACTIVE_BLKS)
 
      dr_dtOld = dr_dt
      
