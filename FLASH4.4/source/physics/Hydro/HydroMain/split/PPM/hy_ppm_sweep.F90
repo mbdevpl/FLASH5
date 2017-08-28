@@ -168,6 +168,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
 !  call IO_writeCheckpoint()
 
   doFluxCorrect = (hy_fluxCorrect .AND. (hy_updateHydroFluxes .OR. hy_useDiffuse))
+  doFluxCorrect=.false.
   if (doFluxCorrect) then
      updateMode = UPDATE_INTERIOR
   else
