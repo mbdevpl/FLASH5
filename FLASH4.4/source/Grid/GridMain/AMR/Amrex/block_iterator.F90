@@ -9,6 +9,8 @@
 !!
 !!****
 
+#include "constants.h"
+
 module block_iterator
 
     use amrex_octree_module, ONLY : amrex_octree_iter, &
@@ -35,6 +37,7 @@ module block_iterator
         logical                 :: is_itor_valid = .FALSE.
     contains
         procedure, public :: is_valid
+        procedure, public :: first
         procedure, public :: next
         procedure, public :: blkMetaData
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
@@ -79,7 +82,7 @@ contains
         if (present(level)) then
             this%level = level
         end if
- 
+
         ! DEVNOTE: the AMReX iterator is not built based on nodetype.
         ! It appears that we get leaves every time.
 
@@ -108,6 +111,28 @@ contains
     end subroutine destroy_iterator
 #endif
 
+    !!****m* block_iterator_t/first
+    !!
+    !! NAME
+    !!  first
+    !!
+    !! SYNPOSIS
+    !!  call itor%first()
+    !!
+    !! DESCRIPTION
+    !!  Reset iterator to the initial block managed by process
+    !!
+    !!****
+    subroutine first(this)
+        class(block_iterator_t), intent(INOUT) :: this
+
+        ! reset to before first valid block
+        call this%oti%clear()   !method added to amrex_octree_iter - KW 2017-08-23
+        this%is_itor_valid = .FALSE.  !DEV: ??
+        ! Initial iterator is not primed.  Advance to first compatible block.
+        call this%next()
+    end subroutine first
+
     !!****m* block_iterator_t/is_valid
     !!
     !! NAME
@@ -123,10 +148,11 @@ contains
     !!  True if iterator is currently set to a valid block
     !!
     !!****
-    logical function is_valid(this)
+    function is_valid(this) result(ans)
         class(block_iterator_t), intent(IN) :: this
+        logical :: ans
 
-        is_valid = this%is_itor_valid
+        ans = this%is_itor_valid
     end function is_valid
 
     !!****m* block_iterator_t/next
@@ -172,30 +198,36 @@ contains
     !!  iterator.
     !!
     !!****
-    subroutine blkMetaData(this, block)
+    subroutine blkMetaData(this, blockDesc)
         use amrex_box_module, ONLY : amrex_box
 
         use block_metadata,   ONLY : block_metadata_t
 !        use physicaldata,     ONLY : unk
 
         class(block_iterator_t), intent(IN)  :: this
-        type(block_metadata_t),  intent(OUT) :: block
+        type(block_metadata_t),  intent(OUT) :: blockDesc
 
         type(amrex_box) :: box
        
         box = this%oti%box()
 
-        block%grid_index        = this%oti%grid_index()
-        block%level             = this%oti%level()
-        block%limits(LOW, :)    = box%lo
-        block%limits(HIGH, :)   = box%hi
+        blockDesc%grid_index        = this%oti%grid_index()
+        blockDesc%level             = this%oti%level()
+        blockDesc%limits(LOW, :)    = box%lo
+        blockDesc%limits(HIGH, :)   = box%hi
 
         ! TODO: Need to determine how to get unk.  Do we allow for the
         ! possibility that the different FABs could have a different number of
         ! guard cells.  It seems like AMReX allows for it.
         call box%grow([gr_iguard, gr_jguard, gr_kguard])
-        block%limitsGC(LOW, :)  = box%lo
-        block%limitsGC(HIGH, :) = box%hi
+        blockDesc%limitsGC(LOW, :)  = box%lo
+        blockDesc%limitsGC(HIGH, :) = box%hi
+
+        blockDesc%localLimits(LOW, :)   = blockDesc%limits(LOW, :)   - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimits(HIGH, :)  = blockDesc%limits(HIGH, :)  - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimitsGC(LOW, :) = 1
+        blockDesc%localLimitsGC(HIGH, :)= blockDesc%limitsGC(HIGH, :)- blockDesc%limitsGC(LOW, :) + 1
+
     end subroutine blkMetaData
  
 end module block_iterator

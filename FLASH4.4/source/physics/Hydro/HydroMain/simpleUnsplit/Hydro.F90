@@ -66,7 +66,7 @@ Subroutine Hydro(block, blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,
 
 #include "UHD.h"
 
-  integer, INTENT(IN),optional :: sweeporder
+  integer, INTENT(IN) :: sweeporder
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
 
   integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits,blkLimitsGC

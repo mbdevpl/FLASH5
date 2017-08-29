@@ -75,6 +75,9 @@ plotfileIntervalTime = 0.
 plotfileIntervalStep = 0
 plotfileNumber = 0
 
+#wr_integrals_freq = 0
+#dr_printTStepLoc = .FALSE.
+
 nend            = 1000
 tmax            = .2
 

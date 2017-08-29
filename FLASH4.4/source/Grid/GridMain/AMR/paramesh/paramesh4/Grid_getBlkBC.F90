@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkBC(integer(IN)  :: blockId,
+!!  Grid_getBlkBC(integer(IN)  :: blockID,
 !!                integer(OUT) :: faces(2,MDIM),
 !!       optional,integer(OUT) :: onBoundary(2,MDIM))
 !!                    
@@ -30,7 +30,7 @@
 !!   
 !! ARGUMENTS 
 !!
-!!  blockId - the local blockId 
+!!  blockID - the local block ID 
 !!  faces   - array returned holding boundary conditions (except PERIODIC),
 !!            if any of the faces of the block are on a physical boundary.
 !!                
@@ -49,22 +49,19 @@
 !!***
 
 
-subroutine Grid_getBlkBC(block, faces, onBoundary)
+subroutine Grid_getBlkBC(blockID, faces, onBoundary)
 
   use tree, ONLY : neigh,bnd_box
   use Grid_data,ONLY : gr_domainBC,gr_globalDomain,gr_minCellSizes
   use gr_interface, ONLY : gr_extractBCForDirection
-  use block_metadata, ONLY : block_metadata_t
 implicit none
 #include "constants.h"
-  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: blockID
   integer, dimension(LOW:HIGH,MDIM),intent(out):: faces
   integer, optional, dimension(LOW:HIGH,MDIM),intent(out):: onBoundary
   integer :: idirf
   integer :: axis,face
-  integer :: blockid
   
-  blockid = block%id
 
 #ifdef DEBUG_GRID
   do idirf=1,6

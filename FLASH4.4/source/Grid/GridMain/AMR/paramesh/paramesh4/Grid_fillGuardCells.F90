@@ -504,10 +504,8 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   if(present(doEos)) then
      if(doEos.and.needEos) then
         call Timers_start("eos gc")
-        if (      (gridDataStruct.NE.CENTER) &
-            .AND. (gridDataStruct.NE.CENTER_FACES)) then
-            itor = block_iterator_t(listBlockType)
-            do while (itor%is_valid())
+        itor = block_iterator_t(listBlockType)
+        do while (itor%is_valid())
                 call itor%blkMetaData(block)
                 
                 call Grid_getBlkPtr(block, solnData)
@@ -517,8 +515,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
                 nullify(solnData)
 
                 call itor%next()
-            end do
-        end if
+        end do
         call Timers_stop("eos gc")
      end if
   end if

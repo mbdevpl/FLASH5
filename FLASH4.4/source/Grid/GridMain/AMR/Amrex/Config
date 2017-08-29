@@ -1,4 +1,4 @@
-LIBRARY amrex2d
+LIBRARY amrex
 
 CONFLICTS IO/IOMain/hdf5/parallel/UG
 CONFLICTS IO/IOMain/hdf5/serial/UG
@@ -7,6 +7,8 @@ CONFLICTS IO/IOMain/hdf5/serial/PM
 
 # add pre-processor symbol FLASH_GRID_AMREX
 PPDEFINE FLASH_GRID_AMREX
+# The following is defined for AMR/Amrex and .../AmrexTransition as well
+PPDEFINE FLASH_GRID_ANYAMREX
 
 # We need to use the Fortran 2003 module named iso_c_binding in
 # the FLASH I/O unit.  This is not an extra dependency
@@ -18,3 +20,5 @@ PPDEFINE FLASH_GRID_AMREX
 
 D How much output is written out. Higher number is more verbose.
 PARAMETER gr_amrex_verbosity INTEGER 0 [ 0 ... ]
+#PARAMETER verbosity INTEGER 0 [ 0 ... ]
+
