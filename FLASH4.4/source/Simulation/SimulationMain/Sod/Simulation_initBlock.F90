@@ -138,6 +138,13 @@ subroutine Simulation_initBlock(solnData,block)
   call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCenter, sizeX)
   call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xRight, sizeX)
 
+#ifdef DEBUG_SIMULATION
+98 format('initBlock:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
+99 format('initBlock:',A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
+  print 99,"solnData" ,(lbound(solnData ,i),ubound(solnData ,i),i=1,4)
+  print*,'blkLim  :',blkLimits
+  print*,'blkLimGC:',blkLimitsGC
+#endif
 !------------------------------------------------------------------------------
 
 ! Loop over cells in the block.  For each, compute the physical position of 
