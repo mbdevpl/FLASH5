@@ -47,6 +47,8 @@ pm3:+pm40
 chombo_ug:-unit=Grid/GridMain/Chombo/UG:-index-reorder:Grid=Chombo:-maxblocks=1:-nofbs:-makefile=chombo:chomboCompatibleHydro=True
 chombo_amr:-unit=Grid/GridMain/Chombo/AMR:-index-reorder:Grid=Chombo:-nofbs:-makefile=chombo:chomboCompatibleHydro=True
 
+amrext:-unit=Grid/GridMain/AMR/paramesh/AmrexTransition:-index-reorder
+
 # pm4dev_clean indicates a version of Paramesh closer to the one
 # that can be downloaded from sourceforge.  pm4dev indicates a 
 # modified version of Paramesh that includes a more scalable way

@@ -27,7 +27,15 @@ Module Eos_interface
        integer,optional,intent(IN) :: gridDataStruct
      end subroutine Eos_wrapped
   end interface
-  
+    interface
+     subroutine Eos_wrapped_blkid(mode,range,blockNum,gridDataStruct)
+       integer, intent(in) :: mode
+       integer, dimension(2,MDIM), intent(in) :: range
+       integer,intent(IN) :: blockNum
+       integer,optional,intent(IN) :: gridDataStruct
+     end subroutine Eos_wrapped_blkid
+  end interface
+
   interface
      subroutine Eos(mode, vecLen, eosData,  massFrac, mask, vecBegin,vecEnd,diagFlag)
        integer, INTENT(in) :: mode, vecLen

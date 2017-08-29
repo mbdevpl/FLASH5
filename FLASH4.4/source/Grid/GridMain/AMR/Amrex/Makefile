@@ -9,3 +9,5 @@ Grid += amrex_interfaces.o \
         gr_conserveToPrimitive.o \
         gr_primitiveToConserve.o
 
+Grid += gr_amrextInterface.o
+

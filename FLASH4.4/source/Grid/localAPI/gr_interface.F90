@@ -128,12 +128,18 @@ module gr_interface
   end interface
 
   interface
-     subroutine gr_sanitizeDataAfterInterp(blkList,count, info, layers)
+     subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
+       implicit none
+       integer, intent(IN) :: ntype
+       character(len=*), intent(IN) :: info
+       integer, dimension(MDIM), intent(IN):: layers
+     end subroutine gr_sanitizeDataAfterInterp
+     subroutine gr_sanitizeDataAfterInterp_blklst(blkList,count, info, layers)
        integer,intent(IN) :: count
        integer, dimension(count), intent(IN) :: blkList
        character(len=*), intent(IN) :: info
        integer, dimension(MDIM), intent(IN):: layers
-     end subroutine gr_sanitizeDataAfterInterp
+     end subroutine gr_sanitizeDataAfterInterp_blklst
   end interface
 
 

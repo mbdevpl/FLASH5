@@ -37,6 +37,7 @@
 subroutine Driver_evolveFlash()
 
   use Driver_data,         ONLY : dr_globalMe, dr_globalNumProcs, dr_nbegin, &
+                                  dr_meshMe, dr_meshNumProcs,            &
                                   dr_nend, dr_dt,                        &
                                   dr_tmax, dr_simTime, dr_redshift,      &
                                   dr_nstep, dr_dtOld, dr_dtNew,          &
@@ -60,12 +61,22 @@ subroutine Driver_evolveFlash()
                                   Timers_getSummary
   use Diffuse_interface,   ONLY : Diffuse
   use Particles_interface, ONLY : Particles_advance, Particles_dump
-  use Grid_interface,      ONLY : Grid_updateRefinement,&
+  use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
+                                  Grid_getListOfBlocks, &
+                                  Grid_getBlkIndexLimits, &
+                                  Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
                                   Grid_getDeltas,&
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
+  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+
+#include "Flash.h"
+#ifdef FLASH_GRID_AMREXTRANSITION
+  use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
+  use gr_amrextData
+#endif
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
@@ -77,16 +88,19 @@ subroutine Driver_evolveFlash()
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
+#ifdef FLASH_GRID_AMREXTRANSITION
 !!$  use amrex_amr_module,    ONLY : amrex_real
 !!$  use amrex_box_module,    ONLY : amrex_box
-!!$  use amrex_box_module
-!!$  use amrex_fab_module
-!!$  use amrex_multifab_module
+!  use amrex_box_module
+!  use amrex_fab_module
+  use amrex_multifab_module
+#else
+  use Driver_data, ONLY : gr_amrextUnkMFs => dr_simGeneration
+#endif
 
   implicit none
 
 #include "constants.h"
-#include "Flash.h"
 
   integer   :: localNumBlocks
 
@@ -120,9 +134,13 @@ subroutine Driver_evolveFlash()
   real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
+#ifdef FLASH_GRID_AMREXTRANSITION
+  type(amrex_multifab),allocatable :: phi_mf(:)
+#endif
+  integer:: ib, blockID, level, maxLev
+
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: block
-  integer:: level, maxLev
 
 !!$  real(amrex_real)  :: time     !testing...
   logical :: nodal(3)
@@ -199,17 +217,29 @@ subroutine Driver_evolveFlash()
      
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
+
+#ifdef FLASH_GRID_AMREXTRANSITION
+     allocate(phi_mf(maxLev))
+#endif
+!!$     call gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, LEAF)
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+#endif
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
+
      do level=1,maxLev
+#ifdef DEBUG_DRIVER
+        print*,' ***************   HYDRO LEVEL', level,'  **********************'
+#endif
+
         itor = block_iterator_t(LEAF, level=level)
         do while(itor%is_valid())
            call itor%blkMetaData(block)
 
-           blkLimits(LOW,:)   = block%limits(LOW,:)-block%cid(:)
-           blkLimitsGC(LOW,:) = block%limitsGC(LOW,:)-block%cid(:)
-           blkLimits(HIGH,:)   = block%limits(HIGH,:)-block%cid(:)
-           blkLimitsGC(HIGH,:) = block%limitsGC(HIGH,:)-block%cid(:)
+           blkLimits(:,:)   = block%localLimits
+           blkLimitsGC(:,:) = block%localLimitsGC
            
-           call Grid_getBlkPtr(block, Uout)
+           call Grid_getBlkPtr(block, Uout,localFlag=.TRUE.)
 !!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
 !!$           call amrex_print(abx)
 !!$           tbx = abx
@@ -239,6 +269,18 @@ subroutine Driver_evolveFlash()
         
         !! save for old dt
      end do
+#ifdef FLASH_GRID_AMREXTRANSITION
+     do level=1,maxLev
+        call amrex_multifab_destroy(phi_mf(level))
+     end do
+     deallocate(phi_mf)
+#endif
+
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
+#endif
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 
      dr_dtOld = dr_dt
      

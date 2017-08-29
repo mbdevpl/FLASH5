@@ -64,7 +64,7 @@ def makeregexp():
         regexp = re.compile(nameregexp)
     else:
         regexp = None
-        print >> sys.stderr, "Worning: setup_reorder.py was invoked without any arrays to reorder."
+        print >> sys.stderr, "Warning: setup_reorder.py was invoked without any arrays to reorder."
 
 def replfunc(mobj):
     d = mobj.groupdict()

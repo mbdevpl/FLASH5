@@ -58,6 +58,8 @@ subroutine Driver_initFlash()
 
   use Grid_interface, ONLY : Grid_init, Grid_initDomain, &
     Grid_getListOfBlocks
+
+#include "Flash.h"
   use Multispecies_interface, ONLY : Multispecies_init
   use Particles_interface, ONLY : Particles_init,  Particles_initData, &
        Particles_initForces
@@ -73,10 +75,14 @@ subroutine Driver_initFlash()
   use Profiler_interface, ONLY : Profiler_init
 
   use IncompNS_interface, ONLY : IncompNS_init
+
+#ifdef FLASH_GRID_ANYAMREX
+  use amrex_base_module, ONLY : amrex_init
+#endif
+
   implicit none
 
 #include "constants.h"
-#include "Flash.h"
 
   integer :: blockCount
   integer :: blockList(MAXBLOCKS)
@@ -100,6 +106,11 @@ subroutine Driver_initFlash()
   !! Now set the parallel environment and introduce any communicators
   !! that might be needed during the simulation
   call Driver_setupParallelEnv()
+
+#ifdef FLASH_GRID_ANYAMREX
+  call amrex_init(dr_globalComm,.FALSE.) !DEV: Should use dr_meshComm !?
+#endif
+
 
   !! Initialize the code timers.  Ideally should be first thing in
   !! code but currently the timing package

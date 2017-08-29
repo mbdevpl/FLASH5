@@ -9,11 +9,11 @@
 !!                 integer (IN) :: props,  
 !!                 integer (IN) :: attrib,
 !!                 integer (IN) :: numProcs,
-!!                 real (INOUT) :: storage, 
-!!                 real (INOUT) :: workspace, 
-!!                 integer (OUT) :: perProc(:),  
-!!                 integer (OUT) :: ifNonZeroProc(:),
-!!                 integer (OUT):: nonZeroProcsCount)   
+!!                 real (INOUT) :: storage(props,count),
+!!                 real (INOUT) :: workspace(props,count),
+!!                 integer(OUT),dimension(numProcs) :: perProc(:),
+!!                 integer(OUT),dimension(numProcs) :: ifNonZeroProc(:),
+!!                 integer(OUT) :: nonZeroProcsCount)
 !!                    
 !!  
 !! DESCRIPTION 
@@ -44,7 +44,7 @@
 !!                each entry is the count of particles destined for the 
 !!                corresponding processor
 !! ifNonZeroProc      - same size array as perProc, here value is 1 if there are 
-!!                any particles to be send to the corresponding processor,
+!!                any particles to be sent to the corresponding processor,
 !!                otherwise the value is zero
 !! nonZeroProcsCount    - The count of the number of processors that will receive
 !!                particles sent by myPE
