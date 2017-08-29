@@ -232,6 +232,8 @@ contains
                   blkId => mData%id, &
                   cid   => mData%cid)
             call Grid_getBlkIndexLimits(blkID, blkLim, blkLimGC)
+            mdata%localLimits   = blkLim
+            mdata%localLimitsGC = blkLimGC
             lo(:) = blkLim(LOW, :)
             hi(:) = blkLim(HIGH, :)
             loGC(:) = blkLimGC(LOW, :)
