@@ -71,6 +71,8 @@ subroutine Driver_evolveFlash()
                                   Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+
+#include "Flash.h"
 #ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
   use gr_amrextData
@@ -99,7 +101,6 @@ subroutine Driver_evolveFlash()
   implicit none
 
 #include "constants.h"
-#include "Flash.h"
 
   integer   :: localNumBlocks
 

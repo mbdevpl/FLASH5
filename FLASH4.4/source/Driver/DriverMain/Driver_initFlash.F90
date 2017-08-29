@@ -58,6 +58,8 @@ subroutine Driver_initFlash()
 
   use Grid_interface, ONLY : Grid_init, Grid_initDomain, &
     Grid_getListOfBlocks
+
+#include "Flash.h"
   use Multispecies_interface, ONLY : Multispecies_init
   use Particles_interface, ONLY : Particles_init,  Particles_initData, &
        Particles_initForces
@@ -81,7 +83,6 @@ subroutine Driver_initFlash()
   implicit none
 
 #include "constants.h"
-#include "Flash.h"
 
   integer :: blockCount
   integer :: blockList(MAXBLOCKS)
