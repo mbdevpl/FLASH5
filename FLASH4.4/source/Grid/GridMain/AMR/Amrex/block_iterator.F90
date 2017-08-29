@@ -223,10 +223,10 @@ contains
         blockDesc%limitsGC(LOW, :)  = box%lo
         blockDesc%limitsGC(HIGH, :) = box%hi
 
-        blockDescDesc%localLimits(LOW, :)   = blockDescDesc%limits(LOW, :)   - blockDescDesc%limitsGC(LOW, :) + 1
-        blockDescDesc%localLimits(HIGH, :)  = blockDescDesc%limits(HIGH, :)  - blockDescDesc%limitsGC(LOW, :) + 1
-        blockDescDesc%localLimitsGC(LOW, :) = 1
-        blockDescDesc%localLimitsGC(HIGH, :)= blockDescDesc%limitsGC(HIGH, :)- blockDescDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimits(LOW, :)   = blockDesc%limits(LOW, :)   - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimits(HIGH, :)  = blockDesc%limits(HIGH, :)  - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimitsGC(LOW, :) = 1
+        blockDesc%localLimitsGC(HIGH, :)= blockDesc%limitsGC(HIGH, :)- blockDesc%limitsGC(LOW, :) + 1
 
     end subroutine blkMetaData
  

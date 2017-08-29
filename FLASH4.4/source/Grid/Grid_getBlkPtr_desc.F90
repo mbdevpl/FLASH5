@@ -55,7 +55,7 @@ subroutine Grid_getBlkPtr_desc(block,dataPtr, gridDataStruct, localFlag)
 
   implicit none
   
-  type(block_metadata_t), intent(in) :: block
+  type(block_metadata_t),target, intent(in) :: block
   real, dimension(:,:,:,:), pointer :: dataPtr
   integer, optional,intent(in) :: gridDataStruct
   logical,optional, intent(in) :: localFlag

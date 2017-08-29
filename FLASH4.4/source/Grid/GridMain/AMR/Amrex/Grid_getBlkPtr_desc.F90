@@ -61,6 +61,8 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
 
 !#include "Flash.h"
 
+  use amrex_fort_module, ONLY : wp => amrex_real
+
 !  use Driver_interface, ONLY : Driver_abortFlash
   use physicaldata,      ONLY : unk
 !  use physicaldata,      ONLY : facevarx, facevary, facevarz
@@ -73,7 +75,7 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
 #include "constants.h"
 
   ! DEV: How to match data types for dataPtr with FLASH?
-  type(block_metadata_t), intent(in)            :: block
+  type(block_metadata_t), intent(in), target    :: block
   real(wp),               intent(out), pointer  :: dataPtr(:, :, :, :)
   integer,                intent(in),  optional :: gridDataStruct
   logical,      optional, intent(in) :: localFlag

@@ -86,14 +86,12 @@ subroutine Driver_evolveFlash()
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
-#ifdef FLASH_GRID_ANYAMREX
+#ifdef FLASH_GRID_AMREXTRANSITION
 !!$  use amrex_amr_module,    ONLY : amrex_real
 !!$  use amrex_box_module,    ONLY : amrex_box
 !  use amrex_box_module
 !  use amrex_fab_module
   use amrex_multifab_module
-  use amrex_distromap_module
-  use amrex_boxarray_module
 #else
   use Driver_data, ONLY : gr_amrextUnkMFs => dr_simGeneration
 #endif
@@ -135,11 +133,10 @@ subroutine Driver_evolveFlash()
   real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
-#ifdef FLASH_GRID_ANYAMREX
+#ifdef FLASH_GRID_AMREXTRANSITION
   type(amrex_multifab),allocatable :: phi_mf(:)
 #endif
   integer:: ib, blockID, level, maxLev
-  integer:: ibLoc, blkLev
 
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: block
@@ -153,10 +150,6 @@ subroutine Driver_evolveFlash()
 !!$       pf, pfab
 !!$  type(amrex_fab) :: uface(NDIM)
 !!$  type(amrex_multifab), allocatable :: fluxes(:,:)
-#ifdef FLASH_GRID_ANYAMREX
-  type(amrex_distromap), allocatable :: dm
-  type(amrex_boxarray) :: ba
-#endif
 
 
   endRunPl = .false.
@@ -224,14 +217,14 @@ subroutine Driver_evolveFlash()
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
 
-#ifdef FLASH_GRID_ANYAMREX
+#ifdef FLASH_GRID_AMREXTRANSITION
      allocate(phi_mf(maxLev))
 #endif
 !!$     call gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, LEAF)
 #ifdef FLASH_GRID_AMREXTRANSITION
      call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
 #endif
-     call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=LEAF)
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
 
      do level=1,maxLev
 #ifdef DEBUG_DRIVER
@@ -275,18 +268,18 @@ subroutine Driver_evolveFlash()
         
         !! save for old dt
      end do
-#ifdef FLASH_GRID_ANYAMREX
+#ifdef FLASH_GRID_AMREXTRANSITION
      do level=1,maxLev
         call amrex_multifab_destroy(phi_mf(level))
      end do
      deallocate(phi_mf)
 #endif
 
-     call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=LEAF, reverse=.TRUE.)
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
      call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
 #endif
-     call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ACTIVE_BLKS)
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 
      dr_dtOld = dr_dt
      

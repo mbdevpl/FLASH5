@@ -107,9 +107,9 @@ Module Grid_interface
 #ifdef FLASH_GRID_ANYAMREX
        use amrex_multifab_module, ONLY : amrex_multifab
        implicit none
-       type(amrex_multifab),intent(INOUT) :: phi(:)
+       type(amrex_multifab),OPTIONAL,intent(INOUT) :: phi(:)
 #else
-       type(*) :: phi
+       type(*),OPTIONAL :: phi
 #endif
        integer,intent(IN),OPTIONAL :: gds
        integer,intent(IN),OPTIONAL :: nodetype
@@ -206,7 +206,7 @@ Module Grid_interface
      end subroutine Grid_getBlkBC
      subroutine Grid_getBlkBC_desc(blockDesc, faces, onBoundary)
        use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: blockDesc
+       type(block_metadata_t),target, intent(in) :: blockDesc
        integer, dimension(2,MDIM),intent(out):: faces
        integer, optional, dimension(2,MDIM), intent(out) :: onBoundary
      end subroutine Grid_getBlkBC_desc

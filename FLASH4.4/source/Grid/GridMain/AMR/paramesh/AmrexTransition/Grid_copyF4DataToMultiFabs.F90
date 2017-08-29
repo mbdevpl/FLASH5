@@ -17,7 +17,7 @@ subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
 #include "Flash.h"
 #include "constants.h"
 
-  type(amrex_multifab),intent(INOUT) :: phi(:)
+  type(amrex_multifab),OPTIONAL,intent(INOUT) :: phi(:)
   integer,intent(IN),OPTIONAL :: gds
   integer,intent(IN),OPTIONAL :: nodetype
   logical,intent(IN),OPTIONAL :: reverse
@@ -29,6 +29,7 @@ subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
   integer   :: myNodetype, listNodetype
   integer   :: localNumBlocks, globalNumBlocks
   logical   :: doReverse
+  logical,save :: didWarn1 = .FALSE.
   real,POINTER,dimension(:,:,:,:) :: pf, pa
 
 !!$  integer, dimension(LOW:HIGH,MDIM) :: tileLimits,blkLimitsGC, cornerID
@@ -74,6 +75,13 @@ subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
   if (present(reverse)) then
      doReverse = reverse
   end if
+
+  if (present(phi)) then
+     if (.NOT.didWarn1) &
+          print*,'Grid_copyF4DataToMultiFabs: WARNING - argument phi is currently ignored.'
+     didWarn1 = .TRUE.
+  end if
+
 
   maxLev = lrefine_max
 
