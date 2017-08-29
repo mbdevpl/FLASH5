@@ -34,11 +34,13 @@ Module Gravity_interface
   end interface
 
   interface
-     subroutine Gravity_accelOneRow (pos,sweepDir,Uin, numCells, grav, &
+     subroutine Gravity_accelOneRow (pos,sweepDir,block, numCells, grav, &
            varIndex, extraAccelVars)
+    use block_metadata, ONLY : block_metadata_t
+
        implicit none
+       type(block_metadata_t) :: block
        integer, intent(IN) :: sweepDir,numCells
-       real,dimension(:,:,:,:) :: Uin       
        integer, dimension(2),INTENT(in) ::pos
        real, dimension(numCells),INTENT(inout) :: grav
        integer, intent(IN), optional :: varIndex 

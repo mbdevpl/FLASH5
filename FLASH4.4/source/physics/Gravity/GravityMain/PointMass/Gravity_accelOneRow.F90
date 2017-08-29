@@ -33,7 +33,7 @@
 !! 
 !!***
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
+subroutine Gravity_accelOneRow (pos, sweepDir, block, numCells, grav, &
                                 potentialIndex, extraAccelVars)
 
 !=======================================================================
@@ -42,13 +42,14 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
        useGravity
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
     Grid_getCellCoords
-
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
 
-  integer, intent(IN) :: sweepDir,blockID,numCells
+  type(block_metadata_t) :: block
+  integer, intent(IN) :: sweepDir,numCells
   integer, dimension(2),INTENT(in) ::pos
   real, dimension(numCells),INTENT(inout) :: grav
   integer,intent(IN),optional :: potentialIndex
@@ -57,14 +58,8 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
 !==========================================================================
 
 
-#ifdef FIXEDBLOCKSIZE
-  real,dimension(GRID_KHI_GC) :: zCenter
-  real,dimension(GRID_JHI_GC) :: yCenter
-  real,dimension(GRID_IHI_GC) :: xCenter
-#else
   real,allocatable,dimension(:) ::xCenter,yCenter,zCenter
   integer, dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
-#endif
   real :: dr32, tmpdr32
 
   integer :: sizeX,sizeY,sizez
@@ -78,30 +73,23 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
 
   j=pos(1)
   k=pos(2)
-#ifndef FIXEDBLOCKSIZE
-  call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
-  sizeX=blkLimitsGC(HIGH,IAXIS)
-  sizeY=blkLimitsGC(HIGH,JAXIS)
-  sizeZ=blkLimitsGC(HIGH,KAXIS)
+  sizeX=numCells
+  sizeY=numCells
+  sizeZ=numCells
   allocate(xCenter(sizeX))
   allocate(yCenter(sizeY))
   allocate(zCenter(sizeZ))
-#else
-  sizeX=GRID_IHI_GC
-  sizeY=GRID_JHI_GC
-  sizeZ=GRID_KHI_GC
-#endif
   zCenter = 0.
   yCenter = 0.
   if (NDIM == 3) then 
-     call Grid_getCellCoords(KAXIS, blockID, CENTER, gcell, zCenter, sizeZ)
+     call Grid_getCellCoords(KAXIS, block, CENTER, gcell, zCenter, sizeZ)
      zCenter = zCenter - grv_ptzpos
   endif
   if (NDIM >= 2) then
-     call Grid_getCellCoords(JAXIS, blockID, CENTER, gcell, yCenter, sizeY)
+     call Grid_getCellCoords(JAXIS, block, CENTER, gcell, yCenter, sizeY)
      yCenter = yCenter - grv_ptypos
   endif
-  call Grid_getCellCoords(IAXIS, blockID, CENTER, gcell, xCenter, sizeX)
+  call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCenter, sizeX)
   xCenter = xCenter - grv_ptxpos
   
 
