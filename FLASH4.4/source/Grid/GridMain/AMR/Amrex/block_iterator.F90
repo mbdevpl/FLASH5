@@ -198,30 +198,36 @@ contains
     !!  iterator.
     !!
     !!****
-    subroutine blkMetaData(this, block)
+    subroutine blkMetaData(this, blockDesc)
         use amrex_box_module, ONLY : amrex_box
 
         use block_metadata,   ONLY : block_metadata_t
 !        use physicaldata,     ONLY : unk
 
         class(block_iterator_t), intent(IN)  :: this
-        type(block_metadata_t),  intent(OUT) :: block
+        type(block_metadata_t),  intent(OUT) :: blockDesc
 
         type(amrex_box) :: box
        
         box = this%oti%box()
 
-        block%grid_index        = this%oti%grid_index()
-        block%level             = this%oti%level()
-        block%limits(LOW, :)    = box%lo
-        block%limits(HIGH, :)   = box%hi
+        blockDesc%grid_index        = this%oti%grid_index()
+        blockDesc%level             = this%oti%level()
+        blockDesc%limits(LOW, :)    = box%lo
+        blockDesc%limits(HIGH, :)   = box%hi
 
         ! TODO: Need to determine how to get unk.  Do we allow for the
         ! possibility that the different FABs could have a different number of
         ! guard cells.  It seems like AMReX allows for it.
         call box%grow([gr_iguard, gr_jguard, gr_kguard])
-        block%limitsGC(LOW, :)  = box%lo
-        block%limitsGC(HIGH, :) = box%hi
+        blockDesc%limitsGC(LOW, :)  = box%lo
+        blockDesc%limitsGC(HIGH, :) = box%hi
+
+        blockDescDesc%localLimits(LOW, :)   = blockDescDesc%limits(LOW, :)   - blockDescDesc%limitsGC(LOW, :) + 1
+        blockDescDesc%localLimits(HIGH, :)  = blockDescDesc%limits(HIGH, :)  - blockDescDesc%limitsGC(LOW, :) + 1
+        blockDescDesc%localLimitsGC(LOW, :) = 1
+        blockDescDesc%localLimitsGC(HIGH, :)= blockDescDesc%limitsGC(HIGH, :)- blockDescDesc%limitsGC(LOW, :) + 1
+
     end subroutine blkMetaData
  
 end module block_iterator

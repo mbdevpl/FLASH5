@@ -19,8 +19,8 @@ module block_metadata
         integer :: grid_index
         integer :: limits(LOW:HIGH, MDIM)
         integer :: limitsGC(LOW:HIGH, MDIM)
-!        integer :: localLimits(LOW:HIGH, MDIM)
-!        integer :: localLimitsGC(LOW:HIGH, MDIM)
+        integer :: localLimits(LOW:HIGH, MDIM)
+        integer :: localLimitsGC(LOW:HIGH, MDIM)
     end type block_metadata_t
 
 contains

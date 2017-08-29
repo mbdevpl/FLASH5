@@ -142,7 +142,7 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
        GAMC_VAR,GAME_VAR,EINT_VAR,&
        ENER_VAR/)
 
-#define DEBUG_UHD
+
   !! End of data declaration ***********************************************
 #ifdef DEBUG_UHD
 98 format(A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')

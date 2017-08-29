@@ -299,6 +299,7 @@ contains
     subroutine blkMetaData(this, blockDesc)
         use amrex_box_module, ONLY : amrex_box
         use block_metadata, ONLY : block_metadata_t
+        use tree,           ONLY : lrefine_max
 
         class(block_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: blockDesc
@@ -324,6 +325,8 @@ contains
         blockDesc%fp => this%li( this%level )%dataPtr()
 
         blockDesc%id = -999
+        blockDesc%stride = 2**(lrefine_max - blockDesc%level)
+        blockDesc%cid = (box%lo - 1) * blockDesc%stride + 1
 
     end subroutine blkMetaData
  

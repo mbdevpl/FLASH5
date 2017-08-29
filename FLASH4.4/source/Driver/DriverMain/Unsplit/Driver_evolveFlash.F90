@@ -234,7 +234,9 @@ subroutine Driver_evolveFlash()
      call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=LEAF)
 
      do level=1,maxLev
+#ifdef DEBUG_DRIVER
         print*,' ***************   HYDRO LEVEL', level,'  **********************'
+#endif
 
         itor = block_iterator_t(LEAF, level=level)
         do while(itor%is_valid())
