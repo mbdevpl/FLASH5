@@ -21,6 +21,7 @@ module gr_amrextInterface
 #include "Flash.h"
   implicit none
 
+#ifdef FLASH_GRID_ANYAMREX
   interface
      subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
        use amrex_multifab_module, ONLY : amrex_multifab
@@ -30,6 +31,7 @@ module gr_amrextInterface
        integer,intent(IN),OPTIONAL :: nodetype
      end subroutine gr_amrextBuildMultiFabsFromF4Grid
   end interface
+#endif
 
   interface
      subroutine gr_fillMetaData(blockID, blockDesc)

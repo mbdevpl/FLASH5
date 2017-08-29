@@ -62,7 +62,7 @@
 #include "constants.h"
 #include "UHD.h"
 
-Subroutine hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,eosMode)
+Subroutine hy_uhd_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
 
   use Hydro_data,     ONLY : hy_eswitch, hy_irenorm, hy_geometry,&
                              hy_dtmin, hy_dtminloc, hy_dtminValid, hy_dtminCfl, hy_meshMe, &
@@ -73,20 +73,22 @@ Subroutine hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,eosMode)
 #endif
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr,&
                              Grid_getCellCoords
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
   !! ---- Argument List ----------------------------------
-  integer, intent(IN) :: blockID
   integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
   real, intent(IN) :: dt,dtOld
   real, dimension(MDIM), intent(IN) :: del
   integer, intent(IN) :: eosMode
+  type(block_metadata_t), intent(IN)   :: block
+  real, pointer, dimension(:,:,:,:) :: U
+  
   !! -----------------------------------------------------
 
   integer :: i,j,k
   real    :: ekin,eint, emag, mhdEnergyCorrection
-  real, pointer, dimension(:,:,:,:) :: U
 #if !defined FLASH_UHD_HYDRO || !defined FLASH_UHD_3T
     real    :: IntEner,newEint
 #endif
@@ -111,14 +113,14 @@ Subroutine hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,eosMode)
 
 
   !! Get block pointers
-  call Grid_getBlkPtr(blockID,U,CENTER)
+!!$  call Grid_getBlkPtr(block,U,CENTER)
 #ifdef FLASH_USM_MHD /* For MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1
-  call Grid_getBlkPtr(blockID,E,SCRATCH)
-  call Grid_getBlkPtr(blockID,Bx,FACEX)
-  call Grid_getBlkPtr(blockID,By,FACEY)
-  if (NDIM == 3) call Grid_getBlkPtr(blockID,Bz,FACEZ)
+  call Grid_getBlkPtr(block,E,SCRATCH)
+  call Grid_getBlkPtr(block,Bx,FACEX)
+  call Grid_getBlkPtr(block,By,FACEY)
+  if (NDIM == 3) call Grid_getBlkPtr(block,Bz,FACEZ)
 #endif
 #endif
 #endif /* For MHD */
@@ -132,9 +134,9 @@ Subroutine hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,eosMode)
      allocate(xCtr(blkLimits(LOW,IAXIS):blkLimits(HIGH, IAXIS)))
      allocate(yCtr(blkLimits(LOW,JAXIS):blkLimits(HIGH, JAXIS)))
      call Grid_getCellCoords&
-          (IAXIS,blockID, CENTER,.false.,xCtr, blkLimits(HIGH, IAXIS)-blkLimits(LOW,IAXIS)+1)
+          (IAXIS,block, CENTER,.false.,xCtr, blkLimits(HIGH, IAXIS)-blkLimits(LOW,IAXIS)+1)
      call Grid_getCellCoords&
-          (JAXIS,blockId, CENTER,.false.,yCtr, blkLimits(HIGH, JAXIS)-blkLimits(LOW,JAXIS)+1)
+          (JAXIS,block, CENTER,.false.,yCtr, blkLimits(HIGH, JAXIS)-blkLimits(LOW,JAXIS)+1)
   endif
 
 
@@ -291,7 +293,7 @@ Subroutine hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,eosMode)
                     hy_dtminloc(1) = i
                     hy_dtminloc(2) = j
                     hy_dtminloc(3) = k
-                    hy_dtminloc(4) = blockID
+!!                    hy_dtminloc(4) = blockID
                     hy_dtminloc(5) = hy_meshMe
                     hy_dtminCfl    = hy_cfl
                     hy_dtminValid = .TRUE.
@@ -422,7 +424,6 @@ Subroutine hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,eosMode)
 #ifdef BDRY_VAR
            endif
 #endif
-
         enddo
      enddo
   enddo
@@ -434,14 +435,14 @@ Subroutine hy_uhd_energyFix(blockID,blkLimits,dt,dtOld,del,eosMode)
 
 
   !! Release block pointers
-  call Grid_releaseBlkPtr(blockID,U,CENTER)
+  call Grid_releaseBlkPtr(block,U,CENTER)
 #ifdef FLASH_USM_MHD /* For MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1
-  call Grid_releaseBlkPtr(blockID,E,SCRATCH)
-  call Grid_releaseBlkPtr(blockID,Bx,FACEX)
-  call Grid_releaseBlkPtr(blockID,By,FACEY)
-  if (NDIM == 3) call Grid_releaseBlkPtr(blockID,Bz,FACEZ)
+  call Grid_releaseBlkPtr(block,E,SCRATCH)
+  call Grid_releaseBlkPtr(block,Bx,FACEX)
+  call Grid_releaseBlkPtr(block,By,FACEY)
+  if (NDIM == 3) call Grid_releaseBlkPtr(block,Bz,FACEZ)
 #endif
 #endif
 #endif /* For MHD */

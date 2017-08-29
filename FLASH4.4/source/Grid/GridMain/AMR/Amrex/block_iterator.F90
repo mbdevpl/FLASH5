@@ -17,9 +17,13 @@ module block_iterator
                                     amrex_octree_iter_build, &
                                     amrex_octree_iter_destroy
 
+    use Grid_data,           ONLY : gr_iguard, gr_jguard, gr_kguard
+
     implicit none
 
     private
+
+#include "constants.h"
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -30,7 +34,7 @@ module block_iterator
     type, public :: block_iterator_t
         type(amrex_octree_iter) :: oti
         integer                 :: level    = INVALID_LEVEL
-        logical                 :: isValid = .FALSE.
+        logical                 :: is_itor_valid = .FALSE.
     contains
         procedure, public :: is_valid
         procedure, public :: first
@@ -100,7 +104,7 @@ contains
     !!  Clean-up block interator object at destruction
     !!
     !!****
-    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
+    subroutine destroy_iterator(this)
         type(block_iterator_t), intent(INOUT) :: this
 
         call amrex_octree_iter_destroy(this%oti)
@@ -124,7 +128,7 @@ contains
 
         ! reset to before first valid block
         call this%oti%clear()   !method added to amrex_octree_iter - KW 2017-08-23
-        this%isValid = .FALSE.  !DEV: ??
+        this%is_itor_valid = .FALSE.  !DEV: ??
         ! Initial iterator is not primed.  Advance to first compatible block.
         call this%next()
     end subroutine first
@@ -148,7 +152,7 @@ contains
         class(block_iterator_t), intent(IN) :: this
         logical :: ans
 
-        ans = this%isValid
+        ans = this%is_itor_valid
     end function is_valid
 
     !!****m* block_iterator_t/next
@@ -167,16 +171,16 @@ contains
     subroutine next(this)
         class(block_iterator_t), intent(INOUT) :: this
 
-        this%isValid = this%oti%next()
+        this%is_itor_valid = this%oti%next()
 
         if (this%level /= INVALID_LEVEL) then
             ! Search for leaves on given level
-            do while (this%isValid)
+            do while (this%is_itor_valid)
                 if (this%oti%level() == this%level) then
                     exit
                 end if
 
-                this%isValid = this%oti%next()
+                this%is_itor_valid = this%oti%next()
             end do
         end if
     end subroutine next
@@ -194,24 +198,36 @@ contains
     !!  iterator.
     !!
     !!****
-    subroutine blkMetaData(this, block)
+    subroutine blkMetaData(this, blockDesc)
         use amrex_box_module, ONLY : amrex_box
-        use block_metadata, ONLY : block_metadata_t
+
+        use block_metadata,   ONLY : block_metadata_t
+!        use physicaldata,     ONLY : unk
 
         class(block_iterator_t), intent(IN)  :: this
-        type(block_metadata_t),  intent(OUT) :: block
+        type(block_metadata_t),  intent(OUT) :: blockDesc
 
         type(amrex_box) :: box
        
         box = this%oti%box()
 
-        ! TODO: Determine if box contains GC or not and finalize limits/limitsGC
-        block%grid_index        = this%oti%grid_index()
-        block%level             = this%oti%level()
-        block%limits(LOW, :)    = box%lo
-        block%limits(HIGH, :)   = box%hi
-        block%limitsGC(LOW, :)  = box%lo
-        block%limitsGC(HIGH, :) = box%hi
+        blockDesc%grid_index        = this%oti%grid_index()
+        blockDesc%level             = this%oti%level()
+        blockDesc%limits(LOW, :)    = box%lo
+        blockDesc%limits(HIGH, :)   = box%hi
+
+        ! TODO: Need to determine how to get unk.  Do we allow for the
+        ! possibility that the different FABs could have a different number of
+        ! guard cells.  It seems like AMReX allows for it.
+        call box%grow([gr_iguard, gr_jguard, gr_kguard])
+        blockDesc%limitsGC(LOW, :)  = box%lo
+        blockDesc%limitsGC(HIGH, :) = box%hi
+
+        blockDesc%localLimits(LOW, :)   = blockDesc%limits(LOW, :)   - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimits(HIGH, :)  = blockDesc%limits(HIGH, :)  - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimitsGC(LOW, :) = 1
+        blockDesc%localLimitsGC(HIGH, :)= blockDesc%limitsGC(HIGH, :)- blockDesc%limitsGC(LOW, :) + 1
+
     end subroutine blkMetaData
  
 end module block_iterator

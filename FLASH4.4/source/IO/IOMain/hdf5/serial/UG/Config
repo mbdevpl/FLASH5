@@ -1,6 +1,7 @@
 CONFLICTS Grid/GridMain/paramesh/Paramesh2
-CONFLICTS Grid/GridMain/paramesh/Paramesh3
-CONFLICTS Grid/GridMain/paramesh/Paramesh4dev
-CONFLICTS Grid/GridMain/paramesh/paramesh4
-CONFLICTS Grid/GridMain/paramesh/paramesh4/Paramesh4.0
-CONFLICTS Grid/GridMain/paramesh/paramesh4/Paramesh4dev
+CONFLICTS Grid/GridMain/AMR/paramesh/Paramesh3
+CONFLICTS Grid/GridMain/AMR/paramesh/Paramesh4dev
+CONFLICTS Grid/GridMain/AMR/paramesh/paramesh4
+CONFLICTS Grid/GridMain/AMR/paramesh/paramesh4/Paramesh4dev
+CONFLICTS Grid/GridMain/AMR/paramesh/paramesh4/Paramesh4.0
+CONFLICTS Grid/GridMain/AMR/Amrex

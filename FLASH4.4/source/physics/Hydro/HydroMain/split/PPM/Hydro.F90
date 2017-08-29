@@ -44,9 +44,7 @@
 !!
 !!***
 
-subroutine Hydro(         &
-                   blockCount, blockList, &
-                   timeEndAdv, dt, dtOld, &
+subroutine Hydro(  timeEndAdv, dt, dtOld, &
                    sweepOrder )
   use hy_ppm_interface, ONLY : hy_ppm_sweep
   use Hydro_data, ONLY:  hy_useHydro,&
@@ -59,8 +57,6 @@ subroutine Hydro(         &
 #include "constants.h"
 #include "Flash.h"
 
-  integer, INTENT(IN) :: blockCount
-  integer, INTENT(IN), dimension(blockCount) :: blockList
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
   integer, INTENT(IN) :: sweepOrder
 
@@ -81,40 +77,28 @@ subroutine Hydro(         &
 
   case (SWEEP_XYZ)
 
-     call hy_ppm_sweep ( &
-                        blockCount, blockList,  &
-                        timeEndAdv, dt, dtOld,  &
+     call hy_ppm_sweep (timeEndAdv, dt, dtOld,  &
                         SWEEP_X )
 
 
 
-     if (NDIM >= 2) call  hy_ppm_sweep(      &
-                                       blockCount, blockList, &
-                                       timeEndAdv, dt, dtOld, &
+     if (NDIM >= 2) call  hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                                        SWEEP_Y )
      
-     if (NDIM == 3) call  hy_ppm_sweep(      &
-                                       blockCount, blockList, &
-                                       timeEndAdv, dt, dtOld, &
+     if (NDIM == 3) call  hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                                        SWEEP_Z )
      hy_gravMassXYZ = hy_gravMass
 
   case (SWEEP_XZY)
 
-     call hy_ppm_sweep (      &
-                        blockCount, blockList, &
-                        timeEndAdv, dt, dtOld, &
+     call hy_ppm_sweep (timeEndAdv, dt, dtOld, &
                         SWEEP_X )
 
 
 
-     if (NDIM == 3) call  hy_ppm_sweep(      &
-                                       blockCount, blockList, &
-                                       timeEndAdv, dt, dtOld, &
+     if (NDIM == 3) call  hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                                        SWEEP_Z )
-     if (NDIM >= 2) call  hy_ppm_sweep(      &
-                                       blockCount, blockList, &
-                                       timeEndAdv, dt, dtOld, &
+     if (NDIM >= 2) call  hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                                        SWEEP_Y )
      
      hy_gravMassXZY = hy_gravMass
@@ -122,38 +106,26 @@ subroutine Hydro(         &
 
   case (SWEEP_ZYX)
      
-     if (NDIM == 3) call hy_ppm_sweep(      &
-                                      blockCount, blockList, &
-                                      timeEndAdv, dt, dtOld, &
+     if (NDIM == 3) call hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                                       SWEEP_Z )
 
-     if (NDIM >= 2) call hy_ppm_sweep(      &
-                                      blockCount, blockList, &
-                                      timeEndAdv, dt, dtOld, &
+     if (NDIM >= 2) call hy_ppm_sweep (timeEndAdv, dt, dtOld, &
                                       SWEEP_Y )
 
-     call hy_ppm_sweep(      &
-                       blockCount, blockList, &
-                       timeEndAdv, dt, dtOld, &
+     call hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                        SWEEP_X )
 
      hy_gravMassZYX = hy_gravMass
 
   case (SWEEP_ZXY)
      
-     if (NDIM == 3) call hy_ppm_sweep(      &
-                                      blockCount, blockList, &
-                                      timeEndAdv, dt, dtOld, &
+     if (NDIM == 3) call hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                                       SWEEP_Z )
 
-     call hy_ppm_sweep(      &
-                       blockCount, blockList, &
-                       timeEndAdv, dt, dtOld, &
+     call hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                        SWEEP_X )
 
-     if (NDIM >= 2) call hy_ppm_sweep(      &
-                                      blockCount, blockList, &
-                                      timeEndAdv, dt, dtOld, &
+     if (NDIM >= 2) call hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                                       SWEEP_Y )
 
 
@@ -162,37 +134,25 @@ subroutine Hydro(         &
   case (SWEEP_YXZ)
      
 
-     if (NDIM >= 2) call hy_ppm_sweep(      &
-                                      blockCount, blockList, &
-                                      timeEndAdv, dt, dtOld, &
+     if (NDIM >= 2) call hy_ppm_sweep( timeEndAdv, dt, dtOld, &
                                       SWEEP_Y )
 
-     call hy_ppm_sweep(      &
-                       blockCount, blockList, &
-                       timeEndAdv, dt, dtOld, &
+     call hy_ppm_sweep( timeEndAdv, dt, dtOld, &
                        SWEEP_X )
 
-     if (NDIM == 3) call hy_ppm_sweep(      &
-                                      blockCount, blockList, &
-                                      timeEndAdv, dt, dtOld, &
+     if (NDIM == 3) call hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                                       SWEEP_Z )
      hy_gravMassYXZ = hy_gravMass
 
   case (SWEEP_YZX)
      
-     if (NDIM >= 2) call hy_ppm_sweep(      &
-                                      blockCount, blockList, &
-                                      timeEndAdv, dt, dtOld, &
+     if (NDIM >= 2) call hy_ppm_sweep(timeEndAdv, dt, dtOld, &
                                       SWEEP_Y )
 
-     if (NDIM == 3) call hy_ppm_sweep(      &
-                                      blockCount, blockList, &
-                                      timeEndAdv, dt, dtOld, &
+     if (NDIM == 3) call hy_ppm_sweep( timeEndAdv, dt, dtOld, &
                                       SWEEP_Z )
 
-     call hy_ppm_sweep(      &
-                       blockCount, blockList, &
-                       timeEndAdv, dt, dtOld, &
+     call hy_ppm_sweep( timeEndAdv, dt, dtOld, &
                        SWEEP_X )
 
 

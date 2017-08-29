@@ -50,9 +50,10 @@
 !!
 !!***
 
+! Note: Do NOT just include dataPtr, things will go wrong!
 !!REORDER(5): unk, facevar[xyz], scratch_ctr, scratch_facevar[xyz]
-!!REORDER(4): dataPtr
-!!FOR FUTURE: Add REORDER for unk, facevar[xyz]1, etc.?
+
+!!FOR FUTURE: Add REORDER for unk1, facevar[xyz]1, etc.?
 
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
@@ -87,6 +88,7 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   logical :: validGridDataStruct
   integer,pointer,dimension(:) :: loUse
   integer :: blockID
+  integer :: i
 
 #ifdef FL_NON_PERMANENT_GUARDCELLS
   integer :: idest, iopt, nlayers, icoord
@@ -191,12 +193,22 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
      if (localFlag) loUse => block%localLimitsGC(LOW, :)
   end if
 
+#ifdef DEBUG_GRID
+  dataPtr => unk(:,:,:,:,blockid)
+98 format('initBlock:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
+99 format('initBlock:',A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
+  print *, "loUse" ,loUse
+  print 99,"UNK" ,(lbound(dataPtr ,i),ubound(dataPtr ,i),i=1,4)
+#endif
+
+
+
      associate (lo => loUse)
 #ifdef INDEXREORDER
         select case (gds)
 #ifndef FL_NON_PERMANENT_GUARDCELLS
         case(CENTER)
-           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => unk(:,:,:,:,blockid)
+           dataPTR(lo(1):, lo(2):, lo(3):, 1:) => unk(:,:,:,:,blockid)
         case(FACEX)
            dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarx(:,:,:,:,blockid)
         case(FACEY)

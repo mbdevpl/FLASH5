@@ -35,7 +35,7 @@
 #ifdef DEBUG_ALL
 #define DEBUG_DRIVER
 #endif
-
+#define DEBUG_DRIVER
 
 subroutine Driver_evolveFlash()
 
@@ -64,9 +64,6 @@ subroutine Driver_evolveFlash()
   use Hydro_interface, ONLY : Hydro
   use Gravity_interface, ONLY :  Gravity_potentialListOfBlocks
   use IO_interface, ONLY :IO_output,IO_outputFinal
-  use Cosmology_interface, ONLY : Cosmology_redshiftHydro, &
-    Cosmology_solveFriedmannEqn, Cosmology_getRedshift
-  use RadTrans_interface, ONLY: RadTrans
   use Eos_interface, ONLY: Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
@@ -253,10 +250,6 @@ subroutine Driver_evolveFlash()
         !!--------------------------------------------------------------------
         !!- Start Physics Sequence
         !!--------------------------------------------------------------------
-        ! 1a. Cosmology-Friedmann Eqn.
-        call Timers_start("cosmology")
-        call Cosmology_solveFriedmannEqn(dr_simTime, dr_dt)
-        call Timers_stop("cosmology")
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 
         dr_simTime = dr_simTime + dr_dt
@@ -268,8 +261,7 @@ subroutine Driver_evolveFlash()
         print*,'going into Hydro'
 #endif
         call Timers_start("hydro")
-        call Hydro( blockCount, blockList, &
-             dr_simTime, dr_dt, dr_dtOld, dr_fSweepDir)
+        call Hydro( dr_simTime, dr_dt, dr_dtOld, dr_fSweepDir)
 
         call Timers_stop("hydro")
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
@@ -281,7 +273,6 @@ subroutine Driver_evolveFlash()
 
         ! 3a. Diffusive processes: 
         !     Radiation, viscosity, conduction, & magnetic registivity
-        call RadTrans(blockCount, blockList, dr_dt, pass=1)
         call Diffuse(blockCount, blockList, dr_dt, pass=1)
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 #ifdef DEBUG_DRIVER
@@ -318,19 +309,11 @@ subroutine Driver_evolveFlash()
         print*, 'return from Gravity_potential '
 #endif
 
-        ! 7a. Cosmology-Redshift
-        call Timers_start("cosmology")
-        call Cosmology_redshiftHydro( blockCount, blockList)
-        call Timers_stop("cosmology")
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 
         !!******************************************************************************
         !!Second "half-step" of the evolution loop
         !!******************************************************************************
-        ! 1b. Cosmology-Friedmann Eqn.
-        call Timers_start("cosmology")
-        call Cosmology_solveFriedmannEqn(dr_simTime, dr_dt)
-        call Timers_stop("cosmology")
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 
         dr_simTime = dr_simTime + dr_dt
@@ -338,13 +321,11 @@ subroutine Driver_evolveFlash()
 
         ! 2b. Hydro/MHD/RHD
         call Timers_start("hydro")
-        call Hydro( blockCount, blockList, &
-             dr_simTime, dr_dt, dr_dtOld, dr_rSweepDir)
+        call Hydro(dr_simTime, dr_dt, dr_dtOld, dr_fSweepDir)
         call Timers_stop("hydro")
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 
         ! 3b. Diffusive processes: 
-        call RadTrans(blockCount, blockList, dr_dt, pass=2)
         call Diffuse(blockCount, blockList, dr_dt, pass=2)
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 
@@ -364,10 +345,6 @@ subroutine Driver_evolveFlash()
         call Gravity_potentialListOfBlocks(blockCount,blockList)
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 
-        ! 7b. Cosmology-Redshift
-        call Timers_start("cosmology")
-        call Cosmology_redshiftHydro( blockCount, blockList)
-        call Timers_stop("cosmology")
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 
         ! 8. Diagnostics
@@ -458,8 +435,6 @@ subroutine Driver_evolveFlash()
 
      !!Update redshift from Driver's POV.  Need this for exit condition. -PR
      !!old redshift needed for accurate restarts.
-     dr_redshiftOld = dr_redshift
-     call Cosmology_getRedshift(dr_redshift)
      
      if (dr_simTime >= dr_tmax) then
         if(dr_globalMe == MASTER_PE) then

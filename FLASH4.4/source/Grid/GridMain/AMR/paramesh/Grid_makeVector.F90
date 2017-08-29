@@ -77,6 +77,7 @@
 #define DEBUG_GRID
 #endif
 
+! DEVNOTE: This should be made generic and moved to GridMain/AMR
 subroutine Grid_makeVector(vecLen,numVars,newVec,numVec,vecLastFree,copyDirection,gridDataStruct)
 
 #include "constants.h"

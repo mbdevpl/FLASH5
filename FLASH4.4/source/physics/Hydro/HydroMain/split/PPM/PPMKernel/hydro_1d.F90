@@ -150,7 +150,7 @@
 !!   
 !!***
 
-subroutine hydro_1d (blockID,numIntCells,numCells, guard,bcs,        &
+subroutine hydro_1d (block,numIntCells,numCells, guard,bcs,        &
                      xyzswp, hy_meshMe, dt, dt_old,                 &
                      jCell, kCell,                             &
                      igeom, useGravity,                             &
@@ -180,13 +180,15 @@ subroutine hydro_1d (blockID,numIntCells,numCells, guard,bcs,        &
   use Driver_interface, ONLY : Driver_abortFlash
   use Gravity_interface, ONLY : Gravity_accelOneRow
   use hy_ppm_interface, ONLY: hy_ppm_force, hy_ppm_geom, hy_ppm_completeGeomFactors
+  use block_metadata, ONLY : block_metadata_t
   implicit none
   
 #include "Flash.h"
 #include "constants.h"
 
-!--arguments-------------------------
-  integer, intent(IN) ::  blockID,jCell, kCell, numIntCells,numCells,&
+  !--arguments-------------------------
+  type(block_metadata_t),intent(IN) :: block
+  integer, intent(IN) ::  jCell, kCell, numIntCells,numCells,&
                           xyzswp, hy_meshMe,igeom, guard
   real, intent(IN) :: dt, dt_old
 
@@ -306,8 +308,8 @@ subroutine hydro_1d (blockID,numIntCells,numCells, guard,bcs,        &
      ! Gravity implementation defines FLASH_GRAVITY_TIMEDEP -> time-dependent gravity field,
      ! interpolate the acceleration linearly in time (pointwise) - KW
      ograv(:) = 0.e0       ! initialize array to zero
-     call Gravity_accelOneRow (pos, xyzswp, blockID, numIntCells8,ograv,GPOL_VAR)
-     call Gravity_accelOneRow (pos, xyzswp, blockID, numIntCells8,grav,GPOT_VAR)
+!!$     call Gravity_accelOneRow (pos, xyzswp, blockID, numIntCells8,ograv,GPOL_VAR)
+!!$     call Gravity_accelOneRow (pos, xyzswp, blockID, numIntCells8,grav,GPOT_VAR)
      dtfac = dt/dt_old
 
      do i = 1,numIntCells8
@@ -320,7 +322,7 @@ subroutine hydro_1d (blockID,numIntCells,numCells, guard,bcs,        &
      ! FLASH_GRAVITY_TIMEDEP not defined -> assume time-independent gravity field.
      ! Also if GPOT_VAR or GPOL_VAR defined -> use current accel without time
      ! interpolation, i.e., handle like time-independent gravity field - KW
-     call Gravity_accelOneRow (pos, xyzswp, blockID, numIntCells8,grav)
+!!$     call Gravity_accelOneRow (pos, xyzswp, blockID, numIntCells8,grav)
      hgrav = grav
      ngrav = grav
 #endif

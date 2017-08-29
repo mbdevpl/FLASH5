@@ -65,7 +65,7 @@
 
 !!REORDER(4):U, V0, scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr, B[xyz]
 
-Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
+Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                                   ogravX,ogravY,ogravZ,&
                                   scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                   hy_SpcR,hy_SpcL,hy_SpcSig,&
@@ -107,6 +107,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
   use Grid_interface,       ONLY : Grid_getBlkPtr,     &
                                    Grid_releaseBlkPtr, &
                                    Grid_getCellCoords
+  use block_metadata,       ONLY : block_metadata_t
 
   implicit none
 
@@ -114,17 +115,12 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 #include "UHD.h"
 
   !! Arguments type declaration ------------------------------------------------------------
-  integer, intent(IN)   :: blockID
+  type(block_metadata_t), intent(IN)   :: block
   integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
   real,    intent(IN)   :: dt
   real,    intent(IN),dimension(MDIM) :: del
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: &
-       ogravX,ogravY,ogravZ
-#else
-  real, dimension(blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
-       intent(IN) :: ogravX,ogravY,ogravZ
-#endif
+  real, dimension(:,:,:), intent(IN) :: ogravX,ogravY,ogravZ
+  real, pointer, dimension(:,:,:,:) :: U
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr, scrchFaceYPtr, scrchFaceZPtr
   real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
   logical, intent(IN), optional :: normalFieldUpdate
@@ -134,7 +130,6 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
   integer,dimension(MDIM) :: dataSize
   real    :: cellCfl,minCfl
   logical :: lowerCflAtBdry
-  real, pointer, dimension(:,:,:,:) :: U
   integer :: dir
   integer,parameter :: dirLast=DIR_X+(NDIM-1)
 
@@ -154,26 +149,17 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
   logical, parameter :: normalFieldUpdateOnly = .FALSE.
 #endif
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(NDIM,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC) :: FlatCoeff,FlatTilde
-  real, dimension(     GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC) :: DivU
-#else
   real, dimension(NDIM,blkLimitsGC(HIGH,IAXIS),&
                        blkLimitsGC(HIGH,JAXIS),&
                        blkLimitsGC(HIGH,KAXIS)) :: FlatCoeff, FlatTilde
   real, dimension(     blkLimitsGC(HIGH,IAXIS),&
                        blkLimitsGC(HIGH,JAXIS),&
                        blkLimitsGC(HIGH,KAXIS)) :: DivU
-#endif
+
   real :: Sp, dv1, dp1, dp2, presL,presR,hdt
 
-#ifdef FIXEDBLOCKSIZE  
-  real, dimension(GRID_IHI_GC) :: xCenter  
-  real, dimension(GRID_JHI_GC) :: yCenter  
-#else  
   real, dimension(blkLimitsGC(HIGH,IAXIS)) :: xCenter  
   real, dimension(blkLimitsGC(HIGH,JAXIS)) :: yCenter  
-#endif
 
   integer :: k2,k3,kGrav,kHydro,kUSM,order
   integer :: k4,im2,ip2,jm2,jp2,km2,kp2
@@ -212,15 +198,10 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 
   ! GLM fluxes & state updates
 #ifdef FLASH_UGLM_MHD
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC) :: &
-       GLMxStar,GLMyStar,GLMzStar,BxStar,ByStar,BzStar
-#else
   real, dimension(blkLimitsGC(HIGH,IAXIS),&
                   blkLimitsGC(HIGH,JAXIS),&
                   blkLimitsGC(HIGH,KAXIS)) :: &
        GLMxStar,GLMyStar,GLMzStar,BxStar,ByStar,BzStar
-#endif
 #endif /* FLASH_UGLM_MHD */
 
 
@@ -291,18 +272,18 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 !!$  sGeo_magp=0.
 
   !! Get block pointer to UNK data
-  call Grid_getBlkPtr(blockID,U,CENTER)
+!!  call Grid_getBlkPtr(blockID,U,CENTER)
 
 
-  ! MHD only-------------------------------------------------------------------------------
-#if defined(FLASH_USM_MHD) && (NFACE_VARS > 0) && (NDIM > 1)
-  if (hy_order > 1) then
-     call Grid_getBlkPtr(blockID,Bx,FACEX)
-     call Grid_getBlkPtr(blockID,By,FACEY)
-     if (NDIM == 3) call Grid_getBlkPtr(blockID,Bz,FACEZ)
-  endif
-#endif /* endif of if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1 */
-  ! MHD only-------------------------------------------------------------------------------
+!!$  ! MHD only-------------------------------------------------------------------------------
+!!$#if defined(FLASH_USM_MHD) && (NFACE_VARS > 0) && (NDIM > 1)
+!!$  if (hy_order > 1) then
+!!$     call Grid_getBlkPtr(blockID,Bx,FACEX)
+!!$     call Grid_getBlkPtr(blockID,By,FACEY)
+!!$     if (NDIM == 3) call Grid_getBlkPtr(blockID,Bz,FACEZ)
+!!$  endif
+!!$#endif /* endif of if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1 */
+!!$  ! MHD only-------------------------------------------------------------------------------
 
 
 
@@ -310,10 +291,10 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 
      if (hy_geometry /= CARTESIAN) then
         ! Grab cell x-coords for this block  
-        call Grid_getCellCoords(IAXIS,blockID, CENTER,.true.,xCenter, blkLimitsGC(HIGH,IAXIS))
+        call Grid_getCellCoords(IAXIS,block, CENTER,.true.,xCenter,dataSize(IAXIS))
 #if NDIM > 1
         if (hy_geometry == SPHERICAL) &
-             call Grid_getCellCoords(JAXIS,blockID, CENTER,.true.,yCenter, blkLimitsGC(HIGH,JAXIS))
+             call Grid_getCellCoords(JAXIS,block, CENTER,.true.,yCenter, dataSize(JAXIS))
 #endif
      endif
 
@@ -329,7 +310,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
   !! (2) Compute divergence of velocity field      -------------------------!
   !! -----------------------------------------------------------------------!
   !if (hy_upwindTVD) kHydro = -1
-
+!! Note --- fix all these indices
   if (hy_useHybridOrder .AND. .NOT. normalFieldUpdateOnly) then
      k4 = hy_order - 1             !cf. hy_uhd_dataReconstOnestep
      if (k4 > 2) k4 = 2 !(i.e., assume order = 3)
@@ -354,7 +335,6 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
               !! We used to compute undivided divergence of velocity fields and (magneto)sonic speed
               !! and store local (magneto)sonic speeds for hybrid order. Now the latter are
               !! computed elsewhere.
-
               DivU(i,j,k) = U(VELX_VAR,i+1,j,k)-U(VELX_VAR,i-1,j,k)
               if (NDIM > 1) then
                  DivU(i,j,k) = DivU(i,j,k) &
@@ -386,7 +366,6 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
         do j=j0-2-min(NGUARD-4,kUSM)*k2,jmax+2+min(NGUARD-4,kUSM)*k2
            do i=i0-2-min(NGUARD-4,kUSM),imax+2+min(NGUARD-4,kUSM)
               do dir=1,NDIM
-
                  select case (dir)
                  case (DIR_X)
                     dp1   = (U(PRES_VAR,i+1,j,k)-U(PRES_VAR,i-1,j,k))
@@ -495,7 +474,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
            do i=i0-2-(k3*kUSM-kHydro),imax+2+(k3*kUSM-kHydro)
            ! Extra stencil is needed for 3D to correctly calculate transverse fluxes 
            !(i.e., cross derivatives in x,y, & z)
-
+              
               !! save the cell center values for later use
               Vc(HY_DENS:HY_END_VARS-kGrav) = &
                       (/U(DENS_VAR,i,j,k)&
@@ -523,6 +502,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
               !! Reduce order in fluid cell near solid boundary if defined:
               !! Reduce order of spatial reconstruction depending on the distance to the solid boundary
               if (order > 2) then
+!!!!! fix this                 
                  im2=max(blkLimitsGC(LOW,IAXIS),i-2); ip2=min(blkLimitsGC(HIGH,IAXIS),i+2)
 #if NDIM > 1
                  jm2=max(blkLimitsGC(LOW,JAXIS),j-2); jp2=min(blkLimitsGC(HIGH,JAXIS),j+2)
@@ -551,8 +531,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
               endif
 #if NDIM > 2
               ! Addtional 3D test whether a solid cell is so close
-              ! that we cannot do all the proper transverse
-              ! computations for this cell.
+              ! that we cannot do all the proper transverse158              ! computations for this cell.
               if (hy_use3dFullCTU) then
                  if (maxval(U(BDRY_VAR,i-1:i+1,j-1:j+1,k-1:k+1)) > 0.) then
                     if (maxval(U(BDRY_VAR,i      ,j-1:j+1,k-1:k+1)) > 0.) lowerCflAtBdry = .TRUE.
@@ -627,7 +606,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
                  if (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0 &
                       .AND. present(hy_spcR)) then
                     call hy_uhd_dataReconstOnestep&
-                      (blockID,blkLimitsGC,    &
+                      (block,U,blkLimitsGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
                        DivU,FlatCoeff,         &
@@ -643,7 +622,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
                        hy_SpcR,hy_SpcL,hy_SpcSig)
                  else
                     call hy_uhd_dataReconstOnestep&
-                      (blockID,blkLimitsGC,    &
+                      (block,U,blkLimitsGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
                        DivU,FlatCoeff,         &
@@ -817,7 +796,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
                      Wn(HY_PRES,DIR_X) < 0. .or. Wp(HY_PRES,DIR_X) < 0.) then
                     if(.NOT.TransX_updateOnly) then
                        print*,'[gRSt] afterGeo fallback to order 1 for DIR_X at i,j=',i,j,&
-                            ' in Block',blockID,'@',hy_meshMe
+                            ' in Block''@',hy_meshMe
                        print*,'[dR1St] afterGeo',Wn(HY_DENS,DIR_X),Wp(HY_DENS,DIR_X), &
                             Wn(HY_PRES,DIR_X), Wp(HY_PRES,DIR_X)
                          call fallbackToFirstOrder(DIR_X,Wn(:,DIR_X),Wp(:,DIR_X),Vc,hy_SpcL,hy_SpcR,U,i,j,k)
@@ -828,7 +807,7 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
                      Wn(HY_PRES,DIR_Y) < 0. .or. Wp(HY_PRES,DIR_Y) < 0.) then
                     if(.NOT.TransY_updateOnly) then
                        print*,'[gRSt] afterGeo fallback to order 1 for DIR_Y at i,j=',i,j,&
-                            ' in Block',blockID,'@',hy_meshMe
+                            ' in Block','@',hy_meshMe
                        print*,'[dR1St] afterGeo',Wn(HY_DENS,DIR_Y),Wp(HY_DENS,DIR_Y), &
                             Wn(HY_PRES,DIR_Y), Wp(HY_PRES,DIR_Y)
                          call fallbackToFirstOrder(DIR_Y,Wn(:,DIR_Y),Wp(:,DIR_Y),Vc,hy_SpcL,hy_SpcR,U,i,j,k)
@@ -1450,17 +1429,17 @@ Subroutine hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del,&
 
 
   !! Release pointers
-  call Grid_releaseBlkPtr(blockID,U,CENTER)
+!!$  call Grid_releaseBlkPtr(blockID,U,CENTER)
 
-  ! MHD only-------------------------------------------------------------------------------
-#if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1
-  if (hy_order > 1) then
-     call Grid_releaseBlkPtr(blockID,Bx,FACEX)
-     call Grid_releaseBlkPtr(blockID,By,FACEY)
-     if (NDIM == 3) call Grid_releaseBlkPtr(blockID,Bz,FACEZ)
-  endif ! if (hy_order > 1) then
-#endif /* endif of if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1 */
-  ! MHD only-------------------------------------------------------------------------------
+!!$  ! MHD only-------------------------------------------------------------------------------
+!!$#if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1
+!!$  if (hy_order > 1) then
+!!$     call Grid_releaseBlkPtr(blockID,Bx,FACEX)
+!!$     call Grid_releaseBlkPtr(blockID,By,FACEY)
+!!$     if (NDIM == 3) call Grid_releaseBlkPtr(blockID,Bz,FACEZ)
+!!$  endif ! if (hy_order > 1) then
+!!$#endif /* endif of if defined(FLASH_USM_MHD) && NFACE_VARS > 0 && NDIM > 1 */
+!!$  ! MHD only-------------------------------------------------------------------------------
 
 
   !! Deallocate arrays

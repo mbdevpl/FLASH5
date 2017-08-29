@@ -285,7 +285,6 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
   real,allocatable,dimension(:,:,:) :: cellvalues
   real, pointer, dimension(:,:,:,:) :: solnData
 
-  integer :: blockID
   integer :: i, var, xb, xe, yb, ye, zb, ze, x, y, z
   integer,dimension(MDIM) :: begOffset,dataLen
 
@@ -293,11 +292,9 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
   integer :: imax, jmax, kmax
   logical :: getIntPtr
 
-  blockID = block%id
-
 #ifdef DEBUG_GRID
   isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
   
   !plane specific stuff
   if(NDIM == 1) then
@@ -508,7 +505,7 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
      dataLen(IAXIS)=dataSize(1)
      dataLen(KAXIS)=dataSize(2)
   end if
-  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
   
   yb=1
   ye=1
@@ -550,11 +547,11 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
      if(plane==YZPLANE)datablock(:,:)=cellvalues(xb,yb:ye,zb:ze)
      deallocate(cellvalues)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      if(plane==XYPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:) = solnData(structIndex,xb,yb:ye,zb:ze)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
      call Grid_getBlkPtr(block,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then

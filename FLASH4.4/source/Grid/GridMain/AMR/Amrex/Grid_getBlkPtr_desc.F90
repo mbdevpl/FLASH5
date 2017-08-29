@@ -59,21 +59,24 @@
 
 subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
 
-#include "constants.h"
-#include "Flash.h"
+!#include "Flash.h"
 
-  use Driver_interface, ONLY : Driver_abortFlash
-  use block_metadata, ONLY : block_metadata_t
-  ! DEVNOTE:  Once we have mesh initialization done, we will need to get access
-  ! to AMReX owned physical data here
-!  use physicaldata, ONLY : unk, facevarx, facevary, facevarz
+  use amrex_fort_module, ONLY : wp => amrex_real
+
+!  use Driver_interface, ONLY : Driver_abortFlash
+  use physicaldata,      ONLY : unk
+!  use physicaldata,      ONLY : facevarx, facevary, facevarz
 !  use gr_specificData, ONLY : scratch,scratch_ctr,&
 !       scratch_facevarx,scratch_facevary,scratch_facevarz
+  use block_metadata,    ONLY : block_metadata_t
 
   implicit none
 
-  type(block_metadata_t), intent(in)            :: block
-  real,                   intent(out), pointer  :: dataPtr(:, :, :, :)
+#include "constants.h"
+
+  ! DEV: How to match data types for dataPtr with FLASH?
+  type(block_metadata_t), intent(in), target    :: block
+  real(wp),               intent(out), pointer  :: dataPtr(:, :, :, :)
   integer,                intent(in),  optional :: gridDataStruct
   logical,      optional, intent(in) :: localFlag
 
@@ -123,35 +126,30 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   associate (lo   => loUse, &
              ilev => block%level, &
              igrd => block%grid_index)
-!#ifdef INDEXREORDER
-    ! TODO: Code up reordered indices once the normal way is finalized
-!#else
-    ! TODO: This is just an idea of how to get data.  Get data from the 
-    ! AMReX Multifabs correctly once the mesh initialization is done.
-    select case (gds)
-    case(CENTER)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => unk(ilev)%dataptr(igrd)
-    case(FACEX)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(ilev)%dataptr(igrd)
-    case(FACEY)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(ilev)%dataptr(igrd)
-    case(FACEZ)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(ilev)%dataptr(igrd)
-    case(SCRATCH)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch(ilev)%dataptr(igrd)
-    case(SCRATCH_CTR)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_ctr(ilev)%dataptr(igrd)
-    case(SCRATCH_FACEX)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarx(ilev)%dataptr(igrd)
-    case(SCRATCH_FACEY)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevary(ilev)%dataptr(igrd)
-    case(SCRATCH_FACEZ)
-       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarz(ilev)%dataptr(igrd)
-    case(WORK)
-       call Driver_abortFlash("work array cannot be got as pointer")
-    case DEFAULT
-       print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
-    end select
+!    select case (gds)
+!    case(CENTER)
+       dataPtr => unk(ilev)%dataptr(igrd)
+!    case(FACEX)
+!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(ilev)%dataptr(igrd)
+!    case(FACEY)
+!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(ilev)%dataptr(igrd)
+!    case(FACEZ)
+!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(ilev)%dataptr(igrd)
+!    case(SCRATCH)
+!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch(ilev)%dataptr(igrd)
+!    case(SCRATCH_CTR)
+!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_ctr(ilev)%dataptr(igrd)
+!    case(SCRATCH_FACEX)
+!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarx(ilev)%dataptr(igrd)
+!    case(SCRATCH_FACEY)
+!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevary(ilev)%dataptr(igrd)
+!    case(SCRATCH_FACEZ)
+!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarz(ilev)%dataptr(igrd)
+!    case(WORK)
+!       call Driver_abortFlash("work array cannot be got as pointer")
+!    case DEFAULT
+!       print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
+!    end select
 !#endif
   end associate
 end subroutine Grid_getBlkPtr_desc

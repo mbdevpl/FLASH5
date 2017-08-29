@@ -111,7 +111,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
   !==============================================================================
 
 
-
+! DEVNOTE: gr_oneBlock is paramesh-specific.   Need to replace these macros.
 #define XCOORD(I) (gr_oneBlock(blkID)%firstAxisCoords(CENTER,I))
 #define YCOORD(I) (gr_oneBlock(blkID)%secondAxisCoords(CENTER,I))
   maxLev=gr_maxRefine

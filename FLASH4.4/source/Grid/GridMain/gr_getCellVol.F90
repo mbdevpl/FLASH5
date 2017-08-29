@@ -47,12 +47,9 @@ subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock)
   integer,intent(IN) :: xb,xe,yb,ye,zb,ze
   real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
   
-  integer :: blockID
   integer,dimension(MDIM) :: point
   real,dimension(MDIM) :: del
   integer :: i, j, k
-
-  blockID = block%id
 
 #ifdef DEBUG_GRID
   print*,xb,xe,yb,ye,zb,ze

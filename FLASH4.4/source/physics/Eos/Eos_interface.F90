@@ -79,9 +79,12 @@ Module Eos_interface
   end interface
 
   interface Eos_unitTest
-     subroutine Eos_unitTest(fileUnit, perfect)
+     subroutine Eos_unitTest(fileUnit, perfect, solnData, blkLimits)
        integer, intent(in) :: fileUnit
        logical, intent(out) :: perfect
+       integer,dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits
+       real,dimension(:,:,:,:),pointer :: solnData
+
      end subroutine Eos_unitTest
   end interface
 

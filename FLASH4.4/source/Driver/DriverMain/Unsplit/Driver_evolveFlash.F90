@@ -64,14 +64,19 @@ subroutine Driver_evolveFlash()
   use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
                                   Grid_getListOfBlocks, &
                                   Grid_getBlkIndexLimits, &
-                                  Grid_getBlkCornerID, &
                                   Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
                                   Grid_getDeltas,&
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
+  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+
+#include "Flash.h"
+#ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
+  use gr_amrextData
+#endif
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
@@ -83,18 +88,19 @@ subroutine Driver_evolveFlash()
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
+#ifdef FLASH_GRID_AMREXTRANSITION
 !!$  use amrex_amr_module,    ONLY : amrex_real
 !!$  use amrex_box_module,    ONLY : amrex_box
 !  use amrex_box_module
 !  use amrex_fab_module
   use amrex_multifab_module
-  use amrex_distromap_module
-  use amrex_boxarray_module
+#else
+  use Driver_data, ONLY : gr_amrextUnkMFs => dr_simGeneration
+#endif
 
   implicit none
 
 #include "constants.h"
-#include "Flash.h"
 
   integer   :: localNumBlocks
 
@@ -122,19 +128,16 @@ subroutine Driver_evolveFlash()
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
-  integer, dimension(LOW:HIGH,MDIM) :: tileLimits,blkLimitsGC, cornerID
-  integer, dimension(LOW:HIGH,MDIM,MAXBLOCKS) :: allLimits
-  integer, dimension(LOW:HIGH,NDIM,MAXBLOCKS) :: dimLimits
-  integer, dimension(MDIM) :: stride
-  integer, dimension(MAXBLOCKS) :: procMapLoc
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   integer :: blockCount
   integer,dimension(MAXBLOCKS)::blks
-  real,pointer,dimension(:,:,:,:) :: Uout
+  real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
+#ifdef FLASH_GRID_AMREXTRANSITION
   type(amrex_multifab),allocatable :: phi_mf(:)
+#endif
   integer:: ib, blockID, level, maxLev
-  integer:: ibLoc, blkLev
 
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: block
@@ -148,8 +151,6 @@ subroutine Driver_evolveFlash()
 !!$       pf, pfab
 !!$  type(amrex_fab) :: uface(NDIM)
 !!$  type(amrex_multifab), allocatable :: fluxes(:,:)
-  type(amrex_distromap), allocatable :: dm
-  type(amrex_boxarray) :: ba
 
 
   endRunPl = .false.
@@ -217,48 +218,35 @@ subroutine Driver_evolveFlash()
      call Grid_fillGuardCells(CENTER,ALLDIR)
      call Timers_start("Hydro")
 
+#ifdef FLASH_GRID_AMREXTRANSITION
      allocate(phi_mf(maxLev))
-     call gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, LEAF)
+#endif
+!!$     call gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, LEAF)
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+#endif
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
+
      do level=1,maxLev
+#ifdef DEBUG_DRIVER
         print*,' ***************   HYDRO LEVEL', level,'  **********************'
-!!$        call Grid_getLocalNumBlks(localNumBlocks)
-!!$        call Grid_getListOfBlocks(LEAF,blks,blockCount)
-!!$        ibLoc = 0
-!!$        do ib=1,blockCount
-!!$           blockID=blks(ib)
-!!$           call Grid_getBlkRefineLevel(blockID,blkLev)
-!!$           if (blkLev == level) then
-!!$              ibLoc = ibLoc + 1
-!!$              procMapLoc(ibLoc) = dr_meshMe
-!!$              call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC,CENTER)
-!!$              call Grid_getBlkCornerID(blockID,cornerID(LOW,:),stride,cornerID(HIGH,:))
-!!$              tileLimits(LOW ,:NDIM) = (cornerID(LOW ,:NDIM)-1) / stride(:NDIM) + 1
-!!$              tileLimits(HIGH,:NDIM) =  cornerID(HIGH,:NDIM) / stride(:NDIM)
-!!$              dimLimits(LOW:HIGH,:,ibLoc) = tileLimits(LOW:HIGH,:NDIM)
-!!$           end if
-!!$        end do
-!!$        bpl(dr_meshMe,level) = ibLoc  ! bpl(dr_meshMe,level) + ibLoc
-!!$        allocate(dm)
-!!$        call amrex_distromap_build(dm,procMapLoc(1:ibLoc))
-!!$        call amrex_print(dm)
-!!$        call amrex_boxarray_build(ba,dimLimits(LOW,:NDIM,1:ibLoc),dimLimits(HIGH,:NDIM,1:ibLoc) )!,ibLoc)
-!!$        call amrex_print(ba)
-!!$        call amrex_multifab_build(phi_mf(level), ba, dm, NUNK_VARS, ng=0)
-!!$        deallocate(dm)
+#endif
 
         itor = block_iterator_t(LEAF, level=level)
         do while(itor%is_valid())
            call itor%blkMetaData(block)
 
-           tileLimits = block%limits
-           call Grid_getBlkPtr(block, Uout)
+           blkLimits(:,:)   = block%localLimits
+           blkLimitsGC(:,:) = block%localLimitsGC
+           
+           call Grid_getBlkPtr(block, Uout,localFlag=.TRUE.)
 !!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
 !!$           call amrex_print(abx)
 !!$           tbx = abx
 
            call Grid_getDeltas(level,del)
-           
-           call Hydro(del,tileLimits,Uout,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
+           Uin => Uout
+           call Hydro(block,blkLimitsGC,Uin, blkLimits, Uout, del,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
            call Grid_releaseBlkPtr(block, Uout)
            nullify(Uout)
  
@@ -281,10 +269,18 @@ subroutine Driver_evolveFlash()
         
         !! save for old dt
      end do
+#ifdef FLASH_GRID_AMREXTRANSITION
      do level=1,maxLev
         call amrex_multifab_destroy(phi_mf(level))
      end do
      deallocate(phi_mf)
+#endif
+
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
+#endif
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 
      dr_dtOld = dr_dt
      

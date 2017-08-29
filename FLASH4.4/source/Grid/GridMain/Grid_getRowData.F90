@@ -264,7 +264,6 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
   real, pointer, dimension(:,:,:,:) :: solnData
   integer :: xb,xe,yb,ye,zb,ze
 
-  integer :: blockID
   integer :: i, j ,k
   integer,dimension(MDIM)::begOffset,dataLen
   integer :: imax, jmax, kmax
@@ -272,11 +271,9 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
   logical :: isget
   logical :: getIntPtr
 
-  blockID = block%id
-
 #ifdef DEBUG_GRID
   isget = .true.
-  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
 
   !verify requested row is available given number of dims in problem
   if((row==KAXIS) .and. (NDIM < 3)) then
@@ -446,7 +443,7 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
 #endif
   dataLen=0
   dataLen(row)=dataSize
-  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
 
   i=1
   j=1
@@ -474,11 +471,11 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
      if(row==KAXIS) datablock(:)=cellvalues(xb,yb,zb:ze)
      deallocate(cellvalues)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      if(row==IAXIS)datablock(:) = solnData(structIndex,i:i+datasize-1,j,k)
      if(row==JAXIS)datablock(:) = solnData(structIndex,i,j:j+datasize-1,k)
      if(row==KAXIS)datablock(:) = solnData(structIndex,i,j,k:k+datasize-1)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
      call Grid_getBlkPtr(block,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then

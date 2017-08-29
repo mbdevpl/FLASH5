@@ -1,10 +1,14 @@
-REQUESTS Grid/GridBoundaryConditions/Chombo
-REQUIRES Grid/GridMain/Chombo/wrapper
-REQUESTS IO/IOMain/chombo
 LIBRARY amrex
 
-# add pre-processor symbol FLASH_GRID_CHOMBO
-PPDEFINE FLASH_GRID_CHOMBO
+CONFLICTS IO/IOMain/hdf5/parallel/UG
+CONFLICTS IO/IOMain/hdf5/serial/UG
+CONFLICTS IO/IOMain/hdf5/parallel/PM
+CONFLICTS IO/IOMain/hdf5/serial/PM
+
+# add pre-processor symbol FLASH_GRID_AMREX
+PPDEFINE FLASH_GRID_AMREX
+# The following is defined for AMR/Amrex and .../AmrexTransition as well
+PPDEFINE FLASH_GRID_ANYAMREX
 
 # We need to use the Fortran 2003 module named iso_c_binding in
 # the FLASH I/O unit.  This is not an extra dependency
@@ -12,7 +16,9 @@ PPDEFINE FLASH_GRID_CHOMBO
 # depends on this module.  We do not define USE_IO_C_INTERFACE
 # in any other Config file because non-Chombo FLASH applications
 # with I/O only optionally depend on the iso_c_binding module.
-PPDEFINE USE_IO_C_INTERFACE
+#PPDEFINE USE_IO_C_INTERFACE
 
 D How much output is written out. Higher number is more verbose.
-PARAMETER verbosity INTEGER 0 [ 0 ... ]
+PARAMETER gr_amrex_verbosity INTEGER 0 [ 0 ... ]
+#PARAMETER verbosity INTEGER 0 [ 0 ... ]
+

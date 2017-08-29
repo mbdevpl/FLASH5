@@ -56,16 +56,19 @@
 !!
 !!***
 
-subroutine gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
+subroutine gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
   use Grid_interface, ONLY : Grid_getBlkIndexLimits
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
 #include "constants.h"
-  integer,intent(IN) :: blockID,gridDataStruct
+  type(block_metadata_t),intent(IN) :: block
+  integer,intent(IN) :: gridDataStruct
   integer,intent(OUT) :: imax,jmax,kmax
   logical,intent(IN) :: isget
   logical :: validDataType
-  integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
+  integer,dimension(2,MDIM) :: blkLimitsGC
 
 
   !do some error checking
@@ -75,7 +78,7 @@ subroutine gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
   !we can do error checking
 
 
-  call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC,gridDataStruct)
+  blkLimitsGC = block%limitsGC
   imax = blkLimitsGC(HIGH,IAXIS)
   jmax = blkLimitsGC(HIGH,JAXIS)
   kmax = blkLimitsGC(HIGH,KAXIS)

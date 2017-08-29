@@ -1,9 +1,11 @@
 Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_ascModule.o Grid_ascGetBlkPtr.o Grid_ascReleaseBlkPtr.o \
 	Grid_genGetBlkPtr.o Grid_genReleaseBlkPtr.o \
+	Grid_copyF4DataToMultiFabs.o \
 	Grid_conserveFluxes.o \
 	Grid_getLocalNumBlks.o \
 	Grid_getBlkRefineLevel.o \
+    Grid_getMaxRefinement.o \
 	Grid_fillGuardCells.o Grid_notifySolnDataUpdate.o \
 	Grid_fillGuardCells_blkid.o \
 	Grid_getBlkPtr.o Grid_getBlkPtr_desc.o Grid_markRefineDerefine.o \

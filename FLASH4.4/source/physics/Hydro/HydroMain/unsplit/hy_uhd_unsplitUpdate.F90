@@ -72,7 +72,7 @@
 #include "Eos.h"
 #include "UHD.h"
 
-  Subroutine hy_uhd_unsplitUpdate(blockID,rangeSwitch,dt,del,dataSize,blkLimits,&
+  Subroutine hy_uhd_unsplitUpdate(block,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
                                   blkLimitsGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                   scrch_Ptr)
 
@@ -111,25 +111,19 @@
     implicit none
 
     !! ---- Arguments ---------------------------------
-    integer,intent(IN) :: blockID, rangeSwitch
+    integer,intent(IN) :: block, rangeSwitch
     real, intent(IN)   :: dt
     real, intent(IN)   :: del(MDIM)
     integer,dimension(MDIM),intent(IN) :: dataSize
     integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
     integer,intent(IN) :: blkLimitsGC(LOW:HIGH,MDIM)
-#ifdef FIXEDBLOCKSIZE
-    real, intent(in) :: xflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-    real, intent(in) :: yflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-    real, intent(in) :: zflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-    real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: gravX,gravY,gravZ
-
-#else
     real, intent(in) :: xflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))
     real, intent(in) :: yflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))  
     real, intent(in) :: zflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))
     real, dimension(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)),& 
          intent(IN) :: gravX,gravY,gravZ
-#endif
+    real, pointer, dimension(:,:,:,:) :: Uin, Uout, scrch_Ptr
+
     !!---------------------------------------------------
 
     integer :: i,j,k,imin,imax,jmin,jmax,kmin,kmax
@@ -137,18 +131,12 @@
     real    :: dxv, dyv
     real, dimension(HY_VARINUM) :: U0
     real, dimension(NFLUXES)    :: FL,FR,GL,GR,HL,HR
-    real, pointer, dimension(:,:,:,:) :: U, scrch_Ptr
     real    :: densNew, densNph ! densNph: "dens at n+1/2"
     real    :: IntEner,tempPres
 
 #if (NSPECIES+NMASS_SCALARS) > 0
-#ifdef FIXEDBLOCKSIZE
-    real, dimension(hy_numXN,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC) :: SpOld
-    real, dimension(6,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC) :: Uold
-#else
     real, dimension(hy_numXN,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)) :: SpOld
     real, dimension(6,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)) :: Uold
-#endif
 #else
   !This is just here so I can have the same omp parallel directive whether
   !(NSPECIES+NMASS_SCALARS) > 0 or not.  SpOld and UOld are not used.
@@ -157,17 +145,9 @@
 #endif
 
     integer :: iSize, jSize, kSize
-#ifdef FIXEDBLOCKSIZE
-    real, dimension(GRID_IHI_GC) :: xCenter, xLeft, xRight
-#else
     real, dimension(dataSize(IAXIS)) :: xCenter, xLeft, xRight
-#endif
 #if NDIM == 3
-#  ifdef FIXEDBLOCKSIZE
-    real, dimension(GRID_JLO:GRID_JHI) :: yCenter
-#  else
     real, dimension(blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)) :: yCenter
-#  endif
 #else
     real, dimension(0) :: yCenter
 #endif
@@ -210,16 +190,6 @@
     logical :: specialForInterior
 #endif
   !! Resistive MHD 
-#ifdef FIXEDBLOCKSIZE 
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC, & 
-                  GRID_JLO_GC:GRID_JHI_GC, & 
-                  GRID_KLO_GC:GRID_KHI_GC) :: res_eta
-
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC, & 
-                  GRID_JLO_GC:GRID_JHI_GC, & 
-                  GRID_KLO_GC:GRID_KHI_GC) :: res_source
-                  
-#else 
   real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), & 
                   blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), & 
                   blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: res_eta
@@ -227,7 +197,7 @@
   real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), & 
                   blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), & 
                   blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: res_source                
-#endif 
+
   real    :: eta_loc, Jyp, Jym, dxBzm,dxBzp, inv_dVrm, inv_dVrp
   real, pointer,dimension(:)    :: speciesArr
 #ifdef FLASH_USM_MHD
@@ -289,91 +259,91 @@
     endif
 
 
-    ! Get block pointers
-    call Grid_getBlkPtr(blockID,U,CENTER)
+!!$    ! Get block pointers
+!!$    call Grid_getBlkPtr(block,U,CENTER)
 
-    if (hy_geometry /= CARTESIAN) then
-       faceAreas = 0.
-       call Grid_getBlkData(blockID, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize+1, jsize, ksize/) )
-#if NDIM > 1
-       if (hy_geometry == SPHERICAL) then
-          call Grid_getBlkData(blockID, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize+1, ksize/) )
-       end if
-#endif
-
-       cellVolumes = 0.
-       call Grid_getBlkData(blockID, CELL_VOLUME, 0, EXTERIOR, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize, ksize/) )
-    endif
+!!$    if (hy_geometry /= CARTESIAN) then
+!!$       faceAreas = 0.
+!!$       call Grid_getBlkData(block, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
+!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!!$            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!!$            (/isize+1, jsize, ksize/) )
+!!$#if NDIM > 1
+!!$       if (hy_geometry == SPHERICAL) then
+!!$          call Grid_getBlkData(block, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
+!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!!$            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!!$            (/isize, jsize+1, ksize/) )
+!!$       end if
+!!$#endif
+!!$
+!!$       cellVolumes = 0.
+!!$       call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, &
+!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!!$            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!!$            (/isize, jsize, ksize/) )
+!!$    endif
 
     
-#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
-    if (hy_forceHydroLimit) then
-       U(MAGX_VAR:MAGZ_VAR,:,:,:) = 0.
-    endif
-#endif
+!!$#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
+!!$    if (hy_forceHydroLimit) then
+!!$       Uin(MAGX_VAR:MAGZ_VAR,:,:,:) = 0.
+!!$    endif
+!!$#endif
 
 
 #if (NSPECIES+NMASS_SCALARS) > 0
     do ispu =  SPECIES_BEGIN, MASS_SCALARS_END !SPECIES_END
        isph= ispu-NPROP_VARS
-       SpOld(isph,:,:,:) = U(ispu,:,:,:)
+       SpOld(isph,:,:,:) = Uin(ispu,:,:,:)
     enddo
-    Uold(1,  :,:,:) = U(DENS_VAR,:,:,:)
-    Uold(2,  :,:,:) = U(PRES_VAR,:,:,:)
-    Uold(3:5,:,:,:) = U(VELX_VAR:VELZ_VAR,:,:,:)
-    Uold(6,  :,:,:) = U(GAME_VAR,:,:,:)
+    Uold(1,  :,:,:) = Uin(DENS_VAR,:,:,:)
+    Uold(2,  :,:,:) = Uin(PRES_VAR,:,:,:)
+    Uold(3:5,:,:,:) = Uin(VELX_VAR:VELZ_VAR,:,:,:)
+    Uold(6,  :,:,:) = Uin(GAME_VAR,:,:,:)
 #endif
 
-#ifdef DEBUG_HYDRO_POSITIVITY
-    call    Grid_getCellCoords(IAXIS,blockID, CENTER,    .true.,xCenter, dataSize(IAXIS))
-#else
-    if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,blockID, CENTER,    .true.,xCenter, dataSize(IAXIS))
-    end if
-#endif
-    if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,blockID, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,blockID, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
-       if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          call Grid_getCellCoords(JAXIS,blockID, CENTER,.false.,yCenter, size(yCenter))
-       end if
-    endif
-
-#ifdef FLASH_USM_MHD
-#ifdef FLASH_UHD_3T
-    !! STORE THE OLD FIELD FOR CURRENT CALCULATION FOR 3T UPDATE
-    scrch_Ptr(HY_XN01_SCRATCHCTR_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)) = U(MAGX_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
-    scrch_Ptr(HY_XN02_SCRATCHCTR_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)) = U(MAGY_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
-    scrch_Ptr(HY_XN03_SCRATCHCTR_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)) = U(MAGZ_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
-#endif
-#endif
+!!$#ifdef DEBUG_HYDRO_POSITIVITY
+!!$    call    Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
+!!$#else
+!!$    if (hy_geometry /= CARTESIAN) then
+!!$       call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
+!!$    end if
+!!$#endif
+!!$    if (hy_geometry /= CARTESIAN) then
+!!$       call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
+!!$       call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+!!$       if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
+!!$          call Grid_getCellCoords(JAXIS,block, CENTER,.false.,yCenter, size(yCenter))
+!!$       end if
+!!$    endif
+!!$
+!!$#ifdef FLASH_USM_MHD
+!!$#ifdef FLASH_UHD_3T
+!!$    !! STORE THE OLD FIELD FOR CURRENT CALCULATION FOR 3T UPDATE
+!!$    scrch_Ptr(HY_XN01_SCRATCHCTR_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)) = Uin(MAGX_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
+!!$    scrch_Ptr(HY_XN02_SCRATCHCTR_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)) = Uin(MAGY_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
+!!$    scrch_Ptr(HY_XN03_SCRATCHCTR_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)) = Uin(MAGZ_VAR,blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS))
+!!$#endif
+!!$#endif
 
     !! Define dimension dependent switches
     ky=0
@@ -390,59 +360,59 @@
     iskip = 1
     if (NDIM == 1 .and. rangeSwitch .eq. UPDATE_BOUND) iskip = imax-imin
     !! Loop to get magnetic resistivity source correction 
-#ifdef FLASH_USM_MHD
-    if (hy_geometry == CYLINDRICAL .and. hy_useMagneticResistivity) then
-       do k=kmin,kmax
-          do j=jmin-2,jmax+2
-             if (NDIM >= 2) then
-                iskip = 1
-                if (rangeSwitch == UPDATE_BOUND .and. j > jmin .and. j < jmax) then
-                   iskip = imax-imin
-                   if (NDIM == 3) then
-                      iskip = 1
-                      if (k > kmin .and. k < kmax) then
-                         iskip = imax-imin
-                      endif
-                   endif
-                endif
-             endif
-
-             do i=imin-2,imax+2,iskip
-                !! Get magnetic Resistivity
-                call MagneticResistivity(U(:,i-1,j,k),res_eta(i-1,j,k))
-                call MagneticResistivity(U(:,i,j,k),res_eta(i,j,k))
-                call MagneticResistivity(U(:,i+1,j,k),res_eta(i+1,j,k))                  
-
-                !! Normalize if needed
-                res_eta(i-1,j,k)  = res_eta(i-1,j,k)/hy_mref
-                res_eta(i  ,j,k)  = res_eta(i  ,j,k)/hy_mref
-                res_eta(i+1,j,k)  = res_eta(i+1,j,k)/hy_mref
-
-                !! We are adding the d (eta Jz)/dr as a source
-                !! term so as to keep the induction of Bphi with the source
-                !! formulation as it does not balance without....
-                eta_loc = 0.5*(res_eta(i,j,k)+res_eta(i-1,j,k))
-                inv_dVrm = xCenter(i)*abs(xCenter(i)) - xCenter(i-1)*abs(xCenter(i-1))
-                inv_dVrm = 2.0/inv_dVrm
-
-                dxBzm = (U(MAGZ_VAR,i  ,j,k)*xCenter(i) &
-                     -  U(MAGZ_VAR,i-1,j,k)*abs(xCenter(i-1)))*inv_dVrm
-                Jym = - eta_loc*dxBzm
-
-                eta_loc = 0.5*(res_eta(i,j,k)+res_eta(i+1,j,k))
-                inv_dVrp = xCenter(i+1)*abs(xCenter(i+1)) - xCenter(i)*abs(xCenter(i))
-                inv_dVrp = 2.0/inv_dVrp
-
-                dxBzp = (U(MAGZ_VAR,i+1,j,k)*xCenter(i+1) &
-                     -  U(MAGZ_VAR,i,j,k)*abs(xCenter(i)))*inv_dVrp                 
-                Jyp = - eta_loc*dxBzp
-
-                res_source(i,j,k) = -(Jyp-Jym)/dx
-             enddo !end of i loop
-          enddo !end of j loop
-       enddo !end of k loop
-    endif
-#endif
+!!$#ifdef FLASH_USM_MHD
+!!$    if (hy_geometry == CYLINDRICAL .and. hy_useMagneticResistivity) then
+!!$       do k=kmin,kmax
+!!$          do j=jmin-2,jmax+2
+!!$             if (NDIM >= 2) then
+!!$                iskip = 1
+!!$                if (rangeSwitch == UPDATE_BOUND .and. j > jmin .and. j < jmax) then
+!!$                   iskip = imax-imin
+!!$                   if (NDIM == 3) then
+!!$                      iskip = 1
+!!$                      if (k > kmin .and. k < kmax) then
+!!$                         iskip = imax-imin
+!!$                      endif
+!!$                   endif
+!!$                endif
+!!$             endif
+!!$
+!!$             do i=imin-2,imax+2,iskip
+!!$                !! Get magnetic Resistivity
+!!$                call MagneticResistivity(Uin(:,i-1,j,k),res_eta(i-1,j,k))
+!!$                call MagneticResistivity(Uin(:,i,j,k),res_eta(i,j,k))
+!!$                call MagneticResistivity(Uin(:,i+1,j,k),res_eta(i+1,j,k))                  
+!!$
+!!$                !! Normalize if needed
+!!$                res_eta(i-1,j,k)  = res_eta(i-1,j,k)/hy_mref
+!!$                res_eta(i  ,j,k)  = res_eta(i  ,j,k)/hy_mref
+!!$                res_eta(i+1,j,k)  = res_eta(i+1,j,k)/hy_mref
+!!$
+!!$                !! We are adding the d (eta Jz)/dr as a source
+!!$                !! term so as to keep the induction of Bphi with the source
+!!$                !! formulation as it does not balance without....
+!!$                eta_loc = 0.5*(res_eta(i,j,k)+res_eta(i-1,j,k))
+!!$                inv_dVrm = xCenter(i)*abs(xCenter(i)) - xCenter(i-1)*abs(xCenter(i-1))
+!!$                inv_dVrm = 2.0/inv_dVrm
+!!$
+!!$                dxBzm = (Uin(MAGZ_VAR,i  ,j,k)*xCenter(i) &
+!!$                     -  Uin(MAGZ_VAR,i-1,j,k)*abs(xCenter(i-1)))*inv_dVrm
+!!$                Jym = - eta_loc*dxBzm
+!!$
+!!$                eta_loc = 0.5*(res_eta(i,j,k)+res_eta(i+1,j,k))
+!!$                inv_dVrp = xCenter(i+1)*abs(xCenter(i+1)) - xCenter(i)*abs(xCenter(i))
+!!$                inv_dVrp = 2.0/inv_dVrp
+!!$
+!!$                dxBzp = (Uin(MAGZ_VAR,i+1,j,k)*xCenter(i+1) &
+!!$                     -  Uin(MAGZ_VAR,i,j,k)*abs(xCenter(i)))*inv_dVrp                 
+!!$                Jyp = - eta_loc*dxBzp
+!!$
+!!$                res_source(i,j,k) = -(Jyp-Jym)/dx
+!!$             enddo !end of i loop
+!!$          enddo !end of j loop
+!!$       enddo !end of k loop
+!!$    endif
+!!$#endif
 
     iskip = 1
     if (NDIM == 1 .and. rangeSwitch .eq. UPDATE_BOUND) iskip = imax-imin
@@ -462,7 +432,7 @@
           endif
           do i=imin,imax,iskip
 #ifdef BDRY_VAR
-             if (U(BDRY_VAR,i,j,k) .LE. 0.0) then
+             if (Uin(BDRY_VAR,i,j,k) .LE. 0.0) then
 #endif
                 !! For non-cartesian geometries
                 leftFac = 1.
@@ -602,7 +572,7 @@
                 end if
 #endif
 
-                U0(HY_DENS) = U(DENS_VAR,i,j,k)                                      !density
+                U0(HY_DENS) = Uin(DENS_VAR,i,j,k)                                      !density
                 if (hy_geometry /= CARTESIAN) then
 #ifdef HALFTIME_DENS_FOR_SGEO_TERMS_AS_IN_SPLIT_HYDRO
                    call updateConservedDens&
@@ -627,18 +597,18 @@
               
 #ifdef FLASH_USM_MHD
                 if (hy_useMagneticResistivity) then 
-                   speciesArr => U(SPECIES_BEGIN:SPECIES_END,i,j,k)
-                   call MagneticResistivity(U(TEMP_VAR,i,j,k),U(DENS_VAR,i,j,k),&
+                   speciesArr => Uin(SPECIES_BEGIN:SPECIES_END,i,j,k)
+                   call MagneticResistivity(Uin(TEMP_VAR,i,j,k),Uin(DENS_VAR,i,j,k),&
                         speciesArr,res_eta(i,j,k))
-                   call hy_uhd_addOhmicHeating(blockID,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
-                   Qohm = Qohm*U(DENS_VAR,i,j,k)
+                   call hy_uhd_addOhmicHeating(block,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
+                   Qohm = Qohm*Uin(DENS_VAR,i,j,k)
                 endif
 #endif
 
 
                 if (hy_useAuxEintEqn) then
                    !! Update intenal energy rho*eint
-                   IntEner  = U(DENS_VAR,i,j,k)*U(EINT_VAR,i,j,k)
+                   IntEner  = Uin(DENS_VAR,i,j,k)*Uin(EINT_VAR,i,j,k)
                    !! Note: scrch_Ptr(HY_VAR1_SCRATCHCTR_VAR,i,j,k) holds the volume-averaged pressures at n+1/2
                    tempPres = scrch_Ptr(HY_VAR1_SCRATCHCTR_VAR,i,j,k)
 
@@ -655,21 +625,21 @@
 
 #ifdef FLASH_UHD_3T
                 !! STORE THE OLD DENSITY AND INTERNAL ENERGY FOR 3T UPDATE
-                scrch_Ptr(HY_VAR1_SCRATCHCTR_VAR,i,j,k) = U(DENS_VAR,i,j,k)
-                scrch_Ptr(HY_VAR2_SCRATCHCTR_VAR,i,j,k) = U(EINT_VAR,i,j,k)
+                scrch_Ptr(HY_VAR1_SCRATCHCTR_VAR,i,j,k) = Uin(DENS_VAR,i,j,k)
+                scrch_Ptr(HY_VAR2_SCRATCHCTR_VAR,i,j,k) = Uin(EINT_VAR,i,j,k)
 
 #ifdef FLASH_USM_MHD
                 scrch_Ptr(HY_XN06_SCRATCHCTR_VAR,i,j,k) = Qohm*dt
 
                 if (hy_hallVelocity) then 
                    !define abar zbar, we store these in scratch for 3T MHD update later on
-                   call Eos_getAbarZbar(solnVec=U(:,i,j,k),abar=abar,zbar=zbar) 
+                   call Eos_getAbarZbar(solnVec=Uin(:,i,j,k),abar=abar,zbar=zbar) 
                    scrch_Ptr(HY_XN04_SCRATCHCTR_VAR,i,j,k) = abar
                    scrch_Ptr(HY_XN05_SCRATCHCTR_VAR,i,j,k) = zbar
 
                    ! correct the energy fluxes with current terms
                    !! Note: hy_uhd_getCurrent sets Jp and Jm for many cells, unless called with mode_switch=4.
-                   call hy_uhd_getCurrents(blockID, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
+                   call hy_uhd_getCurrents(block, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
                                            scrch_Ptr,&
                                            i, j, k)
                    Sphys(HY_ENER) = ( Jp(1,i,j,k) - Jm(1,i,j,k) ) / dx
@@ -685,15 +655,15 @@
 #endif
 
                 !! Prepare to update conserved quantities
-                U0(HY_XMOM:HY_ZMOM) = U(VELX_VAR:VELZ_VAR,i,j,k)*U(DENS_VAR,i,j,k)   !momenta
-                U0(HY_ENER) = U(DENS_VAR,i,j,k)*U(ENER_VAR,i,j,k)                    !total gas energy 
+                U0(HY_XMOM:HY_ZMOM) = Uin(VELX_VAR:VELZ_VAR,i,j,k)*Uin(DENS_VAR,i,j,k)   !momenta
+                U0(HY_ENER) = Uin(DENS_VAR,i,j,k)*Uin(ENER_VAR,i,j,k)                    !total gas energy 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
-                U0(HY_MAGX:HY_MAGZ) = U(MAGX_VAR:MAGZ_VAR,i,j,k)                     !magnetic fields
-                U0(HY_ENER) = U0(HY_ENER)+0.5*dot_product(U(MAGX_VAR:MAGZ_VAR,i,j,k),&
-                                                          U(MAGX_VAR:MAGZ_VAR,i,j,k))!total plasma energy
+                U0(HY_MAGX:HY_MAGZ) = Uin(MAGX_VAR:MAGZ_VAR,i,j,k)                     !magnetic fields
+                U0(HY_ENER) = U0(HY_ENER)+0.5*dot_product(Uin(MAGX_VAR:MAGZ_VAR,i,j,k),&
+                                                          Uin(MAGX_VAR:MAGZ_VAR,i,j,k))!total plasma energy
 #endif
 #ifdef FLASH_UGLM_MHD
-                U0(HY_GLMP) = U(GLMP_VAR,i,j,k)
+                U0(HY_GLMP) = Uin(GLMP_VAR,i,j,k)
 #endif
 
                 Sgeo = 0.
@@ -701,8 +671,8 @@
                    !! Calculate geometrical source terms.  See S&O 75.
                    !! Advance density and phi-momentum to n+1/2 via finite volume update        
                    densStar = U0(HY_DENS)
-                   xvel0    = U(VELX_VAR ,i,j,k)
-                   phiVel0  = U(velPhiVar,i,j,k)
+                   xvel0    = Uin(VELX_VAR ,i,j,k)
+                   phiVel0  = Uin(velPhiVar,i,j,k)
                    xmomStar = U0(HY_XMOM)
                    pmomStar = U0(MOM_PHI)
 
@@ -711,8 +681,8 @@
                    pmagStar = U0(MAG_PHI)
                    zmagStar = U0(MAG_ZI)
 #endif 
-                   cs = sqrt(U(GAMC_VAR,i,j,k)*U(PRES_VAR,i,j,k)/U(DENS_VAR,i,j,k))
-                   eta = (abs(U(VELX_VAR,i,j,k)) + cs) * dt/dx
+                   cs = sqrt(Uin(GAMC_VAR,i,j,k)*Uin(PRES_VAR,i,j,k)/Uin(DENS_VAR,i,j,k))
+                   eta = (abs(Uin(VELX_VAR,i,j,k)) + cs) * dt/dx
                    eta = (1.-eta) / (cs*dt*abs(alpha/xCenter(i)))
 
                    Sgeo(HY_XMOM) = (densNph*phiVel0*phiVel0 + fP*alpha*presStar) / xCenter(i)!T phi,phi
@@ -759,7 +729,7 @@
 
                    if (hy_geometry == SPHERICAL) then
 !!$                      tmomStar = U0(MOM_THT) 
-                      thtVel0  = U(VELY_VAR,i,j,k)
+                      thtVel0  = Uin(VELY_VAR,i,j,k)
                       Sgeo(HY_XMOM) = Sgeo(HY_XMOM) + densNph*thtVel0*thtVel0 / xCenter(i)
                       Sgeo(HY_XMOM) = Sgeo(HY_XMOM)*dx/dx_sph
 #if NDIM > 1
@@ -784,30 +754,30 @@
 
 #ifdef DEBUG_HYDRO_POSITIVITY
                 if (U0(HY_DENS)<hy_smalldens) then
-                   print*,'Low DENS',U(DENS_VAR,i,j,k),'->',U0(HY_DENS),',X=',xCenter(i),',i,j=',i,j,&
-                            ' in Block',blockID,'@',hy_meshMe
+                   print*,'Low DENS',Uin(DENS_VAR,i,j,k),'->',U0(HY_DENS),',X=',xCenter(i),',i,j=',i,j,&
+                            ' in Block',block,'@',hy_meshMe
                 end if
 #endif
 
 
-                U(DENS_VAR,i,j,k) = max(U0(HY_DENS),hy_smalldens)                    !density
+                Uout(DENS_VAR,i,j,k) = max(U0(HY_DENS),hy_smalldens)                    !density
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
-                U(MAGX_VAR:MAGZ_VAR,i,j,k) = U0(HY_MAGX:HY_MAGZ)                     !magnetic fields
+                Uout(MAGX_VAR:MAGZ_VAR,i,j,k) = U0(HY_MAGX:HY_MAGZ)                     !magnetic fields
 #endif
 #ifdef FLASH_UGLM_MHD
-                U(GLMP_VAR,i,j,k) = U0(HY_GLMP)
+                Uout(GLMP_VAR,i,j,k) = U0(HY_GLMP)
 #endif
 #ifdef DEBUG_HYDRO_POSITIVITY
-                if (U0(HY_ENER)/U(DENS_VAR,i,j,k)<hy_smallE) then
-                   print*,'Low ENER',U(ENER_VAR,i,j,k),'->',U0(HY_ENER)/U(DENS_VAR,i,j,k),',X=',xCenter(i),',i,j=',i,j,&
-                            ' in Block',blockID,'@',hy_meshMe
+                if (U0(HY_ENER)/Uout(DENS_VAR,i,j,k)<hy_smallE) then
+                   print*,'Low ENER',Uout(ENER_VAR,i,j,k),'->',U0(HY_ENER)/Uout(DENS_VAR,i,j,k),',X=',xCenter(i),',i,j=',i,j,&
+                            ' in Block',block,'@',hy_meshMe
                 end if
 #endif
-                U(ENER_VAR,i,j,k) = U0(HY_ENER)                                      !total plasma energy
+                Uout(ENER_VAR,i,j,k) = U0(HY_ENER)                                      !total plasma energy
                 !! We will update velocity fields after species & mass scalar update
 
 #if (NSPECIES+NMASS_SCALARS) > 0
-                newDens = U(DENS_VAR,i,j,k)
+                newDens = Uout(DENS_VAR,i,j,k)
                 if (hy_fullSpecMsFluxHandling) then
                    if (rangeSwitch==UPDATE_ALL_SPECMS_BOUND) then
                       specialForInterior = (i > imin .and. i < imax)
@@ -819,11 +789,11 @@
                    sumSpecies = 0.
                    do ispu = SPECIES_BEGIN, MASS_SCALARS_END !SPECIES_END
                       if (specialForInterior) then
-                         U(ispu,i,j,k) = U(ispu,i,j,k) / newDens
+                         Uout(ispu,i,j,k) = Uin(ispu,i,j,k) / newDens
                       else
                          isph= ispu-NPROP_VARS
                          call updateSpeciesMassScalar&
-                                 (U(ispu,i,j,k),Uold(HY_DENS,i,j,k),newDens,&
+                                 (Uout(ispu,i,j,k),Uold(HY_DENS,i,j,k),newDens,&
                                  FL(HY_END_FLUX+isph),FR(HY_END_FLUX+isph),&
                                  GL(HY_END_FLUX+isph),GR(HY_END_FLUX+isph),&
                                  HL(HY_END_FLUX+isph),HR(HY_END_FLUX+isph),&
@@ -832,14 +802,14 @@
 
                       !! Conserving mass fractions
                       if (ispu <= SPECIES_END) then
-                         sumSpecies = sumSpecies + U(ispu,i,j,k)
+                         sumSpecies = sumSpecies + Uout(ispu,i,j,k)
                       endif
 
                    enddo
 
                 !! Conserving mass fractions: They will add up to 1 after this.
                    do ispu = SPECIES_BEGIN, SPECIES_END
-                      U(ispu,i,j,k) = U(ispu,i,j,k)/sumSpecies
+                      Uout(ispu,i,j,k) = Uout(ispu,i,j,k)/sumSpecies
                    enddo
                 else
                 !! Note that the velocity fields here are old velocities at time step n, not n+1
@@ -850,27 +820,27 @@
                       FL(HY_DENS_FLUX),FR(HY_DENS_FLUX),&
                       GL(HY_DENS_FLUX),GR(HY_DENS_FLUX),&
                       HL(HY_DENS_FLUX),HR(HY_DENS_FLUX),&
-                      dxv,dyv,dz,dt, U(SPECIES_BEGIN:MASS_SCALARS_END,i,j,k))
+                      dxv,dyv,dz,dt, Uout(SPECIES_BEGIN:MASS_SCALARS_END,i,j,k))
                 end if
 #endif /*if (NSPECIES+NMASS_SCALARS) > 0*/
 
                 !! Update velocity fields after species & mass scalar update
                 !! DL - why should it be AFTER??? Ah... ok, in the old way, 
                 !!      it still uses velocity fields for mass scalar and species update
-                U(VELX_VAR:VELZ_VAR,i,j,k) = U0(HY_XMOM:HY_ZMOM)/U(DENS_VAR,i,j,k)        !velocities
+                Uout(VELX_VAR:VELZ_VAR,i,j,k) = U0(HY_XMOM:HY_ZMOM)/Uout(DENS_VAR,i,j,k)        !velocities
 
-                U(ENER_VAR,i,j,k) = U0(HY_ENER)/U(DENS_VAR,i,j,k) !total plasma energy, now in mass-specific form
+                Uout(ENER_VAR,i,j,k) = U0(HY_ENER)/Uout(DENS_VAR,i,j,k) !total plasma energy, now in mass-specific form
 
                 if (hy_useAuxEintEqn) then
-                   IntEner = IntEner / U(DENS_VAR,i,j,k)
+                   IntEner = IntEner / Uout(DENS_VAR,i,j,k)
 #ifdef EINT_VAR
 #ifdef DEBUG_HYDRO_POSITIVITY
                    if (IntEner<hy_smallE) then
-                      print*,'Low EINT',U(EINT_VAR,i,j,k),'->',IntEner,',X=',xCenter(i),',i,j=',i,j,&
-                           ' in Block',blockID,'@',hy_meshMe
+                      print*,'Low EINT',Uout(EINT_VAR,i,j,k),'->',IntEner,',X=',xCenter(i),',i,j=',i,j,&
+                           ' in Block',block,'@',hy_meshMe
                    end if
 #endif
-                   U(EINT_VAR,i,j,k) = IntEner
+                   Uout(EINT_VAR,i,j,k) = IntEner
 #endif
                 end if
 
@@ -881,9 +851,9 @@
                 !! MHD still needs to update magnetic fields after the current cell-centered
                 !! variable updates. Therefore, the energy updates should be done after
                 !! updating magnetic fields.
-                ekin = .5*dot_product(U(VELX_VAR:VELZ_VAR,i,j,k),U(VELX_VAR:VELZ_VAR,i,j,k))
+                ekin = .5*dot_product(Uout(VELX_VAR:VELZ_VAR,i,j,k),Uout(VELX_VAR:VELZ_VAR,i,j,k))
 
-                eint = U(ENER_VAR,i,j,k)-ekin
+                eint = Uout(ENER_VAR,i,j,k)-ekin
 
                 if (.not. hy_useAuxEintEqn .or. eint > hy_eswitch*ekin) then
                    newEint = max(hy_smallE,eint)
@@ -891,9 +861,9 @@
                    newEint = max(hy_smallE,IntEner)
                 endif
                 !! Store specific gas energy ener = ekin + eint
-                U(ENER_VAR,i,j,k) = newEint + ekin
+                Uout(ENER_VAR,i,j,k) = newEint + ekin
 #ifdef EINT_VAR
-                U(EINT_VAR,i,j,k) = newEint
+                Uout(EINT_VAR,i,j,k) = newEint
 #endif
 #endif /*ifdef FLASH_UHD_HYDRO*/
 #endif /*ifdef FLASH_UHD_3T*/
@@ -909,21 +879,21 @@
     !! ---------------------------------------------------------------
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
     if (hy_forceHydroLimit) then
-       U(MAGX_VAR:MAGZ_VAR,:,:,:) = 0.
+       Uout(MAGX_VAR:MAGZ_VAR,:,:,:) = 0.
     endif
 #endif
 
 #if (NSPECIES+NMASS_SCALARS) > 0
   ! Renormalize or limit abundances
     if (hy_irenorm == 1) then
-       call Grid_renormAbundance(blockID,blkLimits,U)
+       call Grid_renormAbundance(block,blkLimits,U)
     else
        call Grid_limitAbundance(blkLimits,U)
     endif
 #endif  
-
-    ! Release block pointers
-    call Grid_releaseBlkPtr(blockID,U,CENTER)
+!!$
+!!$    ! Release block pointers
+!!$    call Grid_releaseBlkPtr(block,U,CENTER)
 
 
 
@@ -965,56 +935,56 @@
       endif
 
 
-    ! Get block pointers
-    call Grid_getBlkPtr(blockID,U,CENTER)
-
-    if (hy_geometry /= CARTESIAN) then
-       faceAreas = 0.
-       call Grid_getBlkData(blockID, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize+1, jsize, ksize/) )
-#if NDIM > 1
-       if (hy_geometry == SPHERICAL) then
-          call Grid_getBlkData(blockID, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize+1, ksize/) )
-       end if
-#endif
-
-       cellVolumes = 0.
-       call Grid_getBlkData(blockID, CELL_VOLUME, 0, EXTERIOR, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize, ksize/) )
-    endif
-
-    
-
+!!$    ! Get block pointers
+!!$    call Grid_getBlkPtr(block,U,CENTER)
+!!$
+!!$    if (hy_geometry /= CARTESIAN) then
+!!$       faceAreas = 0.
+!!$       call Grid_getBlkData(block, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
+!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!!$            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!!$            (/isize+1, jsize, ksize/) )
+!!$#if NDIM > 1
+!!$       if (hy_geometry == SPHERICAL) then
+!!$          call Grid_getBlkData(block, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
+!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!!$            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!!$            (/isize, jsize+1, ksize/) )
+!!$       end if
+!!$#endif
+!!$
+!!$       cellVolumes = 0.
+!!$       call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, &
+!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!!$            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!!$            (/isize, jsize, ksize/) )
+!!$    endif
+!!$
+!!$    
+!!$
     if (.NOT. hy_fullSpecMsFluxHandling) then
        do ispu =  SPECIES_BEGIN, MASS_SCALARS_END
           isph= ispu-NPROP_VARS
-          SpOld(isph,:,:,:) = U(ispu,:,:,:)
+          SpOld(isph,:,:,:) = Uout(ispu,:,:,:)
        enddo
-       Uold(1,  :,:,:) = U(DENS_VAR,:,:,:)
-       Uold(2,  :,:,:) = U(PRES_VAR,:,:,:)
-       Uold(3:5,:,:,:) = U(VELX_VAR:VELZ_VAR,:,:,:)
-       Uold(6,  :,:,:) = U(GAME_VAR,:,:,:)
+       Uold(1,  :,:,:) = Uin(DENS_VAR,:,:,:)
+       Uold(2,  :,:,:) = Uin(PRES_VAR,:,:,:)
+       Uold(3:5,:,:,:) = Uin(VELX_VAR:VELZ_VAR,:,:,:)
+       Uold(6,  :,:,:) = Uin(GAME_VAR,:,:,:)
     end if
 
     if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,blockID, CENTER,    .true.,xCenter, dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,blockID, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,blockID, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          call Grid_getCellCoords(JAXIS,blockID, CENTER,.false.,yCenter, size(yCenter))
+          call Grid_getCellCoords(JAXIS,block, CENTER,.false.,yCenter, size(yCenter))
        end if
     endif
 
@@ -1034,7 +1004,7 @@
        do j=jmin,jmax
           do i=imin,imax
 #ifdef BDRY_VAR
-             if (U(BDRY_VAR,i,j,k) .LE. 0.0) then
+             if (Uout(BDRY_VAR,i,j,k) .LE. 0.0) then
 #endif
                 !! For non-cartesian geometries
                 leftFac = 1.
@@ -1110,7 +1080,7 @@
                    do ispu = SPECIES_BEGIN, MASS_SCALARS_END !SPECIES_END
                       isph= ispu-NPROP_VARS
                       call updateSpeciesMassScalar&
-                                 (U(ispu,i,j,k),U(DENS_VAR,i,j,k), 1.0,&
+                                 (Uout(ispu,i,j,k),Uout(DENS_VAR,i,j,k), 1.0,&
                                  FL(HY_END_FLUX+isph),FR(HY_END_FLUX+isph),&
                                  GL(HY_END_FLUX+isph),GR(HY_END_FLUX+isph),&
                                  HL(HY_END_FLUX+isph),HR(HY_END_FLUX+isph),&
@@ -1126,7 +1096,7 @@
                       FL(HY_DENS_FLUX),FR(HY_DENS_FLUX),&
                       GL(HY_DENS_FLUX),GR(HY_DENS_FLUX),&
                       HL(HY_DENS_FLUX),HR(HY_DENS_FLUX),&
-                      dxv,dyv,dz,dt, U(SPECIES_BEGIN:MASS_SCALARS_END,i,j,k))
+                      dxv,dyv,dz,dt, Uout(SPECIES_BEGIN:MASS_SCALARS_END,i,j,k))
                 end if
 
 
@@ -1139,8 +1109,8 @@
     enddo !end of k loop
 
     !! ---------------------------------------------------------------
-    ! Release block pointers
-    call Grid_releaseBlkPtr(blockID,U,CENTER)
+!!$    ! Release block pointers
+!!$    call Grid_releaseBlkPtr(block,U,CENTER)
 #endif
 
   End Subroutine unsplitUpdateSpecMs

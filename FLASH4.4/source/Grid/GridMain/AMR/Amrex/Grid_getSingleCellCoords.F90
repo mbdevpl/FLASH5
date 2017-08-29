@@ -50,13 +50,31 @@
 
 #include "constants.h"
 
-subroutine Grid_getSingleCellCoords(ind, blockId, edge, beginCount, coords)
-  use chombo_f_c_interface, ONLY : ch_get_single_cell_coords
+subroutine Grid_getSingleCellCoords(ind, blockId,edge, beginCount,coords)
   implicit none
+
+#include "constants.h"
+
   integer,dimension(MDIM), intent(in) :: ind
   integer, intent(in) :: blockId, edge
   integer, intent(in) :: beginCount
   real, dimension(MDIM), intent(out) :: coords
 
-  call ch_get_single_cell_coords(blockId, edge, beginCount, ind, coords)
+  write(*,*) "AMReX does *not* deal in block IDs"
+  stop
 end subroutine Grid_getSingleCellCoords
+
+subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
+  use block_metadata, ONLY : block_metadata_t
+
+!  use chombo_f_c_interface, ONLY : ch_get_single_cell_coords
+  implicit none
+  type(block_metadata_t), intent(in) :: block
+  integer,dimension(MDIM), intent(in) :: ind
+  integer, intent(in) :: edge
+  integer, intent(in) :: beginCount
+  real, dimension(MDIM), intent(out) :: coords
+
+  ! DEVNOTE: Code this!
+!  call ch_get_single_cell_coords(blockId, edge, beginCount, ind, coords)
+end subroutine Grid_getSingleCellCoords_Itor

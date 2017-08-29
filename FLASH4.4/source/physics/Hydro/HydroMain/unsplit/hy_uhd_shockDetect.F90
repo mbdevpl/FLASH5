@@ -31,7 +31,7 @@
 
 !!REORDER(4): U
 
-Subroutine hy_uhd_shockDetect(Uin,blkLimitGC,Uout,blkLimit,del )
+Subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
 
 
   use Hydro_data,        ONLY : hy_cfl, hy_cfl_original,&
