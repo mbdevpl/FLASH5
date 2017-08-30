@@ -75,29 +75,15 @@
 !!
 !!***
 
+subroutine Eos_wrapped_blkid(mode,range,blockID,gridDataStruct)
 
-subroutine Eos_wrapped(mode,range,solnData,gridDataStruct)
-  
   implicit none
 
 # include "constants.h"
-#include "FortranLangFeatures.fh"
-
   integer, intent(in) :: mode
   integer, dimension(2,MDIM), intent(in) :: range
-  real, POINTER_INTENT_IN :: solnData(:,:,:,:)
-  integer,optional,intent(IN) :: gridDataStruct
-end subroutine Eos_wrapped
-
-subroutine Eos_arrayWrapped(mode,range,solnData,gridDataStruct)
-
-  implicit none
-
-#include "FortranLangFeatures.fh"
-  integer, intent(in) :: mode
-  integer, dimension(2,MDIM), intent(in) :: range
-  real, POINTER_INTENT_IN :: solnData(:,:,:,:)
+  integer,intent(in) :: blockID
   integer,optional,intent(IN) :: gridDataStruct
   return
-end subroutine Eos_arrayWrapped
+end subroutine Eos_wrapped_blkid
 

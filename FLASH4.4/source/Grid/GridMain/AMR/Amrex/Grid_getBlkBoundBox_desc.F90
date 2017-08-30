@@ -41,28 +41,14 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_getBlkBC(blockId, faces, onBoundary)
-  use Grid_data, ONLY : gr_globalDomain, gr_domainBC
-  use Grid_interface, ONLY : Grid_getBlkBoundBox
+subroutine Grid_getBlkBoundBox_desc(blockDesc,boundBox)
+  use block_metadata, ONLY : block_metadata_t
+  
   implicit none
-  integer, intent(in) :: blockId
-  integer, dimension(2,MDIM),intent(out):: faces
-  integer, optional, dimension(LOW:HIGH,MDIM),intent(out):: onBoundary
-  real, dimension(2,MDIM) :: bnd_box
-  integer :: axis, face
+  
+  type(block_metadata_t), intent(in) :: blockDesc
+  real, dimension(2, MDIM), intent(out) :: boundBox
 
-  !NOTE: Does not behave the same as PARAMESH.  If we are
-  !on a periodic boundary then this version will return "periodic"
-  !in faces array.
-  call Grid_getBlkBoundBox(blockId,bnd_box)
+  return
+end subroutine Grid_getBlkBoundBox_desc
 
-  do axis = 1,MDIM
-     do face = LOW,HIGH
-        if ( bnd_box(face,axis) == gr_globalDomain(face,axis) ) then
-           faces(face,axis) = gr_domainBC(face,axis)
-        else
-           faces(face,axis) = NOT_BOUNDARY
-        end if
-     end do
-  end do
-end subroutine Grid_getBlkBC
