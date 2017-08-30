@@ -403,7 +403,6 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
            end do
 #endif
         end if
-        print*,'calling block'
         call hy_ppm_block(hy_meshMe, block,sweepDir, dt, dtOld, &
                           lim,limGC,bcs,          &
                           numCells,numGuard,      &
@@ -423,7 +422,6 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
                           tempAreaLeft,               &
                           tempFlx,       & 
                           shock, solnData)
-        print*,'return from block'
      else
         tempFlx = 0.0
 
@@ -479,7 +477,6 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
                         solnData )
         call Timers_stop("hy_ppm_updateSoln")
      end if
-     print*,'updated'
 
      if(.not. (doFluxCorrect)) then
         if(hy_irenorm==1) then
@@ -497,7 +494,6 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
 
      call Grid_releaseBlkPtr(block,solnData)
 
-     print*,'release block'
 !!--------- FLUX CONSERVATION
      if (doFluxCorrect) then
 
@@ -505,11 +501,9 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
         size(2) = jsizeGC
         size(3) = ksizeGC
 
-        call Grid_putFluxData(block%id,sweepDir,tempFlx,size, hy_specialFluxVars, tempAreaLeft)
-        print*,'flux put data'
+        call Grid_putFluxData(block,sweepDir,tempFlx,size, hy_specialFluxVars, tempAreaLeft)
         call hy_ppm_putTemporaryData(sweepDir,block%id,size,&
              tempArea, tempDtDx, tempGrav1d, tempGrav1d_o, tempFict, tempAreaLeft)
-        print*,'temporary data'
      end if
 
      deallocate(tempFlx)
@@ -534,7 +528,6 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
   end do
 end do
 
-print*,'first stage done'
 
 ! Do this part only if refining and flux correcting
 
@@ -574,7 +567,7 @@ print*,'first stage done'
            
            call hy_ppm_getTemporaryData(sweepDir,block%id,size,&
                 tempArea,tempDtDx,tempGrav1d,tempGrav1d_o,tempFict, tempAreaLeft)
-           call Grid_getFluxData(block%id,sweepDir, tempFlx,size, hy_specialFluxVars, tempAreaLeft)
+           call Grid_getFluxData(block,sweepDir, tempFlx,size, hy_specialFluxVars, tempAreaLeft)
            
            
            call Grid_getBlkPtr(block,solnData)

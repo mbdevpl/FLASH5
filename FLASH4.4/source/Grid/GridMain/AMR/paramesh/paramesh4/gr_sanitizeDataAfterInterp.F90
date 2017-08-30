@@ -268,7 +268,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
      call itor%next()
   end do
 
-  call itor%destroy_iterator()
+!!$  call itor%destroy_iterator()
 
   return 
 
