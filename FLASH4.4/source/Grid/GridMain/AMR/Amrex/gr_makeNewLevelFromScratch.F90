@@ -33,9 +33,9 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     type(amrex_box)       :: bx
 
     real(wp), contiguous, pointer :: initData(:,:,:,:)
-    real(wp)                      :: x
-    real(wp)                      :: y
-    real(wp)                      :: z
+    real(wp)                      :: x = 0.0_wp 
+    real(wp)                      :: y = 0.0_wp
+    real(wp)                      :: z = 0.0_wp
 
     integer :: rank = 0
 
@@ -45,7 +45,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
 
     rank = amrex_parallel_myproc()
     write(*,*) "[Rank ", rank, "] gr_makeNewLevelFromScratch - Start Level ", lev
-    
+ 
     ba = pba
     dm = pdm
  
@@ -56,7 +56,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
 
     ! Create FABS for storing physical data at coarsest level
     call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
-    
+
     ! Write initial data across domain at coarsest level
     call amrex_mfiter_build(mfi, unk(lev))
 
@@ -73,7 +73,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
                     y = amrex_problo(2) + (dble(j)+0.5d0) * dx(2)
                     do i = lo(1), hi(1)
                         x = amrex_problo(1) + (dble(i)+0.5d0) * dx(1)
-                        initData(i, j, k, 0) = x + y + z 
+                        initData(i, j, k, UNK_VARS_BEGIN) = x + y + z 
                     end do
                 end do
             end do

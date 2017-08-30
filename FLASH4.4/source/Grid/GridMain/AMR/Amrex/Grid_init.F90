@@ -156,42 +156,42 @@ subroutine Grid_init()
 !----------------------------------------------------------------------------------
 ! mesh geometry - moved here so Paramesh_init can use gr_geometry for some checking
 !----------------------------------------------------------------------------------
-!  call RuntimeParameters_get("geometry",gr_str_geometry)
-!  call RuntimeParameters_mapStrToInt(gr_str_geometry, gr_geometry)
-!  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
-!
-!  call Driver_getMype(GLOBAL_COMM, gr_globalMe)
-!  call Driver_getNumProcs(GLOBAL_COMM, gr_globalNumProcs)
-!  call Driver_getComm(GLOBAL_COMM, gr_globalComm)
-!
-!  call Driver_getMype(MESH_COMM, gr_meshMe)
-!  call Driver_getNumProcs(MESH_COMM, gr_meshNumProcs)
-!  call Driver_getComm(MESH_COMM, gr_meshComm)
-!
-!  call Driver_getMype(MESH_ACROSS_COMM, gr_meshAcrossMe)
-!  call Driver_getNumProcs(MESH_ACROSS_COMM, gr_meshAcrossNumProcs)
-!  call Driver_getComm(MESH_ACROSS_COMM, gr_meshAcrossComm)
-!
-!#ifdef GRID_WITH_MONOTONIC
-!  if (NGUARD < 4) then
-!     if (gr_meshMe==MASTER_PE) then
-!        print*,'Grid_init: Monotonic grid interpolation requires at least 4 layers of guard cells.'
-!        print*,' However, NGUARD is only ', NGUARD
-!        print*," Maybe you want to setup with '-gridinterpolation=native',"
-!        print*," or make sure that NGUARD is set correctly in Config file."
-!        call Driver_abortFlash("Please setup with '-gridinterpolation=native', or change NGUARD.")
-!     end if
-!  endif
-!#endif
-!
-!  !Get the physical domain limits. Angles in degrees, will be converted in gr_initGeometry!
-!  call RuntimeParameters_get('xmin', gr_imin)
-!  call RuntimeParameters_get('xmax', gr_imax)
-!  call RuntimeParameters_get('ymin', gr_jmin)
-!  call RuntimeParameters_get('ymax', gr_jmax)
-!  call RuntimeParameters_get('zmin', gr_kmin)
-!  call RuntimeParameters_get('zmax', gr_kmax)
-!
+  call RuntimeParameters_get("geometry",gr_str_geometry)
+  call RuntimeParameters_mapStrToInt(gr_str_geometry, gr_geometry)
+  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
+
+  call Driver_getMype(GLOBAL_COMM, gr_globalMe)
+  call Driver_getNumProcs(GLOBAL_COMM, gr_globalNumProcs)
+  call Driver_getComm(GLOBAL_COMM, gr_globalComm)
+
+  call Driver_getMype(MESH_COMM, gr_meshMe)
+  call Driver_getNumProcs(MESH_COMM, gr_meshNumProcs)
+  call Driver_getComm(MESH_COMM, gr_meshComm)
+
+  call Driver_getMype(MESH_ACROSS_COMM, gr_meshAcrossMe)
+  call Driver_getNumProcs(MESH_ACROSS_COMM, gr_meshAcrossNumProcs)
+  call Driver_getComm(MESH_ACROSS_COMM, gr_meshAcrossComm)
+
+#ifdef GRID_WITH_MONOTONIC
+  if (NGUARD < 4) then
+     if (gr_meshMe==MASTER_PE) then
+        print*,'Grid_init: Monotonic grid interpolation requires at least 4 layers of guard cells.'
+        print*,' However, NGUARD is only ', NGUARD
+        print*," Maybe you want to setup with '-gridinterpolation=native',"
+        print*," or make sure that NGUARD is set correctly in Config file."
+        call Driver_abortFlash("Please setup with '-gridinterpolation=native', or change NGUARD.")
+     end if
+  endif
+#endif
+
+  !Get the physical domain limits. Angles in degrees, will be converted in gr_initGeometry!
+  call RuntimeParameters_get('xmin', gr_imin)
+  call RuntimeParameters_get('xmax', gr_imax)
+  call RuntimeParameters_get('ymin', gr_jmin)
+  call RuntimeParameters_get('ymax', gr_jmax)
+  call RuntimeParameters_get('zmin', gr_kmin)
+  call RuntimeParameters_get('zmax', gr_kmax)
+
 !!!  gr_meshComm = FLASH_COMM
 !! The following renaming was done: "conserved_var" -> "convertToConsvdForMeshCalls". - KW
 !  call RuntimeParameters_get("convertToConsvdForMeshCalls", gr_convertToConsvdForMeshCalls)
@@ -207,80 +207,78 @@ subroutine Grid_init()
 !        gr_convertToConsvdForMeshCalls = .FALSE.
 !     end if
 !  end if
-!
-!#ifndef FLASH_GRID_PARAMESH2
+
 !  call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
 !  call RuntimeParameters_get("gr_sanitizeDataMode",  gr_sanitizeDataMode)
 !  call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
-!#endif
-!
-!  call RuntimeParameters_get("nrefs", gr_nrefs)
+
+  call RuntimeParameters_get("nrefs", gr_nrefs)
 !  call RuntimeParameters_get('lrefine_min_init', gr_lrefineMinInit)
-!  call RuntimeParameters_get('lrefine_min', lrefine_min)
-!  call RuntimeParameters_get('lrefine_max', lrefine_max)
-!
-!  call RuntimeParameters_get("smalle",gr_smalle)
-!  call RuntimeParameters_get("smlrho",gr_smallrho)
-!  call RuntimeParameters_get("smallx",gr_smallx) !
+  call RuntimeParameters_get('lrefine_min', lrefine_min)
+  call RuntimeParameters_get('lrefine_max', lrefine_max)
+
+  call RuntimeParameters_get("smalle",gr_smalle)
+  call RuntimeParameters_get("smlrho",gr_smallrho)
+  call RuntimeParameters_get("smallx",gr_smallx) !
 !!  call RuntimeParameters_get("grid_monotone_hack", gr_monotone) ! for "quadratic_cartesian" interpolation
 !  call RuntimeParameters_get("interpol_order",gr_intpol) ! for "monotonic" interpolation
 !#ifdef GRID_WITH_MONOTONIC
 !  gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
 !#endif
-!
-!
-!  !get the boundary conditions stored as strings in the flash.par file
-!  call RuntimeParameters_get("xl_boundary_type", xl_bcString)
-!  call RuntimeParameters_get("xr_boundary_type", xr_bcString)
-!  call RuntimeParameters_get("yl_boundary_type", yl_bcString)
-!  call RuntimeParameters_get("yr_boundary_type", yr_bcString)
-!  call RuntimeParameters_get("zl_boundary_type", zl_bcString)
-!  call RuntimeParameters_get("zr_boundary_type", zr_bcString)
-!
-!  !map the string boundary conditions to integer constants defined in constants.h
-!  call RuntimeParameters_mapStrToInt(xl_bcString,gr_domainBC(LOW,IAXIS))
-!  call RuntimeParameters_mapStrToInt(xr_bcString,gr_domainBC(HIGH,IAXIS))
-!  call RuntimeParameters_mapStrToInt(yl_bcString,gr_domainBC(LOW,JAXIS))
-!  call RuntimeParameters_mapStrToInt(yr_bcString,gr_domainBC(HIGH,JAXIS))
-!  call RuntimeParameters_mapStrToInt(zl_bcString,gr_domainBC(LOW,KAXIS))
-!  call RuntimeParameters_mapStrToInt(zr_bcString,gr_domainBC(HIGH,KAXIS))
-!
-!  call RuntimeParameters_get("bndPriorityOne",gr_bndOrder(1))
-!  call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
-!  call RuntimeParameters_get("bndPriorityThree",gr_bndOrder(3))
-!
-!  !get the initial grid layout
+
+
+  !get the boundary conditions stored as strings in the flash.par file
+  call RuntimeParameters_get("xl_boundary_type", xl_bcString)
+  call RuntimeParameters_get("xr_boundary_type", xr_bcString)
+  call RuntimeParameters_get("yl_boundary_type", yl_bcString)
+  call RuntimeParameters_get("yr_boundary_type", yr_bcString)
+  call RuntimeParameters_get("zl_boundary_type", zl_bcString)
+  call RuntimeParameters_get("zr_boundary_type", zr_bcString)
+
+  !map the string boundary conditions to integer constants defined in constants.h
+  call RuntimeParameters_mapStrToInt(xl_bcString,gr_domainBC(LOW,IAXIS))
+  call RuntimeParameters_mapStrToInt(xr_bcString,gr_domainBC(HIGH,IAXIS))
+  call RuntimeParameters_mapStrToInt(yl_bcString,gr_domainBC(LOW,JAXIS))
+  call RuntimeParameters_mapStrToInt(yr_bcString,gr_domainBC(HIGH,JAXIS))
+  call RuntimeParameters_mapStrToInt(zl_bcString,gr_domainBC(LOW,KAXIS))
+  call RuntimeParameters_mapStrToInt(zr_bcString,gr_domainBC(HIGH,KAXIS))
+
+  call RuntimeParameters_get("bndPriorityOne",gr_bndOrder(1))
+  call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
+  call RuntimeParameters_get("bndPriorityThree",gr_bndOrder(3))
+
+  !get the initial grid layout
 !  call RuntimeParameters_get("nblockx", gr_nBlockX) !number of initial blks in x dir
 !  call RuntimeParameters_get("nblocky", gr_nBlockY) !number of initial blks in y dir
 !  call RuntimeParameters_get("nblockz", gr_nblockZ) !number of initial blks in z dir  
-!  call RuntimeParameters_get("refine_on_particle_count",gr_refineOnParticleCount)
-!
-!  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
-!  call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
-!
-!  ! DEVNOTE:  We should now have enough parameters to initialize AMReX with 
-!  ! all its necessary configuration values
-!  call gr_amrex_init()
-!
-!!------------------------------------------------------------------------------
-!! mesh geometry       (gr_geometry and gr_{i,j,k}{min,max} already set above)
-!!------------------------------------------------------------------------------
-!
-!! Determine the geometries of the individual dimensions, and scale
-!! angle value parameters that are expressed in degrees to radians.
-!! This call must be made after gr_geometry, gr_domainBC, and gr_{j,k}{min,max}
-!! have been set based on the corresponding runtime parameters.
-!  call gr_initGeometry()
-!
-!  !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
-!  gr_globalDomain(LOW,IAXIS) = gr_imin
-!  gr_globalDomain(LOW,JAXIS) = gr_jmin
-!  gr_globalDomain(LOW,KAXIS) = gr_kmin
-!  gr_globalDomain(HIGH,IAXIS) = gr_imax
-!  gr_globalDomain(HIGH,JAXIS) = gr_jmax
-!  gr_globalDomain(HIGH,KAXIS) = gr_kmax
-!
-!
+  call RuntimeParameters_get("refine_on_particle_count",gr_refineOnParticleCount)
+
+  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
+  call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
+
+  ! DEVNOTE:  We should now have enough parameters to initialize AMReX with 
+  ! all its necessary configuration values
+  call gr_amrex_init()
+
+!------------------------------------------------------------------------------
+! mesh geometry       (gr_geometry and gr_{i,j,k}{min,max} already set above)
+!------------------------------------------------------------------------------
+
+! Determine the geometries of the individual dimensions, and scale
+! angle value parameters that are expressed in degrees to radians.
+! This call must be made after gr_geometry, gr_domainBC, and gr_{j,k}{min,max}
+! have been set based on the corresponding runtime parameters.
+  call gr_initGeometry()
+
+  !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
+  gr_globalDomain(LOW,IAXIS) = gr_imin
+  gr_globalDomain(LOW,JAXIS) = gr_jmin
+  gr_globalDomain(LOW,KAXIS) = gr_kmin
+  gr_globalDomain(HIGH,IAXIS) = gr_imax
+  gr_globalDomain(HIGH,JAXIS) = gr_jmax
+  gr_globalDomain(HIGH,KAXIS) = gr_kmax
+
+
 !  call RuntimeParameters_get("eosMode", eosModeString)
 !  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosMode)
 !
@@ -291,27 +289,27 @@ subroutine Grid_init()
 !
 !  call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
 !  gr_justExchangedGC = .false.
-!
-!
-!  !! This section of the code identifies the variables to used in
-!  !! the refinement criterion. If a variable is a refinement variable
-!  !! then the corresponding refinement/derefinement cutoff and filter
-!  !! values also have to be fetched. The config file defines
-!  !! refinement variables as strings, names as "refine_var_1",
-!  !! "refine_var_2" etc, with the current maximum being 4. The
-!  !! general utility routine takes the base "refine_var_" and appends
-!  !! the index at the end of the string to generate the parameter
-!  !! name and the routine Simulation_mapStrToInt finds its index into UNK.
-!
-!  call RuntimeParameters_get("refine_var_count",gr_numRefineVarsMax)
-!  gr_refine_var = NONEXISTENT
-!  gr_numRefineVars=0
-!
-!  refVarName='refine_var_'
-!  refCutoffName='refine_cutoff_'
-!  derefCutoffName='derefine_cutoff_'
-!  refFilterName='refine_filter_'
-!
+
+
+  !! This section of the code identifies the variables to used in
+  !! the refinement criterion. If a variable is a refinement variable
+  !! then the corresponding refinement/derefinement cutoff and filter
+  !! values also have to be fetched. The config file defines
+  !! refinement variables as strings, names as "refine_var_1",
+  !! "refine_var_2" etc, with the current maximum being 4. The
+  !! general utility routine takes the base "refine_var_" and appends
+  !! the index at the end of the string to generate the parameter
+  !! name and the routine Simulation_mapStrToInt finds its index into UNK.
+
+  call RuntimeParameters_get("refine_var_count",gr_numRefineVarsMax)
+  gr_refine_var = NONEXISTENT
+  gr_numRefineVars=0
+
+  refVarName='refine_var_'
+  refCutoffName='refine_cutoff_'
+  derefCutoffName='derefine_cutoff_'
+  refFilterName='refine_filter_'
+
 !  do i = 1,gr_numRefineVarsMax
 !     call concatStringWithInt(refVarName,i,refVarString)
 !     call RuntimeParameters_get( refVarString, paramString)
@@ -342,11 +340,12 @@ subroutine Grid_init()
 !  end do
 !
 !  gr_enforceMaxRefinement = .FALSE.
-!
-!  call RuntimeParameters_get("lrefine_del", gr_lrefineDel)
-!  gr_maxRefine=lrefine_max
-!  allocate(gr_delta(MDIM,lrefine_max))
-!
+
+  ! DEVNOTE: Get max refine level approriately
+  call RuntimeParameters_get("lrefine_del", gr_lrefineDel)
+  gr_maxRefine=2
+  allocate(gr_delta(MDIM,lrefine_max))
+
 !  call RuntimeParameters_get("gr_lrefineMaxRedDoByLogR", gr_lrefineMaxRedDoByLogR)
 !  call RuntimeParameters_get("gr_lrefineMaxRedRadiusFact", gr_lrefineMaxRedRadiusSq)
 !  gr_lrefineMaxRedRadiusSq = gr_lrefineMaxRedRadiusSq * gr_lrefineMaxRedRadiusSq
@@ -394,7 +393,7 @@ subroutine Grid_init()
 !  end if
 !
 !  call RuntimeParameters_get("gr_restrictAllMethod", gr_restrictAllMethod)
-!
+
 !#ifdef FLASH_PARTICLES
 !  call RuntimeParameters_get('useParticles',gr_useParticles)
 !  call RuntimeParameters_get('pt_maxPerProc',gr_maxParticlesPerProc)
@@ -425,9 +424,9 @@ subroutine Grid_init()
 !     if(gr_domainBC(LOW,i)/=PERIODIC)gr_allPeriodic=.false.
 !     if(gr_domainBC(HIGH,i)/=PERIODIC)gr_allPeriodic=.false.
 !  end do
-!
-!  !Check if there are gravitational isolated boundary conditions
-!  !in order to determine which solvers to intialize.
+
+  !Check if there are gravitational isolated boundary conditions
+  !in order to determine which solvers to intialize.
 !  call RuntimeParameters_get("grav_boundary_type", grav_boundary_type)
 !  gr_isolatedBoundaries = (grav_boundary_type=="isolated")
 !
@@ -437,33 +436,35 @@ subroutine Grid_init()
 !     call Simulation_getVarnameType(i, gr_vartypes(i))
 !     if (gr_vartypes(i) .eq. VARTYPE_PER_MASS) gr_anyVarToConvert = .TRUE.
 !  end do
-!
-!
-!
-!  ! DEVNOTE: Is AMReX doing this for us?
-!  !! calculating deltas for each level of 
-!  !! refinement and putting them in the
-!  !! delta variable
-!!  dx = gr_imax - gr_imin
-!!  dy = gr_jmax - gr_jmin
-!!  dz = gr_kmax - gr_kmin
-!!  rnb = 0.0
-!!  rnb(1) = dx/(1.0*NXB*gr_nBlockX)
-!!#if NDIM > 1
-!!  rnb(2) = dy/(1.0*NYB*gr_nBlockY)
-!!#endif
-!!#if NDIM > 2
-!!  rnb(3) = dz/(1.0*NZB*gr_nBlockZ)
-!!#endif  
-!!  do i = 1,lrefine_max
-!!     gr_delta(1:NDIM,i) = rnb
-!!     gr_delta(NDIM+1:,i) = 0.0
-!!     rnb = rnb/2.0
-!!  end do
-!
-!      
-!
-!
+
+
+
+  ! DEVNOTE: Is AMReX doing this for us?
+  !! calculating deltas for each level of 
+  !! refinement and putting them in the
+  !! delta variable
+  ! DEVNOTE: Get these appropriately.
+  gr_nBlockX = 8
+  gr_nBlockY = 8
+  gr_nBlockZ = 8
+
+  dx = gr_imax - gr_imin
+  dy = gr_jmax - gr_jmin
+  dz = gr_kmax - gr_kmin
+  rnb = 0.0
+  rnb(1) = dx/(1.0*NXB*gr_nBlockX)
+#if NDIM > 1
+  rnb(2) = dy/(1.0*NYB*gr_nBlockY)
+#endif
+#if NDIM > 2
+  rnb(3) = dz/(1.0*NZB*gr_nBlockZ)
+#endif  
+  do i = 1,lrefine_max
+     gr_delta(1:NDIM,i) = rnb
+     gr_delta(NDIM+1:,i) = 0.0
+     rnb = rnb/2.0
+  end do
+
 !  gr_minCellSizes(IAXIS) = (gr_imax - gr_imin) / &
 !       (gr_nblockX*NXB*2**(lrefine_max-1))
 !  gr_minCellSize = gr_minCellSizes(IAXIS)
@@ -496,100 +497,100 @@ subroutine Grid_init()
 !#endif
 !  call gr_setDataStructInfo()
 !  call gr_bcInit()
-!
-!  ! DEVNOTE: Is this Paramesh-specific.  Defined in paramesh
-!  !Initialize grid arrays used by IO
-!!  allocate(gr_nToLeft(0:gr_meshNumProcs-1))
-!!  allocate(gr_gid(nfaces+nchild+1, MAXBLOCKS))
-!
-!  !Only call the particle initialization routines when
-!  !we are using particles.
+
+  ! DEVNOTE: Is this Paramesh-specific.  Defined in paramesh
+  !Initialize grid arrays used by IO
+!  allocate(gr_nToLeft(0:gr_meshNumProcs-1))
+!  allocate(gr_gid(nfaces+nchild+1, MAXBLOCKS))
+
+  !Only call the particle initialization routines when
+  !we are using particles.
 !  if (gr_useParticles .eqv. .true. ) then
 !     call gr_ptInit()
 !     call gr_ptMapInit()
 !  endif
-!
-!!  call gr_sbInit()
-!
-!    ! Reduce guard cell fills
+
+!  call gr_sbInit()
+
+    ! Reduce guard cell fills
 !  call RuntimeParameters_get ("reduceGcellFills", gr_reduceGcellFills)
-!
+
 !  gr_region=0.0
+
+! DEVNOTE: What to do with these?
+!#ifndef BSS_GRID_ARRAYS
+!# if NSCRATCH_GRID_VARS > 0
+!  allocate(scratch(SCRATCH_GRID_VARS_BEGIN:SCRATCH_GRID_VARS_END,&
+!       gr_iLoGc:gr_iHiGc+1, gr_jLoGc:gr_jHiGc+1,&
+!       gr_kLoGc:gr_kHiGc+1,MAXBLOCKS))
+!# else
+!  allocate(scratch(1,1,1,1,1))
+!# endif
 !
-!! DEVNOTE: What to do with these?
-!!#ifndef BSS_GRID_ARRAYS
-!!# if NSCRATCH_GRID_VARS > 0
-!!  allocate(scratch(SCRATCH_GRID_VARS_BEGIN:SCRATCH_GRID_VARS_END,&
-!!       gr_iLoGc:gr_iHiGc+1, gr_jLoGc:gr_jHiGc+1,&
-!!       gr_kLoGc:gr_kHiGc+1,MAXBLOCKS))
-!!# else
-!!  allocate(scratch(1,1,1,1,1))
-!!# endif
-!!
-!!# if NSCRATCH_CENTER_VARS > 0
-!!  allocate(scratch_ctr(SCRATCH_CENTER_VARS_BEGIN:SCRATCH_CENTER_VARS_END,&
-!!       gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc,&
-!!       gr_kLoGc:gr_kHiGc,MAXBLOCKS))
-!!# else
-!!  allocate(scratch_ctr(1,1,1,1,1))
-!!# endif
-!!
-!!# if(NSCRATCH_FACEX_VARS>0)  
-!!  allocate(scratch_facevarx( SCRATCH_FACEX_VARS_BEGIN:SCRATCH_FACEX_VARS_END,&
-!!       gr_iLoGc:gr_iHiGc+1, gr_jLoGc:gr_jHiGc,&
-!!       gr_kLoGc:gr_kHiGc,MAXBLOCKS))
-!!# else
-!!  allocate(scratch_facevarx(1,1,1,1,1))
-!!# endif
-!!
-!!# if(NSCRATCH_FACEY_VARS>0)  
-!!  allocate(scratch_facevary( SCRATCH_FACEY_VARS_BEGIN:SCRATCH_FACEY_VARS_END,&
-!!       gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc+K2D,&
-!!       gr_kLoGc:gr_kHiGc,MAXBLOCKS))
-!!# else
-!!  allocate(scratch_facevary(1,1,1,1,1))
-!!# endif  
-!!
-!!# if(NSCRATCH_FACEZ_VARS>0)
-!!  allocate(scratch_facevarz( SCRATCH_FACEZ_VARS_BEGIN:SCRATCH_FACEZ_VARS_END,&
-!!       gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc,&
-!!       gr_kLoGc:gr_kHiGc+K3D,MAXBLOCKS) )
-!!# else
-!!  allocate(scratch_facevarz(1,1,1,1,1))
-!!# endif
+!# if NSCRATCH_CENTER_VARS > 0
+!  allocate(scratch_ctr(SCRATCH_CENTER_VARS_BEGIN:SCRATCH_CENTER_VARS_END,&
+!       gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc,&
+!       gr_kLoGc:gr_kHiGc,MAXBLOCKS))
+!# else
+!  allocate(scratch_ctr(1,1,1,1,1))
+!# endif
 !
-!!  allocate(gr_xflx(NFLUXES,2,NYB,NZB,MAXBLOCKS))
-!!  allocate(gr_yflx(NFLUXES,NXB,2,NZB,MAXBLOCKS))
-!!  allocate(gr_zflx(NFLUXES,NXB,NYB,2,MAXBLOCKS))
-!!  
-!!# ifdef FLASH_HYDRO_UNSPLIT
-!!#  if NDIM >= 2
-!!  allocate(gr_xflx_yface(NFLUXES,2:NXB, 2   ,NZB  ,MAXBLOCKS))
-!!  allocate(gr_yflx_xface(NFLUXES,2    ,2:NYB,NZB  ,MAXBLOCKS))
-!!#   if NDIM == 3
-!!  allocate(gr_xflx_zface(NFLUXES,2:NXB,NYB  , 2   ,MAXBLOCKS))
-!!  allocate(gr_yflx_zface(NFLUXES,NXB,  2:NYB, 2   ,MAXBLOCKS))
-!!  allocate(gr_zflx_xface(NFLUXES, 2 ,NYB    ,2:NZB,MAXBLOCKS))
-!!  allocate(gr_zflx_yface(NFLUXES,NXB, 2     ,2:NZB,MAXBLOCKS))
-!!#   endif
-!!#  endif
-!!# endif
+!# if(NSCRATCH_FACEX_VARS>0)  
+!  allocate(scratch_facevarx( SCRATCH_FACEX_VARS_BEGIN:SCRATCH_FACEX_VARS_END,&
+!       gr_iLoGc:gr_iHiGc+1, gr_jLoGc:gr_jHiGc,&
+!       gr_kLoGc:gr_kHiGc,MAXBLOCKS))
+!# else
+!  allocate(scratch_facevarx(1,1,1,1,1))
+!# endif
 !
-!!#endif
+!# if(NSCRATCH_FACEY_VARS>0)  
+!  allocate(scratch_facevary( SCRATCH_FACEY_VARS_BEGIN:SCRATCH_FACEY_VARS_END,&
+!       gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc+K2D,&
+!       gr_kLoGc:gr_kHiGc,MAXBLOCKS))
+!# else
+!  allocate(scratch_facevary(1,1,1,1,1))
+!# endif  
 !
+!# if(NSCRATCH_FACEZ_VARS>0)
+!  allocate(scratch_facevarz( SCRATCH_FACEZ_VARS_BEGIN:SCRATCH_FACEZ_VARS_END,&
+!       gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc,&
+!       gr_kLoGc:gr_kHiGc+K3D,MAXBLOCKS) )
+!# else
+!  allocate(scratch_facevarz(1,1,1,1,1))
+!# endif
+
+!  allocate(gr_xflx(NFLUXES,2,NYB,NZB,MAXBLOCKS))
+!  allocate(gr_yflx(NFLUXES,NXB,2,NZB,MAXBLOCKS))
+!  allocate(gr_zflx(NFLUXES,NXB,NYB,2,MAXBLOCKS))
+!  
+!# ifdef FLASH_HYDRO_UNSPLIT
+!#  if NDIM >= 2
+!  allocate(gr_xflx_yface(NFLUXES,2:NXB, 2   ,NZB  ,MAXBLOCKS))
+!  allocate(gr_yflx_xface(NFLUXES,2    ,2:NYB,NZB  ,MAXBLOCKS))
+!#   if NDIM == 3
+!  allocate(gr_xflx_zface(NFLUXES,2:NXB,NYB  , 2   ,MAXBLOCKS))
+!  allocate(gr_yflx_zface(NFLUXES,NXB,  2:NYB, 2   ,MAXBLOCKS))
+!  allocate(gr_zflx_xface(NFLUXES, 2 ,NYB    ,2:NZB,MAXBLOCKS))
+!  allocate(gr_zflx_yface(NFLUXES,NXB, 2     ,2:NZB,MAXBLOCKS))
+!#   endif
+!#  endif
+!# endif
+
+!#endif
+
 !  if(gr_meshMe == MASTER_PE) call printRefinementInfo()
-!
-!contains
-!
-!  subroutine printRefinementInfo()
-!    implicit none
-!    integer :: l,n
-!    real    :: del(MDIM)
-!    character(len=20) :: fmtStr
-!    character(len=2)  :: colHdr(MDIM) = (/'dx', 'dy', 'dz'/)
-!
-!    write(*,*) 'Grid_init: resolution based on runtime params:'
-!    write(*,'(A9,3(A12:4x))')  'lrefine', (colHdr(n),n=1,NDIM)
+
+contains
+
+  subroutine printRefinementInfo()
+    implicit none
+    integer :: l,n
+    real    :: del(MDIM)
+    character(len=20) :: fmtStr
+    character(len=2)  :: colHdr(MDIM) = (/'dx', 'dy', 'dz'/)
+
+    write(*,*) 'Grid_init: resolution based on runtime params:'
+    write(*,'(A9,3(A12:4x))')  'lrefine', (colHdr(n),n=1,NDIM)
 !    do l = lrefine_min, lrefine_max
 !       del (IAXIS)               = (gr_imax - gr_imin) / (gr_nblockX*NXB*2.**(l-1))
 !       if (NDIM > 1)  del(JAXIS) = (gr_jmax - gr_jmin) / (gr_nblockY*NYB*2.**(l-1))
@@ -605,6 +606,6 @@ subroutine Grid_init()
 !
 !       write(*,fmtStr) l, (del(n),n=1,NDIM)
 !    end do
-!  end subroutine printRefinementInfo
+  end subroutine printRefinementInfo
 
 end subroutine Grid_init

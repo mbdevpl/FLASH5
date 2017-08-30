@@ -5,6 +5,8 @@ subroutine gr_amrex_finalize()
     use physicaldata,           ONLY : unk
  
     integer :: lev
+
+    write(*,*) "[gr_amrex_finalize] Finalizing"
     do lev = 0, amrex_max_level
         call amrex_multifab_destroy(unk(lev))
     end do

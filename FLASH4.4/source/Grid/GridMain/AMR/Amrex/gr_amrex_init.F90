@@ -5,6 +5,7 @@ subroutine gr_amrex_init()
   use amrex_amr_module,       ONLY : amrex_init, &
                                      amrex_amrcore_init, &
                                      amrex_init_virtual_functions, &
+                                     amrex_init_from_scratch, &
                                      amrex_max_level
   use amrex_parmparse_module, ONLY : amrex_parmparse, &
                                      amrex_parmparse_build, &
@@ -23,9 +24,13 @@ subroutine gr_amrex_init()
 
 #include "constants.h"
 
+  real(wp), parameter :: T_INIT = 0.0_wp
+
   type(amrex_parmparse) :: pp
   type(amrex_parmparse) :: pp_geom
   type(amrex_parmparse) :: pp_amr
+
+  write(*,*) "[gr_amrex_init] Starting"
  
   !!!!!----- INITIALIZE AMReX & CONFIGURE MANUALLY
   ! Do not parse command line or any file for configuration
@@ -80,5 +85,8 @@ subroutine gr_amrex_init()
   !!!!!----- ALLOCATE DATA STRUCTURES
   ! multifabs
   allocate(unk(0:amrex_max_level))
+
+  ! Setup grids and initialize the data
+  call amrex_init_from_scratch(T_INIT)
 end subroutine gr_amrex_init
 
