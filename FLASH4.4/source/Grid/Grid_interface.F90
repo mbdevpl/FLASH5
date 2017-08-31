@@ -242,10 +242,11 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getBlkData(blockID, dataType, structIndex, beginCount, &
+     subroutine Grid_getBlkData(block, dataType, structIndex, beginCount, &
           startingPos, datablock, dataSize)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(in) :: blockID
+       type(block_metadata_t), intent(in) :: block
        integer, intent(in) :: structIndex, beginCount, dataType
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, dimension(3), intent(in) :: dataSize

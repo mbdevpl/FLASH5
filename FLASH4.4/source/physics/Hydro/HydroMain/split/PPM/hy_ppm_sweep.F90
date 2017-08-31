@@ -606,13 +606,12 @@ end do
         deallocate(tempDtDx)
         deallocate(tempFict)
         deallocate(tempAreaLeft)
-     call itor%next()
+        call itor%next()
 
      end do !!END LOOP OVER BLOCKS
 
   end do
 end if
-  print*,'second round done'
   call Timers_stop("hy_ppm_sweep")
 
 !  call IO_writeCheckpoint()
