@@ -4,10 +4,8 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     use amrex_amr_module,       ONLY : amrex_geom, &
                                        amrex_problo
     use amrex_box_module,       ONLY : amrex_box
-    use amrex_boxarray_module,  ONLY : amrex_boxarray, &
-                                       box_print => amrex_print
-    use amrex_distromap_module, ONLY : amrex_distromap, &
-                                       distro_print => amrex_print
+    use amrex_boxarray_module,  ONLY : amrex_boxarray
+    use amrex_distromap_module, ONLY : amrex_distromap
     use amrex_parallel_module,  ONLY : amrex_parallel_myproc
     use amrex_multifab_module,  ONLY : amrex_mfiter, &
                                        amrex_mfiter_build, &
@@ -48,9 +46,6 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
  
     ba = pba
     dm = pdm
- 
-    call box_print(ba)
-    call distro_print(dm)
 
     call gr_clearLevel(lev)
 

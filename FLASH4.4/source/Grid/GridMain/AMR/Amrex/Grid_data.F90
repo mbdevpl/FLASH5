@@ -30,9 +30,9 @@ Module Grid_data
 #include "constants.h"
 #include "Flash.h"
 
+  integer, save :: gr_verbosity
   real,save, allocatable, dimension(:,:) :: gr_delta
   integer ,save :: gr_nblockX, gr_nblockY, gr_nblockZ
-  integer, save :: lrefine_min, lrefine_max
 
   integer, save :: gr_iguard = NGUARD
   integer, save :: gr_jguard = NGUARD 

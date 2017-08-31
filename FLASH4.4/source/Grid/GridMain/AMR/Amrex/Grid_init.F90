@@ -152,7 +152,9 @@ subroutine Grid_init()
   integer,save :: refVar
   integer :: countInComm, color, key, ierr
   integer :: nonrep
-  
+ 
+  call RuntimeParameters_get("gr_amrex_verbosity", gr_verbosity)
+
 !----------------------------------------------------------------------------------
 ! mesh geometry - moved here so Paramesh_init can use gr_geometry for some checking
 !----------------------------------------------------------------------------------
@@ -213,13 +215,11 @@ subroutine Grid_init()
 !  call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
 
   call RuntimeParameters_get("nrefs", gr_nrefs)
-!  call RuntimeParameters_get('lrefine_min_init', gr_lrefineMinInit)
-  call RuntimeParameters_get('lrefine_min', lrefine_min)
-  call RuntimeParameters_get('lrefine_max', lrefine_max)
+  call RuntimeParameters_get('lrefine_max', gr_maxRefine)
 
-  call RuntimeParameters_get("smalle",gr_smalle)
-  call RuntimeParameters_get("smlrho",gr_smallrho)
-  call RuntimeParameters_get("smallx",gr_smallx) !
+!  call RuntimeParameters_get("smalle",gr_smalle)
+!  call RuntimeParameters_get("smlrho",gr_smallrho)
+!  call RuntimeParameters_get("smallx",gr_smallx) !
 !!  call RuntimeParameters_get("grid_monotone_hack", gr_monotone) ! for "quadratic_cartesian" interpolation
 !  call RuntimeParameters_get("interpol_order",gr_intpol) ! for "monotonic" interpolation
 !#ifdef GRID_WITH_MONOTONIC
@@ -243,22 +243,18 @@ subroutine Grid_init()
   call RuntimeParameters_mapStrToInt(zl_bcString,gr_domainBC(LOW,KAXIS))
   call RuntimeParameters_mapStrToInt(zr_bcString,gr_domainBC(HIGH,KAXIS))
 
-  call RuntimeParameters_get("bndPriorityOne",gr_bndOrder(1))
-  call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
-  call RuntimeParameters_get("bndPriorityThree",gr_bndOrder(3))
+!  call RuntimeParameters_get("bndPriorityOne",gr_bndOrder(1))
+!  call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
+!  call RuntimeParameters_get("bndPriorityThree",gr_bndOrder(3))
 
   !get the initial grid layout
-!  call RuntimeParameters_get("nblockx", gr_nBlockX) !number of initial blks in x dir
-!  call RuntimeParameters_get("nblocky", gr_nBlockY) !number of initial blks in y dir
-!  call RuntimeParameters_get("nblockz", gr_nblockZ) !number of initial blks in z dir  
-  call RuntimeParameters_get("refine_on_particle_count",gr_refineOnParticleCount)
+  call RuntimeParameters_get("nblockx", gr_nBlockX) !number of initial blks in x dir
+  call RuntimeParameters_get("nblocky", gr_nBlockY) !number of initial blks in y dir
+  call RuntimeParameters_get("nblockz", gr_nblockZ) !number of initial blks in z dir  
+!  call RuntimeParameters_get("refine_on_particle_count",gr_refineOnParticleCount)
 
-  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
-  call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
-
-  ! DEVNOTE:  We should now have enough parameters to initialize AMReX with 
-  ! all its necessary configuration values
-  call gr_amrex_init()
+!  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
+!  call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
 
 !------------------------------------------------------------------------------
 ! mesh geometry       (gr_geometry and gr_{i,j,k}{min,max} already set above)
@@ -289,7 +285,6 @@ subroutine Grid_init()
 !
 !  call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
 !  gr_justExchangedGC = .false.
-
 
   !! This section of the code identifies the variables to used in
   !! the refinement criterion. If a variable is a refinement variable
@@ -341,10 +336,8 @@ subroutine Grid_init()
 !
 !  gr_enforceMaxRefinement = .FALSE.
 
-  ! DEVNOTE: Get max refine level approriately
   call RuntimeParameters_get("lrefine_del", gr_lrefineDel)
-  gr_maxRefine=2
-  allocate(gr_delta(MDIM,lrefine_max))
+  allocate(gr_delta(MDIM,gr_maxRefine))
 
 !  call RuntimeParameters_get("gr_lrefineMaxRedDoByLogR", gr_lrefineMaxRedDoByLogR)
 !  call RuntimeParameters_get("gr_lrefineMaxRedRadiusFact", gr_lrefineMaxRedRadiusSq)
@@ -443,11 +436,6 @@ subroutine Grid_init()
   !! calculating deltas for each level of 
   !! refinement and putting them in the
   !! delta variable
-  ! DEVNOTE: Get these appropriately.
-  gr_nBlockX = 8
-  gr_nBlockY = 8
-  gr_nBlockZ = 8
-
   dx = gr_imax - gr_imin
   dy = gr_jmax - gr_jmin
   dz = gr_kmax - gr_kmin
@@ -459,7 +447,7 @@ subroutine Grid_init()
 #if NDIM > 2
   rnb(3) = dz/(1.0*NZB*gr_nBlockZ)
 #endif  
-  do i = 1,lrefine_max
+  do i = 1,gr_maxRefine
      gr_delta(1:NDIM,i) = rnb
      gr_delta(NDIM+1:,i) = 0.0
      rnb = rnb/2.0
@@ -516,6 +504,9 @@ subroutine Grid_init()
 !  call RuntimeParameters_get ("reduceGcellFills", gr_reduceGcellFills)
 
 !  gr_region=0.0
+  
+  ! All runtime parameters needed by AMReX should be loaded by here
+  call gr_amrex_init()
 
 ! DEVNOTE: What to do with these?
 !#ifndef BSS_GRID_ARRAYS

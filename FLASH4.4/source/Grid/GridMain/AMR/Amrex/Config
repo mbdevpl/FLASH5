@@ -29,7 +29,9 @@ PPDEFINE FLASH_GRID_ANYAMREX
 # with I/O only optionally depend on the iso_c_binding module.
 #PPDEFINE USE_IO_C_INTERFACE
 
+# !!! If you add a parameter, please add a description line
+# Format is D <parameter name> <description>
+
 D How much output is written out. Higher number is more verbose.
-PARAMETER gr_amrex_verbosity INTEGER 0 [ 0 ... ]
-#PARAMETER verbosity INTEGER 0 [ 0 ... ]
+PARAMETER gr_amrex_verbosity INTEGER 1 [ 0 ... ]
 
