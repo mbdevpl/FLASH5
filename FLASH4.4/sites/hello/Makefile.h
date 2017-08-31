@@ -154,7 +154,7 @@ ECHO = echo
 #----------------------------------------------------------------------------
 # Fake existence of iso_c_bindings module to prevent unnecessary recompilations.
 #---------------------------------------------------------------------------- 
-ifeq ($(FLASHBINARY),true)
-iso_c_binding.mod :
-	touch $@
-endif
+#ifeq ($(FLASHBINARY),true)
+#iso_c_binding.mod :
+#	touch $@
+#endif
