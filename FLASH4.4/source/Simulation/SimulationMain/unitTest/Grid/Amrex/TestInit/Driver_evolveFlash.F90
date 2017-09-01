@@ -31,15 +31,13 @@
 subroutine Driver_evolveFlash()
     use amrex_fort_module,     ONLY : wp => amrex_real, &
                                       amrex_spacedim
-    use amrex_amr_module,      ONLY : amrex_geom, &
-                                      amrex_problo, &
-                                      amrex_probhi
     use amrex_amrcore_module,  ONLY : amrex_get_finest_level, &
                                       amrex_get_boxarray
     use amrex_box_module,      ONLY : amrex_print, amrex_box
     use amrex_parallel_module, ONLY : amrex_parallel_myproc, &
                                       amrex_parallel_nprocs
 
+    use Grid_interface,        ONLY : Grid_getDomainBoundBox
     use Grid_data,             ONLY : gr_nBlockX, gr_nBlockY, gr_nBlockZ, &
                                       gr_meshMe
 
@@ -65,6 +63,8 @@ subroutine Driver_evolveFlash()
     real(wp)       :: t_old = 0.0_wp
     real(wp)       :: t_new = 0.0_wp
 
+    real           :: domain(LOW:HIGH, MDIM)
+
     integer  :: rank = -1
 
     rank = amrex_parallel_myproc()
@@ -85,19 +85,20 @@ subroutine Driver_evolveFlash()
     ! TODO: Check coordinate system type from AMReX
 
     ! Physical domain
-    call assert_almost_equal(amrex_problo(1), XMIN_EX, 0.0_wp, &
+    call Grid_getDomainBoundBox(domain)
+    call assert_almost_equal(domain(LOW, 1), XMIN_EX, 0.0_wp, &
                              "Incorrect low X-coordinate")
-    call assert_almost_equal(amrex_probhi(1), XMAX_EX, 0.0_wp, &
+    call assert_almost_equal(domain(HIGH, 1), XMAX_EX, 0.0_wp, &
                              "Incorrect high X-coordinate")
 #if NDIM >= 2
-    call assert_almost_equal(amrex_problo(2), YMIN_EX, 0.0_wp, &
+    call assert_almost_equal(domain(LOW, 2), YMIN_EX, 0.0_wp, &
                              "Incorrect low Y-coordinate")
-    call assert_almost_equal(amrex_probhi(2), YMAX_EX, 0.0_wp, &
+    call assert_almost_equal(domain(HIGH, 2), YMAX_EX, 0.0_wp, &
                              "Incorrect high Y-coordinate")
 #if NDIM == 3 
-    call assert_almost_equal(amrex_problo(3), ZMIN_EX, 0.0_wp, &
+    call assert_almost_equal(domain(LOW, 3), ZMIN_EX, 0.0_wp, &
                              "Incorrect low Z-coordinate")
-    call assert_almost_equal(amrex_probhi(3), ZMAX_EX, 0.0_wp, &
+    call assert_almost_equal(domain(HIGH,3), ZMAX_EX, 0.0_wp, &
                              "Incorrect high Z-coordinate")
 #endif
 #endif

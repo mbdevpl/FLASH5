@@ -25,10 +25,7 @@ subroutine gr_amrex_init()
   ! TODO: Hopefully these should disappear
   use Grid_data,                   ONLY : gr_nblockX, gr_nblockY, gr_nblockZ, &
                                           gr_geometry, &
-                                          gr_maxRefine, &
-                                          gr_imin, gr_imax, &
-                                          gr_jmin, gr_jmax, &
-                                          gr_kmin, gr_kmax
+                                          gr_maxRefine
 
   implicit none
 
@@ -105,10 +102,6 @@ subroutine gr_amrex_init()
   call pp_geom%addarr("prob_lo", [xmin, ymin, zmin])
   call pp_geom%addarr("prob_hi", [xmax, ymax, zmax])
   call pp_geom%addarr("is_periodic", [1, 1, 1])
-  ! TODO: Take these out once we have AMReX interface to these values
-  gr_imin = xmin;  gr_imax = xmax
-  gr_jmin = ymin;  gr_jmax = ymax
-  gr_kmin = zmin;  gr_kmax = zmax
 
   ! DEVNOTE: max_grid must be a multiple of blocking_factor.  Error checking in
   ! AMReX or here?

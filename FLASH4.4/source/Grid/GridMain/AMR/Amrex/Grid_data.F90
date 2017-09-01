@@ -34,7 +34,6 @@ Module Grid_data
 ! interface to  get them
   integer ,save :: gr_nblockX, gr_nblockY, gr_nblockZ
   integer ,save :: gr_geometry
-  real ,save :: gr_imin,gr_imax,gr_jmin,gr_jmax,gr_kmin,gr_kmax
   integer,save :: gr_maxRefine
   real,save, allocatable, dimension(:,:) :: gr_delta
 

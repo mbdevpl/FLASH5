@@ -152,12 +152,9 @@ subroutine Grid_init()
   integer,save :: refVar
   integer :: countInComm, color, key, ierr
   integer :: nonrep
- 
-!----------------------------------------------------------------------------------
-! mesh geometry - moved here so Paramesh_init can use gr_geometry for some checking
-!----------------------------------------------------------------------------------
-!  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
 
+  integer :: domain(LOW:HIGH, MDIM)
+ 
   call Driver_getMype(GLOBAL_COMM, gr_globalMe)
   call Driver_getNumProcs(GLOBAL_COMM, gr_globalNumProcs)
   call Driver_getComm(GLOBAL_COMM, gr_globalComm)
@@ -182,20 +179,53 @@ subroutine Grid_init()
   endif
 #endif
 
-  ! All runtime parameters needed by AMReX should be loaded by here
+!------------------------------------------------------------------------------
+! Load into local Grid variables all runtime parameters needed by gr_initGeometry
+!------------------------------------------------------------------------------
+  !get the boundary conditions stored as strings in the flash.par file
+  call RuntimeParameters_get("xl_boundary_type", xl_bcString)
+  call RuntimeParameters_get("xr_boundary_type", xr_bcString)
+  call RuntimeParameters_get("yl_boundary_type", yl_bcString)
+  call RuntimeParameters_get("yr_boundary_type", yr_bcString)
+  call RuntimeParameters_get("zl_boundary_type", zl_bcString)
+  call RuntimeParameters_get("zr_boundary_type", zr_bcString)
+
+  !map the string boundary conditions to integer constants defined in constants.h
+  call RuntimeParameters_mapStrToInt(xl_bcString,gr_domainBC(LOW,IAXIS))
+  call RuntimeParameters_mapStrToInt(xr_bcString,gr_domainBC(HIGH,IAXIS))
+  call RuntimeParameters_mapStrToInt(yl_bcString,gr_domainBC(LOW,JAXIS))
+  call RuntimeParameters_mapStrToInt(yr_bcString,gr_domainBC(HIGH,JAXIS))
+  call RuntimeParameters_mapStrToInt(zl_bcString,gr_domainBC(LOW,KAXIS))
+  call RuntimeParameters_mapStrToInt(zr_bcString,gr_domainBC(HIGH,KAXIS))
+
+!------------------------------------------------------------------------------
+! FLASH inits geometry first as it can change runtime parameters
+!------------------------------------------------------------------------------
+  ! Determine the geometries of the individual dimensions, and scale
+  ! angle value parameters that are expressed in degrees to radians.
+  call gr_initGeometry()
+
+!----------------------------------------------------------------------------------
+! Init AMReX so that it can expose the data it controls through the grid interfaces 
+!----------------------------------------------------------------------------------
   call gr_amrex_init()
 
 !----------------------------------------------------------------------------------
-! Setup all local Grid data variables that depend on AMReX-controlled data
+! Store AMReX-controlled data as local Grid data variables for optimization
 !----------------------------------------------------------------------------------
-  ! DEVNOTE: Initialize these correctly
+! DEVNOTE: Premature optimization is the root to all evil...
+
+!----------------------------------------------------------------------------------
+! Setup all remaining local Grid data variables
+!----------------------------------------------------------------------------------
   !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
-  gr_globalDomain(LOW,IAXIS) = gr_imin
-  gr_globalDomain(LOW,JAXIS) = gr_jmin
-  gr_globalDomain(LOW,KAXIS) = gr_kmin
-  gr_globalDomain(HIGH,IAXIS) = gr_imax
-  gr_globalDomain(HIGH,JAXIS) = gr_jmax
-  gr_globalDomain(HIGH,KAXIS) = gr_kmax
+  call Grid_getDomainBoundBox(domain)
+  gr_globalDomain(LOW,IAXIS) = domain(LOW, 1)
+  gr_globalDomain(LOW,JAXIS) = domain(LOW, 2)
+  gr_globalDomain(LOW,KAXIS) = domain(LOW, 3)
+  gr_globalDomain(HIGH,IAXIS) = domain(HIGH, 1)
+  gr_globalDomain(HIGH,JAXIS) = domain(HIGH, 2)
+  gr_globalDomain(HIGH,KAXIS) = domain(HIGH, 3)
 
 !!!  gr_meshComm = FLASH_COMM
 !! The following renaming was done: "conserved_var" -> "convertToConsvdForMeshCalls". - KW
@@ -226,21 +256,6 @@ subroutine Grid_init()
 !  gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
 !#endif
 
-  !get the boundary conditions stored as strings in the flash.par file
-  call RuntimeParameters_get("xl_boundary_type", xl_bcString)
-  call RuntimeParameters_get("xr_boundary_type", xr_bcString)
-  call RuntimeParameters_get("yl_boundary_type", yl_bcString)
-  call RuntimeParameters_get("yr_boundary_type", yr_bcString)
-  call RuntimeParameters_get("zl_boundary_type", zl_bcString)
-  call RuntimeParameters_get("zr_boundary_type", zr_bcString)
-
-  !map the string boundary conditions to integer constants defined in constants.h
-  call RuntimeParameters_mapStrToInt(xl_bcString,gr_domainBC(LOW,IAXIS))
-  call RuntimeParameters_mapStrToInt(xr_bcString,gr_domainBC(HIGH,IAXIS))
-  call RuntimeParameters_mapStrToInt(yl_bcString,gr_domainBC(LOW,JAXIS))
-  call RuntimeParameters_mapStrToInt(yr_bcString,gr_domainBC(HIGH,JAXIS))
-  call RuntimeParameters_mapStrToInt(zl_bcString,gr_domainBC(LOW,KAXIS))
-  call RuntimeParameters_mapStrToInt(zr_bcString,gr_domainBC(HIGH,KAXIS))
 
 !  call RuntimeParameters_get("bndPriorityOne",gr_bndOrder(1))
 !  call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
@@ -250,17 +265,6 @@ subroutine Grid_init()
 
 !  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
 !  call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
-
-!------------------------------------------------------------------------------
-! mesh geometry       (gr_geometry and gr_{i,j,k}{min,max} already set above)
-!------------------------------------------------------------------------------
-
-! Determine the geometries of the individual dimensions, and scale
-! angle value parameters that are expressed in degrees to radians.
-! This call must be made after gr_geometry, gr_domainBC, and gr_{j,k}{min,max}
-! have been set based on the corresponding runtime parameters.
-  call gr_initGeometry()
-
 
 !  call RuntimeParameters_get("eosMode", eosModeString)
 !  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosMode)
@@ -421,9 +425,9 @@ subroutine Grid_init()
   !! calculating deltas for each level of 
   !! refinement and putting them in the
   !! delta variable
-  dx = gr_imax - gr_imin
-  dy = gr_jmax - gr_jmin
-  dz = gr_kmax - gr_kmin
+  dx = domain(HIGH, 1) - domain(LOW, 1)
+  dy = domain(HIGH, 2) - domain(LOW, 2)
+  dz = domain(HIGH, 3) - domain(LOW, 3)
   rnb = 0.0
   rnb(1) = dx/(1.0*NXB*gr_nBlockX)
 #if NDIM > 1
