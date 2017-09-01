@@ -15,10 +15,12 @@ CONFLICTS IO/IOMain/hdf5/serial/PM
 # add pre-processor symbol FLASH_GRID_AMREX
 PPDEFINE FLASH_GRID_AMREX
 # Temporarily create for ../AmrexTransition only
+# DEVNOTE: The following may be a misunderstanding and should disappear from here - KW
+# DEVNOTE: not to be confused with FLASH_GRID_AMREXTRANSITION, which should NOT be defined here.
 PPDEFINE FLASH_GRID_AMREXTRANS
 # The following is defined for AMR/Amrex and .../AmrexTransition as well
 # Here defined(FLASH_GRID_ANYAMREX) == (defined(FLASH_GRID_AMREX) ||
-#                                       defined(FLASH_GRID_AMREXTRANS))
+#                                       defined(FLASH_GRID_AMREXTRANSITION))
 PPDEFINE FLASH_GRID_ANYAMREX
 
 # We need to use the Fortran 2003 module named iso_c_binding in
@@ -32,6 +34,6 @@ PPDEFINE FLASH_GRID_ANYAMREX
 # !!! If you add a parameter, please add a description line
 # Format is D <parameter name> <description>
 
-D How much output is written out. Higher number is more verbose.
+D gr_amrex_verbosity How much output is written out. Higher number is more verbose.
 PARAMETER gr_amrex_verbosity INTEGER 1 [ 0 ... ]
 

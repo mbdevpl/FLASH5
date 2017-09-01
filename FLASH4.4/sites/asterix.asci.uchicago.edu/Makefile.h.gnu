@@ -138,7 +138,7 @@ LIB_MPE   =
 LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE -llapack -lblas -static
 LIB_LIBNBC = -L/home/cdaley/software/libNBC/1.1.1/mpich-1.4.1p1_gnu/lib -lnbc
 
-LIB_AMREX = -L${AMREX_PATH}/lib -lamrex
+LIB_AMREX = -L${AMREX_PATH}/lib -lamrex -lmpi_cxx -lstdc++
 LIB_AMREX2D = ${LIB_AMREX}
 LIB_STDCXX = -lstdc++
 
