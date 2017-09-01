@@ -154,7 +154,8 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
   use physicaldata, ONLY : unk
 #endif
 #ifdef FLASH_GRID_AMREX
-  use physicaldata, ONLY : unk
+  use gr_physicalMultifabs, ONLY : unk, &
+                                   facevarx, facevary, facevarz
 #endif
 
   implicit none
@@ -421,7 +422,8 @@ subroutine gr_bcGetRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoi
   use physicaldata, ONLY : unk
 #endif
 #ifdef FLASH_GRID_AMREX
-  use physicaldata, ONLY : unk
+  use gr_physicalMultifabs, ONLY : unk, &
+                                   facevarx, facevary, facevarz
 #endif
 
   implicit none

@@ -202,7 +202,6 @@ contains
         use amrex_box_module, ONLY : amrex_box
 
         use block_metadata,   ONLY : block_metadata_t
-!        use physicaldata,     ONLY : unk
 
         class(block_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: blockDesc

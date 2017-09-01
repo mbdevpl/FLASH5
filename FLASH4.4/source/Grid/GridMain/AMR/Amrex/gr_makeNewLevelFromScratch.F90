@@ -11,8 +11,9 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
                                        amrex_mfiter_build, &
                                        amrex_mfiter_destroy, &
                                        amrex_multifab_build
-    use physicaldata,           ONLY : unk
-
+    
+    use gr_physicalMultifabs,   ONLY : unk, &
+                                       facevarx, facevary, facevarz
     use amrex_interfaces,       ONLY : gr_clearLevel
 
     implicit none
@@ -57,6 +58,9 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
 
     ! Create FABS for storing physical data at coarsest level
     call amrex_multifab_build(unk(lev_flash), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevarx(lev_flash), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevary(lev_flash), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevarz(lev_flash), ba, dm, NUNK_VARS, NGUARD)
 
     ! Write initial data across domain at coarsest level
     call amrex_mfiter_build(mfi, unk(lev_flash))

@@ -2,7 +2,8 @@ subroutine gr_amrex_finalize()
     use iso_c_binding
     use amrex_amr_module
     use amrex_octree_module,    ONLY : amrex_octree_finalize
-    use physicaldata,           ONLY : unk
+    use gr_physicalMultifabs,   ONLY : unk, &
+                                       facevarx, facevary, facevarz
  
     integer :: lev
 
@@ -17,6 +18,9 @@ subroutine gr_amrex_finalize()
     end do
 
     deallocate(unk)
+    deallocate(facevarx)
+    deallocate(facevary)
+    deallocate(facevarz)
 
     call amrex_amrcore_finalize()
     call amrex_octree_finalize()

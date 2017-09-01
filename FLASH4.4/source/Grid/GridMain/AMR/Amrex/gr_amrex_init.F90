@@ -16,7 +16,8 @@ subroutine gr_amrex_init()
                                           gr_remakeLevel, &
                                           gr_clearLevel, &
                                           gr_markRefineDerefine
-  use physicaldata,                ONLY : unk
+  use gr_physicalMultifabs,        ONLY : unk, &
+                                          facevarx, facevary, facevarz
 
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
@@ -158,6 +159,9 @@ subroutine gr_amrex_init()
   !   => all code dealing with multifabs at the Fortran/C++ interface must take 
   !      care of the index translation
   allocate(unk(1:amrex_max_level + 1))
+  allocate(facevarx(1:amrex_max_level + 1))
+  allocate(facevary(1:amrex_max_level + 1))
+  allocate(facevarz(1:amrex_max_level + 1))
 
   ! Setup grids and initialize the data.F90vjj
   call amrex_init_from_scratch(T_INIT)

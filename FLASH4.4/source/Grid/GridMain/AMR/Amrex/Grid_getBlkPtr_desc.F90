@@ -51,24 +51,22 @@
 !!
 !!***
 
-!!REORDER(4): dataPtr
-
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
 #endif
 
+! DEVNOTE: Need REORDER directive for dataPtr?
 subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
 
 !#include "Flash.h"
 
-  use amrex_fort_module, ONLY : wp => amrex_real
-
-!  use Driver_interface, ONLY : Driver_abortFlash
-  use physicaldata,      ONLY : unk
-!  use physicaldata,      ONLY : facevarx, facevary, facevarz
-!  use gr_specificData, ONLY : scratch,scratch_ctr,&
-!       scratch_facevarx,scratch_facevary,scratch_facevarz
-  use block_metadata,    ONLY : block_metadata_t
+  use amrex_fort_module,      ONLY : wp => amrex_real
+  
+  use gr_physicalMultifabs,   ONLY : unk, &
+                                     facevarx, facevary, facevarz
+  use block_metadata,         ONLY : block_metadata_t
+  
+  use Driver_interface,       ONLY : Driver_abortFlash
 
   implicit none
 
@@ -126,31 +124,18 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   associate (lo   => loUse, &
              ilev => block%level, &
              igrd => block%grid_index)
-!    select case (gds)
-!    case(CENTER)
+    select case (gds)
+    case(CENTER)
        dataPtr => unk(ilev)%dataptr(igrd)
-!    case(FACEX)
-!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(ilev)%dataptr(igrd)
-!    case(FACEY)
-!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(ilev)%dataptr(igrd)
-!    case(FACEZ)
-!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(ilev)%dataptr(igrd)
-!    case(SCRATCH)
-!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch(ilev)%dataptr(igrd)
-!    case(SCRATCH_CTR)
-!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_ctr(ilev)%dataptr(igrd)
-!    case(SCRATCH_FACEX)
-!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarx(ilev)%dataptr(igrd)
-!    case(SCRATCH_FACEY)
-!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevary(ilev)%dataptr(igrd)
-!    case(SCRATCH_FACEZ)
-!       dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarz(ilev)%dataptr(igrd)
-!    case(WORK)
-!       call Driver_abortFlash("work array cannot be got as pointer")
-!    case DEFAULT
-!       print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
-!    end select
-!#endif
+    case(FACEX)
+       dataPtr => facevarx(ilev)%dataptr(igrd)
+    case(FACEY)
+       dataPtr => facevary(ilev)%dataptr(igrd)
+    case(FACEZ)
+       dataPtr => facevarz(ilev)%dataptr(igrd)
+    case DEFAULT
+        call Driver_abortFlash("[Grid_getBlkPtr_desc] Unknown grid data structure")
+    end select
   end associate
 end subroutine Grid_getBlkPtr_desc
 
