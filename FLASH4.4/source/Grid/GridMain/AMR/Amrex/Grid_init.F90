@@ -115,9 +115,8 @@
 !! gr_restrictAllMethod [INTEGER]
 !!***
 
-!!REORDER(5):scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx
-!!REORDER(5):gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
-
+! DEVNOTE: Need REORDER directive for scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx?
+! DEVNOTE: Need REORDER directive for gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face?
 subroutine Grid_init()
 
   use Grid_data

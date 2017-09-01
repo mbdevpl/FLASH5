@@ -78,6 +78,7 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   integer,                intent(in),  optional :: gridDataStruct
   logical,      optional, intent(in) :: localFlag
 
+  integer :: lev_flash = -1
   integer :: gds
   logical :: validGridDataStruct
   integer,pointer,dimension(:) :: loUse
@@ -124,15 +125,20 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   associate (lo   => loUse, &
              ilev => block%level, &
              igrd => block%grid_index)
+    ! DEVNOTE: Since block descriptor is still using 0-based AMReX level
+    ! indexing, we are doing level translation here EVEN THOUGH THIS ISN'T AT
+    ! THE FORTRAN/C++ INTERACE
+    lev_flash = ilev + 1
+
     select case (gds)
     case(CENTER)
-       dataPtr => unk(ilev)%dataptr(igrd)
+       dataPtr => unk(lev_flash)%dataptr(igrd)
     case(FACEX)
-       dataPtr => facevarx(ilev)%dataptr(igrd)
+       dataPtr => facevarx(lev_flash)%dataptr(igrd)
     case(FACEY)
-       dataPtr => facevary(ilev)%dataptr(igrd)
+       dataPtr => facevary(lev_flash)%dataptr(igrd)
     case(FACEZ)
-       dataPtr => facevarz(ilev)%dataptr(igrd)
+       dataPtr => facevarz(lev_flash)%dataptr(igrd)
     case DEFAULT
         call Driver_abortFlash("[Grid_getBlkPtr_desc] Unknown grid data structure")
     end select

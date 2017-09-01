@@ -17,10 +17,13 @@
 !!  2D run:
 !!     ./setup -auto -2d -nxb=8 -nyb=4 
 !!              unitTest/Grid/Amrex/TestInit 
-!!             -unit=IO/IOMain/hdf5/serial/AM
+!!             +noio -index-reorder
 !!  3D run:
 !!     ./setup -auto -3d -nxb=8 -nyb=4 -nzb=2
 !!              unitTest/Grid/Amrex/TestInit 
+!!             +noio -index-reorder
+!!
+!!  For the future:
 !!             -unit=IO/IOMain/hdf5/serial/AM
 !!
 !!***
