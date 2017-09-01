@@ -227,6 +227,8 @@ subroutine Grid_init()
   gr_globalDomain(HIGH,JAXIS) = domain(HIGH, 2)
   gr_globalDomain(HIGH,KAXIS) = domain(HIGH, 3)
 
+!  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
+
 !!!  gr_meshComm = FLASH_COMM
 !! The following renaming was done: "conserved_var" -> "convertToConsvdForMeshCalls". - KW
 !  call RuntimeParameters_get("convertToConsvdForMeshCalls", gr_convertToConsvdForMeshCalls)
