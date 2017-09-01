@@ -153,14 +153,10 @@ subroutine Grid_init()
   integer :: countInComm, color, key, ierr
   integer :: nonrep
  
-  call RuntimeParameters_get("gr_amrex_verbosity", gr_verbosity)
-
 !----------------------------------------------------------------------------------
 ! mesh geometry - moved here so Paramesh_init can use gr_geometry for some checking
 !----------------------------------------------------------------------------------
-  call RuntimeParameters_get("geometry",gr_str_geometry)
-  call RuntimeParameters_mapStrToInt(gr_str_geometry, gr_geometry)
-  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
+!  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
 
   call Driver_getMype(GLOBAL_COMM, gr_globalMe)
   call Driver_getNumProcs(GLOBAL_COMM, gr_globalNumProcs)
@@ -186,13 +182,20 @@ subroutine Grid_init()
   endif
 #endif
 
-  !Get the physical domain limits. Angles in degrees, will be converted in gr_initGeometry!
-  call RuntimeParameters_get('xmin', gr_imin)
-  call RuntimeParameters_get('xmax', gr_imax)
-  call RuntimeParameters_get('ymin', gr_jmin)
-  call RuntimeParameters_get('ymax', gr_jmax)
-  call RuntimeParameters_get('zmin', gr_kmin)
-  call RuntimeParameters_get('zmax', gr_kmax)
+  ! All runtime parameters needed by AMReX should be loaded by here
+  call gr_amrex_init()
+
+!----------------------------------------------------------------------------------
+! Setup all local Grid data variables that depend on AMReX-controlled data
+!----------------------------------------------------------------------------------
+  ! DEVNOTE: Initialize these correctly
+  !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
+  gr_globalDomain(LOW,IAXIS) = gr_imin
+  gr_globalDomain(LOW,JAXIS) = gr_jmin
+  gr_globalDomain(LOW,KAXIS) = gr_kmin
+  gr_globalDomain(HIGH,IAXIS) = gr_imax
+  gr_globalDomain(HIGH,JAXIS) = gr_jmax
+  gr_globalDomain(HIGH,KAXIS) = gr_kmax
 
 !!!  gr_meshComm = FLASH_COMM
 !! The following renaming was done: "conserved_var" -> "convertToConsvdForMeshCalls". - KW
@@ -214,9 +217,6 @@ subroutine Grid_init()
 !  call RuntimeParameters_get("gr_sanitizeDataMode",  gr_sanitizeDataMode)
 !  call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
 
-  call RuntimeParameters_get("nrefs", gr_nrefs)
-  call RuntimeParameters_get('lrefine_max', gr_maxRefine)
-
 !  call RuntimeParameters_get("smalle",gr_smalle)
 !  call RuntimeParameters_get("smlrho",gr_smallrho)
 !  call RuntimeParameters_get("smallx",gr_smallx) !
@@ -225,7 +225,6 @@ subroutine Grid_init()
 !#ifdef GRID_WITH_MONOTONIC
 !  gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
 !#endif
-
 
   !get the boundary conditions stored as strings in the flash.par file
   call RuntimeParameters_get("xl_boundary_type", xl_bcString)
@@ -247,10 +246,6 @@ subroutine Grid_init()
 !  call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
 !  call RuntimeParameters_get("bndPriorityThree",gr_bndOrder(3))
 
-  !get the initial grid layout
-  call RuntimeParameters_get("nblockx", gr_nBlockX) !number of initial blks in x dir
-  call RuntimeParameters_get("nblocky", gr_nBlockY) !number of initial blks in y dir
-  call RuntimeParameters_get("nblockz", gr_nblockZ) !number of initial blks in z dir  
 !  call RuntimeParameters_get("refine_on_particle_count",gr_refineOnParticleCount)
 
 !  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
@@ -265,14 +260,6 @@ subroutine Grid_init()
 ! This call must be made after gr_geometry, gr_domainBC, and gr_{j,k}{min,max}
 ! have been set based on the corresponding runtime parameters.
   call gr_initGeometry()
-
-  !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
-  gr_globalDomain(LOW,IAXIS) = gr_imin
-  gr_globalDomain(LOW,JAXIS) = gr_jmin
-  gr_globalDomain(LOW,KAXIS) = gr_kmin
-  gr_globalDomain(HIGH,IAXIS) = gr_imax
-  gr_globalDomain(HIGH,JAXIS) = gr_jmax
-  gr_globalDomain(HIGH,KAXIS) = gr_kmax
 
 
 !  call RuntimeParameters_get("eosMode", eosModeString)
@@ -430,8 +417,6 @@ subroutine Grid_init()
 !     if (gr_vartypes(i) .eq. VARTYPE_PER_MASS) gr_anyVarToConvert = .TRUE.
 !  end do
 
-
-
   ! DEVNOTE: Is AMReX doing this for us?
   !! calculating deltas for each level of 
   !! refinement and putting them in the
@@ -505,9 +490,6 @@ subroutine Grid_init()
 
 !  gr_region=0.0
   
-  ! All runtime parameters needed by AMReX should be loaded by here
-  call gr_amrex_init()
-
 ! DEVNOTE: What to do with these?
 !#ifndef BSS_GRID_ARRAYS
 !# if NSCRATCH_GRID_VARS > 0

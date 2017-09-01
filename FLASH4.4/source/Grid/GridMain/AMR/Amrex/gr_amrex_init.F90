@@ -1,32 +1,34 @@
 subroutine gr_amrex_init()
   use iso_c_binding
   
-  use amrex_fort_module,      ONLY : wp => amrex_real
-  use amrex_amr_module,       ONLY : amrex_init, &
-                                     amrex_amrcore_init, &
-                                     amrex_init_virtual_functions, &
-                                     amrex_init_from_scratch, &
-                                     amrex_max_level
-  use amrex_parmparse_module, ONLY : amrex_parmparse, &
-                                     amrex_parmparse_build, &
-                                     amrex_parmparse_destroy
-  use amrex_octree_module,    ONLY : amrex_octree_init
-  use amrex_interfaces,       ONLY : gr_makeNewLevelFromScratch, &
-                                     gr_makeNewLevelFromCoarse, &
-                                     gr_remakeLevel, &
-                                     gr_clearLevel, &
-                                     gr_markRefineDerefine
-  use physicaldata,           ONLY : unk
+  use amrex_fort_module,           ONLY : wp => amrex_real
+  use amrex_amr_module,            ONLY : amrex_init, &
+                                          amrex_amrcore_init, &
+                                          amrex_init_virtual_functions, &
+                                          amrex_init_from_scratch, &
+                                          amrex_max_level
+  use amrex_parmparse_module,      ONLY : amrex_parmparse, &
+                                          amrex_parmparse_build, &
+                                          amrex_parmparse_destroy
+  use amrex_octree_module,         ONLY : amrex_octree_init
+  use amrex_interfaces,            ONLY : gr_makeNewLevelFromScratch, &
+                                          gr_makeNewLevelFromCoarse, &
+                                          gr_remakeLevel, &
+                                          gr_clearLevel, &
+                                          gr_markRefineDerefine
+  use physicaldata,                ONLY : unk
 
-  use Driver_interface,       ONLY : Driver_abortFlash
-  use Grid_data,              ONLY : gr_verbosity, &
-                                     gr_geometry, &
-                                     gr_imin, gr_imax, &
-                                     gr_jmin, gr_jmax, &
-                                     gr_kmin, gr_kmax, &
-                                     gr_nBlockX, gr_nBlockY, gr_nBlockZ, &
-                                     gr_maxRefine, &
-                                     gr_nrefs
+  use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
+                                          RuntimeParameters_mapStrToInt
+  use Driver_interface,            ONLY : Driver_abortFlash
+ 
+  ! TODO: Hopefully these should disappear
+  use Grid_data,                   ONLY : gr_nblockX, gr_nblockY, gr_nblockZ, &
+                                          gr_geometry, &
+                                          gr_maxRefine, &
+                                          gr_imin, gr_imax, &
+                                          gr_jmin, gr_jmax, &
+                                          gr_kmin, gr_kmax
 
   implicit none
 
@@ -44,21 +46,38 @@ subroutine gr_amrex_init()
   type(amrex_parmparse) :: pp_geom
   type(amrex_parmparse) :: pp_amr
 
-  integer       :: coord_sys = -1
-  character(80) :: buffer = ""
+  character(len=MAX_STRING_LENGTH) :: buffer = ""
+
+  integer :: verbosity = 0
+  integer :: nblockX = 1
+  integer :: nblockY = 1
+  integer :: nblockZ = 1
+  integer :: max_refine = 0
+  integer :: nrefs = 1
+  integer :: geometry = CARTESIAN
+  integer :: coord_sys = -1
+  real    :: xmin = 0.0d0
+  real    :: xmax = 1.0d0
+  real    :: ymin = 0.0d0
+  real    :: ymax = 1.0d0
+  real    :: zmin = 0.0d0
+  real    :: zmax = 1.0d0
+  character(len=MAX_STRING_LENGTH) :: str_geometry = ""
 
   write(*,*) "[gr_amrex_init] Starting"
  
   !!!!!----- INITIALIZE AMReX & CONFIGURE MANUALLY
   ! Do not parse command line or any file for configuration
-  
+ 
   ! DEVNOTE: Let FLASH driver construct communicators and then configure AMReX
   ! to use it here.
   call amrex_init(arg_parmparse=.FALSE.)
  
   call amrex_parmparse_build(pp_geom, "geometry")
 
-  select case (gr_geometry)
+  call RuntimeParameters_get("geometry", str_geometry)
+  call RuntimeParameters_mapStrToInt(str_geometry, geometry)
+  select case (geometry)
   case(CARTESIAN)
     coord_sys = AMREX_CARTESIAN
   case(POLAR)
@@ -74,19 +93,48 @@ subroutine gr_amrex_init()
                            // TRIM(ADJUSTL(buffer)))
   end select
   call pp_geom%add   ("coord_sys", coord_sys)
-  call pp_geom%addarr("prob_lo", [gr_imin, gr_jmin, gr_kmin])
-  call pp_geom%addarr("prob_hi", [gr_imax, gr_jmax, gr_kmax])
+  ! TODO: Take these out once we have AMReX interface to these values
+  gr_geometry = geometry
+ 
+  call RuntimeParameters_get('xmin', xmin)
+  call RuntimeParameters_get('xmax', xmax)
+  call RuntimeParameters_get('ymin', ymin)
+  call RuntimeParameters_get('ymax', ymax)
+  call RuntimeParameters_get('zmin', zmin)
+  call RuntimeParameters_get('zmax', zmax)
+  call pp_geom%addarr("prob_lo", [xmin, ymin, zmin])
+  call pp_geom%addarr("prob_hi", [xmax, ymax, zmax])
   call pp_geom%addarr("is_periodic", [1, 1, 1])
+  ! TODO: Take these out once we have AMReX interface to these values
+  gr_imin = xmin;  gr_imax = xmax
+  gr_jmin = ymin;  gr_jmax = ymax
+  gr_kmin = zmin;  gr_kmax = zmax
 
   ! DEVNOTE: max_grid must be a multiple of blocking_factor.  Error checking in
   ! AMReX or here?
   call amrex_parmparse_build(pp_amr, "amr")
-  call pp_amr%add   ("v", gr_verbosity)
-  call pp_amr%add   ("max_level", gr_maxRefine)
-  call pp_amr%add   ("regrid_int", gr_nrefs)
-  call pp_amr%addarr("n_cell", [NXB * gr_nBlockX, &
-                                NYB * gr_nBlockY, &
-                                NZB * gr_nBlockZ])
+  call RuntimeParameters_get("gr_amrex_verbosity", verbosity)
+  call pp_amr%add   ("v", verbosity)
+  
+  call RuntimeParameters_get("nrefs", nrefs)
+  call pp_amr%add   ("regrid_int", nrefs)
+ 
+  call RuntimeParameters_get('lrefine_max', max_refine)
+  call pp_amr%add   ("max_level", max_refine)
+  ! TODO: Take these out once we have AMReX interface to these values
+  gr_maxRefine = max_refine
+
+  call RuntimeParameters_get("nblockx", nBlockX)
+  call RuntimeParameters_get("nblocky", nBlockY)
+  call RuntimeParameters_get("nblockz", nblockZ)
+  call pp_amr%addarr("n_cell", [NXB * nBlockX, &
+                                NYB * nBlockY, &
+                                NZB * nBlockZ])
+  ! TODO: Take these out once we have AMReX interface to these values
+  gr_nblockX = nBlockX
+  gr_nblockY = nBlockY
+  gr_nblockZ = nBlockZ
+
   call pp_amr%add   ("max_grid_size", 4)
   call pp_amr%add   ("blocking_factor", 2)
 !  call pp_amr%add   ("n_proper", )
@@ -110,10 +158,15 @@ subroutine gr_amrex_init()
                                     gr_markRefineDerefine)
 
   !!!!!----- ALLOCATE DATA STRUCTURES
-  ! multifabs
-  allocate(unk(0:amrex_max_level))
+  ! multifabs 
+  !
+  ! NOTE: We implement these with the 1-based level indexing scheme native to
+  ! so that the AMReX unk has a similar interface to the paramesh unk.
+  !   => all code dealing with multifabs at the Fortran/C++ interface must take 
+  !      care of the index translation
+  allocate(unk(1:amrex_max_level + 1))
 
-  ! Setup grids and initialize the data
+  ! Setup grids and initialize the data.F90vjj
   call amrex_init_from_scratch(T_INIT)
 end subroutine gr_amrex_init
 

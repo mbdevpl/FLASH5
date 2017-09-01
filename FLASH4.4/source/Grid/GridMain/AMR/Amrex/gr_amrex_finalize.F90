@@ -7,7 +7,12 @@ subroutine gr_amrex_finalize()
     integer :: lev
 
     write(*,*) "[gr_amrex_finalize] Finalizing"
-    do lev = 0, amrex_max_level
+  
+    ! NOTE: We implement these with the 1-based level indexing scheme native to
+    ! so that the AMReX unk has a similar interface to the paramesh unk.
+    !   => all code dealing with multifabs at the Fortran/C++ interface must take 
+    !      care of the index translation
+    do lev = 1, (amrex_max_level + 1)
         call amrex_multifab_destroy(unk(lev))
     end do
 
