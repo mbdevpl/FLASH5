@@ -9,8 +9,13 @@
 !!  Driver_evolveFlash()
 !!
 !! DESCRIPTION
+!!  A subset of simulation configuration data is loaded into AMReX at
+!!  initialization and is therefore owned by AMReX.  As a result, AMReX is used
+!!  to provide these data values to client code through the associated public
+!!  Grid_* and local gr_* interface accessor routines.
 !!
-!!  Simple stripped down version for testing single units.
+!!  This code tests that AMReX is properly initialized for a Cartesian domain by
+!!  verifying correct results as obtained through the accessor routines.
 !!
 !! NOTES
 !!  This simulation *must* be configured with at least the following
@@ -45,7 +50,12 @@ subroutine Driver_evolveFlash()
                                       gr_meshMe
 
     implicit none
- 
+
+    interface assert_equal
+        procedure :: assert_equal_int
+        procedure :: assert_equal_real
+    end interface
+
     ! These values should match those values in flash.par
     integer,  parameter :: NXCELL_EX  = 64
     integer,  parameter :: NYCELL_EX  = 64
@@ -89,20 +99,14 @@ subroutine Driver_evolveFlash()
 
     ! Physical domain
     call Grid_getDomainBoundBox(domain)
-    call assert_almost_equal(domain(LOW, 1), XMIN_EX, 0.0_wp, &
-                             "Incorrect low X-coordinate")
-    call assert_almost_equal(domain(HIGH, 1), XMAX_EX, 0.0_wp, &
-                             "Incorrect high X-coordinate")
+    call assert_equal(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
+    call assert_equal(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
 #if NDIM >= 2
-    call assert_almost_equal(domain(LOW, 2), YMIN_EX, 0.0_wp, &
-                             "Incorrect low Y-coordinate")
-    call assert_almost_equal(domain(HIGH, 2), YMAX_EX, 0.0_wp, &
-                             "Incorrect high Y-coordinate")
+    call assert_equal(domain(LOW,  2), YMIN_EX, "Incorrect low Y-coordinate")
+    call assert_equal(domain(HIGH, 2), YMAX_EX, "Incorrect high Y-coordinate")
 #if NDIM == 3 
-    call assert_almost_equal(domain(LOW, 3), ZMIN_EX, 0.0_wp, &
-                             "Incorrect low Z-coordinate")
-    call assert_almost_equal(domain(HIGH,3), ZMAX_EX, 0.0_wp, &
-                             "Incorrect high Z-coordinate")
+    call assert_equal(domain(LOW,  3), ZMIN_EX, "Incorrect low Z-coordinate")
+    call assert_equal(domain(HIGH, 3), ZMAX_EX, "Incorrect high Z-coordinate")
 #endif
 #endif
 
@@ -146,7 +150,7 @@ subroutine Driver_evolveFlash()
 
 contains
 
-    subroutine assert_equal(a, b, msg)
+    subroutine assert_equal_int(a, b, msg)
         implicit none
 
         integer,      intent(IN) :: a
@@ -161,7 +165,24 @@ contains
             n_failed = n_failed + 1
         end if
         n_tests = n_tests + 1
-    end subroutine assert_equal
+    end subroutine assert_equal_int
+
+    subroutine assert_equal_real(a, b, msg)
+        implicit none
+
+        real(wp),     intent(IN) :: a
+        real(wp),     intent(IN) :: b
+        character(*), intent(IN) :: msg
+
+        character(256) :: buffer = ""
+
+        if (a /= b) then
+            write(buffer,'(A,F15.8,A,F15.8)') msg, a, " != ", b
+            write(*,*) TRIM(ADJUSTL(buffer))
+            n_failed = n_failed + 1
+        end if
+        n_tests = n_tests + 1
+    end subroutine assert_equal_real
 
     subroutine assert_almost_equal(a, b, prec, msg)
         implicit none
