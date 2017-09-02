@@ -222,13 +222,7 @@ subroutine Driver_initFlash()
   ! initialization that are no longer needed, do it here.
   call Simulation_freeUserArrays()
 
-#ifndef FLASH_GRID_AMREX
-  ! FIXME
-  ! DEVNOTE: IO_writeIntegralQuantities
-  ! is using the original index ordering for unk, which does not
-  ! match the AMReX ordering.
   call IO_outputInitial(  dr_nbegin, dr_initialSimTime)
-#endif
   if(dr_globalMe==MASTER_PE)print*,'Initial plotfile written'
 
   if(dr_globalMe==MASTER_PE)print*,'Driver init all done'

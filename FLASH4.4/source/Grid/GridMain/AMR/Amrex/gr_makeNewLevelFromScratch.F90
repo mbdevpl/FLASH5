@@ -11,8 +11,9 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
                                        amrex_mfiter_build, &
                                        amrex_mfiter_destroy, &
                                        amrex_multifab_build
-    use physicaldata,           ONLY : unk
-
+    
+    use gr_physicalMultifabs,   ONLY : unk, &
+                                       facevarx, facevary, facevarz
     use amrex_interfaces,       ONLY : gr_clearLevel
 
     implicit none
@@ -40,9 +41,15 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     integer :: i = 0
     integer :: j = 0
     integer :: k = 0
+    
+    integer :: lev_flash = -1
+
+    ! C++ AMReX uses zero-based level index set, but FLASH uses 1-based set
+    lev_flash = lev + 1 
 
     rank = amrex_parallel_myproc()
-    write(*,*) "[Rank ", rank, "] gr_makeNewLevelFromScratch - Start Level ", lev
+    write(*,*) "[Rank ", rank, "] gr_makeNewLevelFromScratch - Start Level ", &
+                lev_flash
  
     ba = pba
     dm = pdm
@@ -50,18 +57,21 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     call gr_clearLevel(lev)
 
     ! Create FABS for storing physical data at coarsest level
-    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(unk(lev_flash), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevarx(lev_flash), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevary(lev_flash), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevarz(lev_flash), ba, dm, NUNK_VARS, NGUARD)
 
     ! Write initial data across domain at coarsest level
-    call amrex_mfiter_build(mfi, unk(lev))
+    call amrex_mfiter_build(mfi, unk(lev_flash))
 
     do while (mfi%next())
         bx = mfi%tilebox()
-        initData => unk(lev)%dataptr(mfi)
+        initData => unk(lev_flash)%dataptr(mfi)
 
         associate(lo => bx%lo, &
                   hi => bx%hi, &
-                  dx => amrex_geom(lev)%dx)
+                  dx => amrex_geom(lev_flash)%dx)
             do         k = lo(3), hi(3) 
                 do     j = lo(2), hi(2)
                     z = amrex_problo(3) + (dble(k)+0.5d0) * dx(3)
@@ -77,6 +87,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
 
     call amrex_mfiter_destroy(mfi)
  
-    write(*,*) "[Rank ", rank, "] gr_makeNewLevelFromScratch - End Level ", lev
+    write(*,*) "[Rank ", rank, "] gr_makeNewLevelFromScratch - End Level ", &
+                lev_flash
 end subroutine gr_makeNewLevelFromScratch 
 

@@ -1,5 +1,5 @@
 Grid += amrex_interfaces.o \
-        physicaldata.o \
+        gr_physicalMultifabs.o \
         gr_amrex_init.o gr_amrex_finalize.o \
         gr_clearLevel.o \
         gr_remakeLevel.o \

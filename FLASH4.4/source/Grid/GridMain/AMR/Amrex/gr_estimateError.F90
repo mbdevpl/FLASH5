@@ -35,8 +35,7 @@
 !!
 !!***
 
-!!REORDER(4): solnData
-
+! DEVNOTE: Need REORDER directive for solnData?
 subroutine gr_estimateError(error, iref, refine_filter)
 
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &

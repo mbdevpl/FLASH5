@@ -30,9 +30,12 @@ Module Grid_data
 #include "constants.h"
 #include "Flash.h"
 
-  integer, save :: gr_verbosity
-  real,save, allocatable, dimension(:,:) :: gr_delta
+! TODO: AMReX to get these directly from RuntimeParameters and provide an
+! interface to  get them
   integer ,save :: gr_nblockX, gr_nblockY, gr_nblockZ
+  integer ,save :: gr_geometry
+  integer,save :: gr_maxRefine
+  real,save, allocatable, dimension(:,:) :: gr_delta
 
   integer, save :: gr_iguard = NGUARD
   integer, save :: gr_jguard = NGUARD 
@@ -56,7 +59,6 @@ Module Grid_data
   integer, save :: gr_eosMode
   integer, save :: gr_eosModeInit, gr_eosModeNow
   integer, save :: gr_oneRefLev=1 !! To be used with the multigrid
-  integer ,save :: gr_nrefs
   logical ,save :: gr_convertToConsvdForMeshCalls
   logical ,save :: gr_convertToConsvdInMeshInterp
   logical ,save :: gr_earlyBlockDistAdjustment
@@ -66,14 +68,11 @@ Module Grid_data
 
   integer, save :: gr_numRefineVars, gr_numRefineVarsMax
   integer,allocatable,dimension(:) ,save :: gr_refineVars
-  real ,save :: gr_imin,gr_imax,gr_jmin,gr_jmax,gr_kmin,gr_kmax
   real, save, dimension(LOW:HIGH,MDIM) :: gr_globalDomain
   integer,save,dimension(2,MDIM) :: gr_domainBC, gr_blkBC
-  integer ,save :: gr_geometry
   integer, save, dimension(MDIM) :: gr_dirGeom
   logical, save, dimension(MDIM) :: gr_dirIsAngular
   logical, save :: gr_geometryOverride
-  character(len=MAX_STRING_LENGTH) :: gr_str_geometry
   integer ,save, dimension(MAXREFVARS) :: gr_refine_var    
   real,dimension(MAXREFVARS), save::gr_refine_cutoff,&
        gr_derefine_cutoff,gr_refine_filter
@@ -110,7 +109,7 @@ Module Grid_data
 
 #endif
 
-  integer,save :: gr_lrefineDel, gr_maxRefine, gr_minRefine
+  integer,save :: gr_lrefineDel
   logical,save :: gr_enforceMaxRefinement
   logical,save :: gr_lrefineMaxRedDoByLogR, gr_lrefineMaxRedDoByTime
   real,save :: gr_lrefineMaxRedRadiusSq

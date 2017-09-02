@@ -74,7 +74,8 @@ subroutine io_writeData (fileID)
 
   use Grid_data, ONLY : gr_globalNumBlocks
 
-  use physicaldata, ONLY :unk
+  use gr_physicalMultifabs, ONLY : unk, &
+                                   facevarx, facevary, facevarz
 
   implicit none
 

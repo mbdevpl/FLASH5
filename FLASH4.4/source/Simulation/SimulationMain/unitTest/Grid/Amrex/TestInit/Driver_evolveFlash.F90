@@ -9,18 +9,26 @@
 !!  Driver_evolveFlash()
 !!
 !! DESCRIPTION
+!!  A subset of simulation configuration data is loaded into AMReX at
+!!  initialization and is therefore owned by AMReX.  As a result, AMReX is used
+!!  to provide these data values to client code through the associated public
+!!  Grid_* and local gr_* interface accessor routines.
 !!
-!!  Simple stripped down version for testing single units.
+!!  This code tests that AMReX is properly initialized for a Cartesian domain by
+!!  verifying correct results as obtained through the accessor routines.
 !!
 !! NOTES
 !!  This simulation *must* be configured with at least the following
 !!  2D run:
 !!     ./setup -auto -2d -nxb=8 -nyb=4 
 !!              unitTest/Grid/Amrex/TestInit 
-!!             -unit=IO/IOMain/hdf5/serial/AM
+!!             +noio -index-reorder
 !!  3D run:
 !!     ./setup -auto -3d -nxb=8 -nyb=4 -nzb=2
 !!              unitTest/Grid/Amrex/TestInit 
+!!             +noio -index-reorder
+!!
+!!  For the future:
 !!             -unit=IO/IOMain/hdf5/serial/AM
 !!
 !!***
@@ -31,20 +39,23 @@
 subroutine Driver_evolveFlash()
     use amrex_fort_module,     ONLY : wp => amrex_real, &
                                       amrex_spacedim
-    use amrex_amr_module,      ONLY : amrex_geom, &
-                                      amrex_problo, &
-                                      amrex_probhi
     use amrex_amrcore_module,  ONLY : amrex_get_finest_level, &
                                       amrex_get_boxarray
     use amrex_box_module,      ONLY : amrex_print, amrex_box
     use amrex_parallel_module, ONLY : amrex_parallel_myproc, &
                                       amrex_parallel_nprocs
 
+    use Grid_interface,        ONLY : Grid_getDomainBoundBox
     use Grid_data,             ONLY : gr_nBlockX, gr_nBlockY, gr_nBlockZ, &
                                       gr_meshMe
 
     implicit none
- 
+
+    interface assert_equal
+        procedure :: assert_equal_int
+        procedure :: assert_equal_real
+    end interface
+
     ! These values should match those values in flash.par
     integer,  parameter :: NXCELL_EX  = 64
     integer,  parameter :: NYCELL_EX  = 64
@@ -64,6 +75,8 @@ subroutine Driver_evolveFlash()
     integer        :: n_failed = 0
     real(wp)       :: t_old = 0.0_wp
     real(wp)       :: t_new = 0.0_wp
+
+    real           :: domain(LOW:HIGH, MDIM)
 
     integer  :: rank = -1
 
@@ -85,20 +98,15 @@ subroutine Driver_evolveFlash()
     ! TODO: Check coordinate system type from AMReX
 
     ! Physical domain
-    call assert_almost_equal(amrex_problo(1), XMIN_EX, 0.0_wp, &
-                             "Incorrect low X-coordinate")
-    call assert_almost_equal(amrex_probhi(1), XMAX_EX, 0.0_wp, &
-                             "Incorrect high X-coordinate")
+    call Grid_getDomainBoundBox(domain)
+    call assert_equal(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
+    call assert_equal(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
 #if NDIM >= 2
-    call assert_almost_equal(amrex_problo(2), YMIN_EX, 0.0_wp, &
-                             "Incorrect low Y-coordinate")
-    call assert_almost_equal(amrex_probhi(2), YMAX_EX, 0.0_wp, &
-                             "Incorrect high Y-coordinate")
+    call assert_equal(domain(LOW,  2), YMIN_EX, "Incorrect low Y-coordinate")
+    call assert_equal(domain(HIGH, 2), YMAX_EX, "Incorrect high Y-coordinate")
 #if NDIM == 3 
-    call assert_almost_equal(amrex_problo(3), ZMIN_EX, 0.0_wp, &
-                             "Incorrect low Z-coordinate")
-    call assert_almost_equal(amrex_probhi(3), ZMAX_EX, 0.0_wp, &
-                             "Incorrect high Z-coordinate")
+    call assert_equal(domain(LOW,  3), ZMIN_EX, "Incorrect low Z-coordinate")
+    call assert_equal(domain(HIGH, 3), ZMAX_EX, "Incorrect high Z-coordinate")
 #endif
 #endif
 
@@ -142,7 +150,7 @@ subroutine Driver_evolveFlash()
 
 contains
 
-    subroutine assert_equal(a, b, msg)
+    subroutine assert_equal_int(a, b, msg)
         implicit none
 
         integer,      intent(IN) :: a
@@ -157,7 +165,24 @@ contains
             n_failed = n_failed + 1
         end if
         n_tests = n_tests + 1
-    end subroutine assert_equal
+    end subroutine assert_equal_int
+
+    subroutine assert_equal_real(a, b, msg)
+        implicit none
+
+        real(wp),     intent(IN) :: a
+        real(wp),     intent(IN) :: b
+        character(*), intent(IN) :: msg
+
+        character(256) :: buffer = ""
+
+        if (a /= b) then
+            write(buffer,'(A,F15.8,A,F15.8)') msg, a, " != ", b
+            write(*,*) TRIM(ADJUSTL(buffer))
+            n_failed = n_failed + 1
+        end if
+        n_tests = n_tests + 1
+    end subroutine assert_equal_real
 
     subroutine assert_almost_equal(a, b, prec, msg)
         implicit none
