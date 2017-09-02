@@ -87,9 +87,10 @@
 #define DEBUG_HYDRO
 #endif
 
-subroutine hy_ppm_updateSoln(rangeSwitch,                        &
+subroutine hy_ppm_updateSoln(rangeSwitch,                     &
                          xyzswp, dt,                          &
-                         lim, limGC,numCells,               &
+                         lim, limGC,numCells,                 &
+                         blkLimits,blkLimitsGC,               &
                          tempArea, tempGrav1d_o, tempGrav1d,  &
                          tempDtDx, tempFict,                  &
                          tempFlx,  solnData )
@@ -107,22 +108,21 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
   integer, intent(IN) :: xyzswp
   real,    intent(IN) :: dt
   integer,intent(IN) :: numCells  
-  integer, intent(IN),dimension(LOW:HIGH,MDIM) :: limGC,lim
-  real, intent(IN),DIMENSION(1:limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1,&
-                            1:limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1,&
-                            1:limGC(HIGH,KAXIS)-limGC(LOW,KAXIS)+1) ::       &
+  integer, intent(IN),dimension(LOW:HIGH,MDIM) :: limGC,lim,blkLimits,blkLimitsGC
+  real, intent(IN),DIMENSION(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
+                            blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
+                            blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) ::       &
                                                   tempArea, tempGrav1d_o, &
                                                   tempGrav1d, &
                                                   tempDtDx, tempFict
-  real, intent(IN), DIMENSION(NFLUXES,1:limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1,&
-                            1:limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1,&
-                            1:limGC(HIGH,KAXIS)-limGC(LOW,KAXIS)+1) :: tempFlx
+  real, intent(IN), DIMENSION(NFLUXES,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
+                            blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
+                            blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: tempFlx
 
 
   real, pointer ::  solnData(:,:,:,:) 
-  integer, dimension(LOW:HIGH,MDIM)::blkLimitsGC,blkLimits
 
-  integer :: i, j, k, kk, n, i1, j1, k1
+  integer :: i, j, k, kk, n, iglobal,jglobal,kglobal,minglobal
   integer :: imin, imax, iskip, jmin, jmax, jskip, kmin, kmax, kskip
   real    :: xnflx2(hy_numXn), xnflx1(hy_numXn), dtdx(numCells)
 
@@ -142,29 +142,29 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
 
 !===============================================================================
 ! Calculate local block indices limits:
-  blkLimitsGC(LOW,:)=1
-  blkLimitsGC(HIGH,:)=limGC(HIGH,:)-limGC(LOW,:)+1
-  blkLimits(LOW,:)=blkLimitsGC(LOW,:)+NGUARD
-  blkLimits(HIGH,:)=blkLimitsGC(HIGH,:)-NGUARD
+
 ! update in x direction
   if (xyzswp == SWEEP_X) then
      
      select case (rangeSwitch)
      case (UPDATE_INTERIOR)
         imin  = blkLimits(LOW,IAXIS)+ 1
+        minglobal=1
         imax  = blkLimits(HIGH,IAXIS) - 1
         iskip = 1
      case (UPDATE_BOUND)
         imin  = blkLimits(LOW,IAXIS)
+        minglobal=0
         imax  = blkLimits(HIGH,IAXIS)
         iskip = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)
      case default
         imin  = blkLimits(LOW,IAXIS)
+        minglobal=0
         imax  = blkLimits(HIGH,IAXIS)
         iskip = 1
      end select
      
-#ifdef DEBUG_HYDR
+#ifdef DEBUG_HYDRO
      print*,'the sweep direction is',xyzswp      ! within DEBUG
      print*,'the blkLimits is',blkLimits         ! within DEBUG
      print*,'the blkLimitsGC is',blkLimitsGC     ! within DEBUG
@@ -173,13 +173,15 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
      print*,'the update mode is',rangeSwitch,' numCells',numCells  ! within DEBUG
      print*,'imin etc',imin,imax,iskip           ! within DEBUG
 #endif
-
+     kglobal=lim(LOW,KAXIS)-1
      do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
+        kglobal=kglobal+1
+        jglobal=lim(LOW,JAXIS)-1
         do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
+           jglobal=jglobal+1
+           iglobal=lim(LOW,IAXIS)-1+minglobal
            do i = imin, imax, iskip
-              i1=i+lim(LOW,IAXIS)
-              j1=i+lim(LOW,JAXIS)
-              k1=i+lim(LOW,KAXIS)
+              iglobal=iglobal+1
               dtdx(i)  = tempDtDx(i,j,k)
               
               rhoflx1  = tempFlx(RHO_FLUX,i,j,k)
@@ -239,58 +241,58 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
               grav1d    = tempGrav1d(i,j,k)
               fict1d    = tempFict(i,j,k)
               
-              rho_o     = solnData(DENS_VAR,i1,j1,k1)
-              velx_o    = solnData(VELX_VAR,i1,j1,k1)
+              rho_o     = solnData(DENS_VAR,iglobal,jglobal,kglobal)
+              velx_o    = solnData(VELX_VAR,iglobal,jglobal,kglobal)
               
               if ( hy_useCmaAdvection .and. NSPECIES > 1  ) then
                  ! update the partial mass densities and passive scalars * density
 
                  do n = 1, hy_numXn
                     solnData(SPECIES_BEGIN-1+n,i,j,k) =               &
-                              rho_o*solnData(SPECIES_BEGIN-1+n,i1,j1,k1) &
+                              rho_o*solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) &
                             -dtdx(i)*(xnflx2(n) - xnflx1(n))
                  end do
 
                  ! update the total mass density
                  
-                 solnData(DENS_VAR,i1,j1,k1) = 0.e0
+                 solnData(DENS_VAR,iglobal,jglobal,kglobal) = 0.e0
 
                  do n = 1, NSPECIES
-                    solnData(DENS_VAR,i1,j1,k1) =                        &
-                    solnData(DENS_VAR,i1,j1,k1) +                        &
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1)
+                    solnData(DENS_VAR,iglobal,jglobal,kglobal) =                        &
+                    solnData(DENS_VAR,iglobal,jglobal,kglobal) +                        &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal)
                  end do
                  ! recover partial densities and passive scalars * density
 
-                 inv_new_dens = 1.e0/solnData(DENS_VAR,i1,j1,k1)
+                 inv_new_dens = 1.e0/solnData(DENS_VAR,iglobal,jglobal,kglobal)
 
                  do n = 1, hy_numXn
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) =               &
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) * inv_new_dens
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) =               &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) * inv_new_dens
                  end do
 
               else
                  ! update the density               
-                 solnData(DENS_VAR,i1,j1,k1) = solnData(DENS_VAR,i1,j1,k1) - &
+                 solnData(DENS_VAR,iglobal,jglobal,kglobal) = solnData(DENS_VAR,iglobal,jglobal,kglobal) - &
                                        dtdx(i) * (rhoflx2-rhoflx1)
 
 
                  ! update the mass fractions and passive scalars
                  do n = 1, hy_numXn
 
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) =               &
-                           ( rho_o*solnData(SPECIES_BEGIN-1+n,i1,j1,k1)  &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) =               &
+                           ( rho_o*solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal)  &
                             -dtdx(i)*(xnflx2(n) - xnflx1(n))         &
-                           )/solnData(DENS_VAR,i1,j1,k1)
+                           )/solnData(DENS_VAR,iglobal,jglobal,kglobal)
                  end do
 
               end if
 
               ! limit the density 
-              solnData(DENS_VAR,i1,j1,k1) =                              &
-                   max(hy_smlrho, solnData(DENS_VAR,i1,j1,k1))
+              solnData(DENS_VAR,iglobal,jglobal,kglobal) =                              &
+                   max(hy_smlrho, solnData(DENS_VAR,iglobal,jglobal,kglobal))
              
-              inv_new_dens = 1.e0/solnData(DENS_VAR,i1,j1,k1)
+              inv_new_dens = 1.e0/solnData(DENS_VAR,iglobal,jglobal,kglobal)
 
 !#ifdef CIP
 !              if ( itrcr > 0 ) then
@@ -306,22 +308,22 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
               aux1 = -dtdx(i)*( (uflx2 - uflx1)                      &
                                +aold_t*(pav2 - pav1))                &
                +0.5e0*dt                                             &
-               *( (solnData(DENS_VAR,i1,j1,k1) + rho_o)*fict1d           &
-                 +(rho_o*grav1d_o + solnData(DENS_VAR,i1,j1,k1)*grav1d)  &
+               *( (solnData(DENS_VAR,iglobal,jglobal,kglobal) + rho_o)*fict1d           &
+                 +(rho_o*grav1d_o + solnData(DENS_VAR,iglobal,jglobal,kglobal)*grav1d)  &
                 )
 
-              solnData(VELX_VAR,i1,j1,k1) =                              &
-                         ( rho_o * solnData(VELX_VAR,i1,j1,k1)           &
+              solnData(VELX_VAR,iglobal,jglobal,kglobal) =                              &
+                         ( rho_o * solnData(VELX_VAR,iglobal,jglobal,kglobal)           &
                           +aux1                                      &
                          )*inv_new_dens
               
-              solnData(VELY_VAR,i1,j1,k1) =                              &
-                         ( rho_o * solnData(VELY_VAR,i1,j1,k1)           &
+              solnData(VELY_VAR,iglobal,jglobal,kglobal) =                              &
+                         ( rho_o * solnData(VELY_VAR,iglobal,jglobal,kglobal)           &
                           -dtdx(i) * (utflx2 - utflx1)               &
                          )*inv_new_dens
               
-              solnData(VELZ_VAR,i1,j1,k1) =                              &
-                         ( rho_o * solnData(VELZ_VAR,i1,j1,k1)           &
+              solnData(VELZ_VAR,iglobal,jglobal,kglobal) =                              &
+                         ( rho_o * solnData(VELZ_VAR,iglobal,jglobal,kglobal)           &
                           -dtdx(i) * (uttflx2 - uttflx1)             &
                          )*inv_new_dens
 
@@ -329,27 +331,27 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
               aux1 = - dtdx(i) * (eflx2 - eflx1)                             &
                    + dt*0.5e00                                               &
                    *( rho_o*velx_o*grav1d_o                                  &
-                     +solnData(DENS_VAR,i1,j1,k1)*solnData(VELX_VAR,i1,j1,k1)*grav1d &
+                     +solnData(DENS_VAR,iglobal,jglobal,kglobal)*solnData(VELX_VAR,iglobal,jglobal,kglobal)*grav1d &
                     )
 
-              etot = (rho_o * solnData(ENER_VAR,i1,j1,k1) + aux1)*inv_new_dens
+              etot = (rho_o * solnData(ENER_VAR,iglobal,jglobal,kglobal) + aux1)*inv_new_dens
               
 #ifdef EINT_VAR
               ! get the internal energy
-              einternal = solnData(EINT_VAR,i1,j1,k1)
+              einternal = solnData(EINT_VAR,iglobal,jglobal,kglobal)
 
               ! update internal energy
               aux1 = -dtdx(i) * ( (eintflx2 - eintflx1)               &
-                     -0.5e0*(velx_o + solnData(VELX_VAR,i1,j1,k1))        &
+                     -0.5e0*(velx_o + solnData(VELX_VAR,iglobal,jglobal,kglobal))        &
                      *aold_t * (pav2 - pav1) )
               
               einternal = (rho_o * einternal + aux1)*inv_new_dens
               einternal = max(einternal, hy_smallp*inv_new_dens)
 
 ! compute the new kinetic energy       
-              ekin = 0.5e0 * ( solnData(VELX_VAR,i1,j1,k1)**2             &
-                              +solnData(VELY_VAR,i1,j1,k1)**2             &
-                              +solnData(VELZ_VAR,i1,j1,k1)**2)
+              ekin = 0.5e0 * ( solnData(VELX_VAR,iglobal,jglobal,kglobal)**2             &
+                              +solnData(VELY_VAR,iglobal,jglobal,kglobal)**2             &
+                              +solnData(VELZ_VAR,iglobal,jglobal,kglobal)**2)
 
 ! test whether we should use the internal energy from the evolution
               if (einternal .LT. hy_eintSwitch*ekin) then
@@ -358,11 +360,11 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
                  einternal = etot - ekin
               endif
               
-              solnData(ENER_VAR,i1,j1,k1) = etot
-              solnData(EINT_VAR,i1,j1,k1) = einternal
+              solnData(ENER_VAR,iglobal,jglobal,kglobal) = etot
+              solnData(EINT_VAR,iglobal,jglobal,kglobal) = einternal
 #else
               
-              solnData(ENER_VAR,i1,j1,k1) = etot
+              solnData(ENER_VAR,iglobal,jglobal,kglobal) = etot
 #endif
               
            end do
@@ -376,12 +378,13 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
 ! update in y direction
   
   if ((NDIM >= 2) .and. (xyzswp == SWEEP_Y)) then
-
+     minglobal=0
      select case (rangeSwitch)
      case (UPDATE_INTERIOR)
         jmin  = blkLimits(LOW,JAXIS) + 1 ! NGUARD*K2D + 2
         jmax  = blkLimits(HIGH,JAXIS) - 1 ! NGUARD*K2D + NYB - 1
         jskip = 1
+        minglobal=1
      case (UPDATE_BOUND)
         jmin  = blkLimits(LOW,JAXIS) ! NGUARD*K2D + 1
         jmax  = blkLimits(HIGH,JAXIS) ! NGUARD*K2D + NYB
@@ -401,14 +404,15 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
      print*,'the update mode is',rangeSwitch,' numCells',numCells   ! within DEBUG
      print*,'jmin etc',jmin,jmax,jskip           ! within DEBUG
 #endif
-
+     kglobal=lim(LOW,KAXIS)-1
      do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
+        kglobal=kglobal+1
+        jglobal=lim(LOW,JAXIS)-1+minglobal
         do j = jmin, jmax, jskip
+           jglobal=jglobal+1
+           iglobal=lim(LOW,IAXIS)-1
            do i = blkLimits(LOW,IAXIS) ,blkLimits(HIGH,IAXIS)
-              i1=i+lim(LOW,IAXIS)
-              j1=i+lim(LOW,JAXIS)
-              k1=i+lim(LOW,KAXIS)
-
+              iglobal=iglobal+1
               dtdx(j) = tempDtDx(i,j,k)
 
               rhoflx1  = tempFlx(RHO_FLUX,i,j,k)
@@ -442,59 +446,59 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
               grav1d   = tempGrav1d(i,j,k)
               fict1d   = tempFict(i,j,k)
 
-              rho_o    = solnData(DENS_VAR,i1,j1,k1)
-              vely_o   = solnData(VELY_VAR,i1,j1,k1)
+              rho_o    = solnData(DENS_VAR,iglobal,jglobal,kglobal)
+              vely_o   = solnData(VELY_VAR,iglobal,jglobal,kglobal)
 
               if ( hy_useCmaAdvection .and. NSPECIES > 1  ) then
 
 ! update the partial mass densities and passive scalars * density
 
                  do n = 1, hy_numXn
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) =               &
-                              rho_o*solnData(SPECIES_BEGIN-1+n,i1,j1,k1) &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) =               &
+                              rho_o*solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) &
                             -dtdx(j)*(xnflx2(n) - xnflx1(n))
                  end do
 
 ! update the total mass density
 
-                 solnData(DENS_VAR,i1,j1,k1) = 0.e0
+                 solnData(DENS_VAR,iglobal,jglobal,kglobal) = 0.e0
 
                  do n = 1, NSPECIES
-                    solnData(DENS_VAR,i1,j1,k1) =                        &
-                    solnData(DENS_VAR,i1,j1,k1) +                        &
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1)
+                    solnData(DENS_VAR,iglobal,jglobal,kglobal) =                        &
+                    solnData(DENS_VAR,iglobal,jglobal,kglobal) +                        &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal)
                  end do
 
 ! recover partial densities and passive scalars * density
 
-                 inv_new_dens = 1.e0/solnData(DENS_VAR,i1,j1,k1)
+                 inv_new_dens = 1.e0/solnData(DENS_VAR,iglobal,jglobal,kglobal)
 
                  do n = 1, hy_numXn
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) =               &
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) * inv_new_dens
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) =               &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) * inv_new_dens
                  end do
 
               else
 
 ! update the density               
-                 solnData(DENS_VAR,i1,j1,k1) = solnData(DENS_VAR,i1,j1,k1) - &
+                 solnData(DENS_VAR,iglobal,jglobal,kglobal) = solnData(DENS_VAR,iglobal,jglobal,kglobal) - &
                                        dtdx(j) * (rhoflx2-rhoflx1)
 
 ! update the mass fractions and passive scalars
                  do n = 1, hy_numXn
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) =               &
-                           ( rho_o*solnData(SPECIES_BEGIN-1+n,i1,j1,k1)  &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) =               &
+                           ( rho_o*solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal)  &
                             -dtdx(j)*(xnflx2(n) - xnflx1(n))         &
-                           )/solnData(DENS_VAR,i1,j1,k1)
+                           )/solnData(DENS_VAR,iglobal,jglobal,kglobal)
                  end do
 
               end if
 
 ! blkLimitsit the density 
-              solnData(DENS_VAR,i1,j1,k1) =                              &
-                   max(hy_smlrho, solnData(DENS_VAR,i1,j1,k1))
+              solnData(DENS_VAR,iglobal,jglobal,kglobal) =                              &
+                   max(hy_smlrho, solnData(DENS_VAR,iglobal,jglobal,kglobal))
 
-              inv_new_dens = 1.e0/solnData(DENS_VAR,i1,j1,k1)
+              inv_new_dens = 1.e0/solnData(DENS_VAR,iglobal,jglobal,kglobal)
 !#ifdef CIP
 !
 !              if ( itrcr > 0 ) then
@@ -502,8 +506,8 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
 !                 ! CIP update and blkLimitsit tracer
 !
 !                 do n = itrcr,itrcr
-!                    solnData(n,i1,j1,k1) = atan(solnData(n,i1,j1,k1))/(0.9999d0*pi) + 0.5e0
-!                    solnData(n,i1,j1,k1) = max(0.e0, min(1.e0, solnData(n,i1,j1,k1) ))
+!                    solnData(n,iglobal,jglobal,kglobal) = atan(solnData(n,iglobal,jglobal,kglobal))/(0.9999d0*pi) + 0.5e0
+!                    solnData(n,iglobal,jglobal,kglobal) = max(0.e0, min(1.e0, solnData(n,iglobal,jglobal,kglobal) ))
 !                 end do
 !
 !              end if
@@ -513,22 +517,22 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
               aux1 = -dtdx(j)*( (uflx2 - uflx1)                      &
                                +aold_t*(pav2 - pav1))                &
                +0.5e0*dt                                             &
-               *( (solnData(DENS_VAR,i1,j1,k1) + rho_o)*fict1d           &
-                 +(rho_o*grav1d_o + solnData(DENS_VAR,i1,j1,k1)*grav1d)  &
+               *( (solnData(DENS_VAR,iglobal,jglobal,kglobal) + rho_o)*fict1d           &
+                 +(rho_o*grav1d_o + solnData(DENS_VAR,iglobal,jglobal,kglobal)*grav1d)  &
                 )
 
-              solnData(VELY_VAR,i1,j1,k1) =                              &
-                         ( rho_o * solnData(VELY_VAR,i1,j1,k1)           &
+              solnData(VELY_VAR,iglobal,jglobal,kglobal) =                              &
+                         ( rho_o * solnData(VELY_VAR,iglobal,jglobal,kglobal)           &
                           +aux1                                      &
                          )*inv_new_dens
               
-              solnData(VELX_VAR,i1,j1,k1) =                              &
-                         ( rho_o * solnData(VELX_VAR,i1,j1,k1)           &
+              solnData(VELX_VAR,iglobal,jglobal,kglobal) =                              &
+                         ( rho_o * solnData(VELX_VAR,iglobal,jglobal,kglobal)           &
                           -dtdx(j) * (utflx2 - utflx1)               &
                          )*inv_new_dens
               
-              solnData(VELZ_VAR,i1,j1,k1) =                              &
-                         ( rho_o * solnData(VELZ_VAR,i1,j1,k1)           &
+              solnData(VELZ_VAR,iglobal,jglobal,kglobal) =                              &
+                         ( rho_o * solnData(VELZ_VAR,iglobal,jglobal,kglobal)           &
                           -dtdx(j) * (uttflx2 - uttflx1)             &
                          )*inv_new_dens
 
@@ -536,27 +540,27 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
               aux1 = - dtdx(j) * (eflx2 - eflx1)                             &
                    + dt*0.5e00                                               &
                    *( rho_o*vely_o*grav1d_o                                  &
-                     +solnData(DENS_VAR,i1,j1,k1)*solnData(VELY_VAR,i1,j1,k1)*grav1d &
+                     +solnData(DENS_VAR,iglobal,jglobal,kglobal)*solnData(VELY_VAR,iglobal,jglobal,kglobal)*grav1d &
                     )
 
-              etot = (rho_o * solnData(ENER_VAR,i1,j1,k1) + aux1)*inv_new_dens
+              etot = (rho_o * solnData(ENER_VAR,iglobal,jglobal,kglobal) + aux1)*inv_new_dens
 
 #ifdef EINT_VAR
 ! get the internal energy
-              einternal = solnData(EINT_VAR,i1,j1,k1)
+              einternal = solnData(EINT_VAR,iglobal,jglobal,kglobal)
                
 ! update internal energy
               aux1 = -dtdx(j) * ( (eintflx2 - eintflx1)               &
-                     -0.5e0*(vely_o + solnData(VELY_VAR,i1,j1,k1))        &
+                     -0.5e0*(vely_o + solnData(VELY_VAR,iglobal,jglobal,kglobal))        &
                      *aold_t * (pav2 - pav1) )
 
               einternal = (rho_o * einternal + aux1)*inv_new_dens
               einternal = max(einternal, hy_smallp*inv_new_dens)
 
 ! compute the new kinetic energy
-              ekin = 0.5e0 * ( solnData(VELX_VAR,i1,j1,k1)**2             &
-                              +solnData(VELY_VAR,i1,j1,k1)**2             &
-                              +solnData(VELZ_VAR,i1,j1,k1)**2)
+              ekin = 0.5e0 * ( solnData(VELX_VAR,iglobal,jglobal,kglobal)**2             &
+                              +solnData(VELY_VAR,iglobal,jglobal,kglobal)**2             &
+                              +solnData(VELZ_VAR,iglobal,jglobal,kglobal)**2)
 
 ! test whether we should use the internal energy from the evolution
               if (einternal .LT. hy_eintSwitch*ekin) then
@@ -565,11 +569,11 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
                  einternal = etot - ekin
               endif
               
-              solnData(ENER_VAR,i1,j1,k1) = etot
-              solnData(EINT_VAR,i1,j1,k1) = einternal
+              solnData(ENER_VAR,iglobal,jglobal,kglobal) = etot
+              solnData(EINT_VAR,iglobal,jglobal,kglobal) = einternal
 #else
               
-              solnData(ENER_VAR,i1,j1,k1) = etot
+              solnData(ENER_VAR,iglobal,jglobal,kglobal) = etot
 #endif
 
            end do
@@ -583,12 +587,13 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
 ! update in z direction
       
   if ((NDIM == 3) .and. (xyzswp == SWEEP_Z)) then
-
+     minglobal=0
      select case (rangeSwitch)
      case (UPDATE_INTERIOR)
         kmin  = blkLimits(LOW,KAXIS) + 1 !NGUARD*K3D + 2
         kmax  = blkLimits(HIGH,KAXIS) - 1 ! NGUARD*K3D + NZB - 1
         kskip = 1
+        minglobal=1
      case (UPDATE_BOUND)
         kmin  = blkLimits(LOW,KAXIS) ! NGUARD*K3D + 1
         kmax  = blkLimits(HIGH,KAXIS) ! NGUARD*K3D + NZB
@@ -599,13 +604,16 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
         kskip = 1
      end select
 
+     kglobal=lim(LOW,KAXIS)-1+minglobal
      do k = kmin, kmax, kskip
+        kglobal=kglobal+1
+        jglobal=lim(LOW,JAXIS)-1
         do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS) ! NGUARD*K2D+1, NGUARD*K2D+NYB
+           jglobal=jglobal+1
+           iglobal=lim(LOW,IAXIS)-1
            do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS) ! NGUARD+1, NGUARD+NXB
-              i1=i+lim(LOW,IAXIS)
-              j1=i+lim(LOW,JAXIS)
-              k1=i+lim(LOW,KAXIS)
-
+              iglobal=iglobal+1
+              
               dtdx(k)  = tempDtDx(i,j,k)
 
               rhoflx1  = tempFlx(RHO_FLUX,i,j,k)
@@ -639,59 +647,59 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
               grav1d   = tempGrav1d(i,j,k)
               fict1d   = tempFict(i,j,k)
 
-              rho_o    = solnData(DENS_VAR,i1,j1,k1)
-              velz_o   = solnData(VELZ_VAR,i1,j1,k1)
+              rho_o    = solnData(DENS_VAR,iglobal,jglobal,kglobal)
+              velz_o   = solnData(VELZ_VAR,iglobal,jglobal,kglobal)
 
               if ( hy_useCmaAdvection .and. NSPECIES > 1  ) then
 
 ! update the partial mass densities and passive scalars * density
 
                  do n = 1, hy_numXn
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) =               &
-                              rho_o*solnData(SPECIES_BEGIN-1+n,i1,j1,k1) &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) =               &
+                              rho_o*solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) &
                             -dtdx(k)*(xnflx2(n) - xnflx1(n))
                  end do
 
 ! update the total mass density
 
-                 solnData(DENS_VAR,i1,j1,k1) = 0.e0
+                 solnData(DENS_VAR,iglobal,jglobal,kglobal) = 0.e0
 
                  do n = 1, NSPECIES
-                    solnData(DENS_VAR,i1,j1,k1) =                        &
-                    solnData(DENS_VAR,i1,j1,k1) +                        &
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1)
+                    solnData(DENS_VAR,iglobal,jglobal,kglobal) =                        &
+                    solnData(DENS_VAR,iglobal,jglobal,kglobal) +                        &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal)
                  end do
 
 ! recover partial densities and passive scalars * density
 
-                 inv_new_dens = 1.e0/solnData(DENS_VAR,i1,j1,k1)
+                 inv_new_dens = 1.e0/solnData(DENS_VAR,iglobal,jglobal,kglobal)
 
                  do n = 1, hy_numXn
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) =               &
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) * inv_new_dens
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) =               &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) * inv_new_dens
                  end do
 
               else
 
 ! update the density               
-                 solnData(DENS_VAR,i1,j1,k1) = solnData(DENS_VAR,i1,j1,k1) - &
+                 solnData(DENS_VAR,iglobal,jglobal,kglobal) = solnData(DENS_VAR,iglobal,jglobal,kglobal) - &
                                        dtdx(k) * (rhoflx2-rhoflx1)
 
 ! update the mass fractions and passive scalars
                  do n = 1, hy_numXn
-                    solnData(SPECIES_BEGIN-1+n,i1,j1,k1) =               &
-                           ( rho_o*solnData(SPECIES_BEGIN-1+n,i1,j1,k1)  &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) =               &
+                           ( rho_o*solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal)  &
                             -dtdx(k)*(xnflx2(n) - xnflx1(n))         &
-                           )/solnData(DENS_VAR,i1,j1,k1)
+                           )/solnData(DENS_VAR,iglobal,jglobal,kglobal)
                  end do
 
               end if
 
 ! blkLimitsit the density 
-              solnData(DENS_VAR,i1,j1,k1) =                              &
-                   max(hy_smlrho, solnData(DENS_VAR,i1,j1,k1))
+              solnData(DENS_VAR,iglobal,jglobal,kglobal) =                              &
+                   max(hy_smlrho, solnData(DENS_VAR,iglobal,jglobal,kglobal))
 
-              inv_new_dens = 1.e0/solnData(DENS_VAR,i1,j1,k1)
+              inv_new_dens = 1.e0/solnData(DENS_VAR,iglobal,jglobal,kglobal)
 !#ifdef CIP
 !
 !              if ( itrcr > 0 ) then
@@ -699,8 +707,8 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
 !                 ! CIP update and blkLimitsit tracer
 !
 !                 do n = itrcr,itrcr
-!                    solnData(n,i1,j1,k1) = atan(solnData(n,i1,j1,k1))/(0.9999d0*pi) + 0.5e0
-!                    solnData(n,i1,j1,k1) = max(0.e0, min(1.e0, solnData(n,i1,j1,k1) ))
+!                    solnData(n,iglobal,jglobal,kglobal) = atan(solnData(n,iglobal,jglobal,kglobal))/(0.9999d0*pi) + 0.5e0
+!                    solnData(n,iglobal,jglobal,kglobal) = max(0.e0, min(1.e0, solnData(n,iglobal,jglobal,kglobal) ))
  !                end do
 !
 !              end if
@@ -710,22 +718,22 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
               aux1 = -dtdx(k)*( (uflx2 - uflx1)                      &
                                +aold_t*(pav2 - pav1))                &
                +0.5e0*dt                                             &
-               *( (solnData(DENS_VAR,i1,j1,k1) + rho_o)*fict1d           &
-                 +(rho_o*grav1d_o + solnData(DENS_VAR,i1,j1,k1)*grav1d)  &
+               *( (solnData(DENS_VAR,iglobal,jglobal,kglobal) + rho_o)*fict1d           &
+                 +(rho_o*grav1d_o + solnData(DENS_VAR,iglobal,jglobal,kglobal)*grav1d)  &
                 )
 
-              solnData(VELZ_VAR,i1,j1,k1) =                              &
-                         ( rho_o * solnData(VELZ_VAR,i1,j1,k1)           &
+              solnData(VELZ_VAR,iglobal,jglobal,kglobal) =                              &
+                         ( rho_o * solnData(VELZ_VAR,iglobal,jglobal,kglobal)           &
                           +aux1                                      &
                          )*inv_new_dens
               
-              solnData(VELX_VAR,i1,j1,k1) =                              &
-                         ( rho_o * solnData(VELX_VAR,i1,j1,k1)           &
+              solnData(VELX_VAR,iglobal,jglobal,kglobal) =                              &
+                         ( rho_o * solnData(VELX_VAR,iglobal,jglobal,kglobal)           &
                           -dtdx(k) * (utflx2 - utflx1)               &
                          )*inv_new_dens
               
-              solnData(VELY_VAR,i1,j1,k1) =                              &
-                         ( rho_o * solnData(VELY_VAR,i1,j1,k1)           &
+              solnData(VELY_VAR,iglobal,jglobal,kglobal) =                              &
+                         ( rho_o * solnData(VELY_VAR,iglobal,jglobal,kglobal)           &
                           -dtdx(k) * (uttflx2 - uttflx1)             &
                          )*inv_new_dens
 
@@ -733,27 +741,27 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
               aux1 = - dtdx(k) * (eflx2 - eflx1)                             &
                    + dt*0.5e00                                               &
                    *( rho_o*velz_o*grav1d_o                                  &
-                     +solnData(DENS_VAR,i1,j1,k1)*solnData(VELZ_VAR,i1,j1,k1)*grav1d &
+                     +solnData(DENS_VAR,iglobal,jglobal,kglobal)*solnData(VELZ_VAR,iglobal,jglobal,kglobal)*grav1d &
                     )
 
-              etot = (rho_o * solnData(ENER_VAR,i1,j1,k1) + aux1)*inv_new_dens
+              etot = (rho_o * solnData(ENER_VAR,iglobal,jglobal,kglobal) + aux1)*inv_new_dens
                
 #ifdef EINT_VAR
 ! get the internal energy
-              einternal = solnData(EINT_VAR,i1,j1,k1)
+              einternal = solnData(EINT_VAR,iglobal,jglobal,kglobal)
 
 ! update internal energy
               aux1 = -dtdx(k) * ( (eintflx2 - eintflx1)               &
-                     -0.5e0*(velz_o + solnData(VELZ_VAR,i1,j1,k1))        &
+                     -0.5e0*(velz_o + solnData(VELZ_VAR,iglobal,jglobal,kglobal))        &
                      *aold_t * (pav2 - pav1) )
                
               einternal = (rho_o * einternal + aux1)*inv_new_dens
               einternal = max(einternal, hy_smallp*inv_new_dens)
                
 ! compute the new kinetic energy
-              ekin = 0.5e0 * ( solnData(VELX_VAR,i1,j1,k1)**2             &
-                              +solnData(VELY_VAR,i1,j1,k1)**2             &
-                              +solnData(VELZ_VAR,i1,j1,k1)**2)
+              ekin = 0.5e0 * ( solnData(VELX_VAR,iglobal,jglobal,kglobal)**2             &
+                              +solnData(VELY_VAR,iglobal,jglobal,kglobal)**2             &
+                              +solnData(VELZ_VAR,iglobal,jglobal,kglobal)**2)
                
 ! test whether we should use the internal energy from the evolution
               if (einternal .LT. hy_eintSwitch*ekin) then
@@ -762,17 +770,17 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                        &
                  einternal = etot - ekin
               endif
               
-              solnData(ENER_VAR,i1,j1,k1) = etot
-              solnData(EINT_VAR,i1,j1,k1) = einternal
+              solnData(ENER_VAR,iglobal,jglobal,kglobal) = etot
+              solnData(EINT_VAR,iglobal,jglobal,kglobal) = einternal
 #else
               
-              solnData(ENER_VAR,i1,j1,k1) = etot
+              solnData(ENER_VAR,iglobal,jglobal,kglobal) = etot
 #endif
 
            end do
         end do
      end do
-      
+     
   end if
 
 !=============================================================================

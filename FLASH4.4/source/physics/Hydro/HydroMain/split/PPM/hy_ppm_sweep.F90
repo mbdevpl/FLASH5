@@ -141,7 +141,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
                    secondCoord(:)  , &
                    thirdCoord(:)
   integer :: i,j,k,blk
-  integer, dimension(LOW:HIGH,MDIM) :: lim,limGC,bcs
+  integer, dimension(LOW:HIGH,MDIM) :: lim,limGC,bcs,blkLimits,blkLimitsGC
   integer, dimension(MDIM)   :: eosGcLayers
   integer                    :: transverseEosLayers, transverseGcLayers
   integer, dimension(MDIM)   :: sDetectLayers
@@ -168,7 +168,6 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
 !  call IO_writeCheckpoint()
 
   doFluxCorrect = (hy_fluxCorrect .AND. (hy_updateHydroFluxes .OR. hy_useDiffuse))
-  doFluxCorrect=.false.
   if (doFluxCorrect) then
      updateMode = UPDATE_INTERIOR
   else
@@ -222,6 +221,8 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
           bcs(HIGH,idir) = REFLECTING
      limGC=block%limitsGC
      lim=block%limits
+     blkLimits=block%localLimits
+     blkLimitsGC=block%localLimitsGC
 
 
      isizeGC=limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1
@@ -237,25 +238,25 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
      numCells = max(isizeGC,jsizeGC)
      numcells = max(numCells,ksizeGC)
 
-     allocate(tempFlx(NFLUXES,limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+     allocate(tempFlx(NFLUXES,isizeGC,jsizeGC,ksizeGC))
 
-     allocate(tempArea(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-     allocate(tempGrav1d_o(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-     allocate(tempGrav1d(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-     allocate(tempDtDx(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-     allocate(tempFict(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-     allocate(tempAreaLeft(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+     allocate(tempArea(isizeGC,jsizeGC,ksizeGC))
+     allocate(tempGrav1d_o(isizeGC,jsizeGC,ksizeGC))
+     allocate(tempGrav1d(isizeGC,jsizeGC,ksizeGC))
+     allocate(tempDtDx(isizeGC,jsizeGC,ksizeGC))
+     allocate(tempFict(isizeGC,jsizeGC,ksizeGC))
+     allocate(tempAreaLeft(isizeGC,jsizeGC,ksizeGC))
 
-     allocate(shock(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+     allocate(shock(isizeGC,jsizeGC,ksizeGC))
 
-     allocate(primaryCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-     allocate(primaryLeftCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-     allocate(primaryRghtCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-     allocate(primaryDx(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-     allocate(jCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-     allocate(kCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-     allocate(radialCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-     allocate(ugrid(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
+     allocate(primaryCoord(numCells))
+     allocate(primaryLeftCoord(numCells))
+     allocate(primaryRghtCoord(numCells))
+     allocate(primaryDx(numCells))
+     allocate(jCoord(numCells))
+     allocate(kCoord(numCells))
+     allocate(radialCoord(numCells))
+     allocate(ugrid(numCells))
      allocate(isGc(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
 
      if (NDIM < MDIM .AND. hy_cvisc == 0.0) then 
@@ -469,12 +470,13 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
      if (hy_updateHydroFluxes .OR. hy_useDiffuse) then
         call Timers_start("hy_ppm_updateSoln")
         call hy_ppm_updateSoln(updateMode, &
-                        sweepDir, dt,&
-                        lim,limGC,numCells, &
-                        tempArea, tempGrav1d_o, tempGrav1d, &
-                        tempDtDx, tempFict,   &
-                        tempFlx,       &
-                        solnData )
+             sweepDir, dt,&
+             lim,limGC,numCells, &
+             blkLimits,blkLimitsGC,&
+             tempArea, tempGrav1d_o, tempGrav1d, &
+             tempDtDx, tempFict,   &
+             tempFlx,       &
+             solnData )
         call Timers_stop("hy_ppm_updateSoln")
      end if
 
@@ -556,14 +558,14 @@ end do
            numCells = max(isizeGC,jsizeGC)
            numcells = max(numCells,ksizeGC)
            
-           allocate(tempFlx(NFLUXES,limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(tempFlx(NFLUXES,isizeGC,jsizeGC,ksizeGC))
            
-           allocate(tempArea(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           allocate(tempGrav1d_o(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           allocate(tempGrav1d(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           allocate(tempDtDx(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           allocate(tempFict(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           allocate(tempAreaLeft(limGC(LOW,IAXIS):limGC(HIGH,IAXIS),limGC(LOW,JAXIS):limGC(HIGH,JAXIS),limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
+           allocate(tempArea(isizeGC,jsizeGC,ksizeGC))
+           allocate(tempGrav1d_o(isizeGC,jsizeGC,ksizeGC))
+           allocate(tempGrav1d(isizeGC,jsizeGC,ksizeGC))
+           allocate(tempDtDx(isizeGC,jsizeGC,ksizeGC))
+           allocate(tempFict(isizeGC,jsizeGC,ksizeGC))
+           allocate(tempAreaLeft(isizeGC,jsizeGC,ksizeGC))
            
            call hy_ppm_getTemporaryData(sweepDir,block%id,size,&
                 tempArea,tempDtDx,tempGrav1d,tempGrav1d_o,tempFict, tempAreaLeft)
@@ -577,6 +579,7 @@ end do
            call hy_ppm_updateSoln(updateMode, &
                 sweepDir, dt,&
                 lim,limGC,numCells, &
+                blkLimits,blkLimitsGC,&
                 tempArea, tempGrav1d_o, tempGrav1d, &
                 tempDtDx, tempFict,   &
                 tempFlx,   &

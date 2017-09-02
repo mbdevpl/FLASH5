@@ -82,7 +82,7 @@ subroutine hy_ppm_putTemporaryData(axis, blockID, size, &
   ex = size(1)-NGUARD
   ey = size(2)-NGUARD*K2D
   ez = size(3)-NGUARD*K3D
-  print*,'the values of ',sx,sy,sz,ex,ey,ez
+!!$  print*,'the values of ',sx,sy,sz,ex,ey,ez
   select case(axis)
 
   case(IAXIS)

@@ -118,7 +118,8 @@ Module hy_ppm_interface
   interface
      subroutine hy_ppm_updateSoln(rangeSwitch, &
           xyzswp, dt,                          &
-          blkLimits,blkLimitsGC,numCells,      &
+          lim,limGC,numCells,      &
+          blkLimits,blkLimitsGC,               &
           tempArea, tempGrav1d_o, tempGrav1d,  &
           tempDtDx, tempFict,                  &
           tempFlx,  solnData )
@@ -128,7 +129,7 @@ Module hy_ppm_interface
        integer, intent(IN) :: xyzswp
        real,    intent(IN) :: dt
        integer, intent(IN) :: numCells
-       integer, intent(IN),dimension(2,MDIM)::blkLimitsGC,blkLimits
+       integer, intent(IN),dimension(2,MDIM)::lim,limGC,blkLimitsGC,blkLimits
 #ifdef FIXEDBLOCKSIZE
        real, intent(IN), DIMENSION(GRID_ILO_GC:GRID_IHI_GC, &
             GRID_JLO_GC:GRID_JHI_GC, &
