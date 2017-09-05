@@ -159,7 +159,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
   integer :: lev, maxLev
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: block
-
+  integer :: ilocal,jlocal,klocal
 
 !!----------------------------
 !!------End Data Declarations
@@ -384,10 +384,16 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
            call Hydro_shockStrength(solnData, shock,lim,limGC, sDetectLayers, &
                 radialCoord,jCoord,kCoord,&
                 threshold=0.01, mode=1)
+           klocal=blockLimitsGC(LOW,KAXIS)-1
            do k = limGC(LOW,KAXIS),limGC(HIGH,KAXIS)
+              klocal=klocal+1
+              jlocal=blockLimitsGC(LOW,JAXIS)-1
               do j = limGC(LOW,JAXIS),limGC(HIGH,JAXIS)
+                 jlocal=jlocal+1
+                 ilocal=blockLimitsGC(LOW,IAXIS)-1
                  do i = limGC(LOW,IAXIS),limGC(HIGH,IAXIS)
-                    solnData(SHKS_VAR,i,j,k)=shock(i,j,k)
+                    ilocal=ilocal+1
+                    solnData(SHKS_VAR,i,j,k)=shock(ilocal,jlocal,klocal)
                  end do
               end do
            end do
@@ -395,34 +401,41 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
            call Hydro_detectShock(solnData, shock,lim,limGC, sDetectLayers, &
                 radialCoord,jCoord,kCoord)
 #ifdef SHOK_VAR
+           klocal=blockLimitsGC(LOW,KAXIS)-1
            do k = limGC(LOW,KAXIS),limGC(HIGH,KAXIS)
+              klocal=klocal+1
+              jlocal=blockLimitsGC(LOW,JAXIS)-1
               do j = limGC(LOW,JAXIS),limGC(HIGH,JAXIS)
+                 jlocal=jlocal+1
+                 ilocal=blockLimitsGC(LOW,IAXIS)-1
                  do i = limGC(LOW,IAXIS),limGC(HIGH,IAXIS)
-                    solnData(SHOK_VAR,i,j,k)=shock(i,j,k)
+                    ilocal=ilocal+1
+                    solnData(SHOK_VAR,i,j,k)=shock(ilocal,jlocal,klocal)
                  end do
               end do
            end do
 #endif
         end if
         call hy_ppm_block(hy_meshMe, block,sweepDir, dt, dtOld, &
-                          lim,limGC,bcs,          &
-                          numCells,numGuard,      &
-                          primaryCoord ,     &
-                          primaryLeftCoord , &
-                          primaryRghtCoord , &
-                          primaryDx        , &
-                          secondCoord      , &
-                          thirdCoord       , &
-                          radialCoord     , &
-                          ugrid            , &
-                          tempArea,                   &
-                          tempGrav1d_o,               &
-                          tempGrav1d,                 &
-                          tempDtDx,                   &
-                          tempFict,                   &
-                          tempAreaLeft,               &
-                          tempFlx,       & 
-                          shock, solnData)
+             lim,limGC,bcs,          &
+             blkLimits,blkLimitsGC,  &
+             numCells,numGuard,      &
+             primaryCoord ,     &
+             primaryLeftCoord , &
+             primaryRghtCoord , &
+             primaryDx        , &
+             secondCoord      , &
+             thirdCoord       , &
+             radialCoord     , &
+             ugrid            , &
+             tempArea,                   &
+             tempGrav1d_o,               &
+             tempGrav1d,                 &
+             tempDtDx,                   &
+             tempFict,                   &
+             tempAreaLeft,               &
+             tempFlx,       & 
+             shock, solnData)
      else
         tempFlx = 0.0
 
@@ -482,7 +495,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
 
      if(.not. (doFluxCorrect)) then
         if(hy_irenorm==1) then
-           call Grid_renormAbundance(block%id,lim,solnData)
+!!$           call Grid_renormAbundance(block%id,lim,solnData)
         else
            call Grid_limitAbundance(lim,solnData)
         end if

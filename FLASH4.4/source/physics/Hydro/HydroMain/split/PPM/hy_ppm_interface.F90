@@ -25,7 +25,8 @@ Module hy_ppm_interface
   
   interface
      subroutine hy_ppm_block ( hy_meshMe,block,sweepDir, dt, dtOld, &
-          blkLimits,blkLimitsGC,bcs, &
+          lim,limGC,bcs, &
+          blkLimits,blkLimitsGC, &
           numCells,numguard, &
           primaryCoord     , &
           primaryLeftCoord , &
@@ -49,40 +50,9 @@ Module hy_ppm_interface
        integer, intent(IN) :: sweepDir
        real,    intent(IN) :: dt, dtOld
        integer, intent(IN) :: numCells,numguard
-       integer, intent(IN),dimension(2,MDIM) :: blkLimitsGC,blkLimits,bcs
+       integer, intent(IN),dimension(LOW:HIGH,MDIM) :: lim,limGC,blkLimitsGC,blkLimits,bcs
        real,    pointer :: solnData(:,:,:,:) 
 
-#ifdef FIXEDBLOCKSIZE
-       real, intent(OUT), DIMENSION(GRID_ILO_GC:GRID_IHI_GC,   &
-            GRID_JLO_GC:GRID_JHI_GC,          &
-            GRID_KLO_GC:GRID_KHI_GC) ::       &
-            tempArea,       &
-            tempGrav1d_o,   &
-            tempGrav1d,     &
-            tempDtDx,       &
-            tempFict,       &
-            tempAreaLeft
-
-       real, intent(IN), DIMENSION(GRID_ILO_GC:GRID_IHI_GC,    &
-            GRID_JLO_GC:GRID_JHI_GC,          &
-            GRID_KLO_GC:GRID_KHI_GC) :: &
-            shock
-
-       real, intent(OUT), DIMENSION(NFLUXES,                   &
-            GRID_ILO_GC:GRID_IHI_GC,     &
-            GRID_JLO_GC:GRID_JHI_GC,     &
-            GRID_KLO_GC:GRID_KHI_GC) ::  &
-            tempFlx
-
-       real,intent(IN), DIMENSION(MAXCELLS) :: primaryCoord ,  &
-            primaryLeftCoord , &
-            primaryRghtCoord , &
-            primaryDx        , &
-            secondCoord      , &
-            thirdCoord       , &
-            radialCoord     , &
-            ugrid
-#else
        real, intent(OUT), DIMENSION(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
             blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),          &
             blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) ::       &
@@ -109,7 +79,6 @@ Module hy_ppm_interface
             thirdCoord       , &
             radialCoord      , &
             ugrid
-#endif
      end subroutine hy_ppm_block
   end interface
 

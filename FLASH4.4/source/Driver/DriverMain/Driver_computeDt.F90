@@ -458,7 +458,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
         if (dtMinLoc(4) > 0) then
            index(:)=dtMinLoc(1:MDIM)
-           call Grid_getSingleCellCoords(index,dtMinLoc(4),CENTER, EXTERIOR,coords)
+!!$           call Grid_getSingleCellCoords(index,dtMinLoc(4),CENTER, EXTERIOR,coords)
         else
            coords(:) = 999.0
         end if
