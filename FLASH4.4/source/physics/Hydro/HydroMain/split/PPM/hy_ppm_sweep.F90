@@ -495,7 +495,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
 
      if(.not. (doFluxCorrect)) then
         if(hy_irenorm==1) then
-!!$           call Grid_renormAbundance(block%id,lim,solnData)
+           call Grid_renormAbundance(block%id,lim,solnData)
         else
            call Grid_limitAbundance(lim,solnData)
         end if

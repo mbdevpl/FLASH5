@@ -179,9 +179,9 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                     &
         jglobal=lim(LOW,JAXIS)-1
         do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
            jglobal=jglobal+1
-           iglobal=lim(LOW,IAXIS)-1+minglobal
+           iglobal=lim(LOW,IAXIS)+minglobal-iskip
            do i = imin, imax, iskip
-              iglobal=iglobal+1
+              iglobal=iglobal+iskip
               dtdx(i)  = tempDtDx(i,j,k)
               
               rhoflx1  = tempFlx(RHO_FLUX,i,j,k)
@@ -248,7 +248,7 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                     &
                  ! update the partial mass densities and passive scalars * density
 
                  do n = 1, hy_numXn
-                    solnData(SPECIES_BEGIN-1+n,i,j,k) =               &
+                    solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) =               &
                               rho_o*solnData(SPECIES_BEGIN-1+n,iglobal,jglobal,kglobal) &
                             -dtdx(i)*(xnflx2(n) - xnflx1(n))
                  end do
@@ -407,9 +407,9 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                     &
      kglobal=lim(LOW,KAXIS)-1
      do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
         kglobal=kglobal+1
-        jglobal=lim(LOW,JAXIS)-1+minglobal
+        jglobal=lim(LOW,JAXIS)+minglobal-jskip
         do j = jmin, jmax, jskip
-           jglobal=jglobal+1
+           jglobal=jglobal+jskip
            iglobal=lim(LOW,IAXIS)-1
            do i = blkLimits(LOW,IAXIS) ,blkLimits(HIGH,IAXIS)
               iglobal=iglobal+1
@@ -604,9 +604,9 @@ subroutine hy_ppm_updateSoln(rangeSwitch,                     &
         kskip = 1
      end select
 
-     kglobal=lim(LOW,KAXIS)-1+minglobal
+     kglobal=lim(LOW,KAXIS)+minglobal-kskip
      do k = kmin, kmax, kskip
-        kglobal=kglobal+1
+        kglobal=kglobal+kskip
         jglobal=lim(LOW,JAXIS)-1
         do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS) ! NGUARD*K2D+1, NGUARD*K2D+NYB
            jglobal=jglobal+1
