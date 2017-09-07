@@ -37,8 +37,7 @@
 #include "constants.h"
 
 subroutine Driver_evolveFlash()
-    use amrex_fort_module,     ONLY : wp => amrex_real, &
-                                      amrex_spacedim
+    use amrex_fort_module,     ONLY : amrex_spacedim
     use amrex_amrcore_module,  ONLY : amrex_get_finest_level, &
                                       amrex_get_boxarray
     use amrex_box_module,      ONLY : amrex_print, amrex_box
@@ -76,8 +75,8 @@ subroutine Driver_evolveFlash()
     character(256) :: msg = ""
     integer        :: n_tests = 0
     integer        :: n_failed = 0
-    real(wp)       :: t_old = 0.0_wp
-    real(wp)       :: t_new = 0.0_wp
+    real           :: t_old = 0.0d0
+    real           :: t_new = 0.0d0
 
     real           :: domain(LOW:HIGH, MDIM) = 0.0d0
     real           :: deltas(1:MDIM) = 0.0d0
@@ -199,8 +198,8 @@ contains
     subroutine assert_equal_real(a, b, msg)
         implicit none
 
-        real(wp),     intent(IN) :: a
-        real(wp),     intent(IN) :: b
+        real,         intent(IN) :: a
+        real,         intent(IN) :: b
         character(*), intent(IN) :: msg
 
         character(256) :: buffer = ""
@@ -216,9 +215,9 @@ contains
     subroutine assert_almost_equal(a, b, prec, msg)
         implicit none
 
-        real(wp),     intent(IN) :: a
-        real(wp),     intent(IN) :: b
-        real(wp),     intent(IN) :: prec
+        real,         intent(IN) :: a
+        real,         intent(IN) :: b
+        real,         intent(IN) :: prec
         character(*), intent(IN) :: msg
 
         character(256) :: buffer = ""
