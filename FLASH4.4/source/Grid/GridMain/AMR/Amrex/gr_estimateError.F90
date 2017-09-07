@@ -39,9 +39,10 @@
 subroutine gr_estimateError(error, iref, refine_filter)
 
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
-       gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
+       gr_meshComm, gr_meshMe, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBC, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr
+                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getDeltas
 !  use gr_specificData, ONLY : gr_oneBlock
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t

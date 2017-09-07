@@ -329,7 +329,6 @@ subroutine Grid_init()
 !  gr_enforceMaxRefinement = .FALSE.
 
   call RuntimeParameters_get("lrefine_del", gr_lrefineDel)
-  allocate(gr_delta(MDIM,gr_maxRefine))
 
 !  call RuntimeParameters_get("gr_lrefineMaxRedDoByLogR", gr_lrefineMaxRedDoByLogR)
 !  call RuntimeParameters_get("gr_lrefineMaxRedRadiusFact", gr_lrefineMaxRedRadiusSq)
@@ -421,27 +420,6 @@ subroutine Grid_init()
 !     call Simulation_getVarnameType(i, gr_vartypes(i))
 !     if (gr_vartypes(i) .eq. VARTYPE_PER_MASS) gr_anyVarToConvert = .TRUE.
 !  end do
-
-  ! DEVNOTE: Is AMReX doing this for us?
-  !! calculating deltas for each level of 
-  !! refinement and putting them in the
-  !! delta variable
-  dx = domain(HIGH, 1) - domain(LOW, 1)
-  dy = domain(HIGH, 2) - domain(LOW, 2)
-  dz = domain(HIGH, 3) - domain(LOW, 3)
-  rnb = 0.0
-  rnb(1) = dx/(1.0*NXB*gr_nBlockX)
-#if NDIM > 1
-  rnb(2) = dy/(1.0*NYB*gr_nBlockY)
-#endif
-#if NDIM > 2
-  rnb(3) = dz/(1.0*NZB*gr_nBlockZ)
-#endif  
-  do i = 1,gr_maxRefine
-     gr_delta(1:NDIM,i) = rnb
-     gr_delta(NDIM+1:,i) = 0.0
-     rnb = rnb/2.0
-  end do
 
 !  gr_minCellSizes(IAXIS) = (gr_imax - gr_imin) / &
 !       (gr_nblockX*NXB*2**(lrefine_max-1))

@@ -109,7 +109,9 @@
 
 subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
 
-  use Grid_data, ONLY : gr_globalDomain,gr_delta, gr_maxRefine
+  use Grid_interface,   ONLY : Grid_getDomainBoundBox, &
+                               Grid_getDeltas, &
+                               Grid_getMaxRefinement
   use Driver_interface, ONLY : Driver_abortFlash
   use block_metadata, ONLY : block_metadata_t
 
