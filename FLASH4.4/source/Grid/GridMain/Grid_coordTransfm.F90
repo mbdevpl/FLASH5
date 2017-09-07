@@ -44,7 +44,8 @@
 subroutine Grid_coordTransfm(x,y,z, xout,yout,zout, geometryIn,geometryOut, ndimArg, &
      velI,velJ,velK,velIOut,velJOut,velKOut)
   use Driver_interface, ONLY: Driver_abortFlash
-  use Grid_data, ONLY: gr_meshMe, gr_geometry
+  use Grid_interface, ONLY : Grid_getGeometry
+  use Grid_data, ONLY: gr_meshMe
   implicit none
   real,intent(IN) :: x,y,z
   real,intent(OUT) :: xout,yout,zout
@@ -54,22 +55,25 @@ subroutine Grid_coordTransfm(x,y,z, xout,yout,zout, geometryIn,geometryOut, ndim
   real,OPTIONAL,intent(IN) :: velI,velJ,velK
   real,OPTIONAL,intent(OUT) :: velIOut,velJOut,velKOut
 
+  integer :: geometry
   logical,save :: first_call = .TRUE.
   integer :: geoIn, geoOut, ndim
+
+  call Grid_getGeometry(geometry)
 
   if (present(geometryIn)) then
      geoIn = geometryIn
   else
      geoIn = -1
   end if
-  if (geoIn == -1) geoIn = gr_geometry
+  if (geoIn == -1) geoIn = geometry
      
   if (present(geometryOut)) then
      geoOut = geometryOut
   else
      geoOut = -1
   end if
-  if (geoOut == -1) geoOut = gr_geometry
+  if (geoOut == -1) geoOut = geometry
      
   if (present(ndimArg)) then
      ndim = ndimArg

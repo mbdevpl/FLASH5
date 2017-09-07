@@ -35,8 +35,8 @@
 
 subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock)
 
-  use Grid_data, ONLY : gr_geometry
-  use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellVol
+  use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellVol, &
+                             Grid_getGeometry
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -46,7 +46,8 @@ subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock)
   type(block_metadata_t),intent(IN) :: block
   integer,intent(IN) :: xb,xe,yb,ye,zb,ze
   real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
-  
+ 
+  integer :: geometry
   integer,dimension(MDIM) :: point
   real,dimension(MDIM) :: del
   integer :: i, j, k
@@ -54,7 +55,8 @@ subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock)
 #ifdef DEBUG_GRID
   print*,xb,xe,yb,ye,zb,ze
 #endif
-  if (gr_geometry==CARTESIAN) then
+  call Grid_getGeometry(geometry)
+  if (geometry==CARTESIAN) then
      call Grid_getDeltas(block%level, del)
      dataBlock=del(IAXIS)
      do i = 2,NDIM

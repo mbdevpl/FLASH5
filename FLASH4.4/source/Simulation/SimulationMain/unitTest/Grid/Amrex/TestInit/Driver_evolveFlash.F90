@@ -37,48 +37,57 @@
 #include "constants.h"
 
 subroutine Driver_evolveFlash()
-    use amrex_fort_module,     ONLY : wp => amrex_real, &
-                                      amrex_spacedim
-    use amrex_amrcore_module,  ONLY : amrex_get_finest_level, &
-                                      amrex_get_boxarray
-    use amrex_box_module,      ONLY : amrex_print, amrex_box
+    use amrex_fort_module,     ONLY : amrex_spacedim
     use amrex_parallel_module, ONLY : amrex_parallel_myproc, &
                                       amrex_parallel_nprocs
 
-    use Grid_interface,        ONLY : Grid_getDomainBoundBox
+    use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
+                                      Grid_getGeometry, &
+                                      Grid_getDeltas, &
+                                      Grid_getMaxRefinement
     use Grid_data,             ONLY : gr_nBlockX, gr_nBlockY, gr_nBlockZ, &
                                       gr_meshMe
 
     implicit none
 
-    interface assert_equal
-        procedure :: assert_equal_int
-        procedure :: assert_equal_real
-    end interface
+    interface assertEqual
+        procedure :: assertEqualInt
+        procedure :: assertEqualReal
+    end interface assertEqual
 
     ! These values should match those values in flash.par
-    integer,  parameter :: NXCELL_EX  = 64
-    integer,  parameter :: NYCELL_EX  = 64
-    integer,  parameter :: NZCELL_EX  =  4
-    integer,  parameter :: NXBLK_EX   =  8
-    integer,  parameter :: NYBLK_EX   = 16
-    integer,  parameter :: NZBLK_EX   =  2
-    real(wp), parameter :: XMIN_EX    = -1.00_wp
-    real(wp), parameter :: XMAX_EX    =  2.00_wp
-    real(wp), parameter :: YMIN_EX    = -1.50_wp
-    real(wp), parameter :: YMAX_EX    =  4.50_wp
-    real(wp), parameter :: ZMIN_EX    =  0.50_wp
-    real(wp), parameter :: ZMAX_EX    =  0.75_wp
+    integer,  parameter :: NXCELL_EX   = 64
+    integer,  parameter :: NYCELL_EX   = 64
+    integer,  parameter :: NZCELL_EX   =  4
+    integer,  parameter :: NXBLK_EX    =  8
+    integer,  parameter :: NYBLK_EX    = 16
+    integer,  parameter :: NZBLK_EX    =  2
+    real,     parameter :: XMIN_EX     = -1.00d0
+    real,     parameter :: XMAX_EX     =  2.00d0
+    real,     parameter :: YMIN_EX     = -1.50d0
+    real,     parameter :: YMAX_EX     =  4.50d0
+    real,     parameter :: ZMIN_EX     =  0.50d0
+    real,     parameter :: ZMAX_EX     =  0.75d0
+    real,     parameter :: XDELTA_EX   = (XMAX_EX-XMIN_EX)/NXCELL_EX
+    real,     parameter :: YDELTA_EX   = (YMAX_EX-YMIN_EX)/NYCELL_EX
+    real,     parameter :: ZDELTA_EX   = (ZMAX_EX-ZMIN_EX)/NZCELL_EX
+    integer,  parameter :: MAXLEVEL_EX = 4
 
-    character(256) :: msg = ""
-    integer        :: n_tests = 0
-    integer        :: n_failed = 0
-    real(wp)       :: t_old = 0.0_wp
-    real(wp)       :: t_new = 0.0_wp
+    integer :: n_tests = 0
+    integer :: n_failed = 0
+    real    :: t_old = 0.0d0
+    real    :: t_new = 0.0d0
 
-    real           :: domain(LOW:HIGH, MDIM)
+    integer :: geometry = -100
+    real    :: domain(LOW:HIGH, MDIM) = 0.0d0
+    real    :: deltas(1:MDIM) = 0.0d0
+    real    :: x_expected = 0.0d0
+    real    :: y_expected = 0.0d0
+    real    :: z_expected = 0.0d0
+    integer :: max_level = -1
 
-    integer  :: rank = -1
+    integer :: rank = -1
+    integer :: ilev = 0
 
     rank = amrex_parallel_myproc()
  
@@ -95,40 +104,77 @@ subroutine Driver_evolveFlash()
     end if
     n_tests = n_tests + 1
  
-    ! TODO: Check coordinate system type from AMReX
-
     ! Physical domain
+    call Grid_getGeometry(geometry)
+    call assertEqual(geometry, CARTESIAN, "Incorrect coordinate system type")
+
     call Grid_getDomainBoundBox(domain)
-    call assert_equal(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
-    call assert_equal(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
-#if NDIM >= 2
-    call assert_equal(domain(LOW,  2), YMIN_EX, "Incorrect low Y-coordinate")
-    call assert_equal(domain(HIGH, 2), YMAX_EX, "Incorrect high Y-coordinate")
-#if NDIM == 3 
-    call assert_equal(domain(LOW,  3), ZMIN_EX, "Incorrect low Z-coordinate")
-    call assert_equal(domain(HIGH, 3), ZMAX_EX, "Incorrect high Z-coordinate")
-#endif
+#if NDIM == 1
+    call assertEqual(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
+    call assertEqual(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
+    call assertEqual(domain(LOW,  2), 0.0d0,   "Incorrect low Y-coordinate")
+    call assertEqual(domain(HIGH, 2), 0.0d0,   "Incorrect high Y-coordinate")
+    call assertEqual(domain(LOW,  3), 0.0d0,   "Incorrect low Z-coordinate")
+    call assertEqual(domain(HIGH, 3), 0.0d0,   "Incorrect high Z-coordinate")
+#elif NDIM == 2
+    call assertEqual(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
+    call assertEqual(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
+    call assertEqual(domain(LOW,  2), YMIN_EX, "Incorrect low Y-coordinate")
+    call assertEqual(domain(HIGH, 2), YMAX_EX, "Incorrect high Y-coordinate")
+    call assertEqual(domain(LOW,  3), 0.0d0,   "Incorrect low Z-coordinate")
+    call assertEqual(domain(HIGH, 3), 0.0d0,   "Incorrect high Z-coordinate")
+#elif NDIM == 3 
+    call assertEqual(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
+    call assertEqual(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
+    call assertEqual(domain(LOW,  2), YMIN_EX, "Incorrect low Y-coordinate")
+    call assertEqual(domain(HIGH, 2), YMAX_EX, "Incorrect high Y-coordinate")
+    call assertEqual(domain(LOW,  3), ZMIN_EX, "Incorrect low Z-coordinate")
+    call assertEqual(domain(HIGH, 3), ZMAX_EX, "Incorrect high Z-coordinate")
 #endif
 
     !!!!! CONFIRM PROPER CELL/BLOCK STRUCTURE
     ! Cells
     ! TODO: Get values from AMReX
 
-    ! Deltas
-    ! TODO: Get values from AMReX
+    ! Refinement levels
+    call Grid_getMaxRefinement(max_level, mode=1)
+    call assertEqual(max_level, MAXLEVEL_EX, "Incorrect maximum refine level")
+
+    do ilev = 1, max_level
+        call Grid_getDeltas(ilev, deltas)
+
+        x_expected = XDELTA_EX / 2.0d0**(ilev - 1)
+        y_expected = YDELTA_EX / 2.0d0**(ilev - 1)
+        z_expected = ZDELTA_EX / 2.0d0**(ilev - 1)
+#if NDIM == 1
+        call assertEqual(deltas(1), x_expected, "Incorrect high X-coordinate")
+        call assertEqual(deltas(2), 0.0d0,      "Incorrect high Y-coordinate")
+        call assertEqual(deltas(3), 0.0d0,      "Incorrect high Z-coordinate")
+#elif NDIM == 2
+        call assertEqual(deltas(1), x_expected, "Incorrect high X-coordinate")
+        call assertEqual(deltas(2), y_expected, "Incorrect high Y-coordinate")
+        call assertEqual(deltas(3), 0.0d0,      "Incorrect high Z-coordinate")
+#elif NDIM == 3 
+        call assertEqual(deltas(1), x_expected, "Incorrect high X-coordinate")
+        call assertEqual(deltas(2), y_expected, "Incorrect high Y-coordinate")
+        call assertEqual(deltas(3), z_expected, "Incorrect high Z-coordinate")
+#endif
+    end do
 
     ! Blocks
     ! TODO: Get values from AMReX rather than from FLASH
-    call assert_equal(gr_nBlockX, NXBLK_EX, "Wrong number of blocks along X")
-    call assert_equal(gr_nBlockY, NYBLK_EX, "Wrong number of blocks along Y")
-    call assert_equal(gr_nBlockZ, NZBLK_EX, "Wrong number of blocks along Z")
+    call assertEqual(gr_nBlockX, NXBLK_EX, "Wrong number of blocks along X")
+    call assertEqual(gr_nBlockY, NYBLK_EX, "Wrong number of blocks along Y")
+    call assertEqual(gr_nBlockZ, NZBLK_EX, "Wrong number of blocks along Z")
 
     !!!!! CONFIRM REFINEMENT SETUP
-    ! TODO: Get max refinement level from AMReX
     ! TODO: Get nrefs from AMReX
 
     !!!!! CONFIRM MPI SETUP
-    call assert_equal(rank, gr_meshMe, "AMReX/FLASH ranks are different")
+    call assertEqual(rank, gr_meshMe, "AMReX/FLASH ranks are different")
+
+    ! TODO: Once unittest is refining mesh, check Grid_getMaxRefinement
+    ! with mode that checks actual number of levels in use
 
     call cpu_time (t_new)
  
@@ -150,7 +196,7 @@ subroutine Driver_evolveFlash()
 
 contains
 
-    subroutine assert_equal_int(a, b, msg)
+    subroutine assertEqualInt(a, b, msg)
         implicit none
 
         integer,      intent(IN) :: a
@@ -165,13 +211,13 @@ contains
             n_failed = n_failed + 1
         end if
         n_tests = n_tests + 1
-    end subroutine assert_equal_int
+    end subroutine assertEqualInt
 
-    subroutine assert_equal_real(a, b, msg)
+    subroutine assertEqualReal(a, b, msg)
         implicit none
 
-        real(wp),     intent(IN) :: a
-        real(wp),     intent(IN) :: b
+        real,         intent(IN) :: a
+        real,         intent(IN) :: b
         character(*), intent(IN) :: msg
 
         character(256) :: buffer = ""
@@ -182,14 +228,14 @@ contains
             n_failed = n_failed + 1
         end if
         n_tests = n_tests + 1
-    end subroutine assert_equal_real
+    end subroutine assertEqualReal
 
     subroutine assert_almost_equal(a, b, prec, msg)
         implicit none
 
-        real(wp),     intent(IN) :: a
-        real(wp),     intent(IN) :: b
-        real(wp),     intent(IN) :: prec
+        real,         intent(IN) :: a
+        real,         intent(IN) :: b
+        real,         intent(IN) :: prec
         character(*), intent(IN) :: msg
 
         character(256) :: buffer = ""

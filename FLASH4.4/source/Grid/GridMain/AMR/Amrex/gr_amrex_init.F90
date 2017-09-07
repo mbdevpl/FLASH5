@@ -25,7 +25,6 @@ subroutine gr_amrex_init()
  
   ! TODO: Hopefully these should disappear
   use Grid_data,                   ONLY : gr_nblockX, gr_nblockY, gr_nblockZ, &
-                                          gr_geometry, &
                                           gr_maxRefine
 
   implicit none
@@ -86,13 +85,11 @@ subroutine gr_amrex_init()
   case(SPHERICAL)
     coord_sys = AMREX_SPHERICAL
   case default
-    write(buffer,'(I5)') gr_geometry
+    write(buffer,'(I5)') geometry
     call Driver_abortFlash("Unknown coordinate system type - " &
                            // TRIM(ADJUSTL(buffer)))
   end select
   call pp_geom%add   ("coord_sys", coord_sys)
-  ! TODO: Take these out once we have AMReX interface to these values
-  gr_geometry = geometry
  
   call RuntimeParameters_get('xmin', xmin)
   call RuntimeParameters_get('xmax', xmax)
@@ -112,9 +109,10 @@ subroutine gr_amrex_init()
   
   call RuntimeParameters_get("nrefs", nrefs)
   call pp_amr%add   ("regrid_int", nrefs)
- 
+
+  ! AMReX uses 0-based level index set
   call RuntimeParameters_get('lrefine_max', max_refine)
-  call pp_amr%add   ("max_level", max_refine)
+  call pp_amr%add   ("max_level", max_refine - 1)
   ! TODO: Take these out once we have AMReX interface to these values
   gr_maxRefine = max_refine
 

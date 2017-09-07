@@ -59,7 +59,7 @@
 
 subroutine Grid_subcellGeometry(nsubI,nsubJ,nsubK, &
      dvCell, dvSub, xL,xR, yL,yR, pos, blockID)
-  use Grid_data, ONLY : gr_geometry
+  use Grid_interface, ONLY : Grid_getGeometry
   implicit none
   integer, VALUE_INTENT(IN) :: nsubI, nsubJ, nsubK
   real,    intent(in)  :: dvCell
@@ -69,11 +69,13 @@ subroutine Grid_subcellGeometry(nsubI,nsubJ,nsubK, &
   integer,OPTIONAL, intent(in) :: blockID
   integer,OPTIONAL, intent(in) :: pos(*)
 
+  integer              :: geometry
   real                 :: dvs
   real                 :: xccN2inv, xcsN
   integer              :: i, effGeometry
 
-  effGeometry = gr_geometry
+  call Grid_getGeometry(geometry)
+  effGeometry = geometry
   if (nsubI == 1) effGeometry = CARTESIAN
 
   select case (effGeometry)

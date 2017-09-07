@@ -60,10 +60,6 @@
 !!***
 
 subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
-
-  use Grid_data, ONLY : gr_geometry
-  use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellCoords
-
   implicit none
 
 #include "constants.h"
@@ -78,8 +74,9 @@ end subroutine Grid_getSingleCellVol
 
 subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
 
-  use Grid_data, ONLY : gr_geometry
-  use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellCoords
+  use Grid_interface, ONLY : Grid_getDeltas, &
+                             Grid_getGeometry, &
+                             Grid_getSingleCellCoords
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -92,14 +89,16 @@ subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
   integer, intent(in) :: point(MDIM)
   real, intent(out) :: cellvolume
 
+  integer :: geometry
   real    :: del(MDIM)
   real    :: centerCoords(MDIM), leftCoords(MDIM), rightCoords(MDIM)
  
   del = 1.0
 
+  call Grid_getGeometry(geometry)
   call Grid_getDeltas(block%level, del)
 
-  select case (gr_geometry)
+  select case (geometry)
 
   case (CARTESIAN)
      if(NDIM == 1) then

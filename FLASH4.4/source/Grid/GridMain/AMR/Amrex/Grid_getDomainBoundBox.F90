@@ -62,18 +62,20 @@ subroutine Grid_getDomainBoundBox(boundBox)
   implicit none
 
 #include "constants.h"
+#include "Flash.h"
 
   real, intent(OUT) :: boundBox(LOW:HIGH,  MDIM)
 
-  boundBox = 0.0
-
+  boundBox = 0.0d0
   boundBox(LOW, IAXIS)  = amrex_problo(1)
   boundBox(HIGH, IAXIS) = amrex_probhi(1)
-
+#if NDIM >= 2
   boundBox(LOW, JAXIS)  = amrex_problo(2) 
   boundBox(HIGH, JAXIS) = amrex_probhi(2)
-
+#if NDIM == 3
   boundBox(LOW, KAXIS)  = amrex_problo(3)
   boundBox(HIGH, KAXIS) = amrex_probhi(3)
+#endif
+#endif
 end subroutine Grid_getDomainBoundBox
 
