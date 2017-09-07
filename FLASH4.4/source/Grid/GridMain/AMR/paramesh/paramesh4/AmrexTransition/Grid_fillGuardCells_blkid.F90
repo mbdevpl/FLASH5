@@ -512,11 +512,10 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
            call Grid_getListOfBlocks(listBlockType, blkList, numLeafBlocks)
         end if
         do i = 1,numLeafBlocks
-           call gr_fillMetaData(blkList(i), blockDesc)
-           call Grid_getBlkPtr(blockDesc, solnData)
+           call Grid_getBlkPtr(blkList(i), solnData)
            call Eos_guardCells(gcEosMode, solnData, corners=.true., &
                                layers=returnLayers, skipSrl=.TRUE.)
-           call Grid_releaseBlkPtr(blockDesc, solnData)
+           call Grid_releaseBlkPtr(blkList(i), solnData)
         end do
         call Timers_stop("eos gc")
      end if
