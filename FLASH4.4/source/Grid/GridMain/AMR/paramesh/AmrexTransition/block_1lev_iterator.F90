@@ -41,6 +41,7 @@ module block_1lev_iterator
         procedure, public :: is_valid
         procedure, public :: first
         procedure, public :: next
+        procedure, public :: grid_index
         procedure, public :: tilebox
         procedure, public :: fabbox
         procedure, public :: dataPtr
@@ -281,6 +282,12 @@ contains
 
     end subroutine next
 
+    function grid_index(this) result(idx)
+      class(block_1lev_iterator_t), intent(IN) :: this
+      integer :: idx
+      idx = this%mfi%grid_index()
+    end function grid_index
+
     function tilebox (this) result (bx)
       use amrex_box_module, ONLY : amrex_box
       class(block_1lev_iterator_t), intent(in) :: this
@@ -333,7 +340,7 @@ contains
         fabbox = this%mfi%fabbox()
 
         ! TODO: Determine if box contains GC or not and finalize limits/limitsGC
-!!$        blockDesc%grid_index        = this%oti%grid_index()
+        blockDesc%grid_index        = this%mfi%grid_index()
         blockDesc%level             = this%level
         blockDesc%limits(LOW, :)    = box%lo
         blockDesc%limits(HIGH, :)   = box%hi

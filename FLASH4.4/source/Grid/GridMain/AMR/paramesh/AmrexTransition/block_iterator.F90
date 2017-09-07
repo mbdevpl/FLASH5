@@ -15,10 +15,7 @@
 
 module block_iterator
 
-    use amrex_multifab_module, ONLY : amrex_mfiter, &
-                                    amrex_mfiter_build, &
-                                    amrex_mfiter_destroy
-    use block_1lev_iterator !, ONLY : block_1lev_iterator_t
+    use block_1lev_iterator, ONLY : block_1lev_iterator_t
 
     implicit none
 
@@ -309,8 +306,8 @@ contains
         box = this%li( this%level )%tilebox()
         fabbox=this%li(this%level )%fabbox()
 
-        ! TODO: Determine if box contains GC or not and finalize limits/limitsGC
-!!$        blockDesc%grid_index        = this%oti%grid_index()
+        ! TODO: Determine if box contains GC or not
+        blockDesc%grid_index        = this%li( this%level )%grid_index()
         blockDesc%level             = this%level
         blockDesc%limits(LOW, :)    = box%lo
         blockDesc%limits(HIGH, :)   = box%hi
