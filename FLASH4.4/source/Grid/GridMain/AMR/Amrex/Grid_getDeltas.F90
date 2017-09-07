@@ -21,16 +21,18 @@
 !!
 !!***
 
-subroutine Grid_getDeltas(lev,del)
-  use Grid_data, ONLY: gr_delta
+subroutine Grid_getDeltas(lev, del)
+  use amrex_amrcore_module, ONLY : amrex_geom
+  
   implicit none
 
 #include "constants.h"
   
-  integer, intent(IN)   :: lev
-  real, dimension(MDIM), intent(out) :: del
+  integer, intent(IN)  :: lev
+  real,    intent(OUT) :: del(MDIM)
 
   ! AMReX uses zero-based level indexing, but FLASH assumes one-based
-  del(1:MDIM) = gr_delta(1:MDIM, lev+1)
-  return
+  del = 0.0d0
+  del(1:MDIM) = amrex_geom(lev-1)%dx(1:MDIM)
 end subroutine Grid_getDeltas
+

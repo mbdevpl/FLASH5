@@ -63,12 +63,15 @@ subroutine Driver_evolveFlash()
     integer,  parameter :: NXBLK_EX   =  8
     integer,  parameter :: NYBLK_EX   = 16
     integer,  parameter :: NZBLK_EX   =  2
-    real(wp), parameter :: XMIN_EX    = -1.00_wp
-    real(wp), parameter :: XMAX_EX    =  2.00_wp
-    real(wp), parameter :: YMIN_EX    = -1.50_wp
-    real(wp), parameter :: YMAX_EX    =  4.50_wp
-    real(wp), parameter :: ZMIN_EX    =  0.50_wp
-    real(wp), parameter :: ZMAX_EX    =  0.75_wp
+    real,     parameter :: XMIN_EX    = -1.00d0
+    real,     parameter :: XMAX_EX    =  2.00d0
+    real,     parameter :: YMIN_EX    = -1.50d0
+    real,     parameter :: YMAX_EX    =  4.50d0
+    real,     parameter :: ZMIN_EX    =  0.50d0
+    real,     parameter :: ZMAX_EX    =  0.75d0
+    real,     parameter :: XDELTA_EX  = (XMAX_EX-XMIN_EX)/NXCELL_EX
+    real,     parameter :: YDELTA_EX  = (YMAX_EX-YMIN_EX)/NYCELL_EX
+    real,     parameter :: ZDELTA_EX  = (ZMAX_EX-ZMIN_EX)/NZCELL_EX
 
     character(256) :: msg = ""
     integer        :: n_tests = 0
@@ -76,7 +79,8 @@ subroutine Driver_evolveFlash()
     real(wp)       :: t_old = 0.0_wp
     real(wp)       :: t_new = 0.0_wp
 
-    real           :: domain(LOW:HIGH, MDIM)
+    real           :: domain(LOW:HIGH, MDIM) = 0.0d0
+    real           :: deltas(1:MDIM) = 0.0d0
 
     integer  :: rank = -1
 
@@ -99,15 +103,27 @@ subroutine Driver_evolveFlash()
 
     ! Physical domain
     call Grid_getDomainBoundBox(domain)
+#if NDIM == 1
     call assert_equal(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
     call assert_equal(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
-#if NDIM >= 2
+    call assert_equal(domain(LOW,  2), 0.0d0,   "Incorrect low Y-coordinate")
+    call assert_equal(domain(HIGH, 2), 0.0d0,   "Incorrect high Y-coordinate")
+    call assert_equal(domain(LOW,  3), 0.0d0,   "Incorrect low Z-coordinate")
+    call assert_equal(domain(HIGH, 3), 0.0d0,   "Incorrect high Z-coordinate")
+#elif NDIM == 2
+    call assert_equal(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
+    call assert_equal(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
     call assert_equal(domain(LOW,  2), YMIN_EX, "Incorrect low Y-coordinate")
     call assert_equal(domain(HIGH, 2), YMAX_EX, "Incorrect high Y-coordinate")
-#if NDIM == 3 
+    call assert_equal(domain(LOW,  3), 0.0d0,   "Incorrect low Z-coordinate")
+    call assert_equal(domain(HIGH, 3), 0.0d0,   "Incorrect high Z-coordinate")
+#elif NDIM == 3 
+    call assert_equal(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
+    call assert_equal(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
+    call assert_equal(domain(LOW,  2), YMIN_EX, "Incorrect low Y-coordinate")
+    call assert_equal(domain(HIGH, 2), YMAX_EX, "Incorrect high Y-coordinate")
     call assert_equal(domain(LOW,  3), ZMIN_EX, "Incorrect low Z-coordinate")
     call assert_equal(domain(HIGH, 3), ZMAX_EX, "Incorrect high Z-coordinate")
-#endif
 #endif
 
     !!!!! CONFIRM PROPER CELL/BLOCK STRUCTURE
@@ -115,7 +131,20 @@ subroutine Driver_evolveFlash()
     ! TODO: Get values from AMReX
 
     ! Deltas
-    ! TODO: Get values from AMReX
+    call Grid_getDeltas(1, deltas)
+#if NDIM == 1
+    call assert_equal(deltas(1), XDELTA_EX, "Incorrect high X-coordinate")
+    call assert_equal(deltas(2), 0.0d0,     "Incorrect high Y-coordinate")
+    call assert_equal(deltas(3), 0.0d0,     "Incorrect high Z-coordinate")
+#elif NDIM == 2
+    call assert_equal(deltas(1), XDELTA_EX, "Incorrect high X-coordinate")
+    call assert_equal(deltas(2), YDELTA_EX, "Incorrect high Y-coordinate")
+    call assert_equal(deltas(3), 0.0d0,     "Incorrect high Z-coordinate")
+#elif NDIM == 3 
+    call assert_equal(deltas(1), XDELTA_EX, "Incorrect high X-coordinate")
+    call assert_equal(deltas(2), YDELTA_EX, "Incorrect high Y-coordinate")
+    call assert_equal(deltas(3), ZDELTA_EX, "Incorrect high Z-coordinate")
+#endif
 
     ! Blocks
     ! TODO: Get values from AMReX rather than from FLASH
