@@ -38,13 +38,11 @@
 
 subroutine Driver_evolveFlash()
     use amrex_fort_module,     ONLY : amrex_spacedim
-    use amrex_amrcore_module,  ONLY : amrex_get_finest_level, &
-                                      amrex_get_boxarray
-    use amrex_box_module,      ONLY : amrex_print, amrex_box
     use amrex_parallel_module, ONLY : amrex_parallel_myproc, &
                                       amrex_parallel_nprocs
 
     use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
+                                      Grid_getGeometry, &
                                       Grid_getDeltas, &
                                       Grid_getMaxRefinement
     use Grid_data,             ONLY : gr_nBlockX, gr_nBlockY, gr_nBlockZ, &
@@ -80,6 +78,7 @@ subroutine Driver_evolveFlash()
     real    :: t_old = 0.0d0
     real    :: t_new = 0.0d0
 
+    integer :: geometry = -100
     real    :: domain(LOW:HIGH, MDIM) = 0.0d0
     real    :: deltas(1:MDIM) = 0.0d0
     real    :: x_expected = 0.0d0
@@ -105,9 +104,10 @@ subroutine Driver_evolveFlash()
     end if
     n_tests = n_tests + 1
  
-    ! TODO: Check coordinate system type from AMReX
-
     ! Physical domain
+    call Grid_getGeometry(geometry)
+    call assertEqual(geometry, CARTESIAN, "Incorrect coordinate system type")
+
     call Grid_getDomainBoundBox(domain)
 #if NDIM == 1
     call assertEqual(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
