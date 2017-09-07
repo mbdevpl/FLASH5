@@ -74,6 +74,9 @@ subroutine Grid_getMaxRefinement(maxRefinement, mode, scope, inputComm)
   use Grid_data, ONLY : gr_maxRefine, gr_enforceMaxRefinement
   use tree, ONLY : lnblocks, lrefine_min,lrefine_max, lrefine
 #endif
+#ifdef FLASH_GRID_AMREX
+  use amrex_amrcore_module, ONLY : amrex_max_level
+#endif
 #ifdef FLASH_GRID_CHOMBO
 #ifndef FLASH_GRID_UG
   use Grid_data, ONLY : gr_maxRefine, gr_enforceMaxRefinement
@@ -126,8 +129,9 @@ subroutine Grid_getMaxRefinement(maxRefinement, mode, scope, inputComm)
   maxRefinement = 1
 
 #elif defined FLASH_GRID_AMREX
-  ! DEVNOTE: Code this
-  maxRefinement = 2
+  ! AMReX uses 0-based level index set
+  maxRefinement = amrex_max_level + 1
+  ! DEVNOTE: TODO/Code other outputs based on myMode
 #else
 
   if (myMode .LE. 2) then

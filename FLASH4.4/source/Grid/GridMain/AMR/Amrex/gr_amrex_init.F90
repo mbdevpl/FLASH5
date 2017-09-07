@@ -112,9 +112,10 @@ subroutine gr_amrex_init()
   
   call RuntimeParameters_get("nrefs", nrefs)
   call pp_amr%add   ("regrid_int", nrefs)
- 
+
+  ! AMReX uses 0-based level index set
   call RuntimeParameters_get('lrefine_max', max_refine)
-  call pp_amr%add   ("max_level", max_refine)
+  call pp_amr%add   ("max_level", max_refine - 1)
   ! TODO: Take these out once we have AMReX interface to these values
   gr_maxRefine = max_refine
 
