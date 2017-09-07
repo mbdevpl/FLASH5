@@ -15,6 +15,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     use gr_physicalMultifabs,   ONLY : unk, &
                                        facevarx, facevary, facevarz
     use amrex_interfaces,       ONLY : gr_clearLevel
+    use block_metadata,         ONLY : block_metadata_t
 
     implicit none
 
@@ -31,6 +32,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     type(amrex_mfiter)    :: mfi
     type(amrex_box)       :: bx
 
+    type(block_metadata_t)        :: block
     real(wp), contiguous, pointer :: initData(:,:,:,:)
     real(wp)                      :: x = 0.0_wp 
     real(wp)                      :: y = 0.0_wp
@@ -41,7 +43,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     integer :: i = 0
     integer :: j = 0
     integer :: k = 0
-    
+ 
     integer :: lev_flash = -1
 
     ! C++ AMReX uses zero-based level index set, but FLASH uses 1-based set
@@ -57,7 +59,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     call gr_clearLevel(lev)
 
     ! Create FABS for storing physical data at coarsest level
-    call amrex_multifab_build(unk(lev_flash), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(unk(lev_flash),      ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevarx(lev_flash), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevary(lev_flash), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevarz(lev_flash), ba, dm, NUNK_VARS, NGUARD)
@@ -69,20 +71,21 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
         bx = mfi%tilebox()
         initData => unk(lev_flash)%dataptr(mfi)
 
-        associate(lo => bx%lo, &
-                  hi => bx%hi, &
-                  dx => amrex_geom(lev_flash)%dx)
-            do         k = lo(3), hi(3) 
-                do     j = lo(2), hi(2)
-                    z = amrex_problo(3) + (dble(k)+0.5d0) * dx(3)
-                    y = amrex_problo(2) + (dble(j)+0.5d0) * dx(2)
-                    do i = lo(1), hi(1)
-                        x = amrex_problo(1) + (dble(i)+0.5d0) * dx(1)
-                        initData(i, j, k, UNK_VARS_BEGIN) = x + y + z 
-                    end do
-                end do
-            end do
-        end associate
+        ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
+        block%level = lev
+        block%grid_index = -1
+        block%limits(LOW,  :) = bx%lo
+        block%limits(HIGH, :) = bx%hi
+        block%limitsGC(LOW, :) = bx%lo - NGUARD
+        block%limitsGC(HIGH, :) = bx%hi + NGUARD
+
+        !  We need to zero data in case we reuse blocks from previous levels
+        !  but don't initialize all data in Simulation_initBlock... in particular
+        !  the total vs. internal energies can cause problems in the eos call that 
+        !  follows.
+        initData = 0.0
+        call Simulation_initBlock(initData, block)
+        nullify(initData)
     end do
 
     call amrex_mfiter_destroy(mfi)
