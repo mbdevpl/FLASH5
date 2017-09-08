@@ -22,9 +22,7 @@ subroutine gr_amrex_init()
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
   use Driver_interface,            ONLY : Driver_abortFlash
- 
-  ! TODO: Hopefully these should disappear
-  use Grid_data,                   ONLY : gr_maxRefine
+  use Grid_data,                   ONLY : gr_geometry
 
   implicit none
 
@@ -50,7 +48,6 @@ subroutine gr_amrex_init()
   integer :: nblockZ = 1
   integer :: max_refine = 0
   integer :: nrefs = 1
-  integer :: geometry = CARTESIAN
   integer :: coord_sys = -1
   real    :: xmin = 0.0d0
   real    :: xmax = 1.0d0
@@ -58,7 +55,6 @@ subroutine gr_amrex_init()
   real    :: ymax = 1.0d0
   real    :: zmin = 0.0d0
   real    :: zmax = 1.0d0
-  character(len=MAX_STRING_LENGTH) :: str_geometry = ""
 
   write(*,*) "[gr_amrex_init] Starting"
  
@@ -71,9 +67,7 @@ subroutine gr_amrex_init()
  
   call amrex_parmparse_build(pp_geom, "geometry")
 
-  call RuntimeParameters_get("geometry", str_geometry)
-  call RuntimeParameters_mapStrToInt(str_geometry, geometry)
-  select case (geometry)
+  select case (gr_geometry)
   case(CARTESIAN)
     coord_sys = AMREX_CARTESIAN
   case(POLAR)
@@ -84,7 +78,7 @@ subroutine gr_amrex_init()
   case(SPHERICAL)
     coord_sys = AMREX_SPHERICAL
   case default
-    write(buffer,'(I5)') geometry
+    write(buffer,'(I5)') gr_geometry
     call Driver_abortFlash("Unknown coordinate system type - " &
                            // TRIM(ADJUSTL(buffer)))
   end select
@@ -112,8 +106,6 @@ subroutine gr_amrex_init()
   ! AMReX uses 0-based level index set
   call RuntimeParameters_get('lrefine_max', max_refine)
   call pp_amr%add   ("max_level", max_refine - 1)
-  ! TODO: Take these out once we have AMReX interface to these values
-  gr_maxRefine = max_refine
 
   call RuntimeParameters_get("nblockx", nBlockX)
   call RuntimeParameters_get("nblocky", nBlockY)

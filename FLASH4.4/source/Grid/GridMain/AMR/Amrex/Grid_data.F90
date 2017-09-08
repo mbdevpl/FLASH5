@@ -30,10 +30,11 @@ Module Grid_data
 #include "constants.h"
 #include "Flash.h"
 
-! TODO: AMReX to get these directly from RuntimeParameters and provide an
-! interface to  get them
+  ! Maintain local copies of AMReX-controlled data for optimization
+  integer,save :: gr_lRefineMax
+  integer,save :: gr_geometry
+  
   integer,save :: gr_maxRefine
-
   integer, save :: gr_iguard = NGUARD
   integer, save :: gr_jguard = NGUARD 
   integer, save :: gr_kguard = NGUARD

@@ -52,7 +52,7 @@
 ! disappear.
 subroutine gr_initGeometry()
 
-  use Grid_data, ONLY : gr_dirGeom, gr_dirIsAngular, gr_domainBC
+  use Grid_data, ONLY : gr_dirGeom, gr_dirIsAngular, gr_domainBC, gr_geometry
   use Driver_interface, ONLY : Driver_abortFlash
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt, &
@@ -67,16 +67,11 @@ subroutine gr_initGeometry()
   integer :: idir
 
   real    :: imin, imax, jmin, jmax, kmin, kmax
-  integer :: geometry
   logical :: geometryOverride
-  character(len=MAX_STRING_LENGTH) :: str_geometry = ""
 
   ! Load directly rather than assume that they were already loaded by all
   ! flavors of Grid_init
-  call RuntimeParameters_get("geometry", str_geometry)
-  call RuntimeParameters_mapStrToInt(str_geometry, geometry)
   call RuntimeParameters_get("geometryOverride", geometryOverride)
-
   call RuntimeParameters_get('xmin', imin)
   call RuntimeParameters_get('xmax', imax)
   call RuntimeParameters_get('ymin', jmin)
@@ -99,7 +94,7 @@ subroutine gr_initGeometry()
   end do
 
 #ifdef GRID_GEOM_CARTESIAN
-  if (geometry .ne. CARTESIAN) then
+  if (gr_geometry .ne. CARTESIAN) then
      print *,'WARNING The geometry runtime parameter is different from&
           & CARTESIAN geometry specified at setup time.'
      call Logfile_stampMessage('WARNING The geometry runtime parameter is different from&
@@ -107,7 +102,7 @@ subroutine gr_initGeometry()
   end if
 #endif
 #ifdef GRID_GEOM_POLAR
-  if (geometry .ne. POLAR) then
+  if (gr_geometry .ne. POLAR) then
      print *,'WARNING The geometry runtime parameter is different from&
           & POLAR geometry specified at setup time.'
      call Logfile_stampMessage('WARNING The geometry runtime parameter is different from&
@@ -115,7 +110,7 @@ subroutine gr_initGeometry()
   end if
 #endif
 #ifdef GRID_GEOM_CYLINDRICAL
-  if (geometry .ne. CYLINDRICAL) then
+  if (gr_geometry .ne. CYLINDRICAL) then
      print *,'WARNING The geometry runtime parameter is different from&
           & CYLINDRICAL geometry specified at setup time.'
      call Logfile_stampMessage('WARNING The geometry runtime parameter is different from&
@@ -123,7 +118,7 @@ subroutine gr_initGeometry()
   end if
 #endif
 #ifdef GRID_GEOM_SPHERICAL
-  if (geometry .ne. SPHERICAL) then
+  if (gr_geometry .ne. SPHERICAL) then
      print *,'WARNING The geometry runtime parameter is different from&
           & SPHERICAL geometry specified at setup time.'
      call Logfile_stampMessage('WARNING The geometry runtime parameter is different from&
@@ -134,21 +129,21 @@ subroutine gr_initGeometry()
 
   gr_dirIsAngular = .FALSE.
 
-  if (geometry == CARTESIAN)then
+  if (gr_geometry == CARTESIAN)then
      gr_dirGeom(IAXIS) = XYZ
      gr_dirGeom(JAXIS) = XYZ
      gr_dirGeom(KAXIS) = XYZ
-  elseif(geometry == POLAR)then
+  elseif(gr_geometry == POLAR)then
      gr_dirGeom(IAXIS) = RAD_CYL
      gr_dirGeom(JAXIS) = PHI_CYL
      gr_dirGeom(KAXIS) = XYZ
      gr_dirIsAngular(JAXIS) = .TRUE.
-  elseif(geometry == CYLINDRICAL) then
+  elseif(gr_geometry == CYLINDRICAL) then
      gr_dirGeom(IAXIS) = RAD_CYL
      gr_dirGeom(JAXIS) = XYZ
      gr_dirGeom(KAXIS) = PHI_CYL
      gr_dirIsAngular(KAXIS) = .TRUE.
-  elseif(geometry == SPHERICAL) then
+  elseif(gr_geometry == SPHERICAL) then
      gr_dirGeom(IAXIS) = RAD_SPH
      gr_dirGeom(JAXIS) = THETA
      gr_dirGeom(KAXIS) = PHI_SPH
@@ -166,8 +161,8 @@ subroutine gr_initGeometry()
 ! support (or plan to support) those geometries listed in the header of
 ! grid.F90.  
 
-  if ( (geometry == CYLINDRICAL .AND. NDIM == 1) .OR. &
-       (geometry == POLAR .AND. NDIM == 3) ) then
+  if ( (gr_geometry == CYLINDRICAL .AND. NDIM == 1) .OR. &
+       (gr_geometry == POLAR .AND. NDIM == 3) ) then
      
      print *, "ERROR: geometry invalid"
      call Driver_abortFlash("ERROR: geometry invalid")
@@ -180,7 +175,7 @@ subroutine gr_initGeometry()
 ! proper dimensions.  This ensures that all coordinate values and coordinate
 ! differences for this direction will be in radians.
   
-  if (geometry /= CARTESIAN) then
+  if (gr_geometry /= CARTESIAN) then
 
 ! The radial coordinate must always be >= 0.0.  If it is 0.0, then we should
 ! have a reflecting boundary there.
@@ -203,7 +198,7 @@ subroutine gr_initGeometry()
   if (gr_dirIsAngular(JAXIS)) then
 
 ! Make sure the range is valid.
-     if (geometry == SPHERICAL) then
+     if (gr_geometry == SPHERICAL) then
 
 #if NDIM > 1
 ! y is the spherical theta coordinate.  It ranges from 0 to pi.  Since we
@@ -216,7 +211,7 @@ subroutine gr_initGeometry()
         endif
 #endif
 
-     elseif (geometry == POLAR) then
+     elseif (gr_geometry == POLAR) then
 
 #if NDIM > 1
 ! In polar coordinates, y is the phi coordinate, which can range from 0
@@ -248,7 +243,7 @@ subroutine gr_initGeometry()
   if (gr_dirIsAngular(KAXIS)) then
 
 ! Make sure the range is valid.
-     if (geometry == SPHERICAL .OR. geometry == CYLINDRICAL) then
+     if (gr_geometry == SPHERICAL .OR. gr_geometry == CYLINDRICAL) then
 
 #if NDIM > 2
 ! z is the phi coordinate in both spherical and cylindrical coords.

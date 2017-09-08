@@ -128,6 +128,7 @@ subroutine Grid_init()
   use Logfile_interface, ONLY : Logfile_stampMessage
   use Simulation_interface, ONLY : Simulation_mapStrToInt, Simulation_getVarnameType
   use amrex_interfaces, ONLY : gr_amrex_init
+  use amrex_amrcore_module, ONLY : amrex_max_level
 
 #include "Flash.h"
 #include "constants.h"
@@ -153,6 +154,7 @@ subroutine Grid_init()
   integer :: nonrep
 
   integer :: domain(LOW:HIGH, MDIM)
+  character(len=MAX_STRING_LENGTH) :: str_geometry = ""
  
   call Driver_getMype(GLOBAL_COMM, gr_globalMe)
   call Driver_getNumProcs(GLOBAL_COMM, gr_globalNumProcs)
@@ -181,6 +183,9 @@ subroutine Grid_init()
 !------------------------------------------------------------------------------
 ! Load into local Grid variables all runtime parameters needed by gr_initGeometry
 !------------------------------------------------------------------------------
+  call RuntimeParameters_get("geometry", str_geometry)
+  call RuntimeParameters_mapStrToInt(str_geometry, gr_geometry)
+
   !get the boundary conditions stored as strings in the flash.par file
   call RuntimeParameters_get("xl_boundary_type", xl_bcString)
   call RuntimeParameters_get("xr_boundary_type", xr_bcString)
@@ -212,7 +217,8 @@ subroutine Grid_init()
 !----------------------------------------------------------------------------------
 ! Store AMReX-controlled data as local Grid data variables for optimization
 !----------------------------------------------------------------------------------
-! DEVNOTE: Premature optimization is the root to all evil...
+  gr_lRefineMax = amrex_max_level + 1
+  gr_maxRefine = gr_lRefineMax
 
 !----------------------------------------------------------------------------------
 ! Setup all remaining local Grid data variables
@@ -421,6 +427,7 @@ subroutine Grid_init()
 !     if (gr_vartypes(i) .eq. VARTYPE_PER_MASS) gr_anyVarToConvert = .TRUE.
 !  end do
 
+   ! DEVNOTE: TODO Implement these ASAP
 !  gr_minCellSizes(IAXIS) = (gr_imax - gr_imin) / &
 !       (gr_nblockX*NXB*2**(lrefine_max-1))
 !  gr_minCellSize = gr_minCellSizes(IAXIS)
