@@ -195,12 +195,12 @@ subroutine Grid_init()
   call RuntimeParameters_get("zr_boundary_type", zr_bcString)
 
   !map the string boundary conditions to integer constants defined in constants.h
-  call RuntimeParameters_mapStrToInt(xl_bcString,gr_domainBC(LOW,IAXIS))
-  call RuntimeParameters_mapStrToInt(xr_bcString,gr_domainBC(HIGH,IAXIS))
-  call RuntimeParameters_mapStrToInt(yl_bcString,gr_domainBC(LOW,JAXIS))
-  call RuntimeParameters_mapStrToInt(yr_bcString,gr_domainBC(HIGH,JAXIS))
-  call RuntimeParameters_mapStrToInt(zl_bcString,gr_domainBC(LOW,KAXIS))
-  call RuntimeParameters_mapStrToInt(zr_bcString,gr_domainBC(HIGH,KAXIS))
+  call RuntimeParameters_mapStrToInt(xl_bcString, gr_domainBC(LOW, IAXIS))
+  call RuntimeParameters_mapStrToInt(xr_bcString, gr_domainBC(HIGH,IAXIS))
+  call RuntimeParameters_mapStrToInt(yl_bcString, gr_domainBC(LOW, JAXIS))
+  call RuntimeParameters_mapStrToInt(yr_bcString, gr_domainBC(HIGH,JAXIS))
+  call RuntimeParameters_mapStrToInt(zl_bcString, gr_domainBC(LOW, KAXIS))
+  call RuntimeParameters_mapStrToInt(zr_bcString, gr_domainBC(HIGH,KAXIS))
 
 !------------------------------------------------------------------------------
 ! FLASH inits geometry first as it can change runtime parameters
@@ -240,6 +240,12 @@ subroutine Grid_init()
   end if
 #endif
 #endif
+
+  gr_allPeriodic = .TRUE.
+  do i = 1, NDIM
+     if(gr_domainBC(LOW,  i) /= PERIODIC)     gr_allPeriodic = .FALSE.
+     if(gr_domainBC(HIGH, i) /= PERIODIC)     gr_allPeriodic = .FALSE.
+  end do
 
 !----------------------------------------------------------------------------------
 ! Setup all remaining local Grid data variables
@@ -429,12 +435,6 @@ subroutine Grid_init()
 !      gr_useParticles=.true.
 !  end if
 !#endif
-!
-!  gr_allPeriodic = .true.
-!  do i = 1,NDIM
-!     if(gr_domainBC(LOW,i)/=PERIODIC)gr_allPeriodic=.false.
-!     if(gr_domainBC(HIGH,i)/=PERIODIC)gr_allPeriodic=.false.
-!  end do
 
   !Check if there are gravitational isolated boundary conditions
   !in order to determine which solvers to intialize.

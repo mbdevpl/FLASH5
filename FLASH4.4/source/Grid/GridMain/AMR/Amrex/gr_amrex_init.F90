@@ -10,6 +10,7 @@ subroutine gr_amrex_init()
   use amrex_parmparse_module,      ONLY : amrex_parmparse, &
                                           amrex_parmparse_build, &
                                           amrex_parmparse_destroy
+  use amrex_geometry_module,       ONLY : amrex_pmask
   use amrex_octree_module,         ONLY : amrex_octree_init
   use amrex_interfaces,            ONLY : gr_makeNewLevelFromScratch, &
                                           gr_makeNewLevelFromCoarse, &
@@ -22,7 +23,8 @@ subroutine gr_amrex_init()
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
   use Driver_interface,            ONLY : Driver_abortFlash
-  use Grid_data,                   ONLY : gr_geometry
+  use Grid_data,                   ONLY : gr_geometry, &
+                                          gr_domainBC
 
   implicit none
 
@@ -55,6 +57,8 @@ subroutine gr_amrex_init()
   real    :: ymax = 1.0d0
   real    :: zmin = 0.0d0
   real    :: zmax = 1.0d0
+  integer :: is_periodic(MDIM) = 0
+  integer :: is_periodic_am(MDIM) = 0
 
   write(*,*) "[gr_amrex_init] Starting"
  
@@ -92,7 +96,23 @@ subroutine gr_amrex_init()
   call RuntimeParameters_get('zmax', zmax)
   call pp_geom%addarr("prob_lo", [xmin, ymin, zmin])
   call pp_geom%addarr("prob_hi", [xmax, ymax, zmax])
-  call pp_geom%addarr("is_periodic", [1, 1, 1])
+ 
+  ! DEVNOTE: It should be an error if along one direction, one face has
+  ! periodic, but the other does not.  Should we enforce that here?
+  is_periodic = 0
+  if (     (gr_domainBC(LOW,  IAXIS) == PERIODIC) &
+      .OR. (gr_domainBC(HIGH, IAXIS) == PERIODIC)) then
+    is_periodic(IAXIS) = 1
+  end if
+  if (     (gr_domainBC(LOW,  JAXIS) == PERIODIC) &
+      .OR. (gr_domainBC(HIGH, JAXIS) == PERIODIC)) then
+    is_periodic(JAXIS) = 1
+  end if
+  if (     (gr_domainBC(LOW,  KAXIS) == PERIODIC) &
+      .OR. (gr_domainBC(HIGH, KAXIS) == PERIODIC)) then
+    is_periodic(KAXIS) = 1
+  end if
+  call pp_geom%addarr("is_periodic", is_periodic)
 
   ! DEVNOTE: max_grid must be a multiple of blocking_factor.  Error checking in
   ! AMReX or here?
@@ -148,7 +168,26 @@ subroutine gr_amrex_init()
   allocate(facevary(0:amrex_max_level))
   allocate(facevarz(0:amrex_max_level))
 
-  ! Setup grids and initialize the data.F90vjj
+  ! Setup grids and initialize the data
   call amrex_init_from_scratch(T_INIT)
+
+  !!!!!----- CONFIRM CORRECT AMReX CONFIGURATION
+  ! Check AMReX-controlled BC information
+  is_periodic_am(:) = 0
+  where (amrex_pmask)  is_periodic_am = 1
+
+  if (is_periodic_am(IAXIS) /= is_periodic(IAXIS)) then
+    call Driver_abortFlash("[gr_amrex_init] AMReX does not have correct periodicity in X") 
+  end if
+#if NDIM >= 2
+  if (is_periodic_am(JAXIS) /= is_periodic(JAXIS)) then
+    call Driver_abortFlash("[gr_amrex_init] AMReX does not have correct periodicity in Y") 
+  end if
+#if NDIM == 3
+  if (is_periodic_am(KAXIS) /= is_periodic(KAXIS)) then
+    call Driver_abortFlash("[gr_amrex_init] AMReX does not have correct periodicity in Z") 
+  end if
+#endif
+#endif
 end subroutine gr_amrex_init
 

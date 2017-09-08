@@ -79,6 +79,12 @@ subroutine Driver_evolveFlash()
     real,     parameter :: YDELTA_EX   = (YMAX_EX-YMIN_EX)/NYCELL_EX
     real,     parameter :: ZDELTA_EX   = (ZMAX_EX-ZMIN_EX)/NZCELL_EX
     integer,  parameter :: MAXLEVEL_EX =  4
+    integer,  parameter :: XL_BC_EX    = OUTFLOW
+    integer,  parameter :: XH_BC_EX    = REFLECTING
+    integer,  parameter :: YL_BC_EX    = DIRICHLET
+    integer,  parameter :: YH_BC_EX    = DIODE
+    integer,  parameter :: ZL_BC_EX    = PERIODIC
+    integer,  parameter :: ZH_BC_EX    = DIRICHLET
 
     integer :: n_tests = 0
     integer :: n_failed = 0
@@ -87,6 +93,7 @@ subroutine Driver_evolveFlash()
 
     integer :: geometry = -100
     real    :: domain(LOW:HIGH, MDIM) = 0.0d0
+    integer :: domainBC(LOW:HIGH, MDIM) = PERIODIC 
     real    :: deltas(1:MDIM) = 0.0d0
     real    :: x_expected = 0.0d0
     real    :: y_expected = 0.0d0
@@ -157,6 +164,15 @@ subroutine Driver_evolveFlash()
     call assertEqual(domain(LOW,  3), ZMIN_EX, "Incorrect low Z-coordinate")
     call assertEqual(domain(HIGH, 3), ZMAX_EX, "Incorrect high Z-coordinate")
 #endif
+
+    !!!!! CONFIRM PROPER BC
+    call Grid_getDomainBC(domainBC)
+    call assertEqual(domainBC(LOW,  IAXIS), XL_BC_EX, "Incorrect X-left BC")
+    call assertEqual(domainBC(HIGH, IAXIS), XH_BC_EX, "Incorrect X-right BC")
+    call assertEqual(domainBC(LOW,  JAXIS), YL_BC_EX, "Incorrect Y-left BC")
+    call assertEqual(domainBC(HIGH, JAXIS), YH_BC_EX, "Incorrect Y-right BC")
+    call assertEqual(domainBC(LOW,  KAXIS), ZL_BC_EX, "Incorrect Z-left BC")
+    call assertEqual(domainBC(HIGH, KAXIS), ZH_BC_EX, "Incorrect Z-right BC")
 
     !!!!! CONFIRM PROPER REFINEMENT
     call Grid_getMaxRefinement(max_level, mode=1)

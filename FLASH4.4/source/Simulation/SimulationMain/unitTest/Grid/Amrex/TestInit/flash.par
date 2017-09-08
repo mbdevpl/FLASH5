@@ -19,10 +19,13 @@ nblocky = 16
 nblockz =  2
 
 ##### BOUNDARY CONDITIONS
-#xl_boundary_type = "dirichlet"
-#xr_boundary_type = "dirichlet"
-#yl_boundary_type = "dirichlet"
-#yr_boundary_type = "dirichlet"
+xl_boundary_type = "outflow"
+xr_boundary_type = "reflect"
+yl_boundary_type = "dirichlet"
+yr_boundary_type = "diode"
+# DEVNOTE: One periodic on Z and the other Z not is an unacceptable user error
+zl_boundary_type = "periodic"
+zr_boundary_type = "dirichlet"
 
 ##### AMR CONFIGURATION
 lrefine_max = 4
