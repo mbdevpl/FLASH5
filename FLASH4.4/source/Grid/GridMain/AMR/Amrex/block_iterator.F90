@@ -9,21 +9,18 @@
 !!
 !!****
 
-#include "constants.h"
-
 module block_iterator
 
     use amrex_octree_module, ONLY : amrex_octree_iter, &
                                     amrex_octree_iter_build, &
                                     amrex_octree_iter_destroy
 
-    use Grid_data,           ONLY : gr_iguard, gr_jguard, gr_kguard
-
     implicit none
 
     private
 
 #include "constants.h"
+#include "Flash.h"
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -199,15 +196,17 @@ contains
     !!
     !!****
     subroutine blkMetaData(this, blockDesc)
-        use amrex_box_module, ONLY : amrex_box
+        use amrex_box_module,     ONLY : amrex_box
 
-        use block_metadata,   ONLY : block_metadata_t
+        use block_metadata,       ONLY : block_metadata_t
+        use gr_physicalMultifabs, ONLY : unk
 
         class(block_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: blockDesc
 
+        integer         :: n_guards(MDIM) = 0
         type(amrex_box) :: box
-       
+   
         box = this%oti%box()
 
         blockDesc%grid_index        = this%oti%grid_index()
@@ -215,12 +214,12 @@ contains
         blockDesc%limits(LOW, :)    = box%lo
         blockDesc%limits(HIGH, :)   = box%hi
 
-        ! TODO: Need to determine how to get unk.  Do we allow for the
-        ! possibility that the different FABs could have a different number of
-        ! guard cells.  It seems like AMReX allows for it.
-        call box%grow([gr_iguard, gr_jguard, gr_kguard])
-        blockDesc%limitsGC(LOW, :)  = box%lo
-        blockDesc%limitsGC(HIGH, :) = box%hi
+        ! DEVNOTE: KW says that box with GC available through newer AMReX
+        ! fortran interface.
+        n_guards = 0
+        n_guards(1:NDIM) = unk(blockDesc%level+1)%nghost() 
+        blockDesc%limitsGC(LOW,  :) = box%lo - n_guards
+        blockDesc%limitsGC(HIGH, :) = box%hi + n_guards
 
         blockDesc%localLimits(LOW, :)   = blockDesc%limits(LOW, :)   - blockDesc%limitsGC(LOW, :) + 1
         blockDesc%localLimits(HIGH, :)  = blockDesc%limits(HIGH, :)  - blockDesc%limitsGC(LOW, :) + 1

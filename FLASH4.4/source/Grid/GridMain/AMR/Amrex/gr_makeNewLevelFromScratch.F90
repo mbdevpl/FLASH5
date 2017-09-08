@@ -16,6 +16,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
                                        facevarx, facevary, facevarz
     use amrex_interfaces,       ONLY : gr_clearLevel
     use block_metadata,         ONLY : block_metadata_t
+    use Simulation_interface,   ONLY : Simulation_initBlock
 
     implicit none
 
@@ -60,6 +61,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
 
     ! Create FABS for storing physical data at coarsest level
     call amrex_multifab_build(unk(lev_flash),      ba, dm, NUNK_VARS, NGUARD)
+    ! DEVNOTE: TODO Create test wrt proper face-centered boxes
     call amrex_multifab_build(facevarx(lev_flash), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevary(lev_flash), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevarz(lev_flash), ba, dm, NUNK_VARS, NGUARD)
