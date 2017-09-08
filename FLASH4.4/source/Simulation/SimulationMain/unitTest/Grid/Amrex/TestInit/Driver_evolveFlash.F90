@@ -110,6 +110,10 @@ subroutine Driver_evolveFlash()
 
     integer :: rank = -1
     integer :: ilev = 0
+    integer :: i = 0
+    integer :: j = 0
+    integer :: k = 0
+    integer :: var = 0
 
     rank = amrex_parallel_myproc()
  
@@ -200,7 +204,7 @@ subroutine Driver_evolveFlash()
         ! DEVNOTE: Should we leave this unittest with simple data
         ! that does not refine so that testing the block structure is easy?
         ! All blocks on coarsest level since no refining
-        call assertEqual(block%level, 0, "Incorrect block level")
+        call assertEqual(block%level, 1, "Incorrect block level")
 
         ! Check guard cells along all directions
         blkLimits   = block%limits
@@ -331,16 +335,20 @@ subroutine Driver_evolveFlash()
         call itor%blkMetaData(block)
         call Grid_getBlkPtr(block, solnData)
 
-!        associate(lo => block%limits(LOW, :), &
-!                  hi => block%limits(HIGH, :))
-!            do         k = lo(3), hi(3)
-!                do     j = lo(2), hi(2)
-!                    do i = lo(1), hi(1)
-!                        write(*,*) "(", i, j, k, ") - ", solnData(i, j, k, 0)
-!                    end do
-!                end do
-!            end do
-!        end associate
+        associate(lo => block%limits(LOW, :), &
+                  hi => block%limits(HIGH, :))
+            do         k = lo(3), hi(3)
+                do     j = lo(2), hi(2)
+                    do i = lo(1), hi(1)
+                        do var = UNK_VARS_BEGIN, UNK_VARS_END 
+                            call assertEqual(solnData(i, j, k, var), &
+                                             1.1d0 * var, &
+                                             "Incorrect initial condition")
+                        end do
+                    end do
+                end do
+            end do
+        end associate
 
         call Grid_releaseBlkPtr(block, solnData)
 

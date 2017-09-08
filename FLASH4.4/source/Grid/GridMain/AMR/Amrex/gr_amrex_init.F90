@@ -139,14 +139,14 @@ subroutine gr_amrex_init()
   !!!!!----- ALLOCATE DATA STRUCTURES
   ! multifabs 
   !
-  ! NOTE: We implement these with the 1-based level indexing scheme native to
-  ! so that the AMReX unk has a similar interface to the paramesh unk.
-  !   => all code dealing with multifabs at the Fortran/C++ interface must take 
-  !      care of the index translation
-  allocate(unk(1:amrex_max_level + 1))
-  allocate(facevarx(1:amrex_max_level + 1))
-  allocate(facevary(1:amrex_max_level + 1))
-  allocate(facevarz(1:amrex_max_level + 1))
+  ! NOTE: We implement these with the 0-based level indexing scheme native to
+  ! AMReX instead of the 1-based level indexing scheme of FLASH.
+  !   => all code dealing with multifabs arrays must consider the need for 
+  !      index translation
+  allocate(unk     (0:amrex_max_level))
+  allocate(facevarx(0:amrex_max_level))
+  allocate(facevary(0:amrex_max_level))
+  allocate(facevarz(0:amrex_max_level))
 
   ! Setup grids and initialize the data.F90vjj
   call amrex_init_from_scratch(T_INIT)

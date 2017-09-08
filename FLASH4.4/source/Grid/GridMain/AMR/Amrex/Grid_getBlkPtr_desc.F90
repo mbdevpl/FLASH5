@@ -78,7 +78,6 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   integer,                intent(in),  optional :: gridDataStruct
   logical,      optional, intent(in) :: localFlag
 
-  integer :: lev_flash = -1
   integer :: gds
   logical :: validGridDataStruct
   integer,pointer,dimension(:) :: loUse
@@ -122,23 +121,20 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
      if (localFlag) loUse => block%localLimitsGC(LOW, :)
   end if
 
+  ! Multifab arrays use 0-based level index set (AMReX) instead of 
+  ! 1-based set (FLASH/block)
   associate (lo   => loUse, &
-             ilev => block%level, &
+             ilev => block%level - 1, &
              igrd => block%grid_index)
-    ! DEVNOTE: Since block descriptor is still using 0-based AMReX level
-    ! indexing, we are doing level translation here EVEN THOUGH THIS ISN'T AT
-    ! THE FORTRAN/C++ INTERACE
-    lev_flash = ilev + 1
-
     select case (gds)
     case(CENTER)
-       dataPtr => unk(lev_flash)%dataptr(igrd)
+       dataPtr => unk     (ilev)%dataptr(igrd)
     case(FACEX)
-       dataPtr => facevarx(lev_flash)%dataptr(igrd)
+       dataPtr => facevarx(ilev)%dataptr(igrd)
     case(FACEY)
-       dataPtr => facevary(lev_flash)%dataptr(igrd)
+       dataPtr => facevary(ilev)%dataptr(igrd)
     case(FACEZ)
-       dataPtr => facevarz(lev_flash)%dataptr(igrd)
+       dataPtr => facevarz(ilev)%dataptr(igrd)
     case DEFAULT
         call Driver_abortFlash("[Grid_getBlkPtr_desc] Unknown grid data structure")
     end select

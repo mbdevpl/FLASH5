@@ -17,6 +17,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     use amrex_interfaces,       ONLY : gr_clearLevel
     use block_metadata,         ONLY : block_metadata_t
     use Simulation_interface,   ONLY : Simulation_initBlock
+    use Grid_data,              ONLY : gr_iguard
 
     implicit none
 
@@ -45,14 +46,9 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     integer :: j = 0
     integer :: k = 0
  
-    integer :: lev_flash = -1
-
-    ! C++ AMReX uses zero-based level index set, but FLASH uses 1-based set
-    lev_flash = lev + 1 
-
     rank = amrex_parallel_myproc()
     write(*,*) "[Rank ", rank, "] gr_makeNewLevelFromScratch - Start Level ", &
-                lev_flash
+                lev
  
     ba = pba
     dm = pdm
@@ -60,26 +56,26 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     call gr_clearLevel(lev)
 
     ! Create FABS for storing physical data at coarsest level
-    call amrex_multifab_build(unk(lev_flash),      ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, gr_iguard)
     ! DEVNOTE: TODO Create test wrt proper face-centered boxes
-    call amrex_multifab_build(facevarx(lev_flash), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevary(lev_flash), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevarz(lev_flash), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, gr_iguard)
 
     ! Write initial data across domain at coarsest level
-    call amrex_mfiter_build(mfi, unk(lev_flash))
+    call amrex_mfiter_build(mfi, unk(lev))
 
     do while (mfi%next())
         bx = mfi%tilebox()
-        initData => unk(lev_flash)%dataptr(mfi)
+        initData => unk(lev)%dataptr(mfi)
 
         ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
         block%level = lev
         block%grid_index = -1
         block%limits(LOW,  :) = bx%lo
         block%limits(HIGH, :) = bx%hi
-        block%limitsGC(LOW, :) = bx%lo - NGUARD
-        block%limitsGC(HIGH, :) = bx%hi + NGUARD
+        block%limitsGC(LOW, :) = bx%lo - gr_iguard
+        block%limitsGC(HIGH, :) = bx%hi + gr_iguard
 
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
@@ -93,6 +89,6 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     call amrex_mfiter_destroy(mfi)
  
     write(*,*) "[Rank ", rank, "] gr_makeNewLevelFromScratch - End Level ", &
-                lev_flash
+                lev
 end subroutine gr_makeNewLevelFromScratch 
 

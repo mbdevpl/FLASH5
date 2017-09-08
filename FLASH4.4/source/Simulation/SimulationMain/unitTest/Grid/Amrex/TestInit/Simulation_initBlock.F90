@@ -40,25 +40,18 @@ subroutine Simulation_initBlock(initData, block)
     integer :: j = 1
     integer :: k = 1
     integer :: var = 1
-    integer :: blkLimits(LOW:HIGH, MDIM)
 
-    write(*,*)
-    write(*,*) 'Block descriptor'
-    call bmd_print(block)
-
-!    blkLimits = block%limits
-!    associate(lo => blkLimits(LOW,  :), &
-!              hi => blkLimits(HIGH, :))
-!        do         k = lo(KAXIS), hi(KAXIS)
-!            do     j = lo(JAXIS), hi(JAXIS)
-!                do i = lo(IAXIS), hi(IAXIS)
-!                    do var=UNK_VARS_BEGIN, UNK_VARS_END
-!                        write(*,*) lbound(initData)
-!                        write(*,*) ubound(initData)
-!                    end do
-!                end do
-!            end do
-!        end do
-!    end associate
+    associate(lo => block%limits(LOW,  :), &
+              hi => block%limits(HIGH, :))
+        do         k = lo(KAXIS), hi(KAXIS)
+            do     j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                    do var=UNK_VARS_BEGIN, UNK_VARS_END
+                        initData(i, j, k, var) = 1.1d0 * var
+                    end do
+                end do
+            end do
+        end do
+    end associate
 end subroutine Simulation_initBlock
 
