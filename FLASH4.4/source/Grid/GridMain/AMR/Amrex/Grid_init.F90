@@ -222,7 +222,17 @@ subroutine Grid_init()
 
   call Grid_getDeltas(gr_lRefineMax, deltas)
   gr_minCellSizes = deltas
-  gr_minCellSize = MINVAL(gr_minCellSizes(1:NDIM))
+  gr_minCellSize = gr_minCellSizes(IAXIS)
+#if NDIM >= 2
+  if (.not. gr_dirIsAngular(JAXIS)) then
+    gr_minCellSize = min(gr_minCellSize, gr_minCellSizes(JAXIS))
+  end if
+#if NDIM == 3
+  if (.not. gr_dirIsAngular(KAXIS)) then
+     gr_minCellSize = min(gr_minCellSize, gr_minCellSizes(KAXIS))
+  end if
+#endif
+#endif
 
 !----------------------------------------------------------------------------------
 ! Setup all remaining local Grid data variables
