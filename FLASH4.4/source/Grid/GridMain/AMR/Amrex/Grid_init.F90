@@ -120,6 +120,7 @@
 subroutine Grid_init()
 
   use Grid_data
+  use Grid_interface, ONLY : Grid_getDeltas
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
     RuntimeParameters_mapStrToInt
   use Driver_interface, ONLY : Driver_abortFlash, Driver_getMype, &
@@ -147,12 +148,11 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: yl_bcString,yr_bcString
   character(len=MAX_STRING_LENGTH) :: zl_bcString,zr_bcString
   character(len=MAX_STRING_LENGTH) :: eosModeString, grav_boundary_type
-  real :: dx, dy, dz
-  real, dimension(NDIM) :: rnb
   integer,save :: refVar
   integer :: countInComm, color, key, ierr
   integer :: nonrep
 
+  real :: deltas(1:MDIM)
   integer :: domain(LOW:HIGH, MDIM)
   character(len=MAX_STRING_LENGTH) :: str_geometry = ""
  
@@ -219,6 +219,10 @@ subroutine Grid_init()
 !----------------------------------------------------------------------------------
   gr_lRefineMax = amrex_max_level + 1
   gr_maxRefine = gr_lRefineMax
+
+  call Grid_getDeltas(gr_lRefineMax, deltas)
+  gr_minCellSizes = deltas
+  gr_minCellSize = MINVAL(gr_minCellSizes(1:NDIM))
 
 !----------------------------------------------------------------------------------
 ! Setup all remaining local Grid data variables
@@ -427,31 +431,6 @@ subroutine Grid_init()
 !     if (gr_vartypes(i) .eq. VARTYPE_PER_MASS) gr_anyVarToConvert = .TRUE.
 !  end do
 
-   ! DEVNOTE: TODO Implement these ASAP
-!  gr_minCellSizes(IAXIS) = (gr_imax - gr_imin) / &
-!       (gr_nblockX*NXB*2**(lrefine_max-1))
-!  gr_minCellSize = gr_minCellSizes(IAXIS)
-!
-!
-!  if (NDIM >= 2) then
-!     gr_minCellSizes(JAXIS) = (gr_jmax - gr_jmin) / &
-!          (gr_nblockY*NYB*2**(lrefine_max-1))
-!     if (.not.gr_dirIsAngular(JAXIS)) then
-!        gr_minCellSize = min(gr_minCellSize,gr_minCellSizes(JAXIS))
-!     end if
-!  end if
-!
-!  if (NDIM == 3) then
-!     gr_minCellSizes(KAXIS) = (gr_kmax - gr_kmin) / &
-!          (gr_nblockZ*NZB*2**(lrefine_max-1))
-!     if (.not. gr_dirIsAngular(KAXIS)) then
-!        gr_minCellSize = min(gr_minCellSize,gr_minCellSizes(KAXIS))
-!     end if
-!  end if
-!
-!
-!
-!
 !#ifdef FL_NON_PERMANENT_GUARDCELLS
 !  gr_blkPtrRefCount = 0 
 !  gr_blkPtrRefCount_fc = 0
