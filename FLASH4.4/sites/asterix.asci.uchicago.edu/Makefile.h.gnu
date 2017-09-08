@@ -3,7 +3,7 @@
 # Set the HDF5/MPI library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
 
-AMREX_PATH = $(HOME)/amrex/2d.gnu.DEBUG.MPI
+AMREX_PATH = /home/home/klaus/amrex/2d.gnu.DEBUG.MPI
 
 MPI_PATH   = /opt/openmpi-1.8.6_gcc
 HDF4_PATH  =
