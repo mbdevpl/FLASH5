@@ -19,7 +19,7 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_getBlkIndexLimits.o Grid_getBlkCornerID.o \
 	Grid_getBlkCenterCoords.o \
 	Grid_getBlkBC.o Grid_getBlkBC_desc.o Grid_getDomainBC.o \
-	Grid_getSingleCellCoords.o Grid_sendOutputData.o Grid_finalize.o \
+	Grid_getSingleCellCoords.o Grid_getSingleCellCoords_lev.o Grid_sendOutputData.o Grid_finalize.o \
 	Grid_guardCellMaskHook.o \
 	Grid_putLocalNumBlks.o Grid_dump.o \
 	Grid_initDomain.o \
