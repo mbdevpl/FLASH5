@@ -465,6 +465,12 @@ Module Grid_interface
        integer, intent(in) :: beginCount
        real, dimension(MDIM), intent(out) :: coords
      end subroutine Grid_getSingleCellCoords_Itor
+     subroutine Grid_getSingleCellCoords_lev(ind, level,edge, coords)
+       implicit none
+       integer,dimension(MDIM), intent(in) :: ind
+       integer, intent(in) :: level, edge
+       real, dimension(MDIM), intent(out) :: coords
+     end subroutine Grid_getSingleCellCoords_lev
   end interface
 
   interface Grid_getSingleCellVol
@@ -481,7 +487,7 @@ Module Grid_interface
        integer, intent(in) :: point(MDIM)
        real, intent(out)   :: cellvolume
      end subroutine Grid_getSingleCellVol_Itor
-  end interface
+  end interface Grid_getSingleCellVol
 
   interface
      subroutine Grid_guardCellMaskHook(ccMask, needEos)

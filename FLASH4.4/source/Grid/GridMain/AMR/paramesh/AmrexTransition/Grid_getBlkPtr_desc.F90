@@ -75,6 +75,8 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   use Grid_data, ONLY : gr_meshMe, gr_blkPtrRefCount, gr_lastBlkPtrGotten, &
        gr_blkPtrRefCount_fc, gr_lastBlkPtrGotten_fc,gr_ccMask,gr_fcMask
 #endif 
+  use amrex_multifab_module
+  use gr_amrextData, ONLY : gr_amrextUnkMFs
 
   implicit none
   type(block_metadata_t), intent(in),TARGET :: block
@@ -82,6 +84,7 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   integer, optional,intent(in) :: gridDataStruct
   logical,optional, intent(in) :: localFlag
   
+  type(amrex_multifab), POINTER :: mf
   integer :: gds, blkPtrRefCount, lastBlkPtrGotten
   logical :: validGridDataStruct
   integer,pointer,dimension(:) :: loUse
@@ -194,7 +197,15 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
         select case (gds)
 #ifndef FL_NON_PERMANENT_GUARDCELLS
         case(CENTER)
-           dataPtr(1:, lo(1):, lo(2):, lo(3):) => block%fp
+           if (block%grid_index < 0) then
+              print*,'Grid_getBlkPtr_desc: no valid grid_index!!!!!'
+              dataPtr(1:, lo(1):, lo(2):, lo(3):) => block%fp
+           else
+              mf => gr_amrextUnkMFs(block%level)
+!!$              print*,'Grid_getBlkPtr: (level,grid_index)=',block%level,block%grid_index
+              dataPtr(1:, lo(1):, lo(2):, lo(3):) => mf%dataPtr(block%grid_index)
+           end if
+
 !!$        case(FACEX)
 !!$           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(ilev)%dataptr(igrd)
 !!$        case(FACEY)

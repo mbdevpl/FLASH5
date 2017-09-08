@@ -129,7 +129,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
      blkID       = blockDesc%id
      blkLimits   = blockDesc%limits
      blkLimitsGC = blockDesc%limitsGC
-     call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+     call Grid_getBlkPtr(blockDesc%id, solnData, CENTER)
 
 !!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
