@@ -44,9 +44,12 @@ subroutine Driver_evolveFlash()
     use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
                                       Grid_getGeometry, &
                                       Grid_getDeltas, &
-                                      Grid_getMaxRefinement
-    use Grid_data,             ONLY : gr_nBlockX, gr_nBlockY, gr_nBlockZ, &
+                                      Grid_getMaxRefinement, &
+                                      Grid_getBlkPtr, Grid_releaseBlkPtr
+    use Grid_data,             ONLY : gr_iguard, gr_jguard, gr_kguard, &
                                       gr_meshMe
+    use block_iterator,        ONLY : block_iterator_t
+    use block_metadata,        ONLY : block_metadata_t, bmd_print
 
     implicit none
 
@@ -59,7 +62,11 @@ subroutine Driver_evolveFlash()
     integer,  parameter :: NXCELL_EX   = 64
     integer,  parameter :: NYCELL_EX   = 64
     integer,  parameter :: NZCELL_EX   =  4
-    integer,  parameter :: NXBLK_EX    =  8
+    ! DEVNOTE: FIXME Not able to configure different block numbers with octree
+!    integer,  parameter :: NXBLK_EX    =  8
+!    integer,  parameter :: NYBLK_EX    = 16
+!    integer,  parameter :: NZBLK_EX    =  2
+    integer,  parameter :: NXBLK_EX    = 16
     integer,  parameter :: NYBLK_EX    = 16
     integer,  parameter :: NZBLK_EX    =  2
     real,     parameter :: XMIN_EX     = -1.00d0
@@ -71,7 +78,7 @@ subroutine Driver_evolveFlash()
     real,     parameter :: XDELTA_EX   = (XMAX_EX-XMIN_EX)/NXCELL_EX
     real,     parameter :: YDELTA_EX   = (YMAX_EX-YMIN_EX)/NYCELL_EX
     real,     parameter :: ZDELTA_EX   = (ZMAX_EX-ZMIN_EX)/NZCELL_EX
-    integer,  parameter :: MAXLEVEL_EX = 4
+    integer,  parameter :: MAXLEVEL_EX =  4
 
     integer :: n_tests = 0
     integer :: n_failed = 0
@@ -85,6 +92,21 @@ subroutine Driver_evolveFlash()
     real    :: y_expected = 0.0d0
     real    :: z_expected = 0.0d0
     integer :: max_level = -1
+
+    type(block_iterator_t) :: itor
+    type(block_metadata_t) :: block
+    real, pointer          :: solnData(:, :, :, :) => null()
+    integer                :: n_blocks = 0
+    integer                :: blkLimits(LOW:HIGH, 1:MDIM) = 0
+    integer                :: blkLimitsGC(LOW:HIGH, 1:MDIM) = 0
+    integer                :: blkGC(LOW:HIGH, 1:MDIM) = 0
+    integer                :: blkSize(1:MDIM) = 0
+    integer                :: xBlkMin = 0
+    integer                :: xBlkMax = 0
+    integer                :: yBlkMin = 0
+    integer                :: yBlkMax = 0
+    integer                :: zBlkMin = 0
+    integer                :: zBlkMax = 0
 
     integer :: rank = -1
     integer :: ilev = 0
@@ -132,11 +154,7 @@ subroutine Driver_evolveFlash()
     call assertEqual(domain(HIGH, 3), ZMAX_EX, "Incorrect high Z-coordinate")
 #endif
 
-    !!!!! CONFIRM PROPER CELL/BLOCK STRUCTURE
-    ! Cells
-    ! TODO: Get values from AMReX
-
-    ! Refinement levels
+    !!!!! CONFIRM PROPER REFINEMENT
     call Grid_getMaxRefinement(max_level, mode=1)
     call assertEqual(max_level, MAXLEVEL_EX, "Incorrect maximum refine level")
 
@@ -161,11 +179,145 @@ subroutine Driver_evolveFlash()
 #endif
     end do
 
-    ! Blocks
-    ! TODO: Get values from AMReX rather than from FLASH
-    call assertEqual(gr_nBlockX, NXBLK_EX, "Wrong number of blocks along X")
-    call assertEqual(gr_nBlockY, NYBLK_EX, "Wrong number of blocks along Y")
-    call assertEqual(gr_nBlockZ, NZBLK_EX, "Wrong number of blocks along Z")
+    ! TODO: Once unittest is refining mesh, check Grid_getMaxRefinement
+    ! with mode that checks actual number of levels in use
+
+    !!!!! CONFIRM PROPER BLOCK/CELL STRUCTURE
+    ! Walk across all blocks to test and collect info
+    n_blocks = 0
+    itor = block_iterator_t(LEAF)
+    call itor%blkMetaData(block)
+    xBlkMin = block%limits(LOW, 1)
+    xBlkMax = block%limits(HIGH, 1)
+    yBlkMin = block%limits(LOW, 2)
+    yBlkMax = block%limits(HIGH, 2)
+    zBlkMin = block%limits(LOW, 3)
+    zBlkMax = block%limits(HIGH, 3)
+    do while (itor%is_valid())
+        n_blocks = n_blocks + 1
+        call itor%blkMetaData(block)
+
+        ! DEVNOTE: Should we leave this unittest with simple data
+        ! that does not refine so that testing the block structure is easy?
+        ! All blocks on coarsest level since no refining
+        call assertEqual(block%level, 0, "Incorrect block level")
+
+        ! Check guard cells along all directions
+        blkLimits   = block%limits
+        blkLimitsGC = block%limitsGC
+        blkGC(LOW, :) = blkLimits(LOW, :) - blkLimitsGC(LOW, :)
+        blkGC(HIGH, :) = blkLimitsGC(HIGH, :) - blkLimits(HIGH, :)
+#if NDIM == 1
+        call assertEqual(blkGC(LOW,  IAXIS), gr_iguard, &
+                         "Incorrect guard cell along X-axis")
+        call assertEqual(blkGC(HIGH, IAXIS), gr_iguard, &
+                         "Incorrect guard cell along X-axis")
+        call assertEqual(blkGC(LOW,  JAXIS), 0, "Incorrect guard cell along Y-axis")
+        call assertEqual(blkGC(HIGH, JAXIS), 0, "Incorrect guard cell along Y-axis")
+        call assertEqual(blkGC(LOW,  KAXIS), 0, "Incorrect guard cell along Z-axis")
+        call assertEqual(blkGC(HIGH, KAXIS), 0, "Incorrect guard cell along Z-axis")
+#elif NDIM == 2
+        call assertEqual(blkGC(LOW,  IAXIS), gr_iguard, &
+                         "Incorrect guard cell along X-axis")
+        call assertEqual(blkGC(HIGH, IAXIS), gr_iguard, &
+                         "Incorrect guard cell along X-axis")
+        call assertEqual(blkGC(LOW,  JAXIS), gr_jguard, &
+                         "Incorrect guard cell along Y-axis")
+        call assertEqual(blkGC(HIGH, JAXIS), gr_jguard, &
+                         "Incorrect guard cell along Y-axis")
+        call assertEqual(blkGC(LOW,  KAXIS), 0, "Incorrect guard cell along Z-axis")
+        call assertEqual(blkGC(HIGH, KAXIS), 0, "Incorrect guard cell along Z-axis")
+#elif NDIM == 3
+        call assertEqual(blkGC(LOW,  IAXIS), gr_iguard, &
+                         "Incorrect guard cell along X-axis")
+        call assertEqual(blkGC(HIGH, IAXIS), gr_iguard, &
+                         "Incorrect guard cell along X-axis")
+        call assertEqual(blkGC(LOW,  JAXIS), gr_jguard, &
+                         "Incorrect guard cell along Y-axis")
+        call assertEqual(blkGC(HIGH, JAXIS), gr_jguard, &
+                         "Incorrect guard cell along Y-axis")
+        call assertEqual(blkGC(LOW,  KAXIS), gr_kguard, &
+                         "Incorrect guard cell along Z-axis")
+        call assertEqual(blkGC(HIGH, KAXIS), gr_kguard, &
+                         "Incorrect guard cell along Z-axis")
+#endif
+
+        ! Correct cells per block along each direction
+        blkSize = blkLimits(HIGH, :) - blkLimits(LOW, :) + 1
+#if NDIM == 1
+        call assertEqual(blkSize(IAXIS), NXCELL_EX / NXBLK_EX, &
+                         "Incorrect cells per block along X-axis")
+        call assertEqual(blkSize(JAXIS), 1, "Incorrect cells per block along Y-axis")
+        call assertEqual(blkSize(KAXIS), 1, "Incorrect cells per block along Z-axis")
+#elif NDIM == 2
+        call assertEqual(blkSize(IAXIS), NXCELL_EX / NXBLK_EX, &
+                         "Incorrect cells per block along X-axis")
+        call assertEqual(blkSize(JAXIS), NYCELL_EX / NYBLK_EX, &
+                         "Incorrect cells per block along Y-axis")
+        call assertEqual(blkSize(KAXIS), 1, "Incorrect cells per block along Z-axis")
+#elif NDIM == 3
+        call assertEqual(blkSize(IAXIS), NXCELL_EX / NXBLK_EX, &
+                         "Incorrect cells per block along X-axis")
+        call assertEqual(blkSize(JAXIS), NYCELL_EX / NYBLK_EX, &
+                         "Incorrect cells per block along Y-axis")
+        call assertEqual(blkSize(KAXIS), NZCELL_EX / NZBLK_EX, &
+                         "Incorrect cells per block along Z-axis")
+#endif
+
+        xBlkMin = MIN(xBlkMin, blkLimits(LOW,  IAXIS))
+        yBlkMin = MIN(yBlkMin, blkLimits(LOW,  JAXIS))
+        zBlkMin = MIN(zBlkMin, blkLimits(LOW,  KAXIS))
+        xBlkMax = MAX(xBlkMax, blkLimits(HIGH, IAXIS))
+        yBlkMax = MAX(yBlkMax, blkLimits(HIGH, JAXIS))
+        zBlkMax = MAX(zBlkMax, blkLimits(HIGH, KAXIS))
+
+        call itor%next()
+    end do
+
+    ! Confirm proper number of blocks and cells
+    ! FIXME: This only works for one processor.  Need a reduction here.
+#if NDIM == 1
+    call assertEqual(n_blocks, NXBLK_EX, &
+                     "Incorrect total number of blocks")
+
+    call assertEqual(xBlkMin, 0, "Incorrect origin X-coordinate")
+    ! DEVNOTE: FIXME Shouldn't these be zero as well?
+    call assertEqual(yBlkMin, 1, "Incorrect origin Y-coordinate")
+    call assertEqual(zBlkMin, 1, "Incorrect origin Z-coordinate")
+
+    call assertEqual(xBlkMax + 1, NXCELL_EX, &
+                     "Incorrect total number of cells along X-axis")
+    call assertEqual(yBlkMax, 1, "More than one cell along Y-axis")
+    call assertEqual(zBlkMax, 1, "More than one cell along Z-axis")
+#elif NDIM == 2
+    call assertEqual(n_blocks, NXBLK_EX*NYBLK_EX, &
+                     "Incorrect total number of blocks")
+
+    call assertEqual(xBlkMin, 0, "Incorrect origin X-coordinate")
+    call assertEqual(yBlkMin, 0, "Incorrect origin Y-coordinate")
+    ! DEVNOTE: FIXME Shouldn't these be zero as well?
+    call assertEqual(zBlkMin, 1, "Incorrect origin Z-coordinate")
+
+    call assertEqual(xBlkMax + 1, NXCELL_EX, &
+                     "Incorrect total number of cells along X-axis")
+    call assertEqual(yBlkMax + 1, NYCELL_EX, &
+                     "Incorrect total number of cells along Y-axis")
+    call assertEqual(zBlkMax, 1, "More than one cell along Z-axis")
+#elif NDIM == 3
+    call assertEqual(n_blocks, NXBLK_EX*NYBLK_EX*NZBLK_EX, &
+                     "Incorrect total number of blocks")
+
+    call assertEqual(xBlkMin, 0, "Incorrect origin X-coordinate")
+    call assertEqual(yBlkMin, 0, "Incorrect origin Y-coordinate")
+    call assertEqual(zBlkMin, 0, "Incorrect origin Z-coordinate")
+
+    call assertEqual(xBlkMax + 1, NXCELL_EX, &
+                     "Incorrect total number of cells along X-axis")
+    call assertEqual(yBlkMax + 1, NYCELL_EX, &
+                     "Incorrect total number of cells along Y-axis")
+    call assertEqual(zBlkMax + 1, NZCELL_EX, &
+                     "Incorrect total number of cells along Z-axis")
+#endif
 
     !!!!! CONFIRM REFINEMENT SETUP
     ! TODO: Get nrefs from AMReX
@@ -173,10 +325,27 @@ subroutine Driver_evolveFlash()
     !!!!! CONFIRM MPI SETUP
     call assertEqual(rank, gr_meshMe, "AMReX/FLASH ranks are different")
 
-    ! TODO: Once unittest is refining mesh, check Grid_getMaxRefinement
-    ! with mode that checks actual number of levels in use
+    !!!!! CONFIRM PROPER INITIAL CONDITIONS
+    itor = block_iterator_t(LEAF)
+    do while (itor%is_valid())
+        call itor%blkMetaData(block)
+        call Grid_getBlkPtr(block, solnData)
 
-    call cpu_time (t_new)
+!        associate(lo => block%limits(LOW, :), &
+!                  hi => block%limits(HIGH, :))
+!            do         k = lo(3), hi(3)
+!                do     j = lo(2), hi(2)
+!                    do i = lo(1), hi(1)
+!                        write(*,*) "(", i, j, k, ") - ", solnData(i, j, k, 0)
+!                    end do
+!                end do
+!            end do
+!        end associate
+
+        call Grid_releaseBlkPtr(block, solnData)
+
+        call itor%next()
+    end do
  
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?

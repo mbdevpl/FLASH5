@@ -32,7 +32,6 @@ Module Grid_data
 
 ! TODO: AMReX to get these directly from RuntimeParameters and provide an
 ! interface to  get them
-  integer ,save :: gr_nblockX, gr_nblockY, gr_nblockZ
   integer,save :: gr_maxRefine
 
   integer, save :: gr_iguard = NGUARD

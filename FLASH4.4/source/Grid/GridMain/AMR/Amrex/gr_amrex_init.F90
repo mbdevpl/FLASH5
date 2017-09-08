@@ -24,8 +24,7 @@ subroutine gr_amrex_init()
   use Driver_interface,            ONLY : Driver_abortFlash
  
   ! TODO: Hopefully these should disappear
-  use Grid_data,                   ONLY : gr_nblockX, gr_nblockY, gr_nblockZ, &
-                                          gr_maxRefine
+  use Grid_data,                   ONLY : gr_maxRefine
 
   implicit none
 
@@ -122,10 +121,6 @@ subroutine gr_amrex_init()
   call pp_amr%addarr("n_cell", [NXB * nBlockX, &
                                 NYB * nBlockY, &
                                 NZB * nBlockZ])
-  ! TODO: Take these out once we have AMReX interface to these values
-  gr_nblockX = nBlockX
-  gr_nblockY = nBlockY
-  gr_nblockZ = nBlockZ
 
   call pp_amr%add   ("max_grid_size", 4)
   call pp_amr%add   ("blocking_factor", 2)
