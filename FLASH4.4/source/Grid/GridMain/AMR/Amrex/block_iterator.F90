@@ -209,15 +209,17 @@ contains
    
         box = this%oti%box()
 
+        ! Block descriptor provides FLASH-compliant 1-based level index set
         blockDesc%grid_index        = this%oti%grid_index()
-        blockDesc%level             = this%oti%level()
+        blockDesc%level             = this%oti%level() + 1
         blockDesc%limits(LOW, :)    = box%lo
         blockDesc%limits(HIGH, :)   = box%hi
 
         ! DEVNOTE: KW says that box with GC available through newer AMReX
         ! fortran interface.
         n_guards = 0
-        n_guards(1:NDIM) = unk(blockDesc%level+1)%nghost() 
+        ! Multifab arrays are 0-based (AMReX) instead of 1-based(FLASH)
+        n_guards(1:NDIM) = unk(blockDesc%level-1)%nghost() 
         blockDesc%limitsGC(LOW,  :) = box%lo - n_guards
         blockDesc%limitsGC(HIGH, :) = box%hi + n_guards
 

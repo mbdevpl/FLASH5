@@ -6,11 +6,11 @@ subroutine gr_clearLevel(lev) bind(c)
     implicit none
 
     integer, intent(in), value :: lev
-
-    ! C++ AMReX uses zero-based level index set, but FLASH uses 1-based set
-    call amrex_multifab_destroy(unk(lev + 1))
-    call amrex_multifab_destroy(facevarx(lev + 1))
-    call amrex_multifab_destroy(facevary(lev + 1))
-    call amrex_multifab_destroy(facevarz(lev + 1))
+  
+    ! Multifab arrays use 0-based index set like AMReX
+    call amrex_multifab_destroy(unk     (lev))
+    call amrex_multifab_destroy(facevarx(lev))
+    call amrex_multifab_destroy(facevary(lev))
+    call amrex_multifab_destroy(facevarz(lev))
 end subroutine gr_clearLevel 
 

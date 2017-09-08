@@ -13,7 +13,7 @@ subroutine gr_amrex_finalize()
     ! so that the AMReX unk has a similar interface to the paramesh unk.
     !   => all code dealing with multifabs at the Fortran/C++ interface must take 
     !      care of the index translation
-    do lev = 1, (amrex_max_level + 1)
+    do lev = 0, amrex_max_level
         call amrex_multifab_destroy(unk(lev))
     end do
 

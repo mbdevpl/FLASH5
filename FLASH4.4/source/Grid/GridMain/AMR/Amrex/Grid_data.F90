@@ -35,9 +35,9 @@ Module Grid_data
   integer,save :: gr_geometry
   
   integer,save :: gr_maxRefine
-  integer, save :: gr_iguard = NGUARD
-  integer, save :: gr_jguard = NGUARD 
-  integer, save :: gr_kguard = NGUARD
+  integer, save :: gr_iguard
+  integer, save :: gr_jguard 
+  integer, save :: gr_kguard
 
   integer,save,dimension(MDIM)::gr_bndOrder
   integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars
