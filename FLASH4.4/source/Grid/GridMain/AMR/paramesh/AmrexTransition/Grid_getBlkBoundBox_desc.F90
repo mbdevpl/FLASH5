@@ -79,18 +79,19 @@ subroutine Grid_getBlkBoundBox_desc(blockDesc, boundBox)
   integer, dimension(LOW:HIGH,MDIM) :: lim
   integer :: blockId,level
 
-!!$  blockid = blockDesc%id
+  blockid = blockDesc%id
 
-  if(blockID <= 0) then
-     print *, "blockId = ", blockID
+  if(blockID > 0) then
+     boundBox = bnd_box(:,:,blockId)
+  else
+!!$     print *, "blockId = ", blockID
 !!$     call Driver_abortFlash("Error: Grid_getBlkBoundBox_desc, blockId out of bounds")
-  end if
 
-!!$  boundBox = bnd_box(:,:,blockId)
-  lim=blockDesc%limits
-  level=blockDesc%level
-  call Grid_getSingleCellCoords_lev(lim(LOW,:), level,LEFT_EDGE, boundBox(LOW,:))
-  call Grid_getSingleCellCoords_lev(lim(HIGH,:), level,RIGHT_EDGE, boundBox(HIGH,:))
+     lim=blockDesc%limits
+     level=blockDesc%level
+     call Grid_getSingleCellCoords_lev(lim(LOW,:), level,LEFT_EDGE, boundBox(LOW,:))
+     call Grid_getSingleCellCoords_lev(lim(HIGH,:), level,RIGHT_EDGE, boundBox(HIGH,:))
+  end if
 
   return
 end subroutine Grid_getBlkBoundBox_desc

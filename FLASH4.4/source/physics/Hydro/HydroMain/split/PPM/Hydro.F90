@@ -43,6 +43,8 @@
 !!
 !!
 !!***
+#include "constants.h"
+#include "Flash.h"
 
 subroutine Hydro(  timeEndAdv, dt, dtOld, &
                    sweepOrder )
@@ -52,10 +54,11 @@ subroutine Hydro(  timeEndAdv, dt, dtOld, &
                          hy_gravMassXZY, hy_gravMassYZX,&
                          hy_gravMassYXZ, hy_gravMassZXY
 
+
+
+
   implicit none
 
-#include "constants.h"
-#include "Flash.h"
 
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
   integer, INTENT(IN) :: sweepOrder
