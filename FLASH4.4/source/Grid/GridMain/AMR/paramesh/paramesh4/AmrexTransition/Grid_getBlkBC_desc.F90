@@ -53,18 +53,21 @@ subroutine Grid_getBlkBC_desc(blockDesc, faces, onBoundary)
   real, dimension(2,MDIM) :: bnd_box
   integer :: axis, face
 
-  !NOTE: Does not behave the same as PARAMESH.  If we are
-  !on a periodic boundary then this version will return "periodic"
-  !in faces array.
   call Grid_getBlkBoundBox(blockDesc,bnd_box)
 
   do axis = 1,MDIM
      do face = LOW,HIGH
+
+        faces(face,axis) = NOT_BOUNDARY
+        if (present (onBoundary)) onBoundary(face,axis) = NOT_BOUNDARY
+
+        ! DEVNOTE: We should probably do an inexact comparison here. - KW
         if ( bnd_box(face,axis) == gr_globalDomain(face,axis) ) then
-           faces(face,axis) = gr_domainBC(face,axis)
-        else
-           faces(face,axis) = NOT_BOUNDARY
+           if (gr_domainBC(face,axis) .NE. PERIODIC) &
+                faces(face,axis) = gr_domainBC(face,axis)
+           if (present (onBoundary)) onBoundary(face,axis) = gr_domainBC(face,axis)
         end if
+
      end do
   end do
 end subroutine Grid_getBlkBC_desc
