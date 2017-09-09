@@ -7,7 +7,7 @@ subroutine Grid_releaseBlkPtr(blockID, blkPtr, gridDataStruct)
   real,    intent(inout), pointer  :: blkPtr(:, :, :, :)
   integer, intent(in),    optional :: gridDataStruct
 
-  call Driver_abortFlash("[Grid_getBlkPtr] AMReX does *not* deal in block IDs")
+  call Driver_abortFlash("[Grid_releaseBlkPtr] AMReX does *not* deal in block IDs")
 end subroutine Grid_releaseBlkPtr
 
 subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)

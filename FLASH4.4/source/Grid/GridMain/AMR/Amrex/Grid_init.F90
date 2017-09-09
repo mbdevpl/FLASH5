@@ -120,16 +120,18 @@
 subroutine Grid_init()
 
   use Grid_data
-  use Grid_interface, ONLY : Grid_getDeltas
+  use Grid_interface,              ONLY : Grid_getDeltas, &
+                                          Grid_getMaxRefinement
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
-    RuntimeParameters_mapStrToInt
-  use Driver_interface, ONLY : Driver_abortFlash, Driver_getMype, &
-    Driver_getNumProcs, Driver_getComm
-  use Driver_interface, ONLY : Driver_getMype, Driver_getNumProcs, Driver_getComm
-  use Logfile_interface, ONLY : Logfile_stampMessage
-  use Simulation_interface, ONLY : Simulation_mapStrToInt, Simulation_getVarnameType
-  use amrex_interfaces, ONLY : gr_amrex_init
-  use amrex_amrcore_module, ONLY : amrex_max_level
+                                          RuntimeParameters_mapStrToInt
+  use Driver_interface,            ONLY : Driver_abortFlash, &
+                                          Driver_getMype, &
+                                          Driver_getNumProcs, &
+                                          Driver_getComm
+  use Logfile_interface,           ONLY : Logfile_stampMessage
+  use Simulation_interface,        ONLY : Simulation_mapStrToInt, &
+                                          Simulation_getVarnameType
+  use amrex_interfaces,            ONLY : gr_amrex_init
 
 #include "Flash.h"
 #include "constants.h"
@@ -152,8 +154,6 @@ subroutine Grid_init()
   integer :: countInComm, color, key, ierr
   integer :: nonrep
 
-  real :: deltas(1:MDIM)
-  integer :: domain(LOW:HIGH, MDIM)
   character(len=MAX_STRING_LENGTH) :: str_geometry = ""
  
   call Driver_getMype(GLOBAL_COMM, gr_globalMe)
@@ -217,18 +217,24 @@ subroutine Grid_init()
   gr_kguard = NGUARD
   
 !----------------------------------------------------------------------------------
-! Init AMReX so that it can expose the data it controls through the grid interfaces 
+! Init AMReX so that it can 
+!    (1) expose the data it controls through the grid interfaces,
+!    (2) setup adaptive mesh structures,
+!    (3) load initial conditions, and
+!    (4) do initial refinement of mesh (?).
 !----------------------------------------------------------------------------------
   call gr_amrex_init()
 
 !----------------------------------------------------------------------------------
-! Store AMReX-controlled data as local Grid data variables for optimization
+! Store interface-accessible data as local Grid data variables for optimization
 !----------------------------------------------------------------------------------
-  gr_lRefineMax = amrex_max_level + 1
+  !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
+  call Grid_getDomainBoundBox(gr_globalDomain)
+
+  call Grid_getMaxRefinement(gr_lRefineMax, mode=1)
   gr_maxRefine = gr_lRefineMax
 
-  call Grid_getDeltas(gr_lRefineMax, deltas)
-  gr_minCellSizes = deltas
+  call Grid_getDeltas(gr_lRefineMax, gr_minCellSizes)
   gr_minCellSize = gr_minCellSizes(IAXIS)
 #if NDIM >= 2
   if (.not. gr_dirIsAngular(JAXIS)) then
@@ -250,15 +256,6 @@ subroutine Grid_init()
 !----------------------------------------------------------------------------------
 ! Setup all remaining local Grid data variables
 !----------------------------------------------------------------------------------
-  !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
-  call Grid_getDomainBoundBox(domain)
-  gr_globalDomain(LOW,IAXIS) = domain(LOW, 1)
-  gr_globalDomain(LOW,JAXIS) = domain(LOW, 2)
-  gr_globalDomain(LOW,KAXIS) = domain(LOW, 3)
-  gr_globalDomain(HIGH,IAXIS) = domain(HIGH, 1)
-  gr_globalDomain(HIGH,JAXIS) = domain(HIGH, 2)
-  gr_globalDomain(HIGH,KAXIS) = domain(HIGH, 3)
-
 !  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
 
 !!!  gr_meshComm = FLASH_COMM
@@ -537,34 +534,34 @@ subroutine Grid_init()
 
 !#endif
 
-!  if(gr_meshMe == MASTER_PE) call printRefinementInfo()
+  if(gr_meshMe == MASTER_PE) call printRefinementInfo()
 
 contains
 
   subroutine printRefinementInfo()
+    
     implicit none
-    integer :: l,n
-    real    :: del(MDIM)
-    character(len=20) :: fmtStr
+
+    integer           :: ilev = 0
+    integer           :: n = 0
+    real              :: del(MDIM) = 0.0d0
+    character(len=20) :: fmtStr = ""
     character(len=2)  :: colHdr(MDIM) = (/'dx', 'dy', 'dz'/)
 
     write(*,*) 'Grid_init: resolution based on runtime params:'
     write(*,'(A9,3(A12:4x))')  'lrefine', (colHdr(n),n=1,NDIM)
-!    do l = lrefine_min, lrefine_max
-!       del (IAXIS)               = (gr_imax - gr_imin) / (gr_nblockX*NXB*2.**(l-1))
-!       if (NDIM > 1)  del(JAXIS) = (gr_jmax - gr_jmin) / (gr_nblockY*NYB*2.**(l-1))
-!       if (NDIM == 3) del(KAXIS) = (gr_kmax - gr_kmin) / (gr_nblockZ*NZB*2.**(l-1))
-!
-!       if (maxval(del(IAXIS:NDIM)) .GT. 999999999999.999) then
-!          fmtStr = '(I7,2x,1P,3G16.3)'
-!       else if (minval(del(IAXIS:NDIM)) .LE. 0.0009) then
-!          fmtStr = '(I7,2x,1P,3G16.3)'
-!       else
-!          fmtStr = '(I7,2x,3F16.3)'
-!       end if
-!
-!       write(*,fmtStr) l, (del(n),n=1,NDIM)
-!    end do
+    do ilev = 1, gr_lRefineMax
+       call Grid_getDeltas(ilev, del)
+       if (maxval(del(IAXIS:NDIM)) .GT. 999999999999.999) then
+          fmtStr = '(I7,2x,1P,3G16.3)'
+       else if (minval(del(IAXIS:NDIM)) .LE. 0.0009) then
+          fmtStr = '(I7,2x,1P,3G16.3)'
+       else
+          fmtStr = '(I7,2x,3F16.3)'
+       end if
+
+       write(*,fmtStr) ilev, (del(n),n=1,NDIM)
+    end do
   end subroutine printRefinementInfo
 
 end subroutine Grid_init

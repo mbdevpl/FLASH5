@@ -58,11 +58,11 @@ subroutine Driver_evolveFlash()
         procedure :: assertEqualReal
     end interface assertEqual
 
-    ! These values should match those values in flash.par
+    !!!!! EXPECTED RESULTS BASED ON flash.par AND SETUP VALUES GIVEN ABOVE
     integer,  parameter :: NXCELL_EX   = 64
     integer,  parameter :: NYCELL_EX   = 64
     integer,  parameter :: NZCELL_EX   =  4
-    ! DEVNOTE: FIXME Not able to configure different block numbers with octree
+    ! DEVNOTE: FIXME Not able to configure rectangular blocks with octree
 !    integer,  parameter :: NXBLK_EX    =  8
 !    integer,  parameter :: NYBLK_EX    = 16
 !    integer,  parameter :: NZBLK_EX    =  2
@@ -127,6 +127,9 @@ subroutine Driver_evolveFlash()
     write(*,*)
     call cpu_time(t_old)
 
+    !!!!! CONFIRM MPI SETUP
+    call assertEqual(rank, gr_meshMe, "AMReX/FLASH ranks are different")
+
     !!!!! CONFIRM PROPER COORDINATE SYSTEM
     ! Dimensionality
     if (amrex_spacedim /= NDIM) then
@@ -143,36 +146,27 @@ subroutine Driver_evolveFlash()
 
     call Grid_getDomainBoundBox(domain)
 #if NDIM == 1
-    call assertEqual(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
-    call assertEqual(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
-    call assertEqual(domain(LOW,  2), 0.0d0,   "Incorrect low Y-coordinate")
-    call assertEqual(domain(HIGH, 2), 0.0d0,   "Incorrect high Y-coordinate")
-    call assertEqual(domain(LOW,  3), 0.0d0,   "Incorrect low Z-coordinate")
-    call assertEqual(domain(HIGH, 3), 0.0d0,   "Incorrect high Z-coordinate")
+    call assertEqual(domain(LOW,  IAXIS), XMIN_EX,"Incorrect low X-coordinate")
+    call assertEqual(domain(HIGH, IAXIS), XMAX_EX,"Incorrect high X-coordinate")
+    call assertEqual(domain(LOW,  JAXIS), 0.0d0,  "Incorrect low Y-coordinate")
+    call assertEqual(domain(HIGH, JAXIS), 0.0d0,  "Incorrect high Y-coordinate")
+    call assertEqual(domain(LOW,  KAXIS), 0.0d0,  "Incorrect low Z-coordinate")
+    call assertEqual(domain(HIGH, KAXIS), 0.0d0,  "Incorrect high Z-coordinate")
 #elif NDIM == 2
-    call assertEqual(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
-    call assertEqual(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
-    call assertEqual(domain(LOW,  2), YMIN_EX, "Incorrect low Y-coordinate")
-    call assertEqual(domain(HIGH, 2), YMAX_EX, "Incorrect high Y-coordinate")
-    call assertEqual(domain(LOW,  3), 0.0d0,   "Incorrect low Z-coordinate")
-    call assertEqual(domain(HIGH, 3), 0.0d0,   "Incorrect high Z-coordinate")
+    call assertEqual(domain(LOW,  IAXIS), XMIN_EX,"Incorrect low X-coordinate")
+    call assertEqual(domain(HIGH, IAXIS), XMAX_EX,"Incorrect high X-coordinate")
+    call assertEqual(domain(LOW,  JAXIS), YMIN_EX,"Incorrect low Y-coordinate")
+    call assertEqual(domain(HIGH, JAXIS), YMAX_EX,"Incorrect high Y-coordinate")
+    call assertEqual(domain(LOW,  KAXIS), 0.0d0,  "Incorrect low Z-coordinate")
+    call assertEqual(domain(HIGH, KAXIS), 0.0d0,  "Incorrect high Z-coordinate")
 #elif NDIM == 3 
-    call assertEqual(domain(LOW,  1), XMIN_EX, "Incorrect low X-coordinate")
-    call assertEqual(domain(HIGH, 1), XMAX_EX, "Incorrect high X-coordinate")
-    call assertEqual(domain(LOW,  2), YMIN_EX, "Incorrect low Y-coordinate")
-    call assertEqual(domain(HIGH, 2), YMAX_EX, "Incorrect high Y-coordinate")
-    call assertEqual(domain(LOW,  3), ZMIN_EX, "Incorrect low Z-coordinate")
-    call assertEqual(domain(HIGH, 3), ZMAX_EX, "Incorrect high Z-coordinate")
+    call assertEqual(domain(LOW,  IAXIS), XMIN_EX,"Incorrect low X-coordinate")
+    call assertEqual(domain(HIGH, IAXIS), XMAX_EX,"Incorrect high X-coordinate")
+    call assertEqual(domain(LOW,  JAXIS), YMIN_EX,"Incorrect low Y-coordinate")
+    call assertEqual(domain(HIGH, JAXIS), YMAX_EX,"Incorrect high Y-coordinate")
+    call assertEqual(domain(LOW,  KAXIS), ZMIN_EX,"Incorrect low Z-coordinate")
+    call assertEqual(domain(HIGH, KAXIS), ZMAX_EX,"Incorrect high Z-coordinate")
 #endif
-
-    !!!!! CONFIRM PROPER BC
-    call Grid_getDomainBC(domainBC)
-    call assertEqual(domainBC(LOW,  IAXIS), XL_BC_EX, "Incorrect X-left BC")
-    call assertEqual(domainBC(HIGH, IAXIS), XH_BC_EX, "Incorrect X-right BC")
-    call assertEqual(domainBC(LOW,  JAXIS), YL_BC_EX, "Incorrect Y-left BC")
-    call assertEqual(domainBC(HIGH, JAXIS), YH_BC_EX, "Incorrect Y-right BC")
-    call assertEqual(domainBC(LOW,  KAXIS), ZL_BC_EX, "Incorrect Z-left BC")
-    call assertEqual(domainBC(HIGH, KAXIS), ZH_BC_EX, "Incorrect Z-right BC")
 
     !!!!! CONFIRM PROPER REFINEMENT
     call Grid_getMaxRefinement(max_level, mode=1)
@@ -185,21 +179,21 @@ subroutine Driver_evolveFlash()
         y_expected = YDELTA_EX / 2.0d0**(ilev - 1)
         z_expected = ZDELTA_EX / 2.0d0**(ilev - 1)
 #if NDIM == 1
-        call assertEqual(deltas(1), x_expected, "Incorrect high X-coordinate")
-        call assertEqual(deltas(2), 0.0d0,      "Incorrect high Y-coordinate")
-        call assertEqual(deltas(3), 0.0d0,      "Incorrect high Z-coordinate")
+        call assertEqual(deltas(IAXIS),x_expected,"Incorrect high X-coordinate")
+        call assertEqual(deltas(JAXIS),0.0d0,     "Incorrect high Y-coordinate")
+        call assertEqual(deltas(KAXIS),0.0d0,     "Incorrect high Z-coordinate")
 #elif NDIM == 2
-        call assertEqual(deltas(1), x_expected, "Incorrect high X-coordinate")
-        call assertEqual(deltas(2), y_expected, "Incorrect high Y-coordinate")
-        call assertEqual(deltas(3), 0.0d0,      "Incorrect high Z-coordinate")
+        call assertEqual(deltas(IAXIS),x_expected,"Incorrect high X-coordinate")
+        call assertEqual(deltas(JAXIS),y_expected,"Incorrect high Y-coordinate")
+        call assertEqual(deltas(KAXIS),0.0d0,     "Incorrect high Z-coordinate")
 #elif NDIM == 3 
-        call assertEqual(deltas(1), x_expected, "Incorrect high X-coordinate")
-        call assertEqual(deltas(2), y_expected, "Incorrect high Y-coordinate")
-        call assertEqual(deltas(3), z_expected, "Incorrect high Z-coordinate")
+        call assertEqual(deltas(IAXIS),x_expected,"Incorrect high X-coordinate")
+        call assertEqual(deltas(JAXIS),y_expected,"Incorrect high Y-coordinate")
+        call assertEqual(deltas(KAXIS),z_expected,"Incorrect high Z-coordinate")
 #endif
     end do
 
-    ! TODO: Once unittest is refining mesh, check Grid_getMaxRefinement
+    ! DEV: TODO Once unittest is refining mesh, check Grid_getMaxRefinement
     ! with mode that checks actual number of levels in use
 
     !!!!! CONFIRM PROPER BLOCK/CELL STRUCTURE
@@ -207,12 +201,12 @@ subroutine Driver_evolveFlash()
     n_blocks = 0
     itor = block_iterator_t(LEAF)
     call itor%blkMetaData(block)
-    xBlkMin = block%limits(LOW, 1)
-    xBlkMax = block%limits(HIGH, 1)
-    yBlkMin = block%limits(LOW, 2)
-    yBlkMax = block%limits(HIGH, 2)
-    zBlkMin = block%limits(LOW, 3)
-    zBlkMax = block%limits(HIGH, 3)
+    xBlkMin = block%limits(LOW,  IAXIS)
+    xBlkMax = block%limits(HIGH, IAXIS)
+    yBlkMin = block%limits(LOW,  JAXIS)
+    yBlkMax = block%limits(HIGH, JAXIS)
+    zBlkMin = block%limits(LOW,  KAXIS)
+    zBlkMax = block%limits(HIGH, KAXIS)
     do while (itor%is_valid())
         n_blocks = n_blocks + 1
         call itor%blkMetaData(block)
@@ -339,11 +333,17 @@ subroutine Driver_evolveFlash()
                      "Incorrect total number of cells along Z-axis")
 #endif
 
+    !!!!! CONFIRM PROPER BC
+    call Grid_getDomainBC(domainBC)
+    call assertEqual(domainBC(LOW,  IAXIS), XL_BC_EX, "Incorrect X-left BC")
+    call assertEqual(domainBC(HIGH, IAXIS), XH_BC_EX, "Incorrect X-right BC")
+    call assertEqual(domainBC(LOW,  JAXIS), YL_BC_EX, "Incorrect Y-left BC")
+    call assertEqual(domainBC(HIGH, JAXIS), YH_BC_EX, "Incorrect Y-right BC")
+    call assertEqual(domainBC(LOW,  KAXIS), ZL_BC_EX, "Incorrect Z-left BC")
+    call assertEqual(domainBC(HIGH, KAXIS), ZH_BC_EX, "Incorrect Z-right BC")
+
     !!!!! CONFIRM REFINEMENT SETUP
     ! TODO: Get nrefs from AMReX
-
-    !!!!! CONFIRM MPI SETUP
-    call assertEqual(rank, gr_meshMe, "AMReX/FLASH ranks are different")
 
     !!!!! CONFIRM PROPER INITIAL CONDITIONS
     itor = block_iterator_t(LEAF)
@@ -353,9 +353,9 @@ subroutine Driver_evolveFlash()
 
         associate(lo => block%limits(LOW, :), &
                   hi => block%limits(HIGH, :))
-            do         k = lo(3), hi(3)
-                do     j = lo(2), hi(2)
-                    do i = lo(1), hi(1)
+            do         k = lo(KAXIS), hi(KAXIS)
+                do     j = lo(JAXIS), hi(JAXIS)
+                    do i = lo(IAXIS), hi(IAXIS)
                         do var = UNK_VARS_BEGIN, UNK_VARS_END 
                             call assertEqual(solnData(i, j, k, var), &
                                              1.1d0 * var, &
