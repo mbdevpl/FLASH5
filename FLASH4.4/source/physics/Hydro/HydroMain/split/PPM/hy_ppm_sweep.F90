@@ -217,14 +217,10 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
 
   call Timers_start("hy_ppm_sweep")
 
-#ifdef FLASH_GRID_AMREXTRANSITION
-!!$  allocate(phi_mf(maxLev))
-!!$  call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
-#endif
-  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
+  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
   
   do lev=1,maxLev
-     itor = block_iterator_t(ACTIVE_BLKS, level=lev)
+     itor = block_iterator_t(LEAF, level=lev)
      do while(itor%is_valid())
         call itor%blkMetaData(block)
         
@@ -565,11 +561,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
 !!$  deallocate(phi_mf)
 #endif
   
-  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS, reverse=.TRUE.)
-!!$#ifdef FLASH_GRID_AMREXTRANSITION
-!!$  call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
-!!$#endif
-!!$  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
+  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
   
   
   
