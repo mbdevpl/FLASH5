@@ -79,7 +79,7 @@ contains
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
     !!             iterate only over blocks located at this level of 
-    !!             octree structure
+    !!             octree structure. !DEVNOTE: nodetype not implemented!
     !!
     !! SEE ALSO
     !!  constants.h
@@ -115,7 +115,7 @@ contains
 
         type(block_1lev_iterator_t)        :: this
         integer, intent(IN)           :: nodetype
-        type(amrex_multifab),intent(IN),TARGET :: mfArray(*)
+        type(amrex_multifab),intent(IN),TARGET :: mfArray(0:*)
         integer, intent(IN), optional :: level
         logical, intent(IN), optional :: tiling
 
@@ -129,8 +129,8 @@ contains
         ! It appears that we get leaves every time.
 
         ! Initial iterator is not primed.  Advance to first compatible block.
-        call amrex_mfiter_build(this%mfi,mfArray(level),tiling=tiling)
-        this%mf => mfArray(level)
+        call amrex_mfiter_build(this%mfi,mfArray(level-1),tiling=tiling)
+        this%mf => mfArray(level-1)
 !!$        print*,'block_1lev_iterator: init_iterator_mfa on this=',this%isValid,this%level,associated(this%mfi)
         this%isValid = .TRUE.
         call this%next()
@@ -158,15 +158,15 @@ contains
 !!$        call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs,lrefine_max,LEAF)
         if (present(level)) then
            mfArray => gr_amrextUnkMFs
-           mf => gr_amrextUnkMFs(level)
+           mf => gr_amrextUnkMFs(level-1)
 !!$           print*,'amrex_multifab_nghost(mf)=',mf%nghost()
 !!$           print*,'ABOUT TO call amrex_mfiter_build,size(mfArray)=',size(mfArray)
 !!$           call amrex_mfiter_build(this%mfi,mfArray(level),tiling=tiling)
            call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
 !!$           print*,'amrex_multifab_nghost(mf)=',mf%nghost()
-           this%mf => mfArray(level)
+           this%mf => mfArray(level-1)
         else
-           mf => gr_amrextUnkMFs(1)
+           mf => gr_amrextUnkMFs(0)
            call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
            this%mf => mf
         end if

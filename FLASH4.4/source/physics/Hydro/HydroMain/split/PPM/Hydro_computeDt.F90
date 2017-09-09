@@ -133,7 +133,7 @@ subroutine Hydro_computeDt (block,  &
            temploc(1) = i
            temploc(2) = 1
            temploc(3) = 1
-           temploc(4) = block%id
+           temploc(4) = block%level
            temploc(5) = hy_meshMe
         endif
 
@@ -185,7 +185,7 @@ subroutine Hydro_computeDt (block,  &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = block%id
+                 temploc(4) = block%level
                  temploc(5) = hy_meshMe
               endif
 
@@ -233,7 +233,7 @@ subroutine Hydro_computeDt (block,  &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = block%id
+                 temploc(4) = block%level
                  temploc(5) = hy_meshMe
               endif
 
@@ -299,7 +299,7 @@ subroutine Hydro_computeDt (block,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = block%id
+                    temploc(4) = block%level
                     temploc(5) = hy_meshMe
                  endif
 
@@ -351,7 +351,7 @@ subroutine Hydro_computeDt (block,  &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = block%id
+                    temploc(4) = block%level
                     temploc(5) = hy_meshMe
                  endif
                  

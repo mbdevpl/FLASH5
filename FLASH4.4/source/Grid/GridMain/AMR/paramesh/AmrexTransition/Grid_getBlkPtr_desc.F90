@@ -201,7 +201,7 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
               print*,'Grid_getBlkPtr_desc: no valid grid_index!!!!!'
               dataPtr(1:, lo(1):, lo(2):, lo(3):) => block%fp
            else
-              mf => gr_amrextUnkMFs(block%level)
+              mf => gr_amrextUnkMFs(block%level-1)
 !!$              print*,'Grid_getBlkPtr: (level,grid_index)=',block%level,block%grid_index
               dataPtr(1:, lo(1):, lo(2):, lo(3):) => mf%dataPtr(block%grid_index)
            end if
