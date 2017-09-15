@@ -9,15 +9,12 @@ CONFLICTS IO/IOMain/hdf5/serial/PM
 # DEVNOTE: TEMPORARY SITUATION
 # there are three setup/runtime "scenarios" or "modes":
 # (1) defined(FLASH_GRID_PARAMESH);
-# (2) defined(FLASH_GRID_PARAMESH) && defined(FLASH_GRID_AMREXTRANS);
+# (2) defined(FLASH_GRID_PARAMESH) && defined(FLASH_GRID_AMREXTRANSITION);
 # (3) defined(FLASH_GRID_AMREX)
 
 # add pre-processor symbol FLASH_GRID_AMREX
 PPDEFINE FLASH_GRID_AMREX
-# Temporarily create for ../AmrexTransition only
-# DEVNOTE: The following may be a misunderstanding and should disappear from here - KW
-# DEVNOTE: not to be confused with FLASH_GRID_AMREXTRANSITION, which should NOT be defined here.
-PPDEFINE FLASH_GRID_AMREXTRANS
+
 # The following is defined for AMR/Amrex and .../AmrexTransition as well
 # Here defined(FLASH_GRID_ANYAMREX) == (defined(FLASH_GRID_AMREX) ||
 #                                       defined(FLASH_GRID_AMREXTRANSITION))
