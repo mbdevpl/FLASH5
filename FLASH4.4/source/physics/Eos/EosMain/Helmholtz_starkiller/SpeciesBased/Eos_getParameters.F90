@@ -11,7 +11,11 @@
 !!                         OPTIONAL,logical(OUT) :: inputTempIsGuess,
 !!                         OPTIONAL,logical(OUT) :: constantGammaC,
 !!                         OPTIONAL,logical(OUT) :: inputMassFracNeeded,
-!!                         OPTIONAL,real(OUT) :: smalle)
+!!                         OPTIONAL,real(OUT)    :: smalle,
+!!                         OPTIONAL,real(OUT)    :: smallE1,
+!!                         OPTIONAL,real(OUT)    :: smallE2,
+!!                         OPTIONAL,real(OUT)    :: smallE3)
+!!
 !!
 !! DESCRIPTION
 !!
@@ -31,6 +35,8 @@
 !!   constantGammaC -      Indicates whether the gamc returned by Eos will always be constant.
 !!   inputMassFracNeeded - Indicates whether the Eos implementation makes use of mass fractions.
 !!   smalle -              value of the Eos unit's smallE runtime parameter.
+!!   smallE1,smallE2,smallE3 - values of lower bounds for temperature components in multiTemp 
+!!                         implementations.
 !!
 !! EXAMPLE
 !!
@@ -55,11 +61,13 @@
 
 
 subroutine Eos_getParameters(eintSwitch,inputsAreUnchanged,inputTempIsGuess,constantGammaC,&
-     inputMassFracNeeded,smalle)
+     inputMassFracNeeded,smalle,smallE1,smallE2,smallE3)
 
   use Eos_data, ONLY : eos_smalle, eos_eintSwitch
+  use Eos_data, ONLY : eos_smallEion, eos_smallEele, eos_smallErad
   use eos_helmData, ONLY : eos_forceConstantInput
   use Driver_interface, ONLY : Driver_abortFlash
+
   implicit none
 
 #include "Flash.h"
@@ -70,6 +78,7 @@ subroutine Eos_getParameters(eintSwitch,inputsAreUnchanged,inputTempIsGuess,cons
   logical,OPTIONAL,intent(OUT) :: constantGammaC
   logical,OPTIONAL,intent(OUT) :: inputMassFracNeeded
   real,OPTIONAL,intent(OUT) :: smalle
+  real,OPTIONAL,intent(OUT) :: smallE1,smallE2,smallE3
 
   ! This assumes that runtime parameters have already been gotten.
   if (present(eintSwitch)) eintSwitch = eos_eintSwitch
@@ -79,6 +88,9 @@ subroutine Eos_getParameters(eintSwitch,inputsAreUnchanged,inputTempIsGuess,cons
 
   if (present(inputMassFracNeeded)) inputMassFracNeeded = .TRUE.
   if (present(smalle)) smalle = eos_smalle
+  if (present(smallE1)) smallE1 = eos_smallEion
+  if (present(smallE2)) smallE2 = eos_smallEele
+  if (present(smallE3)) smallE3 = eos_smallErad
 
   return
 end subroutine Eos_getParameters
