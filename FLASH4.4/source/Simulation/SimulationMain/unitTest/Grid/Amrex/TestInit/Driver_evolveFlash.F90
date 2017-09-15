@@ -42,6 +42,8 @@ subroutine Driver_evolveFlash()
                                       amrex_parallel_nprocs
 
     use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
+                                      Grid_getBlkBoundBox, &
+                                      Grid_getSingleCellCoords, &
                                       Grid_getGeometry, &
                                       Grid_getDeltas, &
                                       Grid_getMaxRefinement, &
@@ -114,6 +116,21 @@ subroutine Driver_evolveFlash()
     integer                :: yBlkMax = 0
     integer                :: zBlkMin = 0
     integer                :: zBlkMax = 0
+    real                   :: xMin = 0.0d0
+    real                   :: xMax = 0.0d0
+    real                   :: yMin = 0.0d0
+    real                   :: yMax = 0.0d0
+    real                   :: zMin = 0.0d0
+    real                   :: zMax = 0.0d0
+    real                   :: boundBox(LOW:HIGH, 1:MDIM) = 0.0d0
+    real                   :: c_lo(1:MDIM) = 0.0d0
+    real                   :: c_hi(1:MDIM) = 0.0d0
+    real                   :: c_gc(1:MDIM) = 0.0d0 
+    real                   :: c_itr(1:MDIM) = 0.0d0
+    real                   :: x_coords(4) = 0.0d0
+    real                   :: y_coords(4) = 0.0d0
+    real                   :: x_coords_gc(8) = 0.0d0
+    real                   :: y_coords_gc(8) = 0.0d0
 
     integer :: rank = -1
     integer :: ilev = 0
@@ -195,7 +212,7 @@ subroutine Driver_evolveFlash()
 
     ! DEV: TODO Once unittest is refining mesh, check Grid_getMaxRefinement
     ! with mode that checks actual number of levels in use
-
+    
     !!!!! CONFIRM PROPER BLOCK/CELL STRUCTURE
     ! Walk across all blocks to test and collect info
     n_blocks = 0
@@ -207,9 +224,31 @@ subroutine Driver_evolveFlash()
     yBlkMax = block%limits(HIGH, JAXIS)
     zBlkMin = block%limits(LOW,  KAXIS)
     zBlkMax = block%limits(HIGH, KAXIS)
+    ! DEV: TODO Do better than this
+    xMin = 1.0d10
+    xMax = -xMin
+    yMin = 1.0d10
+    yMax = -yMin
+    zMin = 1.0d10
+    zMax = -zMin
     do while (itor%is_valid())
         n_blocks = n_blocks + 1
         call itor%blkMetaData(block)
+
+        call Grid_getBlkBoundBox(block, boundBox)
+!        write(*,*) '-----------------------------------------'
+!        write(*,*) 'Level = ', block%level
+!        write(*,*) 'GID   = ', block%grid_index
+!        write(*,*) 'Lower:  ', block%limits(LOW, :)
+!        write(*,*) '        ', boundBox(LOW, :)
+!        write(*,*) 'Upper:  ', block%limits(HIGH, :)
+!        write(*,*) '        ', boundBox(HIGH, :)
+        xMin = MIN(xMin, boundBox(LOW,  IAXIS))
+        xMax = MAX(xMax, boundBox(HIGH, IAXIS))
+        yMin = MIN(yMin, boundBox(LOW,  JAXIS))
+        yMax = MAX(yMax, boundBox(HIGH, JAXIS))
+        zMin = MIN(zMin, boundBox(LOW,  KAXIS))
+        zMax = MAX(zMax, boundBox(HIGH, KAXIS))
 
         ! DEVNOTE: Should we leave this unittest with simple data
         ! that does not refine so that testing the block structure is easy?
@@ -287,7 +326,7 @@ subroutine Driver_evolveFlash()
 
         call itor%next()
     end do
-
+    
     ! Confirm proper number of blocks and cells
     ! FIXME: This only works for one processor.  Need a reduction here.
 #if NDIM == 1
@@ -303,6 +342,13 @@ subroutine Driver_evolveFlash()
                      "Incorrect total number of cells along X-axis")
     call assertEqual(yBlkMax, 1, "More than one cell along Y-axis")
     call assertEqual(zBlkMax, 1, "More than one cell along Z-axis")
+    
+    call assertEqual(xMin, XMIN_EX, "Incorrect minimum X-coordinate found")
+    call assertEqual(xMax, XMAX_EX, "Incorrect maximum X-coordinate found")
+    call assertEqual(yMin, 1.0d0,   "Incorrect minimum Y-coordinate found")
+    call assertEqual(yMax, 1.0d0,   "Incorrect maximum Y-coordinate found")
+    call assertEqual(zMin, 1.0d0,   "Incorrect minimum Z-coordinate found")
+    call assertEqual(zMax, 1.0d0,   "Incorrect maximum Z-coordinate found")
 #elif NDIM == 2
     call assertEqual(n_blocks, NXBLK_EX*NYBLK_EX, &
                      "Incorrect total number of blocks")
@@ -317,6 +363,13 @@ subroutine Driver_evolveFlash()
     call assertEqual(yBlkMax + 1, NYCELL_EX, &
                      "Incorrect total number of cells along Y-axis")
     call assertEqual(zBlkMax, 1, "More than one cell along Z-axis")
+    
+    call assertEqual(xMin, XMIN_EX, "Incorrect minimum X-coordinate found")
+    call assertEqual(xMax, XMAX_EX, "Incorrect maximum X-coordinate found")
+    call assertEqual(yMin, YMIN_EX, "Incorrect minimum Y-coordinate found")
+    call assertEqual(yMax, YMAX_EX, "Incorrect maximum Y-coordinate found")
+    call assertEqual(zMin, 1.0d0,   "Incorrect minimum Z-coordinate found")
+    call assertEqual(zMax, 1.0d0,   "Incorrect maximum Z-coordinate found")
 #elif NDIM == 3
     call assertEqual(n_blocks, NXBLK_EX*NYBLK_EX*NZBLK_EX, &
                      "Incorrect total number of blocks")
@@ -331,6 +384,13 @@ subroutine Driver_evolveFlash()
                      "Incorrect total number of cells along Y-axis")
     call assertEqual(zBlkMax + 1, NZCELL_EX, &
                      "Incorrect total number of cells along Z-axis")
+    
+    call assertEqual(xMin, XMIN_EX, "Incorrect minimum X-coordinate found")
+    call assertEqual(xMax, XMAX_EX, "Incorrect maximum X-coordinate found")
+    call assertEqual(yMin, YMIN_EX, "Incorrect minimum Y-coordinate found")
+    call assertEqual(yMax, YMAX_EX, "Incorrect maximum Y-coordinate found")
+    call assertEqual(zMin, ZMIN_EX, "Incorrect minimum Z-coordinate found")
+    call assertEqual(zMax, ZMAX_EX, "Incorrect maximum Z-coordinate found")
 #endif
 
     !!!!! CONFIRM PROPER BC
@@ -370,7 +430,89 @@ subroutine Driver_evolveFlash()
 
         call itor%next()
     end do
- 
+
+    !!!!! CONFIRM CELL COORDINATE ACCESSORS
+    ! DEV: TODO Apply proper Z-info and test in 3D
+    ! Find coordinates of lo/hi
+    block%level = 1
+    block%limits(LOW,  :) = [0, 0, 0]
+    call Grid_getSingleCellCoords([1, 1, 1], block, LEFT_EDGE, INTERIOR, c_lo)
+    block%limits(LOW,  :) = [60, 60, 2]
+    call Grid_getSingleCellCoords([4, 4, 4], block, RIGHT_EDGE, INTERIOR, c_hi)
+    ! Find coordinates of cell as a guard cell of one block ...
+    block%limits(LOW,  :) = [60, 60, 2]
+    call Grid_getSingleCellCoords([1, 1, 1], block, CENTER, EXTERIOR, c_gc)
+    ! and as an interior cell of its neighboring block
+    block%limits(LOW,  :) = [56, 56, 2]
+    call Grid_getSingleCellCoords([3, 3, 3], block, CENTER, INTERIOR, c_itr)
+
+    call assertEqual(c_gc(IAXIS), c_itr(IAXIS), "Invalid cell X-coordinate")
+    call assertEqual(c_gc(JAXIS), c_itr(JAXIS), "Invalid cell Y-coordinate")
+    call assertEqual(c_gc(KAXIS), c_itr(KAXIS), "Invalid cell Z-coordinate")
+
+#if NDIM == 1
+    call assertEqual(c_lo(IAXIS), XMIN_EX, "Invalid cell X-coordinate")
+    call assertEqual(c_lo(JAXIS), 0.0d0,   "Invalid cell Y-coordinate")
+    call assertEqual(c_lo(KAXIS), 0.0d0,   "Invalid cell Z-coordinate")
+    
+    call assertEqual(c_hi(IAXIS), XMAX_EX, "Invalid cell X-coordinate")
+    call assertEqual(c_hi(JAXIS), 0.0d0,   "Invalid cell Y-coordinate")
+    call assertEqual(c_hi(KAXIS), 0.0d0,   "Invalid cell Z-coordinate")
+#elif NDIM == 2
+    call assertEqual(c_lo(IAXIS), XMIN_EX, "Invalid cell X-coordinate")
+    call assertEqual(c_lo(JAXIS), YMIN_EX, "Invalid cell Y-coordinate")
+    call assertEqual(c_lo(KAXIS), 0.0d0,   "Invalid cell Z-coordinate")
+    
+    call assertEqual(c_hi(IAXIS), XMAX_EX, "Invalid cell X-coordinate")
+    call assertEqual(c_hi(JAXIS), YMAX_EX, "Invalid cell Y-coordinate")
+    call assertEqual(c_hi(KAXIS), 0.0d0,   "Invalid cell Z-coordinate")
+
+    call assertEqual(c_gc(IAXIS), 1.7421875, "Invalid cell X-coordinate")
+    call assertEqual(c_gc(JAXIS), 3.9843750, "Invalid cell Y-coordinate")
+    call assertEqual(c_gc(KAXIS), 0.0d0,      "Invalid cell Z-coordinate")
+#elif NDIM == 3
+    call assertEqual(c_lo(IAXIS), XMIN_EX, "Invalid cell X-coordinate")
+    call assertEqual(c_lo(JAXIS), YMIN_EX, "Invalid cell Y-coordinate")
+    call assertEqual(c_lo(KAXIS), ZMIN_EX, "Invalid cell Z-coordinate")
+    
+    call assertEqual(c_hi(IAXIS), XMAX_EX, "Invalid cell X-coordinate")
+    call assertEqual(c_hi(JAXIS), YMAX_EX, "Invalid cell Y-coordinate")
+    call assertEqual(c_hi(KAXIS), ZMAX_EX, "Invalid cell Z-coordinate")
+#endif
+
+    ! DEV: TODO Implement for different NDIM and with proper Z-info
+    ! Check cell coordinates by block starting at lower corner
+    block%limits(LOW, :) = [0, 0, 0]
+    call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, .FALSE., &
+                            x_coords, SIZE(x_coords))
+    call Grid_getCellCoords(JAXIS, block, LEFT_EDGE, .FALSE., &
+                            y_coords, SIZE(y_coords))
+    do j = 1, SIZE(x_coords)
+        call assertEqual(x_coords(j), XMIN_EX + (j-1)*XDELTA_EX, "Bad X-coordinate")
+        call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
+    end do
+
+    ! Check cell coordinates by block starting at upper corner
+    block%limits(LOW, :) = [60, 60, 0]
+    call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, .FALSE., &
+                            x_coords, SIZE(x_coords))
+    call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, .FALSE., &
+                            y_coords, SIZE(y_coords))
+    do j = 1, SIZE(x_coords)
+        call assertEqual(x_coords(j), XMAX_EX - (4-j)*XDELTA_EX, "Bad X-coordinate")
+        call assertEqual(y_coords(j), YMAX_EX - (4-j)*YDELTA_EX, "Bad Y-coordinate")
+    end do
+
+    block%limits(LOW, :) = [60, 60, 0]
+    call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, .TRUE., &
+                            x_coords_gc, SIZE(x_coords_gc))
+    call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, .TRUE., &
+                            y_coords_gc, SIZE(y_coords_gc))
+    do j = 1, SIZE(x_coords_gc)
+        call assertEqual(x_coords_gc(j), XMAX_EX - (4-j+NGUARD)*XDELTA_EX, "Bad X-coordinate")
+        call assertEqual(y_coords_gc(j), YMAX_EX - (4-j+NGUARD)*YDELTA_EX, "Bad Y-coordinate")
+    end do
+
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?
     if (rank == MASTER_PE) then
