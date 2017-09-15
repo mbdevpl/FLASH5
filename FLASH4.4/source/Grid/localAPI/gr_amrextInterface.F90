@@ -21,6 +21,18 @@ module gr_amrextInterface
 #include "Flash.h"
   implicit none
 
+  interface
+     subroutine gr_amrextAmrexInit()
+       implicit none
+     end subroutine gr_amrextAmrexInit
+  end interface
+
+  interface
+     subroutine gr_amrextAmrexFinalize()
+       implicit none
+     end subroutine gr_amrextAmrexFinalize
+  end interface
+
 #ifdef FLASH_GRID_ANYAMREX
   interface
      subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
