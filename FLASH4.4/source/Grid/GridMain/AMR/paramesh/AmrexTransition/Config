@@ -23,3 +23,7 @@ REQUIRES Grid/GridMain/AMR/paramesh/paramesh4/AmrexTransition
 PPDEFINE FLASH_GRID_AMREXTRANSITION
 # The following is defined for AMR/Amrex and .../AmrexTransition as well
 PPDEFINE FLASH_GRID_ANYAMREX
+
+D gr_amrex_verbosity How much output is written out. Higher number is more verbose.
+PARAMETER gr_amrex_verbosity INTEGER 1 [ 0 ... ]
+
