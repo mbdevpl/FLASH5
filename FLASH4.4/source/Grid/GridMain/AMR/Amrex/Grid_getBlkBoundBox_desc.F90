@@ -77,19 +77,15 @@ subroutine Grid_getBlkBoundBox_desc(blockDesc, boundBox)
   integer :: i = 0
 
   ! DEV: FIXME How to manage matching amrex_real to FLASH real
-  ! DEV: FIXME Do the interpretation of the limits change depending on the
-  ! nodetype of the given block?  Here, I assume that the points index
-  ! the cells.
-  ! DEV: FIXME This assumes Cartesian coordinates.
   boundBox = 1.0d0
   associate(x0   => amrex_problo, &
             dx   => amrex_geom(blockDesc%level - 1)%dx, &
             lo   => blockDesc%limits(LOW,  :), &
             hi   => blockDesc%limits(HIGH, :))
-    ! lo is cell-index of lower-left cell in block 
-    ! hi is cell-index of upper-right in block
-    boundBox(LOW,  1:NDIM) = x0(1:NDIM) +  lo(1:NDIM)     *dx(1:NDIM)
-    boundBox(HIGH, 1:NDIM) = x0(1:NDIM) + (hi(1:NDIM) + 1)*dx(1:NDIM)
+    ! lo is 1-based cell-index of lower-left cell in block 
+    ! hi is 1-based cell-index of upper-right cell in block
+    boundBox(LOW,  1:NDIM) = x0(1:NDIM) + (lo(1:NDIM) - 1)*dx(1:NDIM)
+    boundBox(HIGH, 1:NDIM) = x0(1:NDIM) + (hi(1:NDIM)    )*dx(1:NDIM)
   end associate
 end subroutine Grid_getBlkBoundBox_desc
 

@@ -146,10 +146,11 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
   end if
 #endif
 
-  ! DEVNOTE: TODO This assumes that the index and limits are cell center-based
   associate (x0   => amrex_problo(axis), &
              x_lo => block%limits(LOW, axis), &
              dx   => amrex_geom(block%level - 1)%dx(axis))
+    ! x_lo is 1-based cell-index of lower-left cell in block 
+
     shift = 0.0d0
     if (edge == CENTER) then
       shift = 0.5d0
@@ -160,15 +161,16 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
     end if
 
     ! DEV: Should we use gr_[ijk]guard instead of NGUARD?
-    ! First index given in 0-based global indices adjusted according to edge
-    x = x_lo + shift
+    ! First index should be given in 1-based global indices adjusted according
+    ! to edge.  However, make 0-based to simplify calculation in loop.
+    x = x_lo + shift - 1
     if (guardcell) then
       x = x - NGUARD
     end if
 
     coordinates(:) = 0.0d0
     do i = 1, size
-        coordinates(i) = x0 + x * dx
+        coordinates(i) = x0 + x*dx
         x = x + 1.0d0
     end do
   end associate

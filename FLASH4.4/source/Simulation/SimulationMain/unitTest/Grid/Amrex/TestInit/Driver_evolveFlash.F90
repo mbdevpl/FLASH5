@@ -328,17 +328,16 @@ subroutine Driver_evolveFlash()
     end do
     
     ! Confirm proper number of blocks and cells
+    call assertEqual(xBlkMin, 1, "Incorrect origin X-coordinate")
+    call assertEqual(yBlkMin, 1, "Incorrect origin Y-coordinate")
+    call assertEqual(zBlkMin, 1, "Incorrect origin Z-coordinate")
+
     ! FIXME: This only works for one processor.  Need a reduction here.
 #if NDIM == 1
     call assertEqual(n_blocks, NXBLK_EX, &
                      "Incorrect total number of blocks")
 
-    call assertEqual(xBlkMin, 0, "Incorrect origin X-coordinate")
-    ! DEVNOTE: FIXME Shouldn't these be zero as well?
-    call assertEqual(yBlkMin, 1, "Incorrect origin Y-coordinate")
-    call assertEqual(zBlkMin, 1, "Incorrect origin Z-coordinate")
-
-    call assertEqual(xBlkMax + 1, NXCELL_EX, &
+    call assertEqual(xBlkMax, NXCELL_EX, &
                      "Incorrect total number of cells along X-axis")
     call assertEqual(yBlkMax, 1, "More than one cell along Y-axis")
     call assertEqual(zBlkMax, 1, "More than one cell along Z-axis")
@@ -353,14 +352,9 @@ subroutine Driver_evolveFlash()
     call assertEqual(n_blocks, NXBLK_EX*NYBLK_EX, &
                      "Incorrect total number of blocks")
 
-    call assertEqual(xBlkMin, 0, "Incorrect origin X-coordinate")
-    call assertEqual(yBlkMin, 0, "Incorrect origin Y-coordinate")
-    ! DEVNOTE: FIXME Shouldn't these be zero as well?
-    call assertEqual(zBlkMin, 1, "Incorrect origin Z-coordinate")
-
-    call assertEqual(xBlkMax + 1, NXCELL_EX, &
+    call assertEqual(xBlkMax, NXCELL_EX, &
                      "Incorrect total number of cells along X-axis")
-    call assertEqual(yBlkMax + 1, NYCELL_EX, &
+    call assertEqual(yBlkMax, NYCELL_EX, &
                      "Incorrect total number of cells along Y-axis")
     call assertEqual(zBlkMax, 1, "More than one cell along Z-axis")
     
@@ -373,16 +367,12 @@ subroutine Driver_evolveFlash()
 #elif NDIM == 3
     call assertEqual(n_blocks, NXBLK_EX*NYBLK_EX*NZBLK_EX, &
                      "Incorrect total number of blocks")
-
-    call assertEqual(xBlkMin, 0, "Incorrect origin X-coordinate")
-    call assertEqual(yBlkMin, 0, "Incorrect origin Y-coordinate")
-    call assertEqual(zBlkMin, 0, "Incorrect origin Z-coordinate")
-
-    call assertEqual(xBlkMax + 1, NXCELL_EX, &
+    
+    call assertEqual(xBlkMax, NXCELL_EX, &
                      "Incorrect total number of cells along X-axis")
-    call assertEqual(yBlkMax + 1, NYCELL_EX, &
+    call assertEqual(yBlkMax, NYCELL_EX, &
                      "Incorrect total number of cells along Y-axis")
-    call assertEqual(zBlkMax + 1, NZCELL_EX, &
+    call assertEqual(zBlkMax, NZCELL_EX, &
                      "Incorrect total number of cells along Z-axis")
     
     call assertEqual(xMin, XMIN_EX, "Incorrect minimum X-coordinate found")
@@ -411,8 +401,8 @@ subroutine Driver_evolveFlash()
         call itor%blkMetaData(block)
         call Grid_getBlkPtr(block, solnData)
 
-        associate(lo => block%limits(LOW, :), &
-                  hi => block%limits(HIGH, :))
+        associate(lo => block%limitsGC(LOW, :), &
+                  hi => block%limitsGC(HIGH, :))
             do         k = lo(KAXIS), hi(KAXIS)
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)
@@ -435,15 +425,15 @@ subroutine Driver_evolveFlash()
     ! DEV: TODO Apply proper Z-info and test in 3D
     ! Find coordinates of lo/hi
     block%level = 1
-    block%limits(LOW,  :) = [0, 0, 0]
+    block%limits(LOW,  :) = [1, 1, 1]
     call Grid_getSingleCellCoords([1, 1, 1], block, LEFT_EDGE, INTERIOR, c_lo)
-    block%limits(LOW,  :) = [60, 60, 2]
+    block%limits(LOW,  :) = [61, 61, 2]
     call Grid_getSingleCellCoords([4, 4, 4], block, RIGHT_EDGE, INTERIOR, c_hi)
     ! Find coordinates of cell as a guard cell of one block ...
-    block%limits(LOW,  :) = [60, 60, 2]
+    block%limits(LOW,  :) = [61, 61, 2]
     call Grid_getSingleCellCoords([1, 1, 1], block, CENTER, EXTERIOR, c_gc)
     ! and as an interior cell of its neighboring block
-    block%limits(LOW,  :) = [56, 56, 2]
+    block%limits(LOW,  :) = [57, 57, 2]
     call Grid_getSingleCellCoords([3, 3, 3], block, CENTER, INTERIOR, c_itr)
 
     call assertEqual(c_gc(IAXIS), c_itr(IAXIS), "Invalid cell X-coordinate")
@@ -482,7 +472,7 @@ subroutine Driver_evolveFlash()
 
     ! DEV: TODO Implement for different NDIM and with proper Z-info
     ! Check cell coordinates by block starting at lower corner
-    block%limits(LOW, :) = [0, 0, 0]
+    block%limits(LOW, :) = [1, 1, 1]
     call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, .FALSE., &
                             x_coords, SIZE(x_coords))
     call Grid_getCellCoords(JAXIS, block, LEFT_EDGE, .FALSE., &
@@ -493,7 +483,7 @@ subroutine Driver_evolveFlash()
     end do
 
     ! Check cell coordinates by block starting at upper corner
-    block%limits(LOW, :) = [60, 60, 0]
+    block%limits(LOW, :) = [61, 61, 1]
     call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, .FALSE., &
                             x_coords, SIZE(x_coords))
     call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, .FALSE., &
@@ -503,7 +493,7 @@ subroutine Driver_evolveFlash()
         call assertEqual(y_coords(j), YMAX_EX - (4-j)*YDELTA_EX, "Bad Y-coordinate")
     end do
 
-    block%limits(LOW, :) = [60, 60, 0]
+    block%limits(LOW, :) = [61, 61, 1]
     call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, .TRUE., &
                             x_coords_gc, SIZE(x_coords_gc))
     call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, .TRUE., &

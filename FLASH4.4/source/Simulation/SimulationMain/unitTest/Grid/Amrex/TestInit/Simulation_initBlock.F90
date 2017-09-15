@@ -41,8 +41,8 @@ subroutine Simulation_initBlock(initData, block)
     integer :: k = 1
     integer :: var = 1
 
-    associate(lo => block%limits(LOW,  :), &
-              hi => block%limits(HIGH, :))
+    associate(lo => block%limitsGC(LOW,  :), &
+              hi => block%limitsGC(HIGH, :))
         do         k = lo(KAXIS), hi(KAXIS)
             do     j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)

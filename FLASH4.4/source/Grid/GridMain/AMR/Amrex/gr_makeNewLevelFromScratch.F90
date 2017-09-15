@@ -67,16 +67,25 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
 
     do while (mfi%next())
         bx = mfi%tilebox()
-        initData => unk(lev)%dataptr(mfi)
 
         ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
-        block%level = lev
+        ! Level must be 1-based index and limits/limitsGC must be 1-based also
+        ! DEVNOTE: Should we use gr_[ijk]guard here?
+        block%level = lev + 1
         block%grid_index = -1
-        block%limits(LOW,  :) = bx%lo
-        block%limits(HIGH, :) = bx%hi
-        block%limitsGC(LOW, :) = bx%lo - gr_iguard
-        block%limitsGC(HIGH, :) = bx%hi + gr_iguard
+        block%limits(LOW,  :) = 1
+        block%limits(HIGH, :) = 1
+        block%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+        block%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+        block%limitsGC(LOW,  :) = 1
+        block%limitsGC(HIGH, :) = 1
+        block%limitsGC(LOW,  1:NDIM) = block%limits(LOW,  1:NDIM) - NGUARD
+        block%limitsGC(HIGH, 1:NDIM) = block%limits(HIGH, 1:NDIM) + NGUARD
 
+        associate(lo => block%limitsGC(LOW, :))
+            initData(lo(1):, lo(2):, lo(3):, 1:) => unk(lev)%dataptr(mfi)
+        end associate
+ 
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
         !  the total vs. internal energies can cause problems in the eos call that 

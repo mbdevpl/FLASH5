@@ -110,10 +110,11 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
   end if
 #endif
 
-  ! DEVNOTE: TODO This assumes that the index and limits are cell center-based
   associate (x0       => amrex_problo, &
              x_blk_lo => block%limits(LOW, :), &
              dx       => amrex_geom(block%level - 1)%dx)
+    ! x_blk_lo is 1-based cell-index of lower-left cell in block 
+    
     shift = 0.0d0
     if (edge == CENTER) then
       shift = 0.5d0
@@ -122,15 +123,14 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
     end if
 
     ! DEV: Should we use gr_[ijk]guard instead of NGUARD?
-    ! Translate indices to 0-based global indices adjusted according to edge
-    if (beginCount == INTERIOR) then
-      ind_t = (ind - 1         ) + x_blk_lo + shift
-    else
-      ind_t = (ind - 1 - NGUARD) + x_blk_lo + shift
+    ! Translate indices to 1-based global indices adjusted according to edge
+    ind_t = (ind + x_blk_lo - 1) + shift
+    if (beginCount == EXTERIOR) then
+      ind_t = ind_t - NGUARD
     end if
 
     coords(:) = 0.0d0
-    coords(1:NDIM) = x0(1:NDIM) + ind_t(1:NDIM) * dx(1:NDIM)
+    coords(1:NDIM) = x0(1:NDIM) + (ind_t(1:NDIM) - 1) * dx(1:NDIM)
   end associate
  
 end subroutine Grid_getSingleCellCoords_Itor

@@ -209,19 +209,28 @@ contains
    
         box = this%oti%box()
 
-        ! Block descriptor provides FLASH-compliant 1-based level index set
-        blockDesc%grid_index        = this%oti%grid_index()
+        ! Block descriptor provides FLASH-compliant 1-based level index set,
+        ! but AMReX uses 0-based index set.
         blockDesc%level             = this%oti%level() + 1
-        blockDesc%limits(LOW, :)    = box%lo
-        blockDesc%limits(HIGH, :)   = box%hi
+        blockDesc%grid_index        = this%oti%grid_index()
+        ! Block descriptor provides FLASH-compliant 1-based cell index set,
+        ! but AMReX uses 0-based index set.
+        blockDesc%limits(LOW,  :) = 1
+        blockDesc%limits(HIGH, :) = 1
+        blockDesc%limits(LOW,  1:NDIM) = box%lo(1:NDIM) + 1
+        blockDesc%limits(HIGH, 1:NDIM) = box%hi(1:NDIM) + 1
 
         ! DEVNOTE: KW says that box with GC available through newer AMReX
         ! fortran interface.
-        n_guards = 0
+        n_guards(:) = 0
         ! Multifab arrays are 0-based (AMReX) instead of 1-based(FLASH)
         n_guards(1:NDIM) = unk(blockDesc%level-1)%nghost() 
-        blockDesc%limitsGC(LOW,  :) = box%lo - n_guards
-        blockDesc%limitsGC(HIGH, :) = box%hi + n_guards
+        blockDesc%limitsGC(LOW,  :) = 1 
+        blockDesc%limitsGC(HIGH, :) = 1
+        blockDesc%limitsGC(LOW,  1:NDIM) =   blockDesc%limits(LOW,  1:NDIM) &
+                                           - n_guards(1:NDIM)
+        blockDesc%limitsGC(HIGH, 1:NDIM) =   blockDesc%limits(HIGH, 1:NDIM) &
+                                           + n_guards(1:NDIM)
 
         blockDesc%localLimits(LOW, :)   = blockDesc%limits(LOW, :)   - blockDesc%limitsGC(LOW, :) + 1
         blockDesc%localLimits(HIGH, :)  = blockDesc%limits(HIGH, :)  - blockDesc%limitsGC(LOW, :) + 1
