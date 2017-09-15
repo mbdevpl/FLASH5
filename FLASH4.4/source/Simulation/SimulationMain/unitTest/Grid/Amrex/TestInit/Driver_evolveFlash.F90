@@ -47,7 +47,8 @@ subroutine Driver_evolveFlash()
                                       Grid_getGeometry, &
                                       Grid_getDeltas, &
                                       Grid_getMaxRefinement, &
-                                      Grid_getBlkPtr, Grid_releaseBlkPtr
+                                      Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                                      Grid_updateRefinement
     use Grid_data,             ONLY : gr_iguard, gr_jguard, gr_kguard, &
                                       gr_meshMe
     use block_iterator,        ONLY : block_iterator_t
@@ -253,7 +254,7 @@ subroutine Driver_evolveFlash()
         ! DEVNOTE: Should we leave this unittest with simple data
         ! that does not refine so that testing the block structure is easy?
         ! All blocks on coarsest level since no refining
-        call assertEqual(block%level, 1, "Incorrect block level")
+!        call assertEqual(block%level, 1, "Incorrect block level")
 
         ! Check guard cells along all directions
         blkLimits   = block%limits
@@ -502,6 +503,8 @@ subroutine Driver_evolveFlash()
         call assertEqual(x_coords_gc(j), XMAX_EX - (4-j+NGUARD)*XDELTA_EX, "Bad X-coordinate")
         call assertEqual(y_coords_gc(j), YMAX_EX - (4-j+NGUARD)*YDELTA_EX, "Bad Y-coordinate")
     end do
+   
+    call Grid_updateRefinement(5, 1.0d0)
 
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?

@@ -33,6 +33,7 @@ Module Grid_data
   ! Maintain local copies of AMReX-controlled data for optimization
   integer,save :: gr_lRefineMax
   integer,save :: gr_geometry
+  integer,save :: gr_nrefs
   
   integer,save :: gr_maxRefine
   integer, save :: gr_iguard

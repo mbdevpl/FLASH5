@@ -47,8 +47,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     integer :: k = 0
  
     rank = amrex_parallel_myproc()
-    write(*,*) "[Rank ", rank, "] gr_makeNewLevelFromScratch - Start Level ", &
-                lev
+    write(*,*) "[gr_makeNewLevelFromScratch] Start Level ", lev + 1
  
     ba = pba
     dm = pdm
@@ -97,7 +96,6 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
 
     call amrex_mfiter_destroy(mfi)
  
-    write(*,*) "[Rank ", rank, "] gr_makeNewLevelFromScratch - End Level ", &
-                lev
+    write(*,*) "[gr_makeNewLevelFromScratch] Finished Level ", lev + 1
 end subroutine gr_makeNewLevelFromScratch 
 

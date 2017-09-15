@@ -253,6 +253,10 @@ subroutine Grid_init()
      if(gr_domainBC(HIGH, i) /= PERIODIC)     gr_allPeriodic = .FALSE.
   end do
 
+  ! DEV: TODO: Is there a FLASH Grid_*/gr_* interface function to get this?  If
+  ! so, set it up and have it get the value from AMReX
+  call RuntimeParameters_get("nrefs", gr_nrefs)
+
 !----------------------------------------------------------------------------------
 ! Setup all remaining local Grid data variables
 !----------------------------------------------------------------------------------

@@ -189,5 +189,7 @@ subroutine gr_amrex_init()
   end if
 #endif
 #endif
+  
+  write(*,*) "[gr_amrex_init] Finished"
 end subroutine gr_amrex_init
 

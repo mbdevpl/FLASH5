@@ -26,10 +26,10 @@ subroutine gr_remakeLevel(lev, time, pba, pdm) bind(c)
     dm = pdm
  
     rank = amrex_parallel_myproc()
-    write(*,*) "[Rank ", rank, "] gr_remakeLevel - Start Level ", lev
+    write(*,*) "[Rank ", rank, "] gr_remakeLevel - Start Level ", lev + 1
 
     call gr_clearLevel(lev)
 
-    write(*,*) "[Rank ", rank, "] gr_remakeLevel - End Level ", lev
+    write(*,*) "[Rank ", rank, "] gr_remakeLevel - End Level ", lev + 1
 end subroutine gr_remakeLevel 
 

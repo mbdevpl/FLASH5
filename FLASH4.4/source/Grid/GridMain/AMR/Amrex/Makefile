@@ -7,7 +7,8 @@ Grid += amrex_interfaces.o \
         gr_makeNewLevelFromCoarse.o \
         gr_markRefineDerefine.o \
         gr_conserveToPrimitive.o \
-        gr_primitiveToConserve.o
+        gr_primitiveToConserve.o \
+        gr_fillPhysicalBC.o
 
 Grid += gr_amrextInterface.o
 
