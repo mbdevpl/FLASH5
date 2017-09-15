@@ -108,74 +108,70 @@
 #endif
 
 subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
+  use amrex_amrcore_module,  ONLY : amrex_geom
+  use amrex_geometry_module, ONLY : amrex_problo
 
-  use Grid_interface,   ONLY : Grid_getDomainBoundBox, &
-                               Grid_getDeltas, &
-                               Grid_getMaxRefinement
-  use Driver_interface, ONLY : Driver_abortFlash
-  use block_metadata, ONLY : block_metadata_t
+  use Driver_interface,      ONLY : Driver_abortFlash
+  use block_metadata,        ONLY : block_metadata_t
 
 #include "constants.h"
 #include "Flash.h"
 
   implicit none
 
-  integer, intent(in) :: axis, edge
-  type(block_metadata_t) :: block
-  integer, intent(in) :: size
-  logical, intent(in) :: guardcell
-  real,intent(out), dimension(size) :: coordinates
+  integer,                intent(in)  :: axis
+  type(block_metadata_t), intent(in)  :: block
+  integer,                intent(in)  :: edge
+  logical,                intent(in)  :: guardcell
+  integer,                intent(in)  :: size
+  real,                   intent(out) :: coordinates(size)
 
-  integer, dimension(MDIM)::cid,stride
-  integer::first,i
+  real    :: shift = 0.0d0
+  real    :: x = 0.0d0
+  integer :: i = 0
 
-  ! DEVNOTE: Roll back to original version (no cid/stride), or put those in 
-  ! AMReX block metadata
-
-!  cid    = block%cid
-!  stride = block%stride
-!  ! Do some error checking here
-!  
-!
-!#ifdef DEBUG_GRID
-!  print*,' get coordinates', axis, blockID, edge, guardcell,size
+#ifdef DEBUG_GRID
+  print*,' get coordinates', axis, edge, guardcell, size
+  ! DEV: TODO Implement for AMReX
 !  if((blockID<1).or.(blockID>MAXBLOCKS)) then
 !     call Driver_abortFlash("Grid_getCellCoords :invalid blockID ")
 !  end if
-!  if(.not.((edge==LEFT_EDGE).or.(edge==RIGHT_EDGE).or.&
-!       &(edge==CENTER))) then
-!     call Driver_abortFlash("Get Coords : invalid edge specification, must be LEFT_EDGE &
-!          RIGHT_EDGE, or CENTER")
-!  end if
-!
-!!!!  This can be refined further to make it geometry specific
-!
-!  if(.not.((axis==IAXIS).or.(axis==JAXIS).or.(axis==KAXIS))) then
-!     call Driver_abortFlash("Get Coords : invalid axis, must be IAXIS, JAXIS or KAXIS ")
-!  end if
-!  
-!#endif
-!
-!
-!  first=cid(axis)-1
-!  if(guardcell) first=first-stride(axis)*NGUARD
-!  if((edge==CENTER).and.(stride(axis)==1))then
-!     do i = 1,size
-!        coordinates(i)= gr_globalDomain(LOW,axis) + (first+0.5)*gr_delta(axis,gr_maxRefine)
-!        first=first+stride(axis)
-!     end do
-!  else
-!     if(edge==RIGHT_EDGE)first=first+stride(axis)
-!     if((edge==CENTER).and.(stride(axis)>1))first=first+stride(axis)/2
-!     do i = 1,size
-!        coordinates(i)= gr_globalDomain(LOW,axis) + first*gr_delta(axis,gr_maxRefine)
-!        first=first+stride(axis)
-!     end do
-!  end if
-!  return
+  if((edge/=LEFT_EDGE) .and. (edge/=RIGHT_EDGE) .and. (edge/=CENTER)) then
+     call Driver_abortFlash("Get Coords : invalid edge specification, must be LEFT_EDGE &
+          RIGHT_EDGE, or CENTER")
+  end if
+
+  if((axis/=IAXIS) .and. (axis/=JAXIS) .and. (axis/=KAXIS)) then
+     call Driver_abortFlash("Get Coords : invalid axis, must be IAXIS, JAXIS or KAXIS ")
+  end if
+#endif
+
+  ! DEVNOTE: TODO This assumes that the index and limits are cell center-based
+  associate (x0   => amrex_problo(axis), &
+             x_lo => block%limits(LOW, axis), &
+             dx   => amrex_geom(block%level - 1)%dx(axis))
+    shift = 0.0d0
+    if (edge == CENTER) then
+      shift = 0.5d0
+    else if (edge == RIGHT_EDGE) then
+      shift = 1.0d0
+    else if (edge == FACES) then
+      call Driver_abortFlash("[Grid_getCellCoords] - FACES not handled yet")
+    end if
+
+    ! DEV: Should we use gr_[ijk]guard instead of NGUARD?
+    ! First index given in 0-based global indices adjusted according to edge
+    x = x_lo + shift
+    if (guardcell) then
+      x = x - NGUARD
+    end if
+
+    coordinates(:) = 0.0d0
+    do i = 1, size
+        coordinates(i) = x0 + x * dx
+        x = x + 1.0d0
+    end do
+  end associate
+
 end subroutine Grid_getCellCoords
-
-
-
-
 

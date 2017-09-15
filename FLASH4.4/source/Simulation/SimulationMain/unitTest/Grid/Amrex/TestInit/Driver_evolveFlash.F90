@@ -127,6 +127,10 @@ subroutine Driver_evolveFlash()
     real                   :: c_hi(1:MDIM) = 0.0d0
     real                   :: c_gc(1:MDIM) = 0.0d0 
     real                   :: c_itr(1:MDIM) = 0.0d0
+    real                   :: x_coords(4) = 0.0d0
+    real                   :: y_coords(4) = 0.0d0
+    real                   :: x_coords_gc(8) = 0.0d0
+    real                   :: y_coords_gc(8) = 0.0d0
 
     integer :: rank = -1
     integer :: ilev = 0
@@ -427,7 +431,7 @@ subroutine Driver_evolveFlash()
         call itor%next()
     end do
 
-    !!!!! CONFIRM CELL COORDINATE ACCESSOR
+    !!!!! CONFIRM CELL COORDINATE ACCESSORS
     ! DEV: TODO Apply proper Z-info and test in 3D
     ! Find coordinates of lo/hi
     block%level = 1
@@ -475,6 +479,39 @@ subroutine Driver_evolveFlash()
     call assertEqual(c_hi(JAXIS), YMAX_EX, "Invalid cell Y-coordinate")
     call assertEqual(c_hi(KAXIS), ZMAX_EX, "Invalid cell Z-coordinate")
 #endif
+
+    ! DEV: TODO Implement for different NDIM and with proper Z-info
+    ! Check cell coordinates by block starting at lower corner
+    block%limits(LOW, :) = [0, 0, 0]
+    call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, .FALSE., &
+                            x_coords, SIZE(x_coords))
+    call Grid_getCellCoords(JAXIS, block, LEFT_EDGE, .FALSE., &
+                            y_coords, SIZE(y_coords))
+    do j = 1, SIZE(x_coords)
+        call assertEqual(x_coords(j), XMIN_EX + (j-1)*XDELTA_EX, "Bad X-coordinate")
+        call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
+    end do
+
+    ! Check cell coordinates by block starting at upper corner
+    block%limits(LOW, :) = [60, 60, 0]
+    call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, .FALSE., &
+                            x_coords, SIZE(x_coords))
+    call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, .FALSE., &
+                            y_coords, SIZE(y_coords))
+    do j = 1, SIZE(x_coords)
+        call assertEqual(x_coords(j), XMAX_EX - (4-j)*XDELTA_EX, "Bad X-coordinate")
+        call assertEqual(y_coords(j), YMAX_EX - (4-j)*YDELTA_EX, "Bad Y-coordinate")
+    end do
+
+    block%limits(LOW, :) = [60, 60, 0]
+    call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, .TRUE., &
+                            x_coords_gc, SIZE(x_coords_gc))
+    call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, .TRUE., &
+                            y_coords_gc, SIZE(y_coords_gc))
+    do j = 1, SIZE(x_coords_gc)
+        call assertEqual(x_coords_gc(j), XMAX_EX - (4-j+NGUARD)*XDELTA_EX, "Bad X-coordinate")
+        call assertEqual(y_coords_gc(j), YMAX_EX - (4-j+NGUARD)*YDELTA_EX, "Bad Y-coordinate")
+    end do
 
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?
