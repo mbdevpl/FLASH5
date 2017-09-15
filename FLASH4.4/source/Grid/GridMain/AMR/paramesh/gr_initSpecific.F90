@@ -126,6 +126,8 @@ subroutine gr_initSpecific()
   use paramesh_comm_data, ONLY : amr_mpi_meshComm
   use tree, ONLY : lrefine_min, lrefine_max, nfaces, nchild
 
+  use gr_amrextInterface, ONLY : gr_amrextAmrexInit
+
   implicit none
   
   real :: dx, dy, dz
@@ -141,12 +143,19 @@ subroutine gr_initSpecific()
   call RuntimeParameters_get("gr_sanitizeDataMode",  gr_sanitizeDataMode)
   call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
   lrefine_min=gr_minRefine
-  lrefine_max=gr_maxRefine
+  lrefine_max=gr_lrefineMax
+  gr_maxRefine=gr_lrefineMax
 
   amr_mpi_meshComm=gr_meshComm
   call Paramesh_init()
+
+! Determine the geometries of the individual dimensions, and scale
+! angle value parameters that are expressed in degrees to radians.
+! This call must be made after gr_geometry, gr_domainBC, and gr_{j,k}{min,max}
+! have been set based on the corresponding runtime parameters.
   call gr_initGeometry()
 
+  allocate(gr_delta(MDIM,lrefine_max))
   !! calculating deltas for each level of 
   !! refinement and putting them in the
   !! delta variable
@@ -161,20 +170,20 @@ subroutine gr_initSpecific()
 #if NDIM > 2
   rnb(3) = dz/(1.0*NZB*gr_nBlockZ)
 #endif  
-  do i = 1,gr_maxRefine
+  do i = 1,lrefine_max
      gr_delta(1:NDIM,i) = rnb
      gr_delta(NDIM+1:,i) = 0.0
      rnb = rnb/2.0
   end do
 
   gr_minCellSizes(IAXIS) = (gr_imax - gr_imin) / &
-       (gr_nblockX*NXB*2**(gr_maxRefine-1))
+       (gr_nblockX*NXB*2**(lrefine_max-1))
   gr_minCellSize = gr_minCellSizes(IAXIS)
 
 
   if (NDIM >= 2) then
      gr_minCellSizes(JAXIS) = (gr_jmax - gr_jmin) / &
-          (gr_nblockY*NYB*2**(gr_maxRefine-1))
+          (gr_nblockY*NYB*2**(lrefine_max-1))
      if (.not.gr_dirIsAngular(JAXIS)) then
         gr_minCellSize = min(gr_minCellSize,gr_minCellSizes(JAXIS))
      end if
@@ -182,7 +191,7 @@ subroutine gr_initSpecific()
 
   if (NDIM == 3) then
      gr_minCellSizes(KAXIS) = (gr_kmax - gr_kmin) / &
-          (gr_nblockZ*NZB*2**(gr_maxRefine-1))
+          (gr_nblockZ*NZB*2**(lrefine_max-1))
      if (.not. gr_dirIsAngular(KAXIS)) then
         gr_minCellSize = min(gr_minCellSize,gr_minCellSizes(KAXIS))
      end if
@@ -265,6 +274,8 @@ subroutine gr_initSpecific()
 #endif
 
   if(gr_meshMe == MASTER_PE) call printRefinementInfo()
+
+  call gr_amrextAmrexInit()
 
 contains
 
