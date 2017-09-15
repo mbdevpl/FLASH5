@@ -1,0 +1,2 @@
+Setup syntax for 2D Chimera Model:
+./setup CCSN_Chimera -auto -2d +cylindrical -nxb=16 -nyb=16 threadBlockList=False +pm4dev -index-reorder +hdf5 +serialIO -objdir=CCSN_Chimera --with-unit=physics/Hydro/HydroMain/simpleUnsplit
