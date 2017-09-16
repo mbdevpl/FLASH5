@@ -59,8 +59,8 @@ subroutine gr_makeNewLevelFromCoarse(lev, time, pba, pdm) bind(c)
     hi_bc(:, :) = amrex_bc_int_dir
     call amrex_fillcoarsepatch(unk(lev), time,     unk(lev-1),  &
                                          time+0.1, unk(lev-1),  &
-                               amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                amrex_geom(lev-1), gr_fillPhysicalBC,  &
+                               amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                time, &
                                UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                amrex_ref_ratio(lev), amrex_interp_cell_cons, &
