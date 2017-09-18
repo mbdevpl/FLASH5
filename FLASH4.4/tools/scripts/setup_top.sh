@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+# 
 # Create a top-level directory in the current directory, suitable
 # for running large Flash jobs with restarts by multiple people, and
 # with provisions made for preserving run history.
