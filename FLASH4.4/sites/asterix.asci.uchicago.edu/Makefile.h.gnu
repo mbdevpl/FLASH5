@@ -94,6 +94,7 @@ CFLAGS_TEST = -ggdb -O0 -c
 
 
 # if we are using HDF5, we need to specify the path to the include files
+FFLAGS_HDF5 = -I${HDF5_PATH}/include
 CFLAGS_HDF5 = -I${HDF5_PATH}/include -DH5_USE_16_API
 CFLAGS_NCMPI = -I${NCMPI_PATH}/include
 $?$ needed? $?$ CFLAGS_MPI   = -I$(MPI_PATH)/include

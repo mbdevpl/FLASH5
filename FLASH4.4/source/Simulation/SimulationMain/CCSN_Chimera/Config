@@ -27,6 +27,8 @@ REQUESTS IO/IOMain/hdf5
 
 LINKIF Gravity_init.F90.pointmass physics/Gravity/GravityMain/PointMass
 
+DATAFILES d96InitModel.txt
+
 # params for initialization
 
 D chimera_model_file    	Name of input file with chimera model
