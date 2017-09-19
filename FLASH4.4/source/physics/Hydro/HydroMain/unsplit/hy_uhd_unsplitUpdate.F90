@@ -886,9 +886,9 @@
 #if (NSPECIES+NMASS_SCALARS) > 0
   ! Renormalize or limit abundances
     if (hy_irenorm == 1) then
-       call Grid_renormAbundance(block,blkLimits,U)
+       call Grid_renormAbundance(block,blkLimits,Uout)
     else
-       call Grid_limitAbundance(blkLimits,U)
+       call Grid_limitAbundance(blkLimits,Uout)
     endif
 #endif  
 !!$
