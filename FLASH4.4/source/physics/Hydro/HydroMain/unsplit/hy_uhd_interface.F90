@@ -429,13 +429,13 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_unsplit( block,Uin,blkLimitsGC,&
+     subroutine hy_uhd_unsplit( blockDesc,Uin,blkLimitsGC,&
                       Uout,blkLimits,&
                       del,dt, dtOld )
        use block_metadata,   ONLY : block_metadata_t
        implicit none
 
-       type(block_metadata_t), intent(IN) :: block
+       type(block_metadata_t), intent(IN) :: blockDesc
        real,    INTENT(IN) :: dt, dtOld
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
        real, dimension(:,:,:,:),pointer :: Uin
@@ -690,9 +690,11 @@ Module hy_uhd_interface
 
     interface
        subroutine hy_uhd_putGravityUnsplit&
-            (blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
+            (blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
              lastCall)
+         use block_metadata, ONLY : block_metadata_t
          implicit none
+         type(block_metadata_t), intent(IN)   :: blockDesc
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
          real,dimension(:,:,:,:),pointer :: Uin
          integer, dimension(MDIM), intent(IN) :: dataSize

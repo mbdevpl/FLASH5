@@ -33,16 +33,25 @@ Module Gravity_interface
      end subroutine Gravity_accelListOfBlocks
   end interface
 
-  interface
-     subroutine Gravity_accelOneRow (pos,sweepDir,block, numCells, grav, &
+  interface Gravity_accelOneRow
+     subroutine Gravity_accelOneRow_blkid (pos,sweepDir,blockID, numCells, grav, &
            varIndex, extraAccelVars)
-    use block_metadata, ONLY : block_metadata_t
-
        implicit none
-       type(block_metadata_t) :: block
+       integer, intent(IN) :: sweepDir,blockID,numCells
+       integer, dimension(2),INTENT(in) ::pos
+       real, dimension(numCells),INTENT(inout) :: grav
+       integer, intent(IN), optional :: varIndex 
+       integer, intent(IN),OPTIONAL      :: extraAccelVars(MDIM)
+     end subroutine Gravity_accelOneRow_blkid
+     subroutine Gravity_accelOneRow (pos,sweepDir,blockDesc, numCells, grav, Uin,&
+           varIndex, extraAccelVars)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t) :: blockDesc
        integer, intent(IN) :: sweepDir,numCells
        integer, dimension(2),INTENT(in) ::pos
        real, dimension(numCells),INTENT(inout) :: grav
+       real,    POINTER,    OPTIONAL :: Uin(:,:,:,:)
        integer, intent(IN), optional :: varIndex 
        integer, intent(IN),OPTIONAL      :: extraAccelVars(MDIM)
      end subroutine Gravity_accelOneRow
