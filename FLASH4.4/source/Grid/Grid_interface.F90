@@ -302,7 +302,7 @@ Module Grid_interface
      end subroutine Grid_getBlkRefineLevel
   end interface
  
-  interface
+  interface Grid_getCellCoords
      subroutine Grid_getCellCoords_blkid(axis, blockID, edge, guardcell, coordinates, size)
        integer, intent(in) :: axis, edge
        integer, intent(in) :: blockID
