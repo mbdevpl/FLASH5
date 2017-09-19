@@ -28,6 +28,7 @@
 !!
 !!  Dean Townsley 2008
 !!  Contributed to Flash Center at the University of Chicago 2008
+!!  Modified ..., 2017    Flash Center
 !!
 !! ARGUMENTS
 !!
