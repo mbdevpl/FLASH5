@@ -77,7 +77,7 @@
 !!***
 #include "Flash.h"
 #ifdef FLASH_USM_MHD
-!! REORDER(4): B[xyz]
+!! REORDER(4): B[xyz],U
 #endif
 Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
                                      dt,del,ogravX,ogravY,ogravZ,&
