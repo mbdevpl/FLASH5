@@ -208,7 +208,7 @@ Subroutine hy_uhd_unsplit (blockDesc,Uin,blkLimitsGC,&
      end if
 #endif
      
-     call Grid_fillGuardCells(CENTER,ALLDIR)
+!!$     call Grid_fillGuardCells(CENTER,ALLDIR) ! DEV: NONONO!
 !!$     ,doEos=.false.,&
 !!$          maskSize=NUNK_VARS, mask=gcMask,makeMaskConsistent=.false.,&
 !!$          doLogMask=.NOT.gcMaskLogged)
@@ -270,10 +270,11 @@ Subroutine hy_uhd_unsplit (blockDesc,Uin,blkLimitsGC,&
      call Logfile_stampVarMask(hy_gcMask, .TRUE., '[hy_uhd_unsplit]', 'gcNeed')
   end if
 #endif
-  
-  call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.true.,eosMode=hy_eosModeGc,&
-       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,&
-       doLogMask=.NOT.gcMaskLogged)
+
+  ! DEV: NONONO!
+!!$  call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.true.,eosMode=hy_eosModeGc,&
+!!$       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,&
+!!$       doLogMask=.NOT.gcMaskLogged)
   
   
   !! ***************************************************************************
