@@ -61,7 +61,7 @@
 #define DEBUG_GRID_GCMASK
 
 #include "Flash.h"
-Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
+Subroutine hy_uhd_unsplit (blockDesc,Uin,blkLimitsGC,&
                       Uout,blkLimits,&
                       del,dt, dtOld )
 
@@ -129,7 +129,7 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 
 
   !! ---- Argument List ----------------------------------
-  type(block_metadata_t), intent(IN) :: block
+  type(block_metadata_t), intent(IN) :: blockDesc
   real,    INTENT(IN) :: dt, dtOld
   integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
   real, dimension(:,:,:,:),pointer :: Uin
@@ -172,6 +172,10 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
   call Driver_abortFlash("The unsplit Hydro solver only works with PARAMESH 3 or 4!")
 #endif
 
+#ifdef DEBUG_UHD
+  print*,'_unsplit entry: associated(Uin ) is',associated(Uin )
+  print*,'_unsplit entry: associated(Uout) is',associated(Uout)
+#endif
 
 
 #ifdef FLASH_GRID_UG
@@ -322,6 +326,12 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 
   call Timers_stop("Head")
 
+#ifdef DEBUG_UHD
+  print*,'_unsplit bef "LOOP 1": associated(Uin ) is',associated(Uin )
+  print*,'_unsplit bef "LOOP 1": associated(Uout) is',associated(Uout)
+#endif
+
+
 !!$  do i=1,blockCount             !LOOP 1
 !!$
 !!$     blockID = blockList(i)
@@ -381,14 +391,16 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      allocate(gravX(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(gravY(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(gravZ(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+#ifdef DEBUG_UHD
      print*,'came upto this point'
+#endif
      !! ************************************************************************
      !! Get gravity
      gravX = 0.
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_uhd_putGravityUnsplit(blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+        call hy_uhd_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
@@ -407,13 +419,23 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
            hy_SpcSig=0.
         end if
 #endif
+#ifdef DEBUG_UHD
+        print*,'_unsplit bef "call getRiemannState": associated(Uin ) is',associated(Uin )
+        print*,'_unsplit bef "call getRiemannState": associated(Uout) is',associated(Uout)
+#endif
         call Timers_start("RiemannState")
+#ifdef DEBUG_UHD
         print*,'going into RiemannState'
-        call hy_uhd_getRiemannState(block,Uin,blkLimits,blkLimitsGC,dt,del, &
+#endif
+        call hy_uhd_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC,dt,del, &
                                     gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
                                     scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                     hy_SpcR,hy_SpcL,hy_SpcSig)
+#ifdef DEBUG_UHD
         print*,'returning from RiemannState'
+        print*,'_unsplit Aft "call getRiemannState": associated(Uin ) is',associated(Uin )
+        print*,'_unsplit Aft "call getRiemannState": associated(Uout) is',associated(Uout)
+#endif
         call Timers_stop("RiemannState")
         !! DEV: DL-This note seems to be outdated and wrong for the optimized code.
         ! Note: Two different ways of handling gravity:
@@ -439,11 +461,17 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      fly = 0.
      flz = 0.
      call Timers_start("getFaceFlux")
+#ifdef DEBUG_UHD
      print*,'getting face flux'
-     call hy_uhd_getFaceFlux(block,blkLimits,blkLimitsGC,datasize,del,&
+#endif
+     call hy_uhd_getFaceFlux(blockDesc,blkLimits,blkLimitsGC,datasize,del,&
                              flx,fly,flz,&
                              scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
+#ifdef DEBUG_UHD
      print*,'got face flux'
+     print*,'_unsplit Aft "call getFaceFlux": associated(Uin ) is',associated(Uin )
+     print*,'_unsplit Aft "call getFaceFlux": associated(Uout) is',associated(Uout)
+#endif
      call Timers_stop("getFaceFlux")
      !! ************************************************************************
      !! Unsplit update for conservative variables from n to n+1 time step
@@ -459,11 +487,17 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$        end if
      updateMode = UPDATE_ALL
      call Timers_start("unsplitUpdate")
+#ifdef DEBUG_UHD
      print*,'and now update'
-     call hy_uhd_unsplitUpdate(block,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
+#endif
+     call hy_uhd_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
+#ifdef DEBUG_UHD
      print*,'done update'
+     print*,'_unsplit Aft "call unsplitUpdate(UPD_ALL)": associated(Uin ) is',associated(Uin )
+     print*,'_unsplit Aft "call unsplitUpdate(UPD_ALL)": associated(Uout) is',associated(Uout)
+#endif
      call Timers_stop("unsplitUpdate")
 !!$#ifdef FLASH_UHD_3T
 !!$        call Timers_start("unsplitUpdate 3T")
@@ -479,8 +513,12 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
 #ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
         !! Correct energy if necessary
-     call hy_uhd_energyFix(block,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
+     call hy_uhd_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
      
+#ifdef DEBUG_UHD
+     print*,'_unsplit Aft "call energyFix": associated(Uin ) is',associated(Uin )
+     print*,'_unsplit Aft "call energyFix": associated(Uout) is',associated(Uout)
+#endif
      if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
         !! Convert unit
         call hy_uhd_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
@@ -488,6 +526,14 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
      
      !#ifndef FLASH_EOS_GAMMA
      !! Call to Eos
+#ifdef DEBUG_UHD
+     print*,'_unsplit bef Eos_wrapped: associated(Uin ) is',associated(Uin )
+     print*,'_unsplit bef Eos_wrapped: associated(Uout) is',associated(Uout)
+     print*,'_unsplit bef Eos_wrapped: lbound(Uin ):',lbound(Uin )
+     print*,'_unsplit bef Eos_wrapped: ubound(Uin ):',ubound(Uin )
+     print*,'_unsplit bef Eos_wrapped: lbound(Uout):',lbound(Uout)
+     print*,'_unsplit bef Eos_wrapped: ubound(Uout):',ubound(Uout)
+#endif
      call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
      !#endif
 #endif /* ifndef GRAVITY */  
@@ -516,11 +562,11 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$              endif
 !!$           endif
 !!$        else ! Cartesian geometry
-!!$     call Grid_putFluxData(block,IAXIS,flx,datasize)
+!!$     call Grid_putFluxData(blockDesc,IAXIS,flx,datasize)
 !!$     if (NDIM > 1) then
-!!$        call Grid_putFluxData(block,JAXIS,fly,datasize)
+!!$        call Grid_putFluxData(blockDesc,JAXIS,fly,datasize)
 !!$        if (NDIM > 2) then
-!!$           call Grid_putFluxData(block,KAXIS,flz,datasize)
+!!$           call Grid_putFluxData(blockDesc,KAXIS,flz,datasize)
 !!$        endif
 !!$     endif
 !!$     
@@ -580,7 +626,7 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$        gravY = 0.
 !!$        gravZ = 0.
 !!$        if (hy_useGravity) then
-!!$           call hy_uhd_putGravityUnsplit(block,Uout,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ)
+!!$           call hy_uhd_putGravityUnsplit(blockDesc,Uout,blkLimitsGC,dataSize,dt,dtOld,gravX,gravY,gravZ)
 !!$           gravX = gravX/hy_gref
 !!$           gravY = gravY/hy_gref
 !!$           gravZ = gravZ/hy_gref
@@ -638,7 +684,7 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$           call Grid_getFluxData(blockID,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
 !!$
 !!$        else
-!!$           call Grid_getFluxData(block,IAXIS,flx,datasize)
+!!$           call Grid_getFluxData(blockDesc,IAXIS,flx,datasize)
 !!$        endif
 !!$
 !!$#if NDIM > 1
@@ -647,7 +693,7 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$                                (/1,1,1/), faceAreas, datasize)
 !!$           call Grid_getFluxData(blockID,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
 !!$        else
-!!$           call Grid_getFluxData(block,JAXIS,fly,datasize)
+!!$           call Grid_getFluxData(blockDesc,JAXIS,fly,datasize)
 !!$        endif
 !!$#if NDIM > 2
 !!$        if (hy_geometry /= CARTESIAN) then
@@ -675,7 +721,7 @@ Subroutine hy_uhd_unsplit (block,Uin,blkLimitsGC,&
 !!$           updateMode=UPDATE_ALL
 !!$        endif
 !!$        call Timers_start("unsplitUpdate")
-!!$        call hy_uhd_unsplitUpdate(block,updateMode,dt,del,datasize,blkLimits,&
+!!$        call hy_uhd_unsplitUpdate(blockDesc,updateMode,dt,del,datasize,blkLimits,&
 !!$                                  blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
 !!$                                  scrch_Ptr)
 !!$        call Timers_stop("unsplitUpdate")
