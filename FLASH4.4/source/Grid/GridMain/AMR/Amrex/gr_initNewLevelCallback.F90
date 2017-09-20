@@ -62,7 +62,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, gr_iguard)
 
     ! Write initial data across domain at coarsest level
-    call amrex_mfiter_build(mfi, unk(lev))
+    call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
 
     do while (mfi%next())
         bx = mfi%tilebox()
@@ -89,7 +89,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
         !  but don't initialize all data in Simulation_initBlock... in particular
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.
-        initData = 0.0
+        initData = 0.0d0
         call Simulation_initBlock(initData, block)
         nullify(initData)
     end do
