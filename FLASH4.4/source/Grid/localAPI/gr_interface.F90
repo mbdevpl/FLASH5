@@ -168,6 +168,14 @@ module gr_interface
   end interface
 
   interface
+     subroutine gr_markRefineDerefine(error, refine_cutoff,derefine_cutoff)
+       implicit none
+       real, intent(IN) :: refine_cutoff, derefine_cutoff
+       real, intent(IN) :: error(MAXBLOCKS)
+     end subroutine gr_markRefineDerefine
+  end interface
+  
+  interface
      subroutine gr_updateRefinement( gridChanged)
        implicit none
        logical, intent(out),OPTIONAL :: gridChanged

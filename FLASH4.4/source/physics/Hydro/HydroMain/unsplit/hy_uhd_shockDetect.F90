@@ -29,7 +29,7 @@
 !!
 !!***
 
-!!REORDER(4): U
+!!REORDER(4): Uin,Uout
 
 Subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
 
