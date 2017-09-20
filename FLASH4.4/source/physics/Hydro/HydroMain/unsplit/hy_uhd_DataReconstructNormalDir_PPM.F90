@@ -68,6 +68,8 @@
 !!
 !!***
 
+!! REORDER(2): Data1D
+
 Subroutine hy_uhd_DataReconstructNormalDir_PPM&
      (dir,dt,delta,Data1D,DataGrav1D,&
       FlatCoeff,TransUpdateOnly, &
