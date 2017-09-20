@@ -51,7 +51,7 @@ Subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
 
   !! ---- Argument List ----------------------------------
   integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
-  real, dimension(:,:,:,:),INTENT(INOUT) :: Uin
+  real, dimension(:,:,:,:),INTENT(IN) :: Uin
   real,dimension(:,:,:,:),INTENT(OUT) :: Uout
   real,dimension(MDIM),INTENT(IN) :: del
   !! -----------------------------------------------------

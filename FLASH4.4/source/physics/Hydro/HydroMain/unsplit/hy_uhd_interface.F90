@@ -49,10 +49,11 @@ Module hy_uhd_interface
        integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
        real,    intent(IN)   :: dt
        real,    intent(IN),dimension(MDIM) :: del
-       real, dimension(blkLimitsGC(HIGH,IAXIS),  &
-                       blkLimitsGC(HIGH,JAXIS),  &
-                       blkLimitsGC(HIGH,KAXIS)), &
-                       intent(IN) :: ogravX,ogravY,ogravZ
+!!$       real, dimension(blkLimitsGC(HIGH,IAXIS),  &
+!!$                       blkLimitsGC(HIGH,JAXIS),  &
+!!$                       blkLimitsGC(HIGH,KAXIS)), &
+!!$                       intent(IN) :: ogravX,ogravY,ogravZ
+  real, dimension(:,:,:), intent(IN) :: ogravX,ogravY,ogravZ
        real,pointer,dimension(:,:,:,:)::U
        real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
@@ -738,7 +739,7 @@ Module hy_uhd_interface
        subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
        implicit none
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
-       real, dimension(:,:,:,:),INTENT(INOUT) :: Uin
+       real, dimension(:,:,:,:),INTENT(IN) :: Uin
        real,dimension(:,:,:,:),INTENT(OUT) :: Uout
        real,dimension(MDIM),INTENT(IN) :: del
      end subroutine hy_uhd_shockDetect
