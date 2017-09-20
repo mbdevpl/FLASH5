@@ -168,6 +168,17 @@ module gr_interface
   end interface
 
   interface
+     subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       real,intent(INOUT) :: error
+       type(block_metadata_t),intent(IN) :: blockDesc
+       integer, intent(IN) :: iref
+       real, intent(IN) ::  refine_filter
+     end subroutine gr_estimateBlkError
+  end interface
+  
+  interface
      subroutine gr_markRefineDerefine(error, refine_cutoff,derefine_cutoff)
        implicit none
        real, intent(IN) :: refine_cutoff, derefine_cutoff

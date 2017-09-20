@@ -161,7 +161,7 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, beginCount, point, cellvolume)
  
   blockID = blockDesc%id
   level = blockDesc%level
-  if (level < 1 .OR. blockID < 1) then
+  if (level < 1) then
      call Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
      return
   end if
