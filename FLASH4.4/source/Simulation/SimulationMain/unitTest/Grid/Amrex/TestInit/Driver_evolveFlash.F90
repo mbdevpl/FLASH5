@@ -503,8 +503,6 @@ subroutine Driver_evolveFlash()
         call assertEqual(x_coords_gc(j), XMAX_EX - (4-j+NGUARD)*XDELTA_EX, "Bad X-coordinate")
         call assertEqual(y_coords_gc(j), YMAX_EX - (4-j+NGUARD)*YDELTA_EX, "Bad Y-coordinate")
     end do
-   
-    call Grid_updateRefinement(5, 1.0d0)
 
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?
