@@ -1,4 +1,4 @@
-subroutine gr_markRefineDerefine(lev, tags, time, tagval, clearval) bind(c)
+subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind(c)
    use iso_c_binding
    use amrex_fort_module,      ONLY : wp => amrex_real
    use amrex_box_module,       ONLY : amrex_box
@@ -72,6 +72,6 @@ subroutine gr_markRefineDerefine(lev, tags, time, tagval, clearval) bind(c)
    end do
    call amrex_mfiter_destroy(mfi)
 
-   write(*,*) "[gr_markRefineDerefine] on level ", lev + 1
-end subroutine gr_markRefineDerefine
+   write(*,*) "[gr_markRefineDerefineCallback] on level ", lev + 1
+end subroutine gr_markRefineDerefineCallback
 

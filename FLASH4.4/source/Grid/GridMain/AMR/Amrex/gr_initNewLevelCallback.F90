@@ -1,4 +1,4 @@
-subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
+subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use iso_c_binding
     use amrex_fort_module,      ONLY : wp => amrex_real
     use amrex_amr_module,       ONLY : amrex_geom, &
@@ -14,7 +14,7 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     
     use gr_physicalMultifabs,   ONLY : unk, &
                                        facevarx, facevary, facevarz
-    use amrex_interfaces,       ONLY : gr_clearLevel
+    use amrex_interfaces,       ONLY : gr_clearLevelCallback
     use block_metadata,         ONLY : block_metadata_t
     use Simulation_interface,   ONLY : Simulation_initBlock
     use Grid_data,              ONLY : gr_iguard
@@ -47,12 +47,12 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
     integer :: k = 0
  
     rank = amrex_parallel_myproc()
-    write(*,*) "[gr_makeNewLevelFromScratch] Start Level ", lev + 1
+    write(*,*) "[gr_initNewLevelCallback] Start Level ", lev + 1
  
     ba = pba
     dm = pdm
 
-    call gr_clearLevel(lev)
+    call gr_clearLevelCallback(lev)
 
     ! Create FABS for storing physical data at coarsest level
     call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, gr_iguard)
@@ -96,6 +96,6 @@ subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
 
     call amrex_mfiter_destroy(mfi)
  
-    write(*,*) "[gr_makeNewLevelFromScratch] Finished Level ", lev + 1
-end subroutine gr_makeNewLevelFromScratch 
+    write(*,*) "[gr_initNewLevelCallback] Finished Level ", lev + 1
+end subroutine gr_initNewLevelCallback
 

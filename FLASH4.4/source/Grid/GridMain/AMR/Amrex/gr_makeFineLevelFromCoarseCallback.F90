@@ -1,4 +1,4 @@
-subroutine gr_makeNewLevelFromCoarse(lev, time, pba, pdm) bind(c)
+subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use iso_c_binding
     use amrex_fort_module,         ONLY : wp => amrex_real
     use amrex_amrcore_module,      ONLY : amrex_ref_ratio, &
@@ -10,7 +10,7 @@ subroutine gr_makeNewLevelFromCoarse(lev, time, pba, pdm) bind(c)
     use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
-    use amrex_interfaces,          ONLY : gr_clearLevel, &
+    use amrex_interfaces,          ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use Grid_data,                 ONLY : gr_iguard
     use gr_physicalMultifabs,      ONLY : unk, &
@@ -32,13 +32,13 @@ subroutine gr_makeNewLevelFromCoarse(lev, time, pba, pdm) bind(c)
     integer :: lo_bc(NDIM, 1)
     integer :: hi_bc(NDIM, 1)
 
-    write(*,*) "[gr_makeNewLevelFromCoarse] Start on level ", lev + 1
+    write(*,*) "[gr_makeFineLevelFromCoarseCallback] Start on level ", lev + 1
 
     ba = pba
     dm = pdm
 
     !!!!!----- (Re)create FABS for storing physical data at this level
-    call gr_clearLevel(lev)
+    call gr_clearLevelCallback(lev)
     call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, gr_iguard)
     ! DEVNOTE: TODO Create these wrt proper face-centered boxes
     call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, gr_iguard)
@@ -66,6 +66,6 @@ subroutine gr_makeNewLevelFromCoarse(lev, time, pba, pdm) bind(c)
                                amrex_ref_ratio(lev), amrex_interp_cell_cons, &
                                lo_bc, hi_bc)
 
-    write(*,*) "[gr_makeNewLevelFromCoarse] Finished on level ", lev + 1
-end subroutine gr_makeNewLevelFromCoarse
+    write(*,*) "[gr_makeFineLevelFromCoarseCallback] Finished on level ", lev + 1
+end subroutine gr_makeFineLevelFromCoarseCallback
 

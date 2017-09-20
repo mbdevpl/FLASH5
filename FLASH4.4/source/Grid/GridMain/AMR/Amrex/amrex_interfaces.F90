@@ -14,7 +14,7 @@ module amrex_interfaces
       end interface
       
       interface
-         subroutine gr_makeNewLevelFromScratch(lev, time, pba, pdm) bind(c)
+         subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
             use iso_c_binding
             use amrex_fort_module, ONLY : wp => amrex_real
             implicit none
@@ -22,11 +22,11 @@ module amrex_interfaces
             real(wp),    intent(in), value :: time
             type(c_ptr), intent(in), value :: pba
             type(c_ptr), intent(in), value :: pdm
-         end subroutine gr_makeNewLevelFromScratch 
+         end subroutine gr_initNewLevelCallback
       end interface
  
       interface
-         subroutine gr_makeNewLevelFromCoarse(lev, time, pba, pdm) bind(c)
+         subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
             use iso_c_binding
             use amrex_fort_module, ONLY : wp => amrex_real
             implicit none
@@ -34,11 +34,11 @@ module amrex_interfaces
             real(wp),    intent(in), value :: time
             type(c_ptr), intent(in), value :: pba
             type(c_ptr), intent(in), value :: pdm
-         end subroutine gr_makeNewLevelFromCoarse 
+         end subroutine gr_makeFineLevelFromCoarseCallback
       end interface
  
       interface
-         subroutine gr_remakeLevel(lev, time, pba, pdm) bind(c)
+         subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
             use iso_c_binding
             use amrex_fort_module, ONLY : wp => amrex_real
             implicit none
@@ -46,18 +46,18 @@ module amrex_interfaces
             real(wp),    intent(in), value :: time
             type(c_ptr), intent(in), value :: pba
             type(c_ptr), intent(in), value :: pdm
-         end subroutine gr_remakeLevel 
+         end subroutine gr_remakeLevelCallback
       end interface 
  
       interface
-         subroutine gr_clearLevel(lev) bind(c)
+         subroutine gr_clearLevelCallback(lev) bind(c)
             implicit none
             integer, intent(in), value :: lev
-         end subroutine gr_clearLevel
+         end subroutine gr_clearLevelCallback
       end interface
  
       interface
-         subroutine gr_markRefineDerefine(lev, tags, time, &
+         subroutine gr_markRefineDerefineCallback(lev, tags, time, &
                                           tagval, clearval) bind(c)
             use iso_c_binding
             use amrex_fort_module, ONLY : wp => amrex_real
@@ -67,7 +67,7 @@ module amrex_interfaces
             real(wp),          intent(in), value :: time
             character(c_char), intent(in), value :: tagval
             character(c_char), intent(in), value :: clearval
-         end subroutine gr_markRefineDerefine
+         end subroutine gr_markRefineDerefineCallback
       end interface
 
       interface

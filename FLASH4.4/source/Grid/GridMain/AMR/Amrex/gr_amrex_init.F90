@@ -12,11 +12,11 @@ subroutine gr_amrex_init()
                                           amrex_parmparse_destroy
   use amrex_geometry_module,       ONLY : amrex_pmask
   use amrex_octree_module,         ONLY : amrex_octree_init
-  use amrex_interfaces,            ONLY : gr_makeNewLevelFromScratch, &
-                                          gr_makeNewLevelFromCoarse, &
-                                          gr_remakeLevel, &
-                                          gr_clearLevel, &
-                                          gr_markRefineDerefine
+  use amrex_interfaces,            ONLY : gr_initNewLevelCallback, &
+                                          gr_makeFineLevelFromCoarseCallback, &
+                                          gr_remakeLevelCallback, &
+                                          gr_clearLevelCallback, &
+                                          gr_markRefineDerefineCallback
   use gr_physicalMultifabs,        ONLY : unk, &
                                           facevarx, facevary, facevarz
 
@@ -150,11 +150,11 @@ subroutine gr_amrex_init()
   call amrex_amrcore_init()
  
   !!!!!----- REGISTER REFINE CALLBACKS WITH AMReX
-  call amrex_init_virtual_functions(gr_makeNewLevelFromScratch, &
-                                    gr_makeNewLevelFromCoarse, &
-                                    gr_remakeLevel, &
-                                    gr_clearLevel, &
-                                    gr_markRefineDerefine)
+  call amrex_init_virtual_functions(gr_initNewLevelCallback, &
+                                    gr_makeFineLevelFromCoarseCallback, &
+                                    gr_remakeLevelCallback, &
+                                    gr_clearLevelCallback, &
+                                    gr_markRefineDerefineCallback)
 
   !!!!!----- ALLOCATE DATA STRUCTURES
   ! multifabs 
