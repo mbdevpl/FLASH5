@@ -81,9 +81,9 @@ subroutine Simulation_initBlock(solnData,block)
   sizeY = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
   sizeZ = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
   
-  allocate(xCenter(sizeX))
-  allocate(yCenter(sizeY))
-  allocate(zCenter(sizeZ))
+  allocate(xCenter( blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS) ))
+  allocate(yCenter( blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS) ))
+  allocate(zCenter( blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS) ))
   
   zCenter=0.0
   yCenter=0.0
