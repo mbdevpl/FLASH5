@@ -310,7 +310,7 @@ subroutine Grid_init()
 !  gr_eosModeNow = gr_eosModeInit ! may change after initialization is done
 !
 !  call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
-!  gr_justExchangedGC = .false.
+  gr_justExchangedGC = .FALSE.
 
   !! This section of the code identifies the variables to used in
   !! the refinement criterion. If a variable is a refinement variable
