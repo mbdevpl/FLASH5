@@ -58,7 +58,10 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
       ! DEVNOTE: Should we use gr_[ijk]guard here?
       blockDesc%level = lev + 1
-      blockDesc%grid_index = mfi%grid_index() ! DEVNOTE: We can use this in AMREX or AMREXTRANSITION mode
+      ! DEVNOTE: FIXME This is not in the master AMReX branch yet.  The value is
+      ! important here.
+!      blockDesc%grid_index = mfi%grid_index() ! DEVNOTE: We can use this in AMREX or AMREXTRANSITION mode
+      blockDesc%grid_index = -1
       blockDesc%limits(LOW,  :) = 1
       blockDesc%limits(HIGH, :) = 1
       blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
