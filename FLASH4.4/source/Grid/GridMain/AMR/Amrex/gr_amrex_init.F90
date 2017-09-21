@@ -134,8 +134,9 @@ subroutine gr_amrex_init()
                                 NYB * nBlockY, &
                                 NZB * nBlockZ])
 
-  call pp_amr%add   ("max_grid_size", 4)
-  call pp_amr%add   ("blocking_factor", 2)
+  ! DEV: TODO: Set this appropriately based on N[XYZ]B
+  call pp_amr%add   ("max_grid_size", MIN(NXB, NYB)) 
+  call pp_amr%add   ("blocking_factor", 2*MIN(NXB, NYB))
 !  call pp_amr%add   ("n_proper", )
 !  call pp_amr%add   ("grid_eff", ._wp)
 !  call pp_amr%add   ("n_error_buf", )

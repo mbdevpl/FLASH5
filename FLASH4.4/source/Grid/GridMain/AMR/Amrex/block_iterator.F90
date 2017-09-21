@@ -173,7 +173,8 @@ contains
         if (this%level /= INVALID_LEVEL) then
             ! Search for leaves on given level
             do while (this%is_itor_valid)
-                if (this%oti%level() == this%level) then
+                ! oti has 0-based level indexing, while this has 1-based
+                if (this%oti%level() == (this%level - 1)) then
                     exit
                 end if
 
