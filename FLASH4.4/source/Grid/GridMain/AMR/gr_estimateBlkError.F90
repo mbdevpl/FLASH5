@@ -35,31 +35,32 @@
 
 !!REORDER(4): solnData
 
+#include "Flash.h"
+
 subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
 
   use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
-       gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
+       gr_meshComm, gr_meshMe,gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBC, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr
+#ifndef FLASH_GRID_ANYAMREX
+  use Grid_interface, ONLY : Grid_getDeltas
+  use gr_specificData, ONLY : gr_oneBlock
+  use Grid_data, ONLY: gr_delta
+#endif
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
-#include "Flash_mpi.h"
-#include "Flash.h"
 #include "constants.h"  
-#ifdef INDEXREORDER
-  integer,parameter::IX=1,IY=2,IZ=3
-#else
-  integer,parameter::IX=2,IY=3,IZ=4
-#endif  
+
   integer, intent(IN) :: iref
   type(block_metadata_t),intent(IN) :: blockDesc
   real, intent(IN) ::  refine_filter
   real,intent(INOUT) :: error
   integer, parameter :: SQNDIM = NDIM*NDIM
   
-  real,dimension(MDIM) ::  del, del_f, psize
+  real,dimension(MDIM) ::  del, del_f, delta
   integer,dimension(MDIM) :: ncell
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC,face,bdry
   real,allocatable,dimension(:,:,:,:)::delu,delua
@@ -114,8 +115,10 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
 #define YCOORD(I) (yCenter(I))
 #endif
 
-     blkLevel    = blockDesc%level
+#ifndef FLASH_GRID_ANYAMREX
      blkID       = blockDesc%id
+#endif
+     blkLevel    = blockDesc%level
      blkLimits   = blockDesc%limits
      blkLimitsGC = blockDesc%limitsGC
      call Grid_getBlkPtr(blockDesc, solnData, CENTER)
@@ -125,8 +128,12 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
 
         del=0.0
         ncell(:)=blkLimits(HIGH,:)-blkLimits(LOW,:)+1
-        psize(:)=ncell(:)*gr_delta(:,blkLevel)
-        del(IAXIS:NDIM) = 0.5e0*float(ncell(IAXIS:NDIM))/psize(IAXIS:NDIM)
+#ifdef FLASH_GRID_ANYAMREX
+        call Grid_getDeltas(blkLevel,delta)
+#else
+        delta(:) = gr_delta(:,blkLevel)
+#endif
+        del(IAXIS:NDIM) = 0.5e0/delta(IAXIS:NDIM)
         del_f(JAXIS:NDIM) = del(JAXIS:NDIM)
         allocate(delu(NDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
              blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
