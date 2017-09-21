@@ -33,7 +33,9 @@
 !! 
 !!***
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
+#include "constants.h"
+
+subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
                                 potentialIndex, extraAccelVars)
 
 !=======================================================================
@@ -46,7 +48,6 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
   implicit none
 
 #include "Flash.h"
-#include "constants.h"
 
   integer, intent(IN) :: sweepDir,blockID,numCells
   integer, dimension(2),INTENT(in) ::pos
@@ -57,14 +58,8 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
 !==========================================================================
 
 
-#ifdef FIXEDBLOCKSIZE
-  real,dimension(GRID_KHI_GC) :: zCenter
-  real,dimension(GRID_JHI_GC) :: yCenter
-  real,dimension(GRID_IHI_GC) :: xCenter
-#else
   real,allocatable,dimension(:) ::xCenter,yCenter,zCenter
   integer, dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
-#endif
   real :: dr32, tmpdr32
 
   integer :: sizeX,sizeY,sizez
@@ -78,19 +73,12 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
 
   j=pos(1)
   k=pos(2)
-#ifndef FIXEDBLOCKSIZE
-  call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
-  sizeX=blkLimitsGC(HIGH,IAXIS)
-  sizeY=blkLimitsGC(HIGH,JAXIS)
-  sizeZ=blkLimitsGC(HIGH,KAXIS)
+  sizeX=numCells
+  sizeY=numCells
+  sizeZ=numCells
   allocate(xCenter(sizeX))
   allocate(yCenter(sizeY))
   allocate(zCenter(sizeZ))
-#else
-  sizeX=GRID_IHI_GC
-  sizeY=GRID_JHI_GC
-  sizeZ=GRID_KHI_GC
-#endif
   zCenter = 0.
   yCenter = 0.
   if (NDIM == 3) then 
@@ -102,6 +90,116 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
      yCenter = yCenter - grv_ptypos
   endif
   call Grid_getCellCoords(IAXIS, blockID, CENTER, gcell, xCenter, sizeX)
+  xCenter = xCenter - grv_ptxpos
+  
+
+  if (sweepDir .eq. SWEEP_X) then                       ! x-component
+
+     tmpdr32 = yCenter(j)*yCenter(j) + zCenter(k)*zCenter(k) 
+
+     do ii = 1, numCells
+
+        dr32 = sqrt(xCenter(ii)*xCenter(ii) + tmpdr32)
+        dr32 = dr32*dr32*dr32
+
+        grav(ii) = grv_factor*xCenter(ii)/dr32
+     enddo
+
+
+  else if (sweepDir .eq. SWEEP_Y) then          ! y-component
+
+     tmpdr32 = xCenter(j)*xCenter(j) + zCenter(k)*zCenter(k) 
+
+     do ii = 1, numCells
+        
+        dr32 = sqrt(yCenter(ii)*yCenter(ii) + tmpdr32)
+        dr32 = dr32*dr32*dr32
+
+        grav(ii) = grv_factor*yCenter(ii)/dr32
+     enddo
+
+  else if (sweepDir .eq. SWEEP_Z) then          ! z-component
+
+     tmpdr32 = xCenter(j)*xCenter(j) + yCenter(k)*yCenter(k) 
+
+     do ii = 1, numCells
+        
+        dr32 = sqrt(zCenter(ii)*zCenter(ii) + tmpdr32)           
+        dr32 = dr32*dr32*dr32
+        
+        grav(ii) = grv_factor*zCenter(ii)/dr32
+     enddo
+
+  endif
+
+!==============================================================================
+#ifndef FIXEDBLOCKSIZE
+  deallocate(xCenter)
+  deallocate(yCenter)
+  deallocate(zCenter)
+#endif
+
+  return
+
+end subroutine Gravity_accelOneRow_blkid
+
+subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
+                                potentialIndex, extraAccelVars)
+
+!=======================================================================
+
+  use Gravity_data, ONLY: grv_ptxpos, grv_ptypos, grv_ptzpos, grv_factor, &
+       useGravity
+  use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
+    Grid_getCellCoords
+  use block_metadata, ONLY : block_metadata_t
+  implicit none
+
+#include "Flash.h"
+
+  type(block_metadata_t) :: blockDesc
+  integer, intent(IN) :: sweepDir,numCells
+  integer, dimension(2),INTENT(in) ::pos
+  real, dimension(numCells),INTENT(inout) :: grav
+  real,   POINTER,   OPTIONAL :: Uin(:,:,:,:)
+  integer,intent(IN),optional :: potentialIndex
+  integer,intent(IN),OPTIONAL :: extraAccelVars(MDIM)
+
+!==========================================================================
+
+
+  real,allocatable,dimension(:) ::xCenter,yCenter,zCenter
+  integer, dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
+  real :: dr32, tmpdr32
+
+  integer :: sizeX,sizeY,sizez
+
+  integer :: ii,j,k
+  logical :: gcell = .true.
+
+!==============================================================================
+
+  if (.NOT.useGravity) return
+
+  j=pos(1)
+  k=pos(2)
+  sizeX=numCells
+  sizeY=numCells
+  sizeZ=numCells
+  allocate(xCenter(sizeX))
+  allocate(yCenter(sizeY))
+  allocate(zCenter(sizeZ))
+  zCenter = 0.
+  yCenter = 0.
+  if (NDIM == 3) then 
+     call Grid_getCellCoords(KAXIS, blockDesc, CENTER, gcell, zCenter, sizeZ)
+     zCenter = zCenter - grv_ptzpos
+  endif
+  if (NDIM >= 2) then
+     call Grid_getCellCoords(JAXIS, blockDesc, CENTER, gcell, yCenter, sizeY)
+     yCenter = yCenter - grv_ptypos
+  endif
+  call Grid_getCellCoords(IAXIS, blockDesc, CENTER, gcell, xCenter, sizeX)
   xCenter = xCenter - grv_ptxpos
   
 

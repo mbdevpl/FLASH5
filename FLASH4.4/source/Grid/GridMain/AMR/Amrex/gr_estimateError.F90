@@ -35,15 +35,15 @@
 !!
 !!***
 
-!!REORDER(4): solnData
-
+! DEVNOTE: Need REORDER directive for solnData?
 subroutine gr_estimateError(error, iref, refine_filter)
 
-  use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
-       gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
+  use Grid_data, ONLY: gr_maxRefine, &
+       gr_meshComm, gr_meshMe, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBC, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr
-!  use gr_specificData, ONLY : gr_oneBlock
+                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getDeltas, &
+                             Grid_getGeometry
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
@@ -61,7 +61,8 @@ subroutine gr_estimateError(error, iref, refine_filter)
   real, intent(IN) ::  refine_filter
   real,intent(INOUT) :: error(MAXBLOCKS)
   integer, parameter :: SQNDIM = NDIM*NDIM
-  
+ 
+  integer :: geometry
   real,dimension(MDIM) ::  del, del_f, psize
   integer,dimension(MDIM) :: ncell
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC,face,bdry
@@ -86,6 +87,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
   integer :: blkLevel, blkID
   integer:: ib, maxLev
 
+  call Grid_getGeometry(geometry)
 !==============================================================================
 
 ! A non-directional guardcell fill for CENTER (and also EOS calls for
@@ -148,7 +150,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
 !           do j = blkLimitsGC(LOW,JAXIS)+K2D*1,blkLimitsGC(HIGH,JAXIS)-K2D*1
 !              do i = blkLimitsGC(LOW,IAXIS)+1,blkLimitsGC(HIGH,IAXIS)-1
 !                 
-!                 if (gr_geometry == SPHERICAL) &
+!                 if (geometry == SPHERICAL) &
 !                      del(IAXIS) = 1.0/(XCOORD(i+1) - XCOORD(i-1))
 !                 
 !                 ! d/dx
@@ -161,7 +163,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
 !                 
 !#if N_DIM >= 2
 !                 ! d/dy
-!                 if ((gr_geometry == SPHERICAL) .or. (gr_geometry == POLAR)) then
+!                 if ((geometry == SPHERICAL) .or. (geometry == POLAR)) then
 !                    del_f(JAXIS) = del(JAXIS)/XCOORD(i)
 !                 end if
 !                 
@@ -175,10 +177,10 @@ subroutine gr_estimateError(error, iref, refine_filter)
 !                 
 !#if N_DIM == 3
 !                 ! d/dz
-!                 if (gr_geometry == SPHERICAL) then
+!                 if (geometry == SPHERICAL) then
 !                    del_f(KAXIS) = del(KAXIS)/(  XCOORD(i) &
 !                         &    * sin(YCOORD(j))  )
-!                 else if (gr_geometry == CYLINDRICAL) then
+!                 else if (geometry == CYLINDRICAL) then
 !                    del_f(KAXIS) = del(KAXIS)/XCOORD(i)
 !                 end if
 !                 delu(3,i,j,k) = solnData(iref,i,j,k+1) -  solnData(iref,i,j,k-1)
@@ -224,7 +226,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
 !           do j = bstart(JAXIS),bend(JAXIS)
 !              do i = bstart(IAXIS),bend(IAXIS)
 !                 
-!                 if (gr_geometry == SPHERICAL) &
+!                 if (geometry == SPHERICAL) &
 !                      del(IAXIS) = 1.0/(XCOORD(i+1) - XCOORD(i-1))
 !                 
 !                 ! d/dxdx
@@ -238,7 +240,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
 !                 delu4(1) = delu4(1)*del(IAXIS)
 !                 
 !#if N_DIM >= 2
-!                 if ((gr_geometry == SPHERICAL) .or. (gr_geometry == POLAR)) then
+!                 if ((geometry == SPHERICAL) .or. (geometry == POLAR)) then
 !                    del_f(JAXIS) = del(JAXIS)/XCOORD(i)
 !                 end if
 !                 
@@ -275,10 +277,10 @@ subroutine gr_estimateError(error, iref, refine_filter)
 !#endif
 !                 
 !#if N_DIM == 3
-!                 if (gr_geometry == SPHERICAL) then
+!                 if (geometry == SPHERICAL) then
 !                    del_f(KAXIS) = del(KAXIS)/(  XCOORD(i) &
 !                         &    * sin(YCOORD(j))  )
-!                 else if (gr_geometry == CYLINDRICAL) then
+!                 else if (geometry == CYLINDRICAL) then
 !                    del_f(KAXIS) = del(KAXIS)/XCOORD(i)
 !                 end if
 !                 

@@ -56,13 +56,14 @@
 !!***
 
 subroutine Grid_getBlkPtr(blockID, blkPtr, gridDataStruct)
+  use Driver_interface, ONLY : Driver_abortFlash
+
   implicit none
 
   integer, intent(IN)            :: blockID
   real,    intent(OUT), pointer  :: blkPtr(:, :, :, :)
   integer, intent(IN),  optional :: gridDataStruct
 
-  write(*,*) "AMReX does *not* deal in block IDs"
-  stop
+  call Driver_abortFlash("[Grid_getBlkPtr] AMReX does *not* deal in block IDs")
 end subroutine Grid_getBlkPtr
 

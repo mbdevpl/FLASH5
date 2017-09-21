@@ -48,33 +48,90 @@
 !!
 !!***
 
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
 #include "constants.h"
+#include "Flash.h"
 
 subroutine Grid_getSingleCellCoords(ind, blockId,edge, beginCount,coords)
-  implicit none
+  use Driver_interface, ONLY : Driver_abortFlash
 
-#include "constants.h"
+  implicit none
 
   integer,dimension(MDIM), intent(in) :: ind
   integer, intent(in) :: blockId, edge
   integer, intent(in) :: beginCount
   real, dimension(MDIM), intent(out) :: coords
 
-  write(*,*) "AMReX does *not* deal in block IDs"
-  stop
+  CALL Driver_abortFlash("[Grid_getSingleCellCoords] AMReX does *not* deal in block IDs")
 end subroutine Grid_getSingleCellCoords
 
 subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
-  use block_metadata, ONLY : block_metadata_t
+  use amrex_amrcore_module,  ONLY : amrex_geom
+  use amrex_geometry_module, ONLY : amrex_problo
 
-!  use chombo_f_c_interface, ONLY : ch_get_single_cell_coords
+  use block_metadata,        ONLY : block_metadata_t
+
   implicit none
+  
   type(block_metadata_t), intent(in) :: block
-  integer,dimension(MDIM), intent(in) :: ind
-  integer, intent(in) :: edge
-  integer, intent(in) :: beginCount
-  real, dimension(MDIM), intent(out) :: coords
+  integer, intent(in)  :: ind(MDIM)
+  integer, intent(in)  :: edge
+  integer, intent(in)  :: beginCount
+  real,    intent(out) :: coords(MDIM)
 
-  ! DEVNOTE: Code this!
-!  call ch_get_single_cell_coords(blockId, edge, beginCount, ind, coords)
+  real    :: ind_t(1:MDIM) = 0.0d0
+  real    :: shift = 0.0d0
+  integer :: axis = 1
+
+#ifdef DEBUG_GRID
+  print*,' inside Grid_getSingleCellCoords', ind, edge, beginCount
+  if ((edge /= LEFT_EDGE) .and. (edge /= CENTER) .and. (edge /= RIGHT_EDGE)) then
+    call Driver_abortFlash('Grid_getSingleCellCoods : invalid edge')
+  end if
+  if(beginCount == EXTERIOR) then
+     if((ind(IAXIS)<GRID_ILO_GC).or.(ind(IAXIS)>GRID_IHI_GC))&
+          call Driver_abortFlash('GetSingleCellCoords : I index out of blkLimits')
+     if((ind(JAXIS)<GRID_JLO_GC).or.(ind(JAXIS)>GRID_JHI_GC))&
+          call Driver_abortFlash('GetSingleCellCoords : J index out of blkLimits')
+     if((ind(KAXIS)<GRID_KLO_GC).or.(ind(KAXIS)>GRID_KHI_GC))&
+          call Driver_abortFlash('GetSingleCellCoords : K index out of blkLimits')
+  else if(beginCount == INTERIOR) then
+     if((ind(IAXIS)<GRID_ILO).or.(ind(IAXIS)>GRID_IHI))&
+          call Driver_abortFlash('GetSingleCellCoords : I index out of blkLimits')
+     if((ind(JAXIS)<GRID_JLO).or.(ind(JAXIS)>GRID_JHI))&
+          call Driver_abortFlash('GetSingleCellCoords : J index out of blkLimits')
+     if((ind(KAXIS)<GRID_KLO).or.(ind(KAXIS)>GRID_KHI))&
+          call Driver_abortFlash('GetSingleCellCoords : K index out of blkLimits')
+  else
+     call Driver_abortFlash("Grid_getSingleCellCoords, incorrect value for beginCount")
+  end if
+#endif
+
+  associate (x0       => amrex_problo, &
+             x_blk_lo => block%limits(LOW, :), &
+             dx       => amrex_geom(block%level - 1)%dx)
+    ! x_blk_lo is 1-based cell-index of lower-left cell in block 
+    
+    shift = 0.0d0
+    if (edge == CENTER) then
+      shift = 0.5d0
+    else if (edge == RIGHT_EDGE) then
+      shift = 1.0d0
+    end if
+
+    ! DEV: Should we use gr_[ijk]guard instead of NGUARD?
+    ! Translate indices to 1-based global indices adjusted according to edge
+    ind_t = (ind + x_blk_lo - 1) + shift
+    if (beginCount == EXTERIOR) then
+      ind_t = ind_t - NGUARD
+    end if
+
+    coords(:) = 0.0d0
+    coords(1:NDIM) = x0(1:NDIM) + (ind_t(1:NDIM) - 1) * dx(1:NDIM)
+  end associate
+ 
 end subroutine Grid_getSingleCellCoords_Itor
+

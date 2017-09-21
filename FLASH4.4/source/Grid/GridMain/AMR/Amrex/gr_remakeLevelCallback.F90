@@ -1,4 +1,4 @@
-subroutine gr_remakeLevel(lev, time, pba, pdm) bind(c)
+subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use iso_c_binding
     use amrex_fort_module,      ONLY : wp => amrex_real
     use amrex_box_module,       ONLY : amrex_box
@@ -7,7 +7,7 @@ subroutine gr_remakeLevel(lev, time, pba, pdm) bind(c)
     use amrex_distromap_module, ONLY : amrex_distromap, &
                                        distro_print => amrex_print
     use amrex_parallel_module,  ONLY : amrex_parallel_myproc
-    use amrex_interfaces,       ONLY : gr_clearLevel
+    use amrex_interfaces,       ONLY : gr_clearLevelCallback
 
     implicit none
 
@@ -26,10 +26,10 @@ subroutine gr_remakeLevel(lev, time, pba, pdm) bind(c)
     dm = pdm
  
     rank = amrex_parallel_myproc()
-    write(*,*) "[Rank ", rank, "] gr_remakeLevel - Start Level ", lev
+    write(*,*) "[Rank ", rank, "] gr_remakeLevelCallback - Start Level ", lev + 1
 
-    call gr_clearLevel(lev)
+    call gr_clearLevelCallback(lev)
 
-    write(*,*) "[Rank ", rank, "] gr_remakeLevel - End Level ", lev
-end subroutine gr_remakeLevel 
+    write(*,*) "[Rank ", rank, "] gr_remakeLevelCallback - End Level ", lev + 1
+end subroutine gr_remakeLevelCallback
 

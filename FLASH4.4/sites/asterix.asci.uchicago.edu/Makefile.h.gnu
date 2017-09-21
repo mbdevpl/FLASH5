@@ -3,7 +3,7 @@
 # Set the HDF5/MPI library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
 
-AMREX_PATH = $(HOME)/amrex/2d.gnu.DEBUG.MPI
+AMREX_PATH = /home/home/klaus/amrex/2d.gnu.DEBUG.MPI
 
 MPI_PATH   = /opt/openmpi-1.8.6_gcc
 HDF4_PATH  =
@@ -94,6 +94,7 @@ CFLAGS_TEST = -ggdb -O0 -c
 
 
 # if we are using HDF5, we need to specify the path to the include files
+FFLAGS_HDF5 = -I${HDF5_PATH}/include
 CFLAGS_HDF5 = -I${HDF5_PATH}/include -DH5_USE_16_API
 CFLAGS_NCMPI = -I${NCMPI_PATH}/include
 $?$ needed? $?$ CFLAGS_MPI   = -I$(MPI_PATH)/include
@@ -138,7 +139,7 @@ LIB_MPE   =
 LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE -llapack -lblas -static
 LIB_LIBNBC = -L/home/cdaley/software/libNBC/1.1.1/mpich-1.4.1p1_gnu/lib -lnbc
 
-LIB_AMREX = -L${AMREX_PATH}/lib -lamrex
+LIB_AMREX = -L${AMREX_PATH}/lib -lamrex -lmpi_cxx -lstdc++
 LIB_AMREX2D = ${LIB_AMREX}
 LIB_STDCXX = -lstdc++
 

@@ -467,6 +467,8 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
      minCfl = hy_cfl
 #endif
 
+!!$     print*,'RiemannSt lbound(U):',lbound(U)
+!!$     print*,'RiemannSt ubound(U):',ubound(U)
 
      do k=k0-2-(k3*kUSM-kHydro)*k3,kmax+2+(k3*kUSM-kHydro)*k3
 
@@ -474,7 +476,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
            do i=i0-2-(k3*kUSM-kHydro),imax+2+(k3*kUSM-kHydro)
            ! Extra stencil is needed for 3D to correctly calculate transverse fluxes 
            !(i.e., cross derivatives in x,y, & z)
-              
+!!$              print*,'RiemannSt loop:',i,j,' ...'
               !! save the cell center values for later use
               Vc(HY_DENS:HY_END_VARS-kGrav) = &
                       (/U(DENS_VAR,i,j,k)&

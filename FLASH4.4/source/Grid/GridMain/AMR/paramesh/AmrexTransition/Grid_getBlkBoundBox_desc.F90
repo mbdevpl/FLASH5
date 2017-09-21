@@ -66,24 +66,32 @@ subroutine Grid_getBlkBoundBox_desc(blockDesc, boundBox)
   use tree, ONLY : bnd_box
   use Driver_interface, ONLY : Driver_abortFlash
   use block_metadata, ONLY : block_metadata_t
-
+  use Grid_interface, ONLY : Grid_getSingleCellCoords_lev
   implicit none
 
 #include "constants.h"
 
+
   type(block_metadata_t), intent(in) :: blockDesc
   real,dimension(2,MDIM),intent(out) :: boundBox
 
-  integer :: blockId
+
+  integer, dimension(LOW:HIGH,MDIM) :: lim
+  integer :: blockId,level
 
   blockid = blockDesc%id
 
-  if(blockID <= 0) then
-     print *, "blockId = ", blockID
-     call Driver_abortFlash("Error: Grid_getBlkBoundBox_desc, blockId out of bounds")
-  end if
+  if(blockID > 0) then
+     boundBox = bnd_box(:,:,blockId)
+  else
+!!$     print *, "blockId = ", blockID
+!!$     call Driver_abortFlash("Error: Grid_getBlkBoundBox_desc, blockId out of bounds")
 
-  boundBox = bnd_box(:,:,blockId)
+     lim=blockDesc%limits
+     level=blockDesc%level
+     call Grid_getSingleCellCoords_lev(lim(LOW,:), level,LEFT_EDGE, boundBox(LOW,:))
+     call Grid_getSingleCellCoords_lev(lim(HIGH,:), level,RIGHT_EDGE, boundBox(HIGH,:))
+  end if
 
   return
 end subroutine Grid_getBlkBoundBox_desc

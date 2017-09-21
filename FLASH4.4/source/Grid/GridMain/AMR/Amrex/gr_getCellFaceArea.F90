@@ -45,8 +45,8 @@
 subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface,   ONLY : Grid_getDeltas, &
-                               Grid_getCellCoords
-  use Grid_data,        ONLY : gr_geometry
+                               Grid_getCellCoords, &
+                               Grid_getGeometry
   use block_metadata,   ONLY : block_metadata_t
 
   implicit none
@@ -56,6 +56,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
   real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
   real,dimension(MDIM) :: del
 
+  integer :: geometry
   real :: areaFactor_1, areaFactor_2, areaFactor_3
   integer :: i,j,k
   integer :: sizeX, sizeY, sizeZ
@@ -64,7 +65,8 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
        yCoordRight, zCoordLeft, zCoordRight
   logical, parameter :: gCell = .true.
 
-  if (gr_geometry==CARTESIAN) then
+  call Grid_getGeometry(geometry)
+  if (geometry==CARTESIAN) then
      if(NDIM==1) then
         dataBlock = 1.00
      else
@@ -125,7 +127,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
                  areaFactor_2 = 1.
                  areaFactor_3 = 1.
 
-                 if (gr_geometry .eq. SPHERICAL) then
+                 if (geometry .eq. SPHERICAL) then
                     areaFactor_1 = areaFactor_1**2
                     if (NDIM.ge.2) then
                        areaFactor_2 = cos( JCOORD_LEFT(j)   ) - & 
@@ -140,7 +142,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
                        areaFactor_3 = 2*PI
                     end if
 
-                 else if (gr_geometry .eq. POLAR) then
+                 else if (geometry .eq. POLAR) then
                     if(NDIM.ge.2) then
                        areaFactor_2 =  JCOORD_RIGHT(j) - & 
                             &          JCOORD_LEFT(j)
@@ -151,7 +153,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
                        areaFactor_3 = KCOORD_RIGHT(k) - & 
                             &         KCOORD_LEFT(k)
                     end if
-                 else if (gr_geometry .eq. CYLINDRICAL) then ! perp to r
+                 else if (geometry .eq. CYLINDRICAL) then ! perp to r
                     ! INT(dz) * r*INT(d theta)
                     if(NDIM.ge.2) & 
                          &       areaFactor_2 =  JCOORD_RIGHT(j) - & 
@@ -183,7 +185,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
                  areaFactor_2 = 1.
                  areaFactor_3 = 1.
 
-                 if (gr_geometry .eq. SPHERICAL) then
+                 if (geometry .eq. SPHERICAL) then
                     areaFactor_1 = (ICOORD_RIGHT(i)-ICOORD_LEFT(i)) & 
                          &            *(ICOORD_LEFT(i)+ICOORD_RIGHT(i))*.5
                     if (face .eq. JLO_FACE) then
@@ -198,11 +200,11 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
                        areaFactor_3 = 2*PI
                     end if
 
-                 else if (gr_geometry .eq. POLAR) then
+                 else if (geometry .eq. POLAR) then
                     areaFactor_1 =  ICOORD_RIGHT(i) - & 
                          &                     ICOORD_LEFT(i)
 
-                 else if (gr_geometry .eq. CYLINDRICAL) then ! perp to z
+                 else if (geometry .eq. CYLINDRICAL) then ! perp to z
                     ! INT(rdr) * INT(d theta)
                     areaFactor_1 = ( ICOORD_RIGHT(i)**2 -  & 
                          &                      ICOORD_LEFT(i)**2 )*.5
@@ -231,7 +233,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
                  areaFactor_2 = 1.
                  areaFactor_3 = 1.
 
-                 if (gr_geometry .eq. SPHERICAL) then
+                 if (geometry .eq. SPHERICAL) then
                     areaFactor_1 = (ICOORD_RIGHT(i)-ICOORD_LEFT(i)) & 
                          &            *(ICOORD_LEFT(i)+ICOORD_RIGHT(i))*.5
                     if(NDIM.ge.2) then
@@ -241,7 +243,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
                        areaFactor_2 = 2*PI
                     end if
 
-                 else if (gr_geometry .eq. POLAR) then
+                 else if (geometry .eq. POLAR) then
                     areaFactor_1 = ( ICOORD_RIGHT(i)**2 -  & 
                          &                      ICOORD_LEFT(i)**2 )*.5
                     if(NDIM.ge.2) then
@@ -251,7 +253,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
                        areaFactor_2 = 2*PI
                     end if
 
-                 else if (gr_geometry .eq. CYLINDRICAL) then  ! perp to theta
+                 else if (geometry .eq. CYLINDRICAL) then  ! perp to theta
                     ! INT(dr) * INT(dz)
                     areaFactor_1 =  ICOORD_RIGHT(i) - & 
                          &                     ICOORD_LEFT(i)

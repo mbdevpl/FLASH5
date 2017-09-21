@@ -60,7 +60,8 @@ subroutine io_readData()
   use Grid_interface, ONLY : Grid_putLocalNumBlks, Grid_receiveInputData
   use IO_interface, ONLY : IO_getScalar
 
-  use physicaldata, ONLY : unk
+  use gr_physicalMultifabs, ONLY : unk, &
+                                   facevarx, facevary, facevarz
 
   implicit none
 

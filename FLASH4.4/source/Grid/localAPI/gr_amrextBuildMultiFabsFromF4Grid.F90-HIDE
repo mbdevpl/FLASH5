@@ -1,0 +1,9 @@
+subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
+
+  use amrex_multifab_module
+
+  type(amrex_multifab),intent(OUT) :: phi_mf(:)
+  integer,intent(IN) :: maxLev
+  integer,intent(IN),OPTIONAL :: nodetype
+
+end subroutine gr_amrextBuildMultiFabsFromF4Grid

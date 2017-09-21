@@ -68,100 +68,17 @@
 !!
 !!***
 
-!!REORDER(4):solnData
-
 #include "constants.h"
 #include "Flash.h"
 
 subroutine gr_conserveToPrimitive(blkList,count,allCells)
-
-  use Grid_data, ONLY : gr_smallrho,gr_smalle, gr_convertToConsvdForMeshCalls, &
-                        gr_vartypes, gr_anyVarToConvert
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-       Grid_getBlkIndexLimits
+  use Driver_interface, ONLY : Driver_abortFlash
 
   implicit none
+  
   integer,intent(IN) :: count
   integer, dimension(count), intent(IN) :: blkList
   logical, intent(IN):: allCells
-  real :: dens_old_inv
-  integer :: i, j, k,n, blockID, ivar
-  integer :: il,iu,jl,ju,kl,ku
-  real, dimension(:,:,:,:), pointer :: solnData
-  integer,dimension(2,MDIM) :: blkLimits, blkLimitsGC, lim
-
-  if (.not. gr_convertToConsvdForMeshCalls) return
-
-
-  do n = 1,count
-
-     blockID = blkList(n)
-     call Grid_getBlkPtr(blockID, solnData)
-     call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC)
-
-     if (allCells) then
-        ! Get the entire block region.
-        lim = blkLimitsGC
-     else
-        ! Get the internal block region.
-        lim = blkLimits
-     end if
-
-     il = lim(LOW,IAXIS)
-     iu = lim(HIGH,IAXIS)
-     jl = lim(LOW,JAXIS)
-     ju = lim(HIGH,JAXIS)
-     kl = lim(LOW,KAXIS)
-     ku = lim(HIGH,KAXIS)
-
-
-#ifdef DENS_VAR
-     do k = kl,ku
-        do j = jl,ju
-           do i = il,iu
-              if (gr_anyVarToConvert) then
-                 !CD: The Paramesh version of this subroutine is much more complicated
-                 !because it includes logic to avoid dens = 0.0 in ANCESTOR blocks.
-                 if (solnData(DENS_VAR,i,j,k) == 0.0) then
-                    ! If solnData(dens)==0, assume that for all ivars of interest --- namely,
-                    ! the PER_MASS type ones --- solnData(ivar)==0 held before the forward
-                    ! conversion to conserved form; otherwise, the program should have
-                    ! aborted already in the forward conversion. - KW
-                    dens_old_inv = 0.0
-                 else
-                    dens_old_inv = 1./solnData(DENS_VAR,i,j,k)
-                 end if
-
-                 ! small limits -- in case the interpolants are not monotonic
-                 solnData(DENS_VAR,i,j,k) = &
-                      max(solnData(DENS_VAR,i,j,k), gr_smallrho)
-
-                 do ivar = UNK_VARS_BEGIN, UNK_VARS_END
-                    if (gr_vartypes(ivar) .eq. VARTYPE_PER_MASS) then
-                       solnData(ivar,i,j,k) = dens_old_inv*solnData(ivar,i,j,k)
-                    end if
-                 end do
-              end if
-
-              ! small limits -- in case the interpolants are not monotonic
-              solnData(DENS_VAR,i,j,k) = &
-                   max(solnData(DENS_VAR,i,j,k), gr_smallrho)
-
-           end do
-        end do
-     end do
-#endif
-
-#ifdef ENER_VAR
-     ! energy
-     solnData(ENER_VAR,:,:,:) = max(solnData(ENER_VAR,:,:,:), gr_smalle)
-#endif
-#ifdef EINT_VAR
-     solnData(EINT_VAR,:,:,:) = max(solnData(EINT_VAR,:,:,:), gr_smalle)
-#endif
-
-     call Grid_releaseBlkPtr(blockID, solnData)
-  end do
-
-  return
+  
+  call Driver_abortFlash("[gr_conservativeToPrimitive]: Not implemented yet!")
 end subroutine gr_conserveToPrimitive

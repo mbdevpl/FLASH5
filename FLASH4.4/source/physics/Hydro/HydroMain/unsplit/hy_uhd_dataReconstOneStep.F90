@@ -77,7 +77,7 @@
 !!***
 #include "Flash.h"
 #ifdef FLASH_USM_MHD
-!! REORDER(4): B[xyz]
+!! REORDER(4): B[xyz],U
 #endif
 Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
                                      dt,del,ogravX,ogravY,ogravZ,&
@@ -326,7 +326,8 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
   !!*************************************************************!
   !! First, get block pointer for cell-centered variables        !
   !!*************************************************************!
-  call Grid_getBlkPtr(block,U,CENTER)
+  ! DEVNOTE: No, DO NOT!
+!!$  call Grid_getBlkPtr(block,U,CENTER)
 
 
   !!*************************************************************!
@@ -1197,7 +1198,7 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
   enddo
 #endif
 
-  call Grid_releaseBlkPtr(block,U,CENTER)
+!!$  call Grid_releaseBlkPtr(block,U,CENTER)
 
 #ifdef FLASH_USM_MHD /* extra definitions for MHD */
 #if NFACE_VARS > 0

@@ -3,10 +3,10 @@
 REQUIRES Driver
 REQUIRES Grid
 REQUIRES physics/Hydro/HydroMain 
-REQUIRES physics/Eos/EosNuclear
+REQUESTS physics/Eos/EosNuclear
 REQUESTS physics/sourceTerms/Deleptonize
 REQUESTS physics/Gravity/GravityMain/Poisson/Multipole
-REQUIRES physics/RadTrans/RadTransMain/NeutrinoLeakage
+REQUESTS physics/RadTrans/RadTransMain/NeutrinoLeakage
 
 
 # params for 1D initialization

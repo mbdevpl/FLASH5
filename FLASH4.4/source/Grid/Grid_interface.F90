@@ -242,10 +242,11 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getBlkData(blockID, dataType, structIndex, beginCount, &
+     subroutine Grid_getBlkData(block, dataType, structIndex, beginCount, &
           startingPos, datablock, dataSize)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(in) :: blockID
+       type(block_metadata_t), intent(in) :: block
        integer, intent(in) :: structIndex, beginCount, dataType
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, dimension(3), intent(in) :: dataSize
@@ -301,7 +302,7 @@ Module Grid_interface
      end subroutine Grid_getBlkRefineLevel
   end interface
  
-  interface
+  interface Grid_getCellCoords
      subroutine Grid_getCellCoords_blkid(axis, blockID, edge, guardcell, coordinates, size)
        integer, intent(in) :: axis, edge
        integer, intent(in) :: blockID
@@ -327,8 +328,10 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getFluxData(blockID, axis, fluxes, dataSize, pressureSlots, areaLeft)
-       integer, intent(IN) :: blockID
+     subroutine Grid_getFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLeft)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: block
        integer, intent(IN) :: axis
        integer, intent(IN), dimension(3) :: dataSize
        real, intent(INOUT), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes
@@ -462,6 +465,12 @@ Module Grid_interface
        integer, intent(in) :: beginCount
        real, dimension(MDIM), intent(out) :: coords
      end subroutine Grid_getSingleCellCoords_Itor
+     subroutine Grid_getSingleCellCoords_lev(ind, level,edge, coords)
+       implicit none
+       integer,dimension(MDIM), intent(in) :: ind
+       integer, intent(in) :: level, edge
+       real, dimension(MDIM), intent(out) :: coords
+     end subroutine Grid_getSingleCellCoords_lev
   end interface
 
   interface Grid_getSingleCellVol
@@ -478,7 +487,7 @@ Module Grid_interface
        integer, intent(in) :: point(MDIM)
        real, intent(out)   :: cellvolume
      end subroutine Grid_getSingleCellVol_Itor
-  end interface
+  end interface Grid_getSingleCellVol
 
   interface
      subroutine Grid_guardCellMaskHook(ccMask, needEos)
@@ -569,9 +578,10 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_putFluxData(blockID, axis, fluxes, dataSize, pressureSlots, areaLeft)
+     subroutine Grid_putFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLeft)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(IN) :: blockID
+       type(block_metadata_t), intent(IN) :: block
        integer, intent(IN) :: axis
        integer, intent(IN), dimension(3) :: dataSize
        real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes

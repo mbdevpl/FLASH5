@@ -92,7 +92,12 @@ subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
      call Grid_getListOfBlocks(listNodetype,blks,blockCount,level)
      if (blockCount > 0) then
         ib = 0
-!!$        print*,'Grid_copyF4DataToMultiFabs: create iter for level',level,':'
+!!$        999 format('Grid_copyF4DataToMultiFabs[',A1,']: create iter for level',A3,':')
+!!$        if (.NOT.doReverse) then
+!!$           print 999,'>',level
+!!$        else
+!!$           print 999,'<',level
+!!$        end if
         itor = block_1lev_iterator_t(myNodetype, level)
         do while (itor%is_valid())
            call itor%blkMetaData(blockDesc)
@@ -100,6 +105,7 @@ subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
            do while(lrefine(blks(ib)).NE.level)
               ib = ib + 1
            end do
+!!$           print*,ib,gr_meshMe,blks(ib),blockDesc%level,blockDesc%grid_index
            call Grid_getBlkPtr(blks(ib),pf,gds)
            call Grid_getBlkPtr(blockDesc,pa,gds)
            if (ANY(SHAPE(pf).NE.SHAPE(pa))) then

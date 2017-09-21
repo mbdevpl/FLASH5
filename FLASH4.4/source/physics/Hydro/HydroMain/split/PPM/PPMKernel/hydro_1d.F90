@@ -308,8 +308,8 @@ subroutine hydro_1d (block,numIntCells,numCells, guard,bcs,        &
      ! Gravity implementation defines FLASH_GRAVITY_TIMEDEP -> time-dependent gravity field,
      ! interpolate the acceleration linearly in time (pointwise) - KW
      ograv(:) = 0.e0       ! initialize array to zero
-!!$     call Gravity_accelOneRow (pos, xyzswp, blockID, numIntCells8,ograv,GPOL_VAR)
-!!$     call Gravity_accelOneRow (pos, xyzswp, blockID, numIntCells8,grav,GPOT_VAR)
+     call Gravity_accelOneRow (pos, xyzswp, block, numIntCells8,ograv,GPOL_VAR)
+     call Gravity_accelOneRow (pos, xyzswp, block, numIntCells8,grav,GPOT_VAR)
      dtfac = dt/dt_old
 
      do i = 1,numIntCells8
@@ -322,7 +322,7 @@ subroutine hydro_1d (block,numIntCells,numCells, guard,bcs,        &
      ! FLASH_GRAVITY_TIMEDEP not defined -> assume time-independent gravity field.
      ! Also if GPOT_VAR or GPOL_VAR defined -> use current accel without time
      ! interpolation, i.e., handle like time-independent gravity field - KW
-!!$     call Gravity_accelOneRow (pos, xyzswp, blockID, numIntCells8,grav)
+     call Gravity_accelOneRow (pos, xyzswp, block, numIntCells8,grav)
      hgrav = grav
      ngrav = grav
 #endif

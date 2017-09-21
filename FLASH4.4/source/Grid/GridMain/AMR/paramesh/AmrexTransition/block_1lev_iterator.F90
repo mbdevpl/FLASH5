@@ -41,6 +41,7 @@ module block_1lev_iterator
         procedure, public :: is_valid
         procedure, public :: first
         procedure, public :: next
+        procedure, public :: grid_index
         procedure, public :: tilebox
         procedure, public :: fabbox
         procedure, public :: dataPtr
@@ -78,7 +79,7 @@ contains
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
     !!             iterate only over blocks located at this level of 
-    !!             octree structure
+    !!             octree structure. !DEVNOTE: nodetype not implemented!
     !!
     !! SEE ALSO
     !!  constants.h
@@ -114,7 +115,7 @@ contains
 
         type(block_1lev_iterator_t)        :: this
         integer, intent(IN)           :: nodetype
-        type(amrex_multifab),intent(IN),TARGET :: mfArray(*)
+        type(amrex_multifab),intent(IN),TARGET :: mfArray(0:*)
         integer, intent(IN), optional :: level
         logical, intent(IN), optional :: tiling
 
@@ -128,8 +129,8 @@ contains
         ! It appears that we get leaves every time.
 
         ! Initial iterator is not primed.  Advance to first compatible block.
-        call amrex_mfiter_build(this%mfi,mfArray(level),tiling=tiling)
-        this%mf => mfArray(level)
+        call amrex_mfiter_build(this%mfi,mfArray(level-1),tiling=tiling)
+        this%mf => mfArray(level-1)
 !!$        print*,'block_1lev_iterator: init_iterator_mfa on this=',this%isValid,this%level,associated(this%mfi)
         this%isValid = .TRUE.
         call this%next()
@@ -157,15 +158,15 @@ contains
 !!$        call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs,lrefine_max,LEAF)
         if (present(level)) then
            mfArray => gr_amrextUnkMFs
-           mf => gr_amrextUnkMFs(level)
+           mf => gr_amrextUnkMFs(level-1)
 !!$           print*,'amrex_multifab_nghost(mf)=',mf%nghost()
 !!$           print*,'ABOUT TO call amrex_mfiter_build,size(mfArray)=',size(mfArray)
 !!$           call amrex_mfiter_build(this%mfi,mfArray(level),tiling=tiling)
            call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
 !!$           print*,'amrex_multifab_nghost(mf)=',mf%nghost()
-           this%mf => mfArray(level)
+           this%mf => mfArray(level-1)
         else
-           mf => gr_amrextUnkMFs(1)
+           mf => gr_amrextUnkMFs(0)
            call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
            this%mf => mf
         end if
@@ -281,6 +282,12 @@ contains
 
     end subroutine next
 
+    function grid_index(this) result(idx)
+      class(block_1lev_iterator_t), intent(IN) :: this
+      integer :: idx
+      idx = this%mfi%grid_index()
+    end function grid_index
+
     function tilebox (this) result (bx)
       use amrex_box_module, ONLY : amrex_box
       class(block_1lev_iterator_t), intent(in) :: this
@@ -333,7 +340,7 @@ contains
         fabbox = this%mfi%fabbox()
 
         ! TODO: Determine if box contains GC or not and finalize limits/limitsGC
-!!$        blockDesc%grid_index        = this%oti%grid_index()
+        blockDesc%grid_index        = this%mfi%grid_index()
         blockDesc%level             = this%level
         blockDesc%limits(LOW, :)    = box%lo
         blockDesc%limits(HIGH, :)   = box%hi

@@ -30,6 +30,9 @@ subroutine Grid_getDeltas(lev,del)
   integer, intent(IN)   :: lev
   real, dimension(MDIM), intent(out) :: del
 
+  if (lev < 1) then
+     print*,'**lev**',lev,'!'
+  end if
   del(1:MDIM) = gr_delta(1:MDIM,lev)
   return
 end subroutine Grid_getDeltas

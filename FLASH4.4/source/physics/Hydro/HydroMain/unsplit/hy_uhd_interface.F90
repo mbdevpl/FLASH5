@@ -49,10 +49,11 @@ Module hy_uhd_interface
        integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
        real,    intent(IN)   :: dt
        real,    intent(IN),dimension(MDIM) :: del
-       real, dimension(blkLimitsGC(HIGH,IAXIS),  &
-                       blkLimitsGC(HIGH,JAXIS),  &
-                       blkLimitsGC(HIGH,KAXIS)), &
-                       intent(IN) :: ogravX,ogravY,ogravZ
+!!$       real, dimension(blkLimitsGC(HIGH,IAXIS),  &
+!!$                       blkLimitsGC(HIGH,JAXIS),  &
+!!$                       blkLimitsGC(HIGH,KAXIS)), &
+!!$                       intent(IN) :: ogravX,ogravY,ogravZ
+  real, dimension(:,:,:), intent(IN) :: ogravX,ogravY,ogravZ
        real,pointer,dimension(:,:,:,:)::U
        real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
@@ -429,13 +430,13 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_unsplit( block,Uin,blkLimitsGC,&
+     subroutine hy_uhd_unsplit( blockDesc,Uin,blkLimitsGC,&
                       Uout,blkLimits,&
                       del,dt, dtOld )
        use block_metadata,   ONLY : block_metadata_t
        implicit none
 
-       type(block_metadata_t), intent(IN) :: block
+       type(block_metadata_t), intent(IN) :: blockDesc
        real,    INTENT(IN) :: dt, dtOld
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
        real, dimension(:,:,:,:),pointer :: Uin
@@ -690,9 +691,11 @@ Module hy_uhd_interface
 
     interface
        subroutine hy_uhd_putGravityUnsplit&
-            (blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
+            (blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
              lastCall)
+         use block_metadata, ONLY : block_metadata_t
          implicit none
+         type(block_metadata_t), intent(IN)   :: blockDesc
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
          real,dimension(:,:,:,:),pointer :: Uin
          integer, dimension(MDIM), intent(IN) :: dataSize
@@ -736,7 +739,7 @@ Module hy_uhd_interface
        subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
        implicit none
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
-       real, dimension(:,:,:,:),INTENT(INOUT) :: Uin
+       real, dimension(:,:,:,:),INTENT(IN) :: Uin
        real,dimension(:,:,:,:),INTENT(OUT) :: Uout
        real,dimension(MDIM),INTENT(IN) :: del
      end subroutine hy_uhd_shockDetect

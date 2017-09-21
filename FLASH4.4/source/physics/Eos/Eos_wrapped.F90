@@ -76,16 +76,17 @@
 !!***
 
 
-subroutine Eos_wrapped(mode,range,blockID,gridDataStruct)
-
+subroutine Eos_wrapped(mode,range,solnData,gridDataStruct)
+  
   implicit none
 
 # include "constants.h"
+#include "FortranLangFeatures.fh"
+
   integer, intent(in) :: mode
   integer, dimension(2,MDIM), intent(in) :: range
-  integer,intent(in) :: blockID
+  real, POINTER_INTENT_IN :: solnData(:,:,:,:)
   integer,optional,intent(IN) :: gridDataStruct
-  return
 end subroutine Eos_wrapped
 
 subroutine Eos_arrayWrapped(mode,range,solnData,gridDataStruct)

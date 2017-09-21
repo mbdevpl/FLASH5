@@ -112,7 +112,7 @@ Subroutine hy_uhd_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
 #endif /* For MHD */
 
 
-  !! Get block pointers
+  !! Get block pointers - NO!
 !!$  call Grid_getBlkPtr(block,U,CENTER)
 #ifdef FLASH_USM_MHD /* For MHD */
 #if NFACE_VARS > 0
@@ -434,8 +434,8 @@ Subroutine hy_uhd_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
   endif
 
 
-  !! Release block pointers
-  call Grid_releaseBlkPtr(block,U,CENTER)
+  !! Release block pointers - NO!
+!!$  call Grid_releaseBlkPtr(block,U,CENTER)
 #ifdef FLASH_USM_MHD /* For MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1

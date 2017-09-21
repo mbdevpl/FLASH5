@@ -258,8 +258,7 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
        gamcRow, ptotRow, deaRow, dezRow, stotRow, dsdRow, dstRow, &
        detRow, dptRow, dpdRow, dedRow, pelRow, neRow, etaRow, cvRow, cpRow
 
-  use eos_type_module
-  use actual_network, ONLY : actual_network_init
+  use eos_type_module, ONLY : eos_tp, composition, eos_input_rt, eos_input_re, eos_input_rp
   use actual_eos_module, ONLY : actual_eos
 
   !$ use omp_lib
@@ -538,22 +537,9 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
       eos_state(zone) % e = eosData(eint+zone)
 !      eos_state(zone) % xn(:) = massFrac((zone-1)*NSPECIES+1:zone*NSPECIES)
 
-      eos_state(zone) % xn(1)  = massFrac((zone-1)*NSPECIES+6)
-      eos_state(zone) % xn(2)  = massFrac((zone-1)*NSPECIES+2)
-      eos_state(zone) % xn(3)  = massFrac((zone-1)*NSPECIES+10)
-      eos_state(zone) % xn(4)  = massFrac((zone-1)*NSPECIES+8)
-      eos_state(zone) % xn(5)  = massFrac((zone-1)*NSPECIES+7)
-      eos_state(zone) % xn(6)  = massFrac((zone-1)*NSPECIES+12)
-      eos_state(zone) % xn(7)  = massFrac((zone-1)*NSPECIES+11)
-      eos_state(zone) % xn(8)  = massFrac((zone-1)*NSPECIES+1)
-      eos_state(zone) % xn(9)  = massFrac((zone-1)*NSPECIES+3)
-      eos_state(zone) % xn(10) = massFrac((zone-1)*NSPECIES+13)
-      eos_state(zone) % xn(11) = massFrac((zone-1)*NSPECIES+4)
-      eos_state(zone) % xn(12) = massFrac((zone-1)*NSPECIES+5)
-      eos_state(zone) % xn(13) = massFrac((zone-1)*NSPECIES+9)
-
-
-      eos_state(zone) % nr = 0
+      do i = 1, NSPECIES
+         eos_state(zone) % xn(i) = massFrac((zone-1)*NSPECIES+i)
+      end do
 
       if (debug) then
         write(*,*) eos_state(zone) % xn(:)
@@ -576,7 +562,7 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
     !$acc kernels
     !$acc loop
     do zone = 1, vecLen
-      call actual_eos(5,eos_state(zone))
+      call actual_eos(eos_input_re,eos_state(zone))
     end do
     !$acc end kernels
 
@@ -591,8 +577,6 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
         write(*,*) "zone, eos_state(zone) % rho", zone, eos_state(zone) % rho
         write(*,*) "zone, eos_state(zone) % T", zone, eos_state(zone) % T
         write(*,*) "zone, eos_state(zone) % e", zone, eos_state(zone) % e
-        write(*,*) "zone, eos_state(zone) % nr", zone, eos_state(zone) % nr
-        write(*,*) "zone, eos_state(zone) % test", zone, eos_state(zone) % test
 
       end do
 

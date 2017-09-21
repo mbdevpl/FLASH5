@@ -1,11 +1,20 @@
 
 DEFAULT paramesh
 
+# !!! If you add a parameter, please add a description line
+# Format is D <parameter name> <description>
+
+D nblockx num initial blocks in x dir
+PARAMETER nblockx       INTEGER 1    
+
+D nblocky num initial blocks in y dir   
+PARAMETER nblocky       INTEGER 1    
+
+D nblockz num initial blocks in z dir   
+PARAMETER nblockz       INTEGER 1       
+
 D lrefine_max maximum AMR refinement level
 PARAMETER lrefine_max   INTEGER 1 [ 1 ... ]
-
-D lrefine_min minimum AMR refinement level
-PARAMETER lrefine_min   INTEGER 1 [ 1 ... ]       
 
 D nrefs refine/derefine AMR grid every nrefs timesteps
 PARAMETER nrefs         INTEGER 2

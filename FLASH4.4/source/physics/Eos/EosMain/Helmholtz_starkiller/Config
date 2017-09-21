@@ -2,7 +2,7 @@
 #  [physics/Eos/EosMain/Helmholtz]
 DEFAULT SpeciesBased 
 
-EXCLUSIVE SpeciesBased Ye
+EXCLUSIVE SpeciesBased Ye ExternalAbarZbar
 
 D   eos_coulombMult coulomb correction multiplier
 PARAMETER eos_coulombMult  REAL    1.0
@@ -22,7 +22,7 @@ D eos_coulombAbort  Abort if pressures become negative.  Otherwise, issue
 D &              a warning message and continue
 PARAMETER eos_coulombAbort BOOLEAN true
 
-D eos_larget default upper bracket bound and used to fake
+D larget default upper bracket bound and used to fake
 D &           temperature if it tries to go too high.
 D & Currently, only used in the Helmholtz/ExternalAbarZbar implementation of Eos.
 PARAMETER larget REAL 1.e20

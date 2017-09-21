@@ -115,9 +115,6 @@
 !! gr_restrictAllMethod [INTEGER]
 !!***
 
-!!REORDER(5):scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx
-!!REORDER(5):gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
-
 subroutine Grid_init()
 
   use Grid_data
@@ -193,7 +190,7 @@ subroutine Grid_init()
   call RuntimeParameters_get('zmin', gr_kmin)
   call RuntimeParameters_get('zmax', gr_kmax)
   call RuntimeParameters_get('lrefine_min', gr_minRefine)
-  call RuntimeParameters_get('lrefine_max', gr_maxRefine)
+  call RuntimeParameters_get('lrefine_max', gr_lrefineMax)
   call RuntimeParameters_get("nrefs", gr_nrefs)
   call RuntimeParameters_get('lrefine_min_init', gr_lrefineMinInit)
 
@@ -226,20 +223,16 @@ subroutine Grid_init()
   if (useProtonEmission) then
       gr_useParticles=.true.
   end if
+  call RuntimeParameters_get('useElectronSpectrometry',useElectronSpectrometry)
+  if (useElectronSpectrometry) then
+      gr_useParticles=.true.
+  end if
 #endif
-
-  gr_allPeriodic = .true.
-  do i = 1,NDIM
-     if(gr_domainBC(LOW,i)/=PERIODIC)gr_allPeriodic=.false.
-     if(gr_domainBC(HIGH,i)/=PERIODIC)gr_allPeriodic=.false.
-  end do
 
   !Check if there are gravitational isolated boundary conditions
   !in order to determine which solvers to intialize.
   call RuntimeParameters_get("grav_boundary_type", grav_boundary_type)
   gr_isolatedBoundaries = (grav_boundary_type=="isolated")
-
-  gr_anyVarToConvert = .FALSE.
 
   !get the boundary conditions stored as strings in the flash.par file
   call RuntimeParameters_get("xl_boundary_type", xl_bcString)
@@ -256,6 +249,12 @@ subroutine Grid_init()
   call RuntimeParameters_mapStrToInt(yr_bcString,gr_domainBC(HIGH,JAXIS))
   call RuntimeParameters_mapStrToInt(zl_bcString,gr_domainBC(LOW,KAXIS))
   call RuntimeParameters_mapStrToInt(zr_bcString,gr_domainBC(HIGH,KAXIS))
+
+  gr_allPeriodic = .TRUE.
+  do i = 1, NDIM
+     if(gr_domainBC(LOW,  i) /= PERIODIC)     gr_allPeriodic = .FALSE.
+     if(gr_domainBC(HIGH, i) /= PERIODIC)     gr_allPeriodic = .FALSE.
+  end do
 
   call RuntimeParameters_get("bndPriorityOne",gr_bndOrder(1))
   call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
@@ -281,16 +280,14 @@ subroutine Grid_init()
   call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
   gr_justExchangedGC = .false.
 
-
-
-
   call RuntimeParameters_get("refine_on_particle_count",gr_refineOnParticleCount)
 
   call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
   call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
 
-!!  gr_meshComm = FLASH_COMM
-! The following renaming was done: "conserved_var" -> "convertToConsvdForMeshCalls". - KW
+
+  call gr_initSpecific()
+
   call RuntimeParameters_get("convertToConsvdForMeshCalls", gr_convertToConsvdForMeshCalls)
   call RuntimeParameters_get("convertToConsvdInMeshInterp", gr_convertToConsvdInMeshInterp)
   if (gr_convertToConsvdInMeshInterp) then
@@ -303,24 +300,11 @@ subroutine Grid_init()
              "WARNING: convertToConsvdForMeshCalls ignored since convertToConsvdInMeshInterp is requested")
         gr_convertToConsvdForMeshCalls = .FALSE.
      end if
-     
   end if
-  
-
 
 #ifdef GRID_WITH_MONOTONIC
   gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
 #endif
-
-
-!------------------------------------------------------------------------------
-! mesh geometry       (gr_geometry and gr_{i,j,k}{min,max} already set above)
-!------------------------------------------------------------------------------
-
-! Determine the geometries of the individual dimensions, and scale
-! angle value parameters that are expressed in degrees to radians.
-! This call must be made after gr_geometry, gr_domainBC, and gr_{j,k}{min,max}
-! have been set based on the corresponding runtime parameters.
 
   !! This section of the code identifies the variables to used in
   !! the refinement criterion. If a variable is a refinement variable
@@ -373,7 +357,7 @@ subroutine Grid_init()
   gr_enforceMaxRefinement = .FALSE.
 
   call RuntimeParameters_get("lrefine_del", gr_lrefineDel)
-  allocate(gr_delta(MDIM,gr_maxRefine))
+
 
   call RuntimeParameters_get("gr_lrefineMaxRedDoByLogR", gr_lrefineMaxRedDoByLogR)
   call RuntimeParameters_get("gr_lrefineMaxRedRadiusFact", gr_lrefineMaxRedRadiusSq)
@@ -421,10 +405,9 @@ subroutine Grid_init()
      call Logfile_stampMessage("WARNING : Adaptive Grid did not find any variable to refine")
   end if
 
-  call gr_initSpecific()
-
   call RuntimeParameters_get("gr_restrictAllMethod", gr_restrictAllMethod)
 
+  gr_anyVarToConvert = .FALSE.
   do i = UNK_VARS_BEGIN,UNK_VARS_END
      gr_vars(i)=i
      call Simulation_getVarnameType(i, gr_vartypes(i))

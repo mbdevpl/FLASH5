@@ -43,6 +43,8 @@
 !!
 !!
 !!***
+#include "constants.h"
+#include "Flash.h"
 
 subroutine Hydro(  timeEndAdv, dt, dtOld, &
                    sweepOrder )
@@ -52,13 +54,22 @@ subroutine Hydro(  timeEndAdv, dt, dtOld, &
                          hy_gravMassXZY, hy_gravMassYZX,&
                          hy_gravMassYXZ, hy_gravMassZXY
 
+#ifdef FLASH_GRID_AMREXTRANSITION
+  use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
+  use gr_amrextData
+#endif
+  use Grid_interface,      ONLY : Grid_getMaxRefinement
+  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+
+
+
   implicit none
 
-#include "constants.h"
-#include "Flash.h"
 
   real,    INTENT(IN) :: timeEndAdv, dt, dtOld
   integer, INTENT(IN) :: sweepOrder
+
+  integer :: maxLev
 
   if (.NOT. hy_useHydro) return
 
@@ -70,6 +81,12 @@ subroutine Hydro(  timeEndAdv, dt, dtOld, &
   !!--------------------------------------------------------------------------
   !!  Perform three sets of one-dimensional hydro sweeps
   !!--------------------------------------------------------------------------
+
+#ifdef FLASH_GRID_AMREXTRANSITION
+  call Grid_getMaxRefinement(maxLev,mode=1)
+  call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+#endif
+  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
 
   hy_gravMass = 0.0   ! zero out this step's accumulation of gravitationalaccel*mass
 
@@ -158,5 +175,10 @@ subroutine Hydro(  timeEndAdv, dt, dtOld, &
 
      hy_gravMassYZX = hy_gravMass
   end select
+
+#ifdef FLASH_GRID_AMREXTRANSITION
+  call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
+#endif
+  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 
 end subroutine Hydro

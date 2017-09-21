@@ -113,6 +113,7 @@
 
 subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
                          lim,limGC,bcs,  &
+                         blkLimits,blkLimitsGC,  &
                          numCells,numguard, &
                          primaryCoord ,     &
                          primaryLeftCoord , &
@@ -171,8 +172,34 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
   integer, intent(IN) :: sweepDir
   real,    intent(IN) :: dt, dtOld
   integer, intent(IN) :: numCells,numguard
-  integer, intent(IN),dimension(LOW:HIGH,MDIM) :: limGC,lim,bcs
+  integer, intent(IN),dimension(LOW:HIGH,MDIM) :: limGC,lim,bcs, blkLimits, blkLimitsGC
   
+  real, intent(OUT), DIMENSION(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
+       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),          &
+       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) ::       &
+       tempArea,       &
+       tempGrav1d_o,   &
+       tempGrav1d,     &
+       tempDtDx,       &
+       tempFict,       &
+       tempAreaLeft
+  real, intent(IN), DIMENSION(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
+       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
+       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: shock
+  
+  real, intent(OUT), DIMENSION(NFLUXES,                    &
+       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),     &
+       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),     &
+       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) ::  &
+       tempFlx  
+  real, intent(IN), DIMENSION(numCells) :: primaryCoord ,  &
+       primaryLeftCoord , &
+       primaryRghtCoord , &
+       primaryDx        , &
+       secondCoord      , &
+       thirdCoord       , &
+       radialCoord      , &
+       ugrid
   real,    pointer :: solnData(:,:,:,:) 
 
   !! ------------
@@ -184,37 +211,12 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
   integer :: numIntCells
   integer,parameter :: numXn=NSPECIES+NMASS_SCALARS
   integer :: sp,istat
-  integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   ! for gravity accumulation, implemented by LBR 12/19/2006
-  integer, DIMENSION(MDIM) :: point
+  integer, DIMENSION(MDIM) :: point,len, startPos
   real               :: cellVolume
   real, allocatable :: faceAreas(:,:,:), cellVolumes(:,:,:)
-
-  real, intent(OUT),DIMENSION(1:limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1,&
-       1:limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1,&
-       1:limGC(HIGH,KAXIS)-limGC(LOW,KAXIS)+1) ::       &
-                               tempArea,       &
-                               tempGrav1d_o,   &
-                               tempGrav1d,     &
-                               tempDtDx,       &
-                               tempFict,       &
-                               tempAreaLeft
-  real, intent(IN), DIMENSION(1:limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1,&
-       1:limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1,&
-       1:limGC(HIGH,KAXIS)-limGC(LOW,KAXIS)+1) :: shock
   
-  real, intent(OUT), DIMENSION(NFLUXES,&
-       1:limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1,&
-       1:limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1,&
-       1:limGC(HIGH,KAXIS)-limGC(LOW,KAXIS)+1)::tempFlx  
-  real, intent(IN), DIMENSION(numCells) :: primaryCoord ,  &
-                                           primaryLeftCoord , &
-                                           primaryRghtCoord , &
-                                           primaryDx        , &
-                                           secondCoord      , &
-                                           thirdCoord       , &
-                                           radialCoord     , &
-                                           ugrid
+
 
   real, DIMENSION(numCells) :: dtdx, areaLeft, area, cvol, grav, ngrav, fict, shock_multid
   real, DIMENSION(numCells) :: rhoflx, uflx, pav, &
@@ -223,7 +225,8 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
                                tmp, gamc, game,  &
                                uttp, utbt, utlt, utrt
   real, DIMENSION(numCells, NSPECIES+NMASS_SCALARS) :: xn, xnflx
-  integer :: len
+  integer :: iglobal,jglobal,kglobal,iglobal1,iglobal2,jglobal1,jglobal2,kglobal1,kglobal2
+
 
   allocate(hy_dela(numCells),stat = istat) 
   if (istat==0)allocate(hy_dp(numCells),stat = istat) 
@@ -284,7 +287,6 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
      call Driver_abortFlash("Memory allocation error in subroutine hy_block!")
   end if
 
-
 !    Compute fluxes:  copy fluid data from 3D storage arrays        
 !    into 1D work arrays, then operate on each row in turn.         
 !    Update the solution in the 3D storage arrays, then save        
@@ -293,79 +295,85 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
 
 !!$ IMPORTANT -- MOVE TO DATABASE. THIS IS A TEMPORARY HACK 
   grav(:) = 0.
-          
+
   call Timers_start("hy_block")
 ! if we are using a hybrid Riemann solvers (i.e. using HLLE inside shocks), 
 ! then use a multi-dimensional shock detection -- this is more 
 ! accurate than the 1-d one done by the original PPM algorithm.
 ! Flags that signal in which cells a shock was detected are passed to this
 ! subroutine in the shock_multid array, if necessary.
-  blkLimitsGC(LOW,:)=1
-  blkLimitsGC(HIGH,:)=limGC(HIGH,:)-limGC(LOW,:)+1
-  blkLimits(LOW,:)=blkLimitsGC(LOW,:)+NGUARD
-  blkLimits(HIGH,:)=blkLimitsGC(HIGH,:)-NGUARD
-  len=blkLimitsGC(HIGH,IAXIS)
+
+
   tempFlx(:,:,:,:) = 0.0
   select case (sweepDir)
   case (SWEEP_X)
      j1 = 1; j2 = 1
      k1 = 1; k2 = 1
+     jglobal1 = 1; jglobal2 = 1
+     kglobal1 = 1; kglobal2 = 1
      !! Loop over the interior to create the 1d slices
      iloGc = limGC(LOW,IAXIS)
      ihiGc = limGC(HIGH,IAXIS)
      ilo = lim(LOW,IAXIS)
      ihi = lim(HIGH,IAXIS)
-!!$     if (hy_useCellAreasForFluxes) then
-!!$        allocate(faceAreas(ihi+1, &
-!!$              blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-!!$              blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
-!!$        call Grid_getBlkData(block, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
-!!$                             (/1,blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-!!$                             faceAreas, &
-!!$          (/ihi+1, lim(HIGH,JAXIS)-lim(LOW,JAXIS)+1, &
-!!$                   lim(HIGH,KAXIS)-lim(LOW,KAXIS)+1/) )
-!!$        allocate(cellVolumes(ihi, &
-!!$              blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-!!$              blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
-!!$        call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, &
-!!$                             (/1,lim(LOW,JAXIS),lim(LOW,KAXIS)/), &
-!!$                             cellVolumes, &
-!!$          (/ihi, blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1, &
-!!$                 blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1/) )
-!!$     end if
+
+     if (hy_useCellAreasForFluxes) then
+        allocate(faceAreas(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)+1,     &
+             blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),     &
+             blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+        startPos=1
+        len(:)=blkLimitsGC(HIGH,:)-blkLimitsGC(LOW,:)+1
+        len(IAXIS)=len(IAXIS)+1
+        call Grid_getBlkData(block, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
+             startPos, faceAreas, len)
+        len(IAXIS)=len(IAXIS)-1
+        allocate(cellVolumes(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),     &
+             blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),     &
+             blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+        call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, startPos, &
+             cellVolumes,len)
+     end if
+
+
+     kglobal=lim(LOW,KAXIS)-1
      do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
         point(KAXIS) = k
+        kglobal=kglobal+1
+        jglobal=lim(LOW,JAXIS)-1
         do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
            point(JAXIS) = j
-!!$           if (hy_useCellAreasForFluxes) then
-!!$              areaLeft(1:ihi+1) = faceAreas(:,j,k)
-!!$              cvol(1:ihi) = cellVolumes(:,j,k)
-!!$           end if
-           shock_multid(1:len) = shock(1:len,j,k)
-           u(:)    = solnData( VELX_VAR,iloGc:ihiGc, j, k )
-           ut(:)   = solnData( VELY_VAR, iloGc:ihiGc, j, k )
-           utt(:)  = solnData( VELZ_VAR, iloGc:ihiGc, j, k )
-           rho(:)  = solnData( DENS_VAR, iloGc:ihiGc, j, k )
-           p(:)    = solnData( PRES_VAR, iloGc:ihiGc, j, k )
-           e(:)    = solnData( ENER_VAR, iloGc:ihiGc, j, k )
-           tmp(:)  = solnData( TEMP_VAR, iloGc:ihiGc, j, k )
-           game(:) = solnData( GAME_VAR, iloGc:ihiGc, j, k )
-           gamc(:) = solnData( GAMC_VAR, iloGc:ihiGc, j, k )
+           jglobal=jglobal+1
+           if (hy_useCellAreasForFluxes) then
+              areaLeft(1:blkLimits(HIGH,IAXIS)+1) = faceAreas(1:blkLimits(HIGH,IAXIS)+1,j,k)
+              cvol(1:blkLimits(HIGH,IAXIS)) = cellVolumes(1:blkLimits(HIGH,IAXIS),j,k)
+           end if
+           shock_multid(1:len(IAXIS)) = shock(1:len(IAXIS),j,k)
+           u(:)    = solnData( VELX_VAR,iloGc:ihiGc, jglobal,kglobal )
+           ut(:)   = solnData( VELY_VAR, iloGc:ihiGc, jglobal,kglobal )
+           utt(:)  = solnData( VELZ_VAR, iloGc:ihiGc, jglobal,kglobal )
+           rho(:)  = solnData( DENS_VAR, iloGc:ihiGc, jglobal,kglobal )
+           p(:)    = solnData( PRES_VAR, iloGc:ihiGc, jglobal,kglobal )
+           e(:)    = solnData( ENER_VAR, iloGc:ihiGc, jglobal,kglobal )
+           tmp(:)  = solnData( TEMP_VAR, iloGc:ihiGc, jglobal,kglobal )
+           game(:) = solnData( GAME_VAR, iloGc:ihiGc, jglobal,kglobal )
+           gamc(:) = solnData( GAMC_VAR, iloGc:ihiGc, jglobal,kglobal )
 
            if (numXN > 0) then
 #ifdef INDEXREORDER
               !! Note: solnData is going to be flipped so this is OK even if it does not seem so
-              xn(:,:) = solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1),iloGc:ihiGc,j,k)
+              xn(:,:) = solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1),iloGc:ihiGc,jglobal,kglobal)
 #else
               xn(:,:) = transpose&
-                (solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1),iloGc:ihiGc,j,k ))
+                (solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1),iloGc:ihiGc,jglobal,kglobal ))
 #endif
            end if
            if (NDIM.ge.2) then
               j1 = j - 1 ; j2 = j + 1
+              jglobal1=jglobal-1; jglobal2=jglobal+1
            end if
            if (NDIM.eq.3) then
               k1 = k - 1 ; k2 = k + 1
+              kglobal1=kglobal-1; kglobal2=kglobal+1
            end if
 
            !!Initialise to zero (because we may not be overwriting the entire array)
@@ -373,10 +381,10 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
            utbt = 0
            utrt = 0
            utlt = 0
-           uttp(:) = solnData(VELY_VAR, iloGc:ihiGc, j2, k)
-           utbt(:) = solnData(VELY_VAR, iloGc:ihiGc, j1, k)
-           utrt(:) = solnData(VELZ_VAR, iloGc:ihiGc, j, k2)
-           utlt(:) = solnData(VELZ_VAR, iloGc:ihiGc, j, k1)
+           uttp(:) = solnData(VELY_VAR, iloGc:ihiGc, jglobal2, kglobal)
+           utbt(:) = solnData(VELY_VAR, iloGc:ihiGc, jglobal1, kglobal)
+           utrt(:) = solnData(VELZ_VAR, iloGc:ihiGc, jglobal, kglobal2)
+           utlt(:) = solnData(VELZ_VAR, iloGc:ihiGc, jglobal, kglobal1)
 
            xbot = 0.
            xtop = 0.           
@@ -410,45 +418,44 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
                           rhoflx, uflx, pav, utflx, uttflx,         &
                           eflx, eintflx, xnflx)
 !        call Timers_stop("hydro_1d")
+           tempAreaLeft(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,j,k) = areaLeft(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1)
+         if (hy_updateHydroFluxes) then
+           do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
+              tempDtDx(i,j,k)     = dtdx(i)
+              tempArea(i,j,k)     = area(i)
+              tempGrav1d_o(i,j,k) = grav(i)
+              tempGrav1d(i,j,k)   = ngrav(i)
+              tempFict(i,j,k)     = fict(i)
 
-           tempAreaLeft(ilo:ihi+1,j,k) = areaLeft(ilo:ihi+1)
-!!$         if (hy_updateHydroFluxes) then
-!!$           do i = ilo, ihi
-!!$              tempDtDx(i,j,k)     = dtdx(i)
-!!$              tempArea(i,j,k)     = area(i)
-!!$              tempGrav1d_o(i,j,k) = grav(i)
-!!$              tempGrav1d(i,j,k)   = ngrav(i)
-!!$              tempFict(i,j,k)     = fict(i)
-!!$
-!!$              point(IAXIS) = i
-!!$              call Grid_getSingleCellVol(block%ID,EXTERIOR,point,cellVolume)
-!!$              hy_gravMass(IAXIS) = hy_gravMass(IAXIS) + grav(i)*rho(i)*cellVolume
-!!$           enddo
-!!$           
-!!$           do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)+1
-!!$              tempFlx(RHO_FLUX,i,j,k)  = rhoflx(i)
-!!$              tempFlx(U_FLUX,i,j,k)    = uflx(i)
-!!$              tempFlx(P_FLUX,i,j,k)    = pav(i)
-!!$              tempFlx(UT_FLUX,i,j,k)   = utflx(i)
-!!$              tempFlx(UTT_FLUX,i,j,k)  = uttflx(i)
-!!$              tempFlx(E_FLUX,i,j,k)    = eflx(i)
-!!$              tempFlx(EINT_FLUX,i,j,k) = eintflx(i)
-!!$           enddo
-!!$           
-!!$           do sp = 1, numXn
-!!$              do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)+1
-!!$                 tempFlx(SPECIES_FLUX_BEGIN+sp-1,i,j,k) = xnflx(i,sp)
-!!$              end do
-!!$           enddo
-!!$         else
-           do i = ilo, ihi
+              point(IAXIS) = i
+              call Grid_getSingleCellVol(block,EXTERIOR,point,cellVolume)
+              hy_gravMass(IAXIS) = hy_gravMass(IAXIS) + grav(i)*rho(i)*cellVolume
+           enddo
+           
+           do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)+1
+              tempFlx(RHO_FLUX,i,j,k)  = rhoflx(i)
+              tempFlx(U_FLUX,i,j,k)    = uflx(i)
+              tempFlx(P_FLUX,i,j,k)    = pav(i)
+              tempFlx(UT_FLUX,i,j,k)   = utflx(i)
+              tempFlx(UTT_FLUX,i,j,k)  = uttflx(i)
+              tempFlx(E_FLUX,i,j,k)    = eflx(i)
+              tempFlx(EINT_FLUX,i,j,k) = eintflx(i)
+           enddo
+           
+           do sp = 1, numXn
+              do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)+1
+                 tempFlx(SPECIES_FLUX_BEGIN+sp-1,i,j,k) = xnflx(i,sp)
+              end do
+           enddo
+         else
+           do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
               tempDtDx(i,j,k)     = dtdx(i)
               tempArea(i,j,k)     = area(i)
               tempGrav1d_o(i,j,k) = grav(i)
               tempGrav1d(i,j,k)   = ngrav(i)
               tempFict(i,j,k)     = fict(i)
            end do
-!!$         end if
+         end if
         
         end do !!j loop
      end do !!k loop
@@ -456,61 +463,63 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
 #if NDIM >= 2
   case (SWEEP_Y)
      k1 = 1; k2 = 1
+     kglobal1 = 1; kglobal2 = 1
      !! Loop over the interior to create the 1d slices
      jlo = lim(LOW,JAXIS)
      jhi = lim(HIGH,JAXIS)
      jloGc = limGC(LOW,JAXIS)
      jhiGc = limGC(HIGH,JAXIS)
-!!$     if (hy_useCellAreasForFluxes) then
-!!$        allocate(faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-!!$                           jhi+1, &
-!!$                           blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
-!!$        call Grid_getBlkData(block, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
-!!$                             (/blkLimits(LOW,IAXIS),1,blkLimits(LOW,KAXIS)/), &
-!!$                             faceAreas, &
-!!$                             (/blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1, &
-!!$                               jhi+1, &
-!!$                               blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1/) )
-!!$        allocate(cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-!!$                             jhi, &
-!!$                             blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
-!!$        call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, &
-!!$                             (/blkLimits(LOW,IAXIS),1,blkLimits(LOW,KAXIS)/), &
-!!$                             cellVolumes, &
-!!$                             (/blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1, &
-!!$                               jhi, &
-!!$                               blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1/) )
-!!$     end if
+     if (hy_useCellAreasForFluxes) then
+        allocate(faceAreas(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),     &
+             blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)+1,     &
+             blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+        startPos=1
+        len(:)=blkLimitsGC(HIGH,:)-blkLimitsGC(LOW,:)+1
+        len(JAXIS)=len(JAXIS)+1
+        call Grid_getBlkData(block, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
+             startPos, faceAreas, len)
+        len(JAXIS)=len(JAXIS)-1
+        allocate(cellVolumes(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),     &
+             blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),     &
+             blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+        call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, startPos, &
+             cellVolumes,len)
+     end if
+     kglobal=lim(LOW,KAXIS)-1
      do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
         point(KAXIS) = k
+        kglobal=kglobal+1
+        iglobal=lim(LOW,IAXIS)-1
         do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
            point(IAXIS) = i
-           
-!!$           if (hy_useCellAreasForFluxes) then
-!!$              areaLeft(1:jhi+1) = faceAreas(i,:,k)
-!!$              cvol(1:jhi) = cellVolumes(i,:,k)
-!!$           end if
+           iglobal=iglobal+1
+           if (hy_useCellAreasForFluxes) then
+              areaLeft(1:blkLimits(HIGH,JAXIS)+1) = faceAreas(i,1:blkLimits(HIGH,JAXIS)+1,k)
+              cvol(1:blkLimits(HIGH,JAXIS)) = cellVolumes(i,1:blkLimits(HIGH,JAXIS),k)
+           end if
            shock_multid(:) = shock(i,:,k)
-           u(:)    = solnData( VELY_VAR,i, jloGc:jhiGc, k )
-           ut(:)   = solnData( VELX_VAR,i, jloGc:jhiGc, k )
-           utt(:)  = solnData( VELZ_VAR,i, jloGc:jhiGc, k )
-           rho(:)  = solnData( DENS_VAR,i, jloGc:jhiGc, k )
-           p(:)    = solnData( PRES_VAR,i, jloGc:jhiGc, k )
-           e(:)    = solnData( ENER_VAR,i, jloGc:jhiGc, k )
-           tmp(:)  = solnData( TEMP_VAR,i, jloGc:jhiGc, k )
-           game(:) = solnData( GAME_VAR,i, jloGc:jhiGc, k )
-           gamc(:) = solnData( GAMC_VAR,i, jloGc:jhiGc, k )
+           u(:)    = solnData( VELY_VAR,iglobal, jloGc:jhiGc, kglobal )
+           ut(:)   = solnData( VELX_VAR,iglobal, jloGc:jhiGc, kglobal )
+           utt(:)  = solnData( VELZ_VAR,iglobal, jloGc:jhiGc, kglobal )
+           rho(:)  = solnData( DENS_VAR,iglobal, jloGc:jhiGc, kglobal )
+           p(:)    = solnData( PRES_VAR,iglobal, jloGc:jhiGc, kglobal )
+           e(:)    = solnData( ENER_VAR,iglobal, jloGc:jhiGc, kglobal )
+           tmp(:)  = solnData( TEMP_VAR,iglobal, jloGc:jhiGc, kglobal )
+           game(:) = solnData( GAME_VAR,iglobal, jloGc:jhiGc, kglobal )
+           gamc(:) = solnData( GAMC_VAR,iglobal, jloGc:jhiGc, kglobal )
            if (numXN > 0) then
 #ifdef INDEXREORDER
-              xn(:,:) = solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1),i,jloGc:jhiGc,k)
+              xn(:,:) = solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1),iglobal,jloGc:jhiGc,kglobal)
 #else
               xn(:,:) = transpose&
-                &(solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1),i,jloGc:jhiGc,k ))
+                &(solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1),iglobal,jloGc:jhiGc,kglobal ))
 #endif
            end if
            i1 = i - 1 ; i2 = i + 1
+           iglobal1 = iglobal - 1 ; iglobal2 = iglobal + 1
            if (NDIM.eq.3) then
               k1 = k - 1 ; k2 = k + 1
+              kglobal1 = kglobal - 1 ; kglobal2 = kglobal + 1
            end if
            
            !!Initialise to zero (because we may not be overwriting the entire array)
@@ -518,10 +527,10 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
            utbt = 0
            utrt = 0
            utlt = 0
-           uttp(:) = solnData(VELX_VAR, i2 ,jloGc:jhiGc, k)
-           utbt(:) = solnData(VELX_VAR, i1,jloGc:jhiGc, k)
-           utrt(:) = solnData(VELZ_VAR,i, jloGc:jhiGc, k2)
-           utlt(:) = solnData(VELZ_VAR,i, jloGc:jhiGc, k1)
+           uttp(:) = solnData(VELX_VAR, iglobal2 ,jloGc:jhiGc, kglobal)
+           utbt(:) = solnData(VELX_VAR, iglobal1,jloGc:jhiGc, kglobal)
+           utrt(:) = solnData(VELZ_VAR,iglobal, jloGc:jhiGc, kglobal2)
+           utlt(:) = solnData(VELZ_VAR,iglobal, jloGc:jhiGc, kglobal1)
 
            xbot = secondCoord(i1)
            xtop = secondCoord(i2)
@@ -550,38 +559,38 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
                           rhoflx, uflx, pav, utflx, uttflx,        &
                           eflx, eintflx, xnflx)
 !        call Timers_stop("hydro_1d")
-
            tempAreaLeft(i,blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,k) = areaLeft(blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1)
-!!$         if (hy_updateHydroFluxes) then
-!!$           do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
-!!$              tempDtDx(i,j,k)     = dtdx(j)
-!!$              tempArea(i,j,k)     = area(j)
-!!$              tempGrav1d_o(i,j,k) = grav(j)   !! Gradient in y direction
-!!$              tempGrav1d(i,j,k)   = ngrav(j)  !! Gradient in y direction + (dt/dtOld)*(difference in time)
-!!$              tempFict(i,j,k)     = fict(j)
-!!$
-!!$              point(JAXIS) = j
-!!$              call Grid_getSingleCellVol(block%id,EXTERIOR,point,cellVolume)
-!!$              hy_gravMass(JAXIS) = hy_gravMass(JAXIS) + grav(j)*rho(j)*cellVolume !  grav(j)*rho(j)*cellVolume 
-!!$
-!!$           enddo
-           
-!!$           do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)+1
-!!$              tempFlx(RHO_FLUX,i,j,k)  = rhoflx(j)
-!!$              tempFlx(U_FLUX,i,j,k)    = uflx(j)
-!!$              tempFlx(P_FLUX,i,j,k)    = pav(j)
-!!$              tempFlx(UT_FLUX,i,j,k)   = utflx(j)
-!!$              tempFlx(UTT_FLUX,i,j,k)  = uttflx(j)
-!!$              tempFlx(E_FLUX,i,j,k)    = eflx(j)
-!!$              tempFlx(EINT_FLUX,i,j,k) = eintflx(j)
-!!$           enddo
+
+         if (hy_updateHydroFluxes) then
+           do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
+              tempDtDx(i,j,k)     = dtdx(j)
+              tempArea(i,j,k)     = area(j)
+              tempGrav1d_o(i,j,k) = grav(j)   !! Gradient in y direction
+              tempGrav1d(i,j,k)   = ngrav(j)  !! Gradient in y direction + (dt/dtOld)*(difference in time)
+              tempFict(i,j,k)     = fict(j)
+
+              point(JAXIS) = j
+              call Grid_getSingleCellVol(block,EXTERIOR,point,cellVolume)
+              hy_gravMass(JAXIS) = hy_gravMass(JAXIS) + grav(j)*rho(j)*cellVolume !  grav(j)*rho(j)*cellVolume 
+
+           enddo
 !!$           
-!!$           do sp = 1, numXn
-!!$              do j = blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1
-!!$                 tempFlx(SPECIES_FLUX_BEGIN+sp-1,i,j,k) = xnflx(j,sp)
-!!$              end do
-!!$           enddo
-!!$         else
+           do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)+1
+              tempFlx(RHO_FLUX,i,j,k)  = rhoflx(j)
+              tempFlx(U_FLUX,i,j,k)    = uflx(j)
+              tempFlx(P_FLUX,i,j,k)    = pav(j)
+              tempFlx(UT_FLUX,i,j,k)   = utflx(j)
+              tempFlx(UTT_FLUX,i,j,k)  = uttflx(j)
+              tempFlx(E_FLUX,i,j,k)    = eflx(j)
+              tempFlx(EINT_FLUX,i,j,k) = eintflx(j)
+           enddo
+           
+           do sp = 1, numXn
+              do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)+1
+                 tempFlx(SPECIES_FLUX_BEGIN+sp-1,i,j,k) = xnflx(j,sp)
+              end do
+           enddo
+         else
            do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
               tempDtDx(i,j,k)     = dtdx(j)
               tempArea(i,j,k)     = area(j)
@@ -589,7 +598,7 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
               tempGrav1d(i,j,k)   = ngrav(j)
               tempFict(i,j,k)     = fict(j)
            end do
-!!$         end if
+         end if
         end do !!j loop
      end do !!k loop
 
@@ -604,151 +613,154 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
      kloGc = limGC(LOW,KAXIS)
      khiGc = limGC(HIGH,KAXIS)
 
-!!$     if (hy_useCellAreasForFluxes) then
-!!$        allocate(faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-!!$                           blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-!!$                           khi+1))
-!!$        call Grid_getBlkData(block, CELL_FACEAREA, KLO_FACE, EXTERIOR, &
-!!$                             (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),1/), &
-!!$                             faceAreas, &
-!!$                             (/blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1, &
-!!$                               blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1, &
-!!$                               khi+1/) )
-!!$        allocate(cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-!!$                             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-!!$                             khi))
-!!$        call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, &
-!!$                             (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),1/), &
-!!$                             cellVolumes, &
-!!$                             (/blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1, &
-!!$                               blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1, &
-!!$                               khi/) )
-!!$     end if
+     if (hy_useCellAreasForFluxes) then
+        allocate(faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+                           blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+                           blkLimitsGC(LOW,KAXIS):blkLimits(HIGH,KAXIS)+1))
+        startPos=1
+        len(:)=blkLimitsGC(HIGH,:)-blkLimitsGC(LOW,:)+1
+        len(KAXIS)=len(KAXIS)+1
+        call Grid_getBlkData(block, CELL_FACEAREA, KLO_FACE, EXTERIOR, &
+             startPos, faceAreas,len )
+        len(KAXIS)=len(KAXIS)-1
+        allocate(cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+                             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+                             blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
+        call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, startPos,&
+             cellVolumes, len)
+     end if
+     jglobal=lim(LOW,JAXIS)-1
      do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
         point(JAXIS) = j
+        jglobal=jglobal+1
+        iglobal=lim(LOW,IAXIS)-1
         do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
            point(IAXIS) = i
-           
+           iglobal=iglobal+1
            if (hy_useCellAreasForFluxes) then
-              areaLeft(1:blkLimits(HIGH,KAXIS)+1) = faceAreas(i,j,:)
-              cvol(1:blkLimits(HIGH,KAXIS)) = cellVolumes(i,j,:)
+              areaLeft(1:blkLimits(HIGH,KAXIS)+1) = faceAreas(i,j,1:blkLimits(HIGH,KAXIS)+1)
+              cvol(1:blkLimits(HIGH,KAXIS)) = cellVolumes(i,j,1:blkLimits(HIGH,KAXIS))
            end if
            shock_multid(:) = shock(i,j,:)
            
-           u(:)    = solnData( VELZ_VAR, i, j, kloGc:khiGc )
-           ut(:)   = solnData( VELX_VAR, i, j, kloGc:khiGc )
-           utt(:)  = solnData( VELY_VAR, i, j, kloGc:khiGc )
-           rho(:)  = solnData( DENS_VAR, i, j, kloGc:khiGc )
-           p(:)    = solnData( PRES_VAR, i, j, kloGc:khiGc )
-           e(:)    = solnData( ENER_VAR, i, j, kloGc:khiGc )
-           tmp(:)  = solnData( TEMP_VAR, i, j, kloGc:khiGc )
-           game(:) = solnData( GAME_VAR, i, j, kloGc:khiGc )
-           gamc(:) = solnData( GAMC_VAR, i, j, kloGc:khiGc )
-
+           u(:)    = solnData( VELZ_VAR, iglobal, jglobal, kloGc:khiGc )
+           ut(:)   = solnData( VELX_VAR, iglobal, jglobal, kloGc:khiGc )
+           utt(:)  = solnData( VELY_VAR, iglobal, jglobal, kloGc:khiGc )
+           rho(:)  = solnData( DENS_VAR, iglobal, jglobal, kloGc:khiGc )
+           p(:)    = solnData( PRES_VAR, iglobal, jglobal, kloGc:khiGc )
+           e(:)    = solnData( ENER_VAR, iglobal, jglobal, kloGc:khiGc )
+           tmp(:)  = solnData( TEMP_VAR, iglobal, jglobal, kloGc:khiGc )
+           game(:) = solnData( GAME_VAR, iglobal, jglobal, kloGc:khiGc )
+           gamc(:) = solnData( GAMC_VAR, iglobal, jglobal, kloGc:khiGc )
+           
            if (numXN > 0) then
 #ifdef INDEXREORDER
               !! solnData will be flipped so this is OK
-              xn(:,:) = solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1), i, j, kloGc:khiGc)
+              xn(:,:) = solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1), iglobal, jglobal, kloGc:khiGc)
 #else
               xn(:,:) = transpose&
-                &(solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1), i, j, kloGc:khiGc))
+                   &(solnData(SPECIES_BEGIN:(SPECIES_BEGIN+numXN-1), iglobal, jglobal, kloGc:khiGc))
 #endif
            end if
-
+           
            i1 = i - 1 ; i2 = i + 1
            j1 = j - 1 ; j2 = j + 1
+           
+           iglobal1 = iglobal - 1 ; iglobal2 = iglobal + 1
+           jglobal1 = jglobal - 1 ; jglobal2 = jglobal + 1
            
            !!Initialise to zero (because we may not be overwriting the entire array)
            uttp = 0
            utbt = 0
            utrt = 0
            utlt = 0
-           uttp(:) = solnData(VELX_VAR, i2, j, kloGc:khiGc)
-           utbt(:) = solnData(VELX_VAR, i1, j, kloGc:khiGc)
-           utrt(:) = solnData(VELY_VAR, i, j2, kloGc:khiGc)
-           utlt(:) = solnData(VELY_VAR, i, j1, kloGc:khiGc)
+           uttp(:) = solnData(VELX_VAR, iglobal2, jglobal, kloGc:khiGc)
+           utbt(:) = solnData(VELX_VAR, iglobal1, jglobal, kloGc:khiGc)
+           utrt(:) = solnData(VELY_VAR, iglobal, jglobal2, kloGc:khiGc)
+           utlt(:) = solnData(VELY_VAR, iglobal, jglobal1, kloGc:khiGc)
            
            xbot = secondCoord(i1)
            xtop = secondCoord(i2)
            ylft = thirdCoord(j1)
            yrgt = thirdCoord(j2)
            numIntCells = khi-klo+1
-!        call Timers_start("hydro_1d")
+           !        call Timers_start("hydro_1d")
            call hydro_1d (block,numIntCells,numCells,numguard,bcs, &
-                          sweepDir, hy_meshMe ,dt,dtOld, &
-                          i, j,                       &
-                          hy_dirGeom(KAXIS), hy_useGravity,        &
-                          xbot, xtop,                              &
-                          ybot, ytop, ylft, yrgt,                  &
-                          zlft, zrgt, ugrid,                       &
-                          primaryCoord ,     &
-                          primaryLeftCoord , &
-                          primaryRghtCoord , &
-                          primaryDx        , &
-                          secondCoord      , &
-                          thirdCoord       , &
-                          radialCoord     , &
-                          u, ut, utt, rho, p, e, tmp, game, gamc,  &
-                          xn, utbt, uttp, utlt, utrt,              &
-                          shock_multid,                            &
-                          dtdx, areaLeft, area, cvol, grav, ngrav, fict, &
-                          rhoflx, uflx, pav, utflx, uttflx,        &
-                          eflx, eintflx, xnflx)
-!        call Timers_stop("hydro_1d")
+                sweepDir, hy_meshMe ,dt,dtOld, &
+                i, j,                       &
+                hy_dirGeom(KAXIS), hy_useGravity,        &
+                xbot, xtop,                              &
+                ybot, ytop, ylft, yrgt,                  &
+                zlft, zrgt, ugrid,                       &
+                primaryCoord ,     &
+                primaryLeftCoord , &
+                primaryRghtCoord , &
+                primaryDx        , &
+                secondCoord      , &
+                thirdCoord       , &
+                radialCoord     , &
+                u, ut, utt, rho, p, e, tmp, game, gamc,  &
+                xn, utbt, uttp, utlt, utrt,              &
+                shock_multid,                            &
+                dtdx, areaLeft, area, cvol, grav, ngrav, fict, &
+                rhoflx, uflx, pav, utflx, uttflx,        &
+                eflx, eintflx, xnflx)
+           !        call Timers_stop("hydro_1d")
            tempAreaLeft(i,j,blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)+1) = areaLeft(blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)+1)
-!!$         if (hy_updateHydroFluxes) then
-!!$           do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
-!!$              tempDtDx(i,j,k)     = dtdx(k)
-!!$              tempArea(i,j,k)     = area(k)
-!!$              tempGrav1d_o(i,j,k) = grav(k)
-!!$              tempGrav1d(i,j,k)   = ngrav(k)
-!!$              tempFict(i,j,k)     = fict(k)
-!!$
-!!$              point(KAXIS) = k
-!!$              call Grid_getSingleCellVol(block%id,EXTERIOR,point,cellVolume)
-!!$              hy_gravMass(KAXIS) = hy_gravMass(KAXIS) + grav(k)*rho(k)*cellVolume
-!!$
-!!$           enddo
-!!$           
-!!$           do k = blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)+1 
-!!$              tempFlx(RHO_FLUX,i,j,k)  = rhoflx(k)
-!!$              tempFlx(U_FLUX,i,j,k)    = uflx(k)
-!!$              tempFlx(P_FLUX,i,j,k)    = pav(k)
-!!$              tempFlx(UT_FLUX,i,j,k)  = utflx(k)
-!!$              tempFlx(UTT_FLUX,i,j,k)  = uttflx(k)
-!!$              tempFlx(E_FLUX,i,j,k)    = eflx(k)
-!!$              tempFlx(EINT_FLUX,i,j,k) = eintflx(k)
-!!$           enddo
-!!$           
-!!$           do sp = 1, numXn
-!!$              do k = klo, khi+1 
-!!$                 tempFlx(SPECIES_FLUX_BEGIN+sp-1,i,j,k) = xnflx(k,sp)
-!!$              end do
-!!$           enddo
-!!$           
-!!$         else
-           do k = blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)+i
-              tempDtDx(i,j,k)     = dtdx(k)
-              tempArea(i,j,k)     = area(k)
-              tempGrav1d_o(i,j,k) = grav(k)
-              tempGrav1d(i,j,k)   = ngrav(k)
-              tempFict(i,j,k)     = fict(k)
-           end do
-!!$         end if
+           
+           if (hy_updateHydroFluxes) then
+              do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
+                 tempDtDx(i,j,k)     = dtdx(k)
+                 tempArea(i,j,k)     = area(k)
+                 tempGrav1d_o(i,j,k) = grav(k)
+                 tempGrav1d(i,j,k)   = ngrav(k)
+                 tempFict(i,j,k)     = fict(k)
+                 
+                 point(KAXIS) = k
+                 call Grid_getSingleCellVol(block,EXTERIOR,point,cellVolume)
+                 hy_gravMass(KAXIS) = hy_gravMass(KAXIS) + grav(k)*rho(k)*cellVolume
+                 
+              enddo
+              
+              do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)+1 
+                 tempFlx(RHO_FLUX,i,j,k)  = rhoflx(k)
+                 tempFlx(U_FLUX,i,j,k)    = uflx(k)
+                 tempFlx(P_FLUX,i,j,k)    = pav(k)
+                 tempFlx(UT_FLUX,i,j,k)  = utflx(k)
+                 tempFlx(UTT_FLUX,i,j,k)  = uttflx(k)
+                 tempFlx(E_FLUX,i,j,k)    = eflx(k)
+                 tempFlx(EINT_FLUX,i,j,k) = eintflx(k)
+              enddo
+              
+              do sp = 1, numXn
+                 do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)+1  
+                    tempFlx(SPECIES_FLUX_BEGIN+sp-1,i,j,k) = xnflx(k,sp)
+                 end do
+              enddo
+              
+           else
+              do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
+                 tempDtDx(i,j,k)     = dtdx(k)
+                 tempArea(i,j,k)     = area(k)
+                 tempGrav1d_o(i,j,k) = grav(k)
+                 tempGrav1d(i,j,k)   = ngrav(k)
+                 tempFict(i,j,k)     = fict(k)
+              end do
+           end if
            
         end do
      end do
      
 #endif
-     
+  
   end select
-
-!!$  if (hy_useCellAreasForFluxes) then
-!!$     deallocate(cellVolumes)
-!!$     deallocate(faceAreas)
-!!$  end if
+  
+  if (hy_useCellAreasForFluxes) then
+     deallocate(cellVolumes)
+     deallocate(faceAreas)
+  end if
   deallocate( hy_pstor)
-
+  
   deallocate(hy_dela) 
   deallocate(hy_dp) 
   deallocate( hy_du)  
@@ -772,17 +784,17 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
   deallocate( hy_pw6l) 
   deallocate( hy_pw6r) 
   deallocate( hy_pwcubic) 
-
+  
   deallocate(hy_deint)
   deallocate(hy_eint6)
   deallocate(hy_eiLft)
   deallocate( hy_eiRght)
-
+  
   deallocate(hy_dxn)
   deallocate(hy_xn6)
   deallocate(hy_xnlft)
   deallocate( hy_xnrght)
-
+  
   deallocate(hy_gravl) 
   deallocate( hy_gravr) 
   deallocate(hy_clft) 
@@ -802,7 +814,7 @@ subroutine hy_ppm_block( hy_meshMe,block,sweepDir, dt, dtOld, &
   deallocate( hy_gmclft) 
   deallocate( hy_gmcrgt) 
   
-
+  
   call Timers_stop("hy_block")
 end subroutine hy_ppm_block
 

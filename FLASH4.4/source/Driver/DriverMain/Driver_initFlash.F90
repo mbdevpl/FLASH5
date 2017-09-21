@@ -76,7 +76,7 @@ subroutine Driver_initFlash()
 
   use IncompNS_interface, ONLY : IncompNS_init
 
-#ifdef FLASH_GRID_ANYAMREX
+#ifdef FLASH_GRID_AMREXTRANSITION
   use amrex_base_module, ONLY : amrex_init
 #endif
 
@@ -107,7 +107,7 @@ subroutine Driver_initFlash()
   !! that might be needed during the simulation
   call Driver_setupParallelEnv()
 
-#ifdef FLASH_GRID_ANYAMREX
+#ifdef FLASH_GRID_AMREXTRANSITION
   call amrex_init(dr_globalComm,.FALSE.) !DEV: Should use dr_meshComm !?
 #endif
 

@@ -268,7 +268,8 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
      call itor%next()
   end do
 
-  call itor%destroy_iterator()
+  ! DEVNOTE: Decorate with compiler check?
+!  call itor%destroy_iterator()
 
   return 
 

@@ -96,11 +96,12 @@
 !!REORDER(4): fluxes
 !!REORDER(5): gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 #include "Flash.h"
-subroutine Grid_putFluxData(blockID, axis, fluxes, dataSize, pressureSlots, areaLeft)
+subroutine Grid_putFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLeft)
 
   use physicaldata, ONLY : flux_x, flux_y, flux_z, nfluxes
   use tree, ONLY : surr_blks, nodetype
   use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx
+  use block_metadata, ONLY : block_metadata_t
 #ifdef FLASH_HYDRO_UNSPLIT
 #if NDIM >=2
   use gr_specificData, ONLY : gr_xflx_yface, gr_yflx_xface
@@ -114,12 +115,13 @@ subroutine Grid_putFluxData(blockID, axis, fluxes, dataSize, pressureSlots, area
 
 #include "constants.h"
 
-  integer, intent(IN) :: blockID
+  type(block_metadata_t), intent(IN) :: block
   integer, intent(IN) :: axis
   integer, intent(IN), dimension(3) :: dataSize
   real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes
   integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
   real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
+  integer :: blockID
 
 #if NFLUXES > 0
   integer :: presVar, np
@@ -133,7 +135,7 @@ subroutine Grid_putFluxData(blockID, axis, fluxes, dataSize, pressureSlots, area
      presP => presDefault
   end if
 
-
+  blockID=block%id
   sx = NGUARD+1
   sy = NGUARD*K2D+1
   sz = NGUARD*K3D+1

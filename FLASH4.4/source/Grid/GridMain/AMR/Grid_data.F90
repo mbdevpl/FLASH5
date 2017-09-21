@@ -30,6 +30,8 @@ Module Grid_data
 #include "constants.h"
 #include "Flash.h"
 
+  integer,save :: gr_lRefineMax
+
   real,save, allocatable, dimension(:,:) :: gr_delta
   integer, save :: gr_iguard = NGUARD
   integer, save :: gr_jguard = NGUARD 

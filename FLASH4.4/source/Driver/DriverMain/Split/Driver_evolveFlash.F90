@@ -35,7 +35,6 @@
 #ifdef DEBUG_ALL
 #define DEBUG_DRIVER
 #endif
-#define DEBUG_DRIVER
 
 subroutine Driver_evolveFlash()
 

@@ -1,107 +1,109 @@
 module actual_eos_module
 
     use eos_type_module
+    use eos_helmData, only: EOSIMAX, EOSJMAX
 
-    character (len=64) :: eos_name = "helmholtz"
+#include "Flash.h"
+#include "constants.h"
+
+    character (len=64), public :: eos_name = "helmholtz"
 
     ! Runtime parameters
-    logical :: do_coulomb
-    logical :: input_is_constant
+    logical, save :: do_coulomb
+    logical, save :: input_is_constant
 
     !..for the tables, in general
-!   The below parameters correspond to the version of helm_table distributed with FLASH
-    integer, parameter, public :: imax = 211, jmax = 71
+    integer, parameter, private :: imax = EOSIMAX, jmax = EOSJMAX
+    integer, save            :: itmax,jtmax
+    double precision,save   :: d(imax),t(jmax)
 
-    integer            :: itmax,jtmax
-    real, public   :: d(imax),t(jmax)
-
-    real, public :: tlo, thi, tstpp, tstpi
-    real, public :: dlo, dhi, dstpp, dstpi
+    double precision, save :: tlo, thi, tstp, tstpi
+    double precision, save :: dlo, dhi, dstp, dstpi
 
     !..for the helmholtz free energy tables
-    real, public :: f(imax,jmax),fd(imax,jmax),                     &
-                        ft(imax,jmax),fdd(imax,jmax),ftt(imax,jmax),    &
-                        fdt(imax,jmax),fddt(imax,jmax),fdtt(imax,jmax), &
-                        fddtt(imax,jmax)
+    double precision, save :: f(imax,jmax),fd(imax,jmax),                     &
+                              ft(imax,jmax),fdd(imax,jmax),ftt(imax,jmax),    &
+                              fdt(imax,jmax),fddt(imax,jmax),fdtt(imax,jmax), &
+                              fddtt(imax,jmax)
 
     !..for the pressure derivative with density ables
-    real, public :: dpdf(imax,jmax),dpdfd(imax,jmax),                &
-                        dpdft(imax,jmax),dpdfdt(imax,jmax)
+    double precision, save :: dpdf(imax,jmax),dpdfd(imax,jmax),                &
+                              dpdft(imax,jmax),dpdfdt(imax,jmax)
 
     !..for chemical potential tables
-    real, public :: ef(imax,jmax),efd(imax,jmax),                    &
-                        eft(imax,jmax),efdt(imax,jmax)
+    double precision, save :: ef(imax,jmax),efd(imax,jmax),                    &
+                              eft(imax,jmax),efdt(imax,jmax)
 
     !..for the number density tables
-    real, public :: xf(imax,jmax),xfd(imax,jmax),                    &
-                        xft(imax,jmax),xfdt(imax,jmax)
+    double precision, save :: xf(imax,jmax),xfd(imax,jmax),                    &
+                              xft(imax,jmax),xfdt(imax,jmax)
 
     !..for storing the differences
-    real, public :: dt_sav(jmax),dt2_sav(jmax),                      &
-                        dti_sav(jmax),dt2i_sav(jmax),                    &
-                        dd_sav(imax),dd2_sav(imax),                      &
-                        ddi_sav(imax),dd2i_sav(imax)
+    double precision, save :: dt_sav(jmax),dt2_sav(jmax),                      &
+                              dti_sav(jmax),dt2i_sav(jmax),                    &
+                              dd_sav(imax),dd2_sav(imax),                      &
+                              ddi_sav(imax),dd2i_sav(imax)
 
 
     integer          :: max_newton = 100
 
-    real :: ttol = 1.0d-8
-    real :: dtol = 1.0d-8
+    double precision :: ttol = 1.0d-8
+    double precision :: dtol = 1.0d-8
 
     ! 2006 CODATA physical constants
-public
+private
     ! Math constants
-    real :: pi       = 3.1415926535897932384d0
-    real :: a2rad
-    real :: rad2a
+    double precision :: pi       = 3.1415926535897932384d0
+    double precision :: a2rad
+    double precision :: rad2a
 
     ! Physical constants
-    real :: h       = 6.6260689633d-27
-    real :: hbar
-    real :: qe      = 4.8032042712d-10
-    real :: avo_eos = 6.0221417930d23
-    real :: clight  = 2.99792458d10
-    real :: kerg    = 1.380650424d-16
-    real :: ev2erg_eos  = 1.60217648740d-12
-    real :: kev
-    real :: amu     = 1.66053878283d-24
-    real :: me_eos  = 9.1093821545d-28
-    real :: rbohr
-    real :: fine
+    double precision :: h       = 6.6260689633d-27
+    double precision :: hbar
+    double precision :: qe      = 4.8032042712d-10
+    double precision :: avo_eos = 6.0221417930d23
+    double precision :: clight  = 2.99792458d10
+    double precision :: kerg    = 1.380650424d-16
+    double precision :: ev2erg_eos  = 1.60217648740d-12
+    double precision :: kev
+    double precision :: amu     = 1.66053878283d-24
+    double precision :: me_eos  = 9.1093821545d-28
+    double precision :: rbohr
+    double precision :: fine
 
 #ifdef RADIATION
-    real :: ssol    = 0.0d0
+    double precision :: ssol    = 0.0d0
 #else
-    real :: ssol    = 5.67051d-5
+    double precision :: ssol    = 5.67051d-5
 #endif
-    real :: asol
-    real :: weinlam
-    real :: weinfre
+    double precision :: asol
+    double precision :: weinlam
+    double precision :: weinfre
 
     ! Astronomical constants
-    real :: ly      = 9.460528d17
-    real :: pc
+    double precision :: ly      = 9.460528d17
+    double precision :: pc
 
     ! Some other useful combinations of the constants
-    real :: sioncon
-    real :: forth
-    real :: forpi
-    real :: kergavo
-    real :: ikavo
-    real :: asoli3
-    real :: light2
+    double precision :: sioncon
+    double precision :: forth
+    double precision :: forpi
+    double precision :: kergavo
+    double precision :: ikavo
+    double precision :: asoli3
+    double precision :: light2
 
     ! Constants used for the Coulomb corrections
-    real :: a1    = -0.898004d0
-    real :: b1    =  0.96786d0
-    real :: c1    =  0.220703d0
-    real :: d1    = -0.86097d0
-    real :: e1    =  2.5269d0
-    real :: a2    =  0.29561d0
-    real :: b2    =  1.9885d0
-    real :: c2    =  0.288675d0
-    real :: onethird = 1.0d0/3.0d0
-    real :: esqu
+    double precision :: a1    = -0.898004d0
+    double precision :: b1    =  0.96786d0
+    double precision :: c1    =  0.220703d0
+    double precision :: d1    = -0.86097d0
+    double precision :: e1    =  2.5269d0
+    double precision :: a2    =  0.29561d0
+    double precision :: b2    =  1.9885d0
+    double precision :: c2    =  0.288675d0
+    double precision :: onethird = 1.0d0/3.0d0
+    double precision :: esqu
 
     !$acc declare &
     !$acc create(pi, a2rad, rad2a) &
@@ -113,7 +115,7 @@ public
     !$acc create(sioncon, forth, forpi, kergavo, ikavo, asoli3, light2) &
     !$acc create(a1, b1, c1, d1, e1, a2, b2, c2, onethird, esqu) &
     !$acc create(ttol, dtol, tlo, thi, dlo, dhi) &
-    !$acc create(tstpp, tstpi, dstpp, dstpi) &
+    !$acc create(tstp, tstpi, dstp, dstpi) &
     !$acc create(itmax, jtmax, d, t) &
     !$acc create(f, fd, ft, fdd, ftt, fdt, fddt, fdtt, fddtt) &
     !$acc create(dpdf, dpdfd, dpdft, dpdfdt) &
@@ -123,7 +125,7 @@ public
     !$acc create(do_coulomb, input_is_constant) &
     !$acc create(max_newton)
 
-public actual_eos
+public actual_eos, actual_eos_init
 
 contains
 
@@ -152,6 +154,8 @@ contains
 
         !$acc routine seq
 
+!       use bl_error_module
+        use Driver_interface, ONLY : bl_error=>Driver_abortFlash
         use bl_types
         use bl_constants_module
 
@@ -162,10 +166,11 @@ contains
         type (eos_tp), intent(inout) :: state
 
         !..rows to store EOS data
-        real :: temp_row, &
+        double precision :: temp_row, &
                             den_row, &
                             abar_row, &
                             zbar_row, &
+                            ye_row, &
                             etot_row, &
                             ptot_row, &
                             cv_row, &
@@ -198,12 +203,12 @@ contains
 
         logical :: single_iter, double_iter, converged
         integer :: var, dvar, var1, var2, iter
-        real :: v_want
-        real :: v1_want, v2_want
-        real :: xnew, xtol, dvdx, smallx, error, v
-        real :: v1, v2, dv1dt, dv1dr, dv2dt,dv2dr, delr, error1, error2, told, rold, tnew, rnew, v1i, v2i
+        double precision :: v_want
+        double precision :: v1_want, v2_want
+        double precision :: xnew, xtol, dvdx, smallx, error, v
+        double precision :: v1, v2, dv1dt, dv1dr, dv2dt,dv2dr, delr, error1, error2, told, rold, tnew, rnew, v1i, v2i
 
-        real :: x,y,zz,zzi,deni,tempi,xni,dxnidd,dxnida, &
+        double precision :: x,y,zz,zzi,deni,tempi,xni,dxnidd,dxnida, &
                             dpepdt,dpepdd,deepdt,deepdd,dsepdd,dsepdt, &
                             dpraddd,dpraddt,deraddd,deraddt,dpiondd,dpiondt, &
                             deiondd,deiondt,dsraddd,dsraddt,dsiondd,dsiondt, &
@@ -215,7 +220,7 @@ contains
                             temp,den,abar,zbar,ytot1,ye
 
         !..for the abar derivatives
-        real :: dpradda,deradda,dsradda, &
+        double precision :: dpradda,deradda,dsradda, &
                             dpionda,deionda,dsionda, &
                             dpepda,deepda,dsepda,    &
                             dpresda,denerda,dentrda, &
@@ -223,7 +228,7 @@ contains
 
 
         !..for the zbar derivatives
-        real :: dpraddz,deraddz,dsraddz, &
+        double precision :: dpraddz,deraddz,dsraddz, &
                             dpiondz,deiondz,dsiondz, &
                             dpepdz,deepdz,dsepdz,    &
                             dpresdz,denerdz,dentrdz ,&
@@ -233,8 +238,8 @@ contains
 
         !..for the interpolations
         integer          :: iat,jat
-        real :: free,df_d,df_t,df_tt,df_dt
-        real :: xt,xd,mxt,mxd, &
+        double precision :: free,df_d,df_t,df_tt,df_dt
+        double precision :: xt,xd,mxt,mxd, &
                             si0t,si1t,si2t,si0mt,si1mt,si2mt, &
                             si0d,si1d,si2d,si0md,si1md,si2md, &
                             dsi0t,dsi1t,dsi2t,dsi0mt,dsi1mt,dsi2mt, &
@@ -243,19 +248,24 @@ contains
                             z,din,fi(36)
 
         !..for the coulomb corrections
-        real :: dsdd,dsda,lami,inv_lami,lamida,lamidd,     &
+        double precision :: dsdd,dsda,lami,inv_lami,lamida,lamidd,     &
                             plasg,plasgdd,plasgdt,plasgda,plasgdz,     &
                             ecoul,decouldd,decouldt,decoulda,decouldz, &
                             pcoul,dpcouldd,dpcouldt,dpcoulda,dpcouldz, &
                             scoul,dscouldd,dscouldt,dscoulda,dscouldz
 
-        real :: p_temp, e_temp
+        double precision :: p_temp, e_temp
 
+        double precision :: smallt, smalld
+
+        call eos_get_small_temp(smallt)
+        call eos_get_small_dens(smalld)
 
         temp_row = state % T
         den_row  = state % rho
         abar_row = state % abar
         zbar_row = state % zbar
+        ye_row   = state % y_e
 
         ! Initial setup for iterations
 
@@ -366,7 +376,7 @@ contains
            zbar  = zbar_row
 
            ytot1 = 1.0d0 / abar
-           ye    = ytot1 * zbar
+           ye    = ye_row
            din   = ye * den
 
            !..initialize
@@ -938,7 +948,7 @@ contains
               if (dvar .eq. itemp) then
 
                  x = temp_row
-                 smallx = state % smallt
+                 smallx = smallt
                  xtol = ttol
 
                  if (var .eq. ipres) then
@@ -960,7 +970,7 @@ contains
               else ! dvar == density
 
                  x = den_row
-                 smallx = state % smalld
+                 smallx = smalld
                  xtol = dtol
 
                  if (var .eq. ipres) then
@@ -1074,8 +1084,8 @@ contains
               rnew = max(HALF * rold, min(rnew, TWO * rold))
 
               ! Don't let us freeze or evacuate
-              tnew = max(state % smallt, tnew)
-              rnew = max(state % smalld, rnew)
+              tnew = max(smallt, tnew)
+              rnew = max(smalld, rnew)
 
               ! Store the new temperature and density
               den_row  = rnew
@@ -1090,9 +1100,6 @@ contains
            endif
 
         enddo
-
-        state % test = clight
-        state % nr   = iter
 
         state % T    = temp_row
         state % rho  = den_row
@@ -1185,62 +1192,205 @@ contains
 
 
 
+    subroutine actual_eos_init
+
+!       use bl_error_module
+!       use extern_probin_module, only: eos_input_is_constant, use_eos_coulomb
+!       use parallel, only: parallel_IOProcessor
+        use Eos_data, only: eos_meshMe
+        use eos_helmData
+
+        implicit none
+
+        double precision :: dth, dt2, dti, dt2i
+        double precision :: dd, dd2, ddi, dd2i
+        double precision :: tsav, dsav
+        integer :: i, j
+        integer :: status
+
+        ! Read in the runtime parameters
+
+        input_is_constant = eos_forceConstantInput
+        do_coulomb = eos_coulombMult /= 0.0
+        ttol = eos_tol
+        dtol = eos_tol
+        max_newton = eos_maxNewton
+
+        if (eos_meshMe == MASTER_PE) then
+           print *, ''
+           if (do_coulomb) then
+              print *, "Initializing Helmholtz EOS and using Coulomb corrections."
+           else
+              print *, "Initializing Helmholtz EOS without using Coulomb corrections."
+           endif
+           print *, ''
+        endif
+
+        itmax = imax
+        jtmax = jmax
+
+        !..   copy the helmholtz free energy table
+        tlo   = eos_tlo
+        thi   = float(jmax-1)/eos_tstpi + eos_tlo
+        tstp  = (thi - tlo)/float(jmax-1)
+        tstpi = eos_tstpi
+        dlo   = eos_dlo
+        dhi   = float(imax-1)/eos_dstpi + eos_dlo
+        dstp  = (dhi - dlo)/float(imax-1)
+        dstpi = eos_dstpi
+        t     = eos_t
+        d     = eos_d
+
+        !.. copy the helmholtz free energy table
+        f     = eos_f
+        fd    = eos_fd
+        ft    = eos_ft
+        fdd   = eos_fdd
+        ftt   = eos_ftt
+        fdt   = eos_fdt
+        fddt  = eos_fddt
+        fdtt  = eos_fdtt
+        fddtt = eos_fddtt 
+
+        !.. copy the pressure derivative with density table
+        dpdf   = eos_dpdf
+        dpdfd  = eos_dpdfd
+        dpdft  = eos_dpdft
+        dpdfdt = eos_dpdfdt
+
+        !.. copy the electron chemical potential table
+        ef   = eos_ef
+        efd  = eos_efd
+        eft  = eos_eft
+        efdt = eos_efdt
+
+        !.. copy the number density table
+        xf   = eos_xf
+        xfd  = eos_xfd
+        xft  = eos_xft
+        xfdt = eos_xfdt
+
+        !.. copy the temperature and density deltas and their inverses
+        dt_sav   = eos_dt
+        dt2_sav  = eos_dtSqr
+        dti_sav  = eos_dtInv
+        dt2i_sav = eos_dtSqrInv
+        dd_sav   = eos_dd
+        dd2_sav  = eos_ddSqr
+        ddi_sav  = eos_ddInv
+        dd2i_sav = eos_ddSqrInv
+
+        ! Some initialization of constants
+
+        esqu = qe * qe
+
+        a2rad   = pi/180.0d0
+        rad2a   = 180.0d0/pi
+
+        hbar    = 0.5d0 * h/pi
+        kev     = kerg/ev2erg_eos
+        rbohr   = hbar*hbar/(me_eos * qe * qe)
+        fine    = qe*qe/(hbar*clight)
+
+        asol    = 4.0d0 * ssol / clight
+        weinlam = h*clight/(kerg * 4.965114232d0)
+        weinfre = 2.821439372d0*kerg/h
+        pc      = 3.261633d0 * ly
+
+        sioncon = (2.0d0 * pi * amu * kerg)/(h*h)
+        forth   = 4.0d0/3.0d0
+        forpi   = 4.0d0 * pi
+        kergavo = kerg * avo_eos
+        ikavo   = 1.0d0/kergavo
+        asoli3  = asol/3.0d0
+        light2  = clight * clight
+
+        ! Set up the minimum and maximum possible densities.
+
+        mintemp = 10.d0**tlo
+        maxtemp = 10.d0**thi
+        mindens = 10.d0**dlo
+        maxdens = 10.d0**dhi
+
+        !$acc update &
+        !$acc device(pi, a2rad, rad2a) &
+        !$acc device(h, hbar, qe, avo_eos, clight, kerg) &
+        !$acc device(ev2erg_eos, kev, amu, me_eos) &
+        !$acc device(rbohr, fine) &
+        !$acc device(ssol, asol, weinlam, weinfre) &
+        !$acc device(ly, pc) &
+        !$acc device(sioncon, forth, forpi, kergavo, ikavo, asoli3, light2) &
+        !$acc device(a1, b1, c1, d1, e1, a2, b2, c2, onethird, esqu) &
+        !$acc device(ttol, dtol, tlo, thi, dlo, dhi) &
+        !$acc device(tstp, tstpi, dstp, dstpi) &
+        !$acc device(itmax, jtmax, d, t) &
+        !$acc device(f, fd, ft, fdd, ftt, fdt, fddt, fdtt, fddtt) &
+        !$acc device(dpdf, dpdfd, dpdft, dpdfdt) &
+        !$acc device(ef, efd, eft, efdt, xf, xfd, xft, xfdt) &
+        !$acc device(dt_sav, dt2_sav, dti_sav, dt2i_sav) &
+        !$acc device(dd_sav, dd2_sav, ddi_sav, dd2i_sav), &
+        !$acc device(do_coulomb, input_is_constant) &
+        !$acc device(max_newton)
+
+    end subroutine actual_eos_init
+
+
 
     ! quintic hermite polynomial functions
     ! psi0 and its derivatives
     function psi0(z)
     !$acc routine seq
-        real :: z, psi0
+        double precision :: z, psi0
         psi0 = z**3 * ( z * (-6.0d0*z + 15.0d0) -10.0d0) + 1.0d0
     end function
 
     function dpsi0(z)
     !$acc routine seq
-        real :: z, dpsi0
+        double precision :: z, dpsi0
         dpsi0 = z**2 * ( z * (-30.0d0*z + 60.0d0) - 30.0d0)
     end function
 
     function ddpsi0(z)
     !$acc routine seq
-        real :: z, ddpsi0
+        double precision :: z, ddpsi0
         ddpsi0 = z* ( z*( -120.0d0*z + 180.0d0) -60.0d0)
     end function
 
     ! psi1 and its derivatives
     function psi1(z)
     !$acc routine seq
-        real :: z, psi1
+        double precision :: z, psi1
         psi1 = z* ( z**2 * ( z * (-3.0d0*z + 8.0d0) - 6.0d0) + 1.0d0)
     end function
 
     function dpsi1(z)
     !$acc routine seq
-        real :: z, dpsi1
+        double precision :: z, dpsi1
         dpsi1 = z*z * ( z * (-15.0d0*z + 32.0d0) - 18.0d0) +1.0d0
     end function
 
     function ddpsi1(z)
     !$acc routine seq
-        real :: z, ddpsi1
+        double precision :: z, ddpsi1
         ddpsi1 = z * (z * (-60.0d0*z + 96.0d0) -36.0d0)
     end function
 
     ! psi2  and its derivatives
     function psi2(z)
     !$acc routine seq
-        real :: z, psi2
+        double precision :: z, psi2
         psi2 = 0.5d0*z*z*( z* ( z * (-z + 3.0d0) - 3.0d0) + 1.0d0)
     end function
 
     function dpsi2(z)
     !$acc routine seq
-        real :: z, dpsi2
+        double precision :: z, dpsi2
         dpsi2 = 0.5d0*z*( z*(z*(-5.0d0*z + 12.0d0) - 9.0d0) + 2.0d0)
     end function
 
     function ddpsi2(z)
     !$acc routine seq
-        real :: z, ddpsi2
+        double precision :: z, ddpsi2
         ddpsi2 = 0.5d0*(z*( z * (-20.0d0*z + 36.0d0) - 18.0d0) + 2.0d0)
     end function
 
@@ -1248,8 +1398,8 @@ contains
     ! biquintic hermite polynomial function
     function h5(fi,w0t,w1t,w2t,w0mt,w1mt,w2mt,w0d,w1d,w2d,w0md,w1md,w2md)
     !$acc routine seq
-        real :: fi(36)
-        real :: w0t,w1t,w2t,w0mt,w1mt,w2mt,w0d,w1d,w2d,w0md,w1md,w2md,h5
+        double precision :: fi(36)
+        double precision :: w0t,w1t,w2t,w0mt,w1mt,w2mt,w0d,w1d,w2d,w0md,w1md,w2md,h5
 
         h5 =   fi(1)  *w0d*w0t   + fi(2)  *w0md*w0t &
              + fi(3)  *w0d*w0mt  + fi(4)  *w0md*w0mt &
@@ -1276,13 +1426,13 @@ contains
     ! psi0 & derivatives
     function xpsi0(z)
     !$acc routine seq
-        real :: z, xpsi0
+        double precision :: z, xpsi0
         xpsi0 = z * z * (2.0d0*z - 3.0d0) + 1.0
     end function
 
     function xdpsi0(z)
     !$acc routine seq
-        real :: z, xdpsi0
+        double precision :: z, xdpsi0
         xdpsi0 = z * (6.0d0*z - 6.0d0)
     end function
 
@@ -1290,21 +1440,21 @@ contains
     ! psi1 & derivatives
     function xpsi1(z)
     !$acc routine seq
-        real :: z, xpsi1
+        double precision :: z, xpsi1
         xpsi1 = z * ( z * (z - 2.0d0) + 1.0d0)
     end function
 
     function xdpsi1(z)
     !$acc routine seq
-        real :: z, xdpsi1
+        double precision :: z, xdpsi1
         xdpsi1 = z * (3.0d0*z - 4.0d0) + 1.0d0
     end function
 
     ! bicubic hermite polynomial function
     function h3(fi,w0t,w1t,w0mt,w1mt,w0d,w1d,w0md,w1md)
     !$acc routine seq
-        real :: fi(36)
-        real :: w0t,w1t,w0mt,w1mt,w0d,w1d,w0md,w1md,h3
+        double precision :: fi(36)
+        double precision :: w0t,w1t,w0mt,w1mt,w0d,w1d,w0md,w1md,h3
         h3 =   fi(1)  *w0d*w0t   +  fi(2)  *w0md*w0t &
              + fi(3)  *w0d*w0mt  +  fi(4)  *w0md*w0mt &
              + fi(5)  *w0d*w1t   +  fi(6)  *w0md*w1t &
