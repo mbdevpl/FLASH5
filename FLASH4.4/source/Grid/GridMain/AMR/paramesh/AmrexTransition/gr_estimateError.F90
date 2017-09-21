@@ -44,6 +44,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
   use Grid_interface, ONLY : Grid_getBlkBC, &
                              Grid_getListOfBlocks, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr
+  use gr_interface,   ONLY : gr_estimateBlkError
   use gr_specificData, ONLY : gr_oneBlock
   use gr_amrextInterface, ONLY : gr_fillMetaData
   use tree,           ONLY : lnblocks
@@ -125,8 +126,10 @@ subroutine gr_estimateError(error, iref, refine_filter)
   do ib = 1,blockCount
      call gr_fillMetaData(blockList(ib), blockDesc)
 
-     blkLevel    = blockDesc%level
      blkID       = blockDesc%id
+     call gr_estimateBlkError(error(blkID), blockDesc, iref, refine_filter)
+#if(0)
+     blkLevel    = blockDesc%level
      blkLimits   = blockDesc%limits
      blkLimitsGC = blockDesc%limitsGC
      call Grid_getBlkPtr(blockDesc%id, solnData, CENTER)
@@ -363,6 +366,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
         error(blkID) = sqrt(error(blkID))
         deallocate(delu)
         deallocate(delua)
+#endif
 
   end do
 

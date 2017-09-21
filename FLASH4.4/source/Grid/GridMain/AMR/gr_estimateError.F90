@@ -39,10 +39,11 @@
 
 subroutine gr_estimateError(error, iref, refine_filter)
 
-  use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
+  use Grid_data, ONLY: gr_geometry, &
        gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBC, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr
+  use gr_interface,   ONLY : gr_estimateBlkError
   use gr_specificData, ONLY : gr_oneBlock
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
@@ -82,9 +83,8 @@ subroutine gr_estimateError(error, iref, refine_filter)
   integer :: idest, iopt, nlayers, icoord
   logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
   type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(block_metadata_t) :: blockDesc
   integer :: blkLevel, blkID
-  integer:: ib, maxLev
 
 !==============================================================================
 
@@ -114,17 +114,18 @@ subroutine gr_estimateError(error, iref, refine_filter)
 ! DEVNOTE: gr_oneBlock is paramesh-specific.   Need to replace these macros.
 #define XCOORD(I) (gr_oneBlock(blkID)%firstAxisCoords(CENTER,I))
 #define YCOORD(I) (gr_oneBlock(blkID)%secondAxisCoords(CENTER,I))
-  maxLev=gr_maxRefine
 
   itor = block_iterator_t(ACTIVE_BLKS)
   do while(itor%is_valid())
-     call itor%blkMetaData(block)
+     call itor%blkMetaData(blockDesc)
 
-     blkLevel    = block%level
-     blkID       = block%id
-     blkLimits   = block%limits
-     blkLimitsGC = block%limitsGC
-     call Grid_getBlkPtr(block, solnData, CENTER)
+     blkID       = blockDesc%id
+     call gr_estimateBlkError(error(blkID), blockDesc, iref, refine_filter)
+#if(0)
+     blkLevel    = blockDesc%level
+     blkLimits   = blockDesc%limits
+     blkLimitsGC = blockDesc%limitsGC
+     call Grid_getBlkPtr(blockDesc, solnData, CENTER)
 
 !!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
@@ -193,7 +194,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
            end do
         end do
         
-        call Grid_releaseBlkPtr(block, solnData, CENTER)
+        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
         nullify(solnData)
         
         ! Compute second derivatives
@@ -205,7 +206,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
         !    grd=NGUARD-1
         ! No guardcells
         !    grd=NGUARD
-        call Grid_getBlkBC(block,face,bdry)
+        call Grid_getBlkBC(blockDesc,face,bdry)
         
         do i=1,NDIM
            if (face(LOW,i) == NOT_BOUNDARY)then
@@ -354,10 +355,11 @@ subroutine gr_estimateError(error, iref, refine_filter)
            end do
         end do
         
-           ! store the maximum error for the current block
+           ! store the maximum error for the current blocky
         error(blkID) = sqrt(error(blkID))
         deallocate(delu)
         deallocate(delua)
+#endif
 
         call itor%next()
   end do
