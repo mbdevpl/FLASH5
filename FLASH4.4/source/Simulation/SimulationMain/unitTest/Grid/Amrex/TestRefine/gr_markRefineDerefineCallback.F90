@@ -10,6 +10,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
  
    use block_metadata,         ONLY : block_metadata_t
    use gr_physicalMultifabs,   ONLY : unk
+   use Grid_data,              ONLY : gr_maxRefine
+   use gr_interface,           ONLY : gr_estimateBlkError  ! to be used RSN
 
    implicit none
  
@@ -33,6 +35,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    integer :: off(1:MDIM)
 
    integer :: i, j, k, var
+   logical :: refine, derefine, stay
 
    write(*,*) "[gr_markRefineDerefineCallback] Started on level ", lev + 1
    
@@ -46,7 +49,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
       ! DEVNOTE: Should we use gr_[ijk]guard here?
       blockDesc%level = lev + 1
-      blockDesc%grid_index = -1
+      blockDesc%grid_index = mfi%grid_index()
       blockDesc%limits(LOW,  :) = 1
       blockDesc%limits(HIGH, :) = 1
       blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
@@ -69,20 +72,60 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
         off(1:NDIM) = lo(1:NDIM) - 1
         tagData(off(1):, off(2):, off(3):, 1:) => tag%dataptr(mfi)
 
+#ifdef DEBUG_TAGDATA
+        print*,'markRD_cb: lbound(solnData):', lbound(solnData)
+        print*,'markRD_cb: ubound(solnData):', ubound(solnData)
+        print*,'markRD_cb: lbound(tagData):', lbound(tagData)
+        print*,'markRD_cb: ubound(tagData):', ubound(tagData)
+        print*,'markRD_cb: tagData in  =', tagData
+#endif
+
         tagData(:, :, :, :) = clearval
         do         k = lo(3), hi(3)
             do     j = lo(2), hi(2)
                 do i = lo(1), hi(1)
+                    refine   = .FALSE.
+                    derefine = .FALSE.
+                    stay     = .FALSE.
                     do var = UNK_VARS_BEGIN, UNK_VARS_END
+                        if (.not.refine.and. .not.stay &
+                            &          .and.(solnData(i, j, k, var) < 0.25*lev)) then
+                           derefine = .TRUE.
+                        else
+                           derefine = .FALSE.
+                        end if
+
+                        if (solnData(i, j, k, var) > lev) then
+                           derefine = .FALSE.
+                           refine = .TRUE.
+                        end if
+
+                        if (solnData(i, j, k, var) .GE. 0.25*lev)  &
+                             &           stay = .TRUE.
+
+                        ! DEV: The following relies on gr_maxRefine being properly set, which appears to be not
+                        ! always the case.
+!!$                        if (blockDesc%level.ge.gr_maxRefine)  &
+!!$                             &           refine = .FALSE.
+
+
                         if (solnData(i, j, k, var) > lev) then
                             write(*,*) "Tag at (", i, j, k, ") / solnData is", &
                                         solnData(i, j, k, var)
-                            tagData(i, j, k, var) = tagval
                         end if
                     end do
+                    if (refine) then
+                       write(*,*) "Tag at (", i, j, k, ") / ref,deref,stay is", refine,derefine,stay
+                       tagData(i, j, k, 1) = tagval ! Note: last dimension has the range 1:1 !
+!!$                    else if (derefine) then
+!!$                       write(*,*) "Untag (how??) at (", i, j, k, ") / ref,deref,stay is", refine,derefine,stay
+                    end if
                 end do
             end do
         end do
+#ifdef DEBUG_TAGDATA
+        print*,'markRD_cb: tagData out =', tagData
+#endif
       end associate
    end do
    call amrex_mfiter_destroy(mfi)
