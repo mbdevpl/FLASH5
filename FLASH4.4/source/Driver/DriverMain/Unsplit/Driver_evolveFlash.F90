@@ -77,7 +77,7 @@ subroutine Driver_evolveFlash()
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
   use gr_amrextData
 #endif
-  use Hydro_interface,     ONLY : Hydro, &
+  use Hydro_interface,     ONLY : Hydro_advanceAll, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
   use IO_interface,        ONLY : IO_output,IO_outputFinal
@@ -216,6 +216,11 @@ subroutine Driver_evolveFlash()
 !!$          maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
      
      call Grid_fillGuardCells(CENTER,ALLDIR)
+
+     call Hydro_advanceAll(dr_simTime, dr_dt, dr_dtOld)
+#if(0)
+!!!!!! MOVED TO Hydro_advanceAll !!!!!!
+!vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
      call Timers_start("Hydro")
 
 #ifdef FLASH_GRID_AMREXTRANSITION
@@ -275,6 +280,11 @@ subroutine Driver_evolveFlash()
      end do
      deallocate(phi_mf)
 #endif
+
+!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+!!!!!! MOVED TO Hydro_advanceAll !!!!!!
+#endif
+
 
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION

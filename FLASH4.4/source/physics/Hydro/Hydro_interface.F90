@@ -42,18 +42,41 @@ Module Hydro_interface
      end subroutine Hydro_consolidateCFL
   end interface
 
-  interface Hydro
-     subroutine Hydro (block, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+  interface
+     subroutine Hydro_advanceAll(simTime, dt, dtOld)
+       implicit none
+       real, intent(IN) ::  simTime, dt, dtOld
+     end subroutine Hydro_advanceAll
+     subroutine Hydro_prepareBuffers()
+       implicit none
+     end subroutine Hydro_prepareBuffers
+     subroutine Hydro_freeBuffers()
+       implicit none
+     end subroutine Hydro_freeBuffers
+     subroutine Hydro_doLoop0()
+       implicit none
+     end subroutine Hydro_doLoop0
+     subroutine Hydro_doLoop1(simTime, dt, dtOld)
+       implicit none
+       real, intent(IN) ::  simTime, dt, dtOld
+     end subroutine Hydro_doLoop1
+     subroutine Hydro_doLoop4()
+       implicit none
+     end subroutine Hydro_doLoop4
+  end interface
+
+  interface
+     subroutine Hydro_loop1Body (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t) :: block
+       type(block_metadata_t) :: blockDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
-     end subroutine Hydro
-  end interface Hydro
+     end subroutine Hydro_loop1Body
+  end interface
 
   interface Hydro_init
      subroutine Hydro_init()
