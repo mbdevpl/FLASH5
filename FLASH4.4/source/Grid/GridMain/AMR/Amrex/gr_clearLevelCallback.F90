@@ -8,10 +8,10 @@ subroutine gr_clearLevelCallback(lev) bind(c)
     integer, intent(in), value :: lev
   
     ! Multifab arrays use 0-based index set like AMReX
-    write(*,*) "[gr_clearLevelCallback] called on level", lev + 1
     call amrex_multifab_destroy(unk     (lev))
     call amrex_multifab_destroy(facevarx(lev))
     call amrex_multifab_destroy(facevary(lev))
     call amrex_multifab_destroy(facevarz(lev))
+    write(*,'(A,I2)') "[gr_clearLevelCallback]         Cleared level", lev + 1
 end subroutine gr_clearLevelCallback
 

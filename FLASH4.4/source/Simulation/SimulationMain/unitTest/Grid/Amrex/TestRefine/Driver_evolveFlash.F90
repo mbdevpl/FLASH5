@@ -9,13 +9,15 @@
 !!  Driver_evolveFlash()
 !!
 !! DESCRIPTION
-!!  A subset of simulation configuration data is loaded into AMReX at
-!!  initialization and is therefore owned by AMReX.  As a result, AMReX is used
-!!  to provide these data values to client code through the associated public
-!!  Grid_* and local gr_* interface accessor routines.
-!!
-!!  This code tests that AMReX is properly initialized for a Cartesian domain by
-!!  verifying correct results as obtained through the accessor routines.
+!!  The driver for a toy version of a full FLASH simulation that allows users
+!!  to control and therefore experiment with how AMReX mesh refinement and
+!!  derefinement is working as implemented in FLASH.  The code advances the data
+!!  in UNK in time manually.  At each step, the code sets all data in UNK to
+!!  zero except for possibly at a few points, whose non-zero values define
+!!  what level of refinement must be achieved in the blocks that contain them.  
+!!  For example, if a point has its value in UNK set to 3, then after
+!!  regridding, the block the contains the point shall be refined to downed to
+!!  level 4.
 !!
 !! NOTES
 !!  This simulation *must* be configured with at least the following
@@ -31,15 +33,18 @@
 
 subroutine Driver_evolveFlash()
     use amrex_fort_module,     ONLY : amrex_spacedim
-    use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
     use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
                                       Grid_getDeltas, &
-                                      Grid_updateRefinement
+                                      Grid_updateRefinement, &
+                                      Grid_getBlkPtr, Grid_releaseBlkPtr
     use Grid_data,             ONLY : gr_iguard, gr_jguard, gr_kguard, &
                                       gr_meshMe
     use block_iterator,        ONLY : block_iterator_t
     use block_metadata,        ONLY : block_metadata_t, bmd_print
+    use amrex_interfaces,      ONLY : gr_averageDownLevels
+    use sim_interface,         ONLY : sim_writeDataPoints, &
+                                      sim_printLeaves
 
     implicit none
 
@@ -59,8 +64,12 @@ subroutine Driver_evolveFlash()
     type(block_iterator_t) :: itor
     type(block_metadata_t) :: block
 
-    integer :: level
-    integer :: finest_level
+    logical :: gridChanged
+
+    integer       :: i, j, k, var
+    real, pointer :: solnData(:, :, :, :)
+    real          :: points(3, 1:NDIM)
+    real          :: values(3)
 
     write(*,*)
     n_tests = 0
@@ -69,7 +78,7 @@ subroutine Driver_evolveFlash()
     t_new = 0.0d0
     call cpu_time(t_old)
 
-    !!!!! CONFIRM PROPER DIIMENSIONALITY
+    !!!!! CONFIRM PROPER DIMENSIONALITY
     if (amrex_spacedim /= 2) then
         write(*,*) "Wrong dimensionality - ", amrex_spacedim, ' != ', 2
         write(*,*) "Recompile AMReX with correct dimensionality"
@@ -99,25 +108,46 @@ subroutine Driver_evolveFlash()
     call assertEqual(deltas(JAXIS), deltas(IAXIS), "dy != dx at coarse")
     call assertEqual(deltas(KAXIS), 0.0d0, "dz != 0 at coarse")
 
-    write(*,*) "LEAF OUTPUT SECTION"
-    write(*,*) "-------------------------------------------------------"
-    finest_level = amrex_get_finest_level() + 1
-    do level = 1, finest_level 
-        write(*,*) "LEVEL = ", level
-        itor = block_iterator_t(LEAF, level=level)
-        do while (itor%is_valid())
-            call itor%blkMetaData(block)
-            write(*,*) block%limits(LOW, :)
-            write(*,*) block%limits(HIGH, :)
-            write(*,*) "---------"
-
-            call itor%next()
-        end do
-    end do
+    call sim_printLeaves("LEAVES AFTER DATA INIT & REGRID")
 
     !!!!! CONFIRM INITIAL REFINEMENT
     ! Started with 2x2 block structure and refined according to initial data
     ! using unittests own gr_markRefineDerefine callback with AMReX
+
+    !!!!! CONFIRM PROPER SUBSEQUENT REFINEMENT 
+    ! Write new data to leaves only
+    write(*,*)
+    write(*,*) "SETTING ALL DATA TO ZERO AT ALL LEVELS"
+    write(*,*)
+    itor = block_iterator_t(LEAF)
+    do while (itor%is_valid())
+        call itor%blkMetaData(block)
+        call Grid_getBlkPtr(block, solnData)
+
+        solnData = 0.0d0
+
+        call Grid_releaseBlkPtr(block, solnData)
+        call itor%next()
+    end do
+
+    ! Propagate leaf data to coarse levels
+    call gr_averageDownLevels
+
+    ! Should only refine on even steps (nrefs in flash.par)
+    write(*,*)
+    write(*,*) "EVALUATING REFINE/DEREFINE"
+    write(*,*)
+    gridChanged = .FALSE.
+    call Grid_updateRefinement(1, 0.1d0, gridChanged)
+    call assertFalse(gridChanged, "Shouldn't have refined")
+
+    call Grid_updateRefinement(2, 0.2d0, gridChanged)
+    call assertTrue(gridChanged, "Should have refined")
+    write(*,*)
+    call sim_printLeaves("LEAVES AFTER ZEROING ALL DATA & REGRID")
+
+    call Grid_updateRefinement(3, 0.3d0, gridChanged)
+    call assertFalse(gridChanged, "Shouldn't have refined")
 
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?
@@ -134,6 +164,38 @@ subroutine Driver_evolveFlash()
     write(*,*)
 
 contains
+
+    subroutine assertTrue(a, msg)
+        implicit none
+
+        logical,      intent(IN) :: a
+        character(*), intent(IN) :: msg
+
+        character(256) :: buffer = ""
+        
+        if (.NOT. a) then
+            write(buffer,'(A)') msg
+            write(*,*) TRIM(ADJUSTL(buffer))
+            n_failed = n_failed + 1
+        end if
+        n_tests = n_tests + 1
+    end subroutine assertTrue
+
+    subroutine assertFalse(a, msg)
+        implicit none
+
+        logical,      intent(IN) :: a
+        character(*), intent(IN) :: msg
+
+        character(256) :: buffer = ""
+        
+        if (a) then
+            write(buffer,'(A)') msg
+            write(*,*) TRIM(ADJUSTL(buffer))
+            n_failed = n_failed + 1
+        end if
+        n_tests = n_tests + 1
+    end subroutine assertFalse
 
     subroutine assertEqualInt(a, b, msg)
         implicit none

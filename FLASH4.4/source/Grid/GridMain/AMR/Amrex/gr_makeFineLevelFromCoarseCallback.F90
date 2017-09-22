@@ -49,7 +49,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     ! This *hopefully* will do the guard cell fill as well
     ! NOTE: FLASH does not use sub-cycling (temporal interpolation)
     !
-    ! DEVNOTE: FIXME I think the BC here should be arrays
     ! DEVNOTE: FIXME Currently fixing BC to periodic here
     ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved
     !                linear (AMReX_Interpolater.H)
