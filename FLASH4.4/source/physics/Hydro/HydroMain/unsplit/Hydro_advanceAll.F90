@@ -1,12 +1,29 @@
+#define DEBUG_GRID_GCMASK
+
 #include "constants.h"
 
 
 subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+  use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
   use Hydro_interface,     ONLY : Hydro_doLoop0, Hydro_doLoop1, Hydro_doLoop4
+  use Hydro_data, ONLY : hy_fluxCorrect,      &
+                         hy_gref,             &
+                         hy_useGravity,       &
+                         hy_units,            &
+                         hy_gcMaskSize,       &
+                         hy_gcMask,    &
+                         hy_updateHydroFluxes,&
+                         hy_cfl,              &
+                         hy_cfl_original,     &
+                         hy_dtmin,            &
+                         hy_simTime,          &
+                         hy_simGeneration,    &
+                         hy_shockDetectOn,    &
+                         hy_doUnsplitLoop0
   use Hydro_data,       ONLY : hy_useHydro, hy_gpotAlreadyUpToDate
 
 #include "Flash.h"
@@ -18,6 +35,14 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   implicit none
 
   real, intent(IN) ::  simTime, dt, dtOld
+
+  logical :: gcMask(hy_gcMaskSize)
+
+#ifdef DEBUG_GRID_GCMASK
+  logical,save :: gcMaskLogged =.FALSE.
+#else
+  logical,save :: gcMaskLogged =.TRUE.
+#endif
 
   hy_gpotAlreadyUpToDate = .FALSE. ! reset this flag, may be set .TRUE. below if warranted.
 
@@ -124,9 +149,21 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   !! Loop over the blocks
   call Hydro_doLoop1(simTime, dt, dtOld)
 
-     call Hydro_doLoop4()
+  call Hydro_doLoop4()
 
-     call Hydro_freeBuffers()
+
+
+  call Hydro_freeBuffers()
+
+
+
+  call Driver_getSimTime(hy_simTime, hy_simGeneration)
+
+#ifdef DEBUG_GRID_GCMASK
+  if (.NOT.gcMaskLogged) then
+     gcMaskLogged = .TRUE.
+  end if
+#endif
 
   call Timers_stop("Hydro")
 

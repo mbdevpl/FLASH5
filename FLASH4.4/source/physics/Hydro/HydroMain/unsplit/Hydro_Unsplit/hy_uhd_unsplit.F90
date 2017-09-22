@@ -455,16 +455,13 @@ Subroutine hy_uhd_unsplit (blockDesc,Uin,blkLimitsGC,&
 !!$  call hy_uhd_multiTempAfter(blockCount, blockList, dt)
 !!$#endif
 !!$
-!!$  call hy_memDeallocScratch()
 
-  call Driver_getSimTime(hy_simTime, hy_simGeneration)
+! ********** STUFF MOVED TO Hydro_freeBuffers  **********
 
 
-#ifdef DEBUG_GRID_GCMASK
-  if (.NOT.gcMaskLogged) then
-     gcMaskLogged = .TRUE.
-  end if
-#endif
+! ********** STUFF MOVED TO Hydro_advanceAll  **********
+
+
 
   call Timers_stop("tail")
 

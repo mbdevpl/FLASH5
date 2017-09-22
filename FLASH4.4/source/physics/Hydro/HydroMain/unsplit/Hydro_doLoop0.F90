@@ -1,10 +1,70 @@
+#include "constants.h"
+
 subroutine Hydro_doLoop0
+  use Grid_interface, ONLY : Grid_getDeltas
+  use hy_uhd_interface, ONLY : hy_uhd_getRiemannState,  &
+                               hy_uhd_getFaceFlux,      &
+                               hy_uhd_unsplitUpdate,    &
+                               hy_uhd_unitConvert,      &
+                               hy_uhd_energyFix,        &
+                               hy_uhd_prepareNewGravityAccel,&
+                               hy_uhd_putGravityUnsplit,&
+                               hy_uhd_addGravityUnsplit,&
+                               hy_uhd_shockDetect
+  use block_iterator, ONLY : block_iterator_t
+  use block_metadata, ONLY : block_metadata_t
+  use Hydro_data, ONLY : hy_fluxCorrect,      &
+                         hy_gref,             &
+                         hy_useGravity,       &
+                         hy_units,            &
+                         hy_gcMaskSize,       &
+                         hy_gcMask,           &
+                         hy_unsplitEosMode,   &
+                         hy_eosModeGc,        &
+                         hy_eosModeAfter,     &
+                         hy_updateHydroFluxes,&
+                         hy_geometry,         &
+                         hy_fluxCorVars,      &
+                         hy_cfl,              &
+                         hy_cfl_original,     &
+                         hy_numXN,            &
+                         hy_fullRiemannStateArrays,    &
+                         hy_fullSpecMsFluxHandling,   &
+                         hy_dtmin,            &
+                         hy_simTime,          &
+                         hy_simGeneration,    &
+                         hy_shockDetectOn
   implicit none
-  do i=1,blockCount          !LOOP 0
-     blockID = blockList(i)
+
+#include "UHD.h"
+
+  real, dimension(MDIM) :: del
+
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: blockDesc
+
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
+  real, dimension(:,:,:,:),pointer :: Uin
+  real,dimension(:,:,:,:), pointer :: Uout
+
+
+!!$  do i=1,blockCount          !LOOP 0
+!!$     blockID = blockList(i)
+
+  itor = block_iterator_t(LEAF)
+
+  do while(itor%is_valid())
+     call itor%blkMetaData(blockDesc)
+
+     blkLimits(:,:)   = blockDesc%localLimits
+     blkLimitsGC(:,:) = blockDesc%localLimitsGC
+
 
      !! Detect shocks
-  if (hy_shockDetectOn) call hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del)
+     if (hy_shockDetectOn) then
+        call Grid_getDeltas(blockDesc%level,del)
+        call hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del)
+     end if
 
      if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
         call hy_uhd_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
