@@ -337,15 +337,15 @@ subroutine Simulation_initBlock(solnData,block)
            endif
 
 #if NSPECIES > 0
-!#if defined (YE_MSCALAR)
-!           call renorm_mass_ye(solnData(YE_MSCALAR,i,j,k),solnData(SPECIES_BEGIN:SPECIES_END,i,j,k))
-!#else
+#if defined (YE_MSCALAR)
+           call renorm_mass_ye(solnData(YE_MSCALAR,i,j,k),solnData(SPECIES_BEGIN:SPECIES_END,i,j,k))
+#else
            solnData(SPECIES_BEGIN:SPECIES_END,i,j,k) = &
               & max(sim_smallx,min(1.0,solnData(SPECIES_BEGIN:SPECIES_END,i,j,k)))
            suminv = 1.0 / sum(solnData(SPECIES_BEGIN:SPECIES_END,i,j,k))
            solnData(SPECIES_BEGIN:SPECIES_END,i,j,k) = &
               & max(sim_smallx,min(1.0,suminv*solnData(SPECIES_BEGIN:SPECIES_END,i,j,k)))
-!#endif
+#endif
 
 #endif
 #if defined (SUMY_MSCALAR)
@@ -421,7 +421,8 @@ subroutine renorm_mass_ye(ye,xx)
    do i = 1, NSPECIES
       call Multispecies_getProperty(SPECIES_BEGIN + (i-1), Z, zz)
       call Multispecies_getProperty(SPECIES_BEGIN + (i-1), N, nn)
-      xx(i) = xx(i) * (alpha*nn + beta*zz)
+      call Multispecies_getProperty(SPECIES_BEGIN + (i-1), A, aa)
+      xx(i) = xx(i) * (alpha*nn + beta*zz) / aa
       xx(i) = max(sim_smallx,min(1.0,xx(i)))
    end do
 
