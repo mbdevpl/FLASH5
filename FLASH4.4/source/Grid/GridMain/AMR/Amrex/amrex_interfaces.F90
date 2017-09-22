@@ -83,5 +83,11 @@ module amrex_interfaces
          end subroutine gr_fillPhysicalBC
       end interface
  
+      interface
+         subroutine gr_averageDownLevels()
+            implicit none
+         end subroutine gr_averageDownLevels
+      end interface
+
 end module amrex_interfaces
 

@@ -26,36 +26,29 @@
 !!***
 
 subroutine Simulation_initBlock(initData, block)
-    use block_metadata, ONLY : block_metadata_t, bmd_print
-    
+    use block_metadata, ONLY : block_metadata_t
+    use sim_interface,  ONLY : sim_writeDataPoints
+
     implicit none
-    
+
     real,                   intent(IN), pointer :: initData(:, :, :, :)
     type(block_metadata_t), intent(IN)          :: block
 
 #include "constants.h"
 #include "Flash.h"
 
-    integer :: i, j, k
-    integer :: var
+    real    :: points(2, 2)
+    real    :: values(2)
 
-    integer :: point(2)
+    initData(:, :, :, :) = 0.0d0
 
-    associate(lo => block%limits(LOW,  :), &
-              hi => block%limits(HIGH, :))
-        initData(:, :, :, :) = 0.0d0
+    points(:, :) = 0.0d0
+    points(1, :) = [0.16, 0.67]
+    points(2, :) = [0.11, 0.38]
+    values(:) = 0.0d0
+    values(1) = 3.0d0
+    values(2) = 1.0d0
 
-        point = [3, 11] * (2**(block%level - 1))
-        if (      (lo(1) <= point(1)) .AND. (point(1) <= hi(1)) &
-            .AND. (lo(2) <= point(2)) .AND. (point(2) <= hi(2))) then
-            initData(point(1), point(2), 1, 1) = 2.0d0
-        end if
-        
-        point = [3, 6]
-        if (      (lo(1) <= point(1)) .AND. (point(1) <= hi(1)) &
-            .AND. (lo(2) <= point(2)) .AND. (point(2) <= hi(2))) then
-            initData(point(1), point(2), 1, 1) = 1.0d0
-        end if
-    end associate
+    call sim_writeDataPoints(initData, block, points, values)
 end subroutine Simulation_initBlock
 

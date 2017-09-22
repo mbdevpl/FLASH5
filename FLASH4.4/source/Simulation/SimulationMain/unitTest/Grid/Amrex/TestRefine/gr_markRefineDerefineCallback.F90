@@ -34,7 +34,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
    integer :: i, j, k, var
 
-   write(*,*) "[gr_markRefineDerefineCallback] Started on level ", lev + 1
+   write(*,'(A,I2)') "[gr_markRefineDerefineCallback] Started on level ", lev + 1
    
    tag = tags
 
@@ -73,13 +73,12 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
         do         k = lo(3), hi(3)
             do     j = lo(2), hi(2)
                 do i = lo(1), hi(1)
-                    do var = UNK_VARS_BEGIN, UNK_VARS_END
-                        if (solnData(i, j, k, var) > lev) then
-                            write(*,*) "Tag at (", i, j, k, ") / solnData is", &
-                                        solnData(i, j, k, var)
-                            tagData(i, j, k, var) = tagval
-                        end if
-                    end do
+                    if (solnData(i, j, k, 1) > lev) then
+                        write(*,'(A,I2,A,I2,A,F7.5)') "     Tag at (", &
+                              i, ",", j, &
+                              ") / solnData is ", solnData(i, j, k, 1)
+                        tagData(i, j, k, 1) = tagval
+                    end if
                 end do
             end do
         end do
@@ -87,6 +86,6 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    end do
    call amrex_mfiter_destroy(mfi)
 
-   write(*,*) "[gr_markRefineDerefineCallback] Finished on level ", lev + 1
+   write(*,'(A,I2)') "[gr_markRefineDerefineCallback] Finished on level ", lev + 1
 end subroutine gr_markRefineDerefineCallback
 
