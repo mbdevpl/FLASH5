@@ -91,12 +91,14 @@ use_upwindTVD   = .false. # use upwind biased TVD slope for PPM (need nguard=6)
 flux_correct    = .true.
 EOSforRiemann   = .false.
 transOrder      = 1
-use_auxEintEqn  = .TRUE.
+use_auxEintEqn  = .FALSE.
 hydroComputeDtOption = -1
 
 #       II. RIEMANN SOLVERS: 
 RiemannSolver   = "hybrid"       # Roe, HLL, HLLC, LLF, Marquina
 entropy         = .false.     # Entropy fix for the Roe solver
+
+hy_fPresInMomFlux = 0.0       # Part of pressure gradient term in momentum equation to include in momentum fluxes
 
 #       III. STRONG SHOCK HANDELING SCHEME:
 shockDetect     = .true.     # Shock Detect for numerical stability
