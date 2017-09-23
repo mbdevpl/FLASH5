@@ -41,7 +41,7 @@
 !!
 !!***
 
-!!REORDER(4): U, scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
+!!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
 Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
@@ -65,7 +65,13 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
                          hy_eosModeGc,        &
                          hy_eosModeAfter,     &
                          hy_updateHydroFluxes,&
-                         hy_geometry
+                         hy_geometry,         &
+                         hy_fluxCorVars,      &
+                         hy_cfl,              &
+                         hy_cfl_original,     &
+                         hy_numXN,            &
+                         hy_fullRiemannStateArrays,    &
+                         hy_fullSpecMsFluxHandling
 
   implicit none
 
@@ -141,10 +147,10 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 !!$     else
 !!$     call hy_memAllocScratch(SCRATCH_CTR,HY_VAR1_SCRATCHCTR_VAR,2, 0,0,0, &
 !!$          blockList(1:blockCount) )
-     allocate(scrch_Ptr(dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D,2))
-     allocate(scrchFaceXPtr(dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D,HY_NSCRATCH_VARS))
-     allocate(scrchFaceYPtr(dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D,HY_NSCRATCH_VARS))
-     allocate(scrchFaceZPtr(dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D,HY_NSCRATCH_VARS))
+     allocate(scrch_Ptr(2,dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D))
+     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D))
+     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D))
+     allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D))
 !!$     endif
 
 #if (NSPECIES+NMASS_SCALARS) > 0
@@ -186,9 +192,16 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
            hy_SpcSig=0.
         end if
 #endif
+
 #ifdef DEBUG_UHD
         print*,'_unsplit bef "call getRiemannState": associated(Uin ) is',associated(Uin )
         print*,'_unsplit bef "call getRiemannState": associated(Uout) is',associated(Uout)
+        print*,'_unsplit bef "call getRiemannState": lbound(Uin ):',lbound(Uin )
+        print*,'_unsplit bef "call getRiemannState": ubound(Uin ):',ubound(Uin )
+        print*,'_unsplit bef "call getRiemannState": lbound(scrchFaceXPtr):',lbound(scrchFaceXPtr)
+        print*,'_unsplit bef "call getRiemannState": ubound(scrchFaceXPtr):',ubound(scrchFaceXPtr)
+        print*,'_unsplit bef "call getRiemannState": lbound(scrchFaceYPtr):',lbound(scrchFaceYPtr)
+        print*,'_unsplit bef "call getRiemannState": ubound(scrchFaceYPtr):',ubound(scrchFaceYPtr)
 #endif
         call Timers_start("RiemannState")
 #ifdef DEBUG_UHD

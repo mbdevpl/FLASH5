@@ -117,7 +117,7 @@ Subroutine Hydro_computeDt( block,       &
        hy_dtminValid .and. &
       (.not. hy_hydroComputeDtFirstCall .OR. hy_restart)) then
      dtCflLoc = hy_cfl
-     if ( hy_dtmin < dtCheck .AND. hy_dtminloc(4) == block%id) then
+     if ( hy_dtmin < dtCheck .AND. hy_dtminloc(4) == block%level) then
         dtCheck  = hy_dtmin
         dtMinLoc = hy_dtminloc(1:5)
         dtCflLoc = hy_dtminCfl
@@ -267,7 +267,7 @@ Subroutine Hydro_computeDt( block,       &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = block%id
+                    temploc(4) = block%level
                     temploc(5) = hy_meshMe
                  endif
 #ifdef BDRY_VAR

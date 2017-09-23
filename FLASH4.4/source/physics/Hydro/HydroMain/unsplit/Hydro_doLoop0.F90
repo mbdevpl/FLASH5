@@ -1,7 +1,8 @@
 #include "constants.h"
 
 subroutine Hydro_doLoop0
-  use Grid_interface, ONLY : Grid_getDeltas
+  use Grid_interface, ONLY : Grid_getDeltas, &
+                             Grid_getBlkPtr, Grid_releaseBlkPtr
   use hy_uhd_interface, ONLY : hy_uhd_getRiemannState,  &
                                hy_uhd_getFaceFlux,      &
                                hy_uhd_unsplitUpdate,    &
@@ -59,6 +60,8 @@ subroutine Hydro_doLoop0
      blkLimits(:,:)   = blockDesc%localLimits
      blkLimitsGC(:,:) = blockDesc%localLimitsGC
 
+     call Grid_getBlkPtr(blockDesc, Uout,localFlag=.TRUE.)
+     Uin => Uout
 
      !! Detect shocks
      if (hy_shockDetectOn) then
@@ -103,6 +106,8 @@ subroutine Hydro_doLoop0
 #endif
      end if
 #endif
+     call Grid_releaseBlkPtr(blockDesc, Uout)
 
+     call itor%next()
   end do
 end subroutine Hydro_doLoop0

@@ -65,7 +65,7 @@
 !!   This is changed from the behavior in FLASH4.2.2 and earlier.
 !!***
 
-!!REORDER(4): U, Uold, SpOld, scrch_Ptr, [xyz]flux
+!!REORDER(4): Uin, Uout, Uold, SpOld, scrch_Ptr, [xyz]flux
 
 #include "constants.h"
 #include "Flash.h"

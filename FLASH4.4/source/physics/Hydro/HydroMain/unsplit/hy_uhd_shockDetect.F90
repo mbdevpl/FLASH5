@@ -27,6 +27,14 @@
 !!
 !!  Balsara and Spicer, JCP, 149:270--292, 1999.
 !!
+!! NOTES
+!!
+!!  The set of variables read from Uin does not overlap with the set
+!!  of variables updated in Uout. As long as it stays that way, there
+!!  is problem with violationg Fortran's no-aliasing assumptions,
+!!  and thus not need to turn those dummy arguments into POINTERs
+!!  or give them TARGET attributes.
+!!
 !!***
 
 !!REORDER(4): Uin,Uout
@@ -52,7 +60,7 @@ Subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
   !! ---- Argument List ----------------------------------
   integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
   real, dimension(:,:,:,:),INTENT(IN) :: Uin
-  real,dimension(:,:,:,:),INTENT(OUT) :: Uout
+  real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
   real,dimension(MDIM),INTENT(IN) :: del
   !! -----------------------------------------------------
 
@@ -90,6 +98,17 @@ Subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
   ! Set dimensional indices
   if (NDIM > 1) k2=1
   if (NDIM > 2) k3=1
+
+#ifdef DEBUG_UHD
+!!$     print*,'_shockDetect top: associated(Uin ) is',associated(Uin )
+!!$     print*,'_shockDetect top: associated(Uout) is',associated(Uout)
+     print*,'_shockDetect top: lbound(Uin ):',lbound(Uin )
+     print*,'_shockDetect top: ubound(Uin ):',ubound(Uin )
+     print*,'_shockDetect top: lbound(Uout):',lbound(Uout)
+     print*,'_shockDetect top: ubound(Uout):',ubound(Uout)
+     print*,'_shockDetect top: lbound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke)):',lbound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke))
+     print*,'_shockDetect top: ubound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke)):',ubound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke))
+#endif
 
 #ifdef SHOK_VAR
      Uout(SHOK_VAR,ib:ie,jb:je,kb:ke)=0.
