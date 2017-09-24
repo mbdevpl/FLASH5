@@ -34,15 +34,21 @@
 #include "sim_constants.h"
 
 subroutine Driver_evolveFlash()
-    use amrex_fort_module, ONLY : amrex_spacedim
+    use amrex_fort_module,     ONLY : amrex_spacedim
+    use amrex_box_module,      ONLY : amrex_box
+    use amrex_multifab_module, ONLY : amrex_mfiter, &
+                                      amrex_mfiter_build, &
+                                      amrex_mfiter_destroy
 
-    use Grid_interface,    ONLY : Grid_getDomainBoundBox, &
-                                  Grid_getDeltas, &
-                                  Grid_updateRefinement, &
-                                  Grid_getBlkPtr, Grid_releaseBlkPtr
-    use Grid_data,         ONLY : gr_meshMe, gr_lRefineMax, gr_maxRefine
-    use amrex_interfaces,  ONLY : gr_getFinestLevel
-    use sim_interface,     ONLY : sim_advance
+    use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
+                                      Grid_getDeltas, &
+                                      Grid_updateRefinement, &
+                                      Grid_getBlkPtr, Grid_releaseBlkPtr
+    use Grid_data,             ONLY : gr_meshMe, gr_lRefineMax, gr_maxRefine
+    use amrex_interfaces,      ONLY : gr_getFinestLevel
+    use sim_interface,         ONLY : sim_advance
+    use block_metadata,        ONLY : block_metadata_t
+    use gr_physicalMultifabs,  ONLY : unk
 
     implicit none
 
@@ -66,7 +72,12 @@ subroutine Driver_evolveFlash()
     ! DEV: TODO Get rid of hardcoded max levels here and elsewhere
     integer :: block_count(4)
     integer :: block_count_ex(4)
-    integer :: lev
+    integer :: lev, i, j
+
+    real, contiguous, pointer :: solnData(:,:,:,:)
+    type(block_metadata_t)    :: blockDesc
+    type(amrex_mfiter)        :: mfi
+    type(amrex_box)           :: bx
 
     write(*,*)
     n_tests = 0
@@ -187,9 +198,80 @@ subroutine Driver_evolveFlash()
         call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
     end do
 
+    ! During this step, gr_remakeLevelCallback called on level 2
+    ! and then gr_makeFineLevelFromCoarseCallback created level 3 from level 2
+    ! Confirm that data is correct in multifabs at all levels
+    do lev = 1, finest_level
+        call amrex_mfiter_build(mfi, unk(lev-1), tiling=.FALSE.)
+        do while(mfi%next())
+            bx = mfi%tilebox()
+
+            ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
+            ! Level must be 1-based index and limits/limitsGC must be 1-based also
+            ! DEVNOTE: Should we use gr_[ijk]guard here?
+            blockDesc%level = lev
+            blockDesc%grid_index = -1
+            blockDesc%limits(LOW,  :) = 1
+            blockDesc%limits(HIGH, :) = 1
+            blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+            blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+            blockDesc%limitsGC(LOW,  :) = 1
+            blockDesc%limitsGC(HIGH, :) = 1
+            blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
+            blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
+
+            associate (lo => blockDesc%limits(LOW,  :), &
+                       hi => blockDesc%limits(HIGH, :), &
+                     loGC => blockDesc%limitsGC(LOW,  :), &
+                     hiGC => blockDesc%limitsGC(HIGH, :))
+                ! Makes this 1-based cell indexing
+                solnData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev-1)%dataptr(mfi)
+
+                do     j = lo(JAXIS), hi(JAXIS)
+                    do i = lo(IAXIS), hi(IAXIS)
+                        if ((lev == 1) .AND. (i == 15) .AND. (j == 2)) then
+                            ! Level one not affected by remake/makeFine
+                            call assertEqual(solnData(i, j, 1, 1), &
+                                             values(1) / 64.0d0, &
+                                             "Wrong data")
+                        else if ((lev == 2) .AND. (i == 29) .AND. (j == 4)) then
+                            ! Level two data copied into new UNK multifab with remake
+                            call assertEqual(solnData(i, j, 1, 1), &
+                                             values(1) / 16.0d0, &
+                                             "Wrong data")
+                        else if (lev == 3) then
+                            ! Level three data from level two
+                            if      ((i == 57) .AND. (j == 7)) then
+                                call assertEqual(solnData(i, j, 1, 1), &
+                                                 values(1) / 16.0d0, &
+                                                 "Wrong data")
+                            else if ((i == 58) .AND. (j == 7)) then
+                                call assertEqual(solnData(i, j, 1, 1), &
+                                                 values(1) / 16.0d0, &
+                                                 "Wrong data")
+                            else if ((i == 57) .AND. (j == 8)) then
+                                call assertEqual(solnData(i, j, 1, 1), &
+                                                 values(1) / 16.0d0, &
+                                                 "Wrong data")
+                            else if ((i == 58) .AND. (j == 8)) then
+                                call assertEqual(solnData(i, j, 1, 1), &
+                                                 values(1) / 16.0d0, &
+                                                 "Wrong data")
+                            end if
+                        else
+                            call assertEqual(solnData(i, j, 1, 1), 0.0d0, "Data no zero")
+                        end if
+                    end do
+                end do
+
+                nullify(solnData)
+            end associate
+
+        end do
+        call amrex_mfiter_destroy(mfi)
+    end do
+
     !!!!! STEP 9/10 - ADVANCE WITH NO CHANGE TO ACHIEVE LEVEL 4
-    ! gr_remakeLevelCallback called in previous step on level 2
-    ! DEV: TODO Add test to verify that UNK has correct data at all levels
     call sim_advance(9, points, values, &
                      "NO DATA CHANGE - LET IT REFINE TO LEVEL 4", &
                      "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL", &
