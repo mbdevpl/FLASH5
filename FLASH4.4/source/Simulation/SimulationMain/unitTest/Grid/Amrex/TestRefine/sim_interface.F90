@@ -18,5 +18,16 @@ module sim_interface
         end subroutine sim_printLeaves
     end interface 
 
+    interface
+        subroutine sim_advance(step, points, values, set_msg, leaf_msg)
+            implicit none
+            integer,      intent(IN) :: step
+            real,         intent(IN) :: points(:, :)
+            real,         intent(IN) :: values(:)
+            character(*), intent(IN) :: set_msg
+            character(*), intent(IN) :: leaf_msg
+        end subroutine sim_advance
+    end interface 
+
 end module sim_interface
 

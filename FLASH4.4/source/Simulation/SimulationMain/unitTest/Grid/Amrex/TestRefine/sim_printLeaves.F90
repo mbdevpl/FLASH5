@@ -1,8 +1,7 @@
 subroutine sim_printLeaves(title)
-    use amrex_amrcore_module,  ONLY : amrex_get_finest_level
-    
-    use block_iterator,        ONLY : block_iterator_t
-    use block_metadata,        ONLY : block_metadata_t
+    use block_iterator,   ONLY : block_iterator_t
+    use block_metadata,   ONLY : block_metadata_t
+    use amrex_interfaces, ONLY : gr_getFinestLevel
 
     implicit none
 
@@ -16,10 +15,10 @@ subroutine sim_printLeaves(title)
     integer :: lev
     integer :: level
     integer :: finest_level
-    
+
     write(*,'(A)') title
-    write(*,'(A)') "-------------------------------------------------------"
-    finest_level = amrex_get_finest_level() + 1
+    write(*,'(A)') "-----------------------------------"
+    call gr_getFinestLevel(finest_level)
     do level = 1, finest_level 
         write(*,'(A,I2)') "Leaf blocks at level ", level
         itor = block_iterator_t(LEAF, level=level)

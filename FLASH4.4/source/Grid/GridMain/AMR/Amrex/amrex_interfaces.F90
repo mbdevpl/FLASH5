@@ -89,5 +89,12 @@ module amrex_interfaces
          end subroutine gr_averageDownLevels
       end interface
 
+      interface
+         subroutine gr_getFinestLevel(level)
+            implicit none
+            integer, intent(IN) :: level
+         end subroutine gr_getFinestLevel
+      end interface
+
 end module amrex_interfaces
 

@@ -12,7 +12,9 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
 
     ! In this test problem, we only have periodic boundaries.
     ! So there is nothing to do.
-    write(*,*) "[gr_fillPhysicalBC] Start for time ", time
-    write(*,*) "[gr_fillPhysicalBC] Finished for time ", time
+    write(*,'(A,A,F7.4)') "[gr_fillPhysicalBC]", &
+                        "                  Start for time ", time
+    write(*,'(A,A,F7.4)') "[gr_fillPhysicalBC]", &
+                        "                  Finished for time ", time
 end subroutine gr_fillPhysicalBC
 

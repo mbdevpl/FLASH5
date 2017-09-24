@@ -25,17 +25,18 @@
 !!
 !!***
 
-subroutine Simulation_initBlock(initData, block)
+#include "Flash.h"
+#include "constants.h"
+#include "sim_constants.h"
+
+subroutine Simulation_initBlock(initData, blockDesc)
     use block_metadata, ONLY : block_metadata_t
     use sim_interface,  ONLY : sim_writeDataPoints
 
     implicit none
 
     real,                   intent(IN), pointer :: initData(:, :, :, :)
-    type(block_metadata_t), intent(IN)          :: block
-
-#include "constants.h"
-#include "Flash.h"
+    type(block_metadata_t), intent(IN)          :: blockDesc
 
     real    :: points(2, 2)
     real    :: values(2)
@@ -46,9 +47,9 @@ subroutine Simulation_initBlock(initData, block)
     points(1, :) = [0.16, 0.67]
     points(2, :) = [0.11, 0.38]
     values(:) = 0.0d0
-    values(1) = 3.0d0
-    values(2) = 1.0d0
+    values(1) = REFINE_TO_L3
+    values(2) = REFINE_TO_L2
 
-    call sim_writeDataPoints(initData, block, points, values)
+    call sim_writeDataPoints(initData, blockDesc, points, values)
 end subroutine Simulation_initBlock
 

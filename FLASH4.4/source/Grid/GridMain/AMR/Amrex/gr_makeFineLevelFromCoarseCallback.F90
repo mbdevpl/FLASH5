@@ -32,7 +32,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     integer :: lo_bc(NDIM, 1)
     integer :: hi_bc(NDIM, 1)
 
-    write(*,*) "[gr_makeFineLevelFromCoarseCallback] Start on level ", lev + 1
+    write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Start on level ", lev + 1
 
     ba = pba
     dm = pdm
@@ -62,9 +62,9 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                time, &
                                UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                               amrex_ref_ratio(lev), amrex_interp_cell_cons, &
+                               amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                lo_bc, hi_bc)
 
-    write(*,*) "[gr_makeFineLevelFromCoarseCallback] Finished on level ", lev + 1
+    write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Finished on level ", lev + 1
 end subroutine gr_makeFineLevelFromCoarseCallback
 

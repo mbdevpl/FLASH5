@@ -16,16 +16,22 @@ subroutine gr_averageDownLevels()
     finest_level = amrex_get_finest_level()
 
     ! DEV: TODO Implement for face variables as well
-    do lev = finest_level-1, 0, -1
-        call amrex_average_down(unk(lev+1), &
-                                unk(lev  ), &
-                                amrex_geom(lev+1), &
+    do lev = finest_level, 1, -1
+        call amrex_average_down(unk(lev  ), &
+                                unk(lev-1), &
                                 amrex_geom(lev  ), &
+                                amrex_geom(lev-1), &
                                 UNK_VARS_BEGIN, NUNK_VARS, &
-                                amrex_ref_ratio(lev))
+                                amrex_ref_ratio(lev-1))
     end do 
 
-    write(*,'(A,I2,A)') "[gr_averageDownLevels]          From ", &
-                        finest_level, " down to 1"
+    if (finest_level == 0) then
+        write(*,'(A,A)') "[gr_averageDownLevels]", &
+                            "               No need to average"
+    else
+        write(*,'(A,A,I2,A)') "[gr_averageDownLevels]", &
+                              "               From ", &
+                             finest_level, " down to 1"
+    end if
 end subroutine gr_averageDownLevels
 

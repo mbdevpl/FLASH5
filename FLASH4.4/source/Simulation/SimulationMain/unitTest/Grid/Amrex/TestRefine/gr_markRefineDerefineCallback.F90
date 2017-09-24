@@ -13,8 +13,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
    implicit none
  
-#include "constants.h"
 #include "Flash.h"
+#include "constants.h"
 
    integer,           intent(IN), value :: lev
    type(c_ptr),       intent(in), value :: tags 
@@ -32,9 +32,11 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
    integer :: off(1:MDIM)
 
-   integer :: i, j, k, var
+   integer :: refine_to
+   integer :: i, j
 
-   write(*,'(A,I2)') "[gr_markRefineDerefineCallback] Started on level ", lev + 1
+   write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
+                       "      Started on level ", lev + 1
    
    tag = tags
 
@@ -70,22 +72,33 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
         tagData(off(1):, off(2):, off(3):, 1:) => tag%dataptr(mfi)
 
         tagData(:, :, :, :) = clearval
-        do         k = lo(3), hi(3)
-            do     j = lo(2), hi(2)
-                do i = lo(1), hi(1)
-                    if (solnData(i, j, k, 1) > lev) then
-                        write(*,'(A,I2,A,I2,A,F7.5)') "     Tag at (", &
-                              i, ",", j, &
-                              ") / solnData is ", solnData(i, j, k, 1)
-                        tagData(i, j, k, 1) = tagval
-                    end if
-                end do
+        do     j = lo(2), hi(2)
+            do i = lo(1), hi(1)
+                ! Using 0-based AMReX level indexing
+                !
+                ! Stored data is density.  We need to reverse transformation
+                ! back to level of refinement integer that is the same on
+                ! all levels
+                refine_to = INT(solnData(i,j,1,1) * 4.0d0**(4-(lev+1)))
+                if (solnData(i,j,1,1) > 0.0d0) then
+                    write(*,'(A,I2,A,I2,A,F7.5,A,I2)') &
+                          "     Non-zero data at (", &
+                          i, ",", j, ") / density = ", solnData(i,j,1,1), &
+                          " / refine to level ", refine_to
+                end if
+
+                if (refine_to > (lev+1)) then
+                    write(*,'(A,I2,A,I2,A,F7.5)') "     Tag cell at (", &
+                          i, ",", j, ") for refinement"
+                    tagData(i, j, 1, 1) = tagval
+                end if
             end do
         end do
       end associate
    end do
    call amrex_mfiter_destroy(mfi)
 
-   write(*,'(A,I2)') "[gr_markRefineDerefineCallback] Finished on level ", lev + 1
+   write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
+                       "      Finished on level ", lev + 1
 end subroutine gr_markRefineDerefineCallback
 

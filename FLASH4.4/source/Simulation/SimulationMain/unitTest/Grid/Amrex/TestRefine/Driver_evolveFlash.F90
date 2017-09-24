@@ -15,9 +15,10 @@
 !!  in UNK in time manually.  At each step, the code sets all data in UNK to
 !!  zero except for possibly at a few points, whose non-zero values define
 !!  what level of refinement must be achieved in the blocks that contain them.  
-!!  For example, if a point has its value in UNK set to 3, then after
-!!  regridding, the block the contains the point shall be refined to downed to
-!!  level 4.
+!!
+!!  This simulation serves as a form for manually testing appropriate refinement
+!!  with AMReX (See documentation in folder).  Ideally, the leaf blocks will be
+!!  automatically verified at each step.
 !!
 !! NOTES
 !!  This simulation *must* be configured with at least the following
@@ -30,21 +31,18 @@
 
 #include "Flash.h"
 #include "constants.h"
+#include "sim_constants.h"
 
 subroutine Driver_evolveFlash()
-    use amrex_fort_module,     ONLY : amrex_spacedim
+    use amrex_fort_module, ONLY : amrex_spacedim
 
-    use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
-                                      Grid_getDeltas, &
-                                      Grid_updateRefinement, &
-                                      Grid_getBlkPtr, Grid_releaseBlkPtr
-    use Grid_data,             ONLY : gr_iguard, gr_jguard, gr_kguard, &
-                                      gr_meshMe
-    use block_iterator,        ONLY : block_iterator_t
-    use block_metadata,        ONLY : block_metadata_t, bmd_print
-    use amrex_interfaces,      ONLY : gr_averageDownLevels
-    use sim_interface,         ONLY : sim_writeDataPoints, &
-                                      sim_printLeaves
+    use Grid_interface,    ONLY : Grid_getDomainBoundBox, &
+                                  Grid_getDeltas, &
+                                  Grid_updateRefinement, &
+                                  Grid_getBlkPtr, Grid_releaseBlkPtr
+    use Grid_data,         ONLY : gr_meshMe, gr_lRefineMax, gr_maxRefine
+    use amrex_interfaces,  ONLY : gr_getFinestLevel
+    use sim_interface,     ONLY : sim_advance
 
     implicit none
 
@@ -58,18 +56,12 @@ subroutine Driver_evolveFlash()
     real    :: t_old
     real    :: t_new
 
-    real :: domain(LOW:HIGH, 1:MDIM)
-    real :: deltas(1:MDIM)
+    real    :: domain(LOW:HIGH, 1:MDIM)
+    real    :: deltas(1:MDIM)
+    integer :: finest_level
 
-    type(block_iterator_t) :: itor
-    type(block_metadata_t) :: block
-
-    logical :: gridChanged
-
-    integer       :: i, j, k, var
-    real, pointer :: solnData(:, :, :, :)
-    real          :: points(3, 1:NDIM)
-    real          :: values(3)
+    real :: points(3, 1:NDIM)
+    real :: values(3)
 
     write(*,*)
     n_tests = 0
@@ -108,46 +100,95 @@ subroutine Driver_evolveFlash()
     call assertEqual(deltas(JAXIS), deltas(IAXIS), "dy != dx at coarse")
     call assertEqual(deltas(KAXIS), 0.0d0, "dz != 0 at coarse")
 
+    call assertEqual(4, gr_lRefineMax, "Incorrect max number of levels")
+    call assertEqual(gr_maxRefine, gr_lRefineMax, "gr_maxRefine != gr_lRefineMax")
+
     call sim_printLeaves("LEAVES AFTER DATA INIT & REGRID")
 
     !!!!! CONFIRM INITIAL REFINEMENT
     ! Started with 2x2 block structure and refined according to initial data
     ! using unittests own gr_markRefineDerefine callback with AMReX
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(3, finest_level, "Incorrect finest level after init")
 
-    !!!!! CONFIRM PROPER SUBSEQUENT REFINEMENT 
-    ! Write new data to leaves only
-    write(*,*)
-    write(*,*) "SETTING ALL DATA TO ZERO AT ALL LEVELS"
-    write(*,*)
-    itor = block_iterator_t(LEAF)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getBlkPtr(block, solnData)
+    !!!!! STEP 1/2 - CONFIRM DEREFINEMENT GLOBALLY TO LEVEL 1
+    points(:, :) = 0.0d0
+    values(:) = 0.0d0
+    call sim_advance(1, points, values, &
+                     "SETTING ALL DATA TO ZERO AT ALL LEVELS", &
+                     "LEAVES AFTER ZEROING ALL DATA & REGRID")
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(1, finest_level, "Incorrect finest level")
 
-        solnData = 0.0d0
+    !!!!! STEP 3/4 - CONFIRM REFINEMENT GLOBALLY TO LEVEL 2
+    ! Corner cell with periodic BC
+    points(:, :) = 0.0d0
+    values(:) = 0.0d0
+    points(1, :) = [0.99d0, 0.01d0]
+    values(1) = REFINE_TO_L2
+    call sim_advance(3, points, values, &
+                     "SETTING CORNER CELL ONLY FOR LEVEL 2", &
+                     "LEAVES AFTER DATA AT CORNER CELL")
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(2, finest_level, "Incorrect finest level")
 
-        call Grid_releaseBlkPtr(block, solnData)
-        call itor%next()
-    end do
+    !!!!! STEP 5/6 - CONFIRM LEVEL 2 ONLY ON LOWER-RIGHT
+    ! Single point not in corner cell
+    points(:, :) = 0.0d0
+    values(:) = 0.0d0
+    points(1, :) = [0.9d0, 0.1d0]
+    values(1) = REFINE_TO_L2 
+    call sim_advance(5, points, values, &
+                     "SETTING SINGLE CELL ONLY FOR LEVEL 2", &
+                     "LEAVES AFTER LEVEL 2 DATA AT SINGLE CELL")
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(2, finest_level, "Incorrect finest level")
 
-    ! Propagate leaf data to coarse levels
-    call gr_averageDownLevels
+    !!!!! STEP 7/8 - REFINE TO LEVEL 3 ON POINT
+    ! Same point but maximize refinement.  However, refinement 
+    ! can only increase one level with each advance.
+    values(1) = REFINE_TO_L5
+    call sim_advance(7, points, values, &
+                     "SETTING SINGLE CELL ONLY FOR LEVEL 4", &
+                     "LEAVES AFTER ONLY GETTING TO L3 AT SINGLE CELL")
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(3, finest_level, "Incorrect finest level")
 
-    ! Should only refine on even steps (nrefs in flash.par)
-    write(*,*)
-    write(*,*) "EVALUATING REFINE/DEREFINE"
-    write(*,*)
-    gridChanged = .FALSE.
-    call Grid_updateRefinement(1, 0.1d0, gridChanged)
-    call assertFalse(gridChanged, "Shouldn't have refined")
+    !!!!! STEP 9/10 - ADVANCE WITH NO CHANGE TO ACHIEVE LEVEL 4
+    ! gr_remakeLevelCallback called in previous step on level 2
+    ! DEV: TODO Add test to verify that UNK has correct data at all levels
+    call sim_advance(9, points, values, &
+                     "NO DATA CHANGE - LET IT REFINE TO LEVEL 4", &
+                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(4, finest_level, "Incorrect finest level")
 
-    call Grid_updateRefinement(2, 0.2d0, gridChanged)
-    call assertTrue(gridChanged, "Should have refined")
-    write(*,*)
-    call sim_printLeaves("LEAVES AFTER ZEROING ALL DATA & REGRID")
+    !!!!! STEP 11/12 - ADVANCE WITH NO CHANGE AND CONFIRM NO CHANGE
+    ! We should be limited to refinement up to level 4
+    call sim_advance(11, points, values, &
+                     "NO DATA CHANGE -  STUCK AT REFINEMENT LEVEL 4", &
+                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(4, finest_level, "Incorrect finest level")
 
-    call Grid_updateRefinement(3, 0.3d0, gridChanged)
-    call assertFalse(gridChanged, "Shouldn't have refined")
+    !!!!! STEP 13-16 - ADD ONE MORE LEVEL 4 POINT
+    points(:, :) = 0.0d0
+    values(:) = 0.0d0
+    points(1, :) = [0.9d0,  0.1d0]
+    points(2, :) = [0.29d0, 0.58d0]
+    values(1) = REFINE_TO_L4 
+    values(2) = REFINE_TO_L4
+    call sim_advance(13, points, values, &
+                     "SETTING SECOND LEVEL 4 CELL", &
+                     "LEAVES AFTER SECOND LEVEL 4 DATA")
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(4, finest_level, "Incorrect finest level")
+
+    call sim_advance(15, points, values, &
+                     "SETTING SECOND LEVEL 4 CELL", &
+                     "LEAVES AFTER SECOND LEVEL 4 DATA")
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(4, finest_level, "Incorrect finest level")
 
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?
