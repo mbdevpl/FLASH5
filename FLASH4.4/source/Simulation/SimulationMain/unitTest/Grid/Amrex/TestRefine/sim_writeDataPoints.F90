@@ -53,7 +53,7 @@ subroutine sim_writeDataPoints(initData, blockDesc, points, values)
 
                         if (      (cd(1)-dx <= pt(1)) .AND. (pt(1) <= cd(1)+dx) &
                             .AND. (cd(2)-dy <= pt(2)) .AND. (pt(2) <= cd(2)+dy)) then
-                            write(*,'(A,I2,A,I2,A)') &
+                            write(*,'(A,I3,A,I3,A)') &
                                   "     Data point contained in cell (", &
                                   i, ",", j, ")"
                             write(*,'(A,F7.5,A,F7.5,A,F7.5)') "        ", &

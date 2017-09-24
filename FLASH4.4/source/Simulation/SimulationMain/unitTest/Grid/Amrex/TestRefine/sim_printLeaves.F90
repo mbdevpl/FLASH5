@@ -1,4 +1,4 @@
-subroutine sim_printLeaves(title)
+subroutine sim_printLeaves(title, block_count)
     use block_iterator,   ONLY : block_iterator_t
     use block_metadata,   ONLY : block_metadata_t
     use amrex_interfaces, ONLY : gr_getFinestLevel
@@ -7,7 +7,8 @@ subroutine sim_printLeaves(title)
 
 #include "constants.h"
 
-    character(*), intent(IN) :: title
+    character(*), intent(IN)    :: title
+    integer,      intent(INOUT) :: block_count(4)
 
     type(block_iterator_t) :: itor
     type(block_metadata_t) :: blockDesc
@@ -15,6 +16,8 @@ subroutine sim_printLeaves(title)
     integer :: lev
     integer :: level
     integer :: finest_level
+
+    block_count(:) = 0
 
     write(*,'(A)') title
     write(*,'(A)') "-----------------------------------"
@@ -29,6 +32,8 @@ subroutine sim_printLeaves(title)
                      blockDesc%limits(LOW, 2), ") to (", &
                      blockDesc%limits(HIGH, 1), ", ", &
                      blockDesc%limits(HIGH, 2), ")"
+    
+            block_count(level) = block_count(level) + 1
 
             call itor%next()
         end do

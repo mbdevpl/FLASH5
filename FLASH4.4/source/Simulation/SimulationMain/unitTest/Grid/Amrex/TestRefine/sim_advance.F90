@@ -1,4 +1,4 @@
-subroutine sim_advance(step, points, values, set_msg, leaf_msg)
+subroutine sim_advance(step, points, values, set_msg, leaf_msg, block_count)
     use Grid_interface,       ONLY : Grid_updateRefinement, &
                                      Grid_getBlkPtr, Grid_releaseBlkPtr
     use Driver_interface,     ONLY : Driver_abortFlash
@@ -13,11 +13,12 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
 
 #include "constants.h"
     
-    integer,      intent(IN) :: step
-    real,         intent(IN) :: points(:, :)
-    real,         intent(IN) :: values(:)
-    character(*), intent(IN) :: set_msg
-    character(*), intent(IN) :: leaf_msg
+    integer,      intent(IN)    :: step
+    real,         intent(IN)    :: points(:, :)
+    real,         intent(IN)    :: values(:)
+    character(*), intent(IN)    :: set_msg
+    character(*), intent(IN)    :: leaf_msg
+    integer,      intent(INOUT) :: block_count(4)
 
     real, contiguous, pointer :: solnData(:,:,:,:)
    
@@ -72,6 +73,6 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
     end if
 
     write(*,*)
-    call sim_printLeaves(leaf_msg)
+    call sim_printLeaves(leaf_msg, block_count)
 end subroutine sim_advance
 

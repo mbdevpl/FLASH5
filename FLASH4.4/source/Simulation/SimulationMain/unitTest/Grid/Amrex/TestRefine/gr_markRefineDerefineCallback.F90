@@ -81,14 +81,14 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 ! all levels
                 refine_to = INT(solnData(i,j,1,1) * 4.0d0**(4-(lev+1)))
                 if (solnData(i,j,1,1) > 0.0d0) then
-                    write(*,'(A,I2,A,I2,A,F7.5,A,I2)') &
+                    write(*,'(A,I3,A,I3,A,F7.5,A,I3)') &
                           "     Non-zero data at (", &
                           i, ",", j, ") / density = ", solnData(i,j,1,1), &
                           " / refine to level ", refine_to
                 end if
 
                 if (refine_to > (lev+1)) then
-                    write(*,'(A,I2,A,I2,A,F7.5)') "     Tag cell at (", &
+                    write(*,'(A,I3,A,I3,A,F7.5)') "     Tag cell at (", &
                           i, ",", j, ") for refinement"
                     tagData(i, j, 1, 1) = tagval
                 end if

@@ -63,6 +63,11 @@ subroutine Driver_evolveFlash()
     real :: points(3, 1:NDIM)
     real :: values(3)
 
+    ! DEV: TODO Get rid of hardcoded max levels here and elsewhere
+    integer :: block_count(4)
+    integer :: block_count_ex(4)
+    integer :: lev
+
     write(*,*)
     n_tests = 0
     n_failed = 0
@@ -103,7 +108,11 @@ subroutine Driver_evolveFlash()
     call assertEqual(4, gr_lRefineMax, "Incorrect max number of levels")
     call assertEqual(gr_maxRefine, gr_lRefineMax, "gr_maxRefine != gr_lRefineMax")
 
-    call sim_printLeaves("LEAVES AFTER DATA INIT & REGRID")
+    call sim_printLeaves("LEAVES AFTER DATA INIT & REGRID", block_count)
+    block_count_ex = [0, 15, 4, 0]
+    do lev = 1, SIZE(block_count)
+        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
+    end do
 
     !!!!! CONFIRM INITIAL REFINEMENT
     ! Started with 2x2 block structure and refined according to initial data
@@ -116,9 +125,15 @@ subroutine Driver_evolveFlash()
     values(:) = 0.0d0
     call sim_advance(1, points, values, &
                      "SETTING ALL DATA TO ZERO AT ALL LEVELS", &
-                     "LEAVES AFTER ZEROING ALL DATA & REGRID")
+                     "LEAVES AFTER ZEROING ALL DATA & REGRID", &
+                     block_count)
     call gr_getFinestLevel(finest_level)
     call assertEqual(1, finest_level, "Incorrect finest level")
+    
+    block_count_ex = [4, 0, 0, 0]
+    do lev = 1, SIZE(block_count)
+        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
+    end do
 
     !!!!! STEP 3/4 - CONFIRM REFINEMENT GLOBALLY TO LEVEL 2
     ! Corner cell with periodic BC
@@ -128,9 +143,15 @@ subroutine Driver_evolveFlash()
     values(1) = REFINE_TO_L2
     call sim_advance(3, points, values, &
                      "SETTING CORNER CELL ONLY FOR LEVEL 2", &
-                     "LEAVES AFTER DATA AT CORNER CELL")
+                     "LEAVES AFTER DATA AT CORNER CELL", &
+                     block_count)
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
+
+    block_count_ex = [0, 16, 0, 0]
+    do lev = 1, SIZE(block_count)
+        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
+    end do
 
     !!!!! STEP 5/6 - CONFIRM LEVEL 2 ONLY ON LOWER-RIGHT
     ! Single point not in corner cell
@@ -140,9 +161,15 @@ subroutine Driver_evolveFlash()
     values(1) = REFINE_TO_L2 
     call sim_advance(5, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 2", &
-                     "LEAVES AFTER LEVEL 2 DATA AT SINGLE CELL")
+                     "LEAVES AFTER LEVEL 2 DATA AT SINGLE CELL", &
+                     block_count)
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
+
+    block_count_ex = [3, 4, 0, 0]
+    do lev = 1, SIZE(block_count)
+        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
+    end do
 
     !!!!! STEP 7/8 - REFINE TO LEVEL 3 ON POINT
     ! Same point but maximize refinement.  However, refinement 
@@ -150,26 +177,44 @@ subroutine Driver_evolveFlash()
     values(1) = REFINE_TO_L5
     call sim_advance(7, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 4", &
-                     "LEAVES AFTER ONLY GETTING TO L3 AT SINGLE CELL")
+                     "LEAVES AFTER ONLY GETTING TO L3 AT SINGLE CELL", &
+                     block_count)
     call gr_getFinestLevel(finest_level)
     call assertEqual(3, finest_level, "Incorrect finest level")
+
+    block_count_ex = [0, 15, 4, 0]
+    do lev = 1, SIZE(block_count)
+        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
+    end do
 
     !!!!! STEP 9/10 - ADVANCE WITH NO CHANGE TO ACHIEVE LEVEL 4
     ! gr_remakeLevelCallback called in previous step on level 2
     ! DEV: TODO Add test to verify that UNK has correct data at all levels
     call sim_advance(9, points, values, &
                      "NO DATA CHANGE - LET IT REFINE TO LEVEL 4", &
-                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
+                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL", &
+                     block_count)
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
+
+    block_count_ex = [0, 12, 15, 4]
+    do lev = 1, SIZE(block_count)
+        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
+    end do
 
     !!!!! STEP 11/12 - ADVANCE WITH NO CHANGE AND CONFIRM NO CHANGE
     ! We should be limited to refinement up to level 4
     call sim_advance(11, points, values, &
                      "NO DATA CHANGE -  STUCK AT REFINEMENT LEVEL 4", &
-                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
+                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL", &
+                     block_count)
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
+
+    block_count_ex = [0, 12, 15, 4]
+    do lev = 1, SIZE(block_count)
+        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
+    end do
 
     !!!!! STEP 13-16 - ADD ONE MORE LEVEL 4 POINT
     points(:, :) = 0.0d0
@@ -180,15 +225,22 @@ subroutine Driver_evolveFlash()
     values(2) = REFINE_TO_L4
     call sim_advance(13, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
-                     "LEAVES AFTER SECOND LEVEL 4 DATA")
+                     "LEAVES AFTER SECOND LEVEL 4 DATA", &
+                     block_count)
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
     call sim_advance(15, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
-                     "LEAVES AFTER SECOND LEVEL 4 DATA")
+                     "LEAVES AFTER SECOND LEVEL 4 DATA", &
+                     block_count)
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
+
+    block_count_ex = [0, 8, 30, 8]
+    do lev = 1, SIZE(block_count)
+        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
+    end do
 
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?
