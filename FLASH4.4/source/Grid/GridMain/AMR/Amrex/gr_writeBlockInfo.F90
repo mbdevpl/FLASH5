@@ -23,20 +23,19 @@
 #include "Flash.h"
 
 subroutine gr_writeBlockInfo
+  use iso_c_binding,     ONLY : c_int
   use Logfile_interface, ONLY : Logfile_open, Logfile_close
-  use chombo_f_c_interface, ONLY : ch_get_box_info
-  use iso_c_binding, ONLY : c_int
-  use flash_ftypes, ONLY : box_info_t
-  use Grid_interface, ONLY : Grid_getListOfBlocks
-  use Driver_interface, ONLY : Driver_getSimTime, Driver_getNStep
+  use Driver_interface,  ONLY : Driver_getSimTime, &
+                                Driver_getNStep, &
+                                Driver_abortFlash
+
   implicit none
 
-  type(box_info_t) :: boxInfo
   real :: simTime
   integer(c_int) :: b
-  integer, dimension(MAXBLOCKS) :: listOfBlocks
   integer :: i, d, count, logUnit, nstep
   logical, dimension(MDIM) :: isNextToLowDomain, isNextToHighDomain
+  
   logical, parameter :: localLogFile = .true.
 
   !The introduction format string:
@@ -73,28 +72,33 @@ subroutine gr_writeBlockInfo
        " Sim time:", simTime, &
        " Num. local blocks:", count
 
-  do i = 1, count
-     b = listOfBlocks(i)
-     call ch_get_box_info(b, CENTER, boxInfo)
-     
-     do d = 1, NDIM
-        isNextToLowDomain(d) = (boxInfo % isNextToLowDomain(d) == FLASH_TRUE)
-        isNextToHighDomain(d) = (boxInfo % isNextToHighDomain(d) == FLASH_TRUE)
-     end do
-
-     write(logUnit,logStr) &
-          " Block ID:", b, &
-          " refinement level:", boxInfo % lrefine, &
-          " level low index: ", boxInfo % lowLimits(1:NDIM), &
-          " level high index:", boxInfo % highLimits(1:NDIM), & 
-          " corner ID:       ", boxInfo % corner(1:NDIM), & 
-          " stride:          ", boxInfo % stride(1:NDIM), & 
-          " low bound box: ", boxInfo % lowBndbox(1:NDIM), &
-          " high bound box:", boxInfo % highBndbox(1:NDIM), &
-          " next to low domain: ", isNextToLowDomain(1:NDIM), &
-          " next to high domain:", isNextToHighDomain(1:NDIM)
-  end do
+   ! DEV: TODO Implement for AMReX
+!  do i = 1, count
+!     b = listOfBlocks(i)
+!     call ch_get_box_info(b, CENTER, boxInfo)
+!     
+!     do d = 1, NDIM
+!        isNextToLowDomain(d) = (boxInfo % isNextToLowDomain(d) == FLASH_TRUE)
+!        isNextToHighDomain(d) = (boxInfo % isNextToHighDomain(d) == FLASH_TRUE)
+!     end do
+!
+!     write(logUnit,logStr) &
+!          " Block ID:", b, &
+!          " refinement level:", boxInfo % lrefine, &
+!          " level low index: ", boxInfo % lowLimits(1:NDIM), &
+!          " level high index:", boxInfo % highLimits(1:NDIM), & 
+!          " corner ID:       ", boxInfo % corner(1:NDIM), & 
+!          " stride:          ", boxInfo % stride(1:NDIM), & 
+!          " low bound box: ", boxInfo % lowBndbox(1:NDIM), &
+!          " high bound box:", boxInfo % highBndbox(1:NDIM), &
+!          " next to low domain: ", isNextToLowDomain(1:NDIM), &
+!          " next to high domain:", isNextToHighDomain(1:NDIM)
+!  end do
 
   call Logfile_close(localLogFile)
 
+  ! DEV: TODO Implement this with iterator if needed
+  call Driver_abortFlash("[gr_writeBlockInfo] not implemented for AMReX yet")
+
 end subroutine gr_writeBlockInfo
+
