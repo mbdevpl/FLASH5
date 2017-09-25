@@ -5,6 +5,7 @@
 
 subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
+  use Grid_interface,      ONLY : Grid_fillGuardCells
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
@@ -16,6 +17,8 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
                          hy_units,            &
                          hy_gcMaskSize,       &
                          hy_gcMask,    &
+                         hy_eosModeGc,        &
+                         hy_eosModeAfter,     &
                          hy_updateHydroFluxes,&
                          hy_cfl,              &
                          hy_cfl_original,     &
@@ -94,10 +97,10 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
      end if
 #endif
      
-!!$     call Grid_fillGuardCells(CENTER,ALLDIR) ! DEV: NONONO!
-!!$     ,doEos=.false.,&
-!!$          maskSize=NUNK_VARS, mask=gcMask,makeMaskConsistent=.false.,&
-!!$          doLogMask=.NOT.gcMaskLogged)
+     call Grid_fillGuardCells(CENTER,ALLDIR & !) ! DEV: NONONO!
+     ,doEos=.false.,&
+          maskSize=NUNK_VARS, mask=gcMask,makeMaskConsistent=.false.,&
+          doLogMask=.NOT.gcMaskLogged)
      
      hy_cfl = hy_cfl_original
   end if
@@ -118,11 +121,9 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 #endif
 
   ! DEV: NONONO!
-!!$  call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.true.,eosMode=hy_eosModeGc,&
-!!$       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,&
-!!$       doLogMask=.NOT.gcMaskLogged)
-
-
+  call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.true.,eosMode=hy_eosModeGc,&
+       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,&
+       doLogMask=.NOT.gcMaskLogged)
 
   call Timers_stop("Head")
 
@@ -148,6 +149,8 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   !! ***************************************************************************
   !! Loop over the blocks
   call Hydro_doLoop1(simTime, dt, dtOld)
+  call IO_writeCheckpoint()
+  stop
 
   call Hydro_doLoop4()
 

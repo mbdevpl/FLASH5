@@ -21,15 +21,11 @@ Module Hydro_interface
        implicit none
        type(block_metadata_t), intent(IN) :: block
        integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
-#ifdef FIXEDBLOCKSIZE
-       real, dimension(GRID_ILO_GC:GRID_IHI_GC), intent(IN) :: x, dx, uxgrid
-       real, dimension(GRID_JLO_GC:GRID_JHI_GC), intent(IN) :: y, dy, uygrid
-       real, dimension(GRID_KLO_GC:GRID_KHI_GC), intent(IN) :: z, dz, uzgrid
-#else
+
        real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
        real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)), intent(IN) :: y, dy, uygrid
        real, dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)), intent(IN) :: z, dz, uzgrid
-#endif
+
        real,INTENT(INOUT)    :: dt_check
        integer,INTENT(INOUT)    :: dt_minloc(5)
        real, pointer :: solnData(:,:,:,:) 
