@@ -178,8 +178,10 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   if      (present(minLayers)) then
     call Driver_abortFlash("[Grid_fillGuardCells] minLayers *not* implemented for yet AMReX") 
   else if (present(eosMode)) then
+    write(*,*) "eosMode = ", eosMode
     call Driver_abortFlash("[Grid_fillGuardCells] eosMode *not* implemented for yet AMReX") 
   else if (present(doEos)) then
+    write(*,*) "doEos = ", doEos
     call Driver_abortFlash("[Grid_fillGuardCells] doEos *not* implemented for yet AMReX") 
   else if (present(maskSize)) then
     call Driver_abortFlash("[Grid_fillGuardCells] maskSize *not* implemented for yet AMReX") 
@@ -220,7 +222,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end do
   
   gr_justExchangedGC = .TRUE.
-  write(*,*) "[Grid_fillGuardcell] From level 0 to level ", finest_level
+  write(*,'(A,I3)') "[Grid_fillGuardcell] From level 0 to level ", finest_level
 
   call Timers_stop("amr_guardcell")
 end subroutine Grid_fillGuardCells
