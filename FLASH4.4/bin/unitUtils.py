@@ -226,23 +226,23 @@ class UnitList:
         ans = []
         if GVars.gridInterpolation == globals.GRID_INTERP_MONOTONIC:
             for unitName in self.units.keys():
-                if unitName.startswith("Grid/GridMain/paramesh/paramesh4"):
+                if unitName.startswith("Grid/GridMain/AMR/paramesh/paramesh4"):
                     # Check if added this already
                     for unitName2 in self.units.keys():
-                        if unitName2.startswith("Grid/GridMain/paramesh/interpolation/Paramesh4"):
+                        if unitName2.startswith("Grid/GridMain/AMR/paramesh/interpolation/Paramesh4"):
                             break
                     else:
                         # add the required interpolation unit
-                        ans.append("Grid/GridMain/paramesh/interpolation/Paramesh4")
+                        ans.append("Grid/GridMain/AMR/paramesh/interpolation/Paramesh4")
                     break
-                elif unitName.startswith("Grid/GridMain/paramesh/Paramesh2"):
+                elif unitName.startswith("Grid/GridMain/AMR/paramesh/Paramesh2"):
                     # Check if added this already
                     for unitName2 in self.units.keys():
-                        if unitName2.startswith("Grid/GridMain/paramesh/Paramesh2/monotonic"):
+                        if unitName2.startswith("Grid/GridMain/AMR/paramesh/Paramesh2/monotonic"):
                             break
                     else:
                         # add the required interpolation unit
-                        ans.append("Grid/GridMain/paramesh/Paramesh2/monotonic")
+                        ans.append("Grid/GridMain/AMR/paramesh/Paramesh2/monotonic")
                     break
         elif GVars.gridInterpolation == globals.GRID_INTERP_NATIVE:
             # This is the only other possiblity, and all it means is that we
@@ -626,7 +626,7 @@ class UnitList:
         if GVars.maxblocks==None: # using UG
            if grid == 'UG':
              GVars.maxblocks = 1
-           elif grid == 'paramesh':  # using paramesh
+           elif grid == 'AMR':  # using paramesh or Amrex or something like that
              if GVars.dimension==3: 	 
                 GVars.maxblocks = 200
              else: 	 

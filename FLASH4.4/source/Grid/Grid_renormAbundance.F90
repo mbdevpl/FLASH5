@@ -28,7 +28,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockID -   the block number to renormalize
+!!  blockDesc -   the block number to renormalize
 !!  blkLimits - the index limits for internal zones of the block to renormalize
 !!  solnData -  Pointer to the block to be renormalized
 !!
@@ -45,13 +45,15 @@
 !!
 !!***
 
-subroutine Grid_renormAbundance(blockId,blkLimits,solnData)
+subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
+
+  use block_metadata,   ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 
-  integer, INTENT(in) :: blockId
+  type(block_metadata_t), intent(IN) :: blockDesc
   integer, intent(in), dimension(2,MDIM)::blkLimits
   real,pointer :: solnData(:,:,:,:)
 

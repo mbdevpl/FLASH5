@@ -23,6 +23,7 @@
 ! This particular interpolation is monotonic and and the order can be chosen
 ! at run time. The default is parabolic.
 
+#include "Flash.h"
 
 subroutine amr_prolong_gen_work1_fun & 
      &       (recv, ia, ib, ja, jb, ka, kb, idest, & 
@@ -33,10 +34,12 @@ subroutine amr_prolong_gen_work1_fun &
   use Grid_interface, ONLY : Grid_getCellCoords
   use Driver_interface, ONLY : Driver_abortFlash
 
-  use Grid_data,ONLY: gr_dirGeom, gr_smallx, gr_intpol,gr_oneBlock
+  use Grid_data,ONLY: gr_dirGeom, gr_smallx, gr_intpol
+#ifndef FLASH_GRID_ANYAMREX
+  use gr_specificData,ONLY: gr_oneBlock
+#endif
   implicit none
 #include "constants.h"
-#include "Flash.h"
   
   real, intent(IN), &
        dimension(GRID_ILO_GC:GRID_IHI_GC,&

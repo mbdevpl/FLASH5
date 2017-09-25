@@ -1,4 +1,4 @@
-REQUIRES Grid/GridMain/paramesh/interpolation/prolong
+REQUIRES Grid/GridMain/AMR/paramesh/interpolation/prolong
 
 # Define a symbol to signal that monotonic interpolation
 # routines are compiled in:
