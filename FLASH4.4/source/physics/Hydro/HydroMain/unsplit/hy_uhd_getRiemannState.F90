@@ -158,8 +158,8 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 
   real :: Sp, dv1, dp1, dp2, presL,presR,hdt
 
-  real, dimension(blkLimitsGC(HIGH,IAXIS)) :: xCenter  
-  real, dimension(blkLimitsGC(HIGH,JAXIS)) :: yCenter  
+  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)) :: xCenter  
+  real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)) :: yCenter  
 
   integer :: k2,k3,kGrav,kHydro,kUSM,order
   integer :: k4,im2,ip2,jm2,jp2,km2,kp2
@@ -289,6 +289,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 
   if (.NOT. normalFieldUpdateOnly) then
 
+     dataSize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
      if (hy_geometry /= CARTESIAN) then
         ! Grab cell x-coords for this block  
         call Grid_getCellCoords(IAXIS,block, CENTER,.true.,xCenter,dataSize(IAXIS))
@@ -298,7 +299,6 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 #endif
      endif
 
-     dataSize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
      allocate( sig(HY_VARINUMMAX,NDIM,           dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate( lambda(HY_WAVENUM,NDIM,           dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
      allocate(leftEig(HY_VARINUM,HY_WAVENUM,NDIM,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))

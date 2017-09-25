@@ -65,17 +65,18 @@
 !!   This is changed from the behavior in FLASH4.2.2 and earlier.
 !!***
 
-!!REORDER(4): U, Uold, SpOld, scrch_Ptr, [xyz]flux
+!!REORDER(4): Uin, Uout, Uold, SpOld, scrch_Ptr, [xyz]flux
 
 #include "constants.h"
 #include "Flash.h"
 #include "Eos.h"
 #include "UHD.h"
 
-  Subroutine hy_uhd_unsplitUpdate(block,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
+  Subroutine hy_uhd_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
                                   blkLimitsGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                   scrch_Ptr)
 
+    use block_metadata,   ONLY : block_metadata_t
     use Hydro_data,           ONLY : hy_smalldens,hy_order,hy_irenorm,hy_numXN, &
                                      hy_meshMe, &
                                      hy_geometry, hy_gcMaskSize, &
@@ -111,7 +112,8 @@
     implicit none
 
     !! ---- Arguments ---------------------------------
-    integer,intent(IN) :: block, rangeSwitch
+    type(block_metadata_t), intent(IN) :: blockDesc
+    integer,intent(IN) :: rangeSwitch
     real, intent(IN)   :: dt
     real, intent(IN)   :: del(MDIM)
     integer,dimension(MDIM),intent(IN) :: dataSize
@@ -262,33 +264,33 @@
 !!$    ! Get block pointers
 !!$    call Grid_getBlkPtr(block,U,CENTER)
 
-!!$    if (hy_geometry /= CARTESIAN) then
-!!$       faceAreas = 0.
-!!$       call Grid_getBlkData(block, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
-!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-!!$            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
-!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-!!$            (/isize+1, jsize, ksize/) )
-!!$#if NDIM > 1
-!!$       if (hy_geometry == SPHERICAL) then
-!!$          call Grid_getBlkData(block, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
-!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-!!$            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
-!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-!!$            (/isize, jsize+1, ksize/) )
-!!$       end if
-!!$#endif
-!!$
-!!$       cellVolumes = 0.
-!!$       call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, &
-!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-!!$            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-!!$            (/isize, jsize, ksize/) )
-!!$    endif
+    if (hy_geometry /= CARTESIAN) then
+       faceAreas = 0.
+       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
+            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
+            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
+            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+            (/isize+1, jsize, ksize/) )
+#if NDIM > 1
+       if (hy_geometry == SPHERICAL) then
+          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
+            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
+            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+            (/isize, jsize+1, ksize/) )
+       end if
+#endif
+
+       cellVolumes = 0.
+       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, EXTERIOR, &
+            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+            (/isize, jsize, ksize/) )
+    endif
 
     
 !!$#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
@@ -309,20 +311,20 @@
     Uold(6,  :,:,:) = Uin(GAME_VAR,:,:,:)
 #endif
 
-!!$#ifdef DEBUG_HYDRO_POSITIVITY
-!!$    call    Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
-!!$#else
-!!$    if (hy_geometry /= CARTESIAN) then
-!!$       call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
-!!$    end if
-!!$#endif
-!!$    if (hy_geometry /= CARTESIAN) then
-!!$       call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-!!$       call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
-!!$       if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-!!$          call Grid_getCellCoords(JAXIS,block, CENTER,.false.,yCenter, size(yCenter))
-!!$       end if
-!!$    endif
+#ifdef DEBUG_HYDRO_POSITIVITY
+    call    Grid_getCellCoords(IAXIS,blockDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+#else
+    if (hy_geometry /= CARTESIAN) then
+       call Grid_getCellCoords(IAXIS,blockDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+    end if
+#endif
+    if (hy_geometry /= CARTESIAN) then
+       call Grid_getCellCoords(IAXIS,blockDesc, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,blockDesc, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+       if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
+          call Grid_getCellCoords(JAXIS,blockDesc, CENTER,.false.,yCenter, size(yCenter))
+       end if
+    endif
 !!$
 !!$#ifdef FLASH_USM_MHD
 !!$#ifdef FLASH_UHD_3T
@@ -505,6 +507,19 @@
                       alpha  = 2.
                    end select
 
+#ifdef DEBUG_UHD
+!!$     print*,'_unsplitUpdate top: associated(Uin ) is',associated(Uin )
+!!$     print*,'_unsplitUpdate top: associated(Uout) is',associated(Uout)
+     print*,'_unsplitUpdate top: lbound(Uin ):',lbound(Uin )
+     print*,'_unsplitUpdate top: ubound(Uin ):',ubound(Uin )
+     print*,'_unsplitUpdate top: lbound(Uout):',lbound(Uout)
+     print*,'_unsplitUpdate top: ubound(Uout):',ubound(Uout)
+     print*,'_unsplitUpdate top: lbound(faceAreas):',lbound(faceAreas)
+     print*,'_unsplitUpdate top: ubound(faceAreas):',ubound(faceAreas)
+     print*,'_unsplitUpdate top: lbound(cellVolumes):',lbound(cellVolumes)
+     print*,'_unsplitUpdate top: ubound(cellVolumes):',ubound(cellVolumes)
+     print*,'_unsplitUpdate top: i,j,k,cellVolumes(i,j,k)=',i,j,k,cellVolumes(i,j,k)
+#endif
                    leftFac = faceAreas(i  ,j,k)*dx/cellVolumes(i,j,k)
                    rghtFac = faceAreas(i+1,j,k)*dx/cellVolumes(i,j,k)
 
@@ -600,7 +615,7 @@
                    speciesArr => Uin(SPECIES_BEGIN:SPECIES_END,i,j,k)
                    call MagneticResistivity(Uin(TEMP_VAR,i,j,k),Uin(DENS_VAR,i,j,k),&
                         speciesArr,res_eta(i,j,k))
-                   call hy_uhd_addOhmicHeating(block,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
+                   call hy_uhd_addOhmicHeating(blockDesc,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
                    Qohm = Qohm*Uin(DENS_VAR,i,j,k)
                 endif
 #endif
@@ -639,7 +654,7 @@
 
                    ! correct the energy fluxes with current terms
                    !! Note: hy_uhd_getCurrent sets Jp and Jm for many cells, unless called with mode_switch=4.
-                   call hy_uhd_getCurrents(block, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
+                   call hy_uhd_getCurrents(blockDesc, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
                                            scrch_Ptr,&
                                            i, j, k)
                    Sphys(HY_ENER) = ( Jp(1,i,j,k) - Jm(1,i,j,k) ) / dx
@@ -886,14 +901,14 @@
 #if (NSPECIES+NMASS_SCALARS) > 0
   ! Renormalize or limit abundances
     if (hy_irenorm == 1) then
-       call Grid_renormAbundance(block,blkLimits,Uout)
+       call Grid_renormAbundance(blockDesc,blkLimits,Uout)
     else
        call Grid_limitAbundance(blkLimits,Uout)
     endif
 #endif  
 !!$
 !!$    ! Release block pointers
-!!$    call Grid_releaseBlkPtr(block,U,CENTER)
+!!$    call Grid_releaseBlkPtr(blockDesc,U,CENTER)
 
 
 
@@ -936,38 +951,38 @@
 
 
 !!$    ! Get block pointers
-!!$    call Grid_getBlkPtr(block,U,CENTER)
+!!$    call Grid_getBlkPtr(blockDesc,U,CENTER)
 !!$
-!!$    if (hy_geometry /= CARTESIAN) then
-!!$       faceAreas = 0.
-!!$       call Grid_getBlkData(block, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
-!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-!!$            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
-!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-!!$            (/isize+1, jsize, ksize/) )
-!!$#if NDIM > 1
-!!$       if (hy_geometry == SPHERICAL) then
-!!$          call Grid_getBlkData(block, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
-!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-!!$            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
-!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-!!$            (/isize, jsize+1, ksize/) )
-!!$       end if
-!!$#endif
-!!$
-!!$       cellVolumes = 0.
-!!$       call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, &
-!!$            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-!!$            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-!!$            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-!!$            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-!!$            (/isize, jsize, ksize/) )
-!!$    endif
-!!$
-!!$    
-!!$
+    if (hy_geometry /= CARTESIAN) then
+       faceAreas = 0.
+       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
+            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
+            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
+            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+            (/isize+1, jsize, ksize/) )
+#if NDIM > 1
+       if (hy_geometry == SPHERICAL) then
+          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
+            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
+            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+            (/isize, jsize+1, ksize/) )
+       end if
+#endif
+
+       cellVolumes = 0.
+       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, EXTERIOR, &
+            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+            (/isize, jsize, ksize/) )
+    endif
+
+    
+
     if (.NOT. hy_fullSpecMsFluxHandling) then
        do ispu =  SPECIES_BEGIN, MASS_SCALARS_END
           isph= ispu-NPROP_VARS
@@ -980,11 +995,11 @@
     end if
 
     if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,blockDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,blockDesc, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,blockDesc, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          call Grid_getCellCoords(JAXIS,block, CENTER,.false.,yCenter, size(yCenter))
+          call Grid_getCellCoords(JAXIS,blockDesc, CENTER,.false.,yCenter, size(yCenter))
        end if
     endif
 
@@ -1110,7 +1125,7 @@
 
     !! ---------------------------------------------------------------
 !!$    ! Release block pointers
-!!$    call Grid_releaseBlkPtr(block,U,CENTER)
+!!$    call Grid_releaseBlkPtr(blockDesc,U,CENTER)
 #endif
 
   End Subroutine unsplitUpdateSpecMs

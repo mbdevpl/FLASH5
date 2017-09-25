@@ -216,7 +216,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
 #endif
 
 
-  call Grid_getBlkPtr(block,U,CENTER)
+  call Grid_getBlkPtr(block,U,CENTER,localFlag=.TRUE.)
 
   i0   = blkLimits(LOW, IAXIS)
   imax = blkLimits(HIGH,IAXIS)

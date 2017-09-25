@@ -202,7 +202,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_putPointData(block, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount, &
      position, datablock)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
@@ -222,7 +222,7 @@ subroutine Grid_putPointData(block, gridDataStruct, structIndex, beginCount, &
 #endif
 
 
-  type(block_metadata_t), intent(IN) :: block
+  type(block_metadata_t), intent(IN) :: blockDesc
   integer, intent(IN) :: structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(IN) :: position
   real, intent(IN) :: datablock
@@ -239,7 +239,7 @@ subroutine Grid_putPointData(block, gridDataStruct, structIndex, beginCount, &
 
 #ifdef DEBUG_GRID
   isget=.true.
-  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
 
   !verify beginCount is set to a valid value
   if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
@@ -250,7 +250,7 @@ subroutine Grid_putPointData(block, gridDataStruct, structIndex, beginCount, &
 
 
 
-  !verify that indicies aren't too big or too small for the block
+  !verify that indicies aren't too big or too small for the blockDesc
   if(beginCount == EXTERIOR) then
     
      if (position(1) > imax) then
@@ -309,7 +309,7 @@ subroutine Grid_putPointData(block, gridDataStruct, structIndex, beginCount, &
 #endif
 
   dataLen=0
-  call gr_getDataOffsets(block,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(blockDesc,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
 
 
   k = 1
@@ -321,17 +321,17 @@ subroutine Grid_putPointData(block, gridDataStruct, structIndex, beginCount, &
   i = position(IAXIS) + begOffset(IAXIS)
   
   if(getIntPtr) then
-     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
      solnData(structIndex,i,j,k) = datablock
-     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        solnData(structIndex,i,j,k) = datablock
 !!$     else
 !!$     end if
      solnData(structIndex,i,j,k) = datablock
-     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
   end if
   return
 end subroutine Grid_putPointData

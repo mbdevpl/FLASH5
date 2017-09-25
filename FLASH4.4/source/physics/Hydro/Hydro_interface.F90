@@ -21,15 +21,11 @@ Module Hydro_interface
        implicit none
        type(block_metadata_t), intent(IN) :: block
        integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
-#ifdef FIXEDBLOCKSIZE
-       real, dimension(GRID_ILO_GC:GRID_IHI_GC), intent(IN) :: x, dx, uxgrid
-       real, dimension(GRID_JLO_GC:GRID_JHI_GC), intent(IN) :: y, dy, uygrid
-       real, dimension(GRID_KLO_GC:GRID_KHI_GC), intent(IN) :: z, dz, uzgrid
-#else
+
        real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
        real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)), intent(IN) :: y, dy, uygrid
        real, dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)), intent(IN) :: z, dz, uzgrid
-#endif
+
        real,INTENT(INOUT)    :: dt_check
        integer,INTENT(INOUT)    :: dt_minloc(5)
        real, pointer :: solnData(:,:,:,:) 
@@ -42,18 +38,41 @@ Module Hydro_interface
      end subroutine Hydro_consolidateCFL
   end interface
 
-  interface Hydro
-     subroutine Hydro (block, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+  interface
+     subroutine Hydro_advanceAll(simTime, dt, dtOld)
+       implicit none
+       real, intent(IN) ::  simTime, dt, dtOld
+     end subroutine Hydro_advanceAll
+     subroutine Hydro_prepareBuffers()
+       implicit none
+     end subroutine Hydro_prepareBuffers
+     subroutine Hydro_freeBuffers()
+       implicit none
+     end subroutine Hydro_freeBuffers
+     subroutine Hydro_doLoop0()
+       implicit none
+     end subroutine Hydro_doLoop0
+     subroutine Hydro_doLoop1(simTime, dt, dtOld)
+       implicit none
+       real, intent(IN) ::  simTime, dt, dtOld
+     end subroutine Hydro_doLoop1
+     subroutine Hydro_doLoop4()
+       implicit none
+     end subroutine Hydro_doLoop4
+  end interface
+
+  interface
+     subroutine Hydro_loop1Body (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t) :: block
+       type(block_metadata_t) :: blockDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
-     end subroutine Hydro
-  end interface Hydro
+     end subroutine Hydro_loop1Body
+  end interface
 
   interface Hydro_init
      subroutine Hydro_init()

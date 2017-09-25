@@ -740,7 +740,7 @@ Module hy_uhd_interface
        implicit none
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
        real, dimension(:,:,:,:),INTENT(IN) :: Uin
-       real,dimension(:,:,:,:),INTENT(OUT) :: Uout
+       real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
        real,dimension(MDIM),INTENT(IN) :: del
      end subroutine hy_uhd_shockDetect
   end interface

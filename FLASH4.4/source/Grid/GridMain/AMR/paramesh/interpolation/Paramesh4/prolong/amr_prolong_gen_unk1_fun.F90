@@ -37,10 +37,12 @@ subroutine amr_prolong_gen_unk1_fun &
   use Driver_interface, ONLY : Driver_abortFlash
 
   use Grid_data,ONLY: gr_convertToConsvdForMeshCalls, gr_convertToConsvdInMeshInterp, &
-       gr_vartypes, gr_dirGeom, gr_smallx, gr_intpol,gr_oneBlock
+       gr_vartypes, gr_dirGeom, gr_smallx, gr_intpol
+#ifndef FLASH_GRID_ANYAMREX
+  use gr_specificData,ONLY: gr_oneBlock
+#endif
   implicit none
 #include "constants.h"
-#include "Flash.h"
   
   real, intent(IN), &
        dimension(NUNK_VARS,GRID_ILO_GC:GRID_IHI_GC,&

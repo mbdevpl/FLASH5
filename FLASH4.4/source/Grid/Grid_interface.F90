@@ -616,18 +616,18 @@ Module Grid_interface
   end interface
 
   interface Grid_putPointData
-     subroutine Grid_putPointData(blockid, gridDataStruct, variable, beginCount, position, datablock)
+     subroutine Grid_putPointData_blkid(blockid, gridDataStruct, variable, beginCount, position, datablock)
        integer, intent(in) :: blockid, variable, beginCount, gridDataStruct
        integer, dimension(MDIM), intent(in) :: position
        real, intent(in) :: datablock
-     end subroutine Grid_putPointData
-     subroutine Grid_putPointData_desc(blockDesc, gridDataStruct, variable, beginCount, position, datablock)
+     end subroutine Grid_putPointData_blkid
+     subroutine Grid_putPointData(blockDesc, gridDataStruct, variable, beginCount, position, datablock)
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t), intent(in) :: blockDesc
        integer, intent(in) :: variable, beginCount, gridDataStruct
        integer, dimension(MDIM), intent(in) :: position
        real, intent(in) :: datablock
-     end subroutine Grid_putPointData_desc
+     end subroutine Grid_putPointData
   end interface
 
   interface
@@ -905,8 +905,10 @@ Module Grid_interface
 
 
   interface
-     subroutine Grid_renormAbundance(blockId,blkLimits,solnData)
-       integer, INTENT(in) :: blockId
+     subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
+       use block_metadata,   ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: blockDesc
        integer, intent(in), dimension(2,MDIM)::blkLimits
        real,pointer :: solnData(:,:,:,:)
      end subroutine Grid_renormAbundance
