@@ -213,9 +213,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      call Driver_abortFlash("[Grid_fillGuardCells]: Non-center not yet coded")
   end if
 
-  ! DEV: TODO Determine if AMReX can allow for GC fill by direction
+  ! DEV: Filling by direction is not needed any longer
   if (idir /= ALLDIR) then
-    call Driver_abortFlash("[Grid_fillGuardCells]: Only in all directions for now")
+    call Driver_abortFlash("[Grid_fillGuardCells] idir must be ALLDIR with AMReX")
   end if
 
   ! GC data could be managed by other processor.
