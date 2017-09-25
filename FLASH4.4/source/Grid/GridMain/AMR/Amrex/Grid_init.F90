@@ -115,6 +115,9 @@
 !! gr_restrictAllMethod [INTEGER]
 !!***
 
+#include "Flash.h"
+#include "constants.h"
+
 ! DEVNOTE: Need REORDER directive for scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx?
 ! DEVNOTE: Need REORDER directive for gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face?
 subroutine Grid_init()
@@ -133,25 +136,25 @@ subroutine Grid_init()
                                           Simulation_getVarnameType
   use amrex_interfaces,            ONLY : gr_amrex_init
 
-#include "Flash.h"
-#include "constants.h"
   include "Flash_mpi.h"
 
-  logical :: useProtonEmission
-  logical :: useProtonImaging
+!  logical :: useProtonEmission
+!  logical :: useProtonImaging
 
-  integer :: i, j, k, localNumBlocks, ii, numLeafBlks
+   integer :: i
+!  integer :: i, j, k, localNumBlocks, ii, numLeafBlks
 
-  character(len=MAX_STRING_LENGTH),save :: refVarname,refVarString,paramString
-  character(len=MAX_STRING_LENGTH),save :: refCutoffName,refCutOffString
-  character(len=MAX_STRING_LENGTH),save :: derefCutoffName,derefCutOffString
-  character(len=MAX_STRING_LENGTH),save :: refFiltername,refFilterString
-  character(len=MAX_STRING_LENGTH) :: xl_bcString,xr_bcString
-  character(len=MAX_STRING_LENGTH) :: yl_bcString,yr_bcString
-  character(len=MAX_STRING_LENGTH) :: zl_bcString,zr_bcString
-  character(len=MAX_STRING_LENGTH) :: eosModeString, grav_boundary_type
-  integer,save :: refVar
-  integer :: countInComm, color, key, ierr
+  character(len=MAX_STRING_LENGTH) :: paramString
+  character(len=MAX_STRING_LENGTH) :: refVarname, refVarString
+  character(len=MAX_STRING_LENGTH) :: refCutoffName, refCutOffString
+  character(len=MAX_STRING_LENGTH) :: derefCutoffName, derefCutOffString
+  character(len=MAX_STRING_LENGTH) :: refFiltername, refFilterString
+  character(len=MAX_STRING_LENGTH) :: xl_bcString, xr_bcString
+  character(len=MAX_STRING_LENGTH) :: yl_bcString, yr_bcString
+  character(len=MAX_STRING_LENGTH) :: zl_bcString, zr_bcString
+!  character(len=MAX_STRING_LENGTH) :: eosModeString, grav_boundary_type
+!  integer :: countInComm, color, key, ierr
+  integer :: refVar
   integer :: nonrep
 
   character(len=MAX_STRING_LENGTH) :: str_geometry = ""
@@ -291,7 +294,6 @@ subroutine Grid_init()
 !  gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
 !#endif
 
-
 !  call RuntimeParameters_get("bndPriorityOne",gr_bndOrder(1))
 !  call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
 !  call RuntimeParameters_get("bndPriorityThree",gr_bndOrder(3))
@@ -322,45 +324,56 @@ subroutine Grid_init()
   !! the index at the end of the string to generate the parameter
   !! name and the routine Simulation_mapStrToInt finds its index into UNK.
 
-  call RuntimeParameters_get("refine_var_count",gr_numRefineVarsMax)
+  call RuntimeParameters_get("refine_var_count", gr_numRefineVarsMax)
   gr_refine_var = NONEXISTENT
-  gr_numRefineVars=0
+  gr_numRefineVars = 0
 
-  refVarName='refine_var_'
-  refCutoffName='refine_cutoff_'
-  derefCutoffName='derefine_cutoff_'
-  refFilterName='refine_filter_'
+  refVarName = 'refine_var_'
+  refCutoffName = 'refine_cutoff_'
+  derefCutoffName ='derefine_cutoff_'
+  refFilterName = 'refine_filter_'
 
-!  do i = 1,gr_numRefineVarsMax
-!     call concatStringWithInt(refVarName,i,refVarString)
-!     call RuntimeParameters_get( refVarString, paramString)
-!     if(paramString /= "none") then
-!        do ! not a real loop
-!           call Simulation_mapStrToInt(paramString, refVar, MAPBLOCK_UNK)
-!           if(refVar <= 0) exit
+  do i = 1, gr_numRefineVarsMax
+     call concatStringWithInt(refVarName, i, refVarString)
+     call RuntimeParameters_get(refVarString, paramString)
+     if(paramString /= "none") then
+        do ! not a real loop
+           call Simulation_mapStrToInt(paramString, refVar, MAPBLOCK_UNK)
+           if(refVar <= 0)  EXIT
+           nonrep = 0
+           ! DEV: FIXME This is segfaulting, but isn't needed right now
 !           call Grid_getVarNonRep(MAPBLOCK_UNK, refVar, nonrep)
-!           if(nonrep > 0) then; refVar = 0; exit; end if
-!
-!           gr_numRefineVars=gr_numRefineVars+1
-!           gr_refine_var(gr_numRefineVars)=refVar
-!           call concatStringWithInt(refCutoffName,gr_numRefineVars,refCutoffString)
-!           call concatStringWithInt(derefCutoffName,gr_numRefineVars,derefCutOffString)
-!           call concatStringWithInt(refFilterName,gr_numRefineVars,refFilterString)
-!           call RuntimeParameters_get( refCutoffString, gr_refine_cutoff(gr_numRefineVars)  )
-!           call RuntimeParameters_get( derefCutoffString, gr_derefine_cutoff(gr_numRefineVars) )
-!           call RuntimeParameters_get( refFilterString,  gr_refine_filter(gr_numRefineVars) )
-!           exit ! told you it wasnt a real loop
-!        end do
-!        if(refVar <= 0) then
-!           if(gr_globalMe == MASTER_PE) &
-!              print*, 'WARNING: Unrecognized or non-replicated variable name in refine_var_',i,' treating it as "none"'
-!           call Logfile_stampMessage( &
-!              'WARNING: Unrecognized or non-replicatedvariable name in refine_var, treating it as "none"')
-!        end if
-!     end if
-!  end do
-!
-!  gr_enforceMaxRefinement = .FALSE.
+           if(nonrep > 0) then
+             refVar = 0
+             exit
+           end if
+
+           gr_numRefineVars = gr_numRefineVars + 1
+           gr_refine_var(gr_numRefineVars) = refVar
+           call concatStringWithInt(refCutoffName, gr_numRefineVars, &
+                                    refCutoffString)
+           call concatStringWithInt(derefCutoffName, gr_numRefineVars, &
+                                    derefCutOffString)
+           call concatStringWithInt(refFilterName, gr_numRefineVars, &
+                                    refFilterString)
+           call RuntimeParameters_get(refCutoffString, &
+                                      gr_refine_cutoff(gr_numRefineVars))
+           call RuntimeParameters_get(derefCutoffString, &
+                                      gr_derefine_cutoff(gr_numRefineVars))
+           call RuntimeParameters_get(refFilterString, &
+                                      gr_refine_filter(gr_numRefineVars))
+           exit ! told you it wasnt a real loop
+        end do
+        if(refVar <= 0) then
+           if(gr_globalMe == MASTER_PE) &
+              print*, 'WARNING: Unrecognized or non-replicated variable name in refine_var_',i,' treating it as "none"'
+           call Logfile_stampMessage( &
+              'WARNING: Unrecognized or non-replicatedvariable name in refine_var, treating it as "none"')
+        end if
+     end if
+  end do
+
+  gr_enforceMaxRefinement = .FALSE.
 
   call RuntimeParameters_get("lrefine_del", gr_lrefineDel)
 
@@ -404,12 +417,14 @@ subroutine Grid_init()
 !        end if
 !     end do
 !  end if
-!
-!  if(gr_numRefineVars==0)then
-!     if(gr_meshMe == MASTER_PE) print*,'WARNING : Adaptive Grid did not find any refinement variables'
-!     call Logfile_stampMessage("WARNING : Adaptive Grid did not find any variable to refine")
-!  end if
-!
+
+  if (gr_numRefineVars == 0) then
+     if (gr_meshMe == MASTER_PE) then
+        print*,'WARNING : Adaptive Grid did not find any refinement variables'
+     end if
+     call Logfile_stampMessage("WARNING : Adaptive Grid did not find any variable to refine")
+  end if
+
 !  call RuntimeParameters_get("gr_restrictAllMethod", gr_restrictAllMethod)
 
 !#ifdef FLASH_PARTICLES

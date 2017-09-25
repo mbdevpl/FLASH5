@@ -12,10 +12,24 @@ module sim_interface
     end interface
 
     interface
-        subroutine sim_printLeaves(title)
+        subroutine sim_printLeaves(title, block_count)
             implicit none
-            character(*), intent(IN) :: title
+            character(*), intent(IN)    :: title
+            integer,      intent(INOUT) :: block_count(4)
         end subroutine sim_printLeaves
+    end interface 
+
+    interface
+        subroutine sim_advance(step, points, values, set_msg, leaf_msg, &
+                               block_count)
+            implicit none
+            integer,      intent(IN)    :: step
+            real,         intent(IN)    :: points(:, :)
+            real,         intent(IN)    :: values(:)
+            character(*), intent(IN)    :: set_msg
+            character(*), intent(IN)    :: leaf_msg
+            integer,      intent(INOUT) :: block_count(4)
+        end subroutine sim_advance
     end interface 
 
 end module sim_interface

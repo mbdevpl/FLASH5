@@ -12,6 +12,7 @@ subroutine gr_clearLevelCallback(lev) bind(c)
     call amrex_multifab_destroy(facevarx(lev))
     call amrex_multifab_destroy(facevary(lev))
     call amrex_multifab_destroy(facevarz(lev))
-    write(*,'(A,I2)') "[gr_clearLevelCallback]         Cleared level", lev + 1
+    write(*,'(A,A,I2)') "[gr_clearLevelCallback]", &
+                        "              Cleared level", lev + 1
 end subroutine gr_clearLevelCallback
 

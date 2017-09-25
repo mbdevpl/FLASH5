@@ -50,7 +50,12 @@ subroutine Driver_evolveFlash()
                                       Grid_getBlkPtr, Grid_releaseBlkPtr, &
                                       Grid_updateRefinement
     use Grid_data,             ONLY : gr_iguard, gr_jguard, gr_kguard, &
-                                      gr_meshMe
+                                      gr_meshMe, &
+                                      gr_numRefineVarsMax, gr_numRefineVars, &
+                                      gr_refine_var, &
+                                      gr_refine_cutoff, gr_derefine_cutoff, &
+                                      gr_refine_filter, &
+                                      gr_enforceMaxRefinement
     use block_iterator,        ONLY : block_iterator_t
     use block_metadata,        ONLY : block_metadata_t, bmd_print
 
@@ -504,6 +509,35 @@ subroutine Driver_evolveFlash()
         call assertEqual(y_coords_gc(j), YMAX_EX - (4-j+NGUARD)*YDELTA_EX, "Bad Y-coordinate")
     end do
 
+    !!!!! CONFIRM REFINEMENT SETUP
+    ! uses default value
+    call assertEqual(gr_numRefineVarsMax, 4, "Incorrect max refinement variables")
+    call assertEqual(gr_numRefineVars, 3, "Incorrect max refinement variables")
+
+    call assertEqual(gr_refine_var(1), DENS_VAR, "First refine var not DENS")
+    call assertEqual(gr_refine_var(2), TEMP_VAR, "Second refine var not TEMP")
+    call assertEqual(gr_refine_var(3), ENER_VAR, "Third refine var not ENER")
+
+    call assertEqual(gr_refine_cutoff(1), 0.8d0, "Incorrect DENS refine cutoff")
+    call assertEqual(gr_refine_cutoff(2), 0.5d0, "Incorrect TEMP refine cutoff")
+    call assertEqual(gr_refine_cutoff(3), 0.6d0, "Incorrect ENER refine cutoff")
+
+    call assertEqual(gr_derefine_cutoff(1), 0.45d0, &
+                     "Incorrect DENS derefine cutoff")
+    call assertEqual(gr_derefine_cutoff(2), 0.325d0, &
+                     "Incorrect TEMP derefine cutoff")
+    call assertEqual(gr_derefine_cutoff(3), 0.35d0, &
+                     "Incorrect ENER derefine cutoff")
+
+    call assertEqual(gr_refine_filter(1), 0.05d0, &
+                     "Incorrect DENS derefine cutoff")
+    call assertEqual(gr_refine_filter(2), 0.025d0, &
+                     "Incorrect TEMP derefine cutoff")
+    call assertEqual(gr_refine_filter(3), 0.035d0, &
+                     "Incorrect ENER derefine cutoff")
+
+    call assertFalse(gr_enforceMaxRefinement, "gr_enforceMaxRefinement True")
+
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?
     if (rank == MASTER_PE) then
@@ -521,6 +555,38 @@ subroutine Driver_evolveFlash()
     end if
 
 contains
+
+    subroutine assertTrue(a, msg)
+        implicit none
+
+        logical,      intent(IN) :: a
+        character(*), intent(IN) :: msg
+
+        character(256) :: buffer = ""
+        
+        if (.NOT. a) then
+            write(buffer,'(A)') msg
+            write(*,*) TRIM(ADJUSTL(buffer))
+            n_failed = n_failed + 1
+        end if
+        n_tests = n_tests + 1
+    end subroutine assertTrue
+
+    subroutine assertFalse(a, msg)
+        implicit none
+
+        logical,      intent(IN) :: a
+        character(*), intent(IN) :: msg
+
+        character(256) :: buffer = ""
+        
+        if (a) then
+            write(buffer,'(A)') msg
+            write(*,*) TRIM(ADJUSTL(buffer))
+            n_failed = n_failed + 1
+        end if
+        n_tests = n_tests + 1
+    end subroutine assertFalse
 
     subroutine assertEqualInt(a, b, msg)
         implicit none

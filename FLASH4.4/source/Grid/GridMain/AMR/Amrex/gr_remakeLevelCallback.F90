@@ -42,7 +42,8 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     ba = pba
     dm = pdm
  
-    write(*,*) "[gr_remakeLevelCallback] - Start Level ", lev + 1
+    write(*,'(A,A,I2)') "[gr_remakeLevelCallback]", &
+                      "             Start Level ", lev + 1
 
     !!!!! SAVE DATA IN BUFFER WITH GIVEN BOXARRAY/DISTRIBUTION
     ! Get all unk interior data
@@ -89,6 +90,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 
     call amrex_multifab_destroy(mfab)
 
-    write(*,*) "[gr_remakeLevelCallback] - End Level ", lev + 1
+    write(*,'(A,A,I2)') "[gr_remakeLevelCallback]", &
+                      "             Finished Level ", lev + 1
 end subroutine gr_remakeLevelCallback
 

@@ -47,7 +47,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     integer :: k = 0
  
     rank = amrex_parallel_myproc()
-    write(*,'(A,I2)') "[gr_initNewLevelCallback]       Start Level ", lev + 1
+    write(*,'(A,A,I2)') "[gr_initNewLevelCallback]", &
+                        "            Start Level ", lev + 1
  
     ba = pba
     dm = pdm
@@ -97,6 +98,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     call amrex_mfiter_destroy(mfi)
  
-    write(*,'(A,I2)') "[gr_initNewLevelCallback]       Finished Level ", lev + 1
+    write(*,'(A,A,I2)') "[gr_initNewLevelCallback]", &
+                        "            Finished Level ", lev + 1
 end subroutine gr_initNewLevelCallback
 

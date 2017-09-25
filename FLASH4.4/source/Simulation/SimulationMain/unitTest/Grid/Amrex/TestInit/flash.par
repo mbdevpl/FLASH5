@@ -31,3 +31,19 @@ zr_boundary_type = "dirichlet"
 lrefine_max = 4
 nrefs       = 5
 
+refine_var_1    = "dens"
+refine_var_2    = "temp"
+refine_var_3    = "ener"
+
+refine_cutoff_1 = 0.8
+refine_cutoff_2 = 0.5
+refine_cutoff_3 = 0.6
+
+derefine_cutoff_1 = 0.45
+derefine_cutoff_2 = 0.325
+derefine_cutoff_3 = 0.35
+
+refine_filter_1 = 0.05
+refine_filter_2 = 0.025
+refine_filter_3 = 0.035
+
