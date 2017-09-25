@@ -81,7 +81,9 @@ subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
 
   integer :: blockId
 
+#ifndef FLASH_GRID_AMREX
   blockId = blockDesc%id
+#endif
 
   do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
      do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
@@ -109,6 +111,12 @@ subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
            if (error >= 0.10) then
               point(IAXIS)=i; point(JAXIS)=j; point(KAXIS)=k
               print*,'get grid single cell coords',point
+#ifdef FLASH_GRID_AMREX
+              call Grid_getSingleCellCoords_lev(point,blockDesc%level,CENTER, pntCoord)
+              print *, 'Error: non-conservation in block at level ', &
+                        blockDesc%level, &
+                        " / grid_index = ", blockDesc%grid_index
+#else
               if (blockId > 0) then !seems valid, must be in a transitional mode...
                  call Grid_getSingleCellCoords&
                       (point,blockId,CENTER, EXTERIOR, pntCoord)
@@ -116,6 +124,7 @@ subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
                  call Grid_getSingleCellCoords_lev(point,blockDesc%level,CENTER, pntCoord)
               end if
               print *, 'Error: non-conservation in block ', blockId
+#endif
               print *, 'Abundance non-conservation by ', error
               
               print *, 'x = ', pntCoord(IAXIS)
