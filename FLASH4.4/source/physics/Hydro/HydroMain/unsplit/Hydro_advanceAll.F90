@@ -149,8 +149,8 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   !! ***************************************************************************
   !! Loop over the blocks
   call Hydro_doLoop1(simTime, dt, dtOld)
-  call IO_writeCheckpoint()
-  stop
+!!$  call IO_writeCheckpoint()
+!!$  stop
 
   call Hydro_doLoop4()
 

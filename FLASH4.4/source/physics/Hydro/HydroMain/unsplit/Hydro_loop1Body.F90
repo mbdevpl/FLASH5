@@ -273,9 +273,9 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
      call hy_uhd_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
-     call io_writeCheckpoint
-     stop
-#define DEBUG_UHD
+!!$     call io_writeCheckpoint
+!!$     stop
+!#define DEBUG_UHD
 #ifdef DEBUG_UHD
      print*,'done update'
      print*,'_unsplit Aft "call unsplitUpdate(UPD_ALL)": associated(Uin ) is',associated(Uin )
