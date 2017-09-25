@@ -205,6 +205,11 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      call Driver_abortFlash("[Grid_fillGuardCells]: Non-center not yet coded")
   end if
 
+  ! DEV: TODO Determine if AMReX can allow for GC fill by direction
+  if (idir /= ALLDIR) then
+    call Driver_abortFlash("[Grid_fillGuardCells]: Only in all directions for now")
+  end if
+
   ! GC data could be managed by other processor.
   ! Wait for work on all data structures across full mesh to finish 
   ! before GC filling
@@ -222,7 +227,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end do
   
   gr_justExchangedGC = .TRUE.
-  write(*,'(A,I3)') "[Grid_fillGuardcell] From level 0 to level ", finest_level
+  write(*,'(A,I3)') "[Grid_fillGuardcell] From level 1 to level ", &
+                    finest_level+1
 
   call Timers_stop("amr_guardcell")
 end subroutine Grid_fillGuardCells
