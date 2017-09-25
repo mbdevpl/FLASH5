@@ -283,7 +283,10 @@ subroutine Driver_evolveFlash()
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 
      dr_dtOld = dr_dt
-     
+
+     ! DEV: TODO Can we build this into calls already in this file?
+     call Grid_averageDownLevels
+
      !----
      !- End Physics Sequence
      !--------------------------------------------------------------------

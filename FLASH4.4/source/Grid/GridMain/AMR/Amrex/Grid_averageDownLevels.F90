@@ -1,4 +1,4 @@
-subroutine gr_averageDownLevels()
+subroutine Grid_averageDownLevels()
     use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
                                           amrex_geom, &
                                           amrex_ref_ratio
@@ -33,5 +33,5 @@ subroutine gr_averageDownLevels()
                               "               From ", &
                              finest_level, " down to 1"
     end if
-end subroutine gr_averageDownLevels
+end subroutine Grid_averageDownLevels
 

@@ -1331,4 +1331,10 @@ Module Grid_interface
      end subroutine Grid_coordTransfm
   end interface
 
+  interface
+     subroutine Grid_averageDownLevels()
+        implicit none
+     end subroutine Grid_averageDownLevels
+  end interface
+
 end Module Grid_interface
