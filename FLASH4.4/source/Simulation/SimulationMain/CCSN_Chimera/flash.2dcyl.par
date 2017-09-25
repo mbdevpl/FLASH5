@@ -49,7 +49,7 @@ gr_lrefineMaxRedRadiusFact     = 0.15
 gr_lrefineMaxRedTRef           = 2.0
 gr_lrefineMaxRedTimeScale      = 0.5
 
-lrefine_max                    = 11 #9
+lrefine_max                    = 6 # 11 #9
 lrefine_min                    = 1
 refine_var_1                   = "dens"
 refine_var_2                   = "pres"
@@ -59,6 +59,10 @@ refine_cutoff_1		       = 0.8
 refine_cutoff_2		       = 0.8
 refine_cutoff_3		       = 0.8
 refine_cutoff_4		       = 0.8
+
+plot_var_1                     = "dens"
+plot_var_2                     = "pres"
+plot_var_3                     = "temp"
 
 # Simulation
 progenitor_model_file = "d96InitModel.txt"
@@ -88,7 +92,7 @@ cvisc           = 0.1    # coefficient for artificial viscosity
 use_flattening  = .true. # use flattening (dissipative) (originally for PPM)
 use_steepening  = .false. # use contact steepening (originally for PPM)
 use_upwindTVD   = .false. # use upwind biased TVD slope for PPM (need nguard=6)
-flux_correct    = .true.
+flux_correct    = .FALSE. #for now... .true.
 EOSforRiemann   = .false.
 transOrder      = 1
 use_auxEintEqn  = .FALSE.

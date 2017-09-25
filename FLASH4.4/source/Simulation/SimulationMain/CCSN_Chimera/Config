@@ -17,7 +17,7 @@ REQUIRES Multispecies
 #REQUIRES physics/sourceTerms/Burn/BurnMain/nuclearBurn/Aprox19
 
 #REQUIRES physics/Eos/EosMain
-REQUIRES physics/Eos/EosMain/Helmholtz_starkiller
+REQUIRES physics/Eos/EosMain/Helmholtz
 
 REQUESTS physics/Gravity/GravityMain/PointMass
 #REQUESTS physics/Gravity/GravityMain/Poisson/Multipole
