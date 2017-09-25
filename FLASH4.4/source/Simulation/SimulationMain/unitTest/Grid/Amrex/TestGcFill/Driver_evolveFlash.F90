@@ -15,7 +15,7 @@
 !! NOTES
 !!  This simulation *must* be configured with at least the following
 !!  2D run:
-!!     ./setup -auto -2d -nxb=4 -nyb=4 
+!!     ./setup -auto -2d -nxb=2 -nyb=2 
 !!              unitTest/Grid/Amrex/TestGcFill
 !!             +noio -index-reorder
 !!  3D run:
@@ -52,6 +52,8 @@ subroutine Driver_evolveFlash()
         procedure :: assertEqualReal
     end interface assertEqual
 
+    integer, parameter :: FINEST_LEVEL_EX = 2
+
     integer :: n_tests
     integer :: n_failed
     real    :: t_old
@@ -63,11 +65,12 @@ subroutine Driver_evolveFlash()
     integer :: i, j, k
     integer :: i_bc, j_bc, k_bc
     integer :: var
+    integer :: bdd
 
     type(amrex_mfiter)     :: mfi
     type(amrex_box)        :: bx
     type(block_metadata_t) :: blockDesc
-    
+
     real, contiguous, pointer :: initData(:, :, :, :)
 
     n_tests = 0
@@ -91,7 +94,7 @@ subroutine Driver_evolveFlash()
 
     !!!!! CONFIRM THAT GC ARE ZERO AFTER INIT 
     call gr_getFinestLevel(finest_level)
-    call assertEqual(finest_level, 1, "Incorrect finest level")
+    call assertEqual(finest_level, FINEST_LEVEL_EX, "Incorrect finest level")
 
     do lev = 1, finest_level
         call amrex_mfiter_build(mfi, unk(lev-1), tiling=.FALSE.)
@@ -148,9 +151,10 @@ subroutine Driver_evolveFlash()
  
     !!!!! CONFIRM THAT GC ARE NOW FILLED APPROPRIATELY
     call gr_getFinestLevel(finest_level)
-    call assertEqual(finest_level, 1, "Incorrect finest level")
+    call assertEqual(finest_level, FINEST_LEVEL_EX, "Incorrect finest level")
 
-    do lev = 1, finest_level
+    do lev = 1, 1
+!    do lev = 1, finest_level
         call amrex_mfiter_build(mfi, unk(lev-1), tiling=.FALSE.)
         do while (mfi%next())
             bx = mfi%tilebox()
@@ -177,10 +181,33 @@ subroutine Driver_evolveFlash()
                 ! DEVNOT: TODO Use Grid_getBlkPtr once we have correct grid_index
                 initData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev-1)%dataptr(mfi)
 
+                bdd = 8 * 2**(lev - 1)
                 do     k = loGC(KAXIS), hiGC(KAXIS)
                   do   j = loGC(JAXIS), hiGC(JAXIS)
                     do i = loGC(IAXIS), hiGC(IAXIS)
                       do var=UNK_VARS_BEGIN, UNK_VARS_END
+                        ! Account for periodic BC
+                        i_bc = i
+                        j_bc = j
+                        k_bc = k
+                        if (i_bc > bdd) then
+                            i_bc = i_bc - bdd 
+                        else if (i_bc < 1) then
+                            i_bc = i_bc + bdd 
+                        end if
+
+                        if (j_bc > bdd) then
+                            j_bc = j_bc - bdd 
+                        else if (j_bc < 1) then
+                            j_bc = j_bc + bdd 
+                        end if
+
+                        if (k_bc > bdd) then
+                            k_bc = k_bc - bdd
+                        else if (k_bc < 1) then
+                            k_bc = k_bc + bdd 
+                        end if
+                        
                         if (      (lo(IAXIS) <= i) .AND. (i <= hi(IAXIS)) &
                             .AND. (lo(JAXIS) <= j) .AND. (j <= hi(JAXIS)) &
                             .AND. (lo(KAXIS) <= k) .AND. (k <= hi(KAXIS))) then
@@ -189,31 +216,11 @@ subroutine Driver_evolveFlash()
                                              DBLE((i + j + k) * var), &
                                              "Bad data")
                         else
-                            ! Account for periodic BC
-                            i_bc = i
-                            j_bc = j
-                            k_bc = k
-                            if (i_bc > 8) then
-                                i_bc = i_bc - 8 
-                            else if (i_bc < 1) then
-                                i_bc = i_bc + 8
-                            end if
-
-                            if (j_bc > 8) then
-                                j_bc = j_bc - 8 
-                            else if (j_bc < 1) then
-                                j_bc = j_bc + 8
-                            end if
-
-                            if (k_bc > 8) then
-                                k_bc = k_bc - 8 
-                            else if (k_bc < 1) then
-                                k_bc = k_bc + 8
-                            end if
-
+                            write(*,*) "Guardcell at ", i, j, &
+                                       " has value ", initData(i,j,k,var)
                             call assertEqual(initData(i, j, k, var), &
                                              DBLE((i_bc + j_bc + k_bc) * var), &
-                                             "GC not zero")
+                                             "Bad GC data")
                         end if
                       end do
                     end do

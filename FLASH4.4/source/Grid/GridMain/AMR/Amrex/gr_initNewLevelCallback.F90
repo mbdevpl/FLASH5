@@ -40,11 +40,11 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     real(wp)                      :: y = 0.0_wp
     real(wp)                      :: z = 0.0_wp
 
-    integer :: rank = 0
+    integer :: rank
 
-    integer :: i = 0
-    integer :: j = 0
-    integer :: k = 0
+    integer :: i, j, k
+
+    integer :: n_blocks
  
     rank = amrex_parallel_myproc()
     write(*,'(A,A,I2)') "[gr_initNewLevelCallback]", &
@@ -55,9 +55,9 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     call gr_clearLevelCallback(lev)
 
-    ! Create FABS for storing physical data at coarsest level
+    ! Create FABS for storing physical data at given level
     call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, gr_iguard)
-    ! DEVNOTE: TODO Create test wrt proper face-centered boxes
+    ! DEVNOTE: TODO Create there w.r.t. proper face-centered boxes
     call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, gr_iguard)
     call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, gr_iguard)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, gr_iguard)
@@ -65,6 +65,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     ! Write initial data across domain at coarsest level
     call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
 
+    n_blocks = 0
     do while (mfi%next())
         bx = mfi%tilebox()
 
@@ -94,11 +95,13 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
         initData = 0.0d0
         call Simulation_initBlock(initData, block)
         nullify(initData)
+
+        n_blocks = n_blocks + 1
     end do
 
     call amrex_mfiter_destroy(mfi)
  
-    write(*,'(A,A,I2)') "[gr_initNewLevelCallback]", &
-                        "            Finished Level ", lev + 1
+    write(*,'(A,I4,A,I2)') "[gr_initNewLevelCallback]            ", &
+                           n_blocks, " new blocks on level", lev + 1
 end subroutine gr_initNewLevelCallback
 
