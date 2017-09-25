@@ -45,7 +45,7 @@
 !!REORDER(4): solnData
 
 
-subroutine Simulation_initBlock(blockId)
+subroutine Simulation_initBlock(solnData,block)
 
   use Simulation_data, ONLY: sim_xMax, sim_xMin, sim_yMax, sim_yMin, sim_zMax, sim_zMin, &
      &  sim_nProfile, sim_drProf, sim_rProf, sim_vProf, sim_pProf, sim_pExp, sim_rhoProf, &
@@ -54,15 +54,17 @@ subroutine Simulation_initBlock(blockId)
      &  sim_smallT, &
      &  sim_nSubZones, sim_xCenter, sim_yCenter, sim_zCenter, sim_inSubzm1, sim_inszd, &
      sim_threadBlockList, sim_threadWithinBlock
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkPtr, Grid_releaseBlkPtr,&
-    Grid_getCellCoords, Grid_putPointData
-  
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use block_metadata, ONLY : block_metadata_t
+ 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
   
-  integer,intent(IN) ::  blockId
+  real,dimension(:,:,:,:),pointer :: solnData
+  type(block_metadata_t), intent(in) :: block
+
   
   
   integer  ::  i, j, k, n, jLo, jHi
@@ -77,11 +79,10 @@ subroutine Simulation_initBlock(blockId)
   integer :: istat
 
   real,allocatable,dimension(:) :: xCoord,yCoord,zCoord
-  integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   integer :: sizeX,sizeY,sizeZ
   integer,dimension(MDIM) :: axis
-  real, dimension(:,:,:,:),pointer :: solnData
-
+  
   logical :: gcell = .true.
 
   !
@@ -117,26 +118,20 @@ subroutine Simulation_initBlock(blockId)
   endif
 
   ! get the coordinate information for the current block from the database
-
-  call Grid_getBlkIndexLimits(blockId,blkLimits,blkLimitsGC)
-  sizeX = blkLimitsGC(HIGH,IAXIS) - blkLimitsGC(LOW,IAXIS) + 1
-  allocate(xCoord(sizeX),stat=istat); xCoord = 0.0
-  sizeY = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
-  allocate(yCoord(sizeY),stat=istat); yCoord = 0.0
-  sizeZ = blkLimitsGC(HIGH,KAXIS) - blkLimitsGC(LOW,KAXIS) + 1
-  allocate(zCoord(sizeZ),stat=istat); zCoord = 0.0
+  blkLimits = block%limits
+  blkLimitsGC = block%limitsGC
+  allocate(xCoord(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS))); xCoord = 0.0
+  allocate(yCoord(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS))); yCoord = 0.0
+  allocate(zCoord(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS))); zCoord = 0.0
+  sizeX = SIZE(xCoord)
+  sizeY = SIZE(yCoord)
+  sizeZ = SIZE(zCoord)
 
   if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, blockId, CENTER, gcell, zCoord, sizeZ)
+                      (KAXIS, block, CENTER, gcell, zCoord, sizeZ)
   if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, blockId, CENTER,gcell, yCoord, sizeY)
-  call Grid_getCellCoords(IAXIS, blockId, CENTER, gcell, xCoord, sizeX)
-  !
-  !     For each cell
-  !  
-#ifdef FL_NON_PERMANENT_GUARDCELLS
-  call Grid_getBlkPtr(blockId,solnData)
-#endif
+                      (JAXIS, block, CENTER,gcell, yCoord, sizeY)
+  call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCoord, sizeX)
 
   !There is no parallel region in Grid_initDomain and so we use the
   !same thread within block code for both multithreading strategies.
@@ -282,7 +277,6 @@ subroutine Simulation_initBlock(blockId)
            axis(KAXIS)=k
 
 
-#ifdef FL_NON_PERMANENT_GUARDCELLS
            if (NSPECIES > 0) then
               solnData(SPECIES_BEGIN,i,j,k)=1.0-(NSPECIES-1)*sim_smallX
               solnData(SPECIES_BEGIN+1:SPECIES_END,i,j,k)=sim_smallX
@@ -296,33 +290,6 @@ subroutine Simulation_initBlock(blockId)
            solnData(VELY_VAR,i,j,k)=vy
            solnData(VELZ_VAR,i,j,k)=vz
            solnData(TEMP_VAR,i,j,k)=sim_smallT
-#else
-           if (NSPECIES > 0) then
-              ! putting in the value of the default species
-              call Grid_putPointData(blockID, CENTER, SPECIES_BEGIN, EXTERIOR, &
-                   axis, 1.0e0-(NSPECIES-1)*sim_smallX)
-
-
-              !if there is only one species, this loop will not execute
-              do n = SPECIES_BEGIN+1, SPECIES_END
-
-                 call Grid_putPointData(blockID, CENTER, n, EXTERIOR, &
-                      axis, sim_smallX)
-
-              enddo
-           end if
-
-
-           call Grid_putPointData(blockId, CENTER, DENS_VAR, EXTERIOR, axis, rho)
-           call Grid_putPointData(blockId, CENTER, PRES_VAR, EXTERIOR, axis, p)
-           call Grid_putPointData(blockId, CENTER, ENER_VAR, EXTERIOR, axis, e)    
-           call Grid_putPointData(blockId, CENTER, GAME_VAR, EXTERIOR, axis, sim_gamma)
-           call Grid_putPointData(blockId, CENTER, GAMC_VAR, EXTERIOR, axis, sim_gamma)
-           call Grid_putPointData(blockId, CENTER, VELX_VAR, EXTERIOR, axis, vx)
-           call Grid_putPointData(blockId, CENTER, VELY_VAR, EXTERIOR, axis, vy)
-           call Grid_putPointData(blockId, CENTER, VELZ_VAR, EXTERIOR, axis, vz)
-           call Grid_putPointData(blockId, CENTER, TEMP_VAR, EXTERIOR, axis, sim_smallT)
-#endif
         enddo
 #if NDIM == 1
   !$omp end do nowait
@@ -337,9 +304,6 @@ subroutine Simulation_initBlock(blockId)
 #endif
   !$omp end parallel
 
-#ifdef FL_NON_PERMANENT_GUARDCELLS
-  call Grid_releaseBlkPtr(blockID, solnData)
-#endif
   deallocate(xCoord)
   deallocate(yCoord)
   deallocate(zCoord)
@@ -362,84 +326,84 @@ end subroutine Simulation_initBlock
 
 subroutine set_analytic_sedov (N, r, rho, p, v, t, gamma, E, & 
      p_ambient, rho_ambient)
-
-!==============================================================================
-
+  
+  !==============================================================================
+  
   implicit none
-
-!  Arguments
+  
+  !  Arguments
   integer, intent(IN)     :: N
   real, intent(IN)        :: gamma, t, rho_ambient, E, p_ambient
   real, intent(IN), dimension(N)  :: r
   real, intent(OUT), dimension(N) :: rho, v, p
-
-!  Local variables
-
+  
+  !  Local variables
+  
   real    beta, R0, dr, xi, nu1, nu2, nu3, nu4, nu5, VV, G, Z, & 
        kappa, zeta, epsilon, c2sqr, k, gamp1, gam7, gamm1
   integer i
-
-!==============================================================================
-
+  
+  !==============================================================================
+  
   if (gamma .ne. 1.4) then
      write (*,*) 'Warning!  Simulation_initBlock() found gamma<>1.4 and t>0.'
      write (*,*) '          Analytical initial conditions will be'
      write (*,*) '          wrong.  Assuming beta=1.033...'
   endif
-
+  
   !               Compute dimensionless scaling constant and explosion radius.
-
+  
   beta = 1.033
   R0   = beta * (E*t*t/rho_ambient)**0.2
-
+  
   !               Compute exponents for self-similar solution.
-
+  
   nu1 = - (13.*gamma*gamma - 7.*gamma + 12.) / & 
        ((3.*gamma - 1.) * (2.*gamma+1.))
   nu2 = 5. * (gamma - 1.) / (2.*gamma + 1.)
   nu3 = 3. / (2.*gamma + 1.)
   nu4 = - nu1 / (2. - gamma)
   nu5 = - 2. / (2. - gamma)
-
+  
   !               Other useful combinations of gamma.
-
+  
   gamp1 = gamma + 1.E0
   gamm1 = gamma - 1.E0
   gam7  = 7.E0 - gamma
   k     = gamp1 / gamm1
-
+  
   !==============================================================================
-
+  
   !               Generate the solution.
-
+  
   do i = 1, N
-
+     
      xi = r(i) / R0                ! Fraction of explosion radius.
-
+     
      if (xi .le. 1.) then          ! Inside the explosion.
-
+        
         ! Compute V(xi) using bisection.
         ! See Landau & Lifshitz for notation.
         call compute_sedov_v (xi, gamma, nu1, nu2, VV)
-
+        
         G = k * (k*(gamma*VV-1.))**nu3 * & 
              (gamp1/gam7*(5.-(3.*gamma-1.)*VV))**nu4 * & 
              (k*(1.-VV))**nu5
-
+        
         rho(i) = rho_ambient * G
         v(i)   = 2.*r(i)*VV / (5.*t)
-
+        
         if (xi .le. 1.E-6) then     ! Use asymptotic r->0 solution.
            kappa = ( (0.5*gamp1/gamma)**2. * & 
                 (gamp1/gam7* & 
                 (5.-(3.*gamma-1.)/gamma))**nu1 )**(1./nu2) * & 
                 gamm1/gamp1 / gamma
-
+           
            epsilon = k**(nu5+1.) * (k*gamma*kappa)**nu3 * & 
                 (gamp1/gam7*(3.*gamma-1.))**nu4 * & 
                 ((2.*gamma+1)/gamma/(3.*gamma-1.)) * & 
                 (gamm1/gamma)
-
+           
            zeta = gamm1*gamm1/(2.*gamma*gamma*kappa)
            p(i) = rho_ambient/gamma * 0.16*(R0/t)**2 * epsilon*zeta
         else
@@ -447,17 +411,17 @@ subroutine set_analytic_sedov (N, r, rho, p, v, t, gamma, E, &
            c2sqr = 0.16*(r(i)/t)**2 * Z
            p(i) = rho(i) * c2sqr / gamma
         endif
-
+        
      else                          ! Outside the explosion.
-
+        
         rho(i) = rho_ambient
         p(i)   = p_ambient
         v(i)   = 0.
-
+        
      endif
-
+     
   enddo
-
+  
   return
 end subroutine set_analytic_sedov
 
