@@ -39,5 +39,7 @@ subroutine gr_findBlock(blkList,blkCount,pos,blockID)
   real,dimension(MDIM),intent(IN) :: pos
   integer,intent(INOUT) :: blockID
 
-  call Driver_abortFlash("Not yet implemented for Chombo")
+  ! DEV: TODO Implement this with blockDesc if needed
+  call Driver_abortFlash("[gr_findBlock] Not yet implemented for AMReX")
 end subroutine gr_findBlock
+
