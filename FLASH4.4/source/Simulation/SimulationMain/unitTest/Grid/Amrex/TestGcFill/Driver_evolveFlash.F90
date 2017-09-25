@@ -9,23 +9,18 @@
 !!  Driver_evolveFlash()
 !!
 !! DESCRIPTION
-!!  A subset of simulation configuration data is loaded into AMReX at
-!!  initialization and is therefore owned by AMReX.  As a result, AMReX is used
-!!  to provide these data values to client code through the associated public
-!!  Grid_* and local gr_* interface accessor routines.
-!!
-!!  This code tests that AMReX is properly initialized for a Cartesian domain by
-!!  verifying correct results as obtained through the accessor routines.
+!!  This code tests that the subroutine Grid_fillGuardCells is correctly filling
+!!  guardcells for all cell-centered data variables at a single level.
 !!
 !! NOTES
 !!  This simulation *must* be configured with at least the following
 !!  2D run:
-!!     ./setup -auto -2d -nxb=8 -nyb=4 
-!!              unitTest/Grid/Amrex/TestInit 
+!!     ./setup -auto -2d -nxb=4 -nyb=4 
+!!              unitTest/Grid/Amrex/TestGcFill
 !!             +noio -index-reorder
 !!  3D run:
-!!     ./setup -auto -3d -nxb=8 -nyb=4 -nzb=2
-!!              unitTest/Grid/Amrex/TestInit 
+!!     ./setup -auto -3d -nxb=4 -nyb=4 -nzb=4
+!!              unitTest/Grid/Amrex/TestGcFill
 !!             +noio -index-reorder
 !!
 !!  For the future:
@@ -45,6 +40,7 @@ subroutine Driver_evolveFlash()
                                       amrex_mfiter_build, &
                                       amrex_mfiter_destroy
     
+    use Grid_interface,        ONLY : Grid_fillGuardCells
     use amrex_interfaces,      ONLY : gr_getFinestLevel
     use gr_physicalMultifabs,  ONLY : unk
     use block_metadata,        ONLY : block_metadata_t
@@ -65,6 +61,7 @@ subroutine Driver_evolveFlash()
     integer :: finest_level
     integer :: lev
     integer :: i, j, k
+    integer :: i_bc, j_bc, k_bc
     integer :: var
 
     type(amrex_mfiter)     :: mfi
@@ -92,6 +89,7 @@ subroutine Driver_evolveFlash()
     end if
     n_tests = n_tests + 1
 
+    !!!!! CONFIRM THAT GC ARE ZERO AFTER INIT 
     call gr_getFinestLevel(finest_level)
     call assertEqual(finest_level, 1, "Incorrect finest level")
 
@@ -122,7 +120,6 @@ subroutine Driver_evolveFlash()
                 ! DEVNOT: TODO Use Grid_getBlkPtr once we have correct grid_index
                 initData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev-1)%dataptr(mfi)
 
-                ! Confirm that GC are all zero after init
                 do     k = loGC(KAXIS), hiGC(KAXIS)
                   do   j = loGC(JAXIS), hiGC(JAXIS)
                     do i = loGC(IAXIS), hiGC(IAXIS)
@@ -130,10 +127,12 @@ subroutine Driver_evolveFlash()
                         if (      (lo(IAXIS) <= i) .AND. (i <= hi(IAXIS)) &
                             .AND. (lo(JAXIS) <= j) .AND. (j <= hi(JAXIS)) &
                             .AND. (lo(KAXIS) <= k) .AND. (k <= hi(KAXIS))) then
+                            ! Interior has data
                             call assertEqual(initData(i, j, k, var), &
                                              DBLE((i + j + k) * var), &
                                              "Bad data")
                         else
+                            ! Guardcells not populated yet 
                             call assertEqual(initData(i, j, k, var), 0.0d0, &
                                              "GC not zero")
                         end if
@@ -144,7 +143,86 @@ subroutine Driver_evolveFlash()
             end associate
         end do
     end do
+
+    call Grid_fillGuardCells(CENTER, ALLDIR)
  
+    !!!!! CONFIRM THAT GC ARE NOW FILLED APPROPRIATELY
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(finest_level, 1, "Incorrect finest level")
+
+    do lev = 1, finest_level
+        call amrex_mfiter_build(mfi, unk(lev-1), tiling=.FALSE.)
+        do while (mfi%next())
+            bx = mfi%tilebox()
+
+            ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
+            ! Level must be 1-based index and limits/limitsGC must be 1-based also
+            ! DEVNOTE: Should we use gr_[ijk]guard here?
+            blockDesc%level = lev
+            ! DEVNOTE: TODO Get grid_index from mfi
+            blockDesc%grid_index = -1
+            blockDesc%limits(LOW,  :) = 1
+            blockDesc%limits(HIGH, :) = 1
+            blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+            blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+            blockDesc%limitsGC(LOW,  :) = 1
+            blockDesc%limitsGC(HIGH, :) = 1
+            blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
+            blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
+
+            associate(lo   => blockDesc%limits(LOW,  :), &
+                      hi   => blockDesc%limits(HIGH, :), &
+                      loGC => blockDesc%limitsGC(LOW, :), &
+                      hiGC => blockDesc%limitsGC(HIGH, :))
+                ! DEVNOT: TODO Use Grid_getBlkPtr once we have correct grid_index
+                initData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev-1)%dataptr(mfi)
+
+                do     k = loGC(KAXIS), hiGC(KAXIS)
+                  do   j = loGC(JAXIS), hiGC(JAXIS)
+                    do i = loGC(IAXIS), hiGC(IAXIS)
+                      do var=UNK_VARS_BEGIN, UNK_VARS_END
+                        if (      (lo(IAXIS) <= i) .AND. (i <= hi(IAXIS)) &
+                            .AND. (lo(JAXIS) <= j) .AND. (j <= hi(JAXIS)) &
+                            .AND. (lo(KAXIS) <= k) .AND. (k <= hi(KAXIS))) then
+                            ! Interior has data
+                            call assertEqual(initData(i, j, k, var), &
+                                             DBLE((i + j + k) * var), &
+                                             "Bad data")
+                        else
+                            ! Account for periodic BC
+                            i_bc = i
+                            j_bc = j
+                            k_bc = k
+                            if (i_bc > 8) then
+                                i_bc = i_bc - 8 
+                            else if (i_bc < 1) then
+                                i_bc = i_bc + 8
+                            end if
+
+                            if (j_bc > 8) then
+                                j_bc = j_bc - 8 
+                            else if (j_bc < 1) then
+                                j_bc = j_bc + 8
+                            end if
+
+                            if (k_bc > 8) then
+                                k_bc = k_bc - 8 
+                            else if (k_bc < 1) then
+                                k_bc = k_bc + 8
+                            end if
+
+                            call assertEqual(initData(i, j, k, var), &
+                                             DBLE((i_bc + j_bc + k_bc) * var), &
+                                             "GC not zero")
+                        end if
+                      end do
+                    end do
+                  end do
+                end do
+            end associate
+        end do
+    end do
+
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?
     if (rank == MASTER_PE) then

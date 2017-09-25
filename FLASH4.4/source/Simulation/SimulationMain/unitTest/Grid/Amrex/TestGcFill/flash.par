@@ -11,9 +11,9 @@ zmin     = 0.0
 zmax     = 1.0
 
 ##### PARTITION OF PHYSICAL SPACE INTO BLOCKS
-nblockx =  4
-nblocky =  4
-nblockz =  4
+nblockx =  2
+nblocky =  2
+nblockz =  2
 
 ##### BOUNDARY CONDITIONS
 xl_boundary_type = "periodic"
@@ -24,6 +24,6 @@ zl_boundary_type = "periodic"
 zr_boundary_type = "periodic"
 
 ##### AMR CONFIGURATION
-lrefine_max = 3
+lrefine_max = 2
 nrefs       = 1
 
