@@ -152,7 +152,8 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: xl_bcString, xr_bcString
   character(len=MAX_STRING_LENGTH) :: yl_bcString, yr_bcString
   character(len=MAX_STRING_LENGTH) :: zl_bcString, zr_bcString
-!  character(len=MAX_STRING_LENGTH) :: eosModeString, grav_boundary_type
+  character(len=MAX_STRING_LENGTH) :: eosModeString
+!  character(len=MAX_STRING_LENGTH) :: grav_boundary_type
 !  integer :: countInComm, color, key, ierr
   integer :: refVar
   integer :: nonrep
@@ -303,14 +304,15 @@ subroutine Grid_init()
 !  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
 !  call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
 
-!  call RuntimeParameters_get("eosMode", eosModeString)
-!  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosMode)
-!
-!  call RuntimeParameters_get("eosModeInit", eosModeString)
-!  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosModeInit)
-!
+  call RuntimeParameters_get("eosMode", eosModeString)
+  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosMode)
+
+  call RuntimeParameters_get("eosModeInit", eosModeString)
+  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosModeInit)
+
+  ! DEV: FIXME Leave commented for now to see if it is being set
 !  gr_eosModeNow = gr_eosModeInit ! may change after initialization is done
-!
+
 !  call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
   gr_justExchangedGC = .FALSE.
 

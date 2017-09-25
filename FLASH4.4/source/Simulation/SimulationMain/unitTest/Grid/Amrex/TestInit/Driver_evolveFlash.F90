@@ -55,7 +55,9 @@ subroutine Driver_evolveFlash()
                                       gr_refine_var, &
                                       gr_refine_cutoff, gr_derefine_cutoff, &
                                       gr_refine_filter, &
-                                      gr_enforceMaxRefinement
+                                      gr_enforceMaxRefinement, &
+                                      gr_eosMode, &
+                                      gr_eosModeInit
     use block_iterator,        ONLY : block_iterator_t
     use block_metadata,        ONLY : block_metadata_t, bmd_print
 
@@ -538,6 +540,12 @@ subroutine Driver_evolveFlash()
 
     call assertFalse(gr_enforceMaxRefinement, "gr_enforceMaxRefinement True")
 
+    !!!!! CONFIRM EoS SETUP
+    call assertEqual(gr_eosMode, MODE_DENS_EI, &
+                     "Incorrect eosMode")
+    call assertEqual(gr_eosModeInit, MODE_DENS_TEMP, &
+                     "Incorrect eosModeInit")
+
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?
     if (rank == MASTER_PE) then
@@ -621,7 +629,7 @@ contains
         end if
         n_tests = n_tests + 1
     end subroutine assertEqualReal
-
+    
     subroutine assert_almost_equal(a, b, prec, msg)
         implicit none
 
