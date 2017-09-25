@@ -129,13 +129,18 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                selectBlockType, &
                                unitReadsMeshDataOnly)
   use, INTRINSIC :: iso_c_binding
-  use amrex_amrcore_module,   ONLY : amrex_get_finest_level, &
-                                     amrex_geom
+  use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
+                                        amrex_geom, &
+                                        amrex_ref_ratio
+  use amrex_fillpatch_module,    ONLY : amrex_fillpatch
+  use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
+  use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
-  use Grid_data,              ONLY : gr_justExchangedGC
-  use gr_physicalMultifabs,   ONLY : unk
-  use Driver_interface,       ONLY : Driver_abortFlash
-  use Timers_interface,       ONLY : Timers_start, Timers_stop
+  use Grid_data,                 ONLY : gr_justExchangedGC
+  use gr_physicalMultifabs,      ONLY : unk
+  use Driver_interface,          ONLY : Driver_abortFlash
+  use Timers_interface,          ONLY : Timers_start, Timers_stop
+  use amrex_interfaces,          ONLY : gr_fillPhysicalBC
 
   implicit none
 
@@ -153,6 +158,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   logical, intent(in), optional :: doLogMask
   integer, intent(in), optional :: selectBlockType
   logical, intent(in), optional :: unitReadsMeshDataOnly
+
+  integer :: lo_bc(NDIM, 1)
+  integer :: hi_bc(NDIM, 1)
 
   integer :: lev
   integer :: finest_level
@@ -221,11 +229,36 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! DEV: TODO How to do guardcell fill by direction?
   call Timers_start("amr_guardcell")
 
+  ! DEVNOTE: FIXME Currently fixing BC to periodic here
+  ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved
+  !                linear (AMReX_Interpolater.H)
+  ! DEVNOTE: TODO Since we are not using subcycling, should we just use
+  !               amrex_fi_fillpatch_two directly?
+  lo_bc(:, :) = amrex_bc_int_dir
+  hi_bc(:, :) = amrex_bc_int_dir
+
+  ! DEV: Using fill_boundary didn't work on finest levels since the GC outside
+  ! the domain were zero (no periodic BC).  AMReX recommended using fillpatch,
+  ! which is copying *all* data, including the GC.
+  lev = 0
+  call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
+                                 0.0d0, unk(lev), &
+                       amrex_geom(lev), gr_fillPhysicalBC, &
+                       0.0d0, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)
+
   finest_level = amrex_get_finest_level()
-  do lev=0, finest_level
-    call unk(lev)%fill_boundary(amrex_geom(lev), cross=.FALSE.)
+  do lev=1, finest_level
+    call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
+                                   0.0d0, unk(lev-1), &
+                         amrex_geom(lev-1), gr_fillPhysicalBC, &
+                               1.0e0, unk(lev  ), &
+                               0.0d0, unk(lev  ), &
+                         amrex_geom(lev  ), gr_fillPhysicalBC, &
+                         0.0d0, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
+                         amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                         lo_bc, hi_bc)
   end do
-  
+
   gr_justExchangedGC = .TRUE.
   write(*,'(A,I3)') "[Grid_fillGuardcell] From level 1 to level ", &
                     finest_level+1

@@ -153,8 +153,7 @@ subroutine Driver_evolveFlash()
     call gr_getFinestLevel(finest_level)
     call assertEqual(finest_level, FINEST_LEVEL_EX, "Incorrect finest level")
 
-    do lev = 1, 1
-!    do lev = 1, finest_level
+    do lev = 1, finest_level
         call amrex_mfiter_build(mfi, unk(lev-1), tiling=.FALSE.)
         do while (mfi%next())
             bx = mfi%tilebox()
@@ -216,11 +215,31 @@ subroutine Driver_evolveFlash()
                                              DBLE((i + j + k) * var), &
                                              "Bad data")
                         else
-                            write(*,*) "Guardcell at ", i, j, &
-                                       " has value ", initData(i,j,k,var)
-                            call assertEqual(initData(i, j, k, var), &
-                                             DBLE((i_bc + j_bc + k_bc) * var), &
-                                             "Bad GC data")
+                          ! Spot check a few values for now
+                          ! DEV: TODO Improve this check or sufficient?
+                          if (lev == 2) then
+                            if((i == -1) .AND. (j == -1)) then
+                              call assertEqual(initData(i, j, k, var), &
+                                               17.0d0*var, &
+                                               "Incorrect fine GC value")
+                            else if ((i == 0) .AND. (j == 5)) then
+                              call assertEqual(initData(i, j, k, var), &
+                                               11.75d0*var, &
+                                               "Incorrect fine GC value")
+                            else if ((i == 0) .AND. (j == 6)) then
+                              call assertEqual(initData(i, j, k, var), &
+                                               12.25d0*var, &
+                                               "Incorrect fine GC value")
+                            else if ((i == 3) .AND. (j == 9)) then
+                              call assertEqual(initData(i, j, k, var), &
+                                               7.5d0*var, &
+                                               "Incorrect fine GC value")
+                            else if ((i == 3) .AND. (j == 10)) then
+                              call assertEqual(initData(i, j, k, var), &
+                                               8.0d0*var, &
+                                               "Incorrect fine GC value")
+                            end if
+                          end if
                         end if
                       end do
                     end do
