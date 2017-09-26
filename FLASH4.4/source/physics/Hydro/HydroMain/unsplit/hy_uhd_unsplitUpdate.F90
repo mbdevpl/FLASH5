@@ -73,7 +73,7 @@
 #include "UHD.h"
 
   Subroutine hy_uhd_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
-                                  blkLimitsGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
+                                  blGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                   scrch_Ptr)
 
     use block_metadata,   ONLY : block_metadata_t
@@ -118,11 +118,11 @@
     real, intent(IN)   :: del(MDIM)
     integer,dimension(MDIM),intent(IN) :: dataSize
     integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
-    integer,intent(IN) :: blkLimitsGC(LOW:HIGH,MDIM)
-    real, intent(in) :: xflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))
-    real, intent(in) :: yflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))  
-    real, intent(in) :: zflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))
-    real, dimension(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)),& 
+    integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
+    real, intent(in) :: xflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+    real, intent(in) :: yflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))  
+    real, intent(in) :: zflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+    real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),& 
          intent(IN) :: gravX,gravY,gravZ
     real, pointer, dimension(:,:,:,:) :: Uin, Uout, scrch_Ptr
 
@@ -137,8 +137,8 @@
     real    :: IntEner,tempPres
 
 #if (NSPECIES+NMASS_SCALARS) > 0
-    real, dimension(hy_numXN,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)) :: SpOld
-    real, dimension(6,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)) :: Uold
+    real, dimension(hy_numXN,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: SpOld
+    real, dimension(6,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: Uold
 #else
   !This is just here so I can have the same omp parallel directive whether
   !(NSPECIES+NMASS_SCALARS) > 0 or not.  SpOld and UOld are not used.
@@ -147,7 +147,7 @@
 #endif
 
     integer :: iSize, jSize, kSize
-    real, dimension(dataSize(IAXIS)) :: xCenter, xLeft, xRight
+    real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS)) :: xCenter, xLeft, xRight
 #if NDIM == 3
     real, dimension(blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)) :: yCenter
 #else
@@ -169,7 +169,7 @@
                     blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS) ) :: cellVolumes
 
 #if defined(FLASH_USM_MHD) && defined(FLASH_UHD_3T) 
-    real, dimension(3, dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)) :: Jp, Jm
+    real, dimension(3, blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: Jp, Jm
 #else
     real    :: Jp, Jm
 #endif
@@ -192,13 +192,13 @@
     logical :: specialForInterior
 #endif
   !! Resistive MHD 
-  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), & 
-                  blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), & 
-                  blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: res_eta
+  real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS), & 
+                  blGC(LOW,JAXIS):blGC(HIGH,JAXIS), & 
+                  blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: res_eta
 
-  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), & 
-                  blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), & 
-                  blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: res_source                
+  real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS), & 
+                  blGC(LOW,JAXIS):blGC(HIGH,JAXIS), & 
+                  blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: res_source                
 
   real    :: eta_loc, Jyp, Jym, dxBzm,dxBzp, inv_dVrm, inv_dVrp
   real, pointer,dimension(:)    :: speciesArr
@@ -266,7 +266,7 @@
 
     if (hy_geometry /= CARTESIAN) then
        faceAreas = 0.
-       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
+       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, GLOBALIDX1, &
             (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
             faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
@@ -274,7 +274,7 @@
             (/isize+1, jsize, ksize/) )
 #if NDIM > 1
        if (hy_geometry == SPHERICAL) then
-          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
+          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
             (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
             faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
@@ -955,7 +955,7 @@
 !!$
     if (hy_geometry /= CARTESIAN) then
        faceAreas = 0.
-       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, EXTERIOR, &
+       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, GLOBALIDX1, &
             (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
             faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
@@ -963,7 +963,7 @@
             (/isize+1, jsize, ksize/) )
 #if NDIM > 1
        if (hy_geometry == SPHERICAL) then
-          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, EXTERIOR, &
+          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
             (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
             faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
