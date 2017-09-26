@@ -206,6 +206,14 @@ MASTER_PE is the designated master processor in a run.
 #define XZPLANE 66
 #define YZPLANE 77
 
+#if 0
+  Some more constant expressions for use in get/put data functions and other
+  functions that may support several indexing conventions.
+  GLOBALIDX1 - Cells at a given refinement level are identified by global
+  indexes, starting at 1 for the lowermost leftmost cell of the domain.
+#endif
+
+#define GLOBALIDX1 (-2)
 
 #if 0
   This group refers to Grid data strucures, to store cell centered, face
