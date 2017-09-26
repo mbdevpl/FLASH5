@@ -453,7 +453,7 @@ subroutine Grid_putBlkData(block, gridDataStruct, structIndex, beginCount, &
      call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
      
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
      solnData(structIndex,xb:xe,yb:ye,zb:ze)=datablock(:,:,:)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        solnData(xb:xe,yb:ye,zb:ze,structIndex)=datablock(:,:,:)

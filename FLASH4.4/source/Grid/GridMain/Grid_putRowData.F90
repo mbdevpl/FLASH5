@@ -450,7 +450,7 @@ subroutine Grid_putRowData(block, gridDataStruct, structIndex, beginCount, &
      if(row==KAXIS)solnData(structIndex,i,j,k:k+datasize-1)= datablock(:)
      call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        if(row==IAXIS)solnData(i:i+datasize-1,j,k,structIndex)= datablock(:)
 !!$        if(row==JAXIS)solnData(i,j:j+datasize-1,k,structIndex)= datablock(:)

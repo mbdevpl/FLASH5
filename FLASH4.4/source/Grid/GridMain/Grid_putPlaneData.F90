@@ -508,7 +508,7 @@ subroutine Grid_putPlaneData(block, gridDataStruct, structIndex, beginCount, &
      if(plane==YZPLANE)solnData(structIndex,xb,yb:ye,zb:ze) = datablock(:,:)
      call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        if(plane==XYPLANE)solnData(xb:xe,yb:ye,zb,structIndex) = datablock(:,:)
 !!$        if(plane==XZPLANE)solnData(xb:xe,yb,zb:ze,structIndex) = datablock(:,:)

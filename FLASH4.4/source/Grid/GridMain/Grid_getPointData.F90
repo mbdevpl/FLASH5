@@ -227,6 +227,7 @@ subroutine Grid_getPointData(block, gridDataStruct, structIndex, beginCount, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr,gr_releaseInteriorBlkPtr
+  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -343,10 +344,10 @@ subroutine Grid_getPointData(block, gridDataStruct, structIndex, beginCount, &
      xb=i;xe=xb;yb=j;ye=yb;zb=k;ze=zb
      
      if(gridDataStruct==CELL_VOLUME) then
-        call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues)
+        call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues,beginCount)
      else
         call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,&
-             structIndex,block,cellvalues)
+             structIndex,block,cellvalues,beginCount)
      end if
      datablock=cellvalues(1,1,1)
   elseif(getIntPtr) then
@@ -354,7 +355,7 @@ subroutine Grid_getPointData(block, gridDataStruct, structIndex, beginCount, &
      datablock = solnData(structIndex,i,j,k)
      call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        datablock = solnData(i,j,k,structIndex)
 !!$     else

@@ -248,6 +248,7 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -461,10 +462,10 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
      if(row==KAXIS) ze=zb+datasize-1
      allocate(cellvalues(xb:xe,yb:ye,zb:ze))
      if(gridDataStruct==CELL_VOLUME) then
-        call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues)
+        call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues,beginCount)
      else
         call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,&
-             structIndex,block,cellvalues)
+             structIndex,block,cellvalues,beginCount)
      end if
      if(row==IAXIS) datablock(:)=cellvalues(xb:xe,yb,zb)
      if(row==JAXIS) datablock(:)=cellvalues(xb,yb:ye,zb)
@@ -477,7 +478,7 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
      if(row==KAXIS)datablock(:) = solnData(structIndex,i,j,k:k+datasize-1)
      call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        if(row==IAXIS)datablock(:) = solnData(i:i+datasize-1,j,k,structIndex)
 !!$        if(row==JAXIS)datablock(:) = solnData(i,j:j+datasize-1,k,structIndex)
