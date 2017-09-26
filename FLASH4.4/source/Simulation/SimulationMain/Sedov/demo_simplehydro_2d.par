@@ -35,14 +35,14 @@ zmax		= 1.
 #		Boundary conditions
 
 
-xl_boundary_type = "outflow"
-xr_boundary_type = "outflow"
+xl_boundary_type = "periodic"
+xr_boundary_type = "periodic"
 
-yl_boundary_type = "outflow"
-yr_boundary_type = "outflow"
+yl_boundary_type = "periodic"
+yr_boundary_type = "periodic"
 
-zl_boundary_type = "outflow"
-zr_boundary_type = "outflow"
+zl_boundary_type = "periodic"
+zr_boundary_type = "periodic"
 
 
 
@@ -71,6 +71,7 @@ tmax            = 0.05
 run_comment     = "Sedov explosion"
 log_file        = "sedov.log"
 eintSwitch     = 1.e-4
+flux_correct = .FALSE.
 
 plot_var_1 = "dens"
 plot_var_2 = "pres"
@@ -124,7 +125,7 @@ use_steepening	= .false. # use contact steepening (originally for PPM)
 use_upwindTVD	= .false. # use upwind biased TVD slope for PPM (need nguard=6)
 
 #	II. RIEMANN SOLVERS:
-RiemannSolver	= "Roe"       # Roe, HLL, HLLC, LLF, Marquina
+RiemannSolver	= "HLL"       # Roe, HLL, HLLC, LLF, Marquina
 entropy         = .false.     # Entropy fix for the Roe solver
 
 #	III. STRONG SHOCK HANDELING SCHEME:
