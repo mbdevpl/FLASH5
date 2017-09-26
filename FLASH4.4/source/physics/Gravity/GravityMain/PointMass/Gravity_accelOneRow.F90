@@ -133,11 +133,9 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
   endif
 
 !==============================================================================
-#ifndef FIXEDBLOCKSIZE
   deallocate(xCenter)
   deallocate(yCenter)
   deallocate(zCenter)
-#endif
 
   return
 
@@ -243,11 +241,9 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   endif
 
 !==============================================================================
-#ifndef FIXEDBLOCKSIZE
   deallocate(xCenter)
   deallocate(yCenter)
   deallocate(zCenter)
-#endif
 
   return
 
