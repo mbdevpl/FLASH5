@@ -1,11 +1,9 @@
 subroutine gr_amrex_init()
   use iso_c_binding
   
-  use amrex_fort_module,           ONLY : wp => amrex_real
   use amrex_amr_module,            ONLY : amrex_init, &
                                           amrex_amrcore_init, &
                                           amrex_init_virtual_functions, &
-                                          amrex_init_from_scratch, &
                                           amrex_max_level
   use amrex_parmparse_module,      ONLY : amrex_parmparse, &
                                           amrex_parmparse_build, &
@@ -17,8 +15,6 @@ subroutine gr_amrex_init()
                                           gr_remakeLevelCallback, &
                                           gr_clearLevelCallback, &
                                           gr_markRefineDerefineCallback
-  use gr_physicalMultifabs,        ONLY : unk, &
-                                          facevarx, facevary, facevarz
 
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
@@ -36,8 +32,6 @@ subroutine gr_amrex_init()
   integer,  parameter :: AMREX_CARTESIAN   = 0
   integer,  parameter :: AMREX_CYLINDRICAL = 1
   integer,  parameter :: AMREX_SPHERICAL   = 2
-
-  real(wp), parameter :: T_INIT = 0.0_wp
 
   type(amrex_parmparse) :: pp_geom
   type(amrex_parmparse) :: pp_amr
@@ -157,22 +151,9 @@ subroutine gr_amrex_init()
                                     gr_clearLevelCallback, &
                                     gr_markRefineDerefineCallback)
 
-  !!!!!----- ALLOCATE DATA STRUCTURES
-  ! multifabs 
-  !
-  ! NOTE: We implement these with the 0-based level indexing scheme native to
-  ! AMReX instead of the 1-based level indexing scheme of FLASH.
-  !   => all code dealing with multifabs arrays must consider the need for 
-  !      index translation
-  allocate(unk     (0:amrex_max_level))
-  allocate(facevarx(0:amrex_max_level))
-  allocate(facevary(0:amrex_max_level))
-  allocate(facevarz(0:amrex_max_level))
-
-  ! Setup grids and initialize the data
-  call amrex_init_from_scratch(T_INIT)
-
   !!!!!----- CONFIRM CORRECT AMReX CONFIGURATION
+  ! DEV: TODO Check amrex_ref_ratio
+
   ! Check AMReX-controlled BC information
   is_periodic_am(:) = 0
   where (amrex_pmask)  is_periodic_am = 1

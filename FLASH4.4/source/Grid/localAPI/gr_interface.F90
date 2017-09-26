@@ -90,6 +90,28 @@ module gr_interface
   end interface
 
   interface
+     subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,blockDesc,dataBlock,beginCount)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t),intent(IN) :: blockDesc
+       integer,intent(IN) :: xb,xe,yb,ye,zb,ze,face
+       real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
+       integer,intent(IN) :: beginCount
+     end subroutine gr_getCellFaceArea
+  end interface
+
+  interface
+     subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,blockDesc,dataBlock,indexing)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t),intent(IN) :: blockDesc
+       integer,intent(IN) :: xb,xe,yb,ye,zb,ze
+       real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
+       integer,intent(IN) :: indexing
+     end subroutine gr_getCellVol
+  end interface
+
+  interface
      subroutine gr_getBlkHandle(remoteBlockID, pe, blockHandle)
      ! implementation in GridMain/paramesh
        implicit none

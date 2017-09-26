@@ -79,7 +79,7 @@
 #ifdef FLASH_USM_MHD
 !! REORDER(4): B[xyz],U
 #endif
-Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
+Subroutine hy_uhd_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
                                      dt,del,ogravX,ogravY,ogravZ,&
                                      DivU, FlatCoeff,  &
                                      TransX_updateOnly,&
@@ -128,19 +128,20 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
   !!-----Arguments---------------------------------------------------------
   type(block_metadata_t), intent(IN) :: block
   real, pointer, dimension(:,:,:,:) :: U
-  integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimitsGC
+!!$  integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimitsGC
+  integer, intent(IN), dimension(MDIM):: loGC, hiGC
   integer, intent(IN) :: order,ix,iy,iz
   real,    intent(IN) :: dt
   real,    intent(IN), dimension(MDIM) :: del
-  real, dimension(blkLimitsGC(HIGH,IAXIS),&
-                  blkLimitsGC(HIGH,JAXIS),&
-                  blkLimitsGC(HIGH,KAXIS)),intent(IN), target :: ogravX,ogravY,ogravZ
-  real, dimension(NDIM,blkLimitsGC(HIGH,IAXIS),&
-                       blkLimitsGC(HIGH,JAXIS),&
-                       blkLimitsGC(HIGH,KAXIS)),intent(IN) :: FlatCoeff
-  real, dimension(blkLimitsGC(HIGH,IAXIS),&
-                  blkLimitsGC(HIGH,JAXIS),&
-                  blkLimitsGC(HIGH,KAXIS)), intent(IN) :: DivU
+  real, dimension(loGC(IAXIS):hiGC(IAXIS),&
+                  loGC(JAXIS):hiGC(JAXIS),&
+                  loGC(KAXIS):hiGC(KAXIS)),intent(IN), target :: ogravX,ogravY,ogravZ
+  real, dimension(NDIM,loGC(IAXIS):hiGC(IAXIS),&
+                       loGC(JAXIS):hiGC(JAXIS),&
+                       loGC(KAXIS):hiGC(KAXIS)),intent(IN) :: FlatCoeff
+  real, dimension(loGC(IAXIS):hiGC(IAXIS),&
+                  loGC(JAXIS):hiGC(JAXIS),&
+                  loGC(KAXIS):hiGC(KAXIS)), intent(IN) :: DivU
 
   logical, intent(IN) ::  TransX_updateOnly, TransY_updateOnly, TransZ_updateOnly
 
@@ -202,15 +203,10 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
   real, pointer, dimension(:,:,:,:) :: DataMultiD,DataGravMultiD
 #endif
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_IHI_GC), target :: xCenter
-  real, dimension(GRID_JHI_GC), target :: yCenter
-  real, dimension(GRID_KHI_GC), target :: zCenter
-#else
-  real, dimension(blkLimitsGC(HIGH,IAXIS)), target :: xCenter
-  real, dimension(blkLimitsGC(HIGH,JAXIS)), target :: yCenter
-  real, dimension(blkLimitsGC(HIGH,KAXIS)), target :: zCenter
-#endif
+  real, dimension(loGC(IAXIS):hiGC(IAXIS)), target :: xCenter
+  real, dimension(loGC(JAXIS):hiGC(JAXIS)), target :: yCenter
+  real, dimension(loGC(KAXIS):hiGC(KAXIS)), target :: zCenter
+
   !****************** End of GP declarations **********************!
 
 #ifdef FLASH_USM_MHD
@@ -304,12 +300,12 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
   kOrder_orig = kOrder
 
   !! Array bound check for hybrid order in checking DivU
-  if (ix-k4    < blkLimitsGC( LOW,IAXIS) .or. &
-      ix+k4    > blkLimitsGC(HIGH,IAXIS) .or. &
-      iy-k4*k2 < blkLimitsGC( LOW,JAXIS) .or. &
-      iy+k4*k2 > blkLimitsGC(HIGH,JAXIS) .or. &
-      iz-k4*k3 < blkLimitsGC( LOW,KAXIS) .or. &
-      iz+k4*k3 > blkLimitsGC(HIGH,KAXIS)) then
+  if (ix-k4    < loGC(IAXIS) .or. &
+      ix+k4    > hiGC(IAXIS) .or. &
+      iy-k4*k2 < loGC(JAXIS) .or. &
+      iy+k4*k2 > hiGC(JAXIS) .or. &
+      iz-k4*k3 < loGC(KAXIS) .or. &
+      iz+k4*k3 > hiGC(KAXIS)) then
      k4 = k4-1
   endif
 
@@ -451,11 +447,11 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
                        iz-radius:iz+radius)
 #endif
 
-     iSizeGC = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
+     iSizeGC = hiGC(IAXIS)-loGC(IAXIS)+1
      if (NDIM > 1) &
-     jSizeGC = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
+     jSizeGC = hiGC(JAXIS)-loGC(JAXIS)+1
      if (NDIM == 3) &
-     kSizeGC = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
+     kSizeGC = hiGC(KAXIS)-loGC(KAXIS)+1
     
      call Grid_getCellCoords(IAXIS,block, CENTER, .true.,xCenter,iSizeGC)
     if (NDIM > 1) &

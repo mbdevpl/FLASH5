@@ -153,8 +153,8 @@ subroutine Simulation_initBlock(solnData,block)
   do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
      ! Find a real difference between z's if problem is >= 3D
      if (NDIM > 2) then
-        if (k .eq. 1) then
-           dzz = zCoord(2) - zCoord(1) 
+        if (k .eq. blkLimitsGC(LOW,KAXIS)) then
+           dzz = zCoord(blkLimitsGC(LOW,KAXIS)+1) - zCoord(blkLimitsGC(LOW,KAXIS))
         else
            dzz = zCoord(k) - zCoord(k-1) 
         endif
@@ -170,8 +170,8 @@ subroutine Simulation_initBlock(solnData,block)
      do j = blkLimitsGC(LOW, JAXIS), blkLimitsGC(HIGH, JAXIS)
         ! Find a real difference between y's if problem is >= 2D
         if (NDIM > 1) then
-           if (j .eq. 1) then
-              dyy = yCoord(2) - yCoord(1) 
+           if (j .eq. blkLimitsGC(LOW,JAXIS)) then
+              dyy = yCoord(blkLimitsGC(LOW,JAXIS)+1) - yCoord(blkLimitsGC(LOW,JAXIS))
            else
               dyy = yCoord(j) - yCoord(j-1) 
            endif
@@ -186,8 +186,8 @@ subroutine Simulation_initBlock(solnData,block)
 #endif
         do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH, IAXIS)
            xx = xCoord(i)
-           if (i .eq. 1) then
-              dxx = xCoord(2) - xCoord(1) 
+           if (i .eq. blkLimitsGC(LOW,IAXIS)) then
+              dxx = xCoord(blkLimitsGC(LOW,IAXIS)+1) - xCoord(blkLimitsGC(LOW,IAXIS))
            else
               dxx = xCoord(i) - xCoord(i-1) 
            endif

@@ -14,6 +14,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                       gr_refine_cutoff, gr_derefine_cutoff, &
                                       gr_refine_filter, gr_refine_var, &
                                       gr_maxRefine, gr_enforceMaxRefinement
+   use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
    use gr_interface,           ONLY : gr_estimateBlkError
    use gr_physicalMultifabs,   ONLY : unk
    use block_metadata,         ONLY : block_metadata_t
@@ -44,12 +45,13 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
    write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                        "      Started on level ", lev + 1
-   
+ 
    tag = tags
 
    allocate(errors(gr_numRefineVars))
 
    !DEVNOTE:  Can test with tiling later - KW
+   ! unk used the same 0-based level indexing used here by AMReX
    call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
    do while(mfi%next())
       bx = mfi%tilebox()
@@ -58,11 +60,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
       ! DEVNOTE: Should we use gr_[ijk]guard here?
       blockDesc%level = lev + 1
-      ! DEVNOTE: We can use this in AMREX or AMREXTRANSITION mode
-      ! DEVNOTE: FIXME This is not in the master AMReX branch yet.  The value is
-      ! important here.
-!      blockDesc%grid_index = mfi%grid_index()
-      blockDesc%grid_index = -1
+      blockDesc%grid_index = mfi%grid_index()
       blockDesc%limits(LOW,  :) = 1
       blockDesc%limits(HIGH, :) = 1
       blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
@@ -72,18 +70,19 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
       blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
 
+      errors(:) = 0.0d0
       do l = 1, gr_numRefineVars
          iref = gr_refine_var(l)
          refineFilter = gr_refine_filter(l)
          call gr_estimateBlkError(errors(l), blockDesc, iref, refineFilter)
       end do
 
+      call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
       associate (lo   => blockDesc%limits(LOW,  :), &
                  hi   => blockDesc%limits(HIGH, :), &
                  loGC => blockDesc%limitsGC(LOW,  :), &
                  hiGC => blockDesc%limitsGC(HIGH, :))
-        ! Makes this 1-based cell indexing
-        solnData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev)%dataptr(mfi)
 
         ! tagData is one cell larger on all borders than interior and 0-based
         ! Shift to 1-based here
@@ -107,29 +106,30 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             ! we request derefinement.  TODO Figure out.
             if (errors(l) > gr_refine_cutoff(l)) then
                 ! Tag single cell in block that is not on boundary
-                i = INT(0.5d0 * (lo(IAXIS) + hi(IAXIS)))
-                j = INT(0.5d0 * (lo(JAXIS) + hi(JAXIS)))
-                k = INT(0.5d0 * (lo(KAXIS) + hi(KAXIS)))
+                i = INT(0.5d0 * DBLE(lo(IAXIS) + hi(IAXIS)))
+                j = INT(0.5d0 * DBLE(lo(JAXIS) + hi(JAXIS)))
+                k = INT(0.5d0 * DBLE(lo(KAXIS) + hi(KAXIS)))
 
                 ! NOTE: last dimension has range 1:1
                 tagData(i, j, k, 1) = tagval
-#ifdef DEBUG_TAGDATA
-                write(*,'(A,A,I2)') "[gr_markRefineDerefineCallbback]", &
+                
+                write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                                     "      Tag block for refinement at level", &
                                     (lev+1)
-                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallbback]", &
-                                          "      lower: ", &
+                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallback]", &
+                                          "         lower: ", &
                                           lo(IAXIS), lo(JAXIS), lo(KAXIS)
-                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallbback]", &
-                                          "      upper: ", &
+                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallback]", &
+                                          "         upper: ", &
                                           hi(IAXIS), hi(JAXIS), hi(KAXIS)
-                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallbback]", &
-                                          "      Tag cell ", i, j, k 
-#endif
+                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallback]", &
+                                          "         Tag cell ", i, j, k 
                 EXIT rloop
             end if
         end do rloop
       end associate
+
+      call Grid_releaseBlkPtr(blockDesc, solnData)
    end do
    call amrex_mfiter_destroy(mfi)
 

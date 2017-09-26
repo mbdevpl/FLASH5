@@ -72,7 +72,7 @@ subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
   stop
 end subroutine Grid_getSingleCellVol
 
-subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
+subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
 
   use Grid_interface, ONLY : Grid_getDeltas, &
                              Grid_getGeometry, &
@@ -84,19 +84,26 @@ subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
 #include "constants.h"
 #include "Flash.h"
 
-  type(block_metadata_t), intent(in) :: block
-  integer, intent(in) :: beginCount
+  type(block_metadata_t), intent(in) :: blockDesc
   integer, intent(in) :: point(MDIM)
   real, intent(out) :: cellvolume
+  integer, intent(in),OPTIONAL :: indexing
 
   integer :: geometry
+  integer :: beginCount
   real    :: del(MDIM)
   real    :: centerCoords(MDIM), leftCoords(MDIM), rightCoords(MDIM)
  
+  if (present(indexing)) then
+     beginCount = indexing
+  else
+     beginCount = DEFAULTIDX
+  end if
+
   del = 1.0
 
   call Grid_getGeometry(geometry)
-  call Grid_getDeltas(block%level, del)
+  call Grid_getDeltas(blockDesc%level, del)
 
   select case (geometry)
 
@@ -110,7 +117,7 @@ subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
      end if
 
   case (POLAR)
-     call Grid_getSingleCellCoords(point, block, CENTER, beginCount, centerCoords)
+     call Grid_getSingleCellCoords(point, blockDesc, CENTER, beginCount, centerCoords)
 
      if(NDIM == 1) then
         cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS)
@@ -121,7 +128,7 @@ subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
      end if
 
   case (CYLINDRICAL)
-     call Grid_getSingleCellCoords(point, block, CENTER, beginCount, centerCoords)
+     call Grid_getSingleCellCoords(point, blockDesc, CENTER, beginCount, centerCoords)
 
      if(NDIM == 1) then
         cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS)
@@ -132,8 +139,8 @@ subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
      end if
 
   case (SPHERICAL)
-     call Grid_getSingleCellCoords(point, block, LEFT_EDGE, beginCount, leftCoords)
-     call Grid_getSingleCellCoords(point, block, RIGHT_EDGE, beginCount, rightCoords)
+     call Grid_getSingleCellCoords(point, blockDesc, LEFT_EDGE, beginCount, leftCoords)
+     call Grid_getSingleCellCoords(point, blockDesc, RIGHT_EDGE, beginCount, rightCoords)
 
      cellvolume = del(IAXIS) *  &
           ( leftCoords(IAXIS)*  leftCoords(IAXIS)  +  &

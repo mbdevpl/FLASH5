@@ -41,11 +41,14 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
   integer :: gds
  
   if (present(gridDataStruct)) then
-     ! DEV: TODO Implement this
-     call Driver_abortFlash("[Grid_releaseBlkPtr_desc] gridDataStruct not implemented yet")
      gds = gridDataStruct
   else
      gds = CENTER
+  end if
+
+  if (gds /= CENTER) then
+     ! DEV: TODO Implement this
+     call Driver_abortFlash("[Grid_releaseBlkPtr_desc] gridDataStruct not implemented yet")
   end if
 
 #if DRIFT_ENABLE

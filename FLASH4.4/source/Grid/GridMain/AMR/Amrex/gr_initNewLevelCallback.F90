@@ -73,8 +73,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
         ! Level must be 1-based index and limits/limitsGC must be 1-based also
         ! DEVNOTE: Should we use gr_[ijk]guard here?
         block%level = lev + 1
-        ! DEVNOTE: TODO Get grid_index from mfi
-        block%grid_index = -1
+        block%grid_index = mfi%grid_index()
         block%limits(LOW,  :) = 1
         block%limits(HIGH, :) = 1
         block%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1

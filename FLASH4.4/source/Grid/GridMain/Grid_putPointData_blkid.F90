@@ -1,11 +1,11 @@
-!!****if* source/Grid/GridMain/Grid_putPointData
+!!****if* source/Grid/GridMain/Grid_putPointData_blkid
 !!
 !! NAME
-!!  Grid_putPointData
+!!  Grid_putPointData_blkid
 !!
 !! SYNOPSIS
 !!
-!!  Grid_putPointData(integer(IN) :: blockID,
+!!  Grid_putPointData_blkid(integer(IN) :: blockID,
 !!                    integer(IN) :: gridDataStruct,
 !!                    integer(IN) :: structIndex,
 !!                    integer(IN) :: beginCount, 
@@ -58,8 +58,7 @@
 !!               guardcells) and wish to keep loop indicies  
 !!               going from 1 to NXB without having to worry about finding 
 !!               the correct offset for the number of guardcells.) 
-!!               Can also be GLOBALIDX1 for global indexing, or DEFAULTIDX.
-!!               (INTERIOR, EXTERIOR, etc. are defined in constants.h)
+!!               (INTERIOR and EXTERIOR are defined in constants.h)
 !!
 !!
 !!  position(MDIM):
@@ -130,7 +129,7 @@
 !!
 !!          do blockID = 1, localNumBlocks
 !!  
-!!             call Grid_putPointData(blockID, CENTER, DENS_VAR, EXTERIOR, &
+!!             call Grid_putPointData_blkid(blockID, CENTER, DENS_VAR, EXTERIOR, &
 !!                               position, dataBlock)
 !!  
 !!          end do
@@ -182,7 +181,7 @@
 !!
 !!          do blockID = 1, localNumBlocks
 !!  
-!!             call Grid_putPointData(blockID, CENTER, PRES_VAR, INTERIOR, &
+!!             call Grid_putPointData_blkid(blockID, CENTER, PRES_VAR, INTERIOR, &
 !!                               position, dataBlock)
 !!  
 !!          end do
@@ -203,15 +202,13 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_putPointData_blkid(blockid, gridDataStruct, structIndex, beginCount, &
      position, datablock)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr,gr_releaseInteriorBlkPtr
-  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
-  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -224,8 +221,7 @@ subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount,
 #endif
 
 
-  type(block_metadata_t), intent(IN) :: blockDesc
-  integer, intent(IN) :: structIndex, beginCount, gridDataStruct
+  integer, intent(IN) :: blockid, structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(IN) :: position
   real, intent(IN) :: datablock
   real, pointer, dimension(:,:,:,:) :: solnData
@@ -241,69 +237,78 @@ subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount,
 
 #ifdef DEBUG_GRID
   isget=.true.
-  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(blockID,gridDataStruct,imax,jmax,kmax,isget)
 
+
+  !verify we have a valid blockid
+  if((blockid<1).or.(blockid>MAXBLOCKS)) then
+     print*,' Put Data : invalide blockid '
+     call Driver_abortFlash("Put Data : invalid blockid ")
+  end if
+
+
+  
   !verify beginCount is set to a valid value
   if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
-     print *, "Grid_putPointData: beginCount set to improper value"
+     print *, "Grid_putPointData_blkid: beginCount set to improper value"
      print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
      call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
   end if
 
 
 
-  !verify that indicies aren't too big or too small for the blockDesc
+  !verify that indicies aren't too big or too small for the block
   if(beginCount == EXTERIOR) then
     
      if (position(1) > imax) then
-        call Driver_abortFlash("Grid_putPointData position(1) index larger than block")
+        call Driver_abortFlash("Grid_putPointData_blkid position(1) index larger than block")
      end if
 
      if ((NDIM > 1) .and. (position(2) > jmax)) then
-        call Driver_abortFlash("Grid_putPointData position(2) index larger than block")
+        call Driver_abortFlash("Grid_putPointData_blkid position(2) index larger than block")
      end if
     
      if ((NDIM > 2) .and. (position(3) > kmax)) then
-        call Driver_abortFlash("Grid_putPointData position(3) index larger than block")
+        call Driver_abortFlash("Grid_putPointData_blkid position(3) index larger than block")
      end if
     
      if (position(1) < 1) then
         print*,'position is ',position(1)
-        call Driver_abortFlash("Grid_putPointData position(1) index smaller than 1")
+        call Driver_abortFlash("Grid_putPointData_blkid position(1) index smaller than 1")
      end if
 
      if ((NDIM > 1) .and. (position(2) < 1)) then
-        call Driver_abortFlash("Grid_putPointData position(2) index smaller than 1")
+        call Driver_abortFlash("Grid_putPointData_blkid position(2) index smaller than 1")
      end if
     
      if ((NDIM > 2) .and. (position(3) < 1)) then
-        call Driver_abortFlash("Grid_putPointData position(3) index smaller than 1")
+        call Driver_abortFlash("Grid_putPointData_blkid position(3) index smaller than 1")
      end if
         
   else !beginCount == INTERIOR
 
      if ((position(1) + gr_iguard -1) > imax) then
-        call Driver_abortFlash("Grid_putPointData position(1) index larger than block")
+        call Driver_abortFlash("Grid_putPointData_blkid position(1) index larger than block")
      end if
 
      if ((NDIM > 1) .and. ((position(2) + gr_jguard -1) > jmax)) then
-        call Driver_abortFlash("Grid_putPointData position(2) index larger than block")
+        call Driver_abortFlash("Grid_putPointData_blkid position(2) index larger than block")
      end if
     
      if ((NDIM > 2) .and. ((position(3) + gr_kguard -1) > kmax)) then
-        call Driver_abortFlash("Grid_putPointData position(3) index larger than block")
+        call Driver_abortFlash("Grid_putPointData_blkid position(3) index larger than block")
      end if
     
      if (position(1) < 1) then
-        call Driver_abortFlash("Grid_putPointData position(1) index smaller than 1")
+        call Driver_abortFlash("Grid_putPointData_blkid position(1) index smaller than 1")
      end if
 
      if ((NDIM > 1) .and. (position(2) < 1)) then
-        call Driver_abortFlash("Grid_putPointData position(2) index smaller than 1")
+        call Driver_abortFlash("Grid_putPointData_blkid position(2) index smaller than 1")
      end if
     
      if ((NDIM > 2) .and. (position(3) < 1)) then
-        call Driver_abortFlash("Grid_putPointData position(3) index smaller than 1")
+        call Driver_abortFlash("Grid_putPointData_blkid position(3) index smaller than 1")
      end if
 
   end if
@@ -311,7 +316,7 @@ subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount,
 #endif
 
   dataLen=0
-  call gr_getDataOffsets(blockDesc,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(blockID,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
 
 
   k = 1
@@ -323,17 +328,17 @@ subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount,
   i = position(IAXIS) + begOffset(IAXIS)
   
   if(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
      solnData(structIndex,i,j,k) = datablock
-     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
+     call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        solnData(structIndex,i,j,k) = datablock
 !!$     else
 !!$     end if
      solnData(structIndex,i,j,k) = datablock
-     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
   end if
   return
-end subroutine Grid_putPointData
+end subroutine Grid_putPointData_blkid

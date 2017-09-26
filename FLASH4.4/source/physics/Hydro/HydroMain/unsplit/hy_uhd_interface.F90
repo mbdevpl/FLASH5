@@ -37,7 +37,7 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del, &
+     subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del, &
                                        ogravX,ogravY,ogravZ,&
                                        scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                        hy_SpcR,&
@@ -46,14 +46,15 @@ Module hy_uhd_interface
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN)   :: block
-       integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
+       integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits !, blkLimitsGC
+       integer, intent(IN), dimension(MDIM):: loGC, hiGC
        real,    intent(IN)   :: dt
        real,    intent(IN),dimension(MDIM) :: del
 !!$       real, dimension(blkLimitsGC(HIGH,IAXIS),  &
 !!$                       blkLimitsGC(HIGH,JAXIS),  &
 !!$                       blkLimitsGC(HIGH,KAXIS)), &
 !!$                       intent(IN) :: ogravX,ogravY,ogravZ
-  real, dimension(:,:,:), intent(IN) :: ogravX,ogravY,ogravZ
+  real, dimension(loGC(IAXIS):,loGC(JAXIS):,loGC(KAXIS):), intent(IN) :: ogravX,ogravY,ogravZ
        real,pointer,dimension(:,:,:,:)::U
        real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
@@ -106,7 +107,7 @@ Module hy_uhd_interface
 
 
   interface
-     Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
+     Subroutine hy_uhd_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
                                           dt,del,ogravX,ogravY,ogravZ,&
                                           DivU,FlatCoeff,   &
                                           TransX_updateOnly,&
@@ -121,15 +122,15 @@ Module hy_uhd_interface
        implicit none
        type(block_metadata_t),intent(IN) :: block
        real,dimension(:,:,:,:),pointer :: U
-       integer,intent(IN),dimension(LOW:HIGH,MDIM):: blkLimitsGC
+       integer, intent(IN), dimension(MDIM):: loGC, hiGC
        integer,intent(IN) :: order,ix,iy,iz
        real,   intent(IN) :: dt
        real,   intent(IN), dimension(MDIM) :: del
-       real, dimension(blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
+       real, dimension(loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)), &
             intent(IN), target :: ogravX,ogravY,ogravZ
-       real, dimension(NDIM,blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
+       real, dimension(NDIM,loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)), &
             intent(IN) :: FlatCoeff
-       real, dimension(blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
+       real, dimension(loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)), &
             intent(IN) :: DivU
        logical, intent(IN) ::  TransX_updateOnly, TransY_updateOnly, TransZ_updateOnly
        real, dimension(HY_VARINUMMAX,           NDIM),intent(OUT) :: Wp, Wn

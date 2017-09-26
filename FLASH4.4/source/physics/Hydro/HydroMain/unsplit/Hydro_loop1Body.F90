@@ -45,6 +45,7 @@
 
 Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
+  use Grid_interface, ONLY   : Grid_getBlkPtr
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use block_metadata,   ONLY : block_metadata_t
@@ -86,7 +87,8 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
   real, pointer, dimension(:,:,:,:) :: Uin
 
   real,dimension(MDIM),intent(IN) :: del
-  integer,dimension(LOW:HIGH,MDIM),intent(IN) ::blkLimits,blkLimitsGC 
+  integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
+  integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
   type(block_metadata_t), intent(IN) :: blockDesc
   
   integer, dimension(MDIM) :: datasize
@@ -103,11 +105,20 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 
 
   call Timers_start("loop1 body")
+
   
   ! NONSENSE...
 !!$  call hy_uhd_unsplit(block, Uin,blkLimitsGC,&
 !!$                      Uout,blkLimits,&
 !!$                      del,dt, dtOld )
+
+     blkLimits(:,:)   = blockDesc%Limits
+     blkLimitsGC(:,:) = blockDesc%LimitsGC
+     loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
+     loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
+     lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
+     call Grid_getBlkPtr(blockDesc, Uout,localFlag=.fALSE.)
+     Uin => Uout
 
 !!$     if (hy_fluxCorrect .AND. updateEarly) then
 !!$        ! Test whether neighbors are at different refinement levels, and if so,
@@ -147,23 +158,23 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 !!$     else
 !!$     call hy_memAllocScratch(SCRATCH_CTR,HY_VAR1_SCRATCHCTR_VAR,2, 0,0,0, &
 !!$          blockList(1:blockCount) )
-     allocate(scrch_Ptr(2,dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D))
-     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D))
-     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D))
-     allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,dataSize(IAXIS)-1,dataSize(JAXIS)-K2D,dataSize(KAXIS)-K3D))
+     allocate(scrch_Ptr(2,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
 !!$     endif
 
 #if (NSPECIES+NMASS_SCALARS) > 0
      if (hy_fullSpecMsFluxHandling) then
-        allocate(  hy_SpcR(HY_NSPEC,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS),NDIM))
-        allocate(  hy_SpcL(HY_NSPEC,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS),NDIM))
-        allocate(hy_SpcSig(HY_NSPEC,blkLimits(LOW,IAXIS)-2:blkLimits(HIGH,IAXIS)+2,dataSize(JAXIS),dataSize(KAXIS),NDIM))
+        allocate(  hy_SpcR(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
+        allocate(  hy_SpcL(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
+        allocate(hy_SpcSig(HY_NSPEC,blkLimits(LOW,IAXIS)-2:blkLimits(HIGH,IAXIS)+2, loyGC:hiyGC, lozGC:hizGC,NDIM))
      end if
 #endif
 
-     allocate(gravX(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-     allocate(gravY(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-     allocate(gravZ(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+     allocate(gravX(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
+     allocate(gravY(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
+     allocate(gravZ(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 #ifdef DEBUG_UHD
      print*,'came upto this point'
 #endif
@@ -207,7 +218,7 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 #ifdef DEBUG_UHD
         print*,'going into RiemannState'
 #endif
-        call hy_uhd_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC,dt,del, &
+        call hy_uhd_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,del, &
                                     gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
                                     scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                     hy_SpcR,hy_SpcL,hy_SpcSig)
@@ -227,10 +238,10 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 
      endif !! End of if (hy_updateHydroFluxes) then
 
-     allocate(flx(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS),NFLUXES))
-     allocate(fly(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS),NFLUXES))
-     allocate(flz(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS),NFLUXES))
-     allocate(  faceAreas(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+     allocate(flx(loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS),NFLUXES))
+     allocate(fly(loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS),NFLUXES))
+     allocate(flz(loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS),NFLUXES))
+     allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
@@ -270,6 +281,7 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 #ifdef DEBUG_UHD
      print*,'and now update'
 #endif
+
      call hy_uhd_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
