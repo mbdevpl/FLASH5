@@ -35,6 +35,7 @@ subroutine Simulation_initBlock(solnData,block)
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
        Grid_getCellCoords, Grid_getDeltas, Grid_getBlkPtr, &
+       Grid_putPointData, &
        Grid_releaseBlkPtr, Grid_getGeometry, Grid_renormAbundance
   use Eos_interface, ONLY : Eos_wrapped, Eos_getAbarZbar, Eos
   use Multispecies_interface, ONLY : Multispecies_getSumFrac,  Multispecies_getSumInv
@@ -358,13 +359,13 @@ subroutine Simulation_initBlock(solnData,block)
            rigid_axis(JAXIS) = j
            rigid_axis(KAXIS) = k
            if (radCenter <= sim_r_inner) then
-              call Grid_putPointData(block, CENTER, BDRY_VAR, EXTERIOR, rigid_axis, 1.0)
-              call Grid_putPointData(block, CENTER, DENS_VAR, EXTERIOR, rigid_axis, sim_smlrho) !maybe 1.e11 because PNS?
-              call Grid_putPointData(block, CENTER, TEMP_VAR, EXTERIOR, rigid_axis, sim_smallt) !something else because PNS?
-              call Grid_putPointData(block, CENTER, VELX_VAR, EXTERIOR, rigid_axis, 1.e-100)
-              call Grid_putPointData(block, CENTER, VELY_VAR, EXTERIOR, rigid_axis, 1.e-100)
+              call Grid_putPointData(block, CENTER, BDRY_VAR, DEFAULTIDX, rigid_axis, 1.0)
+              call Grid_putPointData(block, CENTER, DENS_VAR, DEFAULTIDX, rigid_axis, sim_smlrho) !maybe 1.e11 because PNS?
+              call Grid_putPointData(block, CENTER, TEMP_VAR, DEFAULTIDX, rigid_axis, sim_smallt) !something else because PNS?
+              call Grid_putPointData(block, CENTER, VELX_VAR, DEFAULTIDX, rigid_axis, 1.e-100)
+              call Grid_putPointData(block, CENTER, VELY_VAR, DEFAULTIDX, rigid_axis, 1.e-100)
            else
-              call Grid_putPointData(block, CENTER, BDRY_VAR, EXTERIOR, rigid_axis, -1.0)
+              call Grid_putPointData(block, CENTER, BDRY_VAR, DEFAULTIDX, rigid_axis, -1.0)
            end if
 #endif
               

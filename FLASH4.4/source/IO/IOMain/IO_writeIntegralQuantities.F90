@@ -114,7 +114,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
               point(KAXIS) = k
 
 !! Get the cell volume for a single cell
-              call Grid_getSingleCellVol(block, EXTERIOR, point, dvol)
+              call Grid_getSingleCellVol(block, point, dvol)
      
               ! mass   
 #ifdef DENS_VAR
