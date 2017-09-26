@@ -284,7 +284,7 @@
 #endif
 
        cellVolumes = 0.
-       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, EXTERIOR, &
+       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, GLOBALIDX1, &
             (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
             cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
@@ -973,7 +973,7 @@
 #endif
 
        cellVolumes = 0.
-       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, EXTERIOR, &
+       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, GLOBALIDX1, &
             (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
             cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
