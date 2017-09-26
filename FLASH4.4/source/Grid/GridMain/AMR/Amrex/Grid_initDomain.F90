@@ -85,6 +85,8 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   ! Setup grids and initialize the data
   call amrex_init_from_scratch(T_INIT)
 
+  ! DEV: TODO This call mimics what is done in AMReX tutorial.  This call breaks
+  ! TestRefine.  Is it really necessary?
   call Grid_averageDownLevels
 end subroutine Grid_initDomain
 
