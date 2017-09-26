@@ -76,8 +76,9 @@ Module Grid_data
 !  logical, save :: gr_useEnergyDeposition
 !  real, save, dimension(LOW:HIGH,MDIM) :: gr_boxContainingLeafNodes
 
-!  integer, save :: gr_eosMode
-!  integer, save :: gr_eosModeInit, gr_eosModeNow
+  integer, save :: gr_eosMode
+  integer, save :: gr_eosModeInit
+!  integer, save :: gr_eosModeNow
 !  integer, save :: gr_oneRefLev=1 !! To be used with the multigrid
 !  logical ,save :: gr_convertToConsvdInMeshInterp
 !  logical ,save :: gr_earlyBlockDistAdjustment
