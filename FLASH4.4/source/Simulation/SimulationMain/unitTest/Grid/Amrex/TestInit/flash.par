@@ -47,3 +47,7 @@ refine_filter_1 = 0.05
 refine_filter_2 = 0.025
 refine_filter_3 = 0.035
 
+##### EoS CONFIGURATION
+eosMode     = "dens_ie"
+eosModeInit = "dens_temp"
+

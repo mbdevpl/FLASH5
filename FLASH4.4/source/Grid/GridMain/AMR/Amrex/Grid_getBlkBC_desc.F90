@@ -44,6 +44,7 @@
 subroutine Grid_getBlkBC_desc(blockDesc, faces, onBoundary)
   use Grid_data, ONLY : gr_globalDomain, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBoundBox
+  use Driver_interface, ONLY : Driver_abortFlash
   use block_metadata, ONLY : block_metadata_t
   implicit none
   type(block_metadata_t), intent(in) :: blockDesc
@@ -51,6 +52,11 @@ subroutine Grid_getBlkBC_desc(blockDesc, faces, onBoundary)
   integer, optional, dimension(LOW:HIGH,MDIM),intent(out):: onBoundary
   real, dimension(2,MDIM) :: bnd_box
   integer :: axis, face
+
+  if (present(onBoundary)) then
+    ! DEV: TODO Implement this
+    call Driver_abortFlash("[Grid_getBlkBC_desc] onBounday not implemented yet")
+  end if
 
   !NOTE: Does not behave the same as PARAMESH.  If we are
   !on a periodic boundary then this version will return "periodic"
