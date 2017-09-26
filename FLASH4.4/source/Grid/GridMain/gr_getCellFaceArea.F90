@@ -32,6 +32,9 @@
 !!               valid  values are ILO_FACE,IHI_FACE, JLO_FACE etc.
 !!  blockID   : my block number
 !!  dataBlock : storage for returning calculated values
+!!  beginCount : How index argument values are intended.
+!!               EXTERIOR or INTERIOR  relative to the block
+!!               GLOBALIDX1            global 1-based per-level indexing
 !!
 !!
 !!***
