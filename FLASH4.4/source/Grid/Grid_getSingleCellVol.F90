@@ -58,9 +58,10 @@
 !!
 !!***
 
-subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
-implicit none
 #include "constants.h"
+
+subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
+  implicit none
 
   integer, intent(in) :: blockID
   integer, intent(in) :: beginCount
@@ -71,16 +72,13 @@ implicit none
   return
 end subroutine Grid_getSingleCellVol
 
-subroutine Grid_getSingleCellVol_Itor(block, beginCount, point, cellvolume)
-  use block_metadata, ONLY : block_metadata_t
+subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
+  implicit none
 
-implicit none
-#include "constants.h"
-
-  type(block_metadata_t), intent(in) :: block
-  integer, intent(in) :: beginCount
+  type(block_metadata_t), intent(in) :: blockDesc
   integer, intent(in) :: point(MDIM)
   real, intent(out)   :: cellvolume
+  integer, intent(in),OPTIONAL :: indexing
 
   cellvolume = 0.0
   return

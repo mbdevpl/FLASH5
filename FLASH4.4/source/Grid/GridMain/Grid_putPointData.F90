@@ -58,7 +58,8 @@
 !!               guardcells) and wish to keep loop indicies  
 !!               going from 1 to NXB without having to worry about finding 
 !!               the correct offset for the number of guardcells.) 
-!!               (INTERIOR and EXTERIOR are defined in constants.h)
+!!               Can also be GLOBALIDX1 for global indexing, or DEFAULTIDX.
+!!               (INTERIOR, EXTERIOR, etc. are defined in constants.h)
 !!
 !!
 !!  position(MDIM):
@@ -209,6 +210,7 @@ subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount,
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr,gr_releaseInteriorBlkPtr
+  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -325,7 +327,7 @@ subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount,
      solnData(structIndex,i,j,k) = datablock
      call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct)
+     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        solnData(structIndex,i,j,k) = datablock
 !!$     else

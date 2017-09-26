@@ -214,6 +214,7 @@ MASTER_PE is the designated master processor in a run.
 #endif
 
 #define GLOBALIDX1 (-2)
+#define DEFAULTIDX 88
 
 #if 0
   This group refers to Grid data strucures, to store cell centered, face
