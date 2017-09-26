@@ -41,6 +41,7 @@
 subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use amrex_amrcore_module, ONLY : amrex_regrid
 
+  use Grid_interface,       ONLY : Grid_fillGuardCells
   use Grid_data,            ONLY : gr_nrefs, gr_maxRefine
   use Timers_interface,     ONLY : Timers_start, Timers_stop
  
@@ -58,6 +59,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      call Timers_start("Grid_updateRefinement")
 
      ! AMReX uses 0-based level index set
+     call Grid_fillGuardCells(CENTER, ALLDIR)
      call amrex_regrid(0, time)
  
      call Timers_stop("Grid_updateRefinement")

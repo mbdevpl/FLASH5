@@ -52,14 +52,16 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
 
   implicit none
 
-#include "constants.h"  
+#include "constants.h" 
 
   integer, intent(IN) :: iref
   type(block_metadata_t),intent(IN) :: blockDesc
   real, intent(IN) ::  refine_filter
   real,intent(INOUT) :: error
-  integer, parameter :: SQNDIM = NDIM*NDIM
   
+  integer, parameter :: SQNDIM = NDIM*NDIM
+  integer, parameter :: WITH_GC = .TRUE.
+
   real,dimension(MDIM) ::  del, del_f, delta
   integer,dimension(MDIM) :: ncell
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC,face,bdry
@@ -143,22 +145,18 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
              blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
              blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 
-        if (gr_geometry == SPHERICAL) then
-           allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-        end if
-#if N_DIM >= 2
-        if (gr_geometry == POLAR) then
-           allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-        end if
-#if N_DIM == 3
-        if (gr_geometry == SPHERICAL) then
-           allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-        end if
-#endif
+
+#ifdef FLASH_GRID_ANYAMREX
+        allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+        allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+
+        call Grid_getCellCoords(IAXIS, blockDesc, CENTER, WITH_GC, &
+                                xCenter, SIZE(xCenter))
+        call Grid_getCellCoords(JAXIS, blockDesc, CENTER, WITH_GC, &
+                                yCenter, SIZE(yCenter))
 #endif
 
         ! Compute first derivatives
-        
         do k = blkLimitsGC(LOW,KAXIS)+K3D*1,blkLimitsGC(HIGH,KAXIS)-K3D*1
            do j = blkLimitsGC(LOW,JAXIS)+K2D*1,blkLimitsGC(HIGH,JAXIS)-K2D*1
               do i = blkLimitsGC(LOW,IAXIS)+1,blkLimitsGC(HIGH,IAXIS)-1
@@ -372,19 +370,13 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
            ! store the maximum error for the current block
         error = sqrt(error)
 
-        if (gr_geometry == SPHERICAL) then
+        if (allocated(xCenter)) then
            deallocate(xCenter)
         end if
-#if N_DIM >= 2
-        if (gr_geometry == POLAR) then
-           deallocate(xCenter)
-        end if
-#if N_DIM == 3
-        if (gr_geometry == SPHERICAL) then
+        if (allocated(yCenter)) then
            deallocate(yCenter)
         end if
-#endif
-#endif
+
         deallocate(delu)
         deallocate(delua)
 

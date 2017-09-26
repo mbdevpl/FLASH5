@@ -44,12 +44,13 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
    write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                        "      Started on level ", lev + 1
-   
+ 
    tag = tags
 
    allocate(errors(gr_numRefineVars))
 
    !DEVNOTE:  Can test with tiling later - KW
+   ! unk used the same 0-based level indexing used here by AMReX
    call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
    do while(mfi%next())
       bx = mfi%tilebox()
@@ -72,6 +73,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
       blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
 
+      errors(:) = 0.0d0
       do l = 1, gr_numRefineVars
          iref = gr_refine_var(l)
          refineFilter = gr_refine_filter(l)
@@ -107,13 +109,13 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             ! we request derefinement.  TODO Figure out.
             if (errors(l) > gr_refine_cutoff(l)) then
                 ! Tag single cell in block that is not on boundary
-                i = INT(0.5d0 * (lo(IAXIS) + hi(IAXIS)))
-                j = INT(0.5d0 * (lo(JAXIS) + hi(JAXIS)))
-                k = INT(0.5d0 * (lo(KAXIS) + hi(KAXIS)))
+                i = INT(0.5d0 * DBLE(lo(IAXIS) + hi(IAXIS)))
+                j = INT(0.5d0 * DBLE(lo(JAXIS) + hi(JAXIS)))
+                k = INT(0.5d0 * DBLE(lo(KAXIS) + hi(KAXIS)))
 
                 ! NOTE: last dimension has range 1:1
                 tagData(i, j, k, 1) = tagval
-#ifdef DEBUG_TAGDATA
+                
                 write(*,'(A,A,I2)') "[gr_markRefineDerefineCallbback]", &
                                     "      Tag block for refinement at level", &
                                     (lev+1)
@@ -125,7 +127,6 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                           hi(IAXIS), hi(JAXIS), hi(KAXIS)
                 write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallbback]", &
                                           "      Tag cell ", i, j, k 
-#endif
                 EXIT rloop
             end if
         end do rloop

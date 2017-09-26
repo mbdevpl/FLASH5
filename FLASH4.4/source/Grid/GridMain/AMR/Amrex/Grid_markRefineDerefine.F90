@@ -41,6 +41,9 @@
 !!
 !!***
 
+#include "constants.h"
+#include "Flash.h"
+
 ! DEVNOTE: Put this in AMReX temporarily until we can determine how to match
 ! the AMReX amrcore refinement-by-callack coexist with the FLASH scheme.
 subroutine Grid_markRefineDerefine()
@@ -57,12 +60,10 @@ subroutine Grid_markRefineDerefine()
 
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Grid_interface, ONLY : Grid_fillGuardCells
+  use Driver_interface, ONLY : Driver_abortFlash
   use Particles_interface, only: Particles_sinkMarkRefineDerefine
+  
   implicit none
-
-#include "constants.h"
-#include "Flash.h"
-
   
   real :: ref_cut,deref_cut,ref_filter
   integer       :: l,i,iref
@@ -72,6 +73,8 @@ subroutine Grid_markRefineDerefine()
   integer,parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
   logical,dimension(maskSize) :: gcMask
   real, dimension(MAXBLOCKS) :: err
+
+  call Driver_abortFlash("[Grid_markRefineDerefine] Not implemented yet in AMReX")
 
 !  if(gr_lrefineMaxRedDoByTime) then
 !     call gr_markDerefineByTime()
