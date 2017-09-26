@@ -113,17 +113,17 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 ! NOTE: last dimension has range 1:1
                 tagData(i, j, k, 1) = tagval
                 
-                write(*,'(A,A,I2)') "[gr_markRefineDerefineCallbback]", &
+                write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                                     "      Tag block for refinement at level", &
                                     (lev+1)
-                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallbback]", &
-                                          "      lower: ", &
+                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallback]", &
+                                          "         lower: ", &
                                           lo(IAXIS), lo(JAXIS), lo(KAXIS)
-                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallbback]", &
-                                          "      upper: ", &
+                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallback]", &
+                                          "         upper: ", &
                                           hi(IAXIS), hi(JAXIS), hi(KAXIS)
-                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallbback]", &
-                                          "      Tag cell ", i, j, k 
+                write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallback]", &
+                                          "         Tag cell ", i, j, k 
                 EXIT rloop
             end if
         end do rloop

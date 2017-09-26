@@ -60,6 +60,8 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
      ! AMReX uses 0-based level index set
      call Grid_fillGuardCells(CENTER, ALLDIR)
+     write(*,'(A,I4,A,E9.3)') "[Grid_updateRefinement] AMReX Regridding @ step=", & 
+                              nstep, " / time = ", time
      call amrex_regrid(0, time)
  
      call Timers_stop("Grid_updateRefinement")

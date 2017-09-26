@@ -56,7 +56,8 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   use amrex_fort_module,    ONLY : wp => amrex_real
   use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
                                    amrex_max_level
-  
+
+  use Grid_interface,       ONLY : Grid_averageDownLevels
   use gr_physicalMultifabs, ONLY : unk, &
                                    facevarx, facevary, facevarz
 
@@ -84,6 +85,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   ! Setup grids and initialize the data
   call amrex_init_from_scratch(T_INIT)
 
-  ! DEV: Call gr_averageDownLevels as in Advection octree tutorial?
+  call Grid_averageDownLevels
 end subroutine Grid_initDomain
 
