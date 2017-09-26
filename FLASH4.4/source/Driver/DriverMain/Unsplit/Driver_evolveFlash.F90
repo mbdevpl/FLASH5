@@ -71,6 +71,10 @@ subroutine Driver_evolveFlash()
                                   Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+#ifdef FLASH_GRID_AMREX
+  ! DEV: Temporary ugliness for debugging
+  use amrex_interfaces,    ONLY : gr_writeData
+#endif
 
 #include "Flash.h"
 #ifdef FLASH_GRID_AMREXTRANSITION
@@ -311,6 +315,11 @@ subroutine Driver_evolveFlash()
         call IO_output(dr_simTime, &
              dr_dtSTS, dr_nstep+1, dr_nbegin, endRunPl, PLOTFILE_AND_PARTICLEFILE)
      endif
+
+#ifdef FLASH_GRID_AMREX
+     ! DEV: Temporary ugliness for debugging
+     call gr_writeData(dr_nstep, dr_simTime)
+#endif
      call Timers_stop("IO_output")
      
      

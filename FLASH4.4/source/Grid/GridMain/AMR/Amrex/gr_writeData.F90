@@ -1,3 +1,5 @@
+#include "Flash.h"
+
 subroutine gr_writeData(stepno, t_new)
     use amrex_fort_module,     ONLY : wp => amrex_real
     use amrex_amrcore_module,  ONLY : amrex_get_numlevels, &
@@ -19,8 +21,12 @@ subroutine gr_writeData(stepno, t_new)
     integer              :: nlevs
     character(len=127)   :: filename
     character(len=16)    :: current_step
-    type(amrex_string)   :: varname(4)
-    integer, allocatable :: stepno_arr(:)
+    character(4)         :: current_var
+
+    type(amrex_string), allocatable :: varname(:)
+    integer,            allocatable :: stepno_arr(:)
+
+    integer :: i 
 
     if      (stepno .lt. 1000000) then
        write(current_step,fmt='(i5.5)') stepno
@@ -37,10 +43,12 @@ subroutine gr_writeData(stepno, t_new)
 
     nlevs = amrex_get_numlevels()
 
-    call amrex_string_build(varname(1), "dens")
-    call amrex_string_build(varname(2), "ener")
-    call amrex_string_build(varname(3), "pres")
-    call amrex_string_build(varname(4), "temp")
+    allocate(varname(NPROP_VARS))
+
+    do i = 1, SIZE(varname)
+        write(current_var,'(I4.4)') i
+        call amrex_string_build(varname(i), "var"//TRIM(current_var))
+    end do
 
     allocate(stepno_arr(0:nlevs-1))
     stepno_arr = stepno
@@ -48,5 +56,7 @@ subroutine gr_writeData(stepno, t_new)
     call amrex_write_plotfile(filename, nlevs, unk, varname, amrex_geom, &
                               t_new, stepno_arr, amrex_ref_ratio)
 
+    deallocate(varname)
+    deallocate(stepno_arr)
 end subroutine gr_writeData
 
