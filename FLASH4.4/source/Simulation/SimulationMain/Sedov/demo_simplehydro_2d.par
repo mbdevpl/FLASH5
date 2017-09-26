@@ -35,15 +35,16 @@ zmax		= 1.
 #		Boundary conditions
 
 
-xl_boundary_type = "outflow"
-xr_boundary_type = "outflow"
+xl_boundary_type = "periodic"
+xr_boundary_type = "periodic"
 
-yl_boundary_type = "outflow"
-yr_boundary_type = "outflow"
+yl_boundary_type = "periodic"
+yr_boundary_type = "periodic"
 
-zl_boundary_type = "outflow"
-zr_boundary_type = "outflow"
+zl_boundary_type = "periodic"
+zr_boundary_type = "periodic"
 
+flux_correct = .FALSE.
 
 
 
@@ -118,13 +119,14 @@ LimitedSlopeBeta= 1.     # Slope parameter for the "limited" slope by Toro
 charLimiting	= .true. # Characteristic limiting vs. Primitive limiting
 
 use_avisc	= .true. # use artificial viscosity (originally for PPM)
-cvisc		= 0.1     # coefficient for artificial viscosity
+#cvisc		= 0.1     # coefficient for artificial viscosity
 use_flattening	= .false. # use flattening (dissipative) (originally for PPM)
 use_steepening	= .false. # use contact steepening (originally for PPM)
 use_upwindTVD	= .false. # use upwind biased TVD slope for PPM (need nguard=6)
 
 #	II. RIEMANN SOLVERS:
-RiemannSolver	= "Roe"       # Roe, HLL, HLLC, LLF, Marquina
+#	II. RIEMANN SOLVERS:
+RiemannSolver	= "HLL"       # Roe, HLL, HLLC, LLF, Marquina
 entropy         = .false.     # Entropy fix for the Roe solver
 
 #	III. STRONG SHOCK HANDELING SCHEME:
