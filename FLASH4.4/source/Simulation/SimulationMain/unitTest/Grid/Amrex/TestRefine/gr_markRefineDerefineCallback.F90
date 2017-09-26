@@ -48,7 +48,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
       ! DEVNOTE: Should we use gr_[ijk]guard here?
       blockDesc%level = lev + 1
-      blockDesc%grid_index = -1
+      blockDesc%grid_index = mfi%grid_index()
       blockDesc%limits(LOW,  :) = 1
       blockDesc%limits(HIGH, :) = 1
       blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
@@ -57,7 +57,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       blockDesc%limitsGC(HIGH, :) = 1
       blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
       blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
- 
+
       associate (lo => blockDesc%limits(LOW,  :), &
                  hi => blockDesc%limits(HIGH, :), &
                  loGC => blockDesc%limitsGC(LOW,  :), &

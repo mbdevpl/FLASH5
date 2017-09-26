@@ -40,7 +40,8 @@ subroutine Driver_evolveFlash()
                                       amrex_mfiter_build, &
                                       amrex_mfiter_destroy
     
-    use Grid_interface,        ONLY : Grid_fillGuardCells
+    use Grid_interface,        ONLY : Grid_fillGuardCells, &
+                                      Grid_getBlkPtr, Grid_releaseBlkPtr
     use amrex_interfaces,      ONLY : gr_getFinestLevel
     use gr_physicalMultifabs,  ONLY : unk
     use block_metadata,        ONLY : block_metadata_t
@@ -105,8 +106,7 @@ subroutine Driver_evolveFlash()
             ! Level must be 1-based index and limits/limitsGC must be 1-based also
             ! DEVNOTE: Should we use gr_[ijk]guard here?
             blockDesc%level = lev
-            ! DEVNOTE: TODO Get grid_index from mfi
-            blockDesc%grid_index = -1
+            blockDesc%grid_index = mfi%grid_index()
             blockDesc%limits(LOW,  :) = 1
             blockDesc%limits(HIGH, :) = 1
             blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
@@ -116,13 +116,12 @@ subroutine Driver_evolveFlash()
             blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
             blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
 
+            call Grid_getBlkPtr(blockDesc, initData)
+            
             associate(lo   => blockDesc%limits(LOW,  :), &
                       hi   => blockDesc%limits(HIGH, :), &
                       loGC => blockDesc%limitsGC(LOW, :), &
                       hiGC => blockDesc%limitsGC(HIGH, :))
-                ! DEVNOT: TODO Use Grid_getBlkPtr once we have correct grid_index
-                initData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev-1)%dataptr(mfi)
-
                 do     k = loGC(KAXIS), hiGC(KAXIS)
                   do   j = loGC(JAXIS), hiGC(JAXIS)
                     do i = loGC(IAXIS), hiGC(IAXIS)
@@ -144,6 +143,8 @@ subroutine Driver_evolveFlash()
                   end do
                 end do
             end associate
+            
+            call Grid_releaseBlkPtr(blockDesc, initData)
         end do
     end do
 
@@ -162,8 +163,7 @@ subroutine Driver_evolveFlash()
             ! Level must be 1-based index and limits/limitsGC must be 1-based also
             ! DEVNOTE: Should we use gr_[ijk]guard here?
             blockDesc%level = lev
-            ! DEVNOTE: TODO Get grid_index from mfi
-            blockDesc%grid_index = -1
+            blockDesc%grid_index = mfi%grid_index()
             blockDesc%limits(LOW,  :) = 1
             blockDesc%limits(HIGH, :) = 1
             blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1

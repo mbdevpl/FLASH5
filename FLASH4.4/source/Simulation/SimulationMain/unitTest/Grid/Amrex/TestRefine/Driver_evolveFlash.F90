@@ -210,7 +210,7 @@ subroutine Driver_evolveFlash()
             ! Level must be 1-based index and limits/limitsGC must be 1-based also
             ! DEVNOTE: Should we use gr_[ijk]guard here?
             blockDesc%level = lev
-            blockDesc%grid_index = -1
+            blockDesc%grid_index = mfi%grid_index()
             blockDesc%limits(LOW,  :) = 1
             blockDesc%limits(HIGH, :) = 1
             blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
@@ -220,12 +220,12 @@ subroutine Driver_evolveFlash()
             blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
             blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
 
+            call Grid_getBlkPtr(blockDesc, solnData)
+            
             associate (lo => blockDesc%limits(LOW,  :), &
                        hi => blockDesc%limits(HIGH, :), &
                      loGC => blockDesc%limitsGC(LOW,  :), &
                      hiGC => blockDesc%limitsGC(HIGH, :))
-                ! Makes this 1-based cell indexing
-                solnData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev-1)%dataptr(mfi)
 
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)
@@ -263,10 +263,9 @@ subroutine Driver_evolveFlash()
                         end if
                     end do
                 end do
-
-                nullify(solnData)
             end associate
-
+            
+            call Grid_releaseBlkPtr(blockDesc, solnData)
         end do
         call amrex_mfiter_destroy(mfi)
     end do

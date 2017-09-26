@@ -31,9 +31,6 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
    integer :: off(1:MDIM)
 
-   integer :: refine_to
-   integer :: i, j
-
    write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                        "      Started on level ", lev + 1
    
@@ -67,13 +64,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
         off(1:NDIM) = lo(1:NDIM) - 1
         tagData(off(1):, off(2):, off(3):, 1:) => tag%dataptr(mfi)
 
-        ! Force refinement so that one corner is refined more than others
         tagData(:, :, :, :) = clearval
-        if (      (lev < 2) &
-            .AND. (lo(IAXIS) <= 2) .AND. (2 <= hi(IAXIS)) &
-            .AND. (lo(JAXIS) <= 2) .AND. (2 <= hi(JAXIS))) then
-            tagData(2, 2, 1, 1) = tagval
-        end if
       end associate
    end do
    call amrex_mfiter_destroy(mfi)

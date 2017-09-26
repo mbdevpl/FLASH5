@@ -14,6 +14,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                       gr_refine_cutoff, gr_derefine_cutoff, &
                                       gr_refine_filter, gr_refine_var, &
                                       gr_maxRefine, gr_enforceMaxRefinement
+   use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
    use gr_interface,           ONLY : gr_estimateBlkError
    use gr_physicalMultifabs,   ONLY : unk
    use block_metadata,         ONLY : block_metadata_t
@@ -59,11 +60,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
       ! DEVNOTE: Should we use gr_[ijk]guard here?
       blockDesc%level = lev + 1
-      ! DEVNOTE: We can use this in AMREX or AMREXTRANSITION mode
-      ! DEVNOTE: FIXME This is not in the master AMReX branch yet.  The value is
-      ! important here.
-!      blockDesc%grid_index = mfi%grid_index()
-      blockDesc%grid_index = -1
+      blockDesc%grid_index = mfi%grid_index()
       blockDesc%limits(LOW,  :) = 1
       blockDesc%limits(HIGH, :) = 1
       blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
@@ -80,12 +77,12 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
          call gr_estimateBlkError(errors(l), blockDesc, iref, refineFilter)
       end do
 
+      call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
       associate (lo   => blockDesc%limits(LOW,  :), &
                  hi   => blockDesc%limits(HIGH, :), &
                  loGC => blockDesc%limitsGC(LOW,  :), &
                  hiGC => blockDesc%limitsGC(HIGH, :))
-        ! Makes this 1-based cell indexing
-        solnData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev)%dataptr(mfi)
 
         ! tagData is one cell larger on all borders than interior and 0-based
         ! Shift to 1-based here
@@ -131,6 +128,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             end if
         end do rloop
       end associate
+
+      call Grid_releaseBlkPtr(blockDesc, solnData)
    end do
    call amrex_mfiter_destroy(mfi)
 
