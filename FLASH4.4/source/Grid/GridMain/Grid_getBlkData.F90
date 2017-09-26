@@ -80,7 +80,8 @@
 !!               guardcells) and wish to keep loop indicies  
 !!               going from 1 to NXB without having to worry about finding 
 !!               the correct offset for the number of guardcells.) 
-!!               (INTERIOR and EXTERIOR are defined in constants.h)
+!!               Can also be GLOBALIDX1 for global indexing, or DEFAULTIDX.
+!!               (INTERIOR, EXTERIOR, etc. are defined in constants.h)
 !!
 !!
 !!  startingPos(MDIM):
@@ -262,6 +263,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -284,6 +286,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   
 #ifdef DEBUG_GRID
 
+  ! DEVNOTE : ALL THIS TESTING NEEDS TO BE UPDATED
   isget = .true.
   call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
 
@@ -390,7 +393,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
      if(NDIM > 1) then
         if ((startingPos(JAXIS) + dataSize(2) -1) > jmax) then
            print *, "Error: Grid_getBlkData"
-           call Driver_abortFlash("Grid_getBlkData indicies too large")
+           call Driver_abortFlash("Grid_getBlkData indices too large")
         end if
      end if
 
@@ -453,19 +456,18 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   xe = xb + dataSize(IAXIS) -1
 
   if(gridDataStruct == CELL_VOLUME) then
-     call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,datablock)
+     call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,datablock,beginCount)
 #ifdef DEBUG_GRID
      print*,'the volume calculated is',maxval(datablock)
 #endif
   elseif (gridDataStruct == CELL_FACEAREA) then
-     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,dataBlock)
-  elseif(getIntPtr) then
+     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,dataBlock,beginCount)
+  elseif(getIntPtr) then        !DEVNOTE: This case should never happen, unless NO_PERMANENT_GUARDCELLS
      call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
      call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
   else
-     
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        datablock(:,:,:)=solnData(xb:xe,yb:ye,zb:ze,structIndex)

@@ -184,13 +184,9 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   logical, save :: hy_useBiermann = .false.
 #endif
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_IHI_GC) :: xCenter, xLeft, xRight
-  real, dimension(GRID_JHI_GC) :: yCenter
-#else
-  real, dimension(datasize(IAXIS)) :: xCenter, xLeft, xRight
-  real, dimension(datasize(JAXIS)) :: yCenter
-#endif
+  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)) :: xCenter, xLeft, xRight
+  real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)) :: yCenter
+
   real :: dPdr, rvol, alpha
   real, allocatable :: xcent(:), ycent(:), zcent(:)
   real :: speed, dy, dz
@@ -216,7 +212,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
 #endif
 
 
-  call Grid_getBlkPtr(block,U,CENTER,localFlag=.TRUE.)
+  call Grid_getBlkPtr(block,U,CENTER,localFlag=.fALSE.)
 
   i0   = blkLimits(LOW, IAXIS)
   imax = blkLimits(HIGH,IAXIS)
@@ -294,10 +290,14 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   endif
 
   if (hy_geometry /= CARTESIAN) then
-     call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
-     call Grid_getCellCoords(JAXIS,block, CENTER,    .true.,yCenter, dataSize(JAXIS))
-     call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-     call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+!!$     call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
+!!$     call Grid_getCellCoords(JAXIS,block, CENTER,    .true.,yCenter, dataSize(JAXIS))
+!!$     call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
+!!$     call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+     call block%getCellCoords(xCenter, IAXIS, CENTER    , INTERIOR)
+     call block%getCellCoords(yCenter, JAXIS, CENTER    , INTERIOR)
+     call block%getCellCoords(xLeft  , IAXIS, LEFT_EDGE , INTERIOR)
+     call block%getCellCoords(xRight , IAXIS, RIGHT_EDGE, INTERIOR)
   endif
 
   !! Compute intercell fluxes using the updated left & right states

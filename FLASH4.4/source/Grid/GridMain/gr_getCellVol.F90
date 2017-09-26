@@ -12,7 +12,8 @@
 !!                integer(IN) :: zb,
 !!                integer(IN) :: ze,
 !!                integer(IN) :: blockID,
-!!                real(xb:xe,yb:ye,zb:ze) (OUT) :: dataBlock)
+!!                real(xb:xe,yb:ye,zb:ze) (OUT) :: dataBlock,
+!!                integer (IN) :: indexing)
 !!  
 !! DESCRIPTION 
 !!  
@@ -29,11 +30,12 @@
 !!  ze        : last cell along KAXIS
 !!  blockID   : my block number
 !!  dataBlock : storage for returning calculated values
-!!
+!!  indexing  : indexing convention used for the first six arguments;
+!!              should be GLOBALIDX1 or EXTERIOR
 !!
 !!***
 
-subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock)
+subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock,indexing)
 
   use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellVol, &
                              Grid_getGeometry
@@ -46,11 +48,13 @@ subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock)
   type(block_metadata_t),intent(IN) :: block
   integer,intent(IN) :: xb,xe,yb,ye,zb,ze
   real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
+  integer,intent(IN) :: indexing
  
   integer :: geometry
   integer,dimension(MDIM) :: point
   real,dimension(MDIM) :: del
   integer :: i, j, k
+  integer :: beginCount
 
 #ifdef DEBUG_GRID
   print*,xb,xe,yb,ye,zb,ze
@@ -72,8 +76,7 @@ subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock)
            point(JAXIS) = j
            do i=xb,xe
               point(IAXIS) = i
-              call Grid_getSingleCellVol(block, EXTERIOR, point, &
-                   dataBlock(i,j,k))
+              call Grid_getSingleCellVol(block, point, dataBlock(i,j,k), indexing)
            end do
         end do
      end do
