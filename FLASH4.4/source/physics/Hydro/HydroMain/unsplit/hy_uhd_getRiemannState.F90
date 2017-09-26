@@ -799,8 +799,8 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                      Wn(HY_PRES,DIR_X) < 0. .or. Wp(HY_PRES,DIR_X) < 0.) then
                     if(.NOT.TransX_updateOnly) then
                        print*,'[gRSt] afterGeo fallback to order 1 for DIR_X at i,j=',i,j,&
-                            ' in Block''@',hy_meshMe
-                       print*,'[dR1St] afterGeo',Wn(HY_DENS,DIR_X),Wp(HY_DENS,DIR_X), &
+                            ' in Block @',hy_meshMe
+                       print*,'[gRSt] afterGeo',Wn(HY_DENS,DIR_X),Wp(HY_DENS,DIR_X), &
                             Wn(HY_PRES,DIR_X), Wp(HY_PRES,DIR_X)
                          call fallbackToFirstOrder(DIR_X,Wn(:,DIR_X),Wp(:,DIR_X),Vc,hy_SpcL,hy_SpcR,U,i,j,k)
                     end if
@@ -810,8 +810,8 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                      Wn(HY_PRES,DIR_Y) < 0. .or. Wp(HY_PRES,DIR_Y) < 0.) then
                     if(.NOT.TransY_updateOnly) then
                        print*,'[gRSt] afterGeo fallback to order 1 for DIR_Y at i,j=',i,j,&
-                            ' in Block','@',hy_meshMe
-                       print*,'[dR1St] afterGeo',Wn(HY_DENS,DIR_Y),Wp(HY_DENS,DIR_Y), &
+                            ' in Block @',hy_meshMe
+                       print*,'[gRSt] afterGeo',Wn(HY_DENS,DIR_Y),Wp(HY_DENS,DIR_Y), &
                             Wn(HY_PRES,DIR_Y), Wp(HY_PRES,DIR_Y)
                          call fallbackToFirstOrder(DIR_Y,Wn(:,DIR_Y),Wp(:,DIR_Y),Vc,hy_SpcL,hy_SpcR,U,i,j,k)
                     end if

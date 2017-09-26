@@ -290,14 +290,17 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   endif
 
   if (hy_geometry /= CARTESIAN) then
-!!$     call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
-!!$     call Grid_getCellCoords(JAXIS,block, CENTER,    .true.,yCenter, dataSize(JAXIS))
-!!$     call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-!!$     call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
-     call block%getCellCoords(xCenter, IAXIS, CENTER    , INTERIOR)
-     call block%getCellCoords(yCenter, JAXIS, CENTER    , INTERIOR)
-     call block%getCellCoords(xLeft  , IAXIS, LEFT_EDGE , INTERIOR)
-     call block%getCellCoords(xRight , IAXIS, RIGHT_EDGE, INTERIOR)
+     call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
+     call Grid_getCellCoords(JAXIS,block, CENTER,    .true.,yCenter, dataSize(JAXIS))
+     call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
+     call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+!!$     call block%getCellCoords(xCenter, IAXIS, CENTER    , INTERIOR)
+!!$     print*,'Here it comes:',xCenter,lbound(xcenter),ubound(xcenter),size(xcenter)
+!!$     print*,xCenter
+!!$     stop
+!!$     call block%getCellCoords(yCenter, JAXIS, CENTER    , INTERIOR)
+!!$     call block%getCellCoords(xLeft  , IAXIS, LEFT_EDGE , INTERIOR)
+!!$     call block%getCellCoords(xRight , IAXIS, RIGHT_EDGE, INTERIOR)
   endif
 
   !! Compute intercell fluxes using the updated left & right states
@@ -1190,10 +1193,13 @@ contains
 
     ! Note: We only allocate these arrays here, which is fine because
     !       the code is to be aborted immediately once this routine is called.
-    allocate(xcent(blkLimitsGC(HIGH, IAXIS)))
-    allocate(ycent(blkLimitsGC(HIGH, JAXIS)))
-    allocate(zcent(blkLimitsGC(HIGH, KAXIS)))
+    allocate(xcent(blkLimitsGC(LOW, IAXIS):blkLimitsGC(LOW, IAXIS)))
+    allocate(ycent(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
+    allocate(zcent(blkLimitsGC(HIGH, KAXIS):blkLimitsGC(HIGH, KAXIS)))
 
+!!$    call block%getCellCoords(xcent, IAXIS, CENTER    , INTERIOR)
+!!$    call block%getCellCoords(ycent, JAXIS, CENTER    , INTERIOR)
+!!$    call block%getCellCoords(zcent, KAXIS, CENTER    , INTERIOR)
     call Grid_getCellCoords(IAXIS, block, CENTER, .true., xcent, blkLimitsGC(HIGH, IAXIS)) 
     call Grid_getCellCoords(JAXIS, block, CENTER, .true., ycent, blkLimitsGC(HIGH, JAXIS))
     call Grid_getCellCoords(KAXIS, block, CENTER, .true., zcent, blkLimitsGC(HIGH, KAXIS))
