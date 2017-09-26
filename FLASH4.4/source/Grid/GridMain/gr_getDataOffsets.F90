@@ -44,7 +44,8 @@
 !!               guardcell indices are not included and index 1 is the first interior cell. 
 !!               If EXTERIOR is specified
 !!               the first index, 1, is the left most guardcell.  See examples
-!!               in get/put data routines for more details
+!!               in get/put data routines for more details.
+!!               if GLOBALIDX1 is specified... !DEV : incomplete
 !!
 !! begOffset - the calculated offset values
 !!
@@ -101,7 +102,7 @@ subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,
 #endif
   !! If operating with permanent guardcells, then the interior implies offset by gcell
   if(beginCount == INTERIOR) then
-     blkLimits = block%limits
+     blkLimits = block%localLimits
      begOffset(1:NDIM) = blkLimits(LOW,1:NDIM)-1
   end if
   

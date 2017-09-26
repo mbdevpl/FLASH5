@@ -262,6 +262,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+  use gr_interface, ONLY : gr_getCellFaceArea
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -458,7 +459,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
      print*,'the volume calculated is',maxval(datablock)
 #endif
   elseif (gridDataStruct == CELL_FACEAREA) then
-     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,dataBlock)
+     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,dataBlock,beginCount)
   elseif(getIntPtr) then
      call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
