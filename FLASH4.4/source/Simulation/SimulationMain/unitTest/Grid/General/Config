@@ -1,3 +1,5 @@
 REQUIRES Grid/GridMain
 REQUIRES Grid/unitTest
 
+FACEVAR area 
+
