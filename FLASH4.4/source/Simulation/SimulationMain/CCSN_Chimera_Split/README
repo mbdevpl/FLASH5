@@ -1,0 +1,2 @@
+Setup syntax for 2D Chimera Model:
+./setup CCSN_Chimera_Split -auto -portable -2d +cylindrical -nxb=16 -nyb=16 -objdir ccsn2dCylChimSplit threadBlockList=False +pm4dev threadWithinBlock=False +splitHydro
