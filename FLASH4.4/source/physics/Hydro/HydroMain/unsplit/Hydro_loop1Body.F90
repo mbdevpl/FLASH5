@@ -306,7 +306,7 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 !!$     call hy_memReleaseBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR)
 
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
-!!!!!!#ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
+#ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
         !! Correct energy if necessary
      call hy_uhd_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
      
@@ -331,7 +331,7 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 #endif
      call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
      !#endif
-!!!!!!#endif /* ifndef GRAVITY */  
+#endif /* ifndef GRAVITY */
      
 !!$     if (blockMustStoreFluxes(blockID)) then
         !! if Flux correction is used.

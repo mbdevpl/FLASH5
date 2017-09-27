@@ -10,7 +10,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
-  use Hydro_interface,     ONLY : Hydro_doLoop0, Hydro_doLoop1, Hydro_doLoop4
+  use Hydro_interface,     ONLY : Hydro_doLoop0, Hydro_doLoop1, Hydro_doLoop4, Hydro_doLoop5
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
                          hy_useGravity,       &
@@ -157,6 +157,25 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
 
   call Hydro_freeBuffers()
+
+
+
+#ifdef GRAVITY /* Perform this only when gravity is used */
+  !! ***************************************************************************
+  !! Fourth part of advancement to compute gravity at n+1 state                *
+  !! ***************************************************************************
+
+#ifdef GPOT_VAR
+  if (hy_useGravity) then
+     ! The following call invokes Gravity_potentialListOfBlocks and related stuff,
+     ! to prepare for retrieving updated accelerations below.
+     call hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
+  endif
+#endif
+
+  call Hydro_doLoop5(simTime, dt, dtOld)
+
+#endif /* End of n+1 gravity coupling */
 
 
 
