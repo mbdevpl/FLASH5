@@ -43,8 +43,10 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    integer :: iref
    integer :: i, j, k, l
 
+#ifdef GRID_DEBUG
    write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                        "      Started on level ", lev + 1
+#endif
  
    tag = tags
 
@@ -112,7 +114,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
                 ! NOTE: last dimension has range 1:1
                 tagData(i, j, k, 1) = tagval
-                
+
+#ifdef GRID_DEBUG
                 write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                                     "      Tag block for refinement at level", &
                                     (lev+1)
@@ -124,6 +127,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                           hi(IAXIS), hi(JAXIS), hi(KAXIS)
                 write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallback]", &
                                           "         Tag cell ", i, j, k 
+#endif
+                
                 EXIT rloop
             end if
         end do rloop
@@ -135,7 +140,10 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
    deallocate(errors)
 
+#ifdef GRID_DEBUG
    write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                        "      Finished on level ", lev + 1
+#endif
+
 end subroutine gr_markRefineDerefineCallback
 

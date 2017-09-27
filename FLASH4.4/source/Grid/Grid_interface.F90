@@ -411,22 +411,24 @@ Module Grid_interface
   end interface
 
   interface Grid_getPointData
-     subroutine Grid_getPointData(blockID, gridDataStruct, variable, beginCount, &
+     subroutine Grid_getPointData(block, gridDataStruct, variable, beginCount, &
           position, datablock)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
-       integer, intent(in) :: blockID
+       type(block_metadata_t), intent(in) :: block
        integer, intent(in) :: variable, beginCount, gridDataStruct
        integer, dimension(MDIM), intent(in) :: position
        real, intent(out) :: datablock
      end subroutine Grid_getPointData
-     subroutine Grid_getPointData_desc(blockDesc, gridDataStruct, variable, beginCount, &
-          position, datablock)
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: blockDesc
-       integer, intent(in) :: variable, beginCount, gridDataStruct
-       integer, dimension(MDIM), intent(in) :: position
-       real, intent(out) :: datablock
-     end subroutine Grid_getPointData_desc
+
+!!$     subroutine Grid_getPointData_desc(blockDesc, gridDataStruct, variable, beginCount, &
+!!$          position, datablock)
+!!$       use block_metadata, ONLY : block_metadata_t
+!!$       type(block_metadata_t), intent(in) :: blockDesc
+!!$       integer, intent(in) :: variable, beginCount, gridDataStruct
+!!$       integer, dimension(MDIM), intent(in) :: position
+!!$       real, intent(out) :: datablock
+!!$     end subroutine Grid_getPointData_desc
   end interface
 
   interface Grid_getRowData

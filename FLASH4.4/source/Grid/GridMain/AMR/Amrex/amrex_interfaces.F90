@@ -90,5 +90,13 @@ module amrex_interfaces
          end subroutine gr_getFinestLevel
       end interface
 
+      interface
+         subroutine gr_writeData(stepno, t_new)
+            implicit none
+            integer, intent(IN) :: stepno
+            real,    intent(IN) :: t_new
+         end subroutine gr_writeData
+      end interface
+
 end module amrex_interfaces
 

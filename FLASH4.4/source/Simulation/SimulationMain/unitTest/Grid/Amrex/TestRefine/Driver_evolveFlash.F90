@@ -49,6 +49,7 @@ subroutine Driver_evolveFlash()
     use sim_interface,         ONLY : sim_advance
     use block_metadata,        ONLY : block_metadata_t
     use gr_physicalMultifabs,  ONLY : unk
+    use amrex_interfaces,      ONLY : gr_writeData
 
     implicit none
 
@@ -128,6 +129,8 @@ subroutine Driver_evolveFlash()
     !!!!! CONFIRM INITIAL REFINEMENT
     ! Started with 2x2 block structure and refined according to initial data
     ! using unittests own gr_markRefineDerefine callback with AMReX
+    call gr_writeData(0, 0.0d0)
+    
     call gr_getFinestLevel(finest_level)
     call assertEqual(3, finest_level, "Incorrect finest level after init")
 
@@ -138,6 +141,8 @@ subroutine Driver_evolveFlash()
                      "SETTING ALL DATA TO ZERO AT ALL LEVELS", &
                      "LEAVES AFTER ZEROING ALL DATA & REGRID", &
                      block_count)
+    call gr_writeData(2, 2.0d0)
+    
     call gr_getFinestLevel(finest_level)
     call assertEqual(1, finest_level, "Incorrect finest level")
     
@@ -156,6 +161,8 @@ subroutine Driver_evolveFlash()
                      "SETTING CORNER CELL ONLY FOR LEVEL 2", &
                      "LEAVES AFTER DATA AT CORNER CELL", &
                      block_count)
+    call gr_writeData(4, 4.0d0)
+    
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
 
@@ -174,6 +181,8 @@ subroutine Driver_evolveFlash()
                      "SETTING SINGLE CELL ONLY FOR LEVEL 2", &
                      "LEAVES AFTER LEVEL 2 DATA AT SINGLE CELL", &
                      block_count)
+    call gr_writeData(6, 6.0d0)
+    
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
 
@@ -190,6 +199,8 @@ subroutine Driver_evolveFlash()
                      "SETTING SINGLE CELL ONLY FOR LEVEL 4", &
                      "LEAVES AFTER ONLY GETTING TO L3 AT SINGLE CELL", &
                      block_count)
+    call gr_writeData(8, 8.0d0)
+    
     call gr_getFinestLevel(finest_level)
     call assertEqual(3, finest_level, "Incorrect finest level")
 
@@ -275,6 +286,8 @@ subroutine Driver_evolveFlash()
                      "NO DATA CHANGE - LET IT REFINE TO LEVEL 4", &
                      "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL", &
                      block_count)
+    call gr_writeData(10, 10.0d0)
+    
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
@@ -289,6 +302,8 @@ subroutine Driver_evolveFlash()
                      "NO DATA CHANGE -  STUCK AT REFINEMENT LEVEL 4", &
                      "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL", &
                      block_count)
+    call gr_writeData(12, 12.0d0)
+    
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
@@ -308,6 +323,8 @@ subroutine Driver_evolveFlash()
                      "SETTING SECOND LEVEL 4 CELL", &
                      "LEAVES AFTER SECOND LEVEL 4 DATA", &
                      block_count)
+    call gr_writeData(14, 14.0d0)
+    
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
@@ -315,6 +332,8 @@ subroutine Driver_evolveFlash()
                      "SETTING SECOND LEVEL 4 CELL", &
                      "LEAVES AFTER SECOND LEVEL 4 DATA", &
                      block_count)
+    call gr_writeData(16, 16.0d0)
+    
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 

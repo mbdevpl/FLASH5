@@ -70,7 +70,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
   logical, parameter :: gCell = .true.
 
   if (beginCount .NE. GLOBALIDX1 .AND. beginCount .NE. DEFAULTIDX) then
-     call Driver_abourtFlash("gr_getCellFaceArea: invalid beginCount: only global indexing is supported in Amrex mode")
+     call Driver_abortFlash("gr_getCellFaceArea: invalid beginCount: only global indexing is supported in Amrex mode")
   end if
 
   call Grid_getGeometry(geometry)

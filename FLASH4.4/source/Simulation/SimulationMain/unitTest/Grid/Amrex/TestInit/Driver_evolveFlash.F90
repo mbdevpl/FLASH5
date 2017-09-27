@@ -60,6 +60,8 @@ subroutine Driver_evolveFlash()
                                       gr_eosModeInit
     use block_iterator,        ONLY : block_iterator_t
     use block_metadata,        ONLY : block_metadata_t, bmd_print
+    ! DEV: FIXME This is a temporary routine
+    use amrex_interfaces,      ONLY : gr_writeData
 
     implicit none
 
@@ -545,6 +547,9 @@ subroutine Driver_evolveFlash()
                      "Incorrect eosMode")
     call assertEqual(gr_eosModeInit, MODE_DENS_TEMP, &
                      "Incorrect eosModeInit")
+
+    !!!!! WRITE OUT DATA
+    call gr_writeData(1, 1.0d0)
 
     !!!!! OUTPUT RESULTS
     ! DEVNOTE: reduction to collect number of fails?

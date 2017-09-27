@@ -13,7 +13,7 @@ checkpointFileIntervalStep     = 0
 checkpointFileIntervalTime     = 0.01 
 plotFileIntervalStep           = 0
 plotFileIntervalTime           = 0.0
-# wall_clock_checkpoint          = 7200.
+# wall_clock_checkpoint          = 43200.
 wall_clock_time_limit          = 7200.
 
 # Time 
@@ -68,54 +68,29 @@ refine_cutoff_4		       = 0.8
 # Simulation
 progenitor_model_file = "d96InitModel.txt"
 chimera_model_file = "chimera_03670_grid_1_01.h5"
-r_inner = 5.e7 #also used as PNS cutout boundary with rigid body
+r_inner = 5.e7 
 rho_inner = 1.e11
 max_r = 2.e9
 
 # Hydro
 useHydro                       = .TRUE.
 cfl                            = 0.5
-interpol_order                 = 1
-updateHydroFluxes              = .TRUE.
-eintSwitch		       = 0.0 # Always use Etot
+updateHydroFluxes              = .true.
+eintSwitch                     = 0.0 # Always use Etot
 convertToConsvdForMeshCalls   = .false.
-converttoconsvdinmeshinterp   = .false.
 
-##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
+##  SWITCHES FR SPLIT HYDRO SOLVER               ##
 #       I. INTERPOLATION SCHEME:
-order           = 3      # Interpolation order (first/second/third/fifth order)
-slopeLimiter    = "hybrid"   # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
-LimitedSlopeBeta= 1.     # Slope parameter for the "limited" slope by Toro
 charLimiting    = .true. # Characteristic limiting vs.Primitive limiting
 
-use_avisc       = .true. # use artificial viscosity (originally for PPM)
 cvisc           = 0.1    # coefficient for artificial viscosity
-use_flattening  = .true. # use flattening (dissipative) (originally for PPM)
 use_steepening  = .false. # use contact steepening (originally for PPM)
-use_upwindTVD   = .false. # use upwind biased TVD slope for PPM (need nguard=6)
 flux_correct    = .true.
-EOSforRiemann   = .false.
-transOrder      = 1
-use_auxEintEqn  = .TRUE.
-hydroComputeDtOption = -1
 
-#       II. RIEMANN SOLVERS: 
-RiemannSolver   = "hybrid"       # Roe, HLL, HLLC, LLF, Marquina
-entropy         = .false.     # Entropy fix for the Roe solver
-
-#       III. STRONG SHOCK HANDELING SCHEME:
-shockDetect     = .true.     # Shock Detect for numerical stability
-## -------------------------------------------------------------##
 
 # Gravity
-useGravity                     = .true. 
-grav_boundary_type             = "isolated"
-use_gravHalfUpdate             = .TRUE. 
+useGravity                     = .false. 
 
-ptmass = 0.0 #The amount of mass added to the point mass calculated in Simulation_init
-ptxpos = 0.0
-ptypos = 0.0
-ptzpos = 0.0
 
 
 #EOS
@@ -147,3 +122,5 @@ nuclearTempMin                 = 1.0e6 #was 1.1e8
 
 use_cma_advection              = .true.
 
+hy_fluxrepresentation          = "hybrid"
+hybrid_riemann                 = .true.
