@@ -141,20 +141,6 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   real, dimension(HY_VARINUMMAX) :: VL,VR 
   real, dimension(NSPECIES)    :: speciesArr
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC, &
-                  GRID_JLO_GC:GRID_JHI_GC, &
-                  GRID_KLO_GC:GRID_KHI_GC) &
-                  :: viscDynamic,cond
-
-#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC, &
-                  GRID_JLO_GC:GRID_JHI_GC, &
-                  GRID_KLO_GC:GRID_KHI_GC) &
-                  :: magResist
-#endif
-
-#else
   real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
                   blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
                   blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) &
@@ -167,7 +153,6 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                   :: magResist
 #endif
 
-#endif
   real    :: viscKinematicUnused,dcffUnused
   real    :: cvisc
   integer :: k2,k3,kGrav,kUSM
@@ -392,6 +377,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                     if(ierr /= 0) call do_error("hy_uhd_HLLD", VL, VR, i,j,k, DIR_X)
 #endif
                  endif
+!!$                 print*,'After R-solve:',i,j,k,xflux(:,i,j,k)
 #endif
               endif
 

@@ -34,7 +34,7 @@
 !!
 !!*** 
 
-Subroutine hy_uhd_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
+Subroutine hy_uhd_putGravityUnsplit(blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
 
   use Gravity_interface, ONLY : Gravity_accelOneRow
 
@@ -49,13 +49,13 @@ Subroutine hy_uhd_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,
 
   !! ---- Argument List ----------------------------------
   type(block_metadata_t), intent(IN)   :: blockDesc
-  integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blGC
+  real,dimension(:,:,:,:),pointer :: Uin
   integer, dimension(MDIM), intent(IN) :: dataSize
   real,    intent(IN) :: dt, dtOld
-  real,dimension(:,:,:,:),pointer :: Uin
 
-  real, dimension(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)), intent(OUT) :: &
-       gravX,gravY,gravZ
+  real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS)), &
+       intent(OUT) :: gravX,gravY,gravZ
 
   integer, intent(IN), OPTIONAL :: potentialIndex
   logical, intent(IN), OPTIONAL :: lastCall
@@ -72,8 +72,8 @@ Subroutine hy_uhd_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,
      tailCall = .FALSE.
   end if
 
-  do iz=blkLimitsGC(LOW,KAXIS),blkLimitsGC(HIGH,KAXIS)
-     do iy=blkLimitsGC(LOW,JAXIS),blkLimitsGC(HIGH,JAXIS)
+  do iz=blGC(LOW,KAXIS),blGC(HIGH,KAXIS)
+     do iy=blGC(LOW,JAXIS),blGC(HIGH,JAXIS)
         gravPos(1)=iy
         gravPos(2)=iz
         if (tailCall .AND. hy_gpotVar > 0) then
@@ -107,8 +107,8 @@ Subroutine hy_uhd_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,
 
 
   if (NDIM >= 2) then
-     do iz=blkLimitsGC(LOW,KAXIS),blkLimitsGC(HIGH,KAXIS)
-        do ix=blkLimitsGC(LOW,IAXIS),blkLimitsGC(HIGH,IAXIS)
+     do iz=blGC(LOW,KAXIS),blGC(HIGH,KAXIS)
+        do ix=blGC(LOW,IAXIS),blGC(HIGH,IAXIS)
            gravPos(1)=ix
            gravPos(2)=iz
            if (tailCall .AND. hy_gpotVar > 0) then
@@ -138,8 +138,8 @@ Subroutine hy_uhd_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,
 
 
      if (NDIM == 3) then
-        do iy=blkLimitsGC(LOW,JAXIS),blkLimitsGC(HIGH,JAXIS)
-           do ix=blkLimitsGC(LOW,IAXIS),blkLimitsGC(HIGH,IAXIS)
+        do iy=blGC(LOW,JAXIS),blGC(HIGH,JAXIS)
+           do ix=blGC(LOW,IAXIS),blGC(HIGH,IAXIS)
               gravPos(1)=ix
               gravPos(2)=iy
               if (tailCall .AND. hy_gpotVar > 0) then
