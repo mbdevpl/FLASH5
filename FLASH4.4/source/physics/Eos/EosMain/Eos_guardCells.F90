@@ -56,7 +56,11 @@ subroutine Eos_guardCells(eosMode, solnData,corners,layers,skipSrl)
   real,dimension(:,:,:,:),pointer :: solnData
   logical,optional, intent(IN) :: skipSrl
 
+#ifdef INDEXREORDER
+  integer,parameter::IX=1,IY=2,IZ=3
+#else
   integer,parameter::IX=2,IY=3,IZ=4
+#endif  
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC,eosRange
   integer,dimension(MDIM,2) :: nlayers
   integer :: neighLev(-1:1, -K2D:K2D , -K3D:K3D)
