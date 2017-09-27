@@ -17,7 +17,9 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_interfaces,       ONLY : gr_clearLevelCallback
     use block_metadata,         ONLY : block_metadata_t
     use Simulation_interface,   ONLY : Simulation_initBlock
-    use Grid_data,              ONLY : gr_iguard
+    use Grid_data,              ONLY : gr_iguard, &
+                                       gr_eosModeInit
+    use Eos_interface,          ONLY : Eos_wrapped
 
     implicit none
 
@@ -93,6 +95,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
         !  follows.
         initData = 0.0d0
         call Simulation_initBlock(initData, block)
+        call Eos_wrapped(gr_eosModeInit, block%limits, initData)
         nullify(initData)
 
         n_blocks = n_blocks + 1
