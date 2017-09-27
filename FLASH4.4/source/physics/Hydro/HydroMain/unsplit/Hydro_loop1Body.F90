@@ -45,7 +45,6 @@
 
 Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
-  use Grid_interface, ONLY   : Grid_getBlkPtr
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use block_metadata,   ONLY : block_metadata_t
@@ -106,19 +105,10 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 
   call Timers_start("loop1 body")
 
-  
-  ! NONSENSE...
-!!$  call hy_uhd_unsplit(block, Uin,blkLimitsGC,&
-!!$                      Uout,blkLimits,&
-!!$                      del,dt, dtOld )
-
-     blkLimits(:,:)   = blockDesc%Limits
-     blkLimitsGC(:,:) = blockDesc%LimitsGC
      loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
      loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
      lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
-     call Grid_getBlkPtr(blockDesc, Uout,localFlag=.fALSE.)
-     Uin => Uout
+
 
 !!$     if (hy_fluxCorrect .AND. updateEarly) then
 !!$        ! Test whether neighbors are at different refinement levels, and if so,

@@ -1,14 +1,14 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine Hydro_doLoop1(simTime, dt, dtOld)
+subroutine Hydro_doLoop5(simTime, dt, dtOld)
 
   use Grid_interface,      ONLY : Grid_getDeltas,&
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
-  use Hydro_interface,     ONLY : Hydro_loop1Body
+  use Hydro_interface,     ONLY : Hydro_loop5Body
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
@@ -19,8 +19,6 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
-
-  integer,save :: sweepDummy = SWEEP_ALL
 
   integer:: level, maxLev
 
@@ -35,7 +33,7 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
 #endif
 
         itor = block_iterator_t(LEAF, level=level)
-        call Timers_stop("loop1")
+        call Timers_stop("loop5")
         do while(itor%is_valid())
            call itor%blkMetaData(blockDesc)
 
@@ -43,26 +41,19 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
            blkLimitsGC(:,:) = blockDesc%limitsGC
            
            call Grid_getBlkPtr(blockDesc, Uout)
-!!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
-!!$           call amrex_print(abx)
-!!$           tbx = abx
 
            call Grid_getDeltas(level,del)
            Uin => Uout
-           call Hydro_loop1Body(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+           call Hydro_loop5Body(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld)
            call Grid_releaseBlkPtr(blockDesc, Uout)
            nullify(Uout)
 !!$           call IO_writecheckpoint;stop
            call itor%next()
         end do
-        call Timers_stop("loop1")
-#ifdef DEBUG_DRIVER
-        print*, 'return from Hydro/MHD timestep'  ! DEBUG
-        print*,'returning from hydro myPE=',dr_globalMe
-#endif
+        call Timers_stop("loop5")
         
         
      end do
 
 
-end subroutine Hydro_doLoop1
+end subroutine Hydro_doLoop5
