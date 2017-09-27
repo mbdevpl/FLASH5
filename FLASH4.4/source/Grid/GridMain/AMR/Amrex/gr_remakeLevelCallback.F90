@@ -24,8 +24,6 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 #include "Flash.h"
 #include "constants.h"
 
-    integer, parameter :: NO_GUARDCELLS = 0
-
     integer,     intent(IN), value :: lev
     real(wp),    intent(IN), value :: time
     type(c_ptr), intent(IN), value :: pba
@@ -47,7 +45,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 
     !!!!! SAVE DATA IN BUFFER WITH GIVEN BOXARRAY/DISTRIBUTION
     ! Get all unk interior data
-    call amrex_multifab_build(mfab, ba, dm, NUNK_VARS, NO_GUARDCELLS)
+    call amrex_multifab_build(mfab, ba, dm, NUNK_VARS, gr_iguard)
     ! DEVNOTE: TODO Include facevars in this process
 
     if (lev == 0) then
@@ -86,7 +84,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 
     ! Only copy interior
     call unk(lev)%copy(mfab, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                       NO_GUARDCELLS)
+                       gr_iguard)
 
     call amrex_multifab_destroy(mfab)
 
