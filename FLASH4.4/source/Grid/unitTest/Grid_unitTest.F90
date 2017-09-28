@@ -29,7 +29,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
 
 
                         
-  use physicaldata, ONLY : unk
+  use physicaldata, ONLY : unk,facevarx,facevary,facevarz
   use Grid_interface, ONLY : Grid_getBlkData, &
        Grid_getPointData, Grid_getRowData, Grid_getMaxRefinement
   use block_iterator, ONLY : block_iterator_t
@@ -60,14 +60,14 @@ subroutine Grid_unitTest(fileUnit,perfect)
   real, allocatable,dimension(:,:) :: dataPlane
   real, allocatable :: dataRow(:)
   real :: dataPoint
-
+  real,dimension(MDIM) :: point
   integer :: lev, maxLev
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: block
   integer :: ilocal,jlocal,klocal
   integer, dimension(LOW:HIGH,MDIM) :: limGC, lim,blkLimits,blkLimitsGC
   
-  integer :: i,j,beg(MDIM),fin(MDIM)
+  integer :: i,j,beg(MDIM),fin(MDIM),iSize,jSize,kSize
   real :: error
 
   ! DEVNOTE: Update code to change out paramesh-specific code
@@ -84,81 +84,99 @@ subroutine Grid_unitTest(fileUnit,perfect)
         blkLimitsGC=block%localLimitsGC
         
         startingPos=1
-        beg=startingPos
-        fin=beg+blkLimitsGC(HIGH,:)-blkLimitsGC(LOW,:)
-        sizeBlk=fin-beg+1
+        beg=startingPos+blkLimits(LOW,:)-1
+        fin=beg+blkLimits(HIGH,:)-blkLimits(LOW,:)
+        fin(IAXIS)=fin(IAXIS)+1
 
-        allocate(dataBlk(sizeBlk(IAXIS), sizeBlk(JAXIS), sizeBlk(KAXIS)))     
+        iSize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1
+        jSize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1
+        kSize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1
 
-        call Grid_getBlkData(block, CENTER, DENS_VAR, EXTERIOR, startingPos, &
-             dataBlk, sizeBlk)
+
+        allocate(dataBlk(lim(LOW,IAXIS):lim(HIGH,IAXIS)+1,&
+             lim(LOW,JAXIS):lim(HIGH,JAXIS), &
+             lim(LOW,KAXIS):lim(HIGH,KAXIS)))
+        call Grid_getBlkData(block, CELL_FACEAREA, ILO_FACE,GLOBALIDX1, &
+             (/lim(LOW,IAXIS),lim(LOW,JAXIS),lim(LOW,KAXIS)/), &
+             dataBlk(lim(LOW,IAXIS):lim(HIGH,IAXIS)+1,&
+             lim(LOW,JAXIS):lim(HIGH,JAXIS),  &
+             lim(LOW,KAXIS):lim(HIGH,KAXIS)), &
+             (/isize+1, jsize, ksize/) )
         error = error+maxval(abs(dataBlk(:,:,:)-&
-             unk(DENS_VAR,beg(IAXIS):fin(IAXIS),beg(JAXIS):fin(JAXIS),beg(KAXIS):fin(KAXIS),block%id)))
-
+             facevarx(1,beg(IAXIS):fin(IAXIS),beg(JAXIS):fin(JAXIS),beg(KAXIS):fin(KAXIS),block%id)))
+        
         startingPos=1
         beg=startingPos+blkLimits(LOW,:)-1
         fin=beg+blkLimits(HIGH,:)-blkLimits(LOW,:)
-        sizeBlk=fin-beg+1
 
         deallocate(dataBlk)
-        allocate(dataBlk(sizeBlk(IAXIS), sizeBlk(JAXIS), sizeBlk(KAXIS)))     
+        print*,'error after face get is ',error
              
-        call Grid_getBlkData(block, CENTER, DENS_VAR, INTERIOR, startingPos, &
-             dataBlk, sizeBlk)
+        error=0.0
+        allocate(dataBlk(lim(LOW,IAXIS):lim(HIGH,IAXIS),&
+             lim(LOW,JAXIS):lim(HIGH,JAXIS), &
+             lim(LOW,KAXIS):lim(HIGH,KAXIS)))
+        call Grid_getBlkData(block, CELL_VOLUME, 0, GLOBALIDX1, &
+             (/lim(LOW,IAXIS),lim(LOW,JAXIS),lim(LOW,KAXIS)/), &
+            dataBlk(lim(LOW,IAXIS):lim(HIGH,IAXIS), &
+            lim(LOW,JAXIS):lim(HIGH,JAXIS), &
+            lim(LOW,KAXIS):lim(HIGH,KAXIS)), &
+            (/isize, jsize, ksize/) )
+!!$        call Grid_getBlkData(block, FACEY, 1, INTERIOR, startingPos, &
+!!$             dataBlk, sizeBlk)
         error = error+maxval(abs(dataBlk(:,:,:)-&
-             unk(DENS_VAR,beg(IAXIS):fin(IAXIS),beg(JAXIS):fin(JAXIS),beg(KAXIS):fin(KAXIS),block%id)))
+             unk(1,beg(IAXIS):fin(IAXIS),beg(JAXIS):fin(JAXIS),beg(KAXIS):fin(KAXIS),block%id)))
         deallocate(dataBlk)
-        print*,'the cumulative error after exterior blk get is ',error
+        print*,'the cumulative error after Center get is ',error
 
 
-        !!  Now test Grid_getPointData, 1 var, EXTERIOR
-        startingPos(1) = 5
-        startingPos(2) = 6
-        startingPos(3) = 1
-
-        beg=startingPos
-        fin=beg
-        call Grid_getPointData(block, CENTER, DENS_VAR, EXTERIOR, startingPos, &
-             dataPoint)
-
-        error = error + abs(dataPoint-unk(DENS_VAR,beg(IAXIS),beg(JAXIS),beg(KAXIS),block%id))
-        print*,'the cumulative error after exterior point get is ',error
-
-        startingPos(1) = 7
-        startingPos(2) = 12
-        startingPos(3) = 1
-        print *, "testing Grid_getPointData, 1 var, EXTERIOR, from guardcells"
-        
-        beg=startingPos
-        fin=beg
-
-        call Grid_getPointData(block, CENTER, DENS_VAR, EXTERIOR, startingPos, &
-             dataPoint)
-        
-        error = error + abs(dataPoint-unk(DENS_VAR,beg(IAXIS),beg(JAXIS),beg(KAXIS),block%id))
-
-             
-
-
-        !  Now test Grid_getPointData, 1 var, INTERIOR
-        print *, "testing Grid_getPointData, 1 var, INTERIOR"
-        
-        startingPos(1) = 7
-        startingPos(2) = 3
-        startingPos(3) = 1
-        beg=startingPos+blkLimits(LOW,:)-1
-        fin=beg
-        
-        call Grid_getPointData(block, CENTER, DENS_VAR, INTERIOR, startingPos, &
-          dataPoint)
-        error = error + abs(dataPoint-unk(DENS_VAR,beg(IAXIS),beg(JAXIS),beg(KAXIS),block%id))
-
-        print*,'the cumulative error is ',error
+!!$        !!  Now test Grid_getPointData, 1 var, EXTERIOR
+!!$        startingPos(1) = 5
+!!$        startingPos(2) = 6
+!!$        startingPos(3) = 1
+!!$
+!!$        beg=startingPos
+!!$        fin=beg
+!!$        call Grid_getPointData(block, CENTER, DENS_VAR, EXTERIOR, startingPos, &
+!!$             dataPoint)
+!!$
+!!$        error = error + abs(dataPoint-unk(DENS_VAR,beg(IAXIS),beg(JAXIS),beg(KAXIS),block%id))
+!!$        print*,'the cumulative error after exterior point get is ',error
+!!$
+!!$        startingPos(1) = 7
+!!$        startingPos(2) = 12
+!!$        startingPos(3) = 1
+!!$        print *, "testing Grid_getPointData, 1 var, EXTERIOR, from guardcells"
+!!$        
+!!$        beg=startingPos
+!!$        fin=beg
+!!$
+!!$        call Grid_getPointData(block, CENTER, DENS_VAR, EXTERIOR, startingPos, &
+!!$             dataPoint)
+!!$        
+!!$        error = error + abs(dataPoint-unk(DENS_VAR,beg(IAXIS),beg(JAXIS),beg(KAXIS),block%id))
+!!$
+!!$             
+!!$
+!!$
+!!$        !  Now test Grid_getPointData, 1 var, INTERIOR
+!!$        print *, "testing Grid_getPointData, 1 var, INTERIOR"
+!!$        
+!!$        startingPos(1) = 7
+!!$        startingPos(2) = 3
+!!$        startingPos(3) = 1
+!!$        beg=startingPos+blkLimits(LOW,:)-1
+!!$        fin=beg
+!!$        
+!!$        call Grid_getPointData(block, CENTER, DENS_VAR, INTERIOR, startingPos, &
+!!$          dataPoint)
+!!$        error = error + abs(dataPoint-unk(DENS_VAR,beg(IAXIS),beg(JAXIS),beg(KAXIS),block%id))
+!!$
+!!$        print*,'the cumulative error is ',error
         call itor%next()     
      end do
   end do
   print*,'the cumulative error is ',error
-  print *, dataPoint
   
 !!$
 !!$
