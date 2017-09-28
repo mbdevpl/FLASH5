@@ -360,8 +360,10 @@ subroutine Simulation_initBlock(solnData,block)
            rigid_axis(KAXIS) = k
            if (radCenter <= sim_r_inner) then
               call Grid_putPointData(block, CENTER, BDRY_VAR, DEFAULTIDX, rigid_axis, 1.0)
-              call Grid_putPointData(block, CENTER, DENS_VAR, DEFAULTIDX, rigid_axis, sim_smlrho) !maybe 1.e11 because PNS?
-              call Grid_putPointData(block, CENTER, TEMP_VAR, DEFAULTIDX, rigid_axis, sim_smallt) !something else because PNS?
+              call Grid_putPointData(block, CENTER, DENS_VAR, DEFAULTIDX, rigid_axis, sim_smlrho*1.2) !maybe 1.e11 because PNS?
+              call Grid_putPointData(block, CENTER, TEMP_VAR, DEFAULTIDX, rigid_axis, sim_smallt*1.2) !something else because PNS?
+!!$              call Grid_putPointData(block, CENTER, DENS_VAR, DEFAULTIDX, rigid_axis, 1.59e+05) !maybe 1.e11 because PNS?
+!!$              call Grid_putPointData(block, CENTER, TEMP_VAR, DEFAULTIDX, rigid_axis, 1.e+6) !something else because PNS?
               call Grid_putPointData(block, CENTER, VELX_VAR, DEFAULTIDX, rigid_axis, 1.e-100)
               call Grid_putPointData(block, CENTER, VELY_VAR, DEFAULTIDX, rigid_axis, 1.e-100)
            else
