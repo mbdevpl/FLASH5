@@ -5,14 +5,14 @@ basenm			       = "ccsn2d_"
 restart			       = .false.
 checkpointFileNumber           = 0
 plotFileNumber                 = 0
-run_comment                    = "CoreCollapse 2D with Chimera data"
+run_comment                    = "1.2*small{rho,T} mono(2) HLL minmod"
 #output_directory	       = "output"
 
 # IO  
 checkpointFileIntervalStep     = 0
 checkpointFileIntervalTime     = 0.01 
 plotFileIntervalStep           = 0
-plotFileIntervalTime           = 0.0
+plotFileIntervalTime           = 0.005
 # wall_clock_checkpoint          = 7200.
 wall_clock_time_limit          = 7200.
 
@@ -24,6 +24,8 @@ tstep_change_factor            = 1.5
 dtinit                         = 1.E-10 #was E-8
 dtmax                          = 1.E5
 dtmin                          = 1.E-20
+dr_dtMinContinue               = 1.0e-12
+dr_dtMinBelowAction            = 1    # write chkpt then abort
 
 # Domain 
 geometry                       = "cylindrical"
@@ -41,6 +43,7 @@ nblockx                        = 20
 nblocky                        = 40 
 nblockz                        = 1
 
+enableMaskedGCFill             = .TRUE.
 
 gr_lrefineMaxRedDoByLogR       = .true.
 gr_lrefineMaxRedDoByTime       = .FALSE.
@@ -60,9 +63,9 @@ refine_cutoff_2		       = 0.8
 refine_cutoff_3		       = 0.8
 refine_cutoff_4		       = 0.8
 
-#plot_var_1                     = "dens"
-#plot_var_2                     = "pres"
-#plot_var_3                     = "temp"
+plot_var_1                     = "dens"
+plot_var_2                     = "pres"
+plot_var_3                     = "temp"
 
 
 # Simulation
@@ -75,16 +78,16 @@ max_r = 2.e9
 # Hydro
 useHydro                       = .TRUE.
 cfl                            = 0.5
-interpol_order                 = 1
+interpol_order                 = 2
 updateHydroFluxes              = .TRUE.
 eintSwitch		       = 0.0 # Always use Etot
-convertToConsvdForMeshCalls   = .false.
-converttoconsvdinmeshinterp   = .false.
+#convertToConsvdForMeshCalls   = .false.
+#converttoconsvdinmeshinterp   = .false.
 
 ##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
 #       I. INTERPOLATION SCHEME:
 order           = 3      # Interpolation order (first/second/third/fifth order)
-slopeLimiter    = "hybrid"   # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
+slopeLimiter    = "minmod"   # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
 LimitedSlopeBeta= 1.     # Slope parameter for the "limited" slope by Toro
 charLimiting    = .true. # Characteristic limiting vs.Primitive limiting
 
@@ -93,15 +96,17 @@ cvisc           = 0.1    # coefficient for artificial viscosity
 use_flattening  = .true. # use flattening (dissipative) (originally for PPM)
 use_steepening  = .false. # use contact steepening (originally for PPM)
 use_upwindTVD   = .false. # use upwind biased TVD slope for PPM (need nguard=6)
-flux_correct    = .true.
+flux_correct    = .FALSE.
 EOSforRiemann   = .false.
 transOrder      = 1
-use_auxEintEqn  = .TRUE.
+use_auxEintEqn  = .FALSE.
 hydroComputeDtOption = -1
 
 #       II. RIEMANN SOLVERS: 
-RiemannSolver   = "hybrid"       # Roe, HLL, HLLC, LLF, Marquina
+RiemannSolver   = "HLL"       # Roe, HLL, HLLC, LLF, Marquina
 entropy         = .false.     # Entropy fix for the Roe solver
+
+hy_fPresInMomFlux = 0.0       # Part of pressure gradient term in momentum equation to include in momentum fluxes
 
 #       III. STRONG SHOCK HANDELING SCHEME:
 shockDetect     = .true.     # Shock Detect for numerical stability
