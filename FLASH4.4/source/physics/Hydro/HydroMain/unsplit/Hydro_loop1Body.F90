@@ -45,7 +45,6 @@
 
 Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
-  use Grid_interface, ONLY   : Grid_getBlkPtr
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use block_metadata,   ONLY : block_metadata_t
@@ -106,19 +105,10 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 
   call Timers_start("loop1 body")
 
-  
-  ! NONSENSE...
-!!$  call hy_uhd_unsplit(block, Uin,blkLimitsGC,&
-!!$                      Uout,blkLimits,&
-!!$                      del,dt, dtOld )
-
-     blkLimits(:,:)   = blockDesc%Limits
-     blkLimitsGC(:,:) = blockDesc%LimitsGC
      loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
      loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
      lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
-     call Grid_getBlkPtr(blockDesc, Uout,localFlag=.fALSE.)
-     Uin => Uout
+
 
 !!$     if (hy_fluxCorrect .AND. updateEarly) then
 !!$        ! Test whether neighbors are at different refinement levels, and if so,
@@ -158,7 +148,7 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 !!$     else
 !!$     call hy_memAllocScratch(SCRATCH_CTR,HY_VAR1_SCRATCHCTR_VAR,2, 0,0,0, &
 !!$          blockList(1:blockCount) )
-     allocate(scrch_Ptr(2,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     allocate(scrch_Ptr    (2,               loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
@@ -306,7 +296,7 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 !!$     call hy_memReleaseBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR)
 
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
-!!!!!!#ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
+#ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
         !! Correct energy if necessary
      call hy_uhd_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
      
@@ -331,7 +321,7 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 #endif
      call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
      !#endif
-!!!!!!#endif /* ifndef GRAVITY */  
+#endif /* ifndef GRAVITY */
      
 !!$     if (blockMustStoreFluxes(blockID)) then
         !! if Flux correction is used.

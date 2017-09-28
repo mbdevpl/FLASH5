@@ -73,7 +73,7 @@ Subroutine Hydro_loop1Body(block, blkLimitsGC, Uin, blkLimits, Uout,  del, timeE
   real, pointer, dimension(:,:,:,:) :: Uout
   real,dimension(MDIM),intent(IN) :: del
   real, pointer, dimension(:,:,:,:) :: Uin
-  type(block_metadata_t) :: block
+  type(block_metadata_t),intent(IN) :: block
 
 
   if (.not. hy_useHydro) return 

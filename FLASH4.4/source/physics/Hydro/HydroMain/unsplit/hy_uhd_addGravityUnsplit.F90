@@ -82,13 +82,19 @@ Subroutine hy_uhd_addGravityUnsplit&
      do j=blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
         do i=blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
 
-           velNew(1:3) = U(VELX_VAR:VELZ_VAR,i,j,k)&
+#ifdef BDRY_VAR
+           if (U(BDRY_VAR,i,j,k) .LE. 0.0) then
+#endif
+              velNew(1:3) = U(VELX_VAR:VELZ_VAR,i,j,k)&
                 + hdt*(/gravX(i,j,k),gravY(i,j,k),gravZ(i,j,k)/)
 
-           U(ENER_VAR,i,j,k) = U(ENER_VAR,i,j,k) &
+              U(ENER_VAR,i,j,k) = U(ENER_VAR,i,j,k) &
                 + hdt*dot_product(velNew(1:3),(/gravX(i,j,k),gravY(i,j,k),gravZ(i,j,k)/))
 
-           U(VELX_VAR:VELZ_VAR,i,j,k) = velNew(1:3)
+              U(VELX_VAR:VELZ_VAR,i,j,k) = velNew(1:3)
+#ifdef BDRY_VAR
+           endif
+#endif
         enddo
      enddo
   enddo
