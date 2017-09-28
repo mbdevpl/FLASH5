@@ -148,7 +148,7 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 !!$     else
 !!$     call hy_memAllocScratch(SCRATCH_CTR,HY_VAR1_SCRATCHCTR_VAR,2, 0,0,0, &
 !!$          blockList(1:blockCount) )
-     allocate(scrch_Ptr(2,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     allocate(scrch_Ptr    (2,               loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
