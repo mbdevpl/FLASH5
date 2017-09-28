@@ -16,15 +16,15 @@
 
 module gr_amrexInterface
     interface
-        subroutine gr_amrex_init()
+        subroutine gr_amrexInit()
             implicit none
-        end subroutine gr_amrex_init
+        end subroutine gr_amrexInit
     end interface
 
     interface
-        subroutine gr_amrex_finalize()
+        subroutine gr_amrexFinalize()
             implicit none
-        end subroutine gr_amrex_finalize
+        end subroutine gr_amrexFinalize
     end interface
 
     interface

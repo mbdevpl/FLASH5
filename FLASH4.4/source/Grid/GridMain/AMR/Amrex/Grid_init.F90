@@ -125,7 +125,7 @@ subroutine Grid_init()
   use Grid_data
   use Grid_interface,              ONLY : Grid_getDeltas, &
                                           Grid_getMaxRefinement
-  use gr_amrexInterface,           ONLY : gr_amrex_init
+  use gr_amrexInterface,           ONLY : gr_amrexInit
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
   use Driver_interface,            ONLY : Driver_abortFlash, &
@@ -214,7 +214,7 @@ subroutine Grid_init()
   call gr_initGeometry()
 
 !------------------------------------------------------------------------------
-! Load into local Grid variables all runtime parameters needed by gr_amrex_init
+! Load into local Grid variables all runtime parameters needed by gr_amrexInit
 !------------------------------------------------------------------------------
   gr_iguard = NGUARD
   gr_jguard = NGUARD 
@@ -227,7 +227,7 @@ subroutine Grid_init()
 !    (3) load initial conditions, and
 !    (4) do initial refinement of mesh (?).
 !----------------------------------------------------------------------------------
-  call gr_amrex_init()
+  call gr_amrexInit()
 
 !----------------------------------------------------------------------------------
 ! Store interface-accessible data as local Grid data variables for optimization

@@ -1,6 +1,6 @@
 Grid += gr_amrexInterface.o \
         gr_physicalMultifabs.o \
-        gr_amrex_init.o gr_amrex_finalize.o \
+        gr_amrexInit.o gr_amrexFinalize.o \
         gr_clearLevelCallback.o \
         gr_remakeLevelCallback.o \
         gr_initNewLevelCallback.o \
