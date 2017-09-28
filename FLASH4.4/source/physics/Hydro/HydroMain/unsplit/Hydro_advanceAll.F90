@@ -6,6 +6,7 @@
 subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
   use Grid_interface,      ONLY : Grid_fillGuardCells
+  use Grid_interface,      ONLY : Grid_getMaxRefinement
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
@@ -32,7 +33,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 #include "Flash.h"
 #ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
-!!$  use gr_amrextData
+  use gr_amrextData
 #endif
 
   implicit none
@@ -46,6 +47,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
+  integer:: maxLev
 
   hy_gpotAlreadyUpToDate = .FALSE. ! reset this flag, may be set .TRUE. below if warranted.
 
@@ -61,6 +63,9 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
 #ifdef FLASH_GRID_UG
   hy_fluxCorrect = .false.
+  maxLev = 1
+#else
+  call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 #endif
 
   call Hydro_prepareBuffers()
