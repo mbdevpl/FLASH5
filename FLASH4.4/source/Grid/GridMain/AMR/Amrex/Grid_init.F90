@@ -125,6 +125,7 @@ subroutine Grid_init()
   use Grid_data
   use Grid_interface,              ONLY : Grid_getDeltas, &
                                           Grid_getMaxRefinement
+  use gr_amrexInterface,           ONLY : gr_amrex_init
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
   use Driver_interface,            ONLY : Driver_abortFlash, &
@@ -134,7 +135,6 @@ subroutine Grid_init()
   use Logfile_interface,           ONLY : Logfile_stampMessage
   use Simulation_interface,        ONLY : Simulation_mapStrToInt, &
                                           Simulation_getVarnameType
-  use amrex_interfaces,            ONLY : gr_amrex_init
 
   include "Flash_mpi.h"
 

@@ -13,7 +13,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_fillpatch_module,    ONLY : amrex_fillpatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
-    use amrex_interfaces,          ONLY : gr_clearLevelCallback, &
+    use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz

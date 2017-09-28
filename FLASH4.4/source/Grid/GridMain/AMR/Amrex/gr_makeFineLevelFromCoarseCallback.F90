@@ -10,7 +10,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
-    use amrex_interfaces,          ONLY : gr_clearLevelCallback, &
+    use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use Grid_data,                 ONLY : gr_iguard
     use gr_physicalMultifabs,      ONLY : unk, &

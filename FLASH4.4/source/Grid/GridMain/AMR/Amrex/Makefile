@@ -1,4 +1,4 @@
-Grid += amrex_interfaces.o \
+Grid += gr_amrexInterface.o \
         gr_physicalMultifabs.o \
         gr_amrex_init.o gr_amrex_finalize.o \
         gr_clearLevelCallback.o \

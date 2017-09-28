@@ -14,7 +14,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     
     use gr_physicalMultifabs,   ONLY : unk, &
                                        facevarx, facevary, facevarz
-    use amrex_interfaces,       ONLY : gr_clearLevelCallback
+    use gr_amrexInterface,      ONLY : gr_clearLevelCallback
     use block_metadata,         ONLY : block_metadata_t
     use Simulation_interface,   ONLY : Simulation_initBlock
     use Grid_data,              ONLY : gr_iguard, &

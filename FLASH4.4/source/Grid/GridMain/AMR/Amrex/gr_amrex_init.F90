@@ -10,17 +10,17 @@ subroutine gr_amrex_init()
                                           amrex_parmparse_destroy
   use amrex_geometry_module,       ONLY : amrex_pmask
   use amrex_octree_module,         ONLY : amrex_octree_init
-  use amrex_interfaces,            ONLY : gr_initNewLevelCallback, &
-                                          gr_makeFineLevelFromCoarseCallback, &
-                                          gr_remakeLevelCallback, &
-                                          gr_clearLevelCallback, &
-                                          gr_markRefineDerefineCallback
 
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
   use Driver_interface,            ONLY : Driver_abortFlash
   use Grid_data,                   ONLY : gr_geometry, &
                                           gr_domainBC
+  use gr_amrexInterface,           ONLY : gr_initNewLevelCallback, &
+                                          gr_makeFineLevelFromCoarseCallback, &
+                                          gr_remakeLevelCallback, &
+                                          gr_clearLevelCallback, &
+                                          gr_markRefineDerefineCallback
 
   implicit none
 

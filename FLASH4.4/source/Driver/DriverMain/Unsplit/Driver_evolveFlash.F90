@@ -73,7 +73,7 @@ subroutine Driver_evolveFlash()
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
 #ifdef FLASH_GRID_AMREX
   ! DEV: Temporary ugliness for debugging
-  use amrex_interfaces,    ONLY : gr_writeData
+  use gr_amrexInterface,   ONLY : gr_writeData
 #endif
 
 #include "Flash.h"

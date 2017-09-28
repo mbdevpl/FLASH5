@@ -1,7 +1,7 @@
 subroutine sim_printLeaves(title, block_count)
-    use block_iterator,   ONLY : block_iterator_t
-    use block_metadata,   ONLY : block_metadata_t
-    use amrex_interfaces, ONLY : gr_getFinestLevel
+    use gr_amrexInterface, ONLY : gr_getFinestLevel
+    use block_iterator,    ONLY : block_iterator_t
+    use block_metadata,    ONLY : block_metadata_t
 
     implicit none
 

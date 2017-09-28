@@ -138,9 +138,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   
   use Grid_data,                 ONLY : gr_justExchangedGC
   use gr_physicalMultifabs,      ONLY : unk
+  use gr_amrexInterface,         ONLY : gr_fillPhysicalBC
   use Driver_interface,          ONLY : Driver_abortFlash
   use Timers_interface,          ONLY : Timers_start, Timers_stop
-  use amrex_interfaces,          ONLY : gr_fillPhysicalBC
 
   implicit none
 

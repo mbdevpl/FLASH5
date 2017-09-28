@@ -42,7 +42,7 @@ subroutine Driver_evolveFlash()
     
     use Grid_interface,        ONLY : Grid_fillGuardCells, &
                                       Grid_getBlkPtr, Grid_releaseBlkPtr
-    use amrex_interfaces,      ONLY : gr_getFinestLevel
+    use gr_amrexInterface,     ONLY : gr_getFinestLevel
     use gr_physicalMultifabs,  ONLY : unk
     use block_metadata,        ONLY : block_metadata_t
 
