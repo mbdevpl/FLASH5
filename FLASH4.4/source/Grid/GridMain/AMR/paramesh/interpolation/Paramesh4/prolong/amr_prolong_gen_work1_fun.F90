@@ -35,7 +35,8 @@ subroutine amr_prolong_gen_work1_fun &
   use Driver_interface, ONLY : Driver_abortFlash
 
   use Grid_data,ONLY: gr_dirGeom, gr_smallx, gr_intpol
-#ifndef FLASH_GRID_ANYAMREX
+#ifndef FLASH_GRID_AMREX
+  ! We should not be compiling this file in the FLASH_GRID_AMREX case anyway!
   use gr_specificData,ONLY: gr_oneBlock
 #endif
   implicit none
