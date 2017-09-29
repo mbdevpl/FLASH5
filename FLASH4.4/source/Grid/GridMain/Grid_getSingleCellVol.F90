@@ -209,8 +209,7 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
      end if
 
   case (CYLINDRICAL)
-     if (blockID<1) call Driver_abortFlash("Grid_getSingleCellVol: got blockDesc without valid id")
-     call Grid_getSingleCellCoords(point, level, CENTER, centerCoords)
+     call Grid_getSingleCellCoords(point, blockDesc, CENTER, beginCount, centerCoords)
 
      if(NDIM == 1) then
         cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS)
