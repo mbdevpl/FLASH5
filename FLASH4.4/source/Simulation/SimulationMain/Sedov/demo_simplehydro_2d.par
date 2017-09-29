@@ -51,7 +51,7 @@ flux_correct = .FALSE.
 
 #	Simulation time, I/O  parameters
 
-cfl		= 0.8
+cfl		= 0.45
 basenm          = "sedov_"
 restart         = .false.
 

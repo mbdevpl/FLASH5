@@ -57,7 +57,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
                                    amrex_max_level
 
-  use Grid_interface,       ONLY : Grid_averageDownLevels
+  use gr_amrexInterface,    ONLY : gr_averageDownLevels
   use gr_physicalMultifabs, ONLY : unk, &
                                    facevarx, facevary, facevarz
 
@@ -87,6 +87,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
 
   ! DEV: TODO This call mimics what is done in AMReX tutorial.  This call breaks
   ! TestRefine.  Is it really necessary?
-  call Grid_averageDownLevels
+  call gr_averageDownLevels
 end subroutine Grid_initDomain
 

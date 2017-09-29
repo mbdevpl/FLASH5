@@ -10,6 +10,7 @@ Grid += gr_amrexInterface.o \
         gr_primitiveToConserve.o \
         gr_fillPhysicalBC.o \
         gr_getFinestLevel.o \
+        gr_averageDownLevels.o \
         gr_writeData.o
 
 Grid += gr_amrextInterface.o

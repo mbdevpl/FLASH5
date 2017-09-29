@@ -141,7 +141,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   
   use Grid_data,                 ONLY : gr_justExchangedGC
   use gr_physicalMultifabs,      ONLY : unk
-  use gr_amrexInterface,         ONLY : gr_fillPhysicalBC
+  use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
+                                        gr_averageDownLevels
   use Driver_interface,          ONLY : Driver_abortFlash
   use Timers_interface,          ONLY : Timers_start, Timers_stop
 
@@ -228,6 +229,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   ! DEV: TODO How to do guardcell fill by direction?
   call Timers_start("amr_guardcell")
+
+  ! Restrict data from leaves to coarser blocks
+  call gr_averageDownLevels
 
   ! DEVNOTE: FIXME Currently fixing BC to periodic here
   ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved

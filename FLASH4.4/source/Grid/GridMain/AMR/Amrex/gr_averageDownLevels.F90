@@ -1,10 +1,26 @@
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_averageDownLevels
+!!
+!! NAME
+!!
+!!  gr_averageDownLevels
+!!
+!! SYNOPSIS
+!!
+!!  call gr_averageDownLevels 
+!!
+!! DESCRIPTION 
+!!
+!!
+!!  
+!!***
+
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
 #endif
 
 #include "Flash.h"
 
-subroutine Grid_averageDownLevels()
+subroutine gr_averageDownLevels()
     use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
                                           amrex_geom, &
                                           amrex_ref_ratio
@@ -17,6 +33,7 @@ subroutine Grid_averageDownLevels()
     integer :: lev
     integer :: finest_level
 
+    ! Work in AMReX 0-based level indexing
     finest_level = amrex_get_finest_level()
 
     ! DEV: TODO Implement for face variables as well
@@ -40,5 +57,5 @@ subroutine Grid_averageDownLevels()
     end if
 #endif
 
-end subroutine Grid_averageDownLevels
+end subroutine gr_averageDownLevels
 

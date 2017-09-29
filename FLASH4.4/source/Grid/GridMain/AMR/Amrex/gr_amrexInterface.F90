@@ -112,5 +112,11 @@ module gr_amrexInterface
         end subroutine gr_writeData
     end interface
 
+    interface
+        subroutine gr_averageDownLevels()
+            implicit none
+        end subroutine gr_averageDownLevels
+    end interface
+
 end module gr_amrexInterface
 
