@@ -493,3 +493,256 @@ subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
   end if
   return
 end subroutine Grid_getRowData
+
+subroutine Grid_getRowData_desc(block, gridDataStruct, structIndex, beginCount, &
+     row, startingPos, datablock, dataSize)
+
+  use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
+  use Driver_interface, ONLY : Driver_abortFlash
+  use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
+  use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
+  use block_metadata, ONLY : block_metadata_t
+
+  implicit none
+
+#include "constants.h"
+#include "Flash.h"
+
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: structIndex, beginCount, row, gridDataStruct
+  integer, dimension(MDIM), intent(in) :: startingPos
+  integer, intent(in) :: dataSize
+  real, dimension(datasize),intent(out) :: datablock
+  real,allocatable,dimension(:,:,:) :: cellvalues
+  real, pointer, dimension(:,:,:,:) :: solnData
+  integer :: xb,xe,yb,ye,zb,ze
+
+  integer :: i, j ,k
+  integer,dimension(MDIM)::begOffset,dataLen
+  integer :: imax, jmax, kmax
+
+  logical :: isget
+  logical :: getIntPtr
+
+#ifdef DEBUG_GRID
+  isget = .true.
+  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
+
+  !verify requested row is available given number of dims in problem
+  if((row==KAXIS) .and. (NDIM < 3)) then
+     print *, "Error: Grid_getRowData "
+     call Driver_abortFlash("you have requested to return the KAXIS in a 1d or 2d problem")
+  end if
+  
+
+ 
+
+
+  !verify requested row is available given number of dims in problem
+  if((row==JAXIS) .and. (NDIM < 2)) then
+     print *, "Error: Grid_getRowData"
+     call Driver_abortFlash("you have requested to return the JAXIS in a 1d problem")
+  end if
+     
+
+  !verify we have a valid blockid
+  if((blockid<1).or.(blockid>MAXBLOCKS)) then
+     print*,"Error: Grid_getRowData : invalid blockid "
+     call Driver_abortFlash("Get_getRowData : invalid blockid ")
+  end if
+  
+  !verify beginCount is set to a valid value
+  if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
+     print *, "Error: Grid_getRowData: beginCount set to improper value"
+     print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
+     call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
+  end if
+     
+
+  !verify that there is enough space in datablock
+  if ((row==IAXIS) .and. (dataSize > imax)) then
+     print *, "Error: Grid_getRowData: dataSize too big"
+     print *,"You are requesting more cells than block has in a dimension"
+     call Driver_abortFlash("Grid_getRowData: dataSize too big")
+  end if
+
+  if ((row==JAXIS) .and. (dataSize > jmax)) then
+     print *, "Error: Grid_getRowData: dataSize too big"
+     print *,"You are requesting more cells than block has in a dimension"
+     call Driver_abortFlash("Grid_getRowData: dataSize too big")
+  end if
+
+  if ((row==KAXIS) .and. (dataSize > kmax)) then
+     print *, "Error: Grid_getRowData: dataSize too big"
+     print *,"You are requesting more cells than block has in a dimension"
+     call Driver_abortFlash("Grid_getRowData: dataSize too big")
+  end if
+
+
+
+  !verify that there is enough space in datablock
+  if ((dataSize < 1)) then 
+     
+     print *, "Error: Grid_getRowData: dataSize too small"
+     print *,"You are requesting more < 1 cell in a dimension of block, 1 is the min"
+     call Driver_abortFlash("Grid_getRowData: dataSize too small")
+  end if
+  
+
+
+
+  !verify that indicies aren't too big or too small for the block
+  if(beginCount == EXTERIOR) then
+    
+     if (startingPos(1) > imax) then
+        call Driver_abortFlash("Grid_getRowData startingPos(1) index larger than block")
+     end if
+
+     if ((NDIM > 1) .and. (startingPos(2) > jmax)) then
+        call Driver_abortFlash("Grid_getRowData startingPos(2) index larger than block")
+     end if
+    
+     if ((NDIM > 2) .and. (startingPos(3) > kmax)) then
+        call Driver_abortFlash("Grid_getRowData startingPos(3) index larger than block")
+     end if
+    
+     if (startingPos(1) < 1) then
+        call Driver_abortFlash("Grid_getRowData startingPos(1) index smaller than 1")
+     end if
+
+     if ((NDIM > 1) .and. (startingPos(2) > jmax)) then
+        call Driver_abortFlash("Grid_getRowData startingPos(2) index smaller than 1")
+     end if
+    
+     if ((NDIM > 2) .and. (startingPos(3) > kmax)) then
+        call Driver_abortFlash("Grid_getRowData startingPos(3) index smaller than 1")
+     end if
+        
+  else !beginCount == INTERIOR
+
+     if ((startingPos(1) + gr_iguard -1) > imax) then
+        call Driver_abortFlash("Grid_getRowData startingPos(1) index larger than block")
+     end if
+
+     if ((NDIM > 1) .and. ((startingPos(2) + gr_jguard -1) > jmax)) then
+        call Driver_abortFlash("Grid_getRowData startingPos(2) index larger than block")
+     end if
+    
+     if ((NDIM > 2) .and. ((startingPos(3) + gr_kguard -1) > kmax)) then
+        call Driver_abortFlash("Grid_getRowData startingPos(3) index larger than block")
+     end if
+    
+     if (startingPos(1) < 1) then
+        call Driver_abortFlash("Grid_getRowData startingPos(1) index smaller than 1")
+     end if
+
+     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
+        call Driver_abortFlash("Grid_getRowData startingPos(2) index smaller than 1")
+     end if
+    
+     if ((NDIM > 2) .and. (startingPos(3) <  1)) then
+        call Driver_abortFlash("Grid_getRowData startingPos(3) index smaller than 1")
+     end if
+
+  end if
+  
+  
+
+  !more verification of indicies
+  !check size and starting pos
+  if(beginCount == EXTERIOR) then
+     if(row == IAXIS) then
+        if ((startingPos(IAXIS) + dataSize -1) > imax) then
+           print *, "Error: Grid_getRowData"
+           call Driver_abortFlash("Grid_getRowData indicies too large")
+        end if
+     end if
+
+     if(row == JAXIS) then
+        if ((startingPos(JAXIS) + dataSize -1) > jmax) then
+           print *, "Error: Grid_getRowData"
+           call Driver_abortFlash("Grid_getRowData indicies too large")
+        end if
+     end if
+
+     if(row == KAXIS) then
+        if ((startingPos(KAXIS) + dataSize -1) > kmax) then
+           print *, "Error: Grid_getRowData"
+           call Driver_abortFlash("Grid_getRowData indicies too large")
+        end if
+     end if
+  else if(beginCount == INTERIOR) then
+     if(row == IAXIS) then
+        if ((startingPos(IAXIS) + dataSize + gr_iguard -1) > imax) then
+           print *, "Error: Grid_getRowData"
+           call Driver_abortFlash("Grid_getRowData indicies too large")
+        end if
+     end if
+
+     if(row == JAXIS) then
+        if ((startingPos(JAXIS) + dataSize + gr_jguard -1) > jmax) then
+           print *, "Error: Grid_getRowData"
+           call Driver_abortFlash("Grid_getRowData indicies too large")
+        end if
+     end if
+
+     if(row == KAXIS) then
+        if ((startingPos(KAXIS) + dataSize + gr_kguard -1) > kmax) then
+           print *, "Error: Grid_getRowData"
+           call Driver_abortFlash("Grid_getRowData indicies too large")
+        end if
+     end if
+  end if
+#endif
+  dataLen=0
+  dataLen(row)=dataSize
+  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+
+  i=1
+  j=1
+  k=1
+  
+
+     !set the starting and ending position in x dir
+  i = startingPos(IAXIS) + begOffset(IAXIS)
+  if(NDIM > 1) j = startingPos(JAXIS) + begOffset(JAXIS)
+  if(NDIM > 2) k = startingPos(KAXIS) + begOffset(KAXIS)
+  if((gridDataStruct==CELL_VOLUME).or.(gridDataStruct==CELL_FACEAREA)) then
+     xb=i;yb=j;zb=k;xe=xb;ye=yb;ze=zb
+     if(row==IAXIS) xe=xb+datasize-1
+     if(row==JAXIS) ye=yb+datasize-1
+     if(row==KAXIS) ze=zb+datasize-1
+     allocate(cellvalues(xb:xe,yb:ye,zb:ze))
+     if(gridDataStruct==CELL_VOLUME) then
+        call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues,beginCount)
+     else
+        call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,&
+             structIndex,block,cellvalues,beginCount)
+     end if
+     if(row==IAXIS) datablock(:)=cellvalues(xb:xe,yb,zb)
+     if(row==JAXIS) datablock(:)=cellvalues(xb,yb:ye,zb)
+     if(row==KAXIS) datablock(:)=cellvalues(xb,yb,zb:ze)
+     deallocate(cellvalues)
+  elseif(getIntPtr) then
+     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
+     if(row==IAXIS)datablock(:) = solnData(structIndex,i:i+datasize-1,j,k)
+     if(row==JAXIS)datablock(:) = solnData(structIndex,i,j:j+datasize-1,k)
+     if(row==KAXIS)datablock(:) = solnData(structIndex,i,j,k:k+datasize-1)
+     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
+  else
+     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
+!!$     if(gridDataStruct==SCRATCH) then
+!!$        if(row==IAXIS)datablock(:) = solnData(i:i+datasize-1,j,k,structIndex)
+!!$        if(row==JAXIS)datablock(:) = solnData(i,j:j+datasize-1,k,structIndex)
+!!$        if(row==KAXIS)datablock(:) = solnData(i,j,k:k+datasize-1,structIndex)
+!!$     else
+!!$     end if
+     if(row==IAXIS)datablock(:) = solnData(structIndex,i:i+datasize-1,j,k)
+     if(row==JAXIS)datablock(:) = solnData(structIndex,i,j:j+datasize-1,k)
+     if(row==KAXIS)datablock(:) = solnData(structIndex,i,j,k:k+datasize-1)
+     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+
+  end if
+  return
+end subroutine Grid_getRowData_desc
