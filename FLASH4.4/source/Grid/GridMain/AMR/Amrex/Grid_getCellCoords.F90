@@ -103,7 +103,7 @@
 !!
 !!***
 
-#ifdef DEBUG
+#ifdef DEBUG_ALL
 #define DEBUG_GRID
 #endif
 

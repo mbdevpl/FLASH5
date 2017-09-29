@@ -1,3 +1,10 @@
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
+#include "constants.h"
+#include "Flash.h"
+
 subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use iso_c_binding
     use amrex_fort_module,         ONLY : wp => amrex_real
@@ -18,9 +25,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     implicit none
 
-#include "constants.h"
-#include "Flash.h"
-
     integer,     intent(IN), value :: lev
     real(wp),    intent(IN), value :: time
     type(c_ptr), intent(IN), value :: pba
@@ -32,7 +36,9 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     integer :: lo_bc(NDIM, 1)
     integer :: hi_bc(NDIM, 1)
 
+#ifdef DEBUG_GRID
     write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Start on level ", lev + 1
+#endif
 
     ba = pba
     dm = pdm
@@ -65,6 +71,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                lo_bc, hi_bc)
 
-    write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Finished on level ", lev + 1
+    write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Make fine level ", lev + 1
+
 end subroutine gr_makeFineLevelFromCoarseCallback
 

@@ -1,3 +1,7 @@
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
 subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     use iso_c_binding
     use amrex_fort_module, ONLY : wp => amrex_real
@@ -12,7 +16,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
 
     ! In this test problem, we only have periodic boundaries.
     ! So there is nothing to do.
-#ifdef GRID_DEBUG
+#ifdef DEBUG_GRID
     write(*,'(A,A,F7.4)') "[gr_fillPhysicalBC]", &
                         "                  Start for time ", time
     write(*,'(A,A,F7.4)') "[gr_fillPhysicalBC]", &

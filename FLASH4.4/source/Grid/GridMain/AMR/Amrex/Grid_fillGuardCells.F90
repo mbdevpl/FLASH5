@@ -122,6 +122,9 @@
 #define DEBUG_GRID
 #endif
 
+#include "constants.h"
+#include "Flash.h"
+
 subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                minLayers, &
                                eosMode, doEos, &
@@ -143,9 +146,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use Timers_interface,          ONLY : Timers_start, Timers_stop
 
   implicit none
-
-#include "constants.h"
-#include "Flash.h"
 
   integer, intent(in)           :: gridDataStruct
   integer, intent(in)           :: idir
@@ -260,9 +260,13 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end do
 
   gr_justExchangedGC = .TRUE.
-  write(*,'(A,I3)') "[Grid_fillGuardcell] From level 1 to level ", &
-                    finest_level+1
 
   call Timers_stop("amr_guardcell")
+  
+#ifdef DEBUG_GRID
+  write(*,'(A,I3)') "[Grid_fillGuardcell] From level 1 to level ", &
+                    finest_level+1
+#endif
+
 end subroutine Grid_fillGuardCells
 

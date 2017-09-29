@@ -1,3 +1,10 @@
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
+#include "Flash.h"
+#include "constants.h"
+
 subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use iso_c_binding
     use amrex_fort_module,         ONLY : wp => amrex_real
@@ -21,9 +28,6 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 
     implicit none
 
-#include "Flash.h"
-#include "constants.h"
-
     integer,     intent(IN), value :: lev
     real(wp),    intent(IN), value :: time
     type(c_ptr), intent(IN), value :: pba
@@ -39,9 +43,11 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 
     ba = pba
     dm = pdm
- 
+
+#ifdef DEBUG_GRID
     write(*,'(A,A,I2)') "[gr_remakeLevelCallback]", &
                       "             Start Level ", lev + 1
+#endif
 
     !!!!! SAVE DATA IN BUFFER WITH GIVEN BOXARRAY/DISTRIBUTION
     ! Get all unk interior data
@@ -89,6 +95,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     call amrex_multifab_destroy(mfab)
 
     write(*,'(A,A,I2)') "[gr_remakeLevelCallback]", &
-                      "             Finished Level ", lev + 1
+                      "             Remake level ", lev + 1
+
 end subroutine gr_remakeLevelCallback
 

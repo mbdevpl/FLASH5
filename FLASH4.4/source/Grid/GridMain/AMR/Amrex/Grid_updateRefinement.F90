@@ -38,6 +38,13 @@
 !!
 !!***
 
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
+#include "constants.h"
+#include "Flash.h"
+
 subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use amrex_amrcore_module, ONLY : amrex_regrid
 
@@ -47,21 +54,21 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
  
   implicit none
 
-#include "constants.h"
-#include "Flash.h"
-
   integer, intent(in)            :: nstep
   real,    intent(in)            :: time
   logical, intent(out), OPTIONAL :: gridChanged
 
   ! We only consider refinements every nrefs timesteps.
   if (mod(nstep, gr_nrefs) == 0) then
+#ifdef DEBUG_GRID
+     write(*,'(A,I4,A,E9.3)') "[Grid_updateRefinement] AMReX Regridding @ step=", & 
+                              nstep, " / time = ", time
+#endif
+     
      call Timers_start("Grid_updateRefinement")
 
      ! AMReX uses 0-based level index set
      call Grid_fillGuardCells(CENTER, ALLDIR)
-     write(*,'(A,I4,A,E9.3)') "[Grid_updateRefinement] AMReX Regridding @ step=", & 
-                              nstep, " / time = ", time
      call amrex_regrid(0, time)
  
      call Timers_stop("Grid_updateRefinement")

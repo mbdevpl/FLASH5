@@ -1,3 +1,10 @@
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
+#include "constants.h"
+#include "Flash.h"
+
 subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use iso_c_binding
     use amrex_fort_module,      ONLY : wp => amrex_real
@@ -6,7 +13,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_box_module,       ONLY : amrex_box
     use amrex_boxarray_module,  ONLY : amrex_boxarray
     use amrex_distromap_module, ONLY : amrex_distromap
-    use amrex_parallel_module,  ONLY : amrex_parallel_myproc
     use amrex_multifab_module,  ONLY : amrex_mfiter, &
                                        amrex_mfiter_build, &
                                        amrex_mfiter_destroy, &
@@ -22,9 +28,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use Eos_interface,          ONLY : Eos_wrapped
 
     implicit none
-
-#include "constants.h"
-#include "Flash.h"
 
     integer,     intent(IN), value :: lev
     real(wp),    intent(IN), value :: time
@@ -42,16 +45,15 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     real(wp)                      :: y = 0.0_wp
     real(wp)                      :: z = 0.0_wp
 
-    integer :: rank
-
     integer :: i, j, k
 
     integer :: n_blocks
- 
-    rank = amrex_parallel_myproc()
+
+#ifdef DEBUG_GRID
     write(*,'(A,A,I2)') "[gr_initNewLevelCallback]", &
                         "            Start Level ", lev + 1
- 
+#endif
+
     ba = pba
     dm = pdm
 
@@ -105,5 +107,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
  
     write(*,'(A,I4,A,I2)') "[gr_initNewLevelCallback]            ", &
                            n_blocks, " new blocks on level", lev + 1
+
 end subroutine gr_initNewLevelCallback
 
