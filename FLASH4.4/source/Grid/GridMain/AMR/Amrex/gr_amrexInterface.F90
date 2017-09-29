@@ -1,20 +1,34 @@
-! DEV: TODO This should be renamed.  It looks like it comes from the AMReX
-!           as is.
-module amrex_interfaces
-      interface
-         subroutine gr_amrex_init()
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_amrexInterface
+!!
+!! NAME
+!!
+!!  gr_amrexInterface
+!!
+!! SYNOPSIS
+!!
+!!  use gr_amrexInterface
+!!
+!! DESCRIPTION 
+!!
+!!
+!!  
+!!***
+
+module gr_amrexInterface
+    interface
+        subroutine gr_amrexInit()
             implicit none
-         end subroutine gr_amrex_init
-      end interface
-      
-      interface
-         subroutine gr_amrex_finalize()
+        end subroutine gr_amrexInit
+    end interface
+
+    interface
+        subroutine gr_amrexFinalize()
             implicit none
-         end subroutine gr_amrex_finalize
-      end interface
-      
-      interface
-         subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
+        end subroutine gr_amrexFinalize
+    end interface
+
+    interface
+        subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
             use iso_c_binding
             use amrex_fort_module, ONLY : wp => amrex_real
             implicit none
@@ -22,11 +36,11 @@ module amrex_interfaces
             real(wp),    intent(in), value :: time
             type(c_ptr), intent(in), value :: pba
             type(c_ptr), intent(in), value :: pdm
-         end subroutine gr_initNewLevelCallback
-      end interface
- 
-      interface
-         subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
+        end subroutine gr_initNewLevelCallback
+    end interface
+
+    interface
+        subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
             use iso_c_binding
             use amrex_fort_module, ONLY : wp => amrex_real
             implicit none
@@ -34,11 +48,11 @@ module amrex_interfaces
             real(wp),    intent(in), value :: time
             type(c_ptr), intent(in), value :: pba
             type(c_ptr), intent(in), value :: pdm
-         end subroutine gr_makeFineLevelFromCoarseCallback
-      end interface
- 
-      interface
-         subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
+        end subroutine gr_makeFineLevelFromCoarseCallback
+    end interface
+
+    interface
+        subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
             use iso_c_binding
             use amrex_fort_module, ONLY : wp => amrex_real
             implicit none
@@ -46,19 +60,19 @@ module amrex_interfaces
             real(wp),    intent(in), value :: time
             type(c_ptr), intent(in), value :: pba
             type(c_ptr), intent(in), value :: pdm
-         end subroutine gr_remakeLevelCallback
-      end interface 
- 
-      interface
-         subroutine gr_clearLevelCallback(lev) bind(c)
+        end subroutine gr_remakeLevelCallback
+    end interface 
+
+    interface
+        subroutine gr_clearLevelCallback(lev) bind(c)
             implicit none
             integer, intent(in), value :: lev
-         end subroutine gr_clearLevelCallback
-      end interface
- 
-      interface
-         subroutine gr_markRefineDerefineCallback(lev, tags, time, &
-                                          tagval, clearval) bind(c)
+        end subroutine gr_clearLevelCallback
+    end interface
+
+    interface
+        subroutine gr_markRefineDerefineCallback(lev, tags, time, &
+                                                 tagval, clearval) bind(c)
             use iso_c_binding
             use amrex_fort_module, ONLY : wp => amrex_real
             implicit none
@@ -67,11 +81,11 @@ module amrex_interfaces
             real(wp),          intent(in), value :: time
             character(c_char), intent(in), value :: tagval
             character(c_char), intent(in), value :: clearval
-         end subroutine gr_markRefineDerefineCallback
-      end interface
+        end subroutine gr_markRefineDerefineCallback
+    end interface
 
-      interface
-         subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
+    interface
+        subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
             use iso_c_binding
             use amrex_fort_module, ONLY : wp => amrex_real
             implicit none
@@ -80,23 +94,23 @@ module amrex_interfaces
             integer(c_int), value :: scomp
             integer(c_int), value :: ncomp
             real(wp),       value :: time
-         end subroutine gr_fillPhysicalBC
-      end interface
- 
-      interface
-         subroutine gr_getFinestLevel(level)
+        end subroutine gr_fillPhysicalBC
+    end interface
+
+    interface
+        subroutine gr_getFinestLevel(level)
             implicit none
             integer, intent(IN) :: level
-         end subroutine gr_getFinestLevel
-      end interface
+        end subroutine gr_getFinestLevel
+    end interface
 
-      interface
-         subroutine gr_writeData(stepno, t_new)
+    interface
+        subroutine gr_writeData(stepno, t_new)
             implicit none
             integer, intent(IN) :: stepno
             real,    intent(IN) :: t_new
-         end subroutine gr_writeData
-      end interface
+        end subroutine gr_writeData
+    end interface
 
-end module amrex_interfaces
+end module gr_amrexInterface
 

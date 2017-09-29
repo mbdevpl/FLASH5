@@ -1,4 +1,4 @@
-subroutine gr_amrex_init()
+subroutine gr_amrexInit()
   use iso_c_binding
   
   use amrex_amr_module,            ONLY : amrex_init, &
@@ -10,17 +10,17 @@ subroutine gr_amrex_init()
                                           amrex_parmparse_destroy
   use amrex_geometry_module,       ONLY : amrex_pmask
   use amrex_octree_module,         ONLY : amrex_octree_init
-  use amrex_interfaces,            ONLY : gr_initNewLevelCallback, &
-                                          gr_makeFineLevelFromCoarseCallback, &
-                                          gr_remakeLevelCallback, &
-                                          gr_clearLevelCallback, &
-                                          gr_markRefineDerefineCallback
 
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
   use Driver_interface,            ONLY : Driver_abortFlash
   use Grid_data,                   ONLY : gr_geometry, &
                                           gr_domainBC
+  use gr_amrexInterface,           ONLY : gr_initNewLevelCallback, &
+                                          gr_makeFineLevelFromCoarseCallback, &
+                                          gr_remakeLevelCallback, &
+                                          gr_clearLevelCallback, &
+                                          gr_markRefineDerefineCallback
 
   implicit none
 
@@ -54,7 +54,7 @@ subroutine gr_amrex_init()
   integer :: is_periodic(MDIM) = 0
   integer :: is_periodic_am(MDIM) = 0
 
-  write(*,*) "[gr_amrex_init] Starting"
+  write(*,*) "[gr_amrexInit] Starting"
  
   !!!!!----- INITIALIZE AMReX & CONFIGURE MANUALLY
   ! Do not parse command line or any file for configuration
@@ -159,19 +159,19 @@ subroutine gr_amrex_init()
   where (amrex_pmask)  is_periodic_am = 1
 
   if (is_periodic_am(IAXIS) /= is_periodic(IAXIS)) then
-    call Driver_abortFlash("[gr_amrex_init] AMReX does not have correct periodicity in X") 
+    call Driver_abortFlash("[gr_amrexInit] AMReX does not have correct periodicity in X") 
   end if
 #if NDIM >= 2
   if (is_periodic_am(JAXIS) /= is_periodic(JAXIS)) then
-    call Driver_abortFlash("[gr_amrex_init] AMReX does not have correct periodicity in Y") 
+    call Driver_abortFlash("[gr_amrexInit] AMReX does not have correct periodicity in Y") 
   end if
 #if NDIM == 3
   if (is_periodic_am(KAXIS) /= is_periodic(KAXIS)) then
-    call Driver_abortFlash("[gr_amrex_init] AMReX does not have correct periodicity in Z") 
+    call Driver_abortFlash("[gr_amrexInit] AMReX does not have correct periodicity in Z") 
   end if
 #endif
 #endif
   
-  write(*,*) "[gr_amrex_init] Finished"
-end subroutine gr_amrex_init
+  write(*,*) "[gr_amrexInit] Finished"
+end subroutine gr_amrexInit
 

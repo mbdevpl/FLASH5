@@ -45,11 +45,11 @@ subroutine Driver_evolveFlash()
                                       Grid_updateRefinement, &
                                       Grid_getBlkPtr, Grid_releaseBlkPtr
     use Grid_data,             ONLY : gr_meshMe, gr_lRefineMax, gr_maxRefine
-    use amrex_interfaces,      ONLY : gr_getFinestLevel
+    use gr_amrexInterface,     ONLY : gr_getFinestLevel, &
+                                      gr_writeData
+    use gr_physicalMultifabs,  ONLY : unk
     use sim_interface,         ONLY : sim_advance
     use block_metadata,        ONLY : block_metadata_t
-    use gr_physicalMultifabs,  ONLY : unk
-    use amrex_interfaces,      ONLY : gr_writeData
 
     implicit none
 

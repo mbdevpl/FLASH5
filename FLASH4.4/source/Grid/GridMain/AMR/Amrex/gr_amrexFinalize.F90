@@ -1,4 +1,4 @@
-subroutine gr_amrex_finalize()
+subroutine gr_amrexFinalize()
     use iso_c_binding
     use amrex_amr_module
     use amrex_octree_module,    ONLY : amrex_octree_finalize
@@ -7,7 +7,7 @@ subroutine gr_amrex_finalize()
  
     integer :: lev
 
-    write(*,*) "[gr_amrex_finalize] Finalizing"
+    write(*,*) "[gr_amrexFinalize] Finalizing"
   
     ! NOTE: We implement these with the 1-based level indexing scheme native to
     ! so that the AMReX unk has a similar interface to the paramesh unk.
@@ -25,5 +25,5 @@ subroutine gr_amrex_finalize()
     call amrex_amrcore_finalize()
     call amrex_octree_finalize()
     call amrex_finalize()
-end subroutine gr_amrex_finalize
+end subroutine gr_amrexFinalize
 
