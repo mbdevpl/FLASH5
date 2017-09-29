@@ -127,7 +127,7 @@ end subroutine Grid_getSingleCellCoords
 
 
 
-
+#ifdef FLASH_GRID_AMREXTRANSITION
 subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
   use Grid_interface,        ONLY : Grid_getSingleCellCoords_lev
   use amrex_amrcore_module,  ONLY : amrex_geom
@@ -201,4 +201,4 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
   end associate
  
 end subroutine Grid_getSingleCellCoords_Itor
-
+#endif
