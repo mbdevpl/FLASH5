@@ -6,6 +6,7 @@
 subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
   use Grid_interface,      ONLY : Grid_fillGuardCells
+  use Grid_interface,      ONLY : Grid_getMaxRefinement
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
@@ -32,7 +33,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 #include "Flash.h"
 #ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
-!!$  use gr_amrextData
+  use gr_amrextData
 #endif
 
   implicit none
@@ -46,6 +47,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
+  integer:: maxLev
 
   hy_gpotAlreadyUpToDate = .FALSE. ! reset this flag, may be set .TRUE. below if warranted.
 
@@ -61,14 +63,13 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
 #ifdef FLASH_GRID_UG
   hy_fluxCorrect = .false.
+  maxLev = 1
+#else
+  call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 #endif
 
   call Hydro_prepareBuffers()
 
-#ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
-#endif
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
 
 
   !! ***************************************************************************
@@ -97,8 +98,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
      end if
 #endif
      
-     call Grid_fillGuardCells(CENTER,ALLDIR & !) ! DEV: NONONO!
-     ,doEos=.false.,&
+     call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.false.,&
           maskSize=NUNK_VARS, mask=gcMask,makeMaskConsistent=.false.,&
           doLogMask=.NOT.gcMaskLogged)
      
@@ -106,8 +106,17 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   end if
 
 
+
   if (hy_doUnsplitLoop0) then
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+#endif
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
      call Hydro_doLoop0()
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
+#endif
   endif
 
 
@@ -120,10 +129,14 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   end if
 #endif
 
-  ! DEV: NONONO!
   call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.true.,eosMode=hy_eosModeGc,&
        maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,&
        doLogMask=.NOT.gcMaskLogged)
+#ifdef FLASH_GRID_AMREXTRANSITION
+  call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+#endif
+  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
+
 
   call Timers_stop("Head")
 
@@ -167,9 +180,17 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
 #ifdef GPOT_VAR
   if (hy_useGravity) then
+  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
+#endif
      ! The following call invokes Gravity_potentialListOfBlocks and related stuff,
      ! to prepare for retrieving updated accelerations below.
      call hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
+#ifdef FLASH_GRID_AMREXTRANSITION
+     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+#endif
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
   endif
 #endif
 

@@ -38,7 +38,8 @@ subroutine amr_prolong_gen_unk1_fun &
 
   use Grid_data,ONLY: gr_convertToConsvdForMeshCalls, gr_convertToConsvdInMeshInterp, &
        gr_vartypes, gr_dirGeom, gr_smallx, gr_intpol
-#ifndef FLASH_GRID_ANYAMREX
+#ifndef FLASH_GRID_AMREX
+  ! We should not be compiling this file in the FLASH_GRID_AMREX case anyway!
   use gr_specificData,ONLY: gr_oneBlock
 #endif
   implicit none
