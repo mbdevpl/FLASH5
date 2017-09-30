@@ -256,7 +256,7 @@
 !!#define DEBUG_GRID
 
 
-subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getBlkData(blockDesc, gridDataStruct, structIndex, beginCount, &
      startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
@@ -271,7 +271,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
 #include "Flash.h"
 #include "constants.h"
 
-  type(block_metadata_t), intent(in) :: block
+  type(block_metadata_t), intent(in) :: blockDesc
   integer, intent(in) :: structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(MDIM), intent(in) :: dataSize
@@ -288,7 +288,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
 
   ! DEVNOTE : ALL THIS TESTING NEEDS TO BE UPDATED
   isget = .true.
-  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
 
 
   !verify beginCount is set to a valid value
@@ -439,7 +439,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   xe = 1
 
 
-  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataSize,beginCount,&
+  call gr_getDataOffsets(blockDesc,gridDataStruct,startingPos,dataSize,beginCount,&
        begOffset,getIntPtr)
 
 #if NDIM > 2
@@ -456,24 +456,24 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   xe = xb + dataSize(IAXIS) -1
 
   if(gridDataStruct == CELL_VOLUME) then
-     call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,datablock,beginCount)
+     call gr_getCellVol(xb,xe,yb,ye,zb,ze,blockDesc,datablock,beginCount)
 #ifdef DEBUG_GRID
      print*,'the volume calculated is',maxval(datablock)
 #endif
   elseif (gridDataStruct == CELL_FACEAREA) then
-     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,dataBlock,beginCount)
+     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,blockDesc,dataBlock,beginCount)
   elseif(getIntPtr) then        !DEVNOTE: This case should never happen, unless NO_PERMANENT_GUARDCELLS
-     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
-     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
+     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        datablock(:,:,:)=solnData(xb:xe,yb:ye,zb:ze,structIndex)
 !!$     else
 !!$     end if
-     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
  
   end if
   

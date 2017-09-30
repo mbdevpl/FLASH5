@@ -1,11 +1,11 @@
-!!****if* source/Grid/GridMain/Grid_getPointData_desc
+!!****if* source/Grid/GridMain/Grid_getPointData_blkid
 !!
 !! NAME
-!!  Grid_getPointData_desc
+!!  Grid_getPointData_blkid
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getPointData_desc(integer(IN) :: blockID,
+!!  Grid_getPointData_blkid(integer(IN) :: blockID,
 !!                    integer(IN) :: gridDataStruct,
 !!                    integer(IN) :: structIndex,
 !!                    integer(IN) :: beginCount, 
@@ -147,7 +147,7 @@
 !!
 !!          do blockID = 1, localNumBlocks
 !!  
-!!             call Grid_getPointData_desc(blockID, CENTER, DENS_VAR, EXTERIOR, &
+!!             call Grid_getPointData_blkid(blockID, CENTER, DENS_VAR, EXTERIOR, &
 !!                               position, dataBlock)
 !!  
 !!          end do
@@ -199,7 +199,7 @@
 !!
 !!          do blockID = 1, localNumBlocks
 !!  
-!!             call Grid_getPointData_desc(blockID, CELL_FACEAREA, IHI_FACE, INTERIOR, &
+!!             call Grid_getPointData_blkid(blockID, CELL_FACEAREA, IHI_FACE, INTERIOR, &
 !!                               position, dataBlock)
 !!  
 !!          end do
@@ -220,7 +220,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getPointData_desc(block, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getPointData_blkid(blockID, gridDataStruct, structIndex, beginCount, &
      position, datablock)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
@@ -234,23 +234,20 @@ subroutine Grid_getPointData_desc(block, gridDataStruct, structIndex, beginCount
 #include "constants.h"
 #include "Flash.h"
 
-  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: blockID
   integer, intent(in) :: structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(in) :: position
   real, intent(out) :: datablock
   real,dimension(1,1,1) :: cellvalues
   real, pointer, dimension(:,:,:,:) :: solnData
 
-  integer :: blockID
-  integer ::  var, i, j, k, ii
+   integer ::  var, i, j, k, ii
   integer,dimension(MDIM) :: begOffset,dataLen
   integer :: imax, jmax, kmax,xb,xe,yb,ye,zb,ze
 
 
   logical :: isget
   logical :: getIntPtr
-
-  blockID = block%id
 
 #ifdef DEBUG_GRID
   isget = .true.
@@ -260,15 +257,15 @@ subroutine Grid_getPointData_desc(block, gridDataStruct, structIndex, beginCount
 
   !verify we have a valid blockid
   if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,' Grid_getPointData_desc invalid blockid ', blockid
-     call Driver_abortFlash("[Grid_getPointData_desc] invalid blockid ")
+     print*,' Grid_getPointData_blkid invalid blockid ', blockid
+     call Driver_abortFlash("[Grid_getPointData_blkid] invalid blockid ")
   end if
 
 
   
   !verify beginCount is set to a valid value
   if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
-     print *, "Grid_getPointData_desc: beginCount set to improper value"
+     print *, "Grid_getPointData_blkid: beginCount set to improper value"
      print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
      call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
   end if
@@ -279,53 +276,53 @@ subroutine Grid_getPointData_desc(block, gridDataStruct, structIndex, beginCount
   if(beginCount == EXTERIOR) then
     
      if (position(1) > imax) then
-        call Driver_abortFlash("Grid_getPointData_desc position(1) index larger than block")
+        call Driver_abortFlash("Grid_getPointData_blkid position(1) index larger than block")
      end if
 
      if ((NDIM > 1) .and. (position(2) > jmax)) then
-        call Driver_abortFlash("Grid_getPointData_desc position(2) index larger than block")
+        call Driver_abortFlash("Grid_getPointData_blkid position(2) index larger than block")
      end if
     
      if ((NDIM > 2) .and. (position(3) > kmax)) then
-        call Driver_abortFlash("Grid_getPointData_desc position(3) index larger than block")
+        call Driver_abortFlash("Grid_getPointData_blkid position(3) index larger than block")
      end if
     
      if (position(1) < 1) then
-        call Driver_abortFlash("Grid_getPointData_desc position(1) index smaller than 1")
+        call Driver_abortFlash("Grid_getPointData_blkid position(1) index smaller than 1")
      end if
 
      if ((NDIM > 1) .and. (position(2) < 1)) then
-        call Driver_abortFlash("Grid_getPointData_desc position(2) index smaller than 1")
+        call Driver_abortFlash("Grid_getPointData_blkid position(2) index smaller than 1")
      end if
     
      if ((NDIM > 2) .and. (position(3) < 1)) then
-        call Driver_abortFlash("Grid_getPointData_desc position(3) index smaller than 1")
+        call Driver_abortFlash("Grid_getPointData_blkid position(3) index smaller than 1")
      end if
         
   else !beginCount == INTERIOR
 
      if ((position(1) + gr_iguard -1) > imax) then
-        call Driver_abortFlash("Grid_getPointData_desc position(1) index larger than block")
+        call Driver_abortFlash("Grid_getPointData_blkid position(1) index larger than block")
      end if
 
      if ((NDIM > 1) .and. ((position(2) + gr_jguard -1) > jmax)) then
-        call Driver_abortFlash("Grid_getPointData_desc position(2) index larger than block")
+        call Driver_abortFlash("Grid_getPointData_blkid position(2) index larger than block")
      end if
     
      if ((NDIM > 2) .and. ((position(3) + gr_kguard -1) > kmax)) then
-        call Driver_abortFlash("Grid_getPointData_desc position(3) index larger than block")
+        call Driver_abortFlash("Grid_getPointData_blkid position(3) index larger than block")
      end if
     
      if (position(1) < 1) then
-        call Driver_abortFlash("Grid_getPointData_desc position(1) index smaller than 1")
+        call Driver_abortFlash("Grid_getPointData_blkid position(1) index smaller than 1")
      end if
 
      if ((NDIM > 1) .and. (position(2) < 1)) then
-        call Driver_abortFlash("Grid_getPointData_desc position(2) index smaller than 1")
+        call Driver_abortFlash("Grid_getPointData_blkid position(2) index smaller than 1")
      end if
     
      if ((NDIM > 2) .and. (position(3) < 1)) then
-        call Driver_abortFlash("Grid_getPointData_desc position(3) index smaller than 1")
+        call Driver_abortFlash("Grid_getPointData_blkid position(3) index smaller than 1")
      end if
 
   end if
@@ -346,10 +343,10 @@ subroutine Grid_getPointData_desc(block, gridDataStruct, structIndex, beginCount
      xb=i;xe=xb;yb=j;ye=yb;zb=k;ze=zb
      
      if(gridDataStruct==CELL_VOLUME) then
-        call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues)
+        call gr_getCellVol(xb,xe,yb,ye,zb,ze,blockID,cellvalues)
      else
         call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,&
-             structIndex,block,cellvalues)
+             structIndex,blockID,cellvalues)
      end if
      datablock=cellvalues(1,1,1)
   elseif(getIntPtr) then
@@ -357,13 +354,13 @@ subroutine Grid_getPointData_desc(block, gridDataStruct, structIndex, beginCount
      datablock = solnData(structIndex,i,j,k)
      call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        datablock = solnData(i,j,k,structIndex)
 !!$     else
 !!$     end if
      datablock = solnData(structIndex,i,j,k)
-     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
   end if
   return
-end subroutine Grid_getPointData_desc
+end subroutine Grid_getPointData_blkid

@@ -242,26 +242,25 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getBlkData(block, dataType, structIndex, beginCount, &
+     subroutine Grid_getBlkData(blockDesc, dataType, structIndex, beginCount, &
           startingPos, datablock, dataSize)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(in) :: block
+       type(block_metadata_t), intent(in) :: blockDesc
        integer, intent(in) :: structIndex, beginCount, dataType
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, dimension(3), intent(in) :: dataSize
        real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(out) :: datablock
      end subroutine Grid_getBlkData
-     subroutine Grid_getBlkData_desc(block, dataType, structIndex, beginCount, &
+     subroutine Grid_getBlkData_blkid(blockID, dataType, structIndex, beginCount, &
           startingPos, datablock, dataSize)
-       use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(in) :: block
+       integer, intent(in) :: blockID
        integer, intent(in) :: structIndex, beginCount, dataType
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, dimension(3), intent(in) :: dataSize
        real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(out) :: datablock
-     end subroutine Grid_getBlkData_desc
+     end subroutine Grid_getBlkData_blkid
   end interface
 
   interface
@@ -390,7 +389,7 @@ Module Grid_interface
   end interface
 
   interface Grid_getPlaneData
-     subroutine Grid_getPlaneData(blockID, gridDataStruct, variable, beginCount, &
+     subroutine Grid_getPlaneData_blkid(blockID, gridDataStruct, variable, beginCount, &
           plane, startingPos, datablock, dataSize)
        implicit none
        integer, intent(IN) :: blockID
@@ -398,41 +397,40 @@ Module Grid_interface
        integer, dimension(MDIM), intent(IN) :: startingPos
        integer, dimension(2), intent(IN) :: dataSize
        real, dimension(datasize(1), dataSize(2)),intent(OUT) :: datablock
-     end subroutine Grid_getPlaneData
-     subroutine Grid_getPlaneData_desc(block, gridDataStruct, variable, beginCount, &
+     end subroutine Grid_getPlaneData_blkid
+     subroutine Grid_getPlaneData(blockDesc, gridDataStruct, variable, beginCount, &
           plane, startingPos, datablock, dataSize)
        use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(IN) :: block
+       type(block_metadata_t), intent(IN) :: blockDesc
        integer, intent(IN) :: variable, beginCount, plane, gridDataStruct
        integer, dimension(MDIM), intent(IN) :: startingPos
        integer, dimension(2), intent(IN) :: dataSize
        real, dimension(datasize(1), dataSize(2)),intent(OUT) :: datablock
-     end subroutine Grid_getPlaneData_desc
+     end subroutine Grid_getPlaneData
   end interface
 
   interface Grid_getPointData
-     subroutine Grid_getPointData(block, gridDataStruct, variable, beginCount, &
+     subroutine Grid_getPointData(blockDesc, gridDataStruct, variable, beginCount, &
           position, datablock)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(in) :: block
+       type(block_metadata_t), intent(in) :: blockDesc
        integer, intent(in) :: variable, beginCount, gridDataStruct
        integer, dimension(MDIM), intent(in) :: position
        real, intent(out) :: datablock
      end subroutine Grid_getPointData
-
-!!$     subroutine Grid_getPointData_desc(blockDesc, gridDataStruct, variable, beginCount, &
-!!$          position, datablock)
-!!$       use block_metadata, ONLY : block_metadata_t
-!!$       type(block_metadata_t), intent(in) :: blockDesc
-!!$       integer, intent(in) :: variable, beginCount, gridDataStruct
-!!$       integer, dimension(MDIM), intent(in) :: position
-!!$       real, intent(out) :: datablock
-!!$     end subroutine Grid_getPointData_desc
+     subroutine Grid_getPointData_blkid(blockID, gridDataStruct, variable, beginCount, &
+          position, datablock)
+       implicit none
+       integer, intent(in) :: blockID
+       integer, intent(in) :: variable, beginCount, gridDataStruct
+       integer, dimension(MDIM), intent(in) :: position
+       real, intent(out) :: datablock
+     end subroutine Grid_getPointData_blkid
   end interface
 
   interface Grid_getRowData
-     subroutine Grid_getRowData(blockID, gridDataStruct, variable, beginCount, &
+     subroutine Grid_getRowData_blkid(blockID, gridDataStruct, variable, beginCount, &
           row, startingPos, datablock, dataSize)
        implicit none
        integer, intent(in) :: blockID
@@ -440,16 +438,17 @@ Module Grid_interface
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, intent(in) :: dataSize
        real, dimension(datasize),intent(out) :: datablock
-     end subroutine Grid_getRowData
-     subroutine Grid_getRowData_desc(block, gridDataStruct, variable, beginCount, &
+     end subroutine Grid_getRowData_blkid
+     subroutine Grid_getRowData(blockDesc, gridDataStruct, variable, beginCount, &
           row, startingPos, datablock, dataSize)
        use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: block
+       implicit none
+       type(block_metadata_t), intent(in) :: blockDesc
        integer, intent(in) :: variable, beginCount, row, gridDataStruct
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, intent(in) :: dataSize
        real, dimension(datasize),intent(out) :: datablock
-     end subroutine Grid_getRowData_desc
+     end subroutine Grid_getRowData
   end interface
 
   interface Grid_getSingleCellCoords
@@ -599,14 +598,14 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_putPlaneData(blockid, gridDataStruct, variable, beginCount, &
+     subroutine Grid_putPlaneData_blkid(blockid, gridDataStruct, variable, beginCount, &
           plane, startingPos, datablock, dataSize)
        integer, intent(in) :: blockid, variable, beginCount, plane, gridDataStruct
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, dimension(2), intent(in) :: dataSize
        real, dimension(datasize(1), dataSize(2)),intent(in) :: datablock
-     end subroutine Grid_putPlaneData
-     subroutine Grid_putPlaneData_desc(blockDesc, gridDataStruct, variable, beginCount, &
+     end subroutine Grid_putPlaneData_blkid
+     subroutine Grid_putPlaneData(blockDesc, gridDataStruct, variable, beginCount, &
           plane, startingPos, datablock, dataSize)
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t), intent(in) :: blockDesc
@@ -614,7 +613,7 @@ Module Grid_interface
        integer, dimension(MDIM), intent(in) :: startingPos
        integer, dimension(2), intent(in) :: dataSize
        real, dimension(datasize(1), dataSize(2)),intent(in) :: datablock
-     end subroutine Grid_putPlaneData_desc
+     end subroutine Grid_putPlaneData
   end interface
 
   interface Grid_putPointData

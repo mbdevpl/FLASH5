@@ -1,11 +1,11 @@
-!!****if* source/Grid/GridMain/Grid_getBlkData_desc
+!!****if* source/Grid/GridMain/Grid_getBlkData_blkid
 !!
 !! NAME
-!!  Grid_getBlkData_desc
+!!  Grid_getBlkData_blkid
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkData_desc(integer(IN) :: blockID,
+!!  Grid_getBlkData_blkid(integer(IN) :: blockID,
 !!                  integer(IN) :: gridDataStruct,
 !!                  integer(IN) :: structIndex,
 !!                  integer(IN) :: beginCount, 
@@ -176,7 +176,7 @@
 !!
 !!          do blockID = 1, localNumBlocks
 !!  
-!!             call Grid_getBlkData_desc(blockID, CENTER, DENS_VAR, EXTERIOR, &
+!!             call Grid_getBlkData_blkid(blockID, CENTER, DENS_VAR, EXTERIOR, &
 !!                               startingPos, dataBlock, dataSize)
 !!  
 !!          end do
@@ -235,7 +235,7 @@
 !!
 !!          do blockID = 1, localNumBlocks
 !!  
-!!             call Grid_getBlkData_desc(blockID, CELL_VOLUME, 0, INTERIOR, &
+!!             call Grid_getBlkData_blkid(blockID, CELL_VOLUME, 0, INTERIOR, &
 !!                               startingPos, dataBlock, dataSize)
 !!  
 !!          end do
@@ -255,36 +255,33 @@
 !!#define DEBUG_GRID
 
 
-subroutine Grid_getBlkData_desc(block, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getBlkData_blkid(blockID, gridDataStruct, structIndex, beginCount, &
      startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
-  use block_metadata, ONLY : block_metadata_t
+  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
 
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
 
-  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: blockID
   integer, intent(in) :: structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(MDIM), intent(in) :: dataSize
   real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(out) :: datablock
   real, pointer, dimension(:,:,:,:) :: solnData
 
-  integer :: blockID
   integer :: i, var, xb, xe, yb, ye, zb, ze
   integer,dimension(MDIM) :: begOffset
   integer :: imax, jmax, kmax
   logical :: isget
   logical :: getIntPtr
   
-  blockID = block%id
-
 #ifdef DEBUG_GRID
 
   isget = .true.
@@ -293,8 +290,8 @@ subroutine Grid_getBlkData_desc(block, gridDataStruct, structIndex, beginCount, 
 
   !verify we have a valid blockid
   if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,' Grid_getBlkData_desc : invalid blockid ', blockid
-     call Driver_abortFlash("[Grid_getBlkData_desc] : invalid blockid ")
+     print*,' Grid_getBlkData_blkid : invalid blockid ', blockid
+     call Driver_abortFlash("[Grid_getBlkData_blkid] : invalid blockid ")
   end if
   
 
@@ -302,7 +299,7 @@ subroutine Grid_getBlkData_desc(block, gridDataStruct, structIndex, beginCount, 
 
   !verify beginCount is set to a valid value
   if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
-     print *, "Grid_getBlkData_desc: beginCount set to improper value"
+     print *, "Grid_getBlkData_blkid: beginCount set to improper value"
      print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
      call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
   end if
@@ -314,9 +311,9 @@ subroutine Grid_getBlkData_desc(block, gridDataStruct, structIndex, beginCount, 
       (dataSize(2) > jmax) .or. &
       (dataSize(3) > kmax)) then
      
-     print *, "Grid_getBlkData_desc: dataSize(1) (2) or (3) too big"
+     print *, "Grid_getBlkData_blkid: dataSize(1) (2) or (3) too big"
      print *,"You are requesting more cells than block has in a dimension"
-     call Driver_abortFlash("Grid_getBlkData_desc: dataSize(1) (2) or (3) too big")
+     call Driver_abortFlash("Grid_getBlkData_blkid: dataSize(1) (2) or (3) too big")
   end if
 
 
@@ -325,9 +322,9 @@ subroutine Grid_getBlkData_desc(block, gridDataStruct, structIndex, beginCount, 
       (dataSize(2) < 1) .or. &
       (dataSize(3) < 1)) then
      
-     print *, "Grid_getBlkData_desc: dataSize(1) (2) or (3) too small"
+     print *, "Grid_getBlkData_blkid: dataSize(1) (2) or (3) too small"
      print *,"You are requesting more < 1 cell in a dimension of block, 1 is the min"
-     call Driver_abortFlash("Grid_getBlkData_desc: dataSize(1) (2) or (3) too small")
+     call Driver_abortFlash("Grid_getBlkData_blkid: dataSize(1) (2) or (3) too small")
   end if
   
 
@@ -336,53 +333,53 @@ subroutine Grid_getBlkData_desc(block, gridDataStruct, structIndex, beginCount, 
   if(beginCount == EXTERIOR) then
     
      if (startingPos(1) > imax) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(1) index larger than block")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(1) index larger than block")
      end if
 
      if ((NDIM > 1) .and. (startingPos(2) > jmax)) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(2) index larger than block")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(2) index larger than block")
      end if
     
      if ((NDIM > 2) .and. (startingPos(3) > kmax)) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(3) index larger than block")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(3) index larger than block")
      end if
     
      if (startingPos(1) < 1) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(1) index smaller than 1")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(1) index smaller than 1")
      end if
 
      if ((NDIM > 1) .and. (startingPos(2) < 1)) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(2) index smaller than 1")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(2) index smaller than 1")
      end if
     
      if ((NDIM > 2) .and. (startingPos(3) < 1)) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(3) index smaller than 1")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(3) index smaller than 1")
      end if
         
   else !beginCount == INTERIOR
 
      if ((startingPos(1) + gr_iguard -1) > imax) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(1) index larger than block")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(1) index larger than block")
      end if
 
      if ((NDIM > 1) .and. ((startingPos(2) + gr_jguard -1) > jmax)) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(2) index larger than block")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(2) index larger than block")
      end if
     
      if ((NDIM > 2) .and. ((startingPos(3) + gr_kguard -1) > kmax)) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(3) index larger than block")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(3) index larger than block")
      end if
     
      if (startingPos(1) < 1) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(1) index smaller than 1")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(1) index smaller than 1")
      end if
 
      if ((NDIM > 1) .and. (startingPos(2) < 1)) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(2) index smaller than 1")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(2) index smaller than 1")
      end if
     
      if ((NDIM > 2) .and. (startingPos(3) < 1)) then
-        call Driver_abortFlash("Grid_getBlkData_desc startingPos(3) index smaller than 1")
+        call Driver_abortFlash("Grid_getBlkData_blkid startingPos(3) index smaller than 1")
      end if
 
   end if
@@ -394,43 +391,43 @@ subroutine Grid_getBlkData_desc(block, gridDataStruct, structIndex, beginCount, 
   if(beginCount == EXTERIOR) then
 
      if ((startingPos(IAXIS) + dataSize(1) -1) > imax) then
-        print *, "Error: Grid_getBlkData_desc"
-        call Driver_abortFlash("Grid_getBlkData_desc indicies too large")
+        print *, "Error: Grid_getBlkData_blkid"
+        call Driver_abortFlash("Grid_getBlkData_blkid indicies too large")
      end if
      
 
      if(NDIM > 1) then
         if ((startingPos(JAXIS) + dataSize(2) -1) > jmax) then
-           print *, "Error: Grid_getBlkData_desc"
-           call Driver_abortFlash("Grid_getBlkData_desc indicies too large")
+           print *, "Error: Grid_getBlkData_blkid"
+           call Driver_abortFlash("Grid_getBlkData_blkid indicies too large")
         end if
      end if
 
      if(NDIM > 2) then
         if ((startingPos(KAXIS) + dataSize(3) -1) > kmax) then
-           print *, "Error: Grid_getBlkData_desc"
-           call Driver_abortFlash("Grid_getBlkData_desc indicies too large")
+           print *, "Error: Grid_getBlkData_blkid"
+           call Driver_abortFlash("Grid_getBlkData_blkid indicies too large")
         end if
      end if
   else if(beginCount == INTERIOR) then
 
      if ((startingPos(IAXIS) + dataSize(1) + gr_iguard -1) > imax) then
-        print *, "Error: Grid_getBlkData_desc"
-        call Driver_abortFlash("Grid_getBlkData_desc indicies too large")
+        print *, "Error: Grid_getBlkData_blkid"
+        call Driver_abortFlash("Grid_getBlkData_blkid indicies too large")
      end if
      
 
      if(NDIM > 1) then
         if ((startingPos(JAXIS) + dataSize(2) + gr_jguard -1) > jmax) then
-           print *, "Error: Grid_getBlkData_desc"
-           call Driver_abortFlash("Grid_getBlkData_desc indicies too large")
+           print *, "Error: Grid_getBlkData_blkid"
+           call Driver_abortFlash("Grid_getBlkData_blkid indicies too large")
         end if
      end if
      
      if(NDIM > 2) then
         if ((startingPos(KAXIS) + dataSize(3) + gr_kguard -1) > kmax) then
-           print *, "Error: Grid_getBlkData_desc"
-           call Driver_abortFlash("Grid_getBlkData_desc indicies too large")
+           print *, "Error: Grid_getBlkData_blkid"
+           call Driver_abortFlash("Grid_getBlkData_blkid indicies too large")
         end if
      end if
   end if
@@ -488,5 +485,5 @@ subroutine Grid_getBlkData_desc(block, gridDataStruct, structIndex, beginCount, 
   end if
   
   return
-end subroutine Grid_getBlkData_desc
+end subroutine Grid_getBlkData_blkid
 
