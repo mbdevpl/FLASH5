@@ -107,4 +107,17 @@ subroutine Eos_putData(axis,pos,vecLen,solnData,gridDataStruct,eosData)
 end subroutine Eos_putData
 
 
+! a variant of Eos_putData where eosData is declard as an array of rank 2.
+subroutine Eos_putDataR2(axis,pos,vecLen,solnData,gridDataStruct,eosData)
+  
+  implicit none
+
+  integer, intent(in) :: axis,vecLen,gridDataStruct
+  integer,dimension(MDIM), intent(in) :: pos
+  real,intent(IN) :: eosData(:,:)
+  real, pointer, dimension(:,:,:,:) :: solnData
+  
+end subroutine Eos_putDataR2
+
+
 
