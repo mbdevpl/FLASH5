@@ -97,6 +97,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
         allocate(dataBlk(lim(LOW,IAXIS):lim(HIGH,IAXIS)+1,&
              lim(LOW,JAXIS):lim(HIGH,JAXIS), &
              lim(LOW,KAXIS):lim(HIGH,KAXIS)))
+!        call Grid_getBlkData(block, FACEX, AREA_FACE_VAR, GLOBALIDX1, &
         call Grid_getBlkData(block, CELL_FACEAREA, ILO_FACE,GLOBALIDX1, &
              (/lim(LOW,IAXIS),lim(LOW,JAXIS),lim(LOW,KAXIS)/), &
              dataBlk(lim(LOW,IAXIS):lim(HIGH,IAXIS)+1,&
@@ -105,13 +106,14 @@ subroutine Grid_unitTest(fileUnit,perfect)
              (/isize+1, jsize, ksize/) )
         error = error+maxval(abs(dataBlk(:,:,:)-&
              facevarx(1,beg(IAXIS):fin(IAXIS),beg(JAXIS):fin(JAXIS),beg(KAXIS):fin(KAXIS),block%id)))
-        
+
         startingPos=1
         beg=startingPos+blkLimits(LOW,:)-1
         fin=beg+blkLimits(HIGH,:)-blkLimits(LOW,:)
 
         deallocate(dataBlk)
         print*,'Grid_getBlkData  ::  error after face get is ',error
+        if (error > 0) perfect = .FALSE.
              
         error=0.0
         allocate(dataBlk(lim(LOW,IAXIS):lim(HIGH,IAXIS),&
@@ -129,6 +131,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
              unk(1,beg(IAXIS):fin(IAXIS),beg(JAXIS):fin(JAXIS),beg(KAXIS):fin(KAXIS),block%id)))
         deallocate(dataBlk)
         print*,'Grid_getBlkData  ::  the cumulative error after Center get is ',error
+        if (error > 0) perfect = .FALSE.
 
         !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -------x------- !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -160,6 +163,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
 
         deallocate(dataPlane)
         print*,'Grid_getPlaneData  ::  error after face get is ',error
+        if (error > 0) perfect = .FALSE.
              
         error=0.0
         allocate(dataPlane(lim(LOW,IAXIS):lim(HIGH,IAXIS),&
@@ -173,6 +177,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
              unk(1,beg(IAXIS):fin(IAXIS),beg(JAXIS):fin(JAXIS),beg(KAXIS),block%id)))
         deallocate(dataPlane)
         print*,'Grid_getPlaneData  ::  the cumulative error after Center get is ',error
+        if (error > 0) perfect = .FALSE.
 
         !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -------x------- !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -201,6 +206,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
 
         deallocate(dataRow)
         print*,'Grid_getRowData  ::  error after face get is ',error
+        if (error > 0) perfect = .FALSE.
              
         error=0.0
         allocate(dataRow(lim(LOW,IAXIS):lim(HIGH,IAXIS)))
@@ -212,6 +218,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
              unk(1,beg(IAXIS):fin(IAXIS),beg(JAXIS),beg(KAXIS),block%id)))
         deallocate(dataRow)
         print*,'Grid_getRowData  ::  the cumulative error after Center get is ',error
+        if (error > 0) perfect = .FALSE.
 
         !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Test for Grid_getPointData  !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         startingPos=1
@@ -235,6 +242,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
         fin=beg+blkLimits(HIGH,:)-blkLimits(LOW,:)
 
         print*,'Grid_getPointData  ::  error after face get is ',error
+        if (error > 0) perfect = .FALSE.
              
         error=0.0
         call Grid_getPointData(block, CELL_VOLUME, 0, GLOBALIDX1, &
@@ -243,6 +251,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
         error = error+abs(dataPoint-&
              unk(1,beg(IAXIS),beg(JAXIS),beg(KAXIS),block%id))
         print*,'Grid_getPointData  ::  the cumulative error after Center get is ',error
+        if (error > 0) perfect = .FALSE.
 
         !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -------x------- !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
