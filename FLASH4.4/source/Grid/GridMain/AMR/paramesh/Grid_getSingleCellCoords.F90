@@ -114,6 +114,8 @@ subroutine Grid_getSingleCellCoords(ind, blockId,edge, beginCount,coords)
 #if NDIM==3
      coords(KAXIS)=gr_oneBlock(BlockId)%thirdAxisCoords(edge,ind(KAXIS)+NGUARD)
 #endif
+  else
+     call Driver_abortFlash("Grid_getSingleCellCoords: invalid beginCount argument!'")
   endif
 
 

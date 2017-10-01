@@ -63,15 +63,17 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
 
   real :: areaFactor_1, areaFactor_2, areaFactor_3
   integer :: blockID
+  integer :: level
   integer :: i,j,k
 
   blockID = block%id
+  level   = block%level
 
   if (gr_geometry==CARTESIAN) then
      if(NDIM==1) then
         dataBlock = 1.00
      else
-        call Grid_getDeltas(block%level,del)
+        call Grid_getDeltas(level,del)
         select case(face)
         case(ILO_FACE,IHI_FACE)
            dataBlock=del(JAXIS)
@@ -273,50 +275,68 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
 contains
   pure real function ICOORD_left(i)
     integer,VALUE :: i
+    integer       :: i0
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        ICOORD_left = ICOORD_OB_LEFT(i)
     else
-       ICOORD_left = gr_globalDomain(LOW,IAXIS) + (block%cid(IAXIS)-1)*gr_delta(IAXIS,gr_lrefineMax)
+       i0 = i-1
+       if (beginCount==EXTERIOR .OR. beginCount==INTERIOR) i0 = i + block%limitsGC(LOW,IAXIS) - 2
+       ICOORD_left = gr_globalDomain(LOW,IAXIS) + i0 * gr_delta(IAXIS,level)
     end if
   end function ICOORD_left
   pure real function ICOORD_right(i)
     integer,VALUE :: i
+    integer       :: i1
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        ICOORD_right = ICOORD_OB_RIGHT(i)
     else
-       ICOORD_right = gr_globalDomain(LOW,IAXIS) + block%cid(IAXIS) * gr_delta(IAXIS,gr_lrefineMax)
+       i1 = i
+       if (beginCount==EXTERIOR .OR. beginCount==INTERIOR) i1 = i + block%limitsGC(LOW,IAXIS) - 1
+       ICOORD_right = gr_globalDomain(LOW,IAXIS) + i1 * gr_delta(IAXIS,level)
     end if
   end function ICOORD_right
   pure real function JCOORD_left(i)
     integer,VALUE :: i
+    integer       :: i0
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        JCOORD_left = JCOORD_OB_LEFT(i)
     else
-       JCOORD_left = gr_globalDomain(LOW,JAXIS) + (block%cid(JAXIS)-1)*gr_delta(JAXIS,gr_lrefineMax)
+       i0 = i-1
+       if (beginCount==EXTERIOR .OR. beginCount==INTERIOR) i0 = i + block%limitsGC(LOW,JAXIS) - 2
+       JCOORD_left = gr_globalDomain(LOW,JAXIS) + i0 * gr_delta(JAXIS,level)
     end if
   end function JCOORD_left
   pure real function JCOORD_right(i)
     integer,VALUE :: i
+    integer       :: i1
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        JCOORD_right = JCOORD_OB_RIGHT(i)
     else
-       JCOORD_right = gr_globalDomain(LOW,JAXIS) + block%cid(JAXIS) * gr_delta(JAXIS,gr_lrefineMax)
+       i1 = i
+       if (beginCount==EXTERIOR .OR. beginCount==INTERIOR) i1 = i + block%limitsGC(LOW,JAXIS) - 1
+       JCOORD_right = gr_globalDomain(LOW,JAXIS) + i1 * gr_delta(JAXIS,level)
     end if
   end function JCOORD_right
   pure real function KCOORD_left(i)
     integer,VALUE :: i
+    integer       :: i0
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        KCOORD_left = KCOORD_OB_LEFT(i)
     else
-       KCOORD_left = gr_globalDomain(LOW,KAXIS) + (block%cid(KAXIS)-1)*gr_delta(KAXIS,gr_lrefineMax)
+       i0 = i-1
+       if (beginCount==EXTERIOR .OR. beginCount==INTERIOR) i0 = i + block%limitsGC(LOW,KAXIS) - 2
+       KCOORD_left = gr_globalDomain(LOW,KAXIS) + i0 * gr_delta(KAXIS,level)
     end if
   end function KCOORD_left
   pure real function KCOORD_right(i)
     integer,VALUE :: i
+    integer       :: i1
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        KCOORD_right = KCOORD_OB_RIGHT(i)
     else
-       KCOORD_right = gr_globalDomain(LOW,KAXIS) + block%cid(KAXIS) * gr_delta(KAXIS,gr_lrefineMax)
+       i1 = i
+       if (beginCount==EXTERIOR .OR. beginCount==INTERIOR) i1 = i + block%limitsGC(LOW,KAXIS) - 1
+       KCOORD_right = gr_globalDomain(LOW,KAXIS) + i1 * gr_delta(KAXIS,level)
     end if
   end function KCOORD_right
 end subroutine gr_getCellFaceArea
