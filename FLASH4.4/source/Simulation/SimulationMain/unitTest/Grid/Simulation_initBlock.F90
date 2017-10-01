@@ -27,8 +27,9 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Simulation_initBlock(solnData,block)
+subroutine Simulation_initBlock(solnData,blockDesc)
   use Grid_interface, ONLY :  Grid_putPointData, Grid_getBlkPtr, Grid_getCellCoords, Grid_getSingleCellVol
+  use Grid_interface, ONLY :  Grid_releaseBlkPtr
   use Grid_data, ONLY : gr_meshME
   use block_metadata, ONLY : block_metadata_t
 
@@ -39,24 +40,27 @@ subroutine Simulation_initBlock(solnData,block)
   ! (including guardcells)
   
   real,dimension(:,:,:,:),pointer :: solnData,sfacex,sfacey
-  type(block_metadata_t), intent(in) :: block
+  type(block_metadata_t), intent(in) :: blockDesc
 
   integer :: i, j, k, var,blockID
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
   integer, dimension(MDIM) :: grd,size,point
   real,dimension(:),allocatable::xLeft,xRight,xCenter,yCenter,yLeft,yRight
 
-  logical :: gcell=.true.
+  logical,parameter :: gcell=.true.
   real :: areaFactor_1, areaFactor_2, areaFactor_3
 
 
-  blkLimits = block%limits
-  blkLimitsGC = block%limitsGC
-  blockID=block%id
+  blkLimits = blockDesc%limits
+  blkLimitsGC = blockDesc%limitsGC
+  blockID=blockDesc%id
   grd(:)=blkLimits(LOW,:)-blkLimitsGC(LOW,:)
   size=blkLimitsGC(HIGH,:)-blkLimitsGC(LOW,:)+1
-  call Grid_getBlkPtr(blockID,sfacex,FACEX)
-  call Grid_getBlkPtr(blockID,sfacey,FACEY)
+#define TEST_USE_FACEVARS
+#ifdef TEST_USE_FACEVARS
+  call Grid_getBlkPtr(blockDesc,sfacex,FACEX)
+  call Grid_getBlkPtr(blockDesc,sfacey,FACEY)
+#endif
   allocate(xLeft(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
   allocate(xRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
   allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
@@ -65,13 +69,13 @@ subroutine Simulation_initBlock(solnData,block)
   allocate(yRight(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
   allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
 
-  call Grid_getCellCoords(IAXIS,block,LEFT_EDGE,gcell,xLeft,size(IAXIS))
-  call Grid_getCellCoords(IAXIS,block,RIGHT_EDGE,gcell,xRight,size(IAXIS))
-  call Grid_getCellCoords(IAXIS,block,LEFT_EDGE,gcell,xCenter,size(IAXIS))
+  call Grid_getCellCoords(IAXIS,blockDesc,LEFT_EDGE,gcell,xLeft,size(IAXIS))
+  call Grid_getCellCoords(IAXIS,blockDesc,RIGHT_EDGE,gcell,xRight,size(IAXIS))
+  call Grid_getCellCoords(IAXIS,blockDesc,LEFT_EDGE,gcell,xCenter,size(IAXIS))
 
-  call Grid_getCellCoords(JAXIS,block,LEFT_EDGE,gcell,yLeft,size(JAXIS))
-  call Grid_getCellCoords(JAXIS,block,RIGHT_EDGE,gcell,yRight,size(JAXIS))
-  call Grid_getCellCoords(JAXIS,block,LEFT_EDGE,gcell,yCenter,size(JAXIS))
+  call Grid_getCellCoords(JAXIS,blockDesc,LEFT_EDGE,gcell,yLeft,size(JAXIS))
+  call Grid_getCellCoords(JAXIS,blockDesc,RIGHT_EDGE,gcell,yRight,size(JAXIS))
+  call Grid_getCellCoords(JAXIS,blockDesc,LEFT_EDGE,gcell,yCenter,size(JAXIS))
   
   do k=blkLimitsGC(LOW,KAXIS),blkLimitsGC(HIGH,KAXIS)
      do j=blkLimitsGC(LOW,JAXIS),blkLimitsGC(HIGH,JAXIS)
@@ -80,10 +84,16 @@ subroutine Simulation_initBlock(solnData,block)
             areaFactor_1 = xLeft(i)
             areaFactor_2 = yRight(j) - yLeft(j)
             areaFactor_3 = 2.*PI
+#ifdef TEST_USE_FACEVARS
             sfacex(1,i,j,k) = abs(areaFactor_1 * areaFactor_2 * areaFactor_3)
-            call Grid_getSingleCellVol(blockID, GLOBALIDX1, point, solnData(1,i,j,k))
+#endif
+            call Grid_getSingleCellVol(blockDesc, point, solnData(1,i,j,k))
         end do
-        sfacex(1,i+1,j,k)= abs(xRight(i) * areaFactor_2 * areaFactor_3)
+#ifdef TEST_USE_FACEVARS
+        associate (i => blkLimitsGC(HIGH,IAXIS))
+          sfacex(1,i+1,j,k)= abs(xRight(i) * areaFactor_2 * areaFactor_3)
+        end associate
+#endif
      end do
   end do
 !!$  blk=(gr_MeshMe*100.0+blockID)*100000000.0
@@ -117,5 +127,9 @@ subroutine Simulation_initBlock(solnData,block)
 !!$    end do
 !!$ end do
 
+#ifdef TEST_USE_FACEVARS
+  call Grid_ReleaseBlkPtr(blockDesc,sfacex,FACEX)
+  call Grid_ReleaseBlkPtr(blockDesc,sfacey,FACEY)
+#endif
  return
 end subroutine Simulation_initBlock
