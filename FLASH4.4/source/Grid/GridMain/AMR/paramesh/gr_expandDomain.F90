@@ -54,7 +54,7 @@ subroutine gr_expandDomain (particlesInitialized)
     Particles_updateRefinement
   use Driver_interface, ONLY : Driver_abortFlash
   use RadTrans_interface, ONLY: RadTrans_sumEnergy
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -173,6 +173,9 @@ subroutine gr_expandDomain (particlesInitialized)
 
         call itor%next()
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
 
 #ifdef ERAD_VAR
      ! Sum radiation energy density over all meshes. This call is

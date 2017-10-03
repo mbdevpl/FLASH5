@@ -244,7 +244,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   use paramesh_interfaces, ONLY : amr_guardcell, amr_restrict
   use paramesh_mpi_interfaces, ONLY: mpi_amr_comm_setup
   use Eos_interface, ONLY : Eos_guardCells
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
   
   implicit none
@@ -449,6 +449,9 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
               call itor%next()
            end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+           call destroy_iterator(itor)
+#endif
         end if
      end if
  
@@ -481,7 +484,10 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
                 call itor%next()
             end do
- 
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+            call destroy_iterator(itor)
+#endif
+
             if (gr_convertToConsvdInMeshInterp) then
                call gr_sanitizeDataAfterInterp(listBlockType, 'after gc filling', layers)
             end if
@@ -516,6 +522,9 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
                 call itor%next()
         end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+        call destroy_iterator(itor)
+#endif
         call Timers_stop("eos gc")
      end if
   end if
