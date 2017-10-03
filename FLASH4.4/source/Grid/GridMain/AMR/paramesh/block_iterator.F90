@@ -23,6 +23,8 @@ module block_iterator
 #include "constants.h"
     private
 
+    public :: destroy_iterator
+
     integer,parameter :: ndims=N_DIM
     integer,parameter :: amrex_real=kind(1.0)
 
@@ -49,8 +51,6 @@ module block_iterator
         procedure, public :: blkMetaData
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         final             :: destroy_iterator
-#else
-        procedure         :: destroy_iterator
 #endif
     end type block_iterator_t
 
@@ -110,11 +110,7 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         type(block_iterator_t), intent(INOUT) :: this
-#else
-      class (block_iterator_t), intent(INOUT) :: this
-#endif
 
         call this%first()
     end subroutine destroy_iterator

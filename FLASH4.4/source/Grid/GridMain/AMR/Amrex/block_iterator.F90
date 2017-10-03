@@ -9,6 +9,9 @@
 !!
 !!****
 
+!! defines IMPURE_ELEMENTAL:
+#include "FortranLangFeatures.fh"
+
 module block_iterator
 
     use amrex_octree_module, ONLY : amrex_octree_iter, &
@@ -21,6 +24,8 @@ module block_iterator
 
 #include "constants.h"
 #include "Flash.h"
+
+    public :: destroy_iterator
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -88,7 +93,6 @@ contains
         call this%next()
     end function init_iterator
 
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
     !!****im* block_iterator_t/destroy_iterator
     !!
     !! NAME
@@ -101,12 +105,11 @@ contains
     !!  Clean-up block interator object at destruction
     !!
     !!****
-    subroutine destroy_iterator(this)
+    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
         type(block_iterator_t), intent(INOUT) :: this
 
         call amrex_octree_iter_destroy(this%oti)
     end subroutine destroy_iterator
-#endif
 
     !!****m* block_iterator_t/first
     !!
