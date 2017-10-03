@@ -15,6 +15,7 @@ plotFileIntervalStep           = 0
 plotFileIntervalTime           = 0.005
 # wall_clock_checkpoint          = 7200.
 wall_clock_time_limit          = 7200.
+memory_stat_freq               = 20
 
 # Time 
 tinitial                       = 0.0

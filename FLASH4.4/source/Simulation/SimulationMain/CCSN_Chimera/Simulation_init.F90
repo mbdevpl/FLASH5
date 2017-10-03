@@ -284,6 +284,7 @@ subroutine Simulation_init()
   end if
   !gr_point_mass = gr_point_mass + point_mass
   sim_pointMass = point_mass
+  call close_chimera_file
   contains
 
 !!! THIS IS OLD READ IN OF KEPLER FILE
