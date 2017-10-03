@@ -9,7 +9,7 @@ subroutine Hydro_doLoop5(simTime, dt, dtOld)
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_loop5Body
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -51,8 +51,11 @@ subroutine Hydro_doLoop5(simTime, dt, dtOld)
            call itor%next()
         end do
         call Timers_stop("loop5")
-        
-        
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+        call destroy_iterator(itor)
+#endif
+
+
      end do
 
 

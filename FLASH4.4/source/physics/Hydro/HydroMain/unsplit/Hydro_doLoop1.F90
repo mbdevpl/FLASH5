@@ -9,7 +9,7 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_loop1Body
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -56,6 +56,9 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
            call itor%next()
         end do
         call Timers_stop("loop1")
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+        call destroy_iterator(itor)
+#endif
 #ifdef DEBUG_DRIVER
         print*, 'return from Hydro/MHD timestep'  ! DEBUG
         print*,'returning from hydro myPE=',dr_globalMe

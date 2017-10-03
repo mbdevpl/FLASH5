@@ -12,7 +12,7 @@ subroutine Hydro_doLoop0
                                hy_uhd_putGravityUnsplit,&
                                hy_uhd_addGravityUnsplit,&
                                hy_uhd_shockDetect
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
@@ -110,4 +110,7 @@ subroutine Hydro_doLoop0
 
      call itor%next()
   end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+  call destroy_iterator(itor)
+#endif
 end subroutine Hydro_doLoop0
