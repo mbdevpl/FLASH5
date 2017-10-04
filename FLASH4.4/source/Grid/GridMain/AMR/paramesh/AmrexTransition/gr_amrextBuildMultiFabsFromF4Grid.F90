@@ -20,7 +20,7 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
 #include "Flash.h"
 #include "constants.h"
 
-  type(amrex_multifab),intent(OUT) :: phi_mf(0:)
+  type(amrex_multifab),intent(INOUT) :: phi_mf(0:)
   integer,intent(IN) :: maxLev
   integer,intent(IN),OPTIONAL :: nodetype
 
@@ -189,7 +189,11 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
 #ifdef DEBUG_GRID
      call amrex_print(ba)
 #endif
+     call amrex_multifab_destroy(phi_mf(level-1))
      call amrex_multifab_build(phi_mf(level-1), ba, dm, NUNK_VARS, ng=NGUARD)
+
+     call amrex_boxarray_destroy(ba)
+     call amrex_distromap_destroy(dm)
 
      deallocate(locLim)
      deallocate(procMap)
