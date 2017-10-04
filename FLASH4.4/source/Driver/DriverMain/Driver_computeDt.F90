@@ -79,7 +79,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Particles_interface, ONLY: Particles_computeDt
 
   use IncompNS_interface, ONLY : IncompNS_computeDt
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -338,6 +338,9 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
         call itor%next()
      enddo
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
   end do
 !!$     end do
      

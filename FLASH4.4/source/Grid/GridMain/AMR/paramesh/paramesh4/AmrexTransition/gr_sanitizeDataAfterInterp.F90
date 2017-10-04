@@ -272,7 +272,9 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
      call itor%next()
   end do
 
-  call itor%destroy_iterator()
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+  call destroy_iterator(itor)
+#endif
 
   return 
 

@@ -42,7 +42,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
                              Grid_getSingleCellVol 
 
   use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -199,7 +199,10 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
      call itor%next()
   enddo
-  
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+  call destroy_iterator(itor)
+#endif
+
   ! Now the MASTER_PE sums the local contributions from all of
   ! the processors and writes the total to a file.
   

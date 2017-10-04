@@ -293,7 +293,7 @@ Subroutine Hydro_loop1Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 !!$#ifndef FLASH_GRID_UG
 !!$     endif
 !!$#endif
-!!$     call hy_memReleaseBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR)
+     deallocate(scrch_Ptr)
 
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
 #ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */

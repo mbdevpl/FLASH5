@@ -31,7 +31,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
        Grid_getBlkIndexLimits
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
   use Grid_data,ONLY : gr_numDataStruct,gr_gridDataStruct,gr_gridDataStructSize
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
   implicit none
 #include "constants.h"
@@ -103,5 +103,8 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
            end do
         end if
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
   end do
 end subroutine gr_bcApplyToAllBlks

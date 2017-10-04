@@ -21,6 +21,8 @@ module block_iterator
 
     private
 
+    public :: destroy_iterator
+
     !!****ic* block_iterator/block_iterator_t
     !!
     !! NAME
@@ -41,8 +43,6 @@ module block_iterator
         procedure, public :: blkMetaData
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         final             :: destroy_iterator
-#else
-        procedure         :: destroy_iterator
 #endif
     end type block_iterator_t
 
@@ -120,7 +120,7 @@ contains
         end do
 
         if (.NOT. this%isValid) then
-           call this%destroy_iterator()
+           call destroy_iterator(this)
         end if
 
 !!$        print*,'block_iterator_build: done building 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
@@ -142,7 +142,6 @@ contains
         this = init_iterator_mfa(nodetype, gr_amrextUnkMFs, level, tiling)
     end function init_iterator
 
-!#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
     !!****im* block_iterator_t/destroy_iterator
     !!
     !! NAME
@@ -156,7 +155,7 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-      class (block_iterator_t), intent(INOUT) :: this
+      type (block_iterator_t), intent(INOUT) :: this
 
         integer :: l
 
@@ -171,7 +170,6 @@ contains
         this%isValid = .FALSE.
 
     end subroutine destroy_iterator
-!#endif
 
     !!****m* block_iterator_t/first
     !!

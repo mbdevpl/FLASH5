@@ -4,11 +4,16 @@
 !!
 !!****
 
+!! defines IMPURE_ELEMENTAL:
+#include "FortranLangFeatures.fh"
+
 module block_iterator
 
     implicit none
 
     private
+
+    public :: destroy_iterator
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -81,6 +86,11 @@ contains
         stop
     end subroutine first
  
+    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
+        type(block_iterator_t), intent(INOUT) :: this
+
+    end subroutine destroy_iterator
+
     !!****m* block_iterator_t/is_valid
     !!
     !! NAME

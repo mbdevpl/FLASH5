@@ -42,7 +42,7 @@ subroutine Driver_verifyInitDt()
        Grid_getBlkPtr, Grid_releaseBlkPtr
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
   implicit none       
@@ -208,6 +208,9 @@ subroutine Driver_verifyInitDt()
            
            call itor%next()
         end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+        call destroy_iterator(itor)
+#endif
      end do
      
      ! find the minimum across all processors, store it in dtCFL on MasterPE

@@ -51,6 +51,9 @@ PARAMETER nquad		        INTEGER 2
 # Extra variables
 VARIABLE BDRY #For cutting out the PNS with rigid body
 
+D entr_variable Specific entropy, for analysis and visualization
+VARIABLE entr TYPE: PER_MASS    EOSMAPOUT: ENTR
+
 # These would allow use to use the "Ye" mode of Helmholtz if we want
 MASS_SCALAR YE
 MASS_SCALAR SUMY

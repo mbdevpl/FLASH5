@@ -74,7 +74,7 @@ subroutine gr_updateRefinement( gridChanged)
   use Particles_interface, ONLY : Particles_updateRefinement 
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
   use gr_amrextData
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -145,6 +145,9 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
      call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ALL_BLKS,reverse=.TRUE.)
   endif
   
@@ -199,6 +202,9 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
      call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ACTIVE_BLKS,reverse=.TRUE.)
 
      call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, lrefine_max, ANCESTOR)
@@ -210,6 +216,9 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
      call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ANCESTOR,reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, lrefine_max, ACTIVE_BLKS)
      call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ACTIVE_BLKS)
@@ -252,6 +261,9 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
      call Timers_stop("eos")
      call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=LEAF,reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, lrefine_max, ACTIVE_BLKS)

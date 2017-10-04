@@ -118,6 +118,7 @@ subroutine Driver_evolveFlash()
   logical :: endRunPl !Should we end our run on this iteration, based on conditions detected by the IO unit?
   logical :: endRun !Should we end our run on this iteration, based on conditions detected by the IO unit?
   logical :: endRunWallClock !Should we end our run on this iteration, based on wall clock time?
+  logical :: shortenedDt !Is the last timestep being shortened to reach dr_tmax?
 
   ! for super-time-stepping
   integer :: nstepSTS
@@ -170,6 +171,7 @@ subroutine Driver_evolveFlash()
      
      useSTS_local = dr_useSTS
 
+     call dr_shortenLastDt(dr_dt, dr_simTime, dr_tmax, shortenedDt, 1)
      if (dr_globalMe == MASTER_PE) then
         
         write (numToStr(1:), '(I10)') dr_nstep
@@ -261,6 +263,9 @@ subroutine Driver_evolveFlash()
  
            call itor%next()
         end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+        call destroy_iterator(itor)
+#endif
         call Timers_stop("Hydro")
 #ifdef DEBUG_DRIVER
         print*, 'return from Hydro/MHD timestep'  ! DEBUG
@@ -361,7 +366,9 @@ subroutine Driver_evolveFlash()
      !!*****************************************************************************
      !!  Evolution Loop -- check termination conditions
      !!*****************************************************************************
-     
+
+     !Exit if this step was handled specially as the last step
+     if(shortenedDt) exit
      !Exit if a .dump_restart or .kill was found during the last step
      if(endRun) exit
      

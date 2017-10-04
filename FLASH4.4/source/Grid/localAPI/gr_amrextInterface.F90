@@ -38,7 +38,7 @@ module gr_amrextInterface
      subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
        use amrex_multifab_module, ONLY : amrex_multifab
        implicit none
-       type(amrex_multifab),intent(OUT) :: phi_mf(:)
+       type(amrex_multifab),intent(INOUT) :: phi_mf(0:)
        integer,intent(IN) :: maxLev
        integer,intent(IN),OPTIONAL :: nodetype
      end subroutine gr_amrextBuildMultiFabsFromF4Grid

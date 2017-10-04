@@ -31,7 +31,7 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   use Grid_interface, ONLY : Grid_getBlkPhysicalSize, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data, ONLY : gr_meshComm
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -135,6 +135,9 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
 
      call itor%next()
   enddo
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+  call destroy_iterator(itor)
+#endif
 
   call mpi_allreduce ( localSum, sum, 1, FLASH_REAL, & 
        MPI_SUM, gr_meshComm, ierr )
