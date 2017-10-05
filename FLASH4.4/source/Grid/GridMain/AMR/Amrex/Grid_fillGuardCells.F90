@@ -139,12 +139,18 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
   use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
-  use Grid_data,                 ONLY : gr_justExchangedGC
+  use Grid_data,                 ONLY : gr_justExchangedGC, &
+        gr_eosModeNow
   use gr_physicalMultifabs,      ONLY : unk
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_averageDownLevels
   use Driver_interface,          ONLY : Driver_abortFlash
   use Timers_interface,          ONLY : Timers_start, Timers_stop
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use gr_interface, ONLY : gr_setGcFillNLayers
+  use Eos_interface, ONLY : Eos_guardCells
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -159,6 +165,15 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   logical, intent(in), optional :: doLogMask
   integer, intent(in), optional :: selectBlockType
   logical, intent(in), optional :: unitReadsMeshDataOnly
+
+  integer :: guard, gcEosMode
+  integer,dimension(MDIM) :: layers, returnLayers
+  integer :: listBlockType
+  real,dimension(:,:,:,:),pointer::solnData
+  type(block_iterator_t) :: itor
+  type(block_metadata_t) :: blockDesc
+
+  logical,parameter :: needEos = .TRUE.
 
   integer :: lo_bc(NDIM, 1)
   integer :: hi_bc(NDIM, 1)
@@ -184,27 +199,34 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   finest_level = -1
 
   ! DEVNOTE: TODO Implement this functionality
+#ifdef DEBUG_GRID
   if      (present(minLayers)) then
     call Driver_abortFlash("[Grid_fillGuardCells] minLayers *not* implemented for yet AMReX") 
-  else if (present(eosMode)) then
+  end if
+  if (present(eosMode)) then
     write(*,*) "eosMode = ", eosMode
     call Driver_abortFlash("[Grid_fillGuardCells] eosMode *not* implemented for yet AMReX") 
-  else if (present(doEos)) then
+  end if
+  if (present(doEos)) then
     write(*,*) "doEos = ", doEos
     call Driver_abortFlash("[Grid_fillGuardCells] doEos *not* implemented for yet AMReX") 
-  else if (present(maskSize)) then
+  end if
+  if (present(maskSize)) then
     call Driver_abortFlash("[Grid_fillGuardCells] maskSize *not* implemented for yet AMReX") 
-  else if (present(mask)) then
+  end if
+  if (present(mask)) then
     call Driver_abortFlash("[Grid_fillGuardCells] mask *not* implemented for yet AMReX") 
-  else if (present(makeMaskConsistent)) then
+  end if
+  if (present(makeMaskConsistent)) then
     call Driver_abortFlash("[Grid_fillGuardCells] makeMaskConsistent *not* implemented for yet AMReX") 
-  else if (present(doLogMask)) then
+  end if
+  if (present(doLogMask)) then
     call Driver_abortFlash("[Grid_fillGuardCells] doLogMask *not* implemented for yet AMReX") 
-  else if (present(selectBlockType)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] selectBlockType *not* implemented for yet AMReX") 
-  else if (present(unitReadsMeshDataOnly)) then
+  end if
+  if (present(unitReadsMeshDataOnly)) then
     call Driver_abortFlash("[Grid_fillGuardCells] unitReadsMeshDataOnly *not* implemented for yet AMReX") 
   end if
+#endif
 
 
   if (gridDataStruct /= CENTER .and. gridDataStruct /= CENTER_FACES) then
@@ -215,8 +237,16 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end if
 
   ! DEV: Filling by direction is not needed any longer
+#ifdef DEBUG_GRID
   if (idir /= ALLDIR) then
     call Driver_abortFlash("[Grid_fillGuardCells] idir must be ALLDIR with AMReX")
+  end if
+#endif
+
+  if(present(eosMode)) then
+     gcEosMode=eosMode
+  else
+     gcEosMode=gr_eosModeNow
   end if
 
   ! GC data could be managed by other processor.
@@ -228,7 +258,30 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 !  call Timers_stop("guardcell Barrier")
 
   ! DEV: TODO How to do guardcell fill by direction?
-  call Timers_start("amr_guardcell")
+  call Timers_stop("guardcell internal")
+
+  guard = NGUARD
+  listBlockType = ACTIVE_BLKS
+
+  !----------------------------------------------------------------
+  ! Figure out nlayers arguments to amr_guardcell based on our arguments
+  call gr_setGcFillNLayers(layers, idir, guard, minLayers, returnLayers)
+
+  if (present(selectBlockType)) then
+     listBlockType = selectBlockType
+     select case (selectBlockType)
+     case(LEAF)
+        ! ok
+     case(ACTIVE_BLKS)
+        ! ok
+     case(ALL_BLKS)
+        call Driver_abortFlash('Grid_fillGuardCells: unsupported value ALL_BLKS for selectBlockType!')
+#ifdef DEBUG_GRID
+     case default
+        call Driver_abortFlash("[Grid_fillGuardCells] selectBlockType *not* implemented for yet AMReX") 
+#endif
+     end select
+  end if
 
   ! Restrict data from leaves to coarser blocks
   call gr_averageDownLevels
@@ -245,6 +298,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! the domain were zero (no periodic BC).  AMReX recommended using fillpatch,
   ! which is copying *all* data, including the GC.
   lev = 0
+  call Timers_start("amr_guardcell")
   call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
                                  0.0d0, unk(lev), &
                        amrex_geom(lev), gr_fillPhysicalBC, &
@@ -262,11 +316,35 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                          lo_bc, hi_bc)
   end do
+  call Timers_stop("amr_guardcell")
 
   gr_justExchangedGC = .TRUE.
 
-  call Timers_stop("amr_guardcell")
+  if(present(doEos)) then
+     if(doEos.and.needEos) then
+        call Timers_start("eos gc")
+        itor = block_iterator_t(listBlockType)
+        do while (itor%is_valid())
+                call itor%blkMetaData(blockDesc)
+                
+                call Grid_getBlkPtr(blockDesc, solnData)
+                call Eos_guardCells(gcEosMode, solnData, corners=.true., &
+                                    layers=returnLayers)
+                call Grid_releaseBlkPtr(blockDesc, solnData)
+                nullify(solnData)
+
+                call itor%next()
+        end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+        call destroy_iterator(itor)
+#endif
+        call Timers_stop("eos gc")
+     end if
+  end if
+
   
+  call Timers_stop("guardcell internal")
+
 #ifdef DEBUG_GRID
   write(*,'(A,I3)') "[Grid_fillGuardcell] From level 1 to level ", &
                     finest_level+1
