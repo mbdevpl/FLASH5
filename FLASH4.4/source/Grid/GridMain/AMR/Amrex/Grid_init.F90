@@ -282,7 +282,7 @@ subroutine Grid_init()
 !     end if
 !  end if
 
-!  call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
+  call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
 !  call RuntimeParameters_get("gr_sanitizeDataMode",  gr_sanitizeDataMode)
 !  call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
 
@@ -460,11 +460,11 @@ subroutine Grid_init()
 !  gr_isolatedBoundaries = (grav_boundary_type=="isolated")
 !
 !  gr_anyVarToConvert = .FALSE.
-!  do i = UNK_VARS_BEGIN,UNK_VARS_END
+  do i = UNK_VARS_BEGIN,UNK_VARS_END
 !     gr_vars(i)=i
-!     call Simulation_getVarnameType(i, gr_vartypes(i))
+     call Simulation_getVarnameType(i, gr_vartypes(i))
 !     if (gr_vartypes(i) .eq. VARTYPE_PER_MASS) gr_anyVarToConvert = .TRUE.
-!  end do
+  end do
 
 !#ifdef FL_NON_PERMANENT_GUARDCELLS
 !  gr_blkPtrRefCount = 0 

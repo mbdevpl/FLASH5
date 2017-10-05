@@ -74,7 +74,6 @@ subroutine gr_setMasks(gridDataStruct,maskSize,mask)
 
   implicit none
 #include "constants.h"
-#include "Flash_mpi.h"
 
   integer, intent(in) :: gridDataStruct
   integer, intent(in) :: maskSize
