@@ -224,75 +224,8 @@ subroutine Driver_evolveFlash()
      call Grid_fillGuardCells(CENTER,ALLDIR)
 
      call Hydro_advanceAll(dr_simTime, dr_dt, dr_dtOld)
-#if(0)
-!!!!!! MOVED TO Hydro_advanceAll !!!!!!
-!vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-     call Timers_start("Hydro")
 
-#ifdef FLASH_GRID_AMREXTRANSITION
-     allocate(phi_mf(maxLev))
-#endif
-!!$     call gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, LEAF)
-#ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
-#endif
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
-
-     do level=1,maxLev
-#ifdef DEBUG_DRIVER
-        print*,' ***************   HYDRO LEVEL', level,'  **********************'
-#endif
-
-        itor = block_iterator_t(LEAF, level=level)
-        do while(itor%is_valid())
-           call itor%blkMetaData(block)
-
-           blkLimits(:,:)   = block%localLimits
-           blkLimitsGC(:,:) = block%localLimitsGC
-           
-           call Grid_getBlkPtr(block, Uout,localFlag=.TRUE.)
-!!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
-!!$           call amrex_print(abx)
-!!$           tbx = abx
-
-           call Grid_getDeltas(level,del)
-           Uin => Uout
-           call Hydro(block,blkLimitsGC,Uin, blkLimits, Uout, del,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
-           call Grid_releaseBlkPtr(block, Uout)
-           nullify(Uout)
- 
-           call itor%next()
-        end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-        call destroy_iterator(itor)
-#endif
-        call Timers_stop("Hydro")
-#ifdef DEBUG_DRIVER
-        print*, 'return from Hydro/MHD timestep'  ! DEBUG
-        print*,'returning from hydro myPE=',dr_globalMe
-#endif
-        
-        
-!!$     ! 8. Diagnostics
-!!$     call Timers_start("diagnostics")
-!!$     call Driver_diagnostics(blockCount, blockList, dr_dt)
-!!$     call Timers_stop("diagnostics")
-!!$#ifdef DEBUG_DRIVER
-!!$     print*, 'return from Diagnostics '  ! DEBUG
-!!$#endif
-        
-        !! save for old dt
-     end do
-#ifdef FLASH_GRID_AMREXTRANSITION
-     do level=1,maxLev
-        call amrex_multifab_destroy(phi_mf(level))
-     end do
-     deallocate(phi_mf)
-#endif
-
-!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-!!!!!! MOVED TO Hydro_advanceAll !!!!!!
-#endif
+!!!!!! Stuff from here has been MOVED TO Hydro_advanceAll !!!!!!
 
 
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
