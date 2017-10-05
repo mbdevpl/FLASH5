@@ -150,7 +150,7 @@ subroutine gr_amrextAmrexInit()
 #endif
 
   call amrex_octree_init()
-!!$  call amrex_amrcore_init()
+  call amrex_amrcore_init()
  
   !!!!!----- REGISTER REFINE CALLBACKS WITH AMReX
 !!$  call amrex_init_virtual_functions(gr_makeNewLevelFromScratch, &
