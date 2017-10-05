@@ -63,7 +63,7 @@ Module Grid_data
 
 !  integer,save,dimension(MDIM)::gr_bndOrder
 !  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars
-!  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vartypes
+  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vartypes
 !  logical, save :: gr_anyVarToConvert
   logical, save :: gr_justExchangedGC
 !  logical, save :: gr_isolatedBoundaries
@@ -97,6 +97,8 @@ Module Grid_data
   real,    save :: gr_derefine_cutoff(MAXREFVARS)
   real,    save :: gr_refine_filter(MAXREFVARS)
 !  integer, save :: gr_globalNumBlocks !
+
+  logical, save :: gr_enableMaskedGCFill
 
 #ifdef GRID_WITH_MONOTONIC
   integer, save :: gr_intpolStencilWidth
@@ -136,7 +138,7 @@ Module Grid_data
 !  logical,save :: gr_lrefinemaxByTime
 !  real, save :: gr_lrefmaxTimes(GR_LREFMAXTIMES)
 !  integer, save :: gr_lrefmaxTimeValues(GR_LREFMAXTIMES)
-!  logical, save ::  gr_gcellsUpToDate = .false.
+  logical, save ::  gr_gcellsUpToDate = .false.
 !
 !  logical, save :: gr_reduceGcellFills = .false.
 !

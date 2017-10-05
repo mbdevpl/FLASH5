@@ -1,19 +1,23 @@
-!!****if* source/Grid/GridMain/paramesh/paramesh4/gr_setMasks
+!!****if* source/Grid/GridMain/paramesh/paramesh4/gr_setMasks_gen
 !!
 !! NAME
-!!  gr_setMasks
+!!  gr_setMasks_gen
 !!
 !! SYNOPSIS
 !!
-!!  gr_setMasks(integer(IN) :: gridDataStruct, 
+!!  call gr_setMasks_gen(integer(IN) :: gridDataStruct, 
 !!                      integer(IN) :: maskSize,
 !!                      logical(IN) :: mask(maskSize))
 !!  
 !! DESCRIPTION 
 !!  
 !!  This routine takes the mask supplied by the calling routine
-!!  and sets the paramesh3 masks for cell centered and face centered
-!!  variables as specified
+!!  and sets the FLASH masks for cell centered and face centered
+!!  variables as specified.
+!!
+!!  This is a generic version independent of PARAMESH, even
+!!  though the output mask arrays are currently still in the
+!!  same form that PARAMESH 3 and 4 used.
 !!
 !!
 !! ARGUMENTS 
@@ -47,7 +51,7 @@
 !!          structures. If a variable should have its guardcells filled,
 !!          the corresponding element in "mask" is true, otherwise it is
 !!          false.
-!!          The mask is always ignored if the runtime parameter
+!!          The mask is always ignored if
 !!          enableMaskedGCFill is set .FALSE.
 !! 
 !!
@@ -55,22 +59,12 @@
 !!***
 
 
-subroutine gr_setMasks(gridDataStruct,maskSize,mask)
+subroutine gr_setMasks_gen(gridDataStruct,maskSize,mask, gcell_on_cc,gcell_on_fc,enableMaskedGCFill)
 
 #include "Flash.h"
 
-  use gr_specificData, ONLY : gr_enableMaskedGCFill
-
-  !! This section disabled for now, may become useful with non-permanent gc support
-!!$#ifdef FL_NON_PERMANENT_GUARDCELLS
-!!$  use Grid_data, ONLY : gr_ccMask
-!!$#if NFACE_VARS>0
-!!$  use Grid_data, ONLY : gr_fcMask
-!!$#endif
-!!$#endif
 
   use Driver_interface, ONLY : Driver_abortFlash
-  use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
 
   implicit none
 #include "constants.h"
@@ -78,6 +72,9 @@ subroutine gr_setMasks(gridDataStruct,maskSize,mask)
   integer, intent(in) :: gridDataStruct
   integer, intent(in) :: maskSize
   logical,dimension(maskSize),intent(in) :: mask
+  logical, intent(INOUT)       :: gcell_on_cc(NUNK_VARS)
+  logical, intent(in),OPTIONAL :: gcell_on_fc(MDIM,NFACE_VARS)
+  logical, intent(in),OPTIONAL :: enableMaskedGCFill
   
   integer :: nv,i
 
@@ -116,8 +113,10 @@ subroutine gr_setMasks(gridDataStruct,maskSize,mask)
 #endif
   
   
-  if (.NOT. gr_enableMaskedGCFill) return
-  
+  if (present(enableMaskedGCFill)) then
+     if (.NOT. enableMaskedGCFill) return
+  end if
+
   if((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
      gcell_on_cc(1:NUNK_VARS)=mask(1:NUNK_VARS)
   end if
@@ -159,15 +158,5 @@ subroutine gr_setMasks(gridDataStruct,maskSize,mask)
   end select
 #endif
 
-!! NOTE -- This section is currently redundant. It should be resurrected if we support
-!!         non permanent guardcells.
-!!$  if (no_permanent_guardcells) then
-!!$     
-!!$#ifdef FL_NON_PERMANENT_GUARDCELLS
-!!$     gr_ccMask=gcell_on_cc
-!!$#if NFACE_VARS >0
-!!$     gr_fcMask=gcell_on_fc
-!!$#endif
-!!$#endif
 
-end subroutine gr_setMasks
+end subroutine gr_setMasks_gen

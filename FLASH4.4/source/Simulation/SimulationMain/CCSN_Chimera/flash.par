@@ -14,12 +14,14 @@ checkpointFileIntervalTime     = 0.01
 plotFileIntervalStep           = 0
 plotFileIntervalTime           = 0.005
 # wall_clock_checkpoint          = 7200.
-wall_clock_time_limit          = 7200.
+wall_clock_time_limit          = 36000.
 memory_stat_freq               = 20
+io_writeMscalarIntegrals       = .TRUE.
 
 # Time 
 tinitial                       = 0.0
-tmax                           = 100.0
+tmax                           = 0.5
+dr_shortenLastStepBeforeTMax   = .TRUE.
 nend                           = 100000000
 tstep_change_factor            = 1.5
 dtinit                         = 1.E-10 #was E-8
@@ -46,10 +48,11 @@ nblockz                        = 1
 
 enableMaskedGCFill             = .TRUE.
 
-gr_lrefineMaxRedDoByLogR       = .true.
+gr_lrefineMaxRedDoByLogR       = .true. # .FALSE. to get NO distance-based refinement limitation
+gr_lrefineMaxRedRadiusFact     = 0.025  # 0.15 to get highest refinement only very close to center
+
 gr_lrefineMaxRedDoByTime       = .FALSE.
 gr_lrefineMaxRedLogBase        = 10.0
-gr_lrefineMaxRedRadiusFact     = 0.15
 gr_lrefineMaxRedTRef           = 2.0
 gr_lrefineMaxRedTimeScale      = 0.5
 
@@ -67,6 +70,7 @@ refine_cutoff_4		       = 0.8
 plot_var_1                     = "dens"
 plot_var_2                     = "pres"
 plot_var_3                     = "temp"
+plot_var_4                     = "entr"
 
 
 # Simulation
@@ -100,7 +104,7 @@ use_upwindTVD   = .false. # use upwind biased TVD slope for PPM (need nguard=6)
 flux_correct    = .FALSE.
 EOSforRiemann   = .false.
 transOrder      = 1
-use_auxEintEqn  = .FALSE.
+use_auxEintEqn  = .FALSE. # Always use Etot
 hydroComputeDtOption = -1
 
 #       II. RIEMANN SOLVERS: 

@@ -140,19 +140,22 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
   use Grid_data,                 ONLY : gr_justExchangedGC, &
-        gr_eosModeNow
+        gr_eosModeNow, gr_meshMe, gr_meshComm, &
+       gr_gcellsUpToDate
+  use Grid_data, ONLY                 : gr_enableMaskedGCFill
+  use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
   use gr_physicalMultifabs,      ONLY : unk
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_averageDownLevels
   use Driver_interface,          ONLY : Driver_abortFlash
   use Timers_interface,          ONLY : Timers_start, Timers_stop
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_setGcFillNLayers
+  use gr_interface, ONLY : gr_setGcFillNLayers, gr_setMasks_gen, gr_makeMaskConsistent_gen
   use Eos_interface, ONLY : Eos_guardCells
   use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
-  implicit none
+#include "Flash_mpi_implicitNone.fh"
 
   integer, intent(in)           :: gridDataStruct
   integer, intent(in)           :: idir
@@ -166,6 +169,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   integer, intent(in), optional :: selectBlockType
   logical, intent(in), optional :: unitReadsMeshDataOnly
 
+  logical,dimension(NUNK_VARS) :: gcell_on_cc
   integer :: guard, gcEosMode
   integer,dimension(MDIM) :: layers, returnLayers
   integer :: listBlockType
@@ -173,7 +177,14 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
 
-  logical,parameter :: needEos = .TRUE.
+  integer :: ierr
+
+  logical :: needEos
+
+  logical, save :: maskWarningDone = .FALSE.
+  logical :: skipThisGcellFill, skipNextGcellFill
+  character(len=10) :: tagext
+  integer :: scompCC, ncompCC, lcompCC
 
   integer :: lo_bc(NDIM, 1)
   integer :: hi_bc(NDIM, 1)
@@ -243,22 +254,100 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end if
 #endif
 
+  skipThisGcellFill = .FALSE.   ! for now
+
   if(present(eosMode)) then
      gcEosMode=eosMode
   else
      gcEosMode=gr_eosModeNow
   end if
 
+  needEos=.true.
+
+  if (.NOT. gr_enableMaskedGCFill) then
+
+     !! If masking is disabled then a warning is issued and all masking related
+     !! processing is skipped
+
+     if (.NOT. maskWarningDone) then
+        call Logfile_stampMessage( 'INFO: Grid_fillGuardCells is ignoring masking.')
+        if (gr_meshMe==MASTER_PE) print*,    'INFO: Grid_fillGuardCells is ignoring masking.'
+        maskWarningDone = .TRUE.
+     end if
+
+  else
+     
+     !! if masking is not explicitly disabled then the presence of a mask allows 
+     !! masking to proceed
+
+     if(present(mask))then
+        if(present(maskSize)) then
+
+           !! If both mask and masksize are present, apply the mask
+           call gr_setMasks_gen(gridDataStruct,maskSize,mask, &
+                gcell_on_cc,                                  &
+                enableMaskedGCFill=gr_enableMaskedGCFill)
+           if(present(makeMaskConsistent))then
+              if(makeMaskConsistent) then
+                 !! if the caller routine is asking for a consistency check
+                 !! then mask may be modified, and also determine if eos needs
+                 !! to be applied based upon the mask consistency
+                 call gr_makeMaskConsistent_gen(gridDataStruct,gcEosMode,needEos,gcell_on_cc)
+              end if
+           end if
+        else  !! if mask is present without the maskSize, abort
+           call Driver_abortFlash("gcfill :: maskSize must be present with mask")
+        end if
+     end if
+  end if
+
   ! GC data could be managed by other processor.
   ! Wait for work on all data structures across full mesh to finish 
   ! before GC filling
   ! DEV: TODO Does AMReX handle synchronization?
-!  call Timers_start("guardcell Barrier")
-!  call MPI_BARRIER(gr_meshComm, ierr)
-!  call Timers_stop("guardcell Barrier")
+  if (.not. skipThisGcellFill) then
+     call Timers_start("guardcell Barrier")
+     call MPI_BARRIER(gr_meshComm, ierr)
+     call Timers_stop("guardcell Barrier")
+  end if
 
   ! DEV: TODO How to do guardcell fill by direction?
-  call Timers_stop("guardcell internal")
+  call Timers_start("guardcell internal")
+  !! appropriately mask the data structures to ensure that only the correct data
+  !! structure is filled.
+  if((gridDataStruct/=CENTER_FACES).and.(gridDataStruct/=CENTER))gcell_on_cc = .false.
+
+  scompCC = UNK_VARS_BEGIN
+  ncompCC = NUNK_VARS
+
+  scompCC = maxloc(merge(1.,0.,gcell_on_cc),dim=1) ! maxloc(gcell_on_cc,dim=1)
+  lcompCC = UNK_VARS_END + 1 - maxloc(merge(1.,0.,gcell_on_cc(UNK_VARS_END:UNK_VARS_BEGIN:-1)),dim=1)
+  ncompCC = lcompCC - scompCC + 1
+  gcell_on_cc(scompCC:lcompCC) = .TRUE.
+
+
+  if(present(mask))then
+     if(present(maskSize)) then
+        if (present(doLogMask)) then
+           if (doLogMask) then
+              if (skipThisGcellFill) then
+                 tagext = '(skipped)'
+              else
+                 tagext = ''
+              end if
+              if (present(doEos)) then
+                 if (doEos) then
+                    call Logfile_stampVarMask(gcell_on_cc, needEos, '[Grid_fillGuardCells]'//tagext, 'gcSet')
+                 else
+                    call Logfile_stampVarMask(gcell_on_cc, needEos, '[Grid_fillGuardCells]'//tagext, 'gcSet[no doEos]')
+                 end if
+              else
+                 call Logfile_stampVarMask(gcell_on_cc, needEos, '[Grid_fillGuardCells]'//tagext, 'gcSet[nop doEos]')
+              end if
+           end if
+        end if
+     end if
+  end if
 
   guard = NGUARD
   listBlockType = ACTIVE_BLKS
@@ -302,7 +391,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
                                  0.0d0, unk(lev), &
                        amrex_geom(lev), gr_fillPhysicalBC, &
-                       0.0d0, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)
+                       0.0d0, scompCC, scompCC, ncompCC)
 
   finest_level = amrex_get_finest_level()
   do lev=1, finest_level
@@ -312,7 +401,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                1.0e0, unk(lev  ), &
                                0.0d0, unk(lev  ), &
                          amrex_geom(lev  ), gr_fillPhysicalBC, &
-                         0.0d0, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
+                         0.0d0, scompCC, scompCC, ncompCC, &
                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                          lo_bc, hi_bc)
   end do
@@ -343,6 +432,44 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end if
 
   
+  !We now test whether we can skip the next guard cell fill.
+  skipNextGcellFill = .false.
+  if(present(unitReadsMeshDataOnly)) then
+     if (unitReadsMeshDataOnly) then
+        if (gr_gcellsUpToDate) then
+           !If *all* guard cells were up to date on entry to
+           !Grid_fillGuardCells then they will continue to be up to date.
+           skipNextGcellFill = .true.
+        else
+           !Check whether we filled guardcells for all layers, all
+           !variables and all active blocks.  This ensures all
+           !guard cells are up to date for the next unit.
+           if ((gridDataStruct == CENTER_FACES .OR. &
+                (gridDataStruct == CENTER .AND. (NFACE_VARS < 1))) &
+                .and. idir == ALLDIR) then
+              skipNextGcellFill = .true.
+              if (present(minLayers)) then
+                 if (minval(layers(1:NDIM)) < guard) then
+                    skipNextGcellFill = .false.
+                 end if
+              end if
+              if (present(mask)) then
+                 if (.not.all(mask .eqv. .true.)) then
+                    skipNextGcellFill = .false.
+                 end if
+              end if
+              if (present(selectBlockType)) then
+                 if (selectBlockType /= ACTIVE_BLKS) then
+                    skipNextGcellFill = .false.
+                 end if
+              end if
+           end if
+        end if
+     end if
+  end if
+  gr_gcellsUpToDate = skipNextGcellFill
+
+
   call Timers_stop("guardcell internal")
 
 #ifdef DEBUG_GRID
