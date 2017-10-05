@@ -140,6 +140,28 @@ module gr_interface
   end interface
 
   interface
+     subroutine gr_setMasks_gen(gridDataStruct,maskSize,mask, gcell_on_cc,gcell_on_fc,enableMaskedGCFill)
+       implicit none
+       integer, intent(in) :: gridDataStruct
+       integer, intent(in) :: maskSize
+       logical,dimension(maskSize),intent(in) :: mask
+       logical, intent(INOUT)       :: gcell_on_cc(NUNK_VARS)
+       logical, intent(in),OPTIONAL :: gcell_on_fc(MDIM,NFACE_VARS)
+       logical, intent(in),OPTIONAL :: enableMaskedGCFill
+     end subroutine gr_setMasks_gen
+  end interface
+
+  interface
+     subroutine gr_makeMaskConsistent_gen(gridDataStruct,eosMode,needEos,gcell_on_cc)
+       implicit none
+       integer,intent(IN) :: gridDataStruct
+       integer,intent(IN) :: eosMode
+       logical,intent(INOUT) :: needEos
+       logical,intent(INOUT) :: gcell_on_cc(NUNK_VARS)
+     end subroutine gr_makeMaskConsistent_gen
+  end interface
+
+  interface
      subroutine gr_neghAtSameLevel(blockID,atSameLevel)
        integer,intent(IN) :: blockID
        logical,dimension(LEFT_EDGE:RIGHT_EDGE,&
