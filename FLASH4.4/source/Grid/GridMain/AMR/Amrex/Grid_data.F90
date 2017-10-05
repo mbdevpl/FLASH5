@@ -78,7 +78,7 @@ Module Grid_data
 
   integer, save :: gr_eosMode
   integer, save :: gr_eosModeInit
-!  integer, save :: gr_eosModeNow
+  integer, save :: gr_eosModeNow
 !  integer, save :: gr_oneRefLev=1 !! To be used with the multigrid
 !  logical ,save :: gr_convertToConsvdInMeshInterp
 !  logical ,save :: gr_earlyBlockDistAdjustment
@@ -98,12 +98,12 @@ Module Grid_data
   real,    save :: gr_refine_filter(MAXREFVARS)
 !  integer, save :: gr_globalNumBlocks !
 
-!#ifdef GRID_WITH_MONOTONIC
-!  integer, save :: gr_intpolStencilWidth
-!#else
-!  ! The following is for Paramesh3f with native interpolation
-!  integer, parameter :: gr_intpolStencilWidth = 1
-!#endif
+#ifdef GRID_WITH_MONOTONIC
+  integer, save :: gr_intpolStencilWidth
+#else
+  ! The following was appropriate for Paramesh3f with native interpolation
+  integer, parameter :: gr_intpolStencilWidth = 1
+#endif
 !
 !#ifdef FLASH_PARTICLES
 !  integer, save :: gr_maxParticlesPerProc

@@ -291,9 +291,9 @@ subroutine Grid_init()
 !  call RuntimeParameters_get("smallx",gr_smallx) !
 !!  call RuntimeParameters_get("grid_monotone_hack", gr_monotone) ! for "quadratic_cartesian" interpolation
 !  call RuntimeParameters_get("interpol_order",gr_intpol) ! for "monotonic" interpolation
-!#ifdef GRID_WITH_MONOTONIC
-!  gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
-!#endif
+#ifdef GRID_WITH_MONOTONIC
+  gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
+#endif
 
 !  call RuntimeParameters_get("bndPriorityOne",gr_bndOrder(1))
 !  call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
@@ -311,7 +311,7 @@ subroutine Grid_init()
   call RuntimeParameters_mapStrToInt(eosModeString, gr_eosModeInit)
 
   ! DEV: FIXME Leave commented for now to see if it is being set
-!  gr_eosModeNow = gr_eosModeInit ! may change after initialization is done
+  gr_eosModeNow = gr_eosModeInit ! may change after initialization is done
 
 !  call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
   gr_justExchangedGC = .FALSE.
