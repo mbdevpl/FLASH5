@@ -143,7 +143,7 @@ Grid += gr_amr_dump_runtime_parameters.o
 Grid += flash_convert_cc_hook.o flash_unconvert_cc_hook.o \
 	gr_sanitizeDataAfterInterp.o gr_flashHook_interfaces.o gr_commSetUp.o \
 	gr_packBCs.o \
-	gr_setGcFillNLayers.o gr_makeMaskConsistent.o gr_setMasks.o \
+	gr_makeMaskConsistent.o gr_setMasks.o \
 	gr_findNeghID.o gr_findAllNeghID.o gr_checkGridState.o
 
 Grid += amr_get_new_nodetypes.o amr_mg_init.o amr_mg_prolong.o \

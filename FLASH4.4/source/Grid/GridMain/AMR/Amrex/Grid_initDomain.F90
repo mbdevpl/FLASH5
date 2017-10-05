@@ -60,6 +60,8 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   use gr_physicalMultifabs, ONLY : unk, &
                                    facevarx, facevary, facevarz
 
+  use Grid_data, ONLY : gr_eosMode, gr_eosModeNow
+
   implicit none
 
   logical, intent(IN)    :: restart
@@ -83,5 +85,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
 
   ! Setup grids and initialize the data
   call amrex_init_from_scratch(T_INIT)
+
+  gr_eosModeNow = gr_eosMode !may be different from gr_eosModeInit
 end subroutine Grid_initDomain
 

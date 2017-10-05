@@ -1,4 +1,4 @@
-# Makefile for [source/Grid/GridMain/paramesh]   
+# Makefile for [source/Grid/GridMain/AMR/paramesh]   
 
 Grid += Grid_getBlkType.o \
         gr_updateData.o gr_createDomain.o gr_recreateDomain.o \
