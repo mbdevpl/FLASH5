@@ -255,7 +255,8 @@ subroutine Driver_evolveFlash()
 
 #ifdef FLASH_GRID_AMREX
      ! DEV: Temporary ugliness for debugging
-     call gr_writeData(dr_nstep, dr_simTime)
+     ! DEV: Moved to IO_writePlotfile for convenient control of frequency with runtime parameters! - KW
+!!$     call gr_writeData(dr_nstep, dr_simTime)
 #endif
      call Timers_stop("IO_output")
      
