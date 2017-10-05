@@ -33,6 +33,7 @@
 #define DEBUG_DRIVER
 #endif
 
+#define DEBUG_GRID_GCMASK
 
 subroutine Driver_evolveFlash()
 
@@ -51,12 +52,16 @@ subroutine Driver_evolveFlash()
                                   dr_useSTSforDiffusion,                 &
                                   dr_tstepChangeFactor,                  &
                                   dr_allowDtSTSDominate,dr_meshComm
+#ifdef DEBUG_GRID_GCMASK
+  use Hydro_data,          ONLY : hy_gcMask, hy_gcMaskSize
+#endif
   use Driver_interface,    ONLY : Driver_sourceTerms, Driver_computeDt, &
                                   Driver_superTimeStep, &
                                   Driver_logMemoryUsage, &
                                   Driver_driftUnk, &
                                   Driver_diagnostics
   use Logfile_interface,   ONLY : Logfile_stamp, Logfile_close
+  use Logfile_interface,   ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop, &
                                   Timers_getSummary
   use Diffuse_interface,   ONLY : Diffuse
@@ -213,15 +218,12 @@ subroutine Driver_evolveFlash()
      
 #ifdef DEBUG_GRID_GCMASK
      if (.NOT.gcMaskLogged) then
-        !!        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
+        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[Driver_evolveFlash]', 'gcNeed')
      end if
 #endif
      
-     !! Guardcell filling routine
-!!$     call Grid_fillGuardCells(CENTER,ALLDIR,&
-!!$          maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
-     
-     call Grid_fillGuardCells(CENTER,ALLDIR)
+     !! Guardcell filling routine - the call has been moved into Hydro.
+!!$     call Grid_fillGuardCells(CENTER,ALLDIR)
 
      call Hydro_advanceAll(dr_simTime, dr_dt, dr_dtOld)
 
@@ -327,6 +329,8 @@ subroutine Driver_evolveFlash()
         endif
         exit
      end if
+
+     gcMaskLogged = .TRUE.
      
   enddo
   !The value of dr_nstep after the loop is (dr_nend + 1) if the loop iterated for
