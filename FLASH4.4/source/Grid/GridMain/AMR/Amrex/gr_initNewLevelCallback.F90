@@ -62,9 +62,11 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     ! Create FABS for storing physical data at given level
     call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, gr_iguard)
     ! DEVNOTE: TODO Create there w.r.t. proper face-centered boxes
+#if NFACE_VARS > 0
     call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, gr_iguard)
     call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, gr_iguard)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, gr_iguard)
+#endif
 
     ! Write initial data across domain at coarsest level
     call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
@@ -105,7 +107,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     call amrex_mfiter_destroy(mfi)
  
-    write(*,'(A,I4,A,I2)') "[gr_initNewLevelCallback]            ", &
+    write(*,'(A,I10,A,I2)') "[gr_initNewLevelCallback]      ", &
                            n_blocks, " new blocks on level", lev + 1
 
 end subroutine gr_initNewLevelCallback
