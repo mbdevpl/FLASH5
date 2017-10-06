@@ -293,12 +293,6 @@ subroutine Grid_getRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
   end if
      
 
-  !verify we have a valid blockid
-  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,"Error: Grid_getRowData : invalid blockid "
-     call Driver_abortFlash("Get_getRowData : invalid blockid ")
-  end if
-  
   !verify beginCount is set to a valid value
   if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
      print *, "Error: Grid_getRowData: beginCount set to improper value"
