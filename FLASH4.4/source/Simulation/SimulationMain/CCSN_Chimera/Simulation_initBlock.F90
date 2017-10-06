@@ -80,7 +80,9 @@ subroutine Simulation_initBlock(solnData,block)
   real :: radCenter, thtCenter, phiCenter
   real :: radCenterVol, thtCenterVol, phiCenterVol
 
-  blockID = block%id
+!!$#ifndef FLASH_GRID_AMREX
+!!$  blockID = block%id    ! Maybe useful for debugging
+!!$#endif
   blkLimits = block%limits
   blkLimitsGC = block%limitsGC
 
