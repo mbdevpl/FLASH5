@@ -43,7 +43,7 @@ subroutine gr_writeData(stepno, t_new)
 
     nlevs = amrex_get_numlevels()
 
-    allocate(varname(NPROP_VARS))
+    allocate(varname(NUNK_VARS))
 
     do i = 1, SIZE(varname)
         write(current_var,'(I4.4)') i

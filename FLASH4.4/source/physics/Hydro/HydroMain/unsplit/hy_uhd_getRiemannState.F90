@@ -534,7 +534,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
               endif
 #if NDIM > 2
               ! Addtional 3D test whether a solid cell is so close
-              ! that we cannot do all the proper transverse158              ! computations for this cell.
+              ! that we cannot do all the proper transverse computations for this cell.
               if (hy_use3dFullCTU) then
                  if (maxval(U(BDRY_VAR,i-1:i+1,j-1:j+1,k-1:k+1)) > 0.) then
                     if (maxval(U(BDRY_VAR,i      ,j-1:j+1,k-1:k+1)) > 0.) lowerCflAtBdry = .TRUE.
