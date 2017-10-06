@@ -209,31 +209,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   finest_level = -1
 
-  ! DEVNOTE: TODO Implement this functionality
+  ! DEV: TODO Implement this functionality
 #ifdef DEBUG_GRID
-  if      (present(minLayers)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] minLayers *not* implemented for yet AMReX") 
-  end if
-  if (present(eosMode)) then
-    write(*,*) "eosMode = ", eosMode
-    call Driver_abortFlash("[Grid_fillGuardCells] eosMode *not* implemented for yet AMReX") 
-  end if
-  if (present(doEos)) then
-    write(*,*) "doEos = ", doEos
-    call Driver_abortFlash("[Grid_fillGuardCells] doEos *not* implemented for yet AMReX") 
-  end if
-  if (present(maskSize)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] maskSize *not* implemented for yet AMReX") 
-  end if
-  if (present(mask)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] mask *not* implemented for yet AMReX") 
-  end if
-  if (present(makeMaskConsistent)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] makeMaskConsistent *not* implemented for yet AMReX") 
-  end if
-  if (present(doLogMask)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] doLogMask *not* implemented for yet AMReX") 
-  end if
   if (present(unitReadsMeshDataOnly)) then
     call Driver_abortFlash("[Grid_fillGuardCells] unitReadsMeshDataOnly *not* implemented for yet AMReX") 
   end if
@@ -247,8 +224,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      call Driver_abortFlash("[Grid_fillGuardCells]: Non-center not yet coded")
   end if
 
-  ! DEV: Filling by direction is not needed any longer
 #ifdef DEBUG_GRID
+  ! Filling by direction is not needed any longer
   if (idir /= ALLDIR) then
     call Driver_abortFlash("[Grid_fillGuardCells] idir must be ALLDIR with AMReX")
   end if
@@ -304,14 +281,12 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! GC data could be managed by other processor.
   ! Wait for work on all data structures across full mesh to finish 
   ! before GC filling
-  ! DEV: TODO Does AMReX handle synchronization?
   if (.not. skipThisGcellFill) then
      call Timers_start("guardcell Barrier")
      call MPI_BARRIER(gr_meshComm, ierr)
      call Timers_stop("guardcell Barrier")
   end if
 
-  ! DEV: TODO How to do guardcell fill by direction?
   call Timers_start("guardcell internal")
   !! appropriately mask the data structures to ensure that only the correct data
   !! structure is filled.
@@ -320,14 +295,16 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   scompCC = UNK_VARS_BEGIN
   ncompCC = NUNK_VARS
 
-  scompCC = maxloc(merge(1.,0.,gcell_on_cc),dim=1) ! maxloc(gcell_on_cc,dim=1)
-  lcompCC = UNK_VARS_END + 1 - maxloc(merge(1.,0.,gcell_on_cc(UNK_VARS_END:UNK_VARS_BEGIN:-1)),dim=1)
-  ncompCC = lcompCC - scompCC + 1
-  gcell_on_cc(scompCC:lcompCC) = .TRUE.
-
-
   if(present(mask))then
      if(present(maskSize)) then
+        if (gr_enableMaskedGCFill) then
+            scompCC = maxloc(merge(1.,0.,gcell_on_cc),dim=1) ! maxloc(gcell_on_cc,dim=1)
+            lcompCC = UNK_VARS_END + 1 - &
+                      maxloc(merge(1.,0.,gcell_on_cc(UNK_VARS_END:UNK_VARS_BEGIN:-1)),dim=1)
+            ncompCC = lcompCC - scompCC + 1
+            gcell_on_cc(scompCC:lcompCC) = .TRUE.
+        end if
+
         if (present(doLogMask)) then
            if (doLogMask) then
               if (skipThisGcellFill) then
