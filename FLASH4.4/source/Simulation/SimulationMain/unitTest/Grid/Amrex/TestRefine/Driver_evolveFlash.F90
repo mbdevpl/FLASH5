@@ -48,20 +48,11 @@ subroutine Driver_evolveFlash()
     use gr_amrexInterface,     ONLY : gr_getFinestLevel, &
                                       gr_writeData
     use gr_physicalMultifabs,  ONLY : unk
-    use sim_interface,         ONLY : sim_advance
     use block_metadata,        ONLY : block_metadata_t
+    use sim_interface,         ONLY : sim_advance
+    use sim_testDriverMod
 
     implicit none
-
-    interface assertEqual
-        procedure :: assertEqualInt
-        procedure :: assertEqualReal
-    end interface assertEqual
-
-    integer :: n_tests
-    integer :: n_failed
-    real    :: t_old
-    real    :: t_new
 
     real    :: domain(LOW:HIGH, 1:MDIM)
     real    :: deltas(1:MDIM)
@@ -80,22 +71,17 @@ subroutine Driver_evolveFlash()
     type(amrex_mfiter)        :: mfi
     type(amrex_box)           :: bx
 
-    write(*,*)
-    n_tests = 0
-    n_failed = 0
-    t_old = 0.0d0
-    t_new = 0.0d0
-    call cpu_time(t_old)
-
     !!!!! CONFIRM PROPER DIMENSIONALITY
+    write(*,*)
     if (amrex_spacedim /= 2) then
         write(*,*) "Wrong dimensionality - ", amrex_spacedim, ' != ', 2
         write(*,*) "Recompile AMReX with correct dimensionality"
         write(*,*)
         stop
     end if
-    n_tests = n_tests + 1
- 
+
+    call start_test_run
+
     !!!!! CONFIRM PROPER SETUP
     ! 16x16 domain with dx = dy = (1.0 - 0.0)/16
     call assertEqual(NXB, 8, "Incorrect initial number of cells/block along X")
@@ -342,105 +328,7 @@ subroutine Driver_evolveFlash()
         call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
     end do
 
-    !!!!! OUTPUT RESULTS
-    ! DEVNOTE: reduction to collect number of fails?
-    write(*,*)
-    if (n_failed == 0) then
-        write(*,*) "SUCCESS - ", &
-                   (n_tests - n_failed), "/", n_tests, ' passed' 
-    else 
-        write(*,*) "FAILURE - ", &
-                   (n_tests - n_failed), "/", n_tests, ' passed'
-    end if
-    write(*,*)
-    write(*,*) 'Walltime = ', (t_new - t_old), ' s'
-    write(*,*)
-
-contains
-
-    subroutine assertTrue(a, msg)
-        implicit none
-
-        logical,      intent(IN) :: a
-        character(*), intent(IN) :: msg
-
-        character(256) :: buffer = ""
-        
-        if (.NOT. a) then
-            write(buffer,'(A)') msg
-            write(*,*) TRIM(ADJUSTL(buffer))
-            n_failed = n_failed + 1
-        end if
-        n_tests = n_tests + 1
-    end subroutine assertTrue
-
-    subroutine assertFalse(a, msg)
-        implicit none
-
-        logical,      intent(IN) :: a
-        character(*), intent(IN) :: msg
-
-        character(256) :: buffer = ""
-        
-        if (a) then
-            write(buffer,'(A)') msg
-            write(*,*) TRIM(ADJUSTL(buffer))
-            n_failed = n_failed + 1
-        end if
-        n_tests = n_tests + 1
-    end subroutine assertFalse
-
-    subroutine assertEqualInt(a, b, msg)
-        implicit none
-
-        integer,      intent(IN) :: a
-        integer,      intent(IN) :: b
-        character(*), intent(IN) :: msg
-
-        character(256) :: buffer = ""
-
-        if (a /= b) then
-            write(buffer,'(A,I5,A,I5)') msg, a, " != ", b
-            write(*,*) TRIM(ADJUSTL(buffer))
-            n_failed = n_failed + 1
-        end if
-        n_tests = n_tests + 1
-    end subroutine assertEqualInt
-
-    subroutine assertEqualReal(a, b, msg)
-        implicit none
-
-        real,         intent(IN) :: a
-        real,         intent(IN) :: b
-        character(*), intent(IN) :: msg
-
-        character(256) :: buffer = ""
-
-        if (a /= b) then
-            write(buffer,'(A,F15.8,A,F15.8)') msg, a, " != ", b
-            write(*,*) TRIM(ADJUSTL(buffer))
-            n_failed = n_failed + 1
-        end if
-        n_tests = n_tests + 1
-    end subroutine assertEqualReal
-
-    subroutine assert_almost_equal(a, b, prec, msg)
-        implicit none
-
-        real,         intent(IN) :: a
-        real,         intent(IN) :: b
-        real,         intent(IN) :: prec
-        character(*), intent(IN) :: msg
-
-        character(256) :: buffer = ""
-
-        if (ABS(b - a) > prec) then
-            write(buffer,'(A,F15.8,A,F15.8)') msg, a, " != ", b
-            write(*,*) TRIM(ADJUSTL(buffer))
-            n_failed = n_failed + 1
-        end if
-        n_tests = n_tests + 1
-    end subroutine assert_almost_equal
+    call finish_test_run
 
 end subroutine Driver_evolveFlash
 
