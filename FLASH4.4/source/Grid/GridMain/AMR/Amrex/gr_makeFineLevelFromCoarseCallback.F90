@@ -19,7 +19,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
-    use Grid_data,                 ONLY : gr_iguard
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz
 
@@ -45,11 +44,11 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     !!!!!----- (Re)create FABS for storing physical data at this level
     call gr_clearLevelCallback(lev)
-    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
     ! DEVNOTE: TODO Create these wrt proper face-centered boxes
-    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, gr_iguard)
-    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, gr_iguard)
-    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
 
     !!!!!----- Fill new refinement level via interpolation from parent block
     ! This *hopefully* will do the guard cell fill as well

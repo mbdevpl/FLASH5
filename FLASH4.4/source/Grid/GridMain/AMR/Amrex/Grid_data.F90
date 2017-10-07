@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_data
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_data
 !!
 !! NAME
 !!  Grid_data
@@ -9,17 +9,7 @@
 !!
 !! DESCRIPTION 
 !!  
-!!  This includes the global integer identifier for a block, the grid geometry information
-!!  
-!!  
-!! 
-!! CREATE AD:04/12/04
-!!
-!! 
-!!   Defining data structures for storing paramesh related infomation.  
-!!   including function for updating the grid information
-!!
-!! MODIFIED AD:05/19/04
+!!  Defining variables for storing AMReX-related data.
 !!   
 !!***
 
@@ -56,10 +46,14 @@ Module Grid_data
   logical, save :: gr_allPeriodic
   real,    save :: gr_minCellSize
   real,    save :: gr_minCellSizes(MDIM)
-  
-  integer, save :: gr_iguard
-  integer, save :: gr_jguard 
-  integer, save :: gr_kguard
+
+  ! These are historical.
+  ! Within the AMReX implementation, the number of guardcells
+  ! is set to NGUARD for all directions.  Code in the Amrex 
+  ! folder should use NGUARD instead of these.
+  integer, save :: gr_iguard = NGUARD
+  integer, save :: gr_jguard = NGUARD
+  integer, save :: gr_kguard = NGUARD
 
 !  integer,save,dimension(MDIM)::gr_bndOrder
 !  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars

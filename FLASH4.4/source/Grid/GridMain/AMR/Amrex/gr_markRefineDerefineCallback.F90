@@ -64,7 +64,6 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
       ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
-      ! DEVNOTE: Should we use gr_[ijk]guard here?
       blockDesc%level = lev + 1
       blockDesc%grid_index = mfi%grid_index()
       blockDesc%limits(LOW,  :) = 1

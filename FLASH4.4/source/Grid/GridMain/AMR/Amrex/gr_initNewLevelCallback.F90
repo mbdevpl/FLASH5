@@ -23,8 +23,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use gr_amrexInterface,      ONLY : gr_clearLevelCallback
     use block_metadata,         ONLY : block_metadata_t
     use Simulation_interface,   ONLY : Simulation_initBlock
-    use Grid_data,              ONLY : gr_iguard, &
-                                       gr_eosModeInit
+    use Grid_data,              ONLY : gr_eosModeInit
     use Eos_interface,          ONLY : Eos_wrapped
 
     implicit none
@@ -41,11 +40,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     type(block_metadata_t)        :: block
     real(wp), contiguous, pointer :: initData(:,:,:,:)
-    real(wp)                      :: x = 0.0_wp 
-    real(wp)                      :: y = 0.0_wp
-    real(wp)                      :: z = 0.0_wp
-
-    integer :: i, j, k
 
     integer :: n_blocks
 
@@ -60,12 +54,12 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call gr_clearLevelCallback(lev)
 
     ! Create FABS for storing physical data at given level
-    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
     ! DEVNOTE: TODO Create there w.r.t. proper face-centered boxes
 #if NFACE_VARS > 0
-    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, gr_iguard)
-    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, gr_iguard)
-    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
 #endif
 
     ! Write initial data across domain at coarsest level
@@ -77,7 +71,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
         ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
         ! Level must be 1-based index and limits/limitsGC must be 1-based also
-        ! DEVNOTE: Should we use gr_[ijk]guard here?
         block%level = lev + 1
         block%grid_index = mfi%grid_index()
         block%limits(LOW,  :) = 1

@@ -213,13 +213,6 @@ subroutine Grid_init()
   ! angle value parameters that are expressed in degrees to radians.
   call gr_initGeometry()
 
-!------------------------------------------------------------------------------
-! Load into local Grid variables all runtime parameters needed by gr_amrexInit
-!------------------------------------------------------------------------------
-  gr_iguard = NGUARD
-  gr_jguard = NGUARD 
-  gr_kguard = NGUARD
-  
 !----------------------------------------------------------------------------------
 ! Init AMReX so that it can 
 !    (1) expose the data it controls through the grid interfaces,

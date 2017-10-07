@@ -122,7 +122,6 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
       shift = 1.0d0
     end if
 
-    ! DEV: Should we use gr_[ijk]guard instead of NGUARD?
     ! Translate indices to 1-based global indices adjusted according to edge
     ind_t = (ind + x_blk_lo - 1) + shift
     if (beginCount == EXTERIOR) then

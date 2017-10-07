@@ -24,7 +24,6 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz
-    use Grid_data,                 ONLY : gr_iguard
 
     implicit none
 
@@ -51,7 +50,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 
     !!!!! SAVE DATA IN BUFFER WITH GIVEN BOXARRAY/DISTRIBUTION
     ! Get all unk interior data
-    call amrex_multifab_build(mfab, ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(mfab, ba, dm, NUNK_VARS, NGUARD)
     ! DEVNOTE: TODO Include facevars in this process
 
     if (lev == 0) then
@@ -86,11 +85,11 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 
     !!!!! REBUILD MFAB AT LEVEL AND FILL FROM BUFFER
     call gr_clearLevelCallback(lev)
-    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
 
     ! Only copy interior
     call unk(lev)%copy(mfab, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                       gr_iguard)
+                       NGUARD)
 
     call amrex_multifab_destroy(mfab)
 
