@@ -1,12 +1,12 @@
-!!****if* source/Simulation/SimulationMain/unitTest/sim_testDriverMod
+!!****if* source/flashUtilities/testing/ut_testDriverMod
 !!
 !! NAME
 !!
-!!  sim_testDriverMod
+!!  ut_testDriverMod
 !!
 !! SYNOPSIS
 !!
-!!  use sim_testDriverMod
+!!  use ut_testDriverMod
 !!
 !! DESCRIPTION
 !!
@@ -33,7 +33,7 @@
 
 #include "constants.h"
 
-module sim_testDriverMod
+module ut_testDriverMod
     implicit none
     private
 
@@ -176,5 +176,5 @@ contains
         my_n_tests = my_n_tests + 1
     end subroutine assertAlmostEqual
 
-end module sim_testDriverMod
+end module ut_testDriverMod
 

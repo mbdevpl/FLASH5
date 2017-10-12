@@ -60,7 +60,7 @@ subroutine Driver_evolveFlash()
                                       gr_eosModeInit
     use block_iterator,        ONLY : block_iterator_t
     use block_metadata,        ONLY : block_metadata_t, bmd_print
-    use sim_testDriverMod
+    use ut_testDriverMod
 
     implicit none
 

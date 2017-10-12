@@ -50,7 +50,7 @@ subroutine Driver_evolveFlash()
     use gr_physicalMultifabs,  ONLY : unk
     use block_metadata,        ONLY : block_metadata_t
     use sim_interface,         ONLY : sim_advance
-    use sim_testDriverMod
+    use ut_testDriverMod
 
     implicit none
 
