@@ -1,4 +1,4 @@
-subroutine sim_advance(step, points, values, set_msg, leaf_msg, block_count)
+subroutine sim_advance(step, points, values, set_msg, leaf_msg)
     use Grid_interface,       ONLY : Grid_updateRefinement, &
                                      Grid_getBlkPtr, Grid_releaseBlkPtr
     use gr_amrexInterface,    ONLY : gr_getFinestLevel, &
@@ -7,21 +7,21 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg, block_count)
     use block_metadata,       ONLY : block_metadata_t 
     use Driver_interface,     ONLY : Driver_abortFlash
     use sim_interface,        ONLY : sim_writeDataPoints, &
+                                     sim_collectLeaves, &
                                      sim_printLeaves
 
     implicit none
 
 #include "constants.h"
-    
+ 
     integer,      intent(IN)    :: step
     real,         intent(IN)    :: points(:, :)
     real,         intent(IN)    :: values(:)
     character(*), intent(IN)    :: set_msg
     character(*), intent(IN)    :: leaf_msg
-    integer,      intent(INOUT) :: block_count(4)
 
     real, contiguous, pointer :: solnData(:,:,:,:)
-   
+ 
     type(block_iterator_t) :: itor
     type(block_metadata_t) :: blockDesc
 
@@ -72,7 +72,6 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg, block_count)
         call Driver_abortFlash("[sim_advance] Should refine on even steps")
     end if
 
-    write(*,*)
-    call sim_printLeaves(leaf_msg, block_count)
+    call sim_collectLeaves
 end subroutine sim_advance
 

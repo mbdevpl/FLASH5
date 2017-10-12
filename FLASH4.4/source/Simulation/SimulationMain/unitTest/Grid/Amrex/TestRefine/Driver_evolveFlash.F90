@@ -49,7 +49,11 @@ subroutine Driver_evolveFlash()
                                       gr_writeData
     use gr_physicalMultifabs,  ONLY : unk
     use block_metadata,        ONLY : block_metadata_t
-    use sim_interface,         ONLY : sim_advance
+    use sim_interface,         ONLY : sim_advance, &
+                                      sim_collectLeaves
+    use Simulation_data,       ONLY : leaves, &
+                                      blocks_t, &
+                                      MIN_REFINE_LEVEL, MAX_REFINE_LEVEL
     use ut_testDriverMod
 
     implicit none
@@ -66,6 +70,8 @@ subroutine Driver_evolveFlash()
     integer :: block_count_ex(4)
     integer :: lev, i, j
 
+    type(blocks_t) :: leaves_ex(MIN_REFINE_LEVEL:MAX_REFINE_LEVEL)
+
     real, contiguous, pointer :: solnData(:,:,:,:)
     type(block_metadata_t)    :: blockDesc
     type(amrex_mfiter)        :: mfi
@@ -79,6 +85,9 @@ subroutine Driver_evolveFlash()
         write(*,*)
         stop
     end if
+
+    !!!!! POPULATE LEAF BLOCK DATA STRUCTURE AS IN sim_advance
+    call sim_collectLeaves
 
     call start_test_run
 
@@ -106,11 +115,43 @@ subroutine Driver_evolveFlash()
     call assertEqual(4, gr_lRefineMax, "Incorrect max number of levels")
     call assertEqual(gr_maxRefine, gr_lRefineMax, "gr_maxRefine != gr_lRefineMax")
 
-    call sim_printLeaves("LEAVES AFTER DATA INIT & REGRID", block_count)
-    block_count_ex = [0, 15, 4, 0]
-    do lev = 1, SIZE(block_count)
-        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
-    end do
+    allocate(leaves_ex(2)%blocks(15, 4), leaves_ex(3)%blocks(4, 4))
+    ! Column 1 / Level 2
+    leaves_ex(2)%blocks(1,  :) = [ 1,  1,  8,  8]
+    leaves_ex(2)%blocks(2,  :) = [ 1,  9,  8, 16]
+    
+    leaves_ex(3)%blocks(1,  :) = [ 1, 33,  8, 40]
+    leaves_ex(3)%blocks(2,  :) = [ 1, 41,  8, 48]
+    leaves_ex(3)%blocks(3,  :) = [ 9, 33, 16, 40]
+    leaves_ex(3)%blocks(4,  :) = [ 9, 41, 16, 48]
+    
+    leaves_ex(2)%blocks(3,  :) = [ 1, 25,  8, 32]
+ 
+    ! Column 2 / Level 2
+    leaves_ex(2)%blocks(4,  :) = [ 9,  1, 16,  8]
+    leaves_ex(2)%blocks(5,  :) = [ 9,  9, 16, 16]
+    leaves_ex(2)%blocks(6,  :) = [ 9, 17, 16, 24]
+    leaves_ex(2)%blocks(7,  :) = [ 9, 25, 16, 32]
+   
+    ! Column 3 / Level 2
+    leaves_ex(2)%blocks(8,  :) = [17,  1, 24,  8]
+    leaves_ex(2)%blocks(9,  :) = [17,  9, 24, 16]
+    leaves_ex(2)%blocks(10, :) = [17, 17, 24, 24]
+    leaves_ex(2)%blocks(11, :) = [17, 25, 24, 32]
+   
+    ! Column 4 / Level 2
+    leaves_ex(2)%blocks(12, :) = [25,  1, 32,  8]
+    leaves_ex(2)%blocks(13, :) = [25,  9, 32, 16]
+    leaves_ex(2)%blocks(14, :) = [25, 17, 32, 24]
+    leaves_ex(2)%blocks(15, :) = [25, 25, 32, 32]
+
+    call assertFalse(allocated(leaves(1)%blocks), "No blocks for level 1")
+    call assertSetEqual(leaves_ex(2)%blocks, leaves(2)%blocks, &
+                     "Incorrect leaf blocks on level 2")
+    call assertSetEqual(leaves_ex(3)%blocks, leaves(3)%blocks, &
+                     "Incorrect leaf blocks on level 3")
+    call assertFalse(allocated(leaves(4)%blocks), "No blocks for level 4")
+    deallocate(leaves_ex(2)%blocks, leaves_ex(3)%blocks)
 
     !!!!! CONFIRM INITIAL REFINEMENT
     ! Started with 2x2 block structure and refined according to initial data
@@ -125,17 +166,26 @@ subroutine Driver_evolveFlash()
     values(:) = 0.0d0
     call sim_advance(1, points, values, &
                      "SETTING ALL DATA TO ZERO AT ALL LEVELS", &
-                     "LEAVES AFTER ZEROING ALL DATA & REGRID", &
-                     block_count)
+                     "LEAVES AFTER ZEROING ALL DATA & REGRID")
     call gr_writeData(2, 2.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(1, finest_level, "Incorrect finest level")
-    
-    block_count_ex = [4, 0, 0, 0]
-    do lev = 1, SIZE(block_count)
-        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
-    end do
+  
+    ! First two integers are lower-left cell in block; last two integers,
+    ! upper-right cell
+    allocate(leaves_ex(1)%blocks(4, 4))
+    leaves_ex(1)%blocks(1, :) = [1, 1,    8,  8]
+    leaves_ex(1)%blocks(2, :) = [1, 9,    8, 16]
+    leaves_ex(1)%blocks(3, :) = [9, 1,   16,  8]
+    leaves_ex(1)%blocks(4, :) = [9, 9,   16, 16]
+
+    call assertSetEqual(leaves_ex(1)%blocks, leaves(1)%blocks, &
+                        "Incorrect leaf blocks on level 1")
+    call assertFalse(allocated(leaves(2)%blocks), "No blocks for level 2")
+    call assertFalse(allocated(leaves(3)%blocks), "No blocks for level 3")
+    call assertFalse(allocated(leaves(4)%blocks), "No blocks for level 4")
+    deallocate(leaves_ex(1)%blocks)
 
     !!!!! STEP 3/4 - CONFIRM REFINEMENT GLOBALLY TO LEVEL 2
     ! Corner cell with periodic BC
@@ -145,17 +195,43 @@ subroutine Driver_evolveFlash()
     values(1) = REFINE_TO_L2
     call sim_advance(3, points, values, &
                      "SETTING CORNER CELL ONLY FOR LEVEL 2", &
-                     "LEAVES AFTER DATA AT CORNER CELL", &
-                     block_count)
+                     "LEAVES AFTER DATA AT CORNER CELL")
     call gr_writeData(4, 4.0d0)
-    
+
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
 
-    block_count_ex = [0, 16, 0, 0]
-    do lev = 1, SIZE(block_count)
-        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
-    end do
+    allocate(leaves_ex(2)%blocks(16, 4))
+    ! Column 1 / Level 2
+    leaves_ex(2)%blocks(1,  :) = [ 1,  1,  8,  8]
+    leaves_ex(2)%blocks(2,  :) = [ 1,  9,  8, 16]
+    leaves_ex(2)%blocks(3,  :) = [ 1, 17,  8, 24]
+    leaves_ex(2)%blocks(4,  :) = [ 1, 25,  8, 32]
+ 
+    ! Column 2 / Level 2
+    leaves_ex(2)%blocks(5,  :) = [ 9,  1, 16,  8]
+    leaves_ex(2)%blocks(6,  :) = [ 9,  9, 16, 16]
+    leaves_ex(2)%blocks(7,  :) = [ 9, 17, 16, 24]
+    leaves_ex(2)%blocks(8,  :) = [ 9, 25, 16, 32]
+   
+    ! Column 3 / Level 2
+    leaves_ex(2)%blocks(9,  :) = [17,  1, 24,  8]
+    leaves_ex(2)%blocks(10, :) = [17,  9, 24, 16]
+    leaves_ex(2)%blocks(11, :) = [17, 17, 24, 24]
+    leaves_ex(2)%blocks(12, :) = [17, 25, 24, 32]
+   
+    ! Column 4 / Level 2
+    leaves_ex(2)%blocks(13, :) = [25,  1, 32,  8]
+    leaves_ex(2)%blocks(14, :) = [25,  9, 32, 16]
+    leaves_ex(2)%blocks(15, :) = [25, 17, 32, 24]
+    leaves_ex(2)%blocks(16, :) = [25, 25, 32, 32]
+   
+    call assertFalse(allocated(leaves(1)%blocks), "No blocks for level 1")
+    call assertSetEqual(leaves_ex(2)%blocks, leaves(2)%blocks, &
+                        "Incorrect leaf blocks on level 2")
+    call assertFalse(allocated(leaves(3)%blocks), "No blocks for level 3")
+    call assertFalse(allocated(leaves(4)%blocks), "No blocks for level 4")
+    deallocate(leaves_ex(2)%blocks)
 
     !!!!! STEP 5/6 - CONFIRM LEVEL 2 ONLY ON LOWER-RIGHT
     ! Single point not in corner cell
@@ -165,17 +241,33 @@ subroutine Driver_evolveFlash()
     values(1) = REFINE_TO_L2 
     call sim_advance(5, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 2", &
-                     "LEAVES AFTER LEVEL 2 DATA AT SINGLE CELL", &
-                     block_count)
+                     "LEAVES AFTER LEVEL 2 DATA AT SINGLE CELL")
     call gr_writeData(6, 6.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
 
-    block_count_ex = [3, 4, 0, 0]
-    do lev = 1, SIZE(block_count)
-        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
-    end do
+    allocate(leaves_ex(1)%blocks(3, 4), &
+             leaves_ex(2)%blocks(4, 4))
+    ! Column 1 / Level 1
+    leaves_ex(1)%blocks(1, :) = [ 1, 1,    8,  8]
+    leaves_ex(1)%blocks(2, :) = [ 1, 9,    8, 16]
+    
+    ! Column 2 / Level 1
+    leaves_ex(2)%blocks(1, :) = [17, 1,   24,  8]
+    leaves_ex(2)%blocks(2, :) = [17, 9,   24, 16]
+    leaves_ex(2)%blocks(3, :) = [25, 1,   32,  8]
+    leaves_ex(2)%blocks(4, :) = [25, 9,   32, 16]
+    
+    leaves_ex(1)%blocks(3, :) = [ 9, 9,   16, 16]
+ 
+    call assertSetEqual(leaves_ex(1)%blocks, leaves(1)%blocks, &
+                        "Incorrect leaf blocks on level 1")
+    call assertSetEqual(leaves_ex(2)%blocks, leaves(2)%blocks, &
+                        "Incorrect leaf blocks on level 2")
+    call assertFalse(allocated(leaves(3)%blocks), "No blocks for level 3")
+    call assertFalse(allocated(leaves(4)%blocks), "No blocks for level 4")
+    deallocate(leaves_ex(1)%blocks, leaves_ex(2)%blocks)
 
     !!!!! STEP 7/8 - REFINE TO LEVEL 3 ON POINT
     ! Same point but maximize refinement.  However, refinement 
@@ -183,17 +275,49 @@ subroutine Driver_evolveFlash()
     values(1) = REFINE_TO_L5
     call sim_advance(7, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 4", &
-                     "LEAVES AFTER ONLY GETTING TO L3 AT SINGLE CELL", &
-                     block_count)
+                     "LEAVES AFTER ONLY GETTING TO L3 AT SINGLE CELL")
     call gr_writeData(8, 8.0d0)
-    
+ 
     call gr_getFinestLevel(finest_level)
     call assertEqual(3, finest_level, "Incorrect finest level")
 
-    block_count_ex = [0, 15, 4, 0]
-    do lev = 1, SIZE(block_count)
-        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
-    end do
+    allocate(leaves_ex(2)%blocks(15, 4), &
+             leaves_ex(3)%blocks(4, 4))
+    ! Column 1 / Level 2
+    leaves_ex(2)%blocks( 1, :) = [ 1,  1,    8,  8]
+    leaves_ex(2)%blocks( 2, :) = [ 1,  9,    8, 16]
+    leaves_ex(2)%blocks( 3, :) = [ 1, 17,    8, 24]
+    leaves_ex(2)%blocks( 4, :) = [ 1, 25,    8, 32]
+ 
+    ! Column 2 / Level 2
+    leaves_ex(2)%blocks( 5, :) = [ 9,  1,   16,  8]
+    leaves_ex(2)%blocks( 6, :) = [ 9,  9,   16, 16]
+    leaves_ex(2)%blocks( 7, :) = [ 9, 17,   16, 24]
+    leaves_ex(2)%blocks( 8, :) = [ 9, 25,   16, 32]
+ 
+    ! Column 3 / Level 2
+    leaves_ex(2)%blocks( 9, :) = [17,  1,   24,  8]
+    leaves_ex(2)%blocks(10, :) = [17,  9,   24, 16]
+    leaves_ex(2)%blocks(11, :) = [17, 17,   24, 24]
+    leaves_ex(2)%blocks(12, :) = [17, 25,   24, 32]
+ 
+    ! Column 4 / Level 2
+    leaves_ex(3)%blocks( 1, :) = [49,  1,   56,  8]
+    leaves_ex(3)%blocks( 2, :) = [49,  9,   56, 16]
+    leaves_ex(3)%blocks( 3, :) = [57,  1,   64,  8]
+    leaves_ex(3)%blocks( 4, :) = [57,  9,   64, 16]
+ 
+    leaves_ex(2)%blocks(13, :) = [25,  9,   32, 16]
+    leaves_ex(2)%blocks(14, :) = [25, 17,   32, 24]
+    leaves_ex(2)%blocks(15, :) = [25, 25,   32, 32]
+
+    call assertFalse(allocated(leaves(1)%blocks), "No blocks for level 1")
+    call assertSetEqual(leaves_ex(2)%blocks, leaves(2)%blocks, &
+                        "Incorrect leaf blocks on level 2")
+    call assertSetEqual(leaves_ex(3)%blocks, leaves(3)%blocks, &
+                        "Incorrect leaf blocks on level 3")
+    call assertFalse(allocated(leaves(4)%blocks), "No blocks for level 4")
+    deallocate(leaves_ex(2)%blocks, leaves_ex(3)%blocks)
 
     ! During this step, gr_remakeLevelCallback called on level 2
     ! and then gr_makeFineLevelFromCoarseCallback created level 3 from level 2
@@ -267,36 +391,89 @@ subroutine Driver_evolveFlash()
         call amrex_mfiter_destroy(mfi)
     end do
 
-    !!!!! STEP 9/10 - ADVANCE WITH NO CHANGE TO ACHIEVE LEVEL 4
+   !!!!! STEP 9/10 - ADVANCE WITH NO CHANGE TO ACHIEVE LEVEL 4
     call sim_advance(9, points, values, &
                      "NO DATA CHANGE - LET IT REFINE TO LEVEL 4", &
-                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL", &
-                     block_count)
+                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
     call gr_writeData(10, 10.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
-    block_count_ex = [0, 12, 15, 4]
-    do lev = 1, SIZE(block_count)
-        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
-    end do
+    allocate(leaves_ex(2)%blocks(12, 4), &
+             leaves_ex(3)%blocks(15, 4), &
+             leaves_ex(4)%blocks( 4, 4))
+    ! Column 1 / Level 2
+    leaves_ex(3)%blocks( 1, :) = [ 1,  1,    8,  8]
+    leaves_ex(3)%blocks( 2, :) = [ 1,  9,    8, 16]
+    leaves_ex(3)%blocks( 3, :) = [ 9,  1,   16,  8]
+    leaves_ex(3)%blocks( 4, :) = [ 9,  9,   16, 16]
+    
+    leaves_ex(2)%blocks( 1, :) = [ 1,  9,    8, 16]
+    leaves_ex(2)%blocks( 2, :) = [ 1, 17,    8, 24]
+    
+    leaves_ex(3)%blocks( 5, :) = [ 1, 49,    8, 56]
+    leaves_ex(3)%blocks( 6, :) = [ 1, 57,    8, 64]
+    leaves_ex(3)%blocks( 7, :) = [ 9, 49,   16, 56]
+    leaves_ex(3)%blocks( 8, :) = [ 9, 57,   16, 64]
+    
+    ! Column 2 / Level 2
+    leaves_ex(2)%blocks( 3, :) = [ 9,  1,   16,  8]
+    leaves_ex(2)%blocks( 4, :) = [ 9,  9,   16, 16]
+    leaves_ex(2)%blocks( 5, :) = [ 9, 17,   16, 24]
+    leaves_ex(2)%blocks( 6, :) = [ 9, 25,   16, 32]
+    
+    ! Column 3 / Level 2
+    leaves_ex(2)%blocks( 7, :) = [17,  1,   24,  8]
+    leaves_ex(2)%blocks( 8, :) = [17,  9,   24, 16]
+    leaves_ex(2)%blocks( 9, :) = [17, 17,   24, 24]
+    leaves_ex(2)%blocks(10, :) = [17, 25,   24, 32]
+
+    ! Column 4 / Level 2
+    leaves_ex(3)%blocks( 9, :) = [ 49,  1,    56,  8]
+    leaves_ex(3)%blocks(10, :) = [ 49,  9,    56, 16]
+
+    leaves_ex(4)%blocks( 1, :) = [113,  1,   120,  8]
+    leaves_ex(4)%blocks( 2, :) = [113,  9,   120, 16]
+    leaves_ex(4)%blocks( 3, :) = [121,  1,   128,  8]
+    leaves_ex(4)%blocks( 4, :) = [121,  9,   128, 16]
+ 
+    leaves_ex(3)%blocks(11, :) = [ 57,  9,    64, 16]
+
+    leaves_ex(2)%blocks(11, :) = [ 25,  9,    32, 16]
+    leaves_ex(2)%blocks(12, :) = [ 25, 17,    32, 24]
+    
+    leaves_ex(3)%blocks(12, :) = [ 49, 49,    56, 56]
+    leaves_ex(3)%blocks(13, :) = [ 49, 57,    56, 64]
+    leaves_ex(3)%blocks(14, :) = [ 57, 49,    64, 56]
+    leaves_ex(3)%blocks(15, :) = [ 57, 57,    64, 64]
+ 
+    call assertFalse(allocated(leaves(1)%blocks), "No blocks for level 1")
+    call assertSetEqual(leaves_ex(2)%blocks, leaves(2)%blocks, &
+                        "Incorrect leaf blocks on level 2")
+    call assertSetEqual(leaves_ex(3)%blocks, leaves(3)%blocks, &
+                        "Incorrect leaf blocks on level 3")
+    call assertSetEqual(leaves_ex(4)%blocks, leaves(4)%blocks, &
+                        "Incorrect leaf blocks on level 4")
 
     !!!!! STEP 11/12 - ADVANCE WITH NO CHANGE AND CONFIRM NO CHANGE
     ! We should be limited to refinement up to level 4
     call sim_advance(11, points, values, &
                      "NO DATA CHANGE -  STUCK AT REFINEMENT LEVEL 4", &
-                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL", &
-                     block_count)
+                     "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
     call gr_writeData(12, 12.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
-    block_count_ex = [0, 12, 15, 4]
-    do lev = 1, SIZE(block_count)
-        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
-    end do
+    call assertFalse(allocated(leaves(1)%blocks), "No blocks for level 1")
+    call assertSetEqual(leaves_ex(2)%blocks, leaves(2)%blocks, &
+                        "Incorrect leaf blocks on level 2")
+    call assertSetEqual(leaves_ex(3)%blocks, leaves(3)%blocks, &
+                        "Incorrect leaf blocks on level 3")
+    call assertSetEqual(leaves_ex(4)%blocks, leaves(4)%blocks, &
+                        "Incorrect leaf blocks on level 4")
+    deallocate(leaves_ex(2)%blocks, leaves_ex(3)%blocks, leaves_ex(4)%blocks)
 
     !!!!! STEP 13-16 - ADD ONE MORE LEVEL 4 POINT
     points(:, :) = 0.0d0
@@ -307,8 +484,7 @@ subroutine Driver_evolveFlash()
     values(2) = REFINE_TO_L4
     call sim_advance(13, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
-                     "LEAVES AFTER SECOND LEVEL 4 DATA", &
-                     block_count)
+                     "LEAVES AFTER SECOND LEVEL 4 DATA")
     call gr_writeData(14, 14.0d0)
     
     call gr_getFinestLevel(finest_level)
@@ -316,17 +492,88 @@ subroutine Driver_evolveFlash()
 
     call sim_advance(15, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
-                     "LEAVES AFTER SECOND LEVEL 4 DATA", &
-                     block_count)
+                     "LEAVES AFTER SECOND LEVEL 4 DATA")
     call gr_writeData(16, 16.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
-    block_count_ex = [0, 8, 30, 8]
-    do lev = 1, SIZE(block_count)
-        call assertEqual(block_count(lev), block_count_ex(lev), "Wrong # of levels")
-    end do
+    allocate(leaves_ex(2)%blocks( 8, 4), &
+             leaves_ex(3)%blocks(30, 4), &
+             leaves_ex(4)%blocks( 8, 4))
+    ! Column 1 / Level 2
+    leaves_ex(3)%blocks( 1, :) = [ 1,  1,     8,  8]
+    leaves_ex(3)%blocks( 2, :) = [ 1,  9,     8, 16]
+    leaves_ex(3)%blocks( 3, :) = [ 9,  1,    16,  8]
+    leaves_ex(3)%blocks( 4, :) = [ 9,  9,    16, 16]
+
+    leaves_ex(3)%blocks( 5, :) = [ 1, 17,     8, 24]
+    leaves_ex(3)%blocks( 6, :) = [ 1, 25,     8, 32]
+    leaves_ex(3)%blocks( 7, :) = [ 9, 17,    16, 24]
+    leaves_ex(3)%blocks( 8, :) = [ 9, 25,    16, 32]
+
+    leaves_ex(3)%blocks( 9, :) = [ 1, 33,     8, 40]
+    leaves_ex(3)%blocks(10, :) = [ 1, 41,     8, 48]
+    leaves_ex(3)%blocks(11, :) = [ 9, 33,    16, 40]
+    leaves_ex(3)%blocks(12, :) = [ 9, 41,    16, 48]
+
+    leaves_ex(3)%blocks(13, :) = [ 1, 49,     8, 56]
+    leaves_ex(3)%blocks(14, :) = [ 1, 57,     8, 64]
+    leaves_ex(3)%blocks(15, :) = [ 9, 49,    16, 56]
+    leaves_ex(3)%blocks(16, :) = [ 9, 57,    16, 64]
+
+    ! Column 2 / Level 2
+    leaves_ex(2)%blocks( 1, :) = [ 9,  1,    16,  8]
+    
+    leaves_ex(3)%blocks(17, :) = [17, 17,    24, 24]
+    leaves_ex(3)%blocks(18, :) = [17, 25,    24, 32]
+    leaves_ex(3)%blocks(19, :) = [25, 17,    32, 24]
+    leaves_ex(3)%blocks(20, :) = [25, 25,    32, 32]
+
+    leaves_ex(4)%blocks( 1, :) = [33, 65,    40, 72]
+    leaves_ex(4)%blocks( 2, :) = [33, 73,    40, 80]
+    leaves_ex(4)%blocks( 3, :) = [41, 65,    48, 72]
+    leaves_ex(4)%blocks( 4, :) = [41, 73,    48, 80]
+
+    leaves_ex(3)%blocks(21, :) = [17, 41,    24, 48]
+    leaves_ex(3)%blocks(22, :) = [25, 33,    32, 40]
+    leaves_ex(3)%blocks(23, :) = [25, 41,    32, 48]
+
+    leaves_ex(2)%blocks( 2, :) = [ 9, 25,    16, 32]
+    
+    ! Column 3 / Level 2
+    leaves_ex(2)%blocks( 3, :) = [17,  1,    24,  8]
+    leaves_ex(2)%blocks( 4, :) = [17,  9,    24, 16]
+    leaves_ex(2)%blocks( 5, :) = [17, 17,    24, 24]
+    leaves_ex(2)%blocks( 6, :) = [17, 25,    24, 32]
+
+    ! Column 4 / Level 2
+    leaves_ex(3)%blocks(24, :) = [49,  1,    56,  8]
+    leaves_ex(3)%blocks(25, :) = [49,  9,    56, 16]
+    
+    leaves_ex(4)%blocks( 5, :) = [113, 1,    120,  8]
+    leaves_ex(4)%blocks( 6, :) = [113, 9,    120, 16]
+    leaves_ex(4)%blocks( 7, :) = [121, 1,    128,  8]
+    leaves_ex(4)%blocks( 8, :) = [121, 9,    128, 16]
+    
+    leaves_ex(3)%blocks(26, :) = [57,  9,    64, 16]
+
+    leaves_ex(2)%blocks( 7, :) = [25,  9,    32, 16]
+    leaves_ex(2)%blocks( 8, :) = [25, 17,    32, 24]
+    
+    leaves_ex(3)%blocks(27, :) = [49, 49,    56, 56]
+    leaves_ex(3)%blocks(28, :) = [49, 57,    56, 64]
+    leaves_ex(3)%blocks(29, :) = [57, 49,    64, 56]
+    leaves_ex(3)%blocks(30, :) = [57, 57,    64, 64]
+ 
+    call assertFalse(allocated(leaves(1)%blocks), "No blocks for level 1")
+    call assertSetEqual(leaves_ex(2)%blocks, leaves(2)%blocks, &
+                        "Incorrect leaf blocks on level 2")
+    call assertSetEqual(leaves_ex(3)%blocks, leaves(3)%blocks, &
+                        "Incorrect leaf blocks on level 3")
+    call assertSetEqual(leaves_ex(4)%blocks, leaves(4)%blocks, &
+                        "Incorrect leaf blocks on level 4")
+    deallocate(leaves_ex(2)%blocks, leaves_ex(3)%blocks, leaves_ex(4)%blocks)
 
     call finish_test_run
 

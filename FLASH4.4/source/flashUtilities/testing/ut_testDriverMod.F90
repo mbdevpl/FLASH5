@@ -47,12 +47,17 @@ module ut_testDriverMod
         procedure :: assertEqualReal
     end interface assertEqual
 
+    interface assertSetEqual
+        procedure :: assertSetEqual2dIntArray
+    end interface assertSetEqual
+
     public :: start_test_run
     public :: finish_test_run
 
     public :: assertTrue
     public :: assertFalse
     public :: assertEqual
+    public :: assertSetEqual
     public :: assertAlmostEqual
 
 contains
@@ -175,6 +180,55 @@ contains
         end if
         my_n_tests = my_n_tests + 1
     end subroutine assertAlmostEqual
+
+    subroutine assertSetEqual2dIntArray(A, B, msg)
+        integer,      intent(IN) :: A(:, :)
+        integer,      intent(IN) :: B(:, :)
+        character(*), intent(IN) :: msg
+
+        logical        :: in_set
+        logical        :: failed
+        integer        :: j, k
+
+        my_n_tests = my_n_tests + 1
+
+        ! Confirm A subset of B
+        failed = .FALSE.
+        do j = 1, SIZE(A, 1)
+            in_set = .FALSE.
+            do k = 1, SIZE(B, 1)
+                if (ALL(A(j, :) == B(k, :))) then
+                    in_set = .TRUE.
+                    exit
+                end if
+            end do
+
+            if (.NOT. in_set) then
+                write(*,*) msg, " - ", A(j, :), " of A not in B"
+                failed = .TRUE.
+            end if
+        end do
+
+        ! Confirm B subset of A
+        do j = 1, SIZE(B, 1)
+            in_set = .FALSE.
+            do k = 1, SIZE(A, 1)
+                if (ALL(B(j, :) == A(k, :))) then
+                    in_set = .TRUE.
+                    exit
+                end if
+            end do
+
+            if (.NOT. in_set) then
+                write(*,*) msg, " - ", B(j, :), " of B not in A"
+                failed = .TRUE.
+            end if
+        end do
+
+        if (failed) then
+            my_n_failed = my_n_failed + 1
+        end if
+    end subroutine assertSetEqual2dIntArray
 
 end module ut_testDriverMod
 

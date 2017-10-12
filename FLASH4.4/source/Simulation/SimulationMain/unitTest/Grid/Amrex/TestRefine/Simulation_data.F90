@@ -1,42 +1,30 @@
-!!****if* source/Simulation/SimulationMain/unitTest/RungeKutta/3Dcircle/Simulation_data
+!!****if* source/Simulation/SimulationMain/unitTest/Grid/Amrex/TestRefine/Simulation_data
 !!
 !! NAME
-!!
 !!  Simulation_data
 !!
 !! SYNOPSIS
 !!
-!!  use Simulation_data 
+!!  use Simulation_data
 !!
 !! DESCRIPTION
 !!
-!!  Stores the local data for the Runge Kutta unit test.
-!!  
+!!  Store the simulation data for the Sod problem
+!!
 !!***
 
-Module Simulation_data
+module Simulation_data
+    implicit none
 
-  implicit none
+    integer, parameter :: MIN_REFINE_LEVEL = 1
+    integer, parameter :: MAX_REFINE_LEVEL = 4
+    integer, parameter :: NUM_LEVELS = MAX_REFINE_LEVEL - MIN_REFINE_LEVEL + 1 
 
-#include "constants.h"
-#include "Flash.h"
-
-  character (len = MAX_STRING_LENGTH), save :: sim_RungeKuttaMethod
-
-  integer, save :: sim_numberOfCircles
-  integer, save :: sim_numberOfRungeKuttaSteps
-
-  real,    save :: sim_errorFraction
-  real,    save :: sim_radius
-  real,    save :: sim_speed
-  real,    save :: sim_stepSize
-
-  real,    save :: sim_rx0
-  real,    save :: sim_ry0
-  real,    save :: sim_rz0
-
-  real,    save :: sim_vx0
-  real,    save :: sim_vy0
-  real,    save :: sim_vz0
-
+    type blocks_t
+      integer, allocatable :: blocks(:, :) 
+    end type blocks_t
+    
+    ! Store the leaf blocks at each level
+    type(blocks_t), save :: leaves(MIN_REFINE_LEVEL:MAX_REFINE_LEVEL)
 end module Simulation_data
+
