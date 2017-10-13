@@ -18,10 +18,6 @@
 !!     ./setup -auto -2d -nxb=2 -nyb=2 
 !!              unitTest/Grid/Amrex/TestGcFill
 !!             +noio -index-reorder
-!!  3D run:
-!!     ./setup -auto -3d -nxb=4 -nyb=4 -nzb=4
-!!              unitTest/Grid/Amrex/TestGcFill
-!!             +noio -index-reorder
 !!
 !!  For the future:
 !!             -unit=IO/IOMain/hdf5/serial/AM
@@ -41,7 +37,8 @@ subroutine Driver_evolveFlash()
                                       amrex_mfiter_destroy
     
     use Grid_interface,        ONLY : Grid_fillGuardCells, &
-                                      Grid_getBlkPtr, Grid_releaseBlkPtr
+                                      Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                                      Grid_getSingleCellCoords
     use gr_amrexInterface,     ONLY : gr_getFinestLevel
     use gr_physicalMultifabs,  ONLY : unk
     use block_metadata,        ONLY : block_metadata_t
@@ -54,15 +51,16 @@ subroutine Driver_evolveFlash()
     integer :: finest_level
     integer :: lev
     integer :: i, j, k
-    integer :: i_bc, j_bc, k_bc
     integer :: var
-    integer :: bdd
 
     type(amrex_mfiter)     :: mfi
     type(amrex_box)        :: bx
     type(block_metadata_t) :: blockDesc
 
     real, contiguous, pointer :: initData(:, :, :, :)
+
+    integer :: idx(1:MDIM)
+    real    :: coords(1:MDIM)
 
     !!!!! CONFIRM PROPER COORDINATE SYSTEM DIMENSIONALITY
     write(*,*)
@@ -86,7 +84,6 @@ subroutine Driver_evolveFlash()
 
             ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
             ! Level must be 1-based index and limits/limitsGC must be 1-based also
-            ! DEVNOTE: Should we use gr_[ijk]guard here?
             blockDesc%level = lev
             blockDesc%grid_index = mfi%grid_index()
             blockDesc%limits(LOW,  :) = 1
@@ -112,8 +109,13 @@ subroutine Driver_evolveFlash()
                             .AND. (lo(JAXIS) <= j) .AND. (j <= hi(JAXIS)) &
                             .AND. (lo(KAXIS) <= k) .AND. (k <= hi(KAXIS))) then
                             ! Interior has data
+                            idx = [i - lo(IAXIS) + 1, &
+                                   j - lo(JAXIS) + 1, &
+                                   k - lo(KAXIS) + 1]
+                            call Grid_getSingleCellCoords(idx, blockDesc, &
+                                                  CENTER, INTERIOR, coords)
                             call assertEqual(initData(i, j, k, var), &
-                                             DBLE((i + j + k) * var), &
+                                             DBLE((coords(IAXIS)+coords(JAXIS)) * var), &
                                              "Bad data")
                         else
                             ! Guardcells not populated yet 
@@ -125,7 +127,7 @@ subroutine Driver_evolveFlash()
                   end do
                 end do
             end associate
-            
+
             call Grid_releaseBlkPtr(blockDesc, initData)
         end do
     end do
@@ -143,7 +145,6 @@ subroutine Driver_evolveFlash()
 
             ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
             ! Level must be 1-based index and limits/limitsGC must be 1-based also
-            ! DEVNOTE: Should we use gr_[ijk]guard here?
             blockDesc%level = lev
             blockDesc%grid_index = mfi%grid_index()
             blockDesc%limits(LOW,  :) = 1
@@ -159,66 +160,64 @@ subroutine Driver_evolveFlash()
                       hi   => blockDesc%limits(HIGH, :), &
                       loGC => blockDesc%limitsGC(LOW, :), &
                       hiGC => blockDesc%limitsGC(HIGH, :))
-                ! DEVNOT: TODO Use Grid_getBlkPtr once we have correct grid_index
-                initData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev-1)%dataptr(mfi)
+                
+                call Grid_getBlkPtr(blockDesc, initData)
 
-                bdd = 8 * 2**(lev - 1)
                 do     k = loGC(KAXIS), hiGC(KAXIS)
                   do   j = loGC(JAXIS), hiGC(JAXIS)
                     do i = loGC(IAXIS), hiGC(IAXIS)
+                      idx = [i - lo(IAXIS) + 1, &
+                             j - lo(JAXIS) + 1, &
+                             k - lo(KAXIS) + 1]
+                      call Grid_getSingleCellCoords(idx, blockDesc, &
+                                                    CENTER, INTERIOR, coords)
+
                       do var=UNK_VARS_BEGIN, UNK_VARS_END
-                        ! Account for periodic BC
-                        i_bc = i
-                        j_bc = j
-                        k_bc = k
-                        if (i_bc > bdd) then
-                            i_bc = i_bc - bdd 
-                        else if (i_bc < 1) then
-                            i_bc = i_bc + bdd 
-                        end if
-
-                        if (j_bc > bdd) then
-                            j_bc = j_bc - bdd 
-                        else if (j_bc < 1) then
-                            j_bc = j_bc + bdd 
-                        end if
-
-                        if (k_bc > bdd) then
-                            k_bc = k_bc - bdd
-                        else if (k_bc < 1) then
-                            k_bc = k_bc + bdd 
-                        end if
-                        
                         if (      (lo(IAXIS) <= i) .AND. (i <= hi(IAXIS)) &
                             .AND. (lo(JAXIS) <= j) .AND. (j <= hi(JAXIS)) &
                             .AND. (lo(KAXIS) <= k) .AND. (k <= hi(KAXIS))) then
                             ! Interior has data
                             call assertEqual(initData(i, j, k, var), &
-                                             DBLE((i + j + k) * var), &
-                                             "Bad data")
+                                 DBLE((coords(IAXIS) + coords(JAXIS)) * var), &
+                                 "Bad data")
                         else
                           ! Spot check a few values for now
-                          ! DEV: TODO Improve this check or sufficient?
-                          if (lev == 2) then
+                          if (lev == 1) then
+                            if (     ((i == 6) .AND. (j == 6)) &
+                                .OR. ((i == 6) .AND. (j == 2))) then
+                              call assertEqual(initData(i, j, k, var), &
+                                               1.5d0*var, &
+                                               "Incorrect coarse GC value")
+                            else if (     ((i == 5) .AND. (j == 1)) &
+                                     .OR. ((i == 5) .AND. (j == 5))) then
+                              call assertEqual(initData(i, j, k, var), &
+                                               0.5d0*var, &
+                                               "Incorrect coarse GC value")
+                            else if ((i == 0) .AND. (j == 5)) then
+                              call assertEqual(initData(i, j, k, var), &
+                                               2.0d0*var, &
+                                               "Incorrect coarse GC value")
+                            end if
+                          else if (lev == 2) then
                             if((i == -1) .AND. (j == -1)) then
                               call assertEqual(initData(i, j, k, var), &
-                                               17.0d0*var, &
+                                               3.25d0*var, &
                                                "Incorrect fine GC value")
                             else if ((i == 0) .AND. (j == 5)) then
                               call assertEqual(initData(i, j, k, var), &
-                                               11.75d0*var, &
+                                               3.0d0*var, &
                                                "Incorrect fine GC value")
                             else if ((i == 0) .AND. (j == 6)) then
                               call assertEqual(initData(i, j, k, var), &
-                                               12.25d0*var, &
+                                               3.25d0*var, &
                                                "Incorrect fine GC value")
                             else if ((i == 3) .AND. (j == 9)) then
                               call assertEqual(initData(i, j, k, var), &
-                                               7.5d0*var, &
+                                               0.75d0*var, &
                                                "Incorrect fine GC value")
                             else if ((i == 3) .AND. (j == 10)) then
                               call assertEqual(initData(i, j, k, var), &
-                                               8.0d0*var, &
+                                               1.0d0*var, &
                                                "Incorrect fine GC value")
                             end if
                           end if
