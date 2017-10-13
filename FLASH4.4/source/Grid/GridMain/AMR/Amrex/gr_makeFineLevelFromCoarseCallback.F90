@@ -12,7 +12,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           amrex_geom
     use amrex_boxarray_module,     ONLY : amrex_boxarray
     use amrex_distromap_module,    ONLY : amrex_distromap
-    use amrex_fillpatch_module,    ONLY : amrex_fillcoarsepatch
     use amrex_multifab_module,     ONLY : amrex_multifab_build
     use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
@@ -32,8 +31,27 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
 
-    integer :: lo_bc(NDIM, 1)
-    integer :: hi_bc(NDIM, 1)
+    integer, target :: lo_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
+    integer, target :: hi_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
+    type(c_ptr)     :: lo_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
+    type(c_ptr)     :: hi_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
+
+    integer :: j
+
+    ! AMReX C++ fillpatch routines
+    interface
+      subroutine amrex_fi_fillcoarsepatch(mf, time, cmf, scomp, dcomp, ncomp, &
+                                         cgeom, fgeom, cfill, ffill, rr, &
+                                         interp, lo_bc, hi_bc) bind(c)
+         import
+         implicit none
+         type(c_ptr), value :: mf, cmf, cgeom, fgeom
+         type(c_ptr), intent(in) :: lo_bc(*), hi_bc(*)
+         type(c_funptr), value :: cfill, ffill
+         real(wp), value :: time
+         integer, value :: scomp, dcomp, ncomp, rr, interp
+      end subroutine amrex_fi_fillcoarsepatch
+    end interface
 
 #ifdef DEBUG_GRID
     write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Start on level ", lev + 1
@@ -57,18 +75,21 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     ! DEVNOTE: FIXME Currently fixing BC to periodic here
     ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved
     !                linear (AMReX_Interpolater.H)
-    ! DEVNOTE: TODO Since we are not using subcycling, should we just use
-    !               amrex_fi_fillcoarsepatch directly?
     lo_bc(:, :) = amrex_bc_int_dir
     hi_bc(:, :) = amrex_bc_int_dir
-    call amrex_fillcoarsepatch(unk(lev), time,     unk(lev-1),  &
-                                         time+0.1, unk(lev-1),  &
-                               amrex_geom(lev-1), gr_fillPhysicalBC,  &
-                               amrex_geom(lev  ), gr_fillPhysicalBC,  &
-                               time, &
-                               UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                               amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                               lo_bc, hi_bc)
+    do j = UNK_VARS_BEGIN, UNK_VARS_END
+       lo_bc_ptr(j) = c_loc(lo_bc(1, j))
+       hi_bc_ptr(j) = c_loc(hi_bc(1, j))
+    end do
+
+    ! -1 because Fortran variable index starts with 1
+    call amrex_fi_fillcoarsepatch(unk(lev)%p, time, unk(lev-1)%p, &
+                                  UNK_VARS_BEGIN-1, UNK_VARS_BEGIN-1, NUNK_VARS, &
+                                  amrex_geom(lev-1)%p, amrex_geom(lev)%p, &
+                                  c_funloc(gr_fillPhysicalBC), &
+                                  c_funloc(gr_fillPhysicalBC), &
+                                  amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                  lo_bc_ptr, hi_bc_ptr)
 
     write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Make fine level ", lev + 1
 
