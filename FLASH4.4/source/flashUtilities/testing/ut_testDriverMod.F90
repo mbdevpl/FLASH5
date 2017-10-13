@@ -76,23 +76,30 @@ contains
     end subroutine start_test_run
 
     subroutine finish_test_run
-        use Grid_data,        ONLY : gr_meshMe
+        use Driver_data,      ONLY : dr_globalMe
         use Driver_Interface, ONLY : Driver_abortFlash
 
         real :: my_t_end
         real :: my_walltime
+
+        integer :: file_unit
+        integer :: ut_getFreeFileUnit
+ 
+        character(4)                 :: rank_str 
+        character(MAX_STRING_LENGTH) :: fileName
 
         if (.NOT. is_testing) then
             call Driver_abortFlash("[finish_test_run] Not testing yet")
         end if
 
         is_testing = .FALSE.
-        
+
         call cpu_time(my_t_end)
         my_walltime = my_t_end - my_t_start
 
         ! DEV: TODO reduction to collect number of tests/fails/max walltime?
-        if (gr_meshMe == MASTER_PE) then
+        if (dr_globalMe == MASTER_PE) then
+            ! Print result to standard out
             write(*,*)
             if (my_n_failed == 0) then
                 write(*,*) "SUCCESS - ", &
@@ -104,6 +111,18 @@ contains
             write(*,*)
             write(*,*) 'Walltime = ', my_walltime, ' s'
             write(*,*)
+
+            ! Create log file for automatic testing on server
+            write(rank_str,"(I4.4)") dr_globalMe
+            filename = "unitTest_" // rank_str
+            file_unit = ut_getFreeFileUnit()
+            OPEN(file_unit, file=filename)
+            if (my_n_failed == 0) then
+                write(file_unit,'(A)') 'SUCCESS all results conformed with expected values.' 
+            else
+                write(file_unit,'(A)') 'FAILURE'
+            end if
+            CLOSE(file_unit)
         end if
     end subroutine finish_test_run
 
