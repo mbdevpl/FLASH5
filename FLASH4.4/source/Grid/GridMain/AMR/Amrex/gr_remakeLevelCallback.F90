@@ -16,9 +16,9 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_multifab_module,     ONLY : amrex_multifab, &
                                           amrex_multifab_build, &
                                           amrex_multifab_destroy
-    use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
+    use Grid_data,                 ONLY : gr_lo_bc_ptr, gr_hi_bc_ptr
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
@@ -109,20 +109,10 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
                                       NUNK_VARS, amrex_geom(lev)%p, &
                                       c_funloc(gr_fillPhysicalBC))
     else
-       ! DEVNOTE: FIXME Currently fixing BC to periodic here
-       ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved
-       !                linear (AMReX_Interpolater.H)
        mfab_coarse(1) = unk(lev-1)%p
        time_coarse(1) = time
        mfab_fine(1)   = unk(lev  )%p
        time_fine(1)   = time
-       
-       lo_bc(:, :) = amrex_bc_int_dir
-       hi_bc(:, :) = amrex_bc_int_dir
-       do j = UNK_VARS_BEGIN, UNK_VARS_END
-          lo_bc_ptr(j) = c_loc(lo_bc(1, j))
-          hi_bc_ptr(j) = c_loc(hi_bc(1, j))
-       end do
 
        call amrex_fi_fillpatch_two(mfab%p, time, &
                                    mfab_coarse, time_coarse, 1, &
@@ -132,7 +122,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
                                    c_funloc(gr_fillPhysicalBC), &
                                    c_funloc(gr_fillPhysicalBC), &
                                    amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                   lo_bc_ptr, hi_bc_ptr)
+                                   gr_lo_bc_ptr, gr_hi_bc_ptr)
     end if
 
     !!!!! REBUILD MFAB AT LEVEL AND FILL FROM BUFFER

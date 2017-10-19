@@ -121,6 +121,9 @@
 ! DEVNOTE: Need REORDER directive for scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx?
 ! DEVNOTE: Need REORDER directive for gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face?
 subroutine Grid_init()
+  use iso_c_binding,               ONLY : c_loc
+
+  use amrex_bc_types_module,       ONLY : amrex_bc_int_dir
 
   use Grid_data
   use Grid_interface,              ONLY : Grid_getDeltas, &
@@ -221,6 +224,14 @@ subroutine Grid_init()
 !    (4) do initial refinement of mesh (?).
 !----------------------------------------------------------------------------------
   call gr_amrexInit()
+
+  ! Save BC information for callbacks
+  gr_lo_bc(:, :) = amrex_bc_int_dir
+  gr_hi_bc(:, :) = amrex_bc_int_dir
+  do i = UNK_VARS_BEGIN, UNK_VARS_END
+     gr_lo_bc_ptr(i) = c_loc(gr_lo_bc(1, i))
+     gr_hi_bc_ptr(i) = c_loc(gr_hi_bc(1, i))
+  end do
 
 !----------------------------------------------------------------------------------
 ! Store interface-accessible data as local Grid data variables for optimization

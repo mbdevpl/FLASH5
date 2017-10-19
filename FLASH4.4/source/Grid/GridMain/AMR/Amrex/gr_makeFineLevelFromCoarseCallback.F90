@@ -13,9 +13,9 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use amrex_boxarray_module,     ONLY : amrex_boxarray
     use amrex_distromap_module,    ONLY : amrex_distromap
     use amrex_multifab_module,     ONLY : amrex_multifab_build
-    use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
+    use Grid_data,                 ONLY : gr_lo_bc_ptr, gr_hi_bc_ptr
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
@@ -30,11 +30,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
-
-    integer, target :: lo_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
-    integer, target :: hi_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
-    type(c_ptr)     :: lo_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
-    type(c_ptr)     :: hi_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
 
     integer :: j
 
@@ -72,16 +67,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     ! This *hopefully* will do the guard cell fill as well
     ! NOTE: FLASH does not use sub-cycling (temporal interpolation)
     !
-    ! DEVNOTE: FIXME Currently fixing BC to periodic here
-    ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved
-    !                linear (AMReX_Interpolater.H)
-    lo_bc(:, :) = amrex_bc_int_dir
-    hi_bc(:, :) = amrex_bc_int_dir
-    do j = UNK_VARS_BEGIN, UNK_VARS_END
-       lo_bc_ptr(j) = c_loc(lo_bc(1, j))
-       hi_bc_ptr(j) = c_loc(hi_bc(1, j))
-    end do
-
     ! -1 because Fortran variable index starts with 1
     call amrex_fi_fillcoarsepatch(unk(lev)%p, time, unk(lev-1)%p, &
                                   UNK_VARS_BEGIN-1, UNK_VARS_BEGIN-1, NUNK_VARS, &
@@ -89,7 +74,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                   c_funloc(gr_fillPhysicalBC), &
                                   c_funloc(gr_fillPhysicalBC), &
                                   amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                  lo_bc_ptr, hi_bc_ptr)
+                                  gr_lo_bc_ptr, gr_hi_bc_ptr)
 
     write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Make fine level ", lev + 1
 

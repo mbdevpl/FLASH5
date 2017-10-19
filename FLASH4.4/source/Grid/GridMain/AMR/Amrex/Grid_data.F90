@@ -17,6 +17,7 @@
 #include "constants.h"
 
 Module Grid_data
+  use iso_c_binding, ONLY : c_ptr
 
   implicit none
 
@@ -39,13 +40,17 @@ Module Grid_data
   logical, save :: gr_bcEnableApplyMixedGds
 
   ! Maintain local copies of AMReX-controlled data for optimization
-  integer, save :: gr_lRefineMax
-  integer, save :: gr_maxRefine
-  integer, save :: gr_geometry
-  integer, save :: gr_nrefs
-  logical, save :: gr_allPeriodic
-  real,    save :: gr_minCellSize
-  real,    save :: gr_minCellSizes(MDIM)
+  integer,         save :: gr_lRefineMax
+  integer,         save :: gr_maxRefine
+  integer,         save :: gr_geometry
+  integer,         save :: gr_nrefs
+  real,            save :: gr_minCellSize
+  real,            save :: gr_minCellSizes(MDIM)
+  logical,         save :: gr_allPeriodic
+  integer, target, save :: gr_lo_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
+  integer, target, save :: gr_hi_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
+  type(c_ptr),     save :: gr_lo_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
+  type(c_ptr),     save :: gr_hi_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
 
   ! These are historical.
   ! Within the AMReX implementation, the number of guardcells

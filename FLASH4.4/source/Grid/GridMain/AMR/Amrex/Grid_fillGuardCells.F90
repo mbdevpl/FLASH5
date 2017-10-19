@@ -136,24 +136,27 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
                                         amrex_geom, &
                                         amrex_ref_ratio
-  use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
   use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
+  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data,                 ONLY : gr_justExchangedGC, &
-        gr_eosModeNow, gr_meshMe, gr_meshComm, &
-       gr_gcellsUpToDate
-  use Grid_data, ONLY                 : gr_enableMaskedGCFill
-  use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
-  use gr_physicalMultifabs,      ONLY : unk
-  use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
-                                        gr_averageDownLevels
+                                        gr_eosModeNow, &
+                                        gr_enableMaskedGCFill, &
+                                        gr_meshMe, gr_meshComm, &
+                                        gr_gcellsUpToDate, &
+                                        gr_lo_bc, gr_hi_bc
+  use Eos_interface,             ONLY : Eos_guardCells
   use Driver_interface,          ONLY : Driver_abortFlash
   use Timers_interface,          ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_setGcFillNLayers, gr_setMasks_gen, gr_makeMaskConsistent_gen
-  use Eos_interface, ONLY : Eos_guardCells
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
-  use block_metadata, ONLY : block_metadata_t
+  use Logfile_interface,         ONLY : Logfile_stampMessage, &
+                                        Logfile_stampVarMask
+  use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
+                                        gr_averageDownLevels
+  use gr_interface,              ONLY : gr_setGcFillNLayers, &
+                                        gr_setMasks_gen, gr_makeMaskConsistent_gen
+  use gr_physicalMultifabs,      ONLY : unk
+  use block_iterator,            ONLY : block_iterator_t, destroy_iterator
+  use block_metadata,            ONLY : block_metadata_t
 
 #include "Flash_mpi_implicitNone.fh"
 
@@ -186,8 +189,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   character(len=10) :: tagext
   integer :: scompCC, ncompCC, lcompCC
 
-  integer, target :: lo_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
-  integer, target :: hi_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
   type(c_ptr)     :: lo_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
   type(c_ptr)     :: hi_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
 
@@ -399,20 +400,14 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! Restrict data from leaves to coarser blocks
   call gr_averageDownLevels
 
-  ! DEVNOTE: FIXME Currently fixing BC to periodic here
-  ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved
-  !                linear (AMReX_Interpolater.H)
-  lo_bc(:, :) = amrex_bc_int_dir
-  hi_bc(:, :) = amrex_bc_int_dir
-
   do j = UNK_VARS_BEGIN, scompCC-1
      lo_bc_ptr(j) = c_null_ptr
      hi_bc_ptr(j) = c_null_ptr
   end do
 
   do j = scompCC, (scompCC + ncompCC - 1)
-     lo_bc_ptr(j) = c_loc(lo_bc(1, j))
-     hi_bc_ptr(j) = c_loc(hi_bc(1, j))
+     lo_bc_ptr(j) = c_loc(gr_lo_bc(1, j))
+     hi_bc_ptr(j) = c_loc(gr_hi_bc(1, j))
   end do
 
   do j = (scompCC + ncompCC), UNK_VARS_END
@@ -513,7 +508,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      end if
   end if
   gr_gcellsUpToDate = skipNextGcellFill
-
 
   call Timers_stop("guardcell internal")
 
