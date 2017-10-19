@@ -5,6 +5,7 @@ subroutine gr_amrexInit()
                                           amrex_amrcore_init, &
                                           amrex_init_virtual_functions, &
                                           amrex_max_level
+  use amrex_amrcore_module,        ONLY : amrex_ref_ratio
   use amrex_parmparse_module,      ONLY : amrex_parmparse, &
                                           amrex_parmparse_build, &
                                           amrex_parmparse_destroy
@@ -91,8 +92,6 @@ subroutine gr_amrexInit()
   call pp_geom%addarr("prob_lo", [xmin, ymin, zmin])
   call pp_geom%addarr("prob_hi", [xmax, ymax, zmax])
  
-  ! DEVNOTE: It should be an error if along one direction, one face has
-  ! periodic, but the other does not.  Should we enforce that here?
   is_periodic = 0
   if (     (gr_domainBC(LOW,  IAXIS) == PERIODIC) &
       .OR. (gr_domainBC(HIGH, IAXIS) == PERIODIC)) then
@@ -136,10 +135,11 @@ subroutine gr_amrexInit()
 !  call pp_amr%add   ("n_error_buf", )
   call pp_amr%add   ("refine_grid_layout", 0)
 
-    ! Finalization not supported by all compilers.  Look at AMReX iterators for 
-    ! preprocessor directives to isolate these.
-!  call amrex_parmpase_destroy(pp_geom)
-!  call amrex_parmpase_destroy(pp_amr)
+  ! desctructors not valid for all compilers
+#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
+  call amrex_parmparse_destroy(pp_geom)
+  call amrex_parmparse_destroy(pp_amr)
+#endif
 
   call amrex_octree_init()
   call amrex_amrcore_init()
@@ -152,7 +152,11 @@ subroutine gr_amrexInit()
                                     gr_markRefineDerefineCallback)
 
   !!!!!----- CONFIRM CORRECT AMReX CONFIGURATION
-  ! DEV: TODO Check amrex_ref_ratio
+  if (SIZE(amrex_ref_ratio) /= (max_refine - 1)) then
+    call Driver_abortFlash("[gr_amrexInit] AMReX ref_ratio has wrong size") 
+  else if (.NOT. ALL(amrex_ref_ratio == 2)) then
+    call Driver_abortFlash("[gr_amrexInit] AMReX ref_ratio has wrong values") 
+  end if
 
   ! Check AMReX-controlled BC information
   is_periodic_am(:) = 0
