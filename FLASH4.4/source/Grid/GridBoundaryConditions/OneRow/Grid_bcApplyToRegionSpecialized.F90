@@ -6,21 +6,20 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_bcApplyToRegionSpecialized(integer(IN)  :: bcType,
-!!                                       integer(IN)  :: gridDataStruct,
-!!                                       integer(IN)  :: guard,
-!!                                       integer(IN)  :: axis,
-!!                                       integer(IN)  :: face,
-!!                                       real(INOUT)  :: regionData(:,:,:,:),
-!!                                       integer(IN)  :: regionSize(:),
-!!                                       logical(IN)  :: mask(:),
-!!                                       logical(OUT) :: applied,
-!!                                       integer(IN)  :: blockHandle,
-!!                                       integer(IN)  :: secondDir,
-!!                                       integer(IN)  :: thirdDir,
-!!                                       integer(IN)  :: endPoints(LOW:HIGH,MDIM),
-!!                                       integer(IN)  :: blkLimitsGC(LOW:HIGH,MDIM),
-!!                              OPTIONAL,integer(IN)  :: idest )
+!!  call Grid_bcApplyToRegionSpecialized(integer(IN)           :: bcType,
+!!                                       integer(IN)           :: gridDataStruct,
+!!                                       integer(IN)           :: guard,
+!!                                       integer(IN)           :: axis,
+!!                                       integer(IN)           :: face,
+!!                                       real(INOUT)           :: regionData(:,:,:,:),
+!!                                       integer(IN)           :: regionSize(:),
+!!                                       logical(IN)           :: mask(:),
+!!                                       logical(OUT)          :: applied,
+!!                                       block_metadata_t(IN)  :: blockDesc,
+!!                                       integer(IN)           :: secondDir,
+!!                                       integer(IN)           :: thirdDir,
+!!                                       integer(IN)           :: endPoints(LOW:HIGH,MDIM),
+!!                              OPTIONAL,integer(IN)           :: idest )
 !!                    
 !!  
 !! DESCRIPTION 
@@ -49,7 +48,7 @@
 !!   supply their own custom boundary conditions, and two it allows FLASH to implement
 !!   more complex boundary conditions such as those with hydrostatic equilibrium in
 !!   isolation from the machinery of setting up the region etc. This interface has
-!!   several extra arguments over Grid_bcApplyToRegion. One is the blockHandle, which allows
+!!   several extra arguments over Grid_bcApplyToRegion. One is the blockDesc, which allows
 !!   access to the coordinates information.
 !!   This routine is always called first when handling boundary conditions, and if it
 !!   finds a match with one of bcTypes that it implements, it sets "applied" to .true., otherwise
@@ -121,16 +120,15 @@
 !!
 !! 2. ADDITIONAL ARGUMENTS
 !!
-!!  blockHandle - Handle for the block for which guardcells are to be filled.
-!!              In grid implementations other than Paramesh 4, this is always
-!!              a local blockID.
+!!    blockDesc - Derived type that encapsulates metadata that uniquely
+!!                characterizes local block to be operated on
 !!
 !!              With Paramesh 4:
 !!              This may be a block actually residing on the local processor,
 !!              or the handle may refer to a block that belong to a remote processor
 !!              but for which cached information is currently available locally.
 !!              The two cases can be distinguished by checking whether 
-!!              (blockHandle .LE. lnblocks): this is true only for blocks that
+!!              (blockDesc .LE. lnblocks): this is true only for blocks that
 !!              reside on the executing processor.
 !!              The block ID is available for passing on to some handlers for 
 !!              boundary conditions that may need it, ignored in the default 
@@ -152,10 +150,6 @@
 !!                          KAXIS   |    IAXIS             JAXIS
 !!
 !!  endPoints - starting and endpoints of the region of interest.
-!!              See also NOTE (1) below.
-!!
-!!  blkLimitsGC - the starting and endpoint of the whole block including
-!!                the guard cells, as returned by Grid_getBlkIndexLimits.
 !!              See also NOTE (1) below.
 !!
 !! NOTES
@@ -190,15 +184,16 @@
 !!***
 
 
-subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
-     guard,axis,face,regionData,regionSize,mask,&
-     applied,blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, idest)
-
 #include "constants.h"
 #include "Flash.h"
 
+subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
+     guard,axis,face,regionData,regionSize,mask,&
+     applied,blockDesc,secondDir,thirdDir,endPoints,idest)
+
   use Grid_interface, ONLY : Grid_applyBCEdge, Grid_applyBCEdgeAllUnkVars
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -210,8 +205,8 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
        regionSize(THIRD_DIR),&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
-  integer,intent(IN) :: blockHandle
-  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+  type(block_metadata_t),intent(IN) :: blockDesc
+  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   logical, intent(OUT) :: applied
   integer,intent(IN),OPTIONAL:: idest
 
@@ -220,6 +215,9 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
   integer :: istrt, iend, jOffset, kOffset
   logical :: isFaceVarNormalDir
 
+  integer :: blkLimitsGC(LOW:HIGH, MDIM)
+
+  blkLimits = blockDesc%limitsGC
 
   !! This is an implementation of Grid_bcApplyToRegionSpecialized that
   !! dispatches any boundary conditions other than the simple ones
@@ -259,7 +257,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
            do j = 1,je
               call Grid_applyBCEdgeAllUnkVars(bcType,axis,guard,regionData(:,j,k,:),face, &
                    cellCenterSweepCoord(istrt:iend), &
-                   secondCoord(j+jOffset),thirdCoord(k+kOffset), blockHandle)
+                   secondCoord(j+jOffset),thirdCoord(k+kOffset), blockDesc%blockID)
            end do
         end do
      else
@@ -267,7 +265,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
            do k = 1,ke
               do j = 1,je
                  call Grid_applyBCEdge(bcType,axis,guard,ivar,regionData(:,j,k,ivar),face, &
-                      gridDataStruct, blockHandle, secondCoord(j+jOffset),thirdCoord(k+kOffset))
+                      gridDataStruct, blockDesc%blockID, secondCoord(j+jOffset),thirdCoord(k+kOffset))
               end do
            end do
         end do
@@ -288,9 +286,9 @@ contains
     sizeGC = blkLimitsGC(HIGH,axis)
     allocate(cellCenterSweepCoord(sizeGC))
     if (isFaceVarNormalDir) then
-       call gr_extendedGetCellCoords(axis, blockHandle, gr_meshMe, FACES, .true., cellCenterSweepCoord, sizeGC)
+       call gr_extendedGetCellCoords(axis, blockDesc, gr_meshMe, FACES, .true., cellCenterSweepCoord, sizeGC)
     else
-       call gr_extendedGetCellCoords(axis, blockHandle, gr_meshMe, CENTER, .true., cellCenterSweepCoord, sizeGC)
+       call gr_extendedGetCellCoords(axis, blockDesc, gr_meshMe, CENTER, .true., cellCenterSweepCoord, sizeGC)
     end if
     sizeGC = blkLimitsGC(HIGH,secondDir)
     allocate(secondCoord(sizeGC))
@@ -298,9 +296,9 @@ contains
     if ((gridDataStruct==FACEX .AND. secondDir==IAXIS) .OR. &
          (gridDataStruct==FACEY .AND. secondDir==JAXIS) .OR. &
          (gridDataStruct==FACEZ .AND. secondDir==KAXIS)) then
-       call gr_extendedGetCellCoords(secondDir, blockHandle, gr_meshMe, FACES, .true., secondCoord, sizeGC)
+       call gr_extendedGetCellCoords(secondDir, blockDesc, gr_meshMe, FACES, .true., secondCoord, sizeGC)
     else
-       call gr_extendedGetCellCoords(secondDir, blockHandle, gr_meshMe, CENTER, .true., secondCoord, sizeGC)
+       call gr_extendedGetCellCoords(secondDir, blockDesc, gr_meshMe, CENTER, .true., secondCoord, sizeGC)
     end if
 #endif
     sizeGC = blkLimitsGC(HIGH,thirdDir)
@@ -309,9 +307,9 @@ contains
     if ((gridDataStruct==FACEX .AND. thirdDir==IAXIS) .OR. &
          (gridDataStruct==FACEY .AND. thirdDir==JAXIS) .OR. &
          (gridDataStruct==FACEZ .AND. thirdDir==KAXIS)) then
-       call gr_extendedGetCellCoords(thirdDir, blockHandle, gr_meshMe, FACES, .true., thirdCoord, sizeGC)
+       call gr_extendedGetCellCoords(thirdDir, blockDesc, gr_meshMe, FACES, .true., thirdCoord, sizeGC)
     else
-       call gr_extendedGetCellCoords(thirdDir, blockHandle, gr_meshMe, CENTER, .true., thirdCoord, sizeGC)
+       call gr_extendedGetCellCoords(thirdDir, blockDesc, gr_meshMe, CENTER, .true., thirdCoord, sizeGC)
     end if
 #endif
 

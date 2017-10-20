@@ -5,15 +5,13 @@
 !!
 !! SYNOPSIS
 !!
-!!  call gr_bcApplyToOneFaceAllGds(integer(IN) :: axis,
-!!                      integer(IN) :: bcType,
-!!                      integer(IN) :: gridDataStruct,
-!!                      integer(IN) :: varCount,
-!!                      integer(IN) :: regionType(MDIM)
-!!                      integer(IN) :: blkLimits(LOW:HIGH,MDIM)
-!!                      integer(IN) :: blkLimitsGC(LOW:HIGH,MDIM)
-!!                      integer(IN) :: blockHandle,
-!!                      integer(IN) :: idest)
+!!  call gr_bcApplyToOneFaceAllGds(integer(IN)          :: axis,
+!!                                 integer(IN)          :: bcType,
+!!                                 integer(IN)          :: gridDataStruct,
+!!                                 integer(IN)          :: varCount,
+!!                                 integer(IN)          :: regionType(MDIM)
+!!                                 block_metadata_t(IN) :: blockDesc,
+!!                                 integer(IN)          :: idest)
 !!  
 !! DESCRIPTION 
 !!
@@ -39,10 +37,8 @@
 !!                     the block and NO_VEC implies that the correspoding dimension is not
 !!                     a part of the region. Normally this value is most likely to be used
 !!                     along KAXIS in a 2D problems, and JAXIS and KAXIS in a 1D problem
-!!    blkLimits      - the endpoints of the block cell (or face) indices without the guardcells
-!!    blkLimitsGC    - the endpoints of the block cell (or face) indices including the guardcells
-!!    blockHandle    - local block number; with Paramesh 4, this may be a handle for a remote block
-!!                     for which Paramesh has cached information locally.
+!!    blockDesc      - Derived type that encapsulates metadata that uniquely
+!!                     characterizes local block to be operated onv
 !!    idest         - this is used in Paramesh 4, where boundary condition handling is applied
 !!                    not to a block's solution data in their permanent location (named UNK, etc.),
 !!                    but to a buffer that contain temporary copies of a few (normally, two) blocks'
@@ -58,7 +54,7 @@
 #include "Flash.h"
 
 subroutine gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
-     regionType,blkLimits,blkLimitsGC,blockHandle,idest)
+     regionType,blockDesc,idest)
 
   use Grid_interface, ONLY : Grid_bcApplyToRegion, &
        Grid_bcApplyToRegionSpecialized, &
@@ -66,11 +62,13 @@ subroutine gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_bcInterface, ONLY : gr_bcGetRegion, gr_bcPutRegion, &
                              gr_bcGetRegionsMixedGds, gr_bcPutRegionsMixedGds
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
   
-  integer, intent(in) :: axis,bcType,gridDataStruct,varCount,blockHandle,idest
-  integer,dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC,blkLimits
+  integer, intent(in) :: axis,bcType,gridDataStruct,varCount,idest
   integer,dimension(MDIM),intent(IN) :: regionType
+  type(block_metadata_t), intent(IN) :: blockDesc
 
   real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
   integer :: face,guard
@@ -83,13 +81,16 @@ subroutine gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
   logical :: isFaceVarNormalDir,applied
   logical :: rightHanded
 
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimitsGC,blkLimits
+
   if(regionType(axis)==LEFT_EDGE) then
      face=LOW
   else
      face=HIGH
   end if
 
-
+  blkLimits = blockDesc%limits
+  blkLimitsGC = blockDesc%limitsGc
   guard=blkLimits(LOW,axis)-blkLimitsGC(LOW,axis)
 
   isFaceVarNormalDir = (gridDataStruct==FACEX).and.(axis==IAXIS)
@@ -144,7 +145,7 @@ subroutine gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
   regionSizeCtr(STRUCTSIZE)=varCount
 
   call gr_bcGetRegionsMixedGds(gridDataStruct,axis,nextDir(1),nextDir(2),endpointsCtr,regionSizeCtr,&
-       regionDataC,regionDataFN,regionDataFT1,regionDataFT2,blockHandle,idest)
+       regionDataC,regionDataFN,regionDataFT1,regionDataFT2,blockDesc,idest)
 !!$  print*,'Done with gr_bcGetRegionsMixedGds'
 #ifdef __INTEL_COMPILER
 #define SUBASSERT(asser) call abo(#asser)
@@ -168,11 +169,11 @@ subroutine gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
   ASSERT( numAllVars == regionSizeCtr(STRUCTSIZE) )
 !!$  call Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
 !!$       guard,axis,face,regionData,regionSize,mask,applied,&
-!!$       blockHandle,nextDir(1),nextDir(2),endpointsCtr,blkLimitsGC, idest)
+!!$       blockDesc,nextDir(1),nextDir(2),endpointsCtr,blkLimitsGC, idest)
 !!$  if(.not.applied) then
 !!$     call Grid_bcApplyToRegion(bcType,gridDataStruct,&
 !!$          guard,axis,face,regionData,regionSize,mask,applied,&
-!!$       blockHandle,nextDir(1),nextDir(2),endpointsCtr,blkLimitsGC, idest)
+!!$       blockDesc,nextDir(1),nextDir(2),endpointsCtr,blkLimitsGC, idest)
 !!$  end if
   applied = .TRUE.
   call Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,&
@@ -180,7 +181,7 @@ subroutine gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
           regionDataC,regionDataFN,regionDataFT1,regionDataFT2,&
           regionSizeCtr,&
           applied,&
-       blockHandle,nextDir(1),nextDir(2),endpointsCtr,blkLimitsGC, rightHanded,idest)
+       blockDesc,nextDir(1),nextDir(2),endpointsCtr,rightHanded,idest)
   if(.not.applied) then
      print*,'gr_bcApplyToOneFace: Unhandled boundary type',bcType, 'axis,regionType=',axis,regionType(axis)
      if (regionType(axis)==LEFT_EDGE) then
@@ -192,7 +193,7 @@ subroutine gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
      end if
   end if
   call gr_bcPutRegionsMixedGds(gridDataStruct,axis,nextDir(1),nextDir(2),endpointsCtr,regionSizeCtr,&
-       regionDataC,regionDataFN,regionDataFT1,regionDataFT2,blockHandle,idest)
+       regionDataC,regionDataFN,regionDataFT1,regionDataFT2,blockDesc,idest)
 
   return
 

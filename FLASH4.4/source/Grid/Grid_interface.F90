@@ -960,7 +960,8 @@ Module Grid_interface
   interface
      subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-          blockHandle,secondDir,ThirdDir,endPoints,blkLimitsGC, idest)
+          blockDesc,secondDir,ThirdDir,endPoints,idest)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
 
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
@@ -971,9 +972,9 @@ Module Grid_interface
             regionSize(STRUCTSIZE)),intent(INOUT)::regionData
        logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
        logical, intent(OUT) :: applied
-       integer,intent(IN) :: blockHandle
+       type(block_metadata_t),intent(IN) :: blockDesc
        integer,intent(IN) :: secondDir,thirdDir
-       integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+       integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
        integer,intent(IN),OPTIONAL:: idest
      end subroutine Grid_bcApplyToRegionSpecialized
   end interface
@@ -981,7 +982,8 @@ Module Grid_interface
   interface
      subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-          blockHandle,secondDir,ThirdDir,endPoints,blkLimitsGC, idest)
+          blockDesc,secondDir,ThirdDir,endPoints,idest)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
        integer,dimension(REGION_DIM),intent(IN) :: regionSize
@@ -991,9 +993,9 @@ Module Grid_interface
             regionSize(STRUCTSIZE)),intent(INOUT)::regionData
        logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
        logical, intent(OUT) :: applied
-       integer,intent(IN) :: blockHandle
+       type(block_metadata_t),intent(IN) :: blockDesc
        integer,intent(IN) :: secondDir,thirdDir
-       integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+       integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
        integer,intent(IN),OPTIONAL:: idest
 
      end subroutine Grid_bcApplyToRegion
@@ -1005,15 +1007,16 @@ Module Grid_interface
           regionDataC,regionDataFN,regionDataFT1,regionDataFT2,&
           regionSizeCtr,&
           applied,&
-          blockHandle,secondDir,thirdDir,endPointsCtr,blkLimitsGC, rightHanded,idest)
+          blockDesc,secondDir,thirdDir,endPointsCtr,rightHanded,idest)
+       use block_metadata, ONLY : block_metadata_t
        implicit none
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
        integer,dimension(REGION_DIM),intent(IN) :: regionSizeCtr
        real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
        logical, intent(INOUT) :: applied
-       integer,intent(IN) :: blockHandle
+       type(block_metadata_t),intent(IN) :: blockDesc
        integer,intent(IN) :: secondDir,thirdDir
-       integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPointsCtr, blkLimitsGC
+       integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPointsCtr
        logical, intent(IN) :: rightHanded
        integer,intent(IN),OPTIONAL:: idest
      end subroutine Grid_bcApplyToRegionMixedGds

@@ -5,24 +5,23 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_bcApplyToRegionMixedGds(integer(IN)  :: bcType,
-!!                            integer(IN)  :: gridDataStruct,
-!!                            integer(IN)  :: guard,
-!!                            integer(IN)  :: bcDir,
-!!                            integer(IN)  :: face,
-!!                    POINTER,real(INOUT)  :: regionDataC(:,:,:,:),
-!!                    POINTER,real(INOUT)  :: regionDataFN(:,:,:,:),
-!!                    POINTER,real(INOUT)  :: regionDataFT1(:,:,:,:),
-!!                    POINTER,real(INOUT)  :: regionDataFT2(:,:,:,:),
-!!                            integer(IN)  :: regionSizeC(REGION_DIM),
-!!                            logical(INOUT) :: apply,
-!!                            integer(IN)  :: blockHandle,
-!!                            integer(IN)  :: secondDir,
-!!                            integer(IN)  :: thirdDir,
-!!                            integer(IN)  :: endPoints(LOW:HIGH,MDIM),
-!!                            integer(IN)  :: blkLimitsGC(LOW:HIGH,MDIM),
-!!                            logical(IN)  :: rightHanded,
-!!                   OPTIONAL,integer(IN)  :: idest)
+!!  call Grid_bcApplyToRegionMixedGds(integer(IN)          :: bcType,
+!!                                    integer(IN)          :: gridDataStruct,
+!!                                    integer(IN)          :: guard,
+!!                                    integer(IN)          :: bcDir,
+!!                                    integer(IN)          :: face,
+!!                            POINTER,real(INOUT)          :: regionDataC(:,:,:,:),
+!!                            POINTER,real(INOUT)          :: regionDataFN(:,:,:,:),
+!!                            POINTER,real(INOUT)          :: regionDataFT1(:,:,:,:),
+!!                            POINTER,real(INOUT)          :: regionDataFT2(:,:,:,:),
+!!                                    integer(IN)          :: regionSizeC(REGION_DIM),
+!!                                    logical(INOUT)       :: apply,
+!!                                    block_metadata_t(IN) :: blockDesc,
+!!                                    integer(IN)          :: secondDir,
+!!                                    integer(IN)          :: thirdDir,
+!!                                    integer(IN)          :: endPoints(LOW:HIGH,MDIM),
+!!                                    logical(IN)          :: rightHanded,
+!!                           OPTIONAL,integer(IN)          :: idest)
 !!
 !!
 !!
@@ -102,9 +101,8 @@
 !!  apply - Do it.
 !!          !DEV: This dummy arg is quite pointless and should go away. - KW
 !!
-!!  blockHandle - Handle for the block for which guardcells are to be filled.
-!!              In grid implementations other than Paramesh 4, this is always
-!!              a local blockID.
+!!  blockDesc - Derived type that encapsulates metadata that uniquely
+!!              characterizes local block to be operated on
 !!
 !!              With Paramesh 4:
 !!              This may be a block actually residing on the local processor,
@@ -133,10 +131,6 @@
 !!                          KAXIS   |    IAXIS             JAXIS
 !!
 !!  endPoints - starting and endpoints of the region of interest.
-!!              See also NOTE (1) below.
-!!
-!!  blkLimitsGC - the starting and endpoint of the whole block including
-!!                the guard cells, as returned by Grid_getBlkIndexLimits.
 !!              See also NOTE (1) below.
 !!
 !!  idest - Only meaningful with PARAMESH 3 or later.  The argument indicates which slot
@@ -187,15 +181,16 @@
 !!
 !!***
 
+#include "constants.h"
+#include "Flash.h"
+
 subroutine Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,&
           guard,bcDir,face,&
           regionDataC,regionDataFN,regionDataFT1,regionDataFT2,&
           regionSizeC,&
           apply,&
-     blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, rightHanded, idest)
-
-#include "constants.h"
-#include "Flash.h"
+     blockDesc,secondDir,thirdDir,endPoints,rightHanded, idest)
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
   
@@ -203,9 +198,9 @@ subroutine Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,&
   integer,dimension(REGION_DIM),intent(IN) :: regionSizeC
   real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
   logical, intent(INOUT) :: apply
-  integer,intent(IN) :: blockHandle
+  type(block_metadata_t),intent(IN) :: blockDesc
   integer,intent(IN) :: secondDir,thirdDir
-  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   logical, intent(IN) :: rightHanded
   integer,intent(IN),OPTIONAL:: idest
 

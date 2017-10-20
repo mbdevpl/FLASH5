@@ -26,23 +26,24 @@
 !!
 !!***
 
+#include "constants.h"
+#include "Flash.h"
+  
 subroutine gr_bcApplyToAllBlks(axis,isWork)
-  use Grid_interface, ONLY : Grid_getLocalNumBlks, Grid_getBlkBC, &
-       Grid_getBlkIndexLimits
+  use Grid_interface, ONLY : Grid_getBlkBC
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
   use Grid_data,ONLY : gr_numDataStruct,gr_gridDataStruct,gr_gridDataStructSize
   use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
+  
   implicit none
-#include "constants.h"
-#include "Flash.h"
   
   integer, intent(in) :: axis
   logical, intent(in) :: isWork
 
   logical, dimension(LOW:HIGH) :: loop
   integer, dimension(LOW:HIGH) :: bcType,face
-  integer,dimension(LOW:HIGH,MDIM) :: blkLimitsGC,blkLimits,blkBC
+  integer,dimension(LOW:HIGH,MDIM) :: blkBC
   integer :: varCount,gridDataStruct
   integer :: edge,struct
   integer,dimension(MDIM) :: regionType
@@ -50,8 +51,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
   integer,dimension(gr_numDataStruct) :: localDataStruct,localStructSize
   integer :: localNum
   type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
-  integer :: blockID
+  type(block_metadata_t) :: blockDesc
 
   if(isWork) then
      localNum=1
@@ -72,20 +72,15 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
 
      itor = block_iterator_t(ALL_BLKS)
      do while (itor%is_valid())
-        call itor%blkMetaData(block) 
-        blockID = block%id
+        call itor%blkMetaData(blockDesc) 
 
-        call Grid_getBlkBC(block,blkBC)  !! For the block find the faces on the boundary
+        call Grid_getBlkBC(blockDesc,blkBC)  !! For the block find the faces on the boundary
         loop(LOW)=blkBC(LOW,axis)/=NOT_BOUNDARY      !! along the specified dimension
         loop(HIGH)=blkBC(HIGH,axis)/=NOT_BOUNDARY
         
         if(loop(LOW).or.loop(HIGH)) then           !! if at least one face is on the boundary
            bcType=blkBC(:,axis)                    !! then proceed with calculation
            
-           !! The next few statements are to get block information to 
-           !! prepare for the calculation
-            blkLimits = block%limits
-            blkLimitsGC = block%limitsGC
            !! Now that all preparatory work is done, call the routine
            !! that will repackage relevant parts of the block data
            !! to pass on the boundary condition routines that do actual
@@ -99,7 +94,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
               if(loop(edge))&
                    call gr_bcApplyToOneFace(axis,bcType(edge),&
                    gridDataStruct,varCount,regionType,&
-                   blkLimits,blkLimitsGC,blockID,idest)
+                   blockDesc,idest)
            end do
         end if
      end do
