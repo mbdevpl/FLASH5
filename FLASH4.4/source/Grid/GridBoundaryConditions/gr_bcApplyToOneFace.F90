@@ -97,7 +97,7 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
   end if
 
 
-#ifndef FLASH_GRID_PARAMESH2
+#if !defined(FLASH_GRID_PARAMESH2) && !defined(FLASH_GRID_AMREX)
   if(gridDataStruct == WORK) then
      call gr_hgMapBcType(testBcType,bcType,1,gridDataStruct,axis,face,idest)
      if (testBcType == GRIDBC_GIMME_WORK) then

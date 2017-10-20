@@ -30,6 +30,7 @@
 #include "Flash.h"
   
 subroutine gr_bcApplyToAllBlks(axis,isWork)
+  use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkBC
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
   use Grid_data,ONLY : gr_numDataStruct,gr_gridDataStruct,gr_gridDataStructSize
@@ -53,6 +54,9 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
 
+#ifdef FLASH_GRID_AMREX
+  call Driver_abortFlash("[gr_bcApplyToAllBlks] not implemented for AMReX")
+#else
   if(isWork) then
      localNum=1
      localDataStruct(localNum)=WORK
@@ -102,4 +106,6 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
      call destroy_iterator(itor)
 #endif
   end do
+#endif
+
 end subroutine gr_bcApplyToAllBlks
