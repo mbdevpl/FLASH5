@@ -63,7 +63,7 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
   use gr_hgInterface, ONLY : gr_hgMapBcType !!, gr_hg_amr_1blk_bcset_work
   use block_metadata, ONLY : block_metadata_t
   implicit none
-  
+ 
   integer, intent(in) :: axis,bcType,gridDataStruct,varCount,idest
   integer,dimension(MDIM),intent(IN) :: regionType
   type(block_metadata_t), intent(IN) :: blockDesc
@@ -76,7 +76,7 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
   integer :: testBcType
 
   integer,dimension(LOW:HIGH,MDIM) :: blkLimitsGC,blkLimits
-  
+
   logical :: isFaceVarNormalDir,applied
   logical,allocatable,dimension(:):: mask
 !!  real,allocatable,dimension(:) :: cellCenterSweepCoord, secondCoord,thirdCoord
@@ -92,10 +92,11 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
 
   if(regionType(axis)==LEFT_EDGE) then
      face=LOW
-  else
+  else if(regionType(axis)==RIGHT_EDGE) then
      face=HIGH
+  else
+     call Driver_abortFlash("[gr_bcApplyToOneFace] type along BC dir must be LEFT_EDGE or RIGHT_EDGE")
   end if
-
 
 #if !defined(FLASH_GRID_PARAMESH2) && !defined(FLASH_GRID_AMREX)
   if(gridDataStruct == WORK) then
@@ -181,8 +182,6 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
         call Driver_abortFlash("unsupported boundary condition on Lower Face")
      else if (regionType(axis)==RIGHT_EDGE) then
          call Driver_abortFlash("unsupported boundary condition on Upper Face")
-     else
-        call Driver_abortFlash("unexpected regionType!")
      end if
   end if
   call gr_bcPutRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
