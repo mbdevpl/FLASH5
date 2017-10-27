@@ -15,7 +15,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use amrex_multifab_module,     ONLY : amrex_multifab_build
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
-    use Grid_data,                 ONLY : gr_lo_bc_ptr, gr_hi_bc_ptr
+    use Grid_data,                 ONLY : lo_bc_amrex_ptr, hi_bc_amrex_ptr
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
@@ -74,7 +74,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                   c_funloc(gr_fillPhysicalBC), &
                                   c_funloc(gr_fillPhysicalBC), &
                                   amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                  gr_lo_bc_ptr, gr_hi_bc_ptr)
+                                  lo_bc_amrex_ptr, hi_bc_amrex_ptr)
 
     write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Make fine level ", lev + 1
 

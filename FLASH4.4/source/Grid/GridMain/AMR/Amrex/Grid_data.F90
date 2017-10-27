@@ -21,7 +21,6 @@ Module Grid_data
 
   implicit none
 
-  !!!!! NEEDED BY Grid_bcApplyToRegion.F90
   integer, save :: gr_dirGeom(MDIM)
   real,    save :: gr_smalle, gr_smallrho
 
@@ -47,10 +46,13 @@ Module Grid_data
   real,            save :: gr_minCellSize
   real,            save :: gr_minCellSizes(MDIM)
   logical,         save :: gr_allPeriodic
-  integer, target, save :: gr_lo_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
-  integer, target, save :: gr_hi_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
-  type(c_ptr),     save :: gr_lo_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
-  type(c_ptr),     save :: gr_hi_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
+
+  ! Local copies that stores BC information for AMReX callbacks.
+  ! These variables should only be used by the AMReX callbacks.
+  integer, target, save :: lo_bc_amrex(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
+  integer, target, save :: hi_bc_amrex(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
+  type(c_ptr),     save :: lo_bc_amrex_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
+  type(c_ptr),     save :: hi_bc_amrex_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
 
   ! These are historical.
   ! Within the AMReX implementation, the number of guardcells

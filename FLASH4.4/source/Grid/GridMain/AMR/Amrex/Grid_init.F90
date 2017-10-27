@@ -121,9 +121,10 @@
 ! DEVNOTE: Need REORDER directive for scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx?
 ! DEVNOTE: Need REORDER directive for gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face?
 subroutine Grid_init()
-  use iso_c_binding,               ONLY : c_loc
+  use iso_c_binding,               ONLY : c_loc, c_null_ptr
 
-  use amrex_bc_types_module,       ONLY : amrex_bc_int_dir
+  use amrex_bc_types_module,       ONLY : amrex_bc_int_dir, &
+                                          amrex_bc_ext_dir
 
   use Grid_data
   use Grid_interface,              ONLY : Grid_getDeltas, &
@@ -141,11 +142,7 @@ subroutine Grid_init()
 
   include "Flash_mpi.h"
 
-!  logical :: useProtonEmission
-!  logical :: useProtonImaging
-
-   integer :: i
-!  integer :: i, j, k, localNumBlocks, ii, numLeafBlks
+  integer :: i, var
 
   character(len=MAX_STRING_LENGTH) :: paramString
   character(len=MAX_STRING_LENGTH) :: refVarname, refVarString
@@ -156,8 +153,6 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: yl_bcString, yr_bcString
   character(len=MAX_STRING_LENGTH) :: zl_bcString, zr_bcString
   character(len=MAX_STRING_LENGTH) :: eosModeString
-!  character(len=MAX_STRING_LENGTH) :: grav_boundary_type
-!  integer :: countInComm, color, key, ierr
   integer :: refVar
   integer :: nonrep
 
@@ -225,12 +220,30 @@ subroutine Grid_init()
 !----------------------------------------------------------------------------------
   call gr_amrexInit()
 
-  ! Save BC information for callbacks
-  gr_lo_bc(:, :) = amrex_bc_int_dir
-  gr_hi_bc(:, :) = amrex_bc_int_dir
-  do i = UNK_VARS_BEGIN, UNK_VARS_END
-     gr_lo_bc_ptr(i) = c_loc(gr_lo_bc(1, i))
-     gr_hi_bc_ptr(i) = c_loc(gr_hi_bc(1, i))
+  ! Save BC information for AMReX callbacks
+  lo_bc_amrex(:, :) = amrex_bc_int_dir
+  hi_bc_amrex(:, :) = amrex_bc_int_dir
+  lo_bc_amrex_ptr(:) = c_null_ptr
+  hi_bc_amrex_ptr(:) = c_null_ptr
+  do i = 1, NDIM
+     select case(gr_domainBC(LOW, i))
+     case(PERIODIC)
+        lo_bc_amrex(i, :) = amrex_bc_int_dir
+     case default
+        lo_bc_amrex(i, :) = amrex_bc_ext_dir
+     end select
+
+     select case(gr_domainBC(HIGH, i))
+     case(PERIODIC)
+        hi_bc_amrex(i, :) = amrex_bc_int_dir
+     case default
+        hi_bc_amrex(i, :) = amrex_bc_ext_dir
+     end select
+  end do
+
+  do var = UNK_VARS_BEGIN, UNK_VARS_END
+     lo_bc_amrex_ptr(var) = c_loc(lo_bc_amrex(1, var))
+     hi_bc_amrex_ptr(var) = c_loc(hi_bc_amrex(1, var))
   end do
 
 !----------------------------------------------------------------------------------

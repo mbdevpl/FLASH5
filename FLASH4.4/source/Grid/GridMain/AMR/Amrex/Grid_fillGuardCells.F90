@@ -144,7 +144,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         gr_enableMaskedGCFill, &
                                         gr_meshMe, gr_meshComm, &
                                         gr_gcellsUpToDate, &
-                                        gr_lo_bc, gr_hi_bc
+                                        lo_bc_amrex, hi_bc_amrex
   use Eos_interface,             ONLY : Eos_guardCells
   use Driver_interface,          ONLY : Driver_abortFlash
   use Timers_interface,          ONLY : Timers_start, Timers_stop
@@ -189,8 +189,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   character(len=10) :: tagext
   integer :: scompCC, ncompCC, lcompCC
 
-  type(c_ptr)     :: lo_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
-  type(c_ptr)     :: hi_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
+  type(c_ptr) :: lo_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
+  type(c_ptr) :: hi_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
 
   integer :: lev, j
   integer :: finest_level
@@ -406,8 +406,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end do
 
   do j = scompCC, (scompCC + ncompCC - 1)
-     lo_bc_ptr(j) = c_loc(gr_lo_bc(1, j))
-     hi_bc_ptr(j) = c_loc(gr_hi_bc(1, j))
+     lo_bc_ptr(j) = c_loc(lo_bc_amrex(1, j))
+     hi_bc_ptr(j) = c_loc(hi_bc_amrex(1, j))
   end do
 
   do j = (scompCC + ncompCC), UNK_VARS_END
@@ -419,6 +419,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! the domain were zero (no periodic BC).  AMReX recommended using fillpatch,
   ! which is copying *all* data, including the GC.
   call Timers_start("amr_guardcell")
+
   
   lev = 0
   mfab_src(1) = unk(lev)%p
