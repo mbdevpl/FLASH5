@@ -106,7 +106,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     end if
 
 #ifdef DEBUG_GRID
-    write(*,'(A,A,F7.4)') "[gr_fillPhysicalBC]", &
+    write(*,'(A,A,I3)') "[gr_fillPhysicalBC]", &
                         "                  Level ", level
 #endif
 

@@ -426,13 +426,13 @@ subroutine Driver_evolveFlash()
     block%limits(LOW,  :) = [1, 1, 1]
     call Grid_getSingleCellCoords([1, 1, 1], block, LEFT_EDGE, INTERIOR, c_lo)
     block%limits(LOW,  :) = [61, 61, 2]
-    call Grid_getSingleCellCoords([4, 4, 4], block, RIGHT_EDGE, INTERIOR, c_hi)
+    call Grid_getSingleCellCoords([4, 4, 1], block, RIGHT_EDGE, INTERIOR, c_hi)
     ! Find coordinates of cell as a guard cell of one block ...
     block%limits(LOW,  :) = [61, 61, 2]
     call Grid_getSingleCellCoords([1, 1, 1], block, CENTER, EXTERIOR, c_gc)
     ! and as an interior cell of its neighboring block
     block%limits(LOW,  :) = [57, 57, 2]
-    call Grid_getSingleCellCoords([3, 3, 3], block, CENTER, INTERIOR, c_itr)
+    call Grid_getSingleCellCoords([3, 3, 1], block, CENTER, INTERIOR, c_itr)
 
     call assertEqual(c_gc(IAXIS), c_itr(IAXIS), "Invalid cell X-coordinate")
     call assertEqual(c_gc(JAXIS), c_itr(JAXIS), "Invalid cell Y-coordinate")
