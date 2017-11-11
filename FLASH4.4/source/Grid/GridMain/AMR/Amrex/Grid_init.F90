@@ -223,8 +223,6 @@ subroutine Grid_init()
   ! Save BC information for AMReX callbacks
   lo_bc_amrex(:, :) = amrex_bc_int_dir
   hi_bc_amrex(:, :) = amrex_bc_int_dir
-  lo_bc_amrex_ptr(:) = c_null_ptr
-  hi_bc_amrex_ptr(:) = c_null_ptr
   do i = 1, NDIM
      select case(gr_domainBC(LOW, i))
      case(PERIODIC)
@@ -239,11 +237,6 @@ subroutine Grid_init()
      case default
         hi_bc_amrex(i, :) = amrex_bc_ext_dir
      end select
-  end do
-
-  do var = UNK_VARS_BEGIN, UNK_VARS_END
-     lo_bc_amrex_ptr(var) = c_loc(lo_bc_amrex(1, var))
-     hi_bc_amrex_ptr(var) = c_loc(hi_bc_amrex(1, var))
   end do
 
 !----------------------------------------------------------------------------------

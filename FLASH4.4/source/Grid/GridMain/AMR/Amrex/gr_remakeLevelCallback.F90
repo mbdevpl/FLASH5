@@ -16,9 +16,10 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_multifab_module,     ONLY : amrex_multifab, &
                                           amrex_multifab_build, &
                                           amrex_multifab_destroy
+    use amrex_fillpatch_module,    ONLY : amrex_fillpatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
-    use Grid_data,                 ONLY : lo_bc_amrex_ptr, hi_bc_amrex_ptr
+    use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
@@ -36,55 +37,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     type(amrex_box)       :: bx
     type(amrex_multifab)  :: mfab
 
-    integer, target :: lo_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
-    integer, target :: hi_bc(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
-    type(c_ptr)     :: lo_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
-    type(c_ptr)     :: hi_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
-
-    type(c_ptr) :: mfab_src(1)
-    real(wp)    :: time_src(1)
-    type(c_ptr) :: mfab_coarse(1)
-    real(wp)    :: time_coarse(1)
-    type(c_ptr) :: mfab_fine(1)
-    real(wp)    :: time_fine(1)
-
     integer :: j
-
-    ! AMReX C++ fillpatch routines
-    interface
-       subroutine amrex_fi_fillpatch_single(mf, time, smf, stime, ns, scomp, dcomp, ncomp, &
-                                            geom, fill) bind(c)
-         import
-         implicit none
-         type(c_ptr),      value :: mf
-         real(wp),         value :: time
-         type(c_ptr), intent(in) :: smf(*)
-         real(wp),    intent(in) :: stime(*)
-         integer(c_int),   value :: scomp, dcomp, ncomp, ns
-         type(c_ptr),      value :: geom
-         type(c_funptr),   value :: fill
-       end subroutine amrex_fi_fillpatch_single
-
-       subroutine amrex_fi_fillpatch_two(mf, time, &
-                                         cmf, ctime, nc, fmf, ftime, nf, scomp, dcomp, ncomp, &
-                                         cgeom, fgeom, cfill, ffill, rr, interp, lo_bc, hi_bc) bind(c)
-         import
-         implicit none
-         type(c_ptr),      value :: mf
-         real(wp),         value :: time
-         type(c_ptr), intent(in) :: cmf(*)
-         real(wp),    intent(in) :: ctime(*)
-         integer,          value :: nc
-         type(c_ptr), intent(in) :: fmf(*)
-         real(wp),    intent(in) :: ftime(*)
-         integer,          value :: nf
-         integer,          value :: scomp, dcomp, ncomp
-         type(c_ptr),      value :: cgeom, fgeom
-         type(c_funptr),   value :: cfill, ffill
-         integer,          value :: rr, interp
-         type(c_ptr), intent(in) :: lo_bc(*), hi_bc(*)
-       end subroutine amrex_fi_fillpatch_two
-    end interface
 
     ba = pba
     dm = pdm
@@ -102,27 +55,20 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     if (lev == 0) then
        ! Move all unk data to given ba/dm layout.  Do *not* use sub-cycling.
        ! -1 because of Fortran variable index starts with 1
-       mfab_src(1) = unk(lev)%p
-       time_src(1) = time
-       call amrex_fi_fillpatch_single(mfab%p, time, mfab_src, time_src, 1, &
-                                      UNK_VARS_BEGIN-1, UNK_VARS_BEGIN-1, &
-                                      NUNK_VARS, amrex_geom(lev)%p, &
-                                      c_funloc(gr_fillPhysicalBC))
+       call amrex_fillpatch(mfab, time+1.0d0, unk(lev), &
+                                  time,       unk(lev), &
+                                  amrex_geom(lev), gr_fillPhysicalBC, &
+                                  time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)       
     else
-       mfab_coarse(1) = unk(lev-1)%p
-       time_coarse(1) = time
-       mfab_fine(1)   = unk(lev  )%p
-       time_fine(1)   = time
-
-       call amrex_fi_fillpatch_two(mfab%p, time, &
-                                   mfab_coarse, time_coarse, 1, &
-                                   mfab_fine, time_fine, 1, &
-                                   UNK_VARS_BEGIN-1, UNK_VARS_BEGIN-1, NUNK_VARS, &
-                                   amrex_geom(lev-1)%p, amrex_geom(lev)%p, &
-                                   c_funloc(gr_fillPhysicalBC), &
-                                   c_funloc(gr_fillPhysicalBC), &
-                                   amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                   lo_bc_amrex_ptr, hi_bc_amrex_ptr)
+       call amrex_fillpatch(mfab, time+1.0d0, unk(lev-1), &
+                                  time,       unk(lev-1), &
+                                  amrex_geom(lev-1), gr_fillPhysicalBC, &
+                                  time+1.0e0, unk(lev  ), &
+                                  time,       unk(lev  ), &
+                                  amrex_geom(lev  ), gr_fillPhysicalBC, &
+                                  time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
+                                  amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                  lo_bc_amrex, hi_bc_amrex)       
     end if
 
     !!!!! REBUILD MFAB AT LEVEL AND FILL FROM BUFFER

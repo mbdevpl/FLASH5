@@ -13,9 +13,10 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use amrex_boxarray_module,     ONLY : amrex_boxarray
     use amrex_distromap_module,    ONLY : amrex_distromap
     use amrex_multifab_module,     ONLY : amrex_multifab_build
+    use amrex_fillpatch_module,    ONLY : amrex_fillcoarsepatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
-    use Grid_data,                 ONLY : lo_bc_amrex_ptr, hi_bc_amrex_ptr
+    use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
@@ -32,21 +33,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     type(amrex_distromap) :: dm
 
     integer :: j
-
-    ! AMReX C++ fillpatch routines
-    interface
-      subroutine amrex_fi_fillcoarsepatch(mf, time, cmf, scomp, dcomp, ncomp, &
-                                         cgeom, fgeom, cfill, ffill, rr, &
-                                         interp, lo_bc, hi_bc) bind(c)
-         import
-         implicit none
-         type(c_ptr), value :: mf, cmf, cgeom, fgeom
-         type(c_ptr), intent(in) :: lo_bc(*), hi_bc(*)
-         type(c_funptr), value :: cfill, ffill
-         real(wp), value :: time
-         integer, value :: scomp, dcomp, ncomp, rr, interp
-      end subroutine amrex_fi_fillcoarsepatch
-    end interface
 
 #ifdef DEBUG_GRID
     write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Start on level ", lev + 1
@@ -68,13 +54,14 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     ! NOTE: FLASH does not use sub-cycling (temporal interpolation)
     !
     ! -1 because Fortran variable index starts with 1
-    call amrex_fi_fillcoarsepatch(unk(lev)%p, time, unk(lev-1)%p, &
-                                  UNK_VARS_BEGIN-1, UNK_VARS_BEGIN-1, NUNK_VARS, &
-                                  amrex_geom(lev-1)%p, amrex_geom(lev)%p, &
-                                  c_funloc(gr_fillPhysicalBC), &
-                                  c_funloc(gr_fillPhysicalBC), &
-                                  amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                  lo_bc_amrex_ptr, hi_bc_amrex_ptr)
+    call amrex_fillcoarsepatch(unk(lev), time,     unk(lev-1),  &
+                                         time+0.1, unk(lev-1),  &
+                                         amrex_geom(lev-1), gr_fillPhysicalBC,  &
+                                         amrex_geom(lev  ), gr_fillPhysicalBC,  &
+                                         time, &
+                                         UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
+                                         amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                         lo_bc_amrex, hi_bc_amrex) 
 
     write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Make fine level ", lev + 1
 

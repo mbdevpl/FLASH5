@@ -51,8 +51,6 @@ Module Grid_data
   ! These variables should only be used by the AMReX callbacks.
   integer, target, save :: lo_bc_amrex(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
   integer, target, save :: hi_bc_amrex(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
-  type(c_ptr),     save :: lo_bc_amrex_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
-  type(c_ptr),     save :: hi_bc_amrex_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
 
   ! These are historical.
   ! Within the AMReX implementation, the number of guardcells

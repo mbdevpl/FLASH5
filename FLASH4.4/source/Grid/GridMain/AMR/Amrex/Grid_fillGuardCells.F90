@@ -136,6 +136,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
                                         amrex_geom, &
                                         amrex_ref_ratio
+  use amrex_fillpatch_module,    ONLY : amrex_fillpatch
   use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
   use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
@@ -195,54 +196,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   integer :: lev, j
   integer :: finest_level
     
-  type(c_ptr) :: mfab_src(1)
-  real(wp)    :: time_src(1)
-  type(c_ptr) :: mfab_coarse(1)
-  real(wp)    :: time_coarse(1)
-  type(c_ptr) :: mfab_fine(1)
-  real(wp)    :: time_fine(1)
-
 #ifdef DEBUG_GRID
   logical:: validDataStructure
-#endif
-
-  ! AMReX C++ fillpatch routines
-  interface
-     subroutine amrex_fi_fillpatch_single(mf, time, smf, stime, ns, scomp, dcomp, ncomp, &
-                                          geom, fill) bind(c)
-       import
-       implicit none
-       type(c_ptr),      value :: mf
-       real(wp),         value :: time
-       type(c_ptr), intent(in) :: smf(*)
-       real(wp),    intent(in) :: stime(*)
-       integer(c_int),   value :: scomp, dcomp, ncomp, ns
-       type(c_ptr),      value :: geom
-       type(c_funptr),   value :: fill
-     end subroutine amrex_fi_fillpatch_single
-
-     subroutine amrex_fi_fillpatch_two(mf, time, &
-                                       cmf, ctime, nc, fmf, ftime, nf, scomp, dcomp, ncomp, &
-                                       cgeom, fgeom, cfill, ffill, rr, interp, lo_bc, hi_bc) bind(c)
-       import
-       implicit none
-       type(c_ptr),      value :: mf
-       real(wp),         value :: time
-       type(c_ptr), intent(in) :: cmf(*)
-       real(wp),    intent(in) :: ctime(*)
-       integer,          value :: nc
-       type(c_ptr), intent(in) :: fmf(*)
-       real(wp),    intent(in) :: ftime(*)
-       integer,          value :: nf
-       integer,          value :: scomp, dcomp, ncomp
-       type(c_ptr),      value :: cgeom, fgeom
-       type(c_funptr),   value :: cfill, ffill
-       integer,          value :: rr, interp
-       type(c_ptr), intent(in) :: lo_bc(*), hi_bc(*)
-     end subroutine amrex_fi_fillpatch_two
-  end interface
-
-#ifdef DEBUG_GRID
+  
   validDataStructure = (gridDataStruct==CENTER).or.&
                        (gridDataStruct==FACES).or.&
                        (gridDataStruct==FACEX).or.&
@@ -400,51 +356,28 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! Restrict data from leaves to coarser blocks
   call gr_averageDownLevels
 
-  do j = UNK_VARS_BEGIN, scompCC-1
-     lo_bc_ptr(j) = c_null_ptr
-     hi_bc_ptr(j) = c_null_ptr
-  end do
-
-  do j = scompCC, (scompCC + ncompCC - 1)
-     lo_bc_ptr(j) = c_loc(lo_bc_amrex(1, j))
-     hi_bc_ptr(j) = c_loc(hi_bc_amrex(1, j))
-  end do
-
-  do j = (scompCC + ncompCC), UNK_VARS_END
-     lo_bc_ptr(j) = c_null_ptr
-     hi_bc_ptr(j) = c_null_ptr
-  end do
-
   ! Using fill_boundary didn't work on finest levels since the GC outside
   ! the domain were zero (no periodic BC).  AMReX recommended using fillpatch,
   ! which is copying *all* data, including the GC.
   call Timers_start("amr_guardcell")
-
   
   lev = 0
-  mfab_src(1) = unk(lev)%p
-  time_src(1) = 0.0d0
-  call amrex_fi_fillpatch_single(unk(lev)%p, 0.0d0, mfab_src, time_src, 1, &
-                                 scompCC-1, scompCC-1, ncompCC, &
-                                 amrex_geom(lev)%p, &
-                                 c_funloc(gr_fillPhysicalBC))
+  call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
+                                 0.0d0, unk(lev), &
+                                 amrex_geom(lev), gr_fillPhysicalBC, &
+                                 0.0d0, scompCC, scompCC, ncompCC)
 
   finest_level = amrex_get_finest_level()
   do lev=1, finest_level
-    mfab_coarse(1) = unk(lev-1)%p
-    time_coarse(1) = 0.0d0 
-    mfab_fine(1)   = unk(lev  )%p
-    time_fine(1)   = 0.0d0
-    
-    call amrex_fi_fillpatch_two(unk(lev)%p, 0.0d0, &
-                                mfab_coarse, time_coarse, 1, &
-                                mfab_fine, time_fine, 1, &
-                                scompCC-1, scompCC-1, ncompCC, &
-                                amrex_geom(lev-1)%p, amrex_geom(lev)%p, &
-                                c_funloc(gr_fillPhysicalBC), &
-                                c_funloc(gr_fillPhysicalBC), &
-                                amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                lo_bc_ptr, hi_bc_ptr)
+    call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
+                                   0.0d0, unk(lev-1), &
+                                   amrex_geom(lev-1), gr_fillPhysicalBC, &
+                                   1.0e0, unk(lev  ), &
+                                   0.0d0, unk(lev  ), &
+                                   amrex_geom(lev  ), gr_fillPhysicalBC, &
+                                   0.0d0, scompCC, scompCC, ncompCC, &
+                                   amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                   lo_bc_amrex, hi_bc_amrex) 
   end do
   call Timers_stop("amr_guardcell")
 
