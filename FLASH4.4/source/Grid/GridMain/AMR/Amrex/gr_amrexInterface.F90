@@ -14,6 +14,8 @@
 !!  
 !!***
 
+#include "constants.h"
+
 module gr_amrexInterface
     interface
         subroutine gr_amrexInit()
@@ -116,6 +118,44 @@ module gr_amrexInterface
         subroutine gr_averageDownLevels()
             implicit none
         end subroutine gr_averageDownLevels
+    end interface
+
+    interface
+        subroutine gr_getPatchBoundaryEndpoints(face, axis, limits, delta, endpoints)
+            implicit none
+
+            integer, intent(IN)  :: face
+            integer, intent(IN)  :: axis
+            integer, intent(IN)  :: limits(LOW:HIGH, 1:MDIM)
+            real,    intent(IN)  :: delta(1:MDIM)
+            integer, intent(OUT) :: endpoints(LOW:HIGH, 1:MDIM)
+        end subroutine gr_getPatchBoundaryEndpoints
+    end interface
+
+    interface
+        subroutine gr_transformBcRegion(srcData, axis, endPts, regionSize, region)
+            use amrex_fort_module, ONLY : wp => amrex_real
+            implicit none
+
+            real(wp), pointer, contiguous, intent(IN)  :: srcData(:, :, :, :)
+            integer,                       intent(IN)  :: axis
+            integer,                       intent(IN)  :: endPts(LOW:HIGH, 1:MDIM)
+            integer,                       intent(IN)  :: regionSize(4)
+            real(wp), pointer, contiguous, intent(OUT) :: region(:, :, :, :)
+        end subroutine gr_transformBcRegion
+    end interface
+
+    interface
+        subroutine gr_untransformBcRegion(destData, axis, endPts, regionSize, region)
+            use amrex_fort_module, ONLY : wp => amrex_real
+            implicit none
+
+            real(wp), intent(INOUT), pointer, contiguous :: destData(:, :, :, :)
+            integer,  intent(IN)                         :: axis
+            integer,  intent(IN)                         :: endPts(LOW:HIGH, 1:MDIM)
+            integer,  intent(IN)                         :: regionSize(4)
+            real(wp), intent(IN)                         :: region(:, :, :, :)
+        end subroutine gr_untransformBcRegion
     end interface
 
 end module gr_amrexInterface
