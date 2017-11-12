@@ -17,7 +17,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    use Grid_data,              ONLY : gr_numRefineVars, &
                                       gr_refine_cutoff, gr_derefine_cutoff, &
                                       gr_refine_filter, gr_refine_var, &
-                                      gr_maxRefine, gr_enforceMaxRefinement
+                                      gr_maxRefine, gr_enforceMaxRefinement, &
+                                      gr_minRefine
    use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
    use gr_interface,           ONLY : gr_estimateBlkError
    use gr_physicalMultifabs,   ONLY : unk
@@ -53,6 +54,25 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 #endif
  
    tag = tags
+
+   if (lev < gr_minRefine - 1) then
+#ifdef DEBUG_GRID
+      write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallback]", &
+                                "         derefinement to this level not allowed"
+#endif
+
+      ! Enforce 1-based minimum level contraint
+      call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
+      
+      do while(mfi%next())
+         tagData => tag%dataptr(mfi)
+         tagData(:, :, :, :) = tagval
+         nullify(tagData)
+      end do
+
+      call amrex_mfiter_destroy(mfi)
+      RETURN
+   end if
 
    allocate(errors(gr_numRefineVars))
 
@@ -135,6 +155,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 EXIT rloop
             end if
         end do rloop
+
+        nullify(tagData)
       end associate
 
       call Grid_releaseBlkPtr(blockDesc, solnData)

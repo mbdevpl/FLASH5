@@ -39,13 +39,13 @@ Module Grid_data
   logical, save :: gr_bcEnableApplyMixedGds
 
   ! Maintain local copies of AMReX-controlled data for optimization
-  integer,         save :: gr_lRefineMax
-  integer,         save :: gr_maxRefine
-  integer,         save :: gr_geometry
-  integer,         save :: gr_nrefs
-  real,            save :: gr_minCellSize
-  real,            save :: gr_minCellSizes(MDIM)
-  logical,         save :: gr_allPeriodic
+  integer, save :: gr_lRefineMax
+  integer, save :: gr_maxRefine
+  integer, save :: gr_geometry
+  integer, save :: gr_nrefs
+  real,    save :: gr_minCellSize
+  real,    save :: gr_minCellSizes(MDIM)
+  logical, save :: gr_allPeriodic
 
   ! Local copies that stores BC information for AMReX callbacks.
   ! These variables should only be used by the AMReX callbacks.
@@ -59,6 +59,8 @@ Module Grid_data
   integer, save :: gr_iguard = NGUARD
   integer, save :: gr_jguard = NGUARD
   integer, save :: gr_kguard = NGUARD
+
+  integer, save :: gr_minRefine
 
 !  integer,save,dimension(MDIM)::gr_bndOrder
 !  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars

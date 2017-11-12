@@ -387,6 +387,7 @@ subroutine Grid_init()
 
   gr_enforceMaxRefinement = .FALSE.
 
+  call RuntimeParameters_get('lrefine_min', gr_minRefine)
   call RuntimeParameters_get("lrefine_del", gr_lrefineDel)
 
 !  call RuntimeParameters_get("gr_lrefineMaxRedDoByLogR", gr_lrefineMaxRedDoByLogR)
