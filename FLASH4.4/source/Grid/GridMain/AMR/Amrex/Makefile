@@ -11,9 +11,9 @@ Grid += gr_amrexInterface.o \
         gr_fillPhysicalBC.o \
         gr_getFinestLevel.o \
         gr_averageDownLevels.o \
-        gr_getPatchBoundaryEndpoints.o \
-        gr_transformBcRegion.o \
-        gr_untransformBcRegion.o \
+        gr_splitFabAtBoundary.o \
+        gr_copyFabInteriorToRegion.o \
+        gr_copyGuardcellRegionToFab.o \
         gr_writeData.o
 
 Grid += gr_amrextInterface.o
