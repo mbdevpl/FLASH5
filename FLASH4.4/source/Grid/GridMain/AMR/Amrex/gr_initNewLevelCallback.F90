@@ -43,11 +43,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     integer :: n_blocks
 
-#ifdef DEBUG_GRID
-    write(*,'(A,A,I2)') "[gr_initNewLevelCallback]", &
-                        "            Start Level ", lev + 1
-#endif
-
     ba = pba
     dm = pdm
 
@@ -100,8 +95,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     call amrex_mfiter_destroy(mfi)
  
-    write(*,'(A,I10,A,I2)') "[gr_initNewLevelCallback]      ", &
-                           n_blocks, " new blocks on level", lev + 1
+    write(*,'(A,I10,A,I0)') "Created and initialized ", n_blocks, &
+                           " blocks on level ", lev + 1
 
 end subroutine gr_initNewLevelCallback
 

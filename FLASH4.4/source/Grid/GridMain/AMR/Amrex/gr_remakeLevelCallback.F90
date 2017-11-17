@@ -15,7 +15,10 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_distromap_module,    ONLY : amrex_distromap
     use amrex_multifab_module,     ONLY : amrex_multifab, &
                                           amrex_multifab_build, &
-                                          amrex_multifab_destroy
+                                          amrex_multifab_destroy, &
+                                          amrex_mfiter, &
+                                          amrex_mfiter_build, &
+                                          amrex_mfiter_destroy
     use amrex_fillpatch_module,    ONLY : amrex_fillpatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
@@ -36,16 +39,12 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     type(amrex_distromap) :: dm
     type(amrex_box)       :: bx
     type(amrex_multifab)  :: mfab
+    type(amrex_mfiter)    :: mfi
 
-    integer :: j
+    integer :: nFab
 
     ba = pba
     dm = pdm
-
-#ifdef DEBUG_GRID
-    write(*,'(A,A,I2)') "[gr_remakeLevelCallback]", &
-                      "             Start Level ", lev + 1
-#endif
 
     !!!!! SAVE DATA IN BUFFER WITH GIVEN BOXARRAY/DISTRIBUTION
     ! Get all unk interior data
@@ -81,8 +80,14 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 
     call amrex_multifab_destroy(mfab)
 
-    write(*,'(A,A,I2)') "[gr_remakeLevelCallback]", &
-                      "             Remake level ", lev + 1
+    nFab = 0
+    call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)
+    do while(mfi%next())
+        nFab = nFab + 1 
+    end do
+    call amrex_mfiter_destroy(mfi)
+
+    write(*,'(A,I0,A,I0,A)') "Remade level ", (lev+1), " - ", nFab, " blocks"
 
 end subroutine gr_remakeLevelCallback
 

@@ -12,7 +12,10 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           amrex_geom
     use amrex_boxarray_module,     ONLY : amrex_boxarray
     use amrex_distromap_module,    ONLY : amrex_distromap
-    use amrex_multifab_module,     ONLY : amrex_multifab_build
+    use amrex_multifab_module,     ONLY : amrex_multifab_build, &
+                                          amrex_mfiter, &
+                                          amrex_mfiter_build, &
+                                          amrex_mfiter_destroy
     use amrex_fillpatch_module,    ONLY : amrex_fillcoarsepatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
@@ -31,12 +34,9 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
+    type(amrex_mfiter)    :: mfi
 
-    integer :: j
-
-#ifdef DEBUG_GRID
-    write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Start on level ", lev + 1
-#endif
+    integer :: nFab
 
     ba = pba
     dm = pdm
@@ -63,7 +63,14 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                          lo_bc_amrex, hi_bc_amrex) 
 
-    write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Make fine level ", lev + 1
+    nFab = 0
+    call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)
+    do while(mfi%next())
+        nFab = nFab + 1 
+    end do
+    call amrex_mfiter_destroy(mfi)
+
+    write(*,'(A,I0,A,I0,A)') "Made fine level ", lev + 1, " - ", nFab, " blocks"
 
 end subroutine gr_makeFineLevelFromCoarseCallback
 
