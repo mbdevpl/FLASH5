@@ -63,7 +63,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
       ! Enforce 1-based minimum level contraint
       call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
-      
+
       do while(mfi%next())
          tagData => tag%dataptr(mfi)
          tagData(:, :, :, :) = tagval
@@ -80,7 +80,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    ! unk used the same 0-based level indexing used here by AMReX
    call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
    do while(mfi%next())
-      bx = mfi%tilebox()
+      bx = mfi%fabbox()
 
       ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
@@ -88,12 +88,12 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       blockDesc%grid_index = mfi%grid_index()
       blockDesc%limits(LOW,  :) = 1
       blockDesc%limits(HIGH, :) = 1
-      blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
-      blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+      blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
+      blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
       blockDesc%limitsGC(LOW,  :) = 1
       blockDesc%limitsGC(HIGH, :) = 1
-      blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
-      blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
+      blockDesc%limitsGC(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+      blockDesc%limitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
 
       errors(:) = 0.0d0
       do l = 1, gr_numRefineVars
