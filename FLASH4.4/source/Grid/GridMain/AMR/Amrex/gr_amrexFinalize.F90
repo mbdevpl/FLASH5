@@ -1,7 +1,25 @@
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_amrexFinalize
+!!
+!! NAME
+!!  gr_amrexFinalize
+!!
+!! SYNOPSIS
+!!  gr_amrexFinalize
+!!           
+!! DESCRIPTION
+!!  Clean-up all data structures managed by the Grid unit and allow AMReX to
+!!  clean-up and terminate octree-based operations.
+!!
+!!***
+
 subroutine gr_amrexFinalize()
     use iso_c_binding
-    use amrex_amr_module
+    use amrex_init_module,      ONLY : amrex_finalize
+    use amrex_amrcore_module,   ONLY : amrex_max_level, &
+                                       amrex_amrcore_finalize
+    use amrex_multifab_module,  ONLY : amrex_multifab_destroy
     use amrex_octree_module,    ONLY : amrex_octree_finalize
+
     use gr_physicalMultifabs,   ONLY : unk, &
                                        facevarx, facevary, facevarz
  
@@ -9,18 +27,18 @@ subroutine gr_amrexFinalize()
 
     write(*,*) "[gr_amrexFinalize] Finalizing"
   
-    ! NOTE: We implement these with the 1-based level indexing scheme native to
-    ! so that the AMReX unk has a similar interface to the paramesh unk.
-    !   => all code dealing with multifabs at the Fortran/C++ interface must take 
-    !      care of the index translation
+    ! NOTE: Arrays of multifabs use AMReX's 0-based level indexing scheme
     do lev = 0, amrex_max_level
         call amrex_multifab_destroy(unk(lev))
+        call amrex_multifab_destroy(facevarx(lev))
+        call amrex_multifab_destroy(facevary(lev))
+        call amrex_multifab_destroy(facevarz(lev))
     end do
 
-    deallocate(unk)
-    deallocate(facevarx)
-    deallocate(facevary)
-    deallocate(facevarz)
+    if (allocated(unk))         deallocate(unk)
+    if (allocated(facevarx))    deallocate(facevarx)
+    if (allocated(facevary))    deallocate(facevary)
+    if (allocated(facevarz))    deallocate(facevarz)
 
     call amrex_amrcore_finalize()
     call amrex_octree_finalize()

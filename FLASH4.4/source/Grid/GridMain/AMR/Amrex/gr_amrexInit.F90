@@ -1,16 +1,30 @@
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_amrexInit
+!!
+!! NAME
+!!  gr_amrexInit
+!!
+!! SYNOPSIS
+!!  call gr_amrexInit()
+!! 
+!! DESCRIPTION
+!!  Configure AMReX using FLASH-supplied runtime parameters and for operating in
+!!  octree mode.
+!!
+!!***
+
 subroutine gr_amrexInit()
   use iso_c_binding
   
-  use amrex_amr_module,            ONLY : amrex_init, &
-                                          amrex_amrcore_init, &
+  use amrex_init_module,           ONLY : amrex_init
+  use amrex_amrcore_module,        ONLY : amrex_amrcore_init, &
                                           amrex_init_virtual_functions, &
-                                          amrex_max_level
-  use amrex_amrcore_module,        ONLY : amrex_ref_ratio
+                                          amrex_max_level, &
+                                          amrex_ref_ratio
+  use amrex_octree_module,         ONLY : amrex_octree_init
   use amrex_parmparse_module,      ONLY : amrex_parmparse, &
                                           amrex_parmparse_build, &
                                           amrex_parmparse_destroy
   use amrex_geometry_module,       ONLY : amrex_pmask
-  use amrex_octree_module,         ONLY : amrex_octree_init
 
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
