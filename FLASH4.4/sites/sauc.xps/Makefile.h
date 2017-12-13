@@ -2,19 +2,15 @@
 #----------------------------------------------------------------------------
 # Set the HDF5/MPI library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
+SPACK_GCC=/home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-6.4.0
 
-HDF5_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/hdf5-1.8.19-tgq3sf66sw3agicwotbrgpvgtrfgdoie
-LIB_HDF5 = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/hdf5-1.8.19-tgq3sf66sw3agicwotbrgpvgtrfgdoie/lib
-AMREX_PATH = ${HOME}/Projects/lib_install
-HYPRE_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/hypre-2.10.0b-7pe44q2taksk77wdoksdmbenoxtd3fyl
-MPI_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/openmpi-2.1.1-w6t2medqmrz2y2w6dyptgdbhkimvx2qx/bin
-
-SUPERLU_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/superlu-5.2.1-viuzdwgywv3jaqfcxhrh25fx3mwhnrlw
-BLAS_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/openblas-0.2.20-wvvffniytzrq4ay5ghonzqels6ygt6rd
-LIB_LAPACK =
-
-
-
+HDF5_PATH = ${SPACK_GCC}/hdf5-1.8.19-5lqpmk33ppfciguocaeidfhswdpazaj7
+#HDF5_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/hdf5-1.8.19-tgq3sf66sw3agicwotbrgpvgtrfgdoie
+#AMREX_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/amrex-master-6jw7hbzurjx3w7zq7yxdiulpn5w4czer
+AMREX_PATH = ${SPACK_GCC}/amrex-master-xavsjpdiznbgzuessdvwbb2yk4yorzdx
+#AMREX_PATH = /home/sauc/Softwares/amrex-master/build5
+HYPRE_PATH = ${SPACK_GCC}/hypre-2.12.1-tflkxlnnce5zpcuiip5zqnp7oojpbmg7
+#HYPRE_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/hypre-2.10.0b-7pe44q2taksk77wdoksdmbenoxtd3fyl
 ZLIB_PATH  =
 
 PAPI_PATH  =
@@ -22,6 +18,8 @@ PAPI_FLAGS =
 
 LIB_NCMPI = /usr/local
 MPE_PATH   =
+MPI_PATH = ${SPACK_GCC}/openmpi-3.0.0-wh55zsfvylrgvsmpnl6n3yfiuukpel2r/bin
+#MPI_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/openmpi-2.1.1-w6t2medqmrz2y2w6dyptgdbhkimvx2qx/bin
 
 #----------------------------------------------------------------------------
 # Compiler and linker commands
@@ -34,7 +32,7 @@ MPE_PATH   =
 #----------------------------------------------------------------------------
 FCOMP   = $(MPI_PATH)/mpif90
 CCOMP   = $(MPI_PATH)/mpicc
-CPPCOMP = $(MPI_PATH)/mpic++
+CPPCOMP = $(MPI_PATH)/mpiCC
 LINK    = $(MPI_PATH)/mpif90 -std=c++11
 
 # pre-processor flag
@@ -57,15 +55,15 @@ FFLAGS_DEBUG = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
 -pedantic -Wall -Wextra -Waliasing \
 -Wsurprising -Wconversion -Wunderflow \
 -ffpe-trap=invalid,zero,overflow -fbounds-check \
--fimplicit-none -fstack-protector-all
+-fimplicit-none -fstack-protector-all \
+-fbacktrace -fbounds-check
 
 FFLAGS_TEST = -ggdb -c -fdefault-real-8 -fdefault-double-8 \
 -ffree-line-length-none
 
-
 FFLAGS_HYPRE = -I${HYPRE_PATH}/include
-#FFLAGS_AMREX = -I${AMREX_PATH}/include
-#FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
+FFLAGS_AMREX = -I${AMREX_PATH}/include
+FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
 
 #F90FLAGS = -I${HDF5_PATH}/include -DH5_USE_16_API
 F90FLAGS = -I${HDF5_PATH}/include
@@ -87,9 +85,6 @@ CDEFINES += -DDarwin
 
 CFLAGS_HDF5 = -I${HDF5_PATH}/include -DH5_USE_16_API
 CFLAGS_NCMPI = -I$(LIB_NCMPI)/include
-
-CFLAGS_SUPERLU = -I${SUPERLU_PATH}/include
-FFLAGS_SUPERLU = -I${SUPERLU_PATH}/include
 
 #----------------------------------------------------------------------------
 # Linker flags
@@ -114,16 +109,12 @@ LFLAGS_TEST  = -o
 #  depending on how FLASH was setup.
 #----------------------------------------------------------------------------
 
-# option -lmpicxx is added so that the fortran compiler (mpif90) during linking will 'know' the cxx libraries. Otherwise it will give error if cxx files are included there for specific compilers when openMPI wrapper compilers mpifort and mpic++ link to different MPI libraries. You can check this with the -showme:libs. 
-# https://stackoverflow.com/questions/35164095/calling-c-from-fortran-with-openmpi
-LIB_OPT   = -lmpi_cxx
-LIB_DEBUG = -lmpi_cxx
+LIB_OPT   =
+LIB_DEBUG =
 LIB_TEST  =
 
 #LIB_HDF5  = -L/usr/local/lib -lhdf5 /usr/lib64/libz.a
-#LIB_HDF5  = -Wl,-rpath -L${HDF5_PATH}/lib -lhdf5
-#LIB_HDF5  = -L${HDF5_PATH}/lib -lhdf5
-LIB_HDF5  = -L$(HDF5_PATH)/lib -lhdf5 -Wl,-rpath,$(HDF5_PATH)/lib
+LIB_HDF5  = -L${HDF5_PATH}/lib -lhdf5 -Wl,-rpath,$(HDF5_PATH)/lib
 
 LIB_PAPI  =
 LIB_MATH  =
@@ -132,25 +123,15 @@ LIB_MPI   =
 #LIB_NCMPI = -L $(NCMPI_PATH)/lib -lpnetcdf
 LIB_MPE   =
 
-LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE -Wl,-rpath,${HYPRE_PATH}/lib 
+LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE
 
 LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
 LIB_AMREX2D = ${LIB_AMREX}
 LIB_STDCXX =
-#LIB_STDCXX = -L/usr/lib -lc++
+LIB_STDCXX = -L/usr/lib/gcc/x86_64-linux-gnu/5.4.0 -lstdc++
+LIB_STDCXX = -L/usr/include/c++/5 -lstdc++
+LIB_STDCXX = -L/home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/gcc-6.4.0-vh4t4mqp6q3xnzt3zht2dvhw7ikzbzfu/include/c++/6.4.0 -lstdc++
 
-LIB_BLAS = -L${BLAS_PATH}/lib -lopenblas -Wl,-rpath,${BLAS_PATH}/lib 
-
-LIB_SUPERLU      = -L${SUPERLU_PATH}/lib -lsuperlu
-
-#Specify TEC_PLOT=YES in order to link the tec plot library.
-TEC_PLOT=YES
-ifeq ($(TEC_PLOT), YES)
-#CONFIG_LIB = -I${setup_dir}/../source/Simulation/SimulationMain/INavierStokes -L${setup_dir}/../source/Simulation/SimulationMain/INavierStokes -ltecio -lstdc++ 
-CONFIG_LIB = -I${setup_dir}/../source/Simulation/SimulationMain/INavierStokes/tecio/tecsrc ../source/Simulation/SimulationMain/INavierStokes/tecio64.a -lstdc++ $(HDF5_PATH)/lib/libhdf5_fortran.a
-endif
-
-LIB_KPD = ./umf4_f77wrapper.o ./libamd.a ./libumfpack.a -lblas
 
 # Uncomment the following line to use electic fence memory debugger.
 # Need the following environmental variable (see env.sh):
@@ -180,12 +161,7 @@ ECHO = echo
 #----------------------------------------------------------------------------
 # Fake existence of iso_c_bindings module to prevent unnecessary recompilations.
 #---------------------------------------------------------------------------- 
-ifeq ($(FLASHBINARY),true)
-iso_c_binding.mod :
-	touch $@
-##endif
-#gcc version 4.9.1 results in MPI communication errors
-#unless we compile with -O0
-mpi_amr_1blk_guardcell.o : %.o : %.F90
-	$(FCOMP) $(FFLAGS) -O0 $(F90FLAGS) $(FDEFINES)  $<
-endif
+#ifeq ($(FLASHBINARY),true)
+#iso_c_binding.mod :
+#	touch $@
+#endif
