@@ -40,8 +40,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    real(wp),               contiguous, pointer :: solnData(:,:,:,:)
    character(kind=c_char), contiguous, pointer :: tagData(:,:,:,:)
 
-   real, allocatable :: errors(:)
-   real              :: refineCut, derefineCut, refineFilter
+   real :: error
+   real :: refineCut, derefineCut, refineFilter
 
    integer :: off(1:MDIM)
 
@@ -74,8 +74,6 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       RETURN
    end if
 
-   allocate(errors(gr_numRefineVars))
-
    !DEVNOTE:  Can test with tiling later - KW
    ! unk used the same 0-based level indexing used here by AMReX
    call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
@@ -94,13 +92,6 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       blockDesc%limitsGC(HIGH, :) = 1
       blockDesc%limitsGC(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
       blockDesc%limitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
-
-      errors(:) = 0.0d0
-      do l = 1, gr_numRefineVars
-         iref = gr_refine_var(l)
-         refineFilter = gr_refine_filter(l)
-         call gr_estimateBlkError(errors(l), blockDesc, iref, refineFilter)
-      end do
 
       call Grid_getBlkPtr(blockDesc, solnData, CENTER)
 
@@ -123,13 +114,18 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
         tagData(:, :, :, :) = clearval
  rloop: do l = 1, gr_numRefineVars
-            if (gr_refine_var(l) < 1)   CYCLE
+            iref = gr_refine_var(l)
+            if (iref < 1)   CYCLE
+    
+            error = 0.0d0
+            refineFilter = gr_refine_filter(l)
+            call gr_estimateBlkError(error, blockDesc, iref, refineFilter)
 
             ! Refinement is based on Berger-Rigoutsis algorithm, for which each
             ! cell is marked as having sufficient or insufficient resolution.
             ! There is no means to indicate derefine/stay/refine as with
             ! Paramesh.
-            if (errors(l) > gr_refine_cutoff(l)) then
+            if (error > gr_refine_cutoff(l)) then
                 ! According to Weiquin, when AMReX is setup in octree mode,
                 ! tagging a single cell in a block is sufficient for indicating
                 ! a need to refine.   Tag a cell near to center.
@@ -164,8 +160,6 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       call Grid_releaseBlkPtr(blockDesc, solnData)
    end do
    call amrex_mfiter_destroy(mfi)
-
-   deallocate(errors)
 
 #ifdef DEBUG_GRID
    write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
