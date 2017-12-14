@@ -144,10 +144,15 @@ subroutine gr_amrexInit()
   ! DEV: TODO: Set this appropriately based on N[XYZ]B
   call pp_amr%add   ("max_grid_size", MIN(NXB, NYB)) 
   call pp_amr%add   ("blocking_factor", 2*MIN(NXB, NYB))
-!  call pp_amr%add   ("n_proper", )
 !  call pp_amr%add   ("grid_eff", ._wp)
-!  call pp_amr%add   ("n_error_buf", )
   call pp_amr%add   ("refine_grid_layout", 0)
+ 
+  ! According to Weiqun n_proper=1 is an appropriate setting that will result in
+  ! correct nesting.
+  call pp_amr%add   ("n_proper", 1)
+  ! We account for data in the guardcells when determining error metric for
+  ! entire block.  Therefore, we do not need to tag guardcells.
+  call pp_amr%add   ("n_error_buf", 0)
 
   ! desctructors not valid for all compilers
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)

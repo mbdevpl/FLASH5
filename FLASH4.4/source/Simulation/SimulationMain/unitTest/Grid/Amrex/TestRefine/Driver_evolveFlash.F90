@@ -187,62 +187,16 @@ subroutine Driver_evolveFlash()
     call assertFalse(allocated(leaves(4)%blocks), "No blocks for level 4")
     deallocate(leaves_ex(1)%blocks)
 
-    !!!!! STEP 3/4 - CONFIRM REFINEMENT GLOBALLY TO LEVEL 2
-    ! Corner cell with periodic BC
-    points(:, :) = 0.0d0
-    values(:) = 0.0d0
-    points(1, :) = [0.99d0, 0.01d0]
-    values(1) = REFINE_TO_L2
-    call sim_advance(3, points, values, &
-                     "SETTING CORNER CELL ONLY FOR LEVEL 2", &
-                     "LEAVES AFTER DATA AT CORNER CELL")
-    call gr_writeData(4, 4.0d0)
-
-    call gr_getFinestLevel(finest_level)
-    call assertEqual(2, finest_level, "Incorrect finest level")
-
-    allocate(leaves_ex(2)%blocks(16, 4))
-    ! Column 1 / Level 2
-    leaves_ex(2)%blocks(1,  :) = [ 1,  1,  8,  8]
-    leaves_ex(2)%blocks(2,  :) = [ 1,  9,  8, 16]
-    leaves_ex(2)%blocks(3,  :) = [ 1, 17,  8, 24]
-    leaves_ex(2)%blocks(4,  :) = [ 1, 25,  8, 32]
- 
-    ! Column 2 / Level 2
-    leaves_ex(2)%blocks(5,  :) = [ 9,  1, 16,  8]
-    leaves_ex(2)%blocks(6,  :) = [ 9,  9, 16, 16]
-    leaves_ex(2)%blocks(7,  :) = [ 9, 17, 16, 24]
-    leaves_ex(2)%blocks(8,  :) = [ 9, 25, 16, 32]
-   
-    ! Column 3 / Level 2
-    leaves_ex(2)%blocks(9,  :) = [17,  1, 24,  8]
-    leaves_ex(2)%blocks(10, :) = [17,  9, 24, 16]
-    leaves_ex(2)%blocks(11, :) = [17, 17, 24, 24]
-    leaves_ex(2)%blocks(12, :) = [17, 25, 24, 32]
-   
-    ! Column 4 / Level 2
-    leaves_ex(2)%blocks(13, :) = [25,  1, 32,  8]
-    leaves_ex(2)%blocks(14, :) = [25,  9, 32, 16]
-    leaves_ex(2)%blocks(15, :) = [25, 17, 32, 24]
-    leaves_ex(2)%blocks(16, :) = [25, 25, 32, 32]
-   
-    call assertFalse(allocated(leaves(1)%blocks), "No blocks for level 1")
-    call assertSetEqual(leaves_ex(2)%blocks, leaves(2)%blocks, &
-                        "Incorrect leaf blocks on level 2")
-    call assertFalse(allocated(leaves(3)%blocks), "No blocks for level 3")
-    call assertFalse(allocated(leaves(4)%blocks), "No blocks for level 4")
-    deallocate(leaves_ex(2)%blocks)
-
-    !!!!! STEP 5/6 - CONFIRM LEVEL 2 ONLY ON LOWER-RIGHT
+    !!!!! STEP 3/4 - CONFIRM LEVEL 2 ONLY ON LOWER-RIGHT
     ! Single point not in corner cell
     points(:, :) = 0.0d0
     values(:) = 0.0d0
     points(1, :) = [0.9d0, 0.1d0]
     values(1) = REFINE_TO_L2 
-    call sim_advance(5, points, values, &
+    call sim_advance(3, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 2", &
                      "LEAVES AFTER LEVEL 2 DATA AT SINGLE CELL")
-    call gr_writeData(6, 6.0d0)
+    call gr_writeData(4, 6.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
@@ -269,14 +223,14 @@ subroutine Driver_evolveFlash()
     call assertFalse(allocated(leaves(4)%blocks), "No blocks for level 4")
     deallocate(leaves_ex(1)%blocks, leaves_ex(2)%blocks)
 
-    !!!!! STEP 7/8 - REFINE TO LEVEL 3 ON POINT
+    !!!!! STEP 5/6 - REFINE TO LEVEL 3 ON POINT
     ! Same point but maximize refinement.  However, refinement 
     ! can only increase one level with each advance.
     values(1) = REFINE_TO_L5
-    call sim_advance(7, points, values, &
+    call sim_advance(5, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 4", &
                      "LEAVES AFTER ONLY GETTING TO L3 AT SINGLE CELL")
-    call gr_writeData(8, 8.0d0)
+    call gr_writeData(6, 8.0d0)
  
     call gr_getFinestLevel(finest_level)
     call assertEqual(3, finest_level, "Incorrect finest level")
@@ -391,11 +345,11 @@ subroutine Driver_evolveFlash()
         call amrex_mfiter_destroy(mfi)
     end do
 
-   !!!!! STEP 9/10 - ADVANCE WITH NO CHANGE TO ACHIEVE LEVEL 4
-    call sim_advance(9, points, values, &
+   !!!!! STEP 7/8 - ADVANCE WITH NO CHANGE TO ACHIEVE LEVEL 4
+    call sim_advance(7, points, values, &
                      "NO DATA CHANGE - LET IT REFINE TO LEVEL 4", &
                      "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
-    call gr_writeData(10, 10.0d0)
+    call gr_writeData(8, 10.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
@@ -456,12 +410,12 @@ subroutine Driver_evolveFlash()
     call assertSetEqual(leaves_ex(4)%blocks, leaves(4)%blocks, &
                         "Incorrect leaf blocks on level 4")
 
-    !!!!! STEP 11/12 - ADVANCE WITH NO CHANGE AND CONFIRM NO CHANGE
+    !!!!! STEP 9/10 - ADVANCE WITH NO CHANGE AND CONFIRM NO CHANGE
     ! We should be limited to refinement up to level 4
-    call sim_advance(11, points, values, &
+    call sim_advance(9, points, values, &
                      "NO DATA CHANGE -  STUCK AT REFINEMENT LEVEL 4", &
                      "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
-    call gr_writeData(12, 12.0d0)
+    call gr_writeData(10, 12.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
@@ -475,25 +429,25 @@ subroutine Driver_evolveFlash()
                         "Incorrect leaf blocks on level 4")
     deallocate(leaves_ex(2)%blocks, leaves_ex(3)%blocks, leaves_ex(4)%blocks)
 
-    !!!!! STEP 13-16 - ADD ONE MORE LEVEL 4 POINT
+    !!!!! STEP 11-14 - ADD ONE MORE LEVEL 4 POINT
     points(:, :) = 0.0d0
     values(:) = 0.0d0
     points(1, :) = [0.9d0,  0.1d0]
     points(2, :) = [0.29d0, 0.58d0]
     values(1) = REFINE_TO_L4 
     values(2) = REFINE_TO_L4
-    call sim_advance(13, points, values, &
+    call sim_advance(11, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
                      "LEAVES AFTER SECOND LEVEL 4 DATA")
-    call gr_writeData(14, 14.0d0)
+    call gr_writeData(12, 14.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
-    call sim_advance(15, points, values, &
+    call sim_advance(13, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
                      "LEAVES AFTER SECOND LEVEL 4 DATA")
-    call gr_writeData(16, 16.0d0)
+    call gr_writeData(14, 16.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")

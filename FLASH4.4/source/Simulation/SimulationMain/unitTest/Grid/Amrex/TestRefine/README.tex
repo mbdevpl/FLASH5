@@ -78,20 +78,19 @@ achieved by AMReX for the block containing that point.
 \begin{enumerate}
 \item[(Init)]{One data point that refines down to level 3 and one to level 2.}
 \item[(Steps 1/2)]{Set all data to zero to invoke full derefinement to level 1.}
-\item[(Steps 3/4)]{One data point in corner cell to invoke refinement to level 2 in
-its block.  Since all periodic boundaries, global refinement to level 2.}
-\item[(Steps 5/6)]{One data point away from corner to invoke refiment to level 2 in
+\item[(Steps 3/4)]{One data point near corner to invoke refinement to level 2 in
 its block only.}
-\item[(Steps 7/8)]{Same point to invoke refiment to level 5.  Should only achieve
-level 3 refinement under point.  Should see level 2
-refinement to maintain 1-level difference at refinement boundaries.}
-\item[(Steps 9/10)]{No change to data.  Let refinement achieve level 4 under
-point.}
-\item[(Steps 11/12)]{No change to data.  Refinement should be unchanged since
+\item[(Steps 5/6)]{Same point to invoke refiment to level 5.  Should only achieve
+level 3 refinement under point.  Should see level 2 
+refinement elsewhere to maintain 1-level difference at refinement boundaries.}
+\item[(Steps 7/8)]{No change to data.  Let refinement achieve level 4 under
+point.  Due to periodic boundary conditions, refinement to level 3 on other
+three corners.}
+\item[(Steps 9/10)]{No change to data.  Refinement should be unchanged since
 the maximum refinement level is 4.}
-\item[(Steps 13/14)]{Add another point set to refine to level 4.  No refinement check
-here.  We just let this step to advance toward full refinement.}
-\item[(Steps 15/16)]{No change to data.  Final refinement/derefinement should be
+\item[(Steps 11/12)]{Add another point set to refine to level 4.  No refinement check
+here.  We just let this step advance toward full refinement.}
+\item[(Steps 13/14)]{No change to data.  Final refinement/derefinement should be
 achieved at this step.}
 \end{enumerate}
 
@@ -109,7 +108,7 @@ lower-/upper-right blocks should be level 1.  However, they are promoted to
 level 2 due to periodic BC.
 \begin{figure}[!hp]
 \begin{center}
-\includegraphics[width=4.25in]{TestRefine_Init_AMReX.pdf}
+\includegraphics[width=4.25in]{TestRefine_Init_Both.pdf}
 \caption{(Init) Refinement of mesh expected with both Paramesh and AMReX after loading
 initial conditions and doing initial refinement.  Note that level indexing is
 1-based in FLASH.}
@@ -121,64 +120,52 @@ initial conditions and doing initial refinement.  Note that level indexing is
 Expected leaf blocks after initial refinement for both Paramesh and AMReX
 \begin{figure}[!hp]
 \begin{center}
-\includegraphics[width=4.25in]{TestRefine_Step1_Both.pdf}\\
+\includegraphics[width=4.25in]{TestRefine_Step2_Both.pdf}\\
 \caption{(Step 1) Common refinement expected for Paramesh and achieved with AMReX after
 setting all data to zeros at step 1.}
 \end{center}
 \end{figure}
 
 \newpage
-\subsection{Steps 3/4}
-Expected leaf blocks after step 2 refinement with Paramesh.  AMReX results in
-the same refinement.
-\begin{figure}[!hp]
-\begin{center}
-\includegraphics[width=4.25in]{TestRefine_Step2_Both.pdf}\\
-\caption{(Step 2) Common refinement expected for Paramesh and achieved with AMReX after
-setting corner cell only for refinement to level 2 at step 2.}
-\end{center}
-\end{figure}
-
-\newpage
-\subsection{Step 5/6}
+\subsection{Step 3/4}
 Expected leaf blocks after step 2 refinement with Paramesh
 \begin{figure}[!hp]
 \begin{center}
-\includegraphics[width=4.25in]{TestRefine_Step6_Both.pdf}
+\includegraphics[width=4.25in]{TestRefine_Step4_Both.pdf}
 \caption{(Step 3) }
 \end{center}
 \end{figure}
 
 \newpage
-\subsection{Step 7/8}
+\subsection{Step 5/6}
 Leaf blocks achieved after step 8 refinement with AMReX
 \begin{figure}[!hp]
 \begin{center}
-\includegraphics[width=4.25in]{TestRefine_Step8_Both.pdf}
+\includegraphics[width=4.25in]{TestRefine_Step6_Both.pdf}
 \caption{(Step 4) }
 \end{center}
 \end{figure}
 
 \newpage
-\subsection{Steps 9-12}
+\subsection{Steps 7-10}
 Leaf blocks achieved after step 10 refinement with AMReX
 \begin{figure}[!hp]
 \begin{center}
-\includegraphics[width=4.25in]{TestRefine_Step10_Both.pdf}
+\includegraphics[width=4.25in]{TestRefine_Step8_Both.pdf}
 \caption{(Step 5) }
 \end{center}
 \end{figure}
 
 \newpage
-\subsection{Steps 13/14}
+\subsection{Steps 11/12}
 Ignore these steps.  They are necessary only to allow the refinement to advance
 the new data point to level 3 here.
 
-\subsection{Steps 15/16}
-Leaf blocks achieved after step 15 refinement with AMReX
+\subsection{Steps 13/14}
+Leaf blocks achieved after step 13 refinement with AMReX
 \begin{figure}[!hp]
 \begin{center}
-\includegraphics[width=4.25in]{TestRefine_Step16_Both.pdf}
+\includegraphics[width=4.25in]{TestRefine_Step14_Both.pdf}
 \caption{(Step 6) }
 \end{center}
 \end{figure}

@@ -8,6 +8,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                       amrex_mfiter_destroy, &
                                       amrex_multifab_build
  
+   use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
    use block_metadata,         ONLY : block_metadata_t
    use gr_physicalMultifabs,   ONLY : unk
 
@@ -58,22 +59,14 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
       blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
 
+      call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
       associate (lo => blockDesc%limits(LOW,  :), &
-                 hi => blockDesc%limits(HIGH, :), &
-                 loGC => blockDesc%limitsGC(LOW,  :), &
-                 hiGC => blockDesc%limitsGC(HIGH, :))
-        ! Makes this 1-based cell indexing
-        solnData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev)%dataptr(mfi)
-
-        ! tagData is one cell larger on all borders than interior and 0-based
-        ! Shift to 1-based here
-        off = lo
-        off(1:NDIM) = lo(1:NDIM) - 1
-        tagData(off(1):, off(2):, off(3):, 1:) => tag%dataptr(mfi)
-
+                 hi => blockDesc%limits(HIGH, :))
+        tagData => tag%dataptr(mfi)
         tagData(:, :, :, :) = clearval
-        do     j = lo(2), hi(2)
-            do i = lo(1), hi(1)
+        do     j = lo(JAXIS), hi(JAXIS)
+            do i = lo(IAXIS), hi(IAXIS)
                 ! Using 0-based AMReX level indexing
                 !
                 ! Stored data is density.  We need to reverse transformation
@@ -90,11 +83,14 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 if (refine_to > (lev+1)) then
                     write(*,'(A,I3,A,I3,A,F7.5)') "     Tag cell at (", &
                           i, ",", j, ") for refinement"
-                    tagData(i, j, 1, 1) = tagval
+                    ! AMReX uses 0-based spatial indices/FLASH uses 1-based
+                    tagData(i-1, j-1, 1, 1) = tagval
                 end if
             end do
         end do
       end associate
+
+      call Grid_releaseBlkPtr(blockDesc, solnData)
    end do
    call amrex_mfiter_destroy(mfi)
 

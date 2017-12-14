@@ -104,36 +104,38 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
       call Grid_getBlkPtr(blockDesc, solnData, CENTER)
 
-      associate (lo   => blockDesc%limits(LOW,  :), &
-                 hi   => blockDesc%limits(HIGH, :), &
-                 loGC => blockDesc%limitsGC(LOW,  :), &
-                 hiGC => blockDesc%limitsGC(HIGH, :))
-
-        ! tagData is one cell larger on all borders than interior and 0-based
-        ! Shift to 1-based here
-        off = lo
-        off(1:NDIM) = lo(1:NDIM) - 1
-        tagData(off(1):, off(2):, off(3):, 1:) => tag%dataptr(mfi)
+      ! The width of the halo of gaurdcells included in the tagbox array may
+      ! differ.  According to Weiqun, this is necessary for ensuring proper
+      ! nesting.
+      tagData => tag%dataptr(mfi)
+      
+      associate (lo     => blockDesc%limits(LOW,  :), &
+                 hi     => blockDesc%limits(HIGH, :), &
+                 lo_tag => lbound(tagData), &
+                 hi_tag => ubound(tagData))
 
 #ifdef DEBUG_TAGDATA
         print*,'markRD_cb: lbound(solnData):', lbound(solnData)
         print*,'markRD_cb: ubound(solnData):', ubound(solnData)
-        print*,'markRD_cb: lbound(tagData):', lbound(tagData)
-        print*,'markRD_cb: ubound(tagData):', ubound(tagData)
-        print*,'markRD_cb: tagData in  =', tagData
+        print*,'markRD_cb: lbound(tagData):', (lo_tag + 1)
+        print*,'markRD_cb: ubound(tagData):', (hi_tag + 1)
 #endif
 
         tagData(:, :, :, :) = clearval
  rloop: do l = 1, gr_numRefineVars
             if (gr_refine_var(l) < 1)   CYCLE
 
-            ! DEV: Not clear if we can tag cells to inform AMReX that
-            ! we request derefinement.  TODO Figure out.
+            ! Refinement is based on Berger-Rigoutsis algorithm, for which each
+            ! cell is marked as having sufficient or insufficient resolution.
+            ! There is no means to indicate derefine/stay/refine as with
+            ! Paramesh.
             if (errors(l) > gr_refine_cutoff(l)) then
-                ! Tag single cell in block that is not on boundary
-                i = INT(0.5d0 * DBLE(lo(IAXIS) + hi(IAXIS)))
-                j = INT(0.5d0 * DBLE(lo(JAXIS) + hi(JAXIS)))
-                k = INT(0.5d0 * DBLE(lo(KAXIS) + hi(KAXIS)))
+                ! According to Weiquin, when AMReX is setup in octree mode,
+                ! tagging a single cell in a block is sufficient for indicating
+                ! a need to refine.   Tag a cell near to center.
+                i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
+                j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
+                k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
 
                 ! NOTE: last dimension has range 1:1
                 tagData(i, j, k, 1) = tagval
