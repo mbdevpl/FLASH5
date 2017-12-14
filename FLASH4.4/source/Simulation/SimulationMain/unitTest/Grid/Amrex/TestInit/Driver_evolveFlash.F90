@@ -399,8 +399,8 @@ subroutine Driver_evolveFlash()
         call itor%blkMetaData(block)
         call Grid_getBlkPtr(block, solnData)
 
-        associate(lo => block%limitsGC(LOW, :), &
-                  hi => block%limitsGC(HIGH, :))
+        associate(lo => block%limits(LOW, :), &
+                  hi => block%limits(HIGH, :))
             do         k = lo(KAXIS), hi(KAXIS)
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)
