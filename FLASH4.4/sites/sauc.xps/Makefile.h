@@ -4,12 +4,12 @@
 #----------------------------------------------------------------------------
 SPACK_GCC=/home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-6.4.0
 
-HDF5_PATH = ${SPACK_GCC}/hdf5-1.8.19-5lqpmk33ppfciguocaeidfhswdpazaj7
+HDF5_PATH = ${SPACK_GCC}/hdf5-1.8.19-o37nepbsolbgwzs2qrqdfglr3tmhai2c
 #HDF5_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/hdf5-1.8.19-tgq3sf66sw3agicwotbrgpvgtrfgdoie
 #AMREX_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/amrex-master-6jw7hbzurjx3w7zq7yxdiulpn5w4czer
-AMREX_PATH = ${SPACK_GCC}/amrex-master-xavsjpdiznbgzuessdvwbb2yk4yorzdx
-#AMREX_PATH = /home/sauc/Softwares/amrex-master/build5
-HYPRE_PATH = ${SPACK_GCC}/hypre-2.12.1-tflkxlnnce5zpcuiip5zqnp7oojpbmg7
+#AMREX_PATH = ${SPACK_GCC}/amrex-master-xavsjpdiznbgzuessdvwbb2yk4yorzdx
+AMREX_PATH = /home/sauc/Softwares/amrex-master/build
+HYPRE_PATH = ${SPACK_GCC}/hypre-2.10.0b-q7c6jt2acstfmxviujmeh57gxgxltvzs
 #HYPRE_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/hypre-2.10.0b-7pe44q2taksk77wdoksdmbenoxtd3fyl
 ZLIB_PATH  =
 
@@ -18,7 +18,7 @@ PAPI_FLAGS =
 
 LIB_NCMPI = /usr/local
 MPE_PATH   =
-MPI_PATH = ${SPACK_GCC}/openmpi-3.0.0-wh55zsfvylrgvsmpnl6n3yfiuukpel2r/bin
+MPI_PATH = ${SPACK_GCC}/mpich-3.2-lzsswghgolhsenaxyajs7zfoyr6ddj5t/bin
 #MPI_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/openmpi-2.1.1-w6t2medqmrz2y2w6dyptgdbhkimvx2qx/bin
 
 #----------------------------------------------------------------------------
@@ -128,10 +128,9 @@ LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE
 LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
 LIB_AMREX2D = ${LIB_AMREX}
 LIB_STDCXX =
-LIB_STDCXX = -L/usr/lib/gcc/x86_64-linux-gnu/5.4.0 -lstdc++
+#LIB_STDCXX = -L/usr/lib/gcc/x86_64-linux-gnu/5.4.0 -lstdc++
 LIB_STDCXX = -L/usr/include/c++/5 -lstdc++
-LIB_STDCXX = -L/home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/gcc-6.4.0-vh4t4mqp6q3xnzt3zht2dvhw7ikzbzfu/include/c++/6.4.0 -lstdc++
-
+#LIB_STDCXX = -L/home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/gcc-6.4.0-vh4t4mqp6q3xnzt3zht2dvhw7ikzbzfu/include/c++/6.4.0 -lstdc++ -Wl,-rpath,/home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/gcc-6.4.0-vh4t4mqp6q3xnzt3zht2dvhw7ikzbzfu/include/c++/6.4.0
 
 # Uncomment the following line to use electic fence memory debugger.
 # Need the following environmental variable (see env.sh):
