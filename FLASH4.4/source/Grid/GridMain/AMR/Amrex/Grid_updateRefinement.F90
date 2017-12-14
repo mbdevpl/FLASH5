@@ -64,7 +64,23 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      write(*,'(A,I4,A,E9.3)') "[Grid_updateRefinement] AMReX Regridding @ step=", & 
                               nstep, " / time = ", time
 #endif
-     
+ 
+     ! DEV: TODO Allow for updates to gr_maxRefine here?
+     ! Does this work for initialization and all callbacks?
+!     if(gr_lrefineMaxRedDoByTime) then
+!        call gr_markDerefineByTime()
+!     end if
+!     
+!     if(gr_lrefineMaxByTime) then
+!        call gr_setMaxRefineByTime()
+!     end if
+!
+!    if(gr_lrefineMaxRedDoByLogR) then
+!       call gr_unmarkRefineByLogRadius(gr_lrefineCenterI, &
+!                                       gr_lrefineCenterJ, &
+!                                       gr_lrefineCenterK)
+!    end if
+
      call Timers_start("Grid_updateRefinement")
 
      ! AMReX uses 0-based level index set
