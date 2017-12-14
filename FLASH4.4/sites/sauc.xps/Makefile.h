@@ -86,6 +86,9 @@ CDEFINES += -DDarwin
 CFLAGS_HDF5 = -I${HDF5_PATH}/include -DH5_USE_16_API
 CFLAGS_NCMPI = -I$(LIB_NCMPI)/include
 
+CFLAGS_SUPERLU = -I${SUPERLU_PATH}/include
+FFLAGS_SUPERLU = -I${SUPERLU_PATH}/include
+
 #----------------------------------------------------------------------------
 # Linker flags
 #
@@ -109,12 +112,16 @@ LFLAGS_TEST  = -o
 #  depending on how FLASH was setup.
 #----------------------------------------------------------------------------
 
-LIB_OPT   =
-LIB_DEBUG =
+# option -lmpicxx is added so that the fortran compiler (mpif90) during linking will 'know' the cxx libraries. Otherwise it will give error if cxx files are included there for specific compilers when openMPI wrapper compilers mpifort and mpic++ link to different MPI libraries. You can check this with the -showme:libs. 
+# https://stackoverflow.com/questions/35164095/calling-c-from-fortran-with-openmpi
+LIB_OPT   = -lmpi_cxx
+LIB_DEBUG = -lmpi_cxx
 LIB_TEST  =
 
 #LIB_HDF5  = -L/usr/local/lib -lhdf5 /usr/lib64/libz.a
-LIB_HDF5  = -L${HDF5_PATH}/lib -lhdf5 -Wl,-rpath,$(HDF5_PATH)/lib
+#LIB_HDF5  = -Wl,-rpath -L${HDF5_PATH}/lib -lhdf5
+#LIB_HDF5  = -L${HDF5_PATH}/lib -lhdf5
+LIB_HDF5  = -L$(HDF5_PATH)/lib -lhdf5 -Wl,-rpath,$(HDF5_PATH)/lib
 
 LIB_PAPI  =
 LIB_MATH  =
@@ -123,7 +130,7 @@ LIB_MPI   =
 #LIB_NCMPI = -L $(NCMPI_PATH)/lib -lpnetcdf
 LIB_MPE   =
 
-LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE
+LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE -Wl,-rpath,${HYPRE_PATH}/lib 
 
 LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
 LIB_AMREX2D = ${LIB_AMREX}
