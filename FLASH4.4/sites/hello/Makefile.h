@@ -2,20 +2,16 @@
 #----------------------------------------------------------------------------
 # Set the HDF5/MPI library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
-SPACK_GCC=${SPACK_ROOT}/opt/spack/darwin-sierra-x86_64/gcc-6.4.0
-
-HDF5_PATH = ${SPACK_GCC}/hdf5-1.8.19-ssqe5xh5xgs5oxvng4wtmm243mxseclz
+HDF5_PATH = ${SPACK_GCC}/hdf5-1.8.19-w4zx76td5ykzpoifzfdx2x43xt62fa2u
 AMREX_PATH = ${HOME}/Projects/lib_install
 
-HYPRE_PATH = ${SPACK_GCC}/hypre-2.11.2-w5g2jgzmgkizzdgghcgc4esqxpedkcxv
+HYPRE_PATH = ${SPACK_GCC}/hypre-2.12.1-t5c6do67rsieweqyid6vuis7gv7w62h3
 ZLIB_PATH  =
 
 PAPI_PATH  =
 PAPI_FLAGS =
 
 LIB_NCMPI = /usr/local
-MPE_PATH   =
-MPI_PATH = ${SPACK_GCC}/mpich-3.2-4oaofbxy3yq76r6zuvws4jnca3qzfb62/bin
 
 #----------------------------------------------------------------------------
 # Compiler and linker commands
@@ -26,10 +22,10 @@ MPI_PATH = ${SPACK_GCC}/mpich-3.2-4oaofbxy3yq76r6zuvws4jnca3qzfb62/bin
 #   You need to edit mpif90 and add .F90 to the test of filename extensions,
 #   or upgrade your MPICH.
 #----------------------------------------------------------------------------
-FCOMP   = $(MPI_PATH)/mpif90
-CCOMP   = $(MPI_PATH)/mpicc
-CPPCOMP = $(MPI_PATH)/mpiCC
-LINK    = $(MPI_PATH)/mpif90 -std=c++11
+FCOMP   = mpif90
+CCOMP   = mpicc
+CPPCOMP = mpiCC
+LINK    = mpif90 -std=c++11
 
 # pre-processor flag
 PP      = -D
@@ -123,7 +119,7 @@ LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE
 
 LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
 LIB_AMREX2D = ${LIB_AMREX}
-LIB_STDCXX = -L${SPACK_CLANG}/gcc-6.4.0-kxmur5jjl6fcfiy6zw5vm2rhttugi364/lib -lstdc++
+LIB_STDCXX = -L${SPACK_CLANG}/gcc-7.1.0-iob425i3dwdibytea2aygtbwswae35mw/lib -lstdc++
 
 
 # Uncomment the following line to use electic fence memory debugger.
