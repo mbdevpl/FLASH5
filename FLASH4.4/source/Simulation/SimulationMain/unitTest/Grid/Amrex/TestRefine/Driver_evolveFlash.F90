@@ -196,7 +196,7 @@ subroutine Driver_evolveFlash()
     call sim_advance(3, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 2", &
                      "LEAVES AFTER LEVEL 2 DATA AT SINGLE CELL")
-    call gr_writeData(4, 6.0d0)
+    call gr_writeData(4, 4.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
@@ -230,7 +230,7 @@ subroutine Driver_evolveFlash()
     call sim_advance(5, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 4", &
                      "LEAVES AFTER ONLY GETTING TO L3 AT SINGLE CELL")
-    call gr_writeData(6, 8.0d0)
+    call gr_writeData(6, 6.0d0)
  
     call gr_getFinestLevel(finest_level)
     call assertEqual(3, finest_level, "Incorrect finest level")
@@ -349,7 +349,7 @@ subroutine Driver_evolveFlash()
     call sim_advance(7, points, values, &
                      "NO DATA CHANGE - LET IT REFINE TO LEVEL 4", &
                      "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
-    call gr_writeData(8, 10.0d0)
+    call gr_writeData(8, 8.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
@@ -415,7 +415,7 @@ subroutine Driver_evolveFlash()
     call sim_advance(9, points, values, &
                      "NO DATA CHANGE -  STUCK AT REFINEMENT LEVEL 4", &
                      "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
-    call gr_writeData(10, 12.0d0)
+    call gr_writeData(10, 10.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
@@ -439,7 +439,7 @@ subroutine Driver_evolveFlash()
     call sim_advance(11, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
                      "LEAVES AFTER SECOND LEVEL 4 DATA")
-    call gr_writeData(12, 14.0d0)
+    call gr_writeData(12, 12.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
@@ -447,7 +447,7 @@ subroutine Driver_evolveFlash()
     call sim_advance(13, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
                      "LEAVES AFTER SECOND LEVEL 4 DATA")
-    call gr_writeData(14, 16.0d0)
+    call gr_writeData(14, 14.0d0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
@@ -528,6 +528,57 @@ subroutine Driver_evolveFlash()
     call assertSetEqual(leaves_ex(4)%blocks, leaves(4)%blocks, &
                         "Incorrect leaf blocks on level 4")
     deallocate(leaves_ex(2)%blocks, leaves_ex(3)%blocks, leaves_ex(4)%blocks)
+    
+    !!!!! STEP 15-16 - DEREFINE TO 2x2 BLOCK STRUCTURE
+    points(:, :) = 0.0d0
+    values(:) = 0.0d0
+    call sim_advance(15, points, values, &
+                     "SETTING ALL DATA TO ZERO AT ALL LEVELS", &
+                     "LEAVES AFTER ZEROING ALL DATA & REGRID")
+    call gr_writeData(16, 16.0d0)
+    
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(1, finest_level, "Incorrect finest level")
+
+    !!!!! STEP 17-18 - MARK CELLS ON EITHER SIDE OF BOUNDARY TO CONFIRM
+    !!!!!              THAT BOTH BLOCKS REFINE
+    !                  (as opposed to single translated block/patch)
+    points(1, :) = [0.49d0,  0.1d0]
+    points(2, :) = [0.51d0,  0.1d0]
+    values(1) = REFINE_TO_L2
+    values(2) = REFINE_TO_L2
+    call sim_advance(17, points, values, &
+                     "CONFIRM OCTREE BEHAVIOR INSTEAD OF SINGLE " // &
+                     "EFFICIENT PATCH", &
+                     "CORRECT OCTREE-COMPATIBLE LEAVES")
+    call gr_writeData(18, 18.0d0)
+    
+    call gr_getFinestLevel(finest_level)
+    call assertEqual(2, finest_level, "Incorrect finest level")
+  
+    allocate(leaves_ex(1)%blocks( 2, 4), &
+             leaves_ex(2)%blocks( 8, 4))
+    ! Column 1 / Level 2
+    leaves_ex(2)%blocks( 1, :) = [ 1,  1,     8,  8]
+    leaves_ex(2)%blocks( 2, :) = [ 1,  9,     8, 16]
+    leaves_ex(2)%blocks( 3, :) = [ 9,  1,    16,  8]
+    leaves_ex(2)%blocks( 4, :) = [ 9,  9,    16, 16]
+
+    leaves_ex(1)%blocks( 1, :) = [ 1,  9,     8, 16]
+    
+    ! Column 1 / Level 2
+    leaves_ex(2)%blocks( 5, :) = [17,  1,    24,  8]
+    leaves_ex(2)%blocks( 6, :) = [17,  9,    24, 16]
+    leaves_ex(2)%blocks( 7, :) = [25,  1,    32,  8]
+    leaves_ex(2)%blocks( 8, :) = [25,  9,    32, 16]
+
+    leaves_ex(1)%blocks( 2, :) = [ 9,  9,    16, 16]
+    
+    call assertSetEqual(leaves_ex(1)%blocks, leaves(1)%blocks, &
+                        "Incorrect leaf blocks on level 1")
+    call assertSetEqual(leaves_ex(2)%blocks, leaves(2)%blocks, &
+                        "Incorrect leaf blocks on level 2")
+    deallocate(leaves_ex(1)%blocks, leaves_ex(2)%blocks)
 
     call finish_test_run
 
