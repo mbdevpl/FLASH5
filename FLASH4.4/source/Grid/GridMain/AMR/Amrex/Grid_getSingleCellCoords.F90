@@ -99,11 +99,11 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
      if((ind(KAXIS)<GRID_KLO_GC).or.(ind(KAXIS)>GRID_KHI_GC))&
           call Driver_abortFlash('GetSingleCellCoords : K index out of blkLimits')
   else if(beginCount == INTERIOR) then
-     if((ind(IAXIS)<GRID_ILO).or.(ind(IAXIS)>GRID_IHI))&
+     if((ind(IAXIS)<1).or.(ind(IAXIS)>NXB))&
           call Driver_abortFlash('GetSingleCellCoords : I index out of blkLimits')
-     if((ind(JAXIS)<GRID_JLO).or.(ind(JAXIS)>GRID_JHI))&
+     if((ind(JAXIS)<1).or.(ind(JAXIS)>NYB))&
           call Driver_abortFlash('GetSingleCellCoords : J index out of blkLimits')
-     if((ind(KAXIS)<GRID_KLO).or.(ind(KAXIS)>GRID_KHI))&
+     if((ind(KAXIS)<1).or.(ind(KAXIS)>NZB))&
           call Driver_abortFlash('GetSingleCellCoords : K index out of blkLimits')
   else
      call Driver_abortFlash("Grid_getSingleCellCoords, incorrect value for beginCount")
@@ -122,7 +122,6 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
       shift = 1.0d0
     end if
 
-    ! DEV: Should we use gr_[ijk]guard instead of NGUARD?
     ! Translate indices to 1-based global indices adjusted according to edge
     ind_t = (ind + x_blk_lo - 1) + shift
     if (beginCount == EXTERIOR) then

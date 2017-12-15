@@ -15,16 +15,18 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_distromap_module,    ONLY : amrex_distromap
     use amrex_multifab_module,     ONLY : amrex_multifab, &
                                           amrex_multifab_build, &
-                                          amrex_multifab_destroy
-    use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
+                                          amrex_multifab_destroy, &
+                                          amrex_mfiter, &
+                                          amrex_mfiter_build, &
+                                          amrex_mfiter_destroy
     use amrex_fillpatch_module,    ONLY : amrex_fillpatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
+    use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz
-    use Grid_data,                 ONLY : gr_iguard
 
     implicit none
 
@@ -37,65 +39,55 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     type(amrex_distromap) :: dm
     type(amrex_box)       :: bx
     type(amrex_multifab)  :: mfab
+    type(amrex_mfiter)    :: mfi
 
-    integer :: lo_bc(NDIM, 1)
-    integer :: hi_bc(NDIM, 1)
+    integer :: nFab
 
     ba = pba
     dm = pdm
 
-#ifdef DEBUG_GRID
-    write(*,'(A,A,I2)') "[gr_remakeLevelCallback]", &
-                      "             Start Level ", lev + 1
-#endif
-
     !!!!! SAVE DATA IN BUFFER WITH GIVEN BOXARRAY/DISTRIBUTION
     ! Get all unk interior data
-    call amrex_multifab_build(mfab, ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(mfab, ba, dm, NUNK_VARS, NGUARD)
     ! DEVNOTE: TODO Include facevars in this process
 
     if (lev == 0) then
        ! Move all unk data to given ba/dm layout.  Do *not* use sub-cycling.
-       ! DEVNOTE: TODO Since we are not using subcycling, should we just use
-       !               amrex_fi_fillpatch_single directly?
+       ! -1 because of Fortran variable index starts with 1
        call amrex_fillpatch(mfab, time+1.0d0, unk(lev), &
                                   time,       unk(lev), &
-                            amrex_geom(lev), gr_fillPhysicalBC, &
-                            time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)
+                                  amrex_geom(lev), gr_fillPhysicalBC, &
+                                  time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)       
     else
-       ! DEVNOTE: FIXME Currently fixing BC to periodic here
-       ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved
-       !                linear (AMReX_Interpolater.H)
-       ! DEVNOTE: TODO Since we are not using subcycling, should we just use
-       !               amrex_fi_fillpatch_two directly?
-       lo_bc(:, :) = amrex_bc_int_dir
-       hi_bc(:, :) = amrex_bc_int_dir
-
-       ! Move all unk data to given ba/dm layout based on data in unk data 
-       ! in given level and next coarsest level.  Do *not* use sub-cycling.
        call amrex_fillpatch(mfab, time+1.0d0, unk(lev-1), &
                                   time,       unk(lev-1), &
-                            amrex_geom(lev-1), gr_fillPhysicalBC, &
+                                  amrex_geom(lev-1), gr_fillPhysicalBC, &
                                   time+1.0e0, unk(lev  ), &
                                   time,       unk(lev  ), &
-                            amrex_geom(lev  ), gr_fillPhysicalBC, &
-                            time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                            amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                            lo_bc, hi_bc)
+                                  amrex_geom(lev  ), gr_fillPhysicalBC, &
+                                  time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
+                                  amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                  lo_bc_amrex, hi_bc_amrex)       
     end if
 
     !!!!! REBUILD MFAB AT LEVEL AND FILL FROM BUFFER
     call gr_clearLevelCallback(lev)
-    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
 
     ! Only copy interior
     call unk(lev)%copy(mfab, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                       gr_iguard)
+                       NGUARD)
 
     call amrex_multifab_destroy(mfab)
 
-    write(*,'(A,A,I2)') "[gr_remakeLevelCallback]", &
-                      "             Remake level ", lev + 1
+    nFab = 0
+    call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)
+    do while(mfi%next())
+        nFab = nFab + 1 
+    end do
+    call amrex_mfiter_destroy(mfi)
+
+    write(*,'(A,I0,A,I0,A)') "Remade level ", (lev+1), " - ", nFab, " blocks"
 
 end subroutine gr_remakeLevelCallback
 

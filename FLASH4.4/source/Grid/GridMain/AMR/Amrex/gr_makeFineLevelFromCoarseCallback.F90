@@ -12,14 +12,16 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           amrex_geom
     use amrex_boxarray_module,     ONLY : amrex_boxarray
     use amrex_distromap_module,    ONLY : amrex_distromap
+    use amrex_multifab_module,     ONLY : amrex_multifab_build, &
+                                          amrex_mfiter, &
+                                          amrex_mfiter_build, &
+                                          amrex_mfiter_destroy
     use amrex_fillpatch_module,    ONLY : amrex_fillcoarsepatch
-    use amrex_multifab_module,     ONLY : amrex_multifab_build
-    use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
+    use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
-    use Grid_data,                 ONLY : gr_iguard
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz
 
@@ -32,46 +34,43 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
+    type(amrex_mfiter)    :: mfi
 
-    integer :: lo_bc(NDIM, 1)
-    integer :: hi_bc(NDIM, 1)
-
-#ifdef DEBUG_GRID
-    write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Start on level ", lev + 1
-#endif
+    integer :: nFab
 
     ba = pba
     dm = pdm
 
     !!!!!----- (Re)create FABS for storing physical data at this level
     call gr_clearLevelCallback(lev)
-    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
     ! DEVNOTE: TODO Create these wrt proper face-centered boxes
-    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, gr_iguard)
-    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, gr_iguard)
-    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, gr_iguard)
+    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
+    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
 
     !!!!!----- Fill new refinement level via interpolation from parent block
     ! This *hopefully* will do the guard cell fill as well
     ! NOTE: FLASH does not use sub-cycling (temporal interpolation)
     !
-    ! DEVNOTE: FIXME Currently fixing BC to periodic here
-    ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved
-    !                linear (AMReX_Interpolater.H)
-    ! DEVNOTE: TODO Since we are not using subcycling, should we just use
-    !               amrex_fi_fillcoarsepatch directly?
-    lo_bc(:, :) = amrex_bc_int_dir
-    hi_bc(:, :) = amrex_bc_int_dir
+    ! -1 because Fortran variable index starts with 1
     call amrex_fillcoarsepatch(unk(lev), time,     unk(lev-1),  &
                                          time+0.1, unk(lev-1),  &
-                               amrex_geom(lev-1), gr_fillPhysicalBC,  &
-                               amrex_geom(lev  ), gr_fillPhysicalBC,  &
-                               time, &
-                               UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                               amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                               lo_bc, hi_bc)
+                                         amrex_geom(lev-1), gr_fillPhysicalBC,  &
+                                         amrex_geom(lev  ), gr_fillPhysicalBC,  &
+                                         time, &
+                                         UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
+                                         amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                         lo_bc_amrex, hi_bc_amrex) 
 
-    write(*,'(A,I2)') "[gr_makeFineLevelFromCoarseCallback] Make fine level ", lev + 1
+    nFab = 0
+    call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)
+    do while(mfi%next())
+        nFab = nFab + 1 
+    end do
+    call amrex_mfiter_destroy(mfi)
+
+    write(*,'(A,I0,A,I0,A)') "Made fine level ", lev + 1, " - ", nFab, " blocks"
 
 end subroutine gr_makeFineLevelFromCoarseCallback
 

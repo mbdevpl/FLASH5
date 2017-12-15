@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_data
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_data
 !!
 !! NAME
 !!  Grid_data
@@ -9,17 +9,7 @@
 !!
 !! DESCRIPTION 
 !!  
-!!  This includes the global integer identifier for a block, the grid geometry information
-!!  
-!!  
-!! 
-!! CREATE AD:04/12/04
-!!
-!! 
-!!   Defining data structures for storing paramesh related infomation.  
-!!   including function for updating the grid information
-!!
-!! MODIFIED AD:05/19/04
+!!  Defining variables for storing AMReX-related data.
 !!   
 !!***
 
@@ -27,10 +17,10 @@
 #include "constants.h"
 
 Module Grid_data
+  use iso_c_binding, ONLY : c_ptr
 
   implicit none
 
-  !!!!! NEEDED BY Grid_bcApplyToRegion.F90
   integer, save :: gr_dirGeom(MDIM)
   real,    save :: gr_smalle, gr_smallrho
 
@@ -53,13 +43,24 @@ Module Grid_data
   integer, save :: gr_maxRefine
   integer, save :: gr_geometry
   integer, save :: gr_nrefs
-  logical, save :: gr_allPeriodic
   real,    save :: gr_minCellSize
   real,    save :: gr_minCellSizes(MDIM)
-  
-  integer, save :: gr_iguard
-  integer, save :: gr_jguard 
-  integer, save :: gr_kguard
+  logical, save :: gr_allPeriodic
+
+  ! Local copies that stores BC information for AMReX callbacks.
+  ! These variables should only be used by the AMReX callbacks.
+  integer, target, save :: lo_bc_amrex(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
+  integer, target, save :: hi_bc_amrex(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
+
+  ! These are historical.
+  ! Within the AMReX implementation, the number of guardcells
+  ! is set to NGUARD for all directions.  Code in the Amrex 
+  ! folder should use NGUARD instead of these.
+  integer, save :: gr_iguard = NGUARD
+  integer, save :: gr_jguard = NGUARD
+  integer, save :: gr_kguard = NGUARD
+
+  integer, save :: gr_minRefine
 
 !  integer,save,dimension(MDIM)::gr_bndOrder
 !  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars

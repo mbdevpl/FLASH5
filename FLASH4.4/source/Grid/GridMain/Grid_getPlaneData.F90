@@ -315,16 +315,6 @@ subroutine Grid_getPlaneData(blockDesc, gridDataStruct, structIndex, beginCount,
      print *, "Error: Grid_getPlaneData"
      call Driver_abortFlash("Grid_getPlaneData.  Can not get yzplane data for 2d problem")
   end if
-
-
-
-  !verify we have a valid blockid
-  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,"Error: Grid_getPlaneData : invalid blockid "
-     call Driver_abortFlash("Get_getPlaneData : invalid blockid ")
-  end if
- 
- 
   
   !verify beginCount is set to a valid value
   if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then

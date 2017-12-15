@@ -132,28 +132,32 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                selectBlockType, &
                                unitReadsMeshDataOnly)
   use, INTRINSIC :: iso_c_binding
+  use amrex_fort_module,         ONLY : wp => amrex_real
   use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
                                         amrex_geom, &
                                         amrex_ref_ratio
   use amrex_fillpatch_module,    ONLY : amrex_fillpatch
-  use amrex_bc_types_module,     ONLY : amrex_bc_int_dir
   use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
+  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data,                 ONLY : gr_justExchangedGC, &
-        gr_eosModeNow, gr_meshMe, gr_meshComm, &
-       gr_gcellsUpToDate
-  use Grid_data, ONLY                 : gr_enableMaskedGCFill
-  use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
-  use gr_physicalMultifabs,      ONLY : unk
-  use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
-                                        gr_averageDownLevels
+                                        gr_eosModeNow, &
+                                        gr_enableMaskedGCFill, &
+                                        gr_meshMe, gr_meshComm, &
+                                        gr_gcellsUpToDate, &
+                                        lo_bc_amrex, hi_bc_amrex
+  use Eos_interface,             ONLY : Eos_guardCells
   use Driver_interface,          ONLY : Driver_abortFlash
   use Timers_interface,          ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_setGcFillNLayers, gr_setMasks_gen, gr_makeMaskConsistent_gen
-  use Eos_interface, ONLY : Eos_guardCells
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
-  use block_metadata, ONLY : block_metadata_t
+  use Logfile_interface,         ONLY : Logfile_stampMessage, &
+                                        Logfile_stampVarMask
+  use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
+                                        gr_averageDownLevels
+  use gr_interface,              ONLY : gr_setGcFillNLayers, &
+                                        gr_setMasks_gen, gr_makeMaskConsistent_gen
+  use gr_physicalMultifabs,      ONLY : unk
+  use block_iterator,            ONLY : block_iterator_t, destroy_iterator
+  use block_metadata,            ONLY : block_metadata_t
 
 #include "Flash_mpi_implicitNone.fh"
 
@@ -186,15 +190,15 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   character(len=10) :: tagext
   integer :: scompCC, ncompCC, lcompCC
 
-  integer :: lo_bc(NDIM, 1)
-  integer :: hi_bc(NDIM, 1)
+  type(c_ptr) :: lo_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
+  type(c_ptr) :: hi_bc_ptr(UNK_VARS_BEGIN:UNK_VARS_END)
 
-  integer :: lev
+  integer :: lev, j
   integer :: finest_level
-
+    
 #ifdef DEBUG_GRID
   logical:: validDataStructure
-
+  
   validDataStructure = (gridDataStruct==CENTER).or.&
                        (gridDataStruct==FACES).or.&
                        (gridDataStruct==FACEX).or.&
@@ -209,31 +213,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   finest_level = -1
 
-  ! DEVNOTE: TODO Implement this functionality
+  ! DEV: TODO Implement this functionality
 #ifdef DEBUG_GRID
-  if      (present(minLayers)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] minLayers *not* implemented for yet AMReX") 
-  end if
-  if (present(eosMode)) then
-    write(*,*) "eosMode = ", eosMode
-    call Driver_abortFlash("[Grid_fillGuardCells] eosMode *not* implemented for yet AMReX") 
-  end if
-  if (present(doEos)) then
-    write(*,*) "doEos = ", doEos
-    call Driver_abortFlash("[Grid_fillGuardCells] doEos *not* implemented for yet AMReX") 
-  end if
-  if (present(maskSize)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] maskSize *not* implemented for yet AMReX") 
-  end if
-  if (present(mask)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] mask *not* implemented for yet AMReX") 
-  end if
-  if (present(makeMaskConsistent)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] makeMaskConsistent *not* implemented for yet AMReX") 
-  end if
-  if (present(doLogMask)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] doLogMask *not* implemented for yet AMReX") 
-  end if
   if (present(unitReadsMeshDataOnly)) then
     call Driver_abortFlash("[Grid_fillGuardCells] unitReadsMeshDataOnly *not* implemented for yet AMReX") 
   end if
@@ -247,8 +228,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      call Driver_abortFlash("[Grid_fillGuardCells]: Non-center not yet coded")
   end if
 
-  ! DEV: Filling by direction is not needed any longer
 #ifdef DEBUG_GRID
+  ! Filling by direction is not needed any longer
   if (idir /= ALLDIR) then
     call Driver_abortFlash("[Grid_fillGuardCells] idir must be ALLDIR with AMReX")
   end if
@@ -304,14 +285,12 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! GC data could be managed by other processor.
   ! Wait for work on all data structures across full mesh to finish 
   ! before GC filling
-  ! DEV: TODO Does AMReX handle synchronization?
   if (.not. skipThisGcellFill) then
      call Timers_start("guardcell Barrier")
      call MPI_BARRIER(gr_meshComm, ierr)
      call Timers_stop("guardcell Barrier")
   end if
 
-  ! DEV: TODO How to do guardcell fill by direction?
   call Timers_start("guardcell internal")
   !! appropriately mask the data structures to ensure that only the correct data
   !! structure is filled.
@@ -320,14 +299,16 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   scompCC = UNK_VARS_BEGIN
   ncompCC = NUNK_VARS
 
-  scompCC = maxloc(merge(1.,0.,gcell_on_cc),dim=1) ! maxloc(gcell_on_cc,dim=1)
-  lcompCC = UNK_VARS_END + 1 - maxloc(merge(1.,0.,gcell_on_cc(UNK_VARS_END:UNK_VARS_BEGIN:-1)),dim=1)
-  ncompCC = lcompCC - scompCC + 1
-  gcell_on_cc(scompCC:lcompCC) = .TRUE.
-
-
   if(present(mask))then
      if(present(maskSize)) then
+        if (gr_enableMaskedGCFill) then
+            scompCC = maxloc(merge(1.,0.,gcell_on_cc),dim=1) ! maxloc(gcell_on_cc,dim=1)
+            lcompCC = UNK_VARS_END + 1 - &
+                      maxloc(merge(1.,0.,gcell_on_cc(UNK_VARS_END:UNK_VARS_BEGIN:-1)),dim=1)
+            ncompCC = lcompCC - scompCC + 1
+            gcell_on_cc(scompCC:lcompCC) = .TRUE.
+        end if
+
         if (present(doLogMask)) then
            if (doLogMask) then
               if (skipThisGcellFill) then
@@ -375,35 +356,28 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! Restrict data from leaves to coarser blocks
   call gr_averageDownLevels
 
-  ! DEVNOTE: FIXME Currently fixing BC to periodic here
-  ! DEVNOTE: FIXME Currently fixing interpolation mode to cell conserved
-  !                linear (AMReX_Interpolater.H)
-  ! DEVNOTE: TODO Since we are not using subcycling, should we just use
-  !               amrex_fi_fillpatch_two directly?
-  lo_bc(:, :) = amrex_bc_int_dir
-  hi_bc(:, :) = amrex_bc_int_dir
-
-  ! DEV: Using fill_boundary didn't work on finest levels since the GC outside
+  ! Using fill_boundary didn't work on finest levels since the GC outside
   ! the domain were zero (no periodic BC).  AMReX recommended using fillpatch,
   ! which is copying *all* data, including the GC.
-  lev = 0
   call Timers_start("amr_guardcell")
+  
+  lev = 0
   call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
                                  0.0d0, unk(lev), &
-                       amrex_geom(lev), gr_fillPhysicalBC, &
-                       0.0d0, scompCC, scompCC, ncompCC)
+                                 amrex_geom(lev), gr_fillPhysicalBC, &
+                                 0.0d0, scompCC, scompCC, ncompCC)
 
   finest_level = amrex_get_finest_level()
   do lev=1, finest_level
     call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
                                    0.0d0, unk(lev-1), &
-                         amrex_geom(lev-1), gr_fillPhysicalBC, &
-                               1.0e0, unk(lev  ), &
-                               0.0d0, unk(lev  ), &
-                         amrex_geom(lev  ), gr_fillPhysicalBC, &
-                         0.0d0, scompCC, scompCC, ncompCC, &
-                         amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                         lo_bc, hi_bc)
+                                   amrex_geom(lev-1), gr_fillPhysicalBC, &
+                                   1.0e0, unk(lev  ), &
+                                   0.0d0, unk(lev  ), &
+                                   amrex_geom(lev  ), gr_fillPhysicalBC, &
+                                   0.0d0, scompCC, scompCC, ncompCC, &
+                                   amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                   lo_bc_amrex, hi_bc_amrex) 
   end do
   call Timers_stop("amr_guardcell")
 
@@ -468,7 +442,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      end if
   end if
   gr_gcellsUpToDate = skipNextGcellFill
-
 
   call Timers_stop("guardcell internal")
 

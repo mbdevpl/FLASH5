@@ -253,16 +253,6 @@ subroutine Grid_getPointData(blockDesc, gridDataStruct, structIndex, beginCount,
 #ifdef DEBUG_GRID
   isget = .true.
   call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
-
-
-
-  !verify we have a valid blockid
-  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,' Grid_getPointData invalid blockid ', blockid
-     call Driver_abortFlash("[Grid_getPointData] invalid blockid ")
-  end if
-
-
   
   !verify beginCount is set to a valid value
   if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then

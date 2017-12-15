@@ -5,14 +5,14 @@
 !!
 !! SYNOPSIS
 !!
-!!  call gr_bcGetRegion(integer(IN) :: gridDataStruct,
-!!                 integer(IN)   :: axis,
-!!                 integer(IN)   :: endPoints(LOW:HIGH,MDIM),
-!!                 integer(IN)   :: regionSize(REGION_DIM),
-!!                 integer(OUT)  :: mask(regionSize(4)),
-!!                 real(out)     :: region(regionSize(1),regionSize(2),regionSize(3),regionSize(4)),
-!!                 integer(IN)   :: blockID,
-!!                 integer(IN)   :: idest)
+!!  call gr_bcGetRegion(integer(IN)     :: gridDataStruct,
+!!                 integer(IN)          :: axis,
+!!                 integer(IN)          :: endPoints(LOW:HIGH,MDIM),
+!!                 integer(IN)          :: regionSize(REGION_DIM),
+!!                 integer(OUT)         :: mask(regionSize(4)),
+!!                 real(out)            :: region(regionSize(1),regionSize(2),regionSize(3),regionSize(4)),
+!!                 block_metadata_t(IN) :: blockDesc,
+!!                 integer(IN)          :: idest)
 !!  
 !! DESCRIPTION 
 !!  This routine creates a region for the application of boundary condition
@@ -49,8 +49,9 @@
 !!  mask           : Mask to be used if selected variables are getting boundary
 !!                   filled. Currently this has meaning for only PM3 and PM4.
 !!  region         : the extracted region
-!!  blockID        : the local block ID.
-!!                   (With Paramesh3 f. this may actually be a blockHandle that refers
+!!  blockDesc      : Derived type that encapsulates metadata that uniquely
+!!                   characterizes local block to be operated on
+!!                   (With Paramesh3 f. this may actually contain a blockHandle that refers
 !!                   to a remote block, but this implementation does not actually use
 !!                   the blockID at all if the grid is Paramesh3 f. - see idest instead).
 !!  idest          : has meaning only for PM3 and PM4, where it distinguishes between 
@@ -136,11 +137,12 @@
 #endif
 
 subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
-     region,blockID,idest)
+     region,blockDesc,idest)
   
 #include "constants.h"
   
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata,   ONLY : block_metadata_t
   
 #ifdef FLASH_GRID_UG
   use physicaldata, ONLY: unk,facevarx,facevary,facevarz
@@ -154,6 +156,9 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
   use physicaldata, ONLY : unk
 #endif
 #ifdef FLASH_GRID_AMREX
+  ! DEV: TODO How to manage casting from multifab real to FLASH real?
+  use amrex_fort_module,    ONLY : wp => amrex_real
+  use Grid_interface,       ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use gr_physicalMultifabs, ONLY : unk, &
                                    facevarx, facevary, facevarz
 #endif
@@ -166,12 +171,15 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
   logical,dimension(regionSize(STRUCTSIZE)),intent(OUT) :: mask
   real,dimension(regionSize(BC_DIR),regionSize(SECOND_DIR),&
        regionSize(THIRD_DIR),regionSize(STRUCTSIZE)),intent(OUT) :: region
-  integer, intent(in) :: blockID
+  type(block_metadata_t), intent(in) :: blockDesc
   integer,intent(IN) :: idest
 
   integer :: var,i,j,k,n,m,strt,fin, varCount,bcVecEnd
   logical :: validGridDataStruct
 
+#ifdef FLASH_GRID_AMREX
+  real(wp), pointer :: dataPtr(:, :, :, :)
+#endif
 
   strt = endPoints(LOW,axis)
   fin  = endPoints(HIGH,axis)
@@ -182,11 +190,14 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
 
   validGridDataStruct = .false.
   validGridDataStruct= (gridDataStruct == CENTER).or.validGridDataStruct
+#ifndef FLASH_GRID_AMREX
+  ! DEV: FIXME once face[xyz] implemented for AMReX
   validGridDataStruct= (gridDataStruct == FACEX).or.validGridDataStruct
   validGridDataStruct= (gridDataStruct == FACEY).or.validGridDataStruct
   validGridDataStruct= (gridDataStruct == FACEZ).or.validGridDataStruct
   validGridDataStruct= (gridDataStruct == WORK).or.validGridDataStruct
-  
+#endif
+
   if(.not.validGridDataStruct) then
      print *, "gr_bcGetRegion: gridDataStruct set to improper value"
      print *, "gridDataStruct must = CENTER,FACEX,FACEY,FACEZ,WORK " // &
@@ -215,16 +226,21 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
      mask(1:varCount)=gcell_on_fc(3,1:varCount)
   end if
 #elif defined FLASH_GRID_AMREX
-  !DEVNOTE: Code this once the data structures are fixed
+  !DEV: TODO Code up mask portion
+
+  call Grid_getBlkPtr(blockDesc, dataPtr, gridDataStruct)
 #endif
+
   if(axis==IAXIS) then
      do k=endPoints(LOW,KAXIS),endPoints(HIGH,KAXIS)
         m=k-endPoints(LOW,KAXIS)+1
         do j=endPoints(LOW,JAXIS),endPoints(HIGH,JAXIS)
            n=j-endPoints(LOW,JAXIS)+1
            do var=1,varCount
+#if   defined FLASH_GRID_AMREX
+              region(1:bcVecEnd,n,m,var)=dataPtr(strt:fin,j,k,var)
+#elif defined FLASH_GRID_PARAMESH3OR4
               select case(gridDataStruct)
-#ifdef FLASH_GRID_PARAMESH3OR4
                  !! since PM3 f. insists on using unk1 etc
               case(CENTER)
                  region(1:bcVecEnd,n,m,var)=unk1(var,strt:fin,j,k,idest)
@@ -236,26 +252,26 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
                  region(1:bcVecEnd,n,m,var)=facevarz1(var,strt:fin,j,k,idest)
               case(WORK)
                  region(1:bcVecEnd,n,m,varCount)=work1(strt:fin,j,k,idest)
-#elif defined FLASH_GRID_AMREX
-  !DEVNOTE: Code this once the data structures are fixed
+              end select
 #else
+              select case(gridDataStruct)
                  !! this section in play if the grid is UG or PM2
               case(CENTER)
-                 region(1:bcVecEnd,n,m,var)=unk(var,strt:fin,j,k,blockID)
+                 region(1:bcVecEnd,n,m,var)=unk(var,strt:fin,j,k,blockDesc%id)
 #if NFACE_VARS>0
               case(FACEX)
-                 region(1:bcVecEnd,n,m,var)=facevarx(var,strt:fin,j,k,blockID)
+                 region(1:bcVecEnd,n,m,var)=facevarx(var,strt:fin,j,k,blockDesc%id)
               case(FACEY)
-                 region(1:bcVecEnd,n,m,var)=facevary(var,strt:fin,j,k,blockID)
+                 region(1:bcVecEnd,n,m,var)=facevary(var,strt:fin,j,k,blockDesc%id)
               case(FACEZ)
-                 region(1:bcVecEnd,n,m,var)=facevarz(var,strt:fin,j,k,blockID)
+                 region(1:bcVecEnd,n,m,var)=facevarz(var,strt:fin,j,k,blockDesc%id)
 #endif
 #ifdef FLASH_GRID_PARAMESH2
               case(WORK)
-                 region(1:bcVecEnd,n,m,varCount)=work(strt:fin,j,k,blockID,1)
-#endif
+                 region(1:bcVecEnd,n,m,varCount)=work(strt:fin,j,k,blockDesc%id,1)
 #endif
               end select
+#endif
            end do
         end do
      end do
@@ -266,9 +282,11 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
         do i=endPoints(LOW,IAXIS),endPoints(HIGH,IAXIS)
            n=i-endPoints(LOW,IAXIS)+1
            do var=1,varCount
+#if    defined FLASH_GRID_AMREX
+              region(1:bcVecEnd,n,m,var)=dataPtr(i,strt:fin,k,var)
+#elif  defined FLASH_GRID_PARAMESH3OR4
+              !! since PM3 f. insists on using unk1 etc
               select case(gridDataStruct)
-#ifdef FLASH_GRID_PARAMESH3OR4
-                 !! since PM3 f. insists on using unk1 etc
               case(CENTER)
                  region(1:bcVecEnd,n,m,var)=unk1(var,i,strt:fin,k,idest)
               case(FACEX)
@@ -279,26 +297,26 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
                  region(1:bcVecEnd,n,m,var)=facevarz1(var,i,strt:fin,k,idest)
               case(WORK)
                  region(1:bcVecEnd,n,m,varCount)=work1(i,strt:fin,k,idest)
-#elif defined FLASH_GRID_AMREX
-  !DEVNOTE: Code this once the data structures are fixed
+              end select
 #else
-                 !! this section in play if the grid is UG or PM2
+              !! this section in play if the grid is UG or PM2
+              select case(gridDataStruct)
               case(CENTER)
-                 region(1:bcVecEnd,n,m,var)=unk(var,i,strt:fin,k,blockID)
+                 region(1:bcVecEnd,n,m,var)=unk(var,i,strt:fin,k,blockDesc%id)
 #if NFACE_VARS>0
               case(FACEX)
-                 region(1:bcVecEnd,n,m,var)=facevarx(var,i,strt:fin,k,blockID)
+                 region(1:bcVecEnd,n,m,var)=facevarx(var,i,strt:fin,k,blockDesc%id)
               case(FACEY)
-                 region(1:bcVecEnd,n,m,var)=facevary(var,i,strt:fin,k,blockID)
+                 region(1:bcVecEnd,n,m,var)=facevary(var,i,strt:fin,k,blockDesc%id)
               case(FACEZ)
-                 region(1:bcVecEnd,n,m,var)=facevarz(var,i,strt:fin,k,blockID)
+                 region(1:bcVecEnd,n,m,var)=facevarz(var,i,strt:fin,k,blockDesc%id)
 #endif
 #ifdef FLASH_GRID_PARAMESH2
               case(WORK)
-                 region(1:bcVecEnd,n,m,varCount)=work(i,strt:fin,k,blockID,1)
-#endif
+                 region(1:bcVecEnd,n,m,varCount)=work(i,strt:fin,k,blockDesc%id,1)
 #endif
               end select
+#endif
            end do
         end do
      end do
@@ -308,9 +326,11 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
         do i=endPoints(LOW,IAXIS),endPoints(HIGH,IAXIS)
            n=i-endPoints(LOW,IAXIS)+1
            do var=1,varCount
+#if   defined FLASH_GRID_AMREX
+              region(1:bcVecEnd,n,m,var)=dataPtr(i,j,strt:fin,var)
+#elif defined FLASH_GRID_PARAMESH3OR4
+              !! since PM3 f. insists on using unk1 etc
               select case(gridDataStruct)
-#ifdef FLASH_GRID_PARAMESH3OR4
-                 !! since PM3 f. insists on using unk1 etc
               case(CENTER)
                  region(1:bcVecEnd,n,m,var)=unk1(var,i,j,strt:fin,idest)
               case(FACEX)
@@ -321,30 +341,35 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
                  region(1:bcVecEnd,n,m,var)=facevarz1(var,i,j,strt:fin,idest)
               case(WORK)
                  region(1:bcVecEnd,n,m,varCount)=work1(i,j,strt:fin,idest)
-#elif defined FLASH_GRID_AMREX
-  !DEVNOTE: Code this once the data structures are fixed
+              end select
 #else
-                 !! this section in play if the grid is UG or PM2
+              !! this section in play if the grid is UG or PM2
+              select case(gridDataStruct)
               case(CENTER)
-                 region(1:bcVecEnd,n,m,var)=unk(var,i,j,strt:fin,blockID)
+                 region(1:bcVecEnd,n,m,var)=unk(var,i,j,strt:fin,blockDesc%id)
 #if NFACE_VARS>0
               case(FACEX)
-                 region(1:bcVecEnd,n,m,var)=facevarx(var,i,j,strt:fin,blockID)
+                 region(1:bcVecEnd,n,m,var)=facevarx(var,i,j,strt:fin,blockDesc%id)
               case(FACEY)
-                 region(1:bcVecEnd,n,m,var)=facevary(var,i,j,strt:fin,blockID)
+                 region(1:bcVecEnd,n,m,var)=facevary(var,i,j,strt:fin,blockDesc%id)
               case(FACEZ)
-                 region(1:bcVecEnd,n,m,var)=facevarz(var,i,j,strt:fin,blockID)
+                 region(1:bcVecEnd,n,m,var)=facevarz(var,i,j,strt:fin,blockDesc%id)
 #endif
 #ifdef FLASH_GRID_PARAMESH2
               case(WORK)
-                 region(1:bcVecEnd,n,m,varCount)=work(i,j,strt:fin,blockID,1)
-#endif
+                 region(1:bcVecEnd,n,m,varCount)=work(i,j,strt:fin,blockDesc%id,1)
 #endif
               end select
+#endif
            end do
         end do
      end do
   end if
+
+#if   defined FLASH_GRID_AMREX
+  call Grid_releaseBlkPtr(blockDesc, dataPtr, gridDataStruct)
+#endif
+
   return
 end subroutine gr_bcGetRegion
 
@@ -356,18 +381,18 @@ end subroutine gr_bcGetRegion
 !!
 !! SYNOPSIS
 !!
-!!  call gr_bcGetRegionsMixedGds(integer(IN) :: gridDataStruct,
-!!                               integer(IN)   :: axis,
-!!                               integer(IN)   :: secondDir,
-!!                               integer(IN)   :: thirdDir,
-!!                               integer(IN)   :: endPoints(LOW:HIGH,MDIM),
-!!                               integer(IN)   :: regionSize(REGION_DIM),
-!!                               real(out),POINTER :: regionC(:,:,:,:),
-!!                               real(out),POINTER :: regionFN(:,:,:,:),
-!!                               real(out),POINTER :: regionFT1(:,:,:,:),
-!!                               real(out),POINTER :: regionFT2(:,:,:,:),
-!!                               integer(IN)   :: blockID,
-!!                               integer(IN)   :: idest)
+!!  call gr_bcGetRegionsMixedGds(integer(IN)          :: gridDataStruct,
+!!                               integer(IN)          :: axis,
+!!                               integer(IN)          :: secondDir,
+!!                               integer(IN)          :: thirdDir,
+!!                               integer(IN)          :: endPoints(LOW:HIGH,MDIM),
+!!                               integer(IN)          :: regionSize(REGION_DIM),
+!!                               real(out),POINTER    :: regionC(:,:,:,:),
+!!                               real(out),POINTER    :: regionFN(:,:,:,:),
+!!                               real(out),POINTER    :: regionFT1(:,:,:,:),
+!!                               real(out),POINTER    :: regionFT2(:,:,:,:),
+!!                               block_metadata_t(IN) :: blockDesc,
+!!                               integer(IN)          :: idest)
 !!  
 !! DESCRIPTION 
 !!  This routine returns pointers for regions for the application of boundary conditions
@@ -406,9 +431,10 @@ end subroutine gr_bcGetRegion
 subroutine gr_bcGetRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoints,&
      regionSize,&
      regionC,regionFN,regionFT1,regionFT2,&
-     blockID,idest)
+     blockDesc,idest)
   
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata,   ONLY : block_metadata_t
   
 #ifdef FLASH_GRID_UG
   use physicaldata, ONLY: unk,facevarx,facevary,facevarz
@@ -432,7 +458,7 @@ subroutine gr_bcGetRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoi
   integer,dimension(LOW:HIGH,MDIM),intent(IN) :: endPoints
   integer,intent(IN) :: regionSize(REGION_DIM)
   real,pointer,dimension(:,:,:,:) :: regionFN, regionFT1, regionFT2, regionC
-  integer, intent(in) :: blockID
+  type(block_metadata_t), intent(in) :: blockDesc
   integer,intent(IN) :: idest
 
   integer,parameter :: ndim=NDIM
@@ -485,11 +511,11 @@ subroutine gr_bcGetRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoi
 #elif defined FLASH_GRID_AMREX
   ! DEVNOTE: Code this once the data structures are fixed
 #else
-  pUnk => unk(:,:,:,:,blockID)
+  pUnk => unk(:,:,:,:,blockDesc%id)
 #if NFACE_VARS>0
-  pFaceVarX => facevarx(:,:,:,:,blockID)
-  pFaceVarY => facevary(:,:,:,:,blockID)
-  pFaceVarZ => facevarz(:,:,:,:,blockID)
+  pFaceVarX => facevarx(:,:,:,:,blockDesc%id)
+  pFaceVarY => facevary(:,:,:,:,blockDesc%id)
+  pFaceVarZ => facevarz(:,:,:,:,blockDesc%id)
 #endif
 #endif
 

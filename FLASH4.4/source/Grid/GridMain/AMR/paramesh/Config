@@ -33,7 +33,3 @@ PPDEFINE FLASH_GRID_PARAMESH
 D lrefine_min_init minimum AMR refinement level for initialization
 PARAMETER lrefine_min_init   INTEGER 1 [ 1 ... ]
 
-D lrefine_min minimum AMR refinement level
-PARAMETER lrefine_min   INTEGER 1 [ 1 ... ]       
-
-

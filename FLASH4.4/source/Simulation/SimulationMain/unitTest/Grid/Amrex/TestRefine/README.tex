@@ -59,7 +59,7 @@
 \section{Introduction}
 Unittest is configured such that
 \begin{itemize}
-\item{the coareset level\footnote{AMReX uses 0-based level indexing whereas
+\item{the coarsest level\footnote{AMReX uses 0-based level indexing whereas
 FLASH uses 1-based indexing.  We adopt the FLASH convention here so that the coarsest
 level is level 1.} has 2 blocks along both the X and Y
 coordinates and each block has 8 cells along both axes}
@@ -89,14 +89,13 @@ refinement to maintain 1-level difference at refinement boundaries.}
 point.}
 \item[(Steps 11/12)]{No change to data.  Refinement should be unchanged since
 the maximum refinement level is 4.}
-%\item[(Steps 13/14)]{Three points at different levels and one to finest level.}
-% TODO: Do test so that cell tagged only on finest level
+\item[(Steps 13/14)]{Add another point set to refine to level 4.  No refinement check
+here.  We just let this step to advance toward full refinement.}
+\item[(Steps 15/16)]{No change to data.  Final refinement/derefinement should be
+achieved at this step.}
 \end{enumerate}
 
 \subsection{Conclusions}
-AMReX more conservative that Paramesh in the sense that once a neighbor block is
-tagged for refinement due to a neighboring block, all blocks were refined up.\\
-
 If a cell is tagged for refinement in a fine level, but not tagged in any lower
 levels, the cell's block is correctly refined.\\
 
@@ -105,39 +104,11 @@ additional refinement.
 
 \newpage
 \subsection{Init}
-Leaf blocks after initial refinement with AMReX
-\begin{itemize}
-\item{Level 1 ($16 \times 16$ cells) --- 0 blocks}
-\item{Level 2 ($32 \times 32$ cells) --- 15 blocks}
-    \begin{itemize}
-    \item{From $( 1, 1)$ to $( 8, 8)$}
-    \item{From $( 9, 1)$ to $(16, 8)$}
-    \item{From $(17, 1)$ to $(24, 8)$}
-    \item{From $(25, 1)$ to $(32, 1)$}
-    \item{From $( 1, 9)$ to $( 8,16)$}
-    \item{From $( 9, 9)$ to $(16,16)$}
-    \item{From $(17, 9)$ to $(24,16)$}
-    \item{From $(25, 9)$ to $(32,16)$}
-    \item{From $( 9,17)$ to $(16,24)$}
-    \item{From $(17,17)$ to $(24,24)$}
-    \item{From $(25,17)$ to $(32,24)$}
-    \item{From $( 1,25)$ to $( 8,32)$}
-    \item{From $( 9,25)$ to $(16,32)$}
-    \item{From $(17,25)$ to $(24,32)$}
-    \item{From $(25,25)$ to $(32,32)$}
-    \end{itemize}
-\item{Level 3 ($64\times 64$ cells) --- 4 blocks}
-    \begin{itemize}
-    \item{From $(1,33)$ to $( 8,40)$}
-    \item{From $(9,33)$ to $(16,40)$}
-    \item{From $(1,41)$ to $( 8,48)$}
-    \item{From $(9,41)$ to $(16,48)$}
-    \end{itemize}
-\end{itemize}
-
+Leaf blocks after initial refinement with AMReX.  Note that the
+lower-/upper-right blocks should be level 1.  However, they are promoted to
+level 2 due to periodic BC.
 \begin{figure}[!hp]
 \begin{center}
-\includegraphics[width=4.25in]{TestRefine_Init_Paramesh.pdf}\\
 \includegraphics[width=4.25in]{TestRefine_Init_AMReX.pdf}
 \caption{(Init) Refinement of mesh expected with both Paramesh and AMReX after loading
 initial conditions and doing initial refinement.  Note that level indexing is
@@ -148,16 +119,6 @@ initial conditions and doing initial refinement.  Note that level indexing is
 \newpage
 \subsection{Steps 1/2}
 Expected leaf blocks after initial refinement for both Paramesh and AMReX
-\begin{itemize}
-\item{Level 1 ($16 \times 16$ cells) --- 4 blocks}
-    \begin{itemize}
-    \item{From $(1,1)$ to $(8,8)$}
-    \item{From $(9,1)$ to $(16,8)$}
-    \item{From $(1,9)$ to $(8,16)$}
-    \item{From $(9,9)$ to $(16,16)$}
-    \end{itemize}
-\end{itemize}
-
 \begin{figure}[!hp]
 \begin{center}
 \includegraphics[width=4.25in]{TestRefine_Step1_Both.pdf}\\
@@ -170,29 +131,6 @@ setting all data to zeros at step 1.}
 \subsection{Steps 3/4}
 Expected leaf blocks after step 2 refinement with Paramesh.  AMReX results in
 the same refinement.
-\begin{itemize}
-\item{Level 1 ($16 \times 16$ cells) --- 0 blocks}
-\item{Level 2 ($32 \times 32$ cells) --- 16 blocks}
-    \begin{itemize}
-    \item{From $( 1, 1)$ to $( 8, 8)$}
-    \item{From $( 9, 1)$ to $(16, 8)$}
-    \item{From $(17, 1)$ to $(24, 8)$}
-    \item{From $(25, 1)$ to $(32, 8)$}
-    \item{From $( 1, 9)$ to $( 8,16)$}
-    \item{From $( 9, 9)$ to $(16,16)$}
-    \item{From $(17, 9)$ to $(24,16)$}
-    \item{From $(25, 9)$ to $(32,16)$}
-    \item{From $( 1,17)$ to $( 8,24)$}
-    \item{From $( 9,17)$ to $(16,24)$}
-    \item{From $(17,17)$ to $(24,24)$}
-    \item{From $(25,17)$ to $(32,24)$}
-    \item{From $( 1,25)$ to $( 8,32)$}
-    \item{From $( 9,25)$ to $(16,32)$}
-    \item{From $(17,25)$ to $(24,32)$}
-    \item{From $(25,25)$ to $(32,32)$}
-    \end{itemize}
-\end{itemize}
-
 \begin{figure}[!hp]
 \begin{center}
 \includegraphics[width=4.25in]{TestRefine_Step2_Both.pdf}\\
@@ -204,22 +142,6 @@ setting corner cell only for refinement to level 2 at step 2.}
 \newpage
 \subsection{Step 5/6}
 Expected leaf blocks after step 2 refinement with Paramesh
-\begin{itemize}
-\item{Level 1 ($16 \times 16$ cells) --- 3 blocks}
-    \begin{itemize}
-    \item{From $( 1, 1)$ to $( 8, 8)$}
-    \item{From $( 1, 9)$ to $( 8,16)$}
-    \item{From $( 9, 9)$ to $(16,16)$}
-    \end{itemize}
-\item{Level 2 ($32 \times 32$ cells) --- 4 blocks}
-    \begin{itemize}
-    \item{From $(17,1)$ to $(24,8)$}
-    \item{From $(25,1)$ to $(32,8)$}
-    \item{From $(17,9)$ to $(24,16)$}
-    \item{From $(25,9)$ to $(32,16)$}
-    \end{itemize}
-\end{itemize}
-
 \begin{figure}[!hp]
 \begin{center}
 \includegraphics[width=4.25in]{TestRefine_Step6_Both.pdf}
@@ -230,24 +152,6 @@ Expected leaf blocks after step 2 refinement with Paramesh
 \newpage
 \subsection{Step 7/8}
 Leaf blocks achieved after step 8 refinement with AMReX
-\begin{itemize}
-\item{Level 1 ($16 \times 16$ cells) --- 0 blocks}
-\item{Level 2 ($32 \times 32$ cells) --- 15 blocks}
-    \begin{itemize}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \end{itemize}
-\item{Level 3 ($64 \times 64$ cells) --- 4 blocks}
-    \begin{itemize}
-    \item{From $(49,1)$ to $(56, 8)$}
-    \item{From $(57,1)$ to $(64, 8)$}
-    \item{From $(49,9)$ to $(56,16)$}
-    \item{From $(57,9)$ to $(64,16)$}
-    \end{itemize}
-\end{itemize}
-
 \begin{figure}[!hp]
 \begin{center}
 \includegraphics[width=4.25in]{TestRefine_Step8_Both.pdf}
@@ -258,50 +162,6 @@ Leaf blocks achieved after step 8 refinement with AMReX
 \newpage
 \subsection{Steps 9-12}
 Leaf blocks achieved after step 10 refinement with AMReX
-\begin{itemize}
-\item{Level 1 ($16 \times 16$ cells) --- 0 blocks}
-\item{Level 2 ($32 \times 32$ cells) --- 12 blocks}
-    \begin{itemize}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \end{itemize}
-\item{Level 3 ($64 \times 64$ cells) --- 15 blocks}
-    \begin{itemize}
-    \item{From $(1, 1)$ to $( 8, 8)$}
-    \item{From $(9, 1)$ to $(16, 8)$}
-    \item{From $(1, 9)$ to $( 8,16)$}
-    \item{From $(9, 9)$ to $(16,16)$}
-    \item{From $(49,1)$ to $(56, 8)$}
-    \item{From $(49,9)$ to $(56,16)$}
-    \item{From $(57,9)$ to $(64,16)$}
-    \item{From $(1,49)$ to $( 8,56)$}
-    \item{From $(9,49)$ to $(16,56)$}
-    \item{From $(1,57)$ to $( 8,64)$}
-    \item{From $(9,57)$ to $(16,64)$}
-    \item{From $(49,49)$ to $(56,56)$}
-    \item{From $(57,49)$ to $(64,56)$}
-    \item{From $(49,57)$ to $(56,64)$}
-    \item{From $(57,57)$ to $(64,64)$}
-    \end{itemize}
-\item{Level 4 ($128 \times 128$ cells) --- 4 blocks}
-    \begin{itemize}
-    \item{From $(113,1)$ to $(120, 8)$}
-    \item{From $(121,1)$ to $(128, 8)$}
-    \item{From $(113,9)$ to $(120,16)$}
-    \item{From $(121,9)$ to $(128,16)$}
-    \end{itemize}
-\end{itemize}
-
 \begin{figure}[!hp]
 \begin{center}
 \includegraphics[width=4.25in]{TestRefine_Step10_Both.pdf}
@@ -314,68 +174,8 @@ Leaf blocks achieved after step 10 refinement with AMReX
 Ignore these steps.  They are necessary only to allow the refinement to advance
 the new data point to level 3 here.
 
-\newpage
 \subsection{Steps 15/16}
 Leaf blocks achieved after step 15 refinement with AMReX
-\begin{itemize}
-\item{Level 1 ($16 \times 16$ cells) --- 0 blocks}
-\item{Level 2 ($32 \times 32$ cells) --- 8 blocks}
-    \begin{itemize}
-    \item{From $( 9, 1)$ to $(16, 8)$}
-    \item{From $(17, 1)$ to $(24, 8)$}
-    \item{From $(17, 9)$ to $(24,16)$}
-    \item{From $(25, 9)$ to $(32,16)$}
-    \item{From $(17,17)$ to $(24,24)$}
-    \item{From $(25,17)$ to $(32,24)$}
-    \item{From $( 9,25)$ to $(16,32)$}
-    \item{From $(17,25)$ to $(24,32)$}
-    \end{itemize}
-\item{Level 3 ($64 \times 64$ cells) --- 30 blocks}
-    \begin{itemize}
-    \item{From $(1, 1)$ to $( 8, 8)$}
-    \item{From $(9, 1)$ to $(16, 8)$}
-    \item{From $(1, 9)$ to $( 8,16)$}
-    \item{From $(9, 9)$ to $(16,16)$}
-    \item{From $(49,1)$ to $(56, 8)$}
-    \item{From $(49,9)$ to $(56,16)$}
-    \item{From $(57,9)$ to $(64,16)$}
-    \item{From $(1,49)$ to $( 8,56)$}
-    \item{From $(9,49)$ to $(16,56)$}
-    \item{From $(1,57)$ to $( 8,64)$}
-    \item{From $(9,57)$ to $(16,64)$}
-    \item{From $(49,49)$ to $(56,56)$}
-    \item{From $(57,49)$ to $(64,56)$}
-    \item{From $(49,57)$ to $(56,64)$}
-    \item{From $(57,57)$ to $(64,64)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \item{From $(,)$ to $(,)$}
-    \end{itemize}
-\item{Level 4 ($128 \times 128$ cells) --- 8 blocks}
-    \begin{itemize}
-    \item{From $(113,1)$ to $(120, 8)$}
-    \item{From $(121,1)$ to $(128, 8)$}
-    \item{From $(113,9)$ to $(120,16)$}
-    \item{From $(121,9)$ to $(128,16)$}
-    \item{From $(33,65)$ to $(40,72)$}
-    \item{From $(41,65)$ to $(48,72)$}
-    \item{From $(33,73)$ to $(40,80)$}
-    \item{From $(41,73)$ to $(48,80)$}
-    \end{itemize}
-\end{itemize}
-
 \begin{figure}[!hp]
 \begin{center}
 \includegraphics[width=4.25in]{TestRefine_Step16_Both.pdf}

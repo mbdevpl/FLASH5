@@ -35,9 +35,21 @@ subroutine gr_averageDownLevels()
 
     ! Work in AMReX 0-based level indexing
     finest_level = amrex_get_finest_level()
+#ifdef DEBUG_GRID
+    if (finest_level == 0) then
+        write(*,'(A,A)') "[gr_averageDownLevels]", &
+                         "               No need to average"
+    end if
+#endif
 
     ! DEV: TODO Implement for face variables as well
     do lev = finest_level, 1, -1
+#ifdef DEBUG_GRID
+        write(*,'(A,A,I2,A,I2)') "[gr_averageDownLevels]", &
+                                 "               From ", &
+                                 lev+1, " down to ", lev
+#endif
+
         call amrex_average_down(unk(lev  ), &
                                 unk(lev-1), &
                                 amrex_geom(lev  ), &
@@ -45,17 +57,6 @@ subroutine gr_averageDownLevels()
                                 UNK_VARS_BEGIN, NUNK_VARS, &
                                 amrex_ref_ratio(lev-1))
     end do 
-
-#ifdef DEBUG_GRID
-    if (finest_level == 0) then
-        write(*,'(A,A)') "[gr_averageDownLevels]", &
-                            "               No need to average"
-    else
-        write(*,'(A,A,I2,A)') "[gr_averageDownLevels]", &
-                              "               From ", &
-                             finest_level, " down to 1"
-    end if
-#endif
 
 end subroutine gr_averageDownLevels
 

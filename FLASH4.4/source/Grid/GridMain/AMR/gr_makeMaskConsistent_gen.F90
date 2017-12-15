@@ -131,6 +131,9 @@ subroutine gr_makeMaskConsistent_gen(gridDataStruct,eosMode,needEos,gcell_on_cc,
 #ifndef ENER_VAR
 #undef HAVE_UNK_VARS_FOR_EOS
 #endif
+#ifndef GAMC_VAR
+#undef HAVE_UNK_VARS_FOR_EOS
+#endif
 #ifndef DENS_VAR
 #undef HAVE_UNK_VARS_FOR_EOS
 #define DENS_VAR 1

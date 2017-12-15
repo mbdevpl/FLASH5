@@ -17,7 +17,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    use Grid_data,              ONLY : gr_numRefineVars, &
                                       gr_refine_cutoff, gr_derefine_cutoff, &
                                       gr_refine_filter, gr_refine_var, &
-                                      gr_maxRefine, gr_enforceMaxRefinement
+                                      gr_maxRefine, gr_enforceMaxRefinement, &
+                                      gr_minRefine
    use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
    use gr_interface,           ONLY : gr_estimateBlkError
    use gr_physicalMultifabs,   ONLY : unk
@@ -54,27 +55,45 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
  
    tag = tags
 
+   if (lev < gr_minRefine - 1) then
+#ifdef DEBUG_GRID
+      write(*,'(A,A,I4,I4,I4)') "[gr_markRefineDerefineCallback]", &
+                                "         derefinement to this level not allowed"
+#endif
+
+      ! Enforce 1-based minimum level contraint
+      call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
+
+      do while(mfi%next())
+         tagData => tag%dataptr(mfi)
+         tagData(:, :, :, :) = tagval
+         nullify(tagData)
+      end do
+
+      call amrex_mfiter_destroy(mfi)
+      RETURN
+   end if
+
    allocate(errors(gr_numRefineVars))
 
    !DEVNOTE:  Can test with tiling later - KW
    ! unk used the same 0-based level indexing used here by AMReX
    call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
    do while(mfi%next())
-      bx = mfi%tilebox()
+      bx = mfi%fabbox()
 
       ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
-      ! DEVNOTE: Should we use gr_[ijk]guard here?
       blockDesc%level = lev + 1
       blockDesc%grid_index = mfi%grid_index()
       blockDesc%limits(LOW,  :) = 1
       blockDesc%limits(HIGH, :) = 1
-      blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
-      blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+      blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
+      blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
       blockDesc%limitsGC(LOW,  :) = 1
       blockDesc%limitsGC(HIGH, :) = 1
-      blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
-      blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
+      blockDesc%limitsGC(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+      blockDesc%limitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
 
       errors(:) = 0.0d0
       do l = 1, gr_numRefineVars
@@ -136,6 +155,8 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 EXIT rloop
             end if
         end do rloop
+
+        nullify(tagData)
       end associate
 
       call Grid_releaseBlkPtr(blockDesc, solnData)

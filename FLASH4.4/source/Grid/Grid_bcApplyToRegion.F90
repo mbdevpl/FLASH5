@@ -5,21 +5,20 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_bcApplyToRegion(integer(IN)  :: bcType,
-!!                            integer(IN)  :: gridDataStruct,
-!!                            integer(IN)  :: guard,
-!!                            integer(IN)  :: axis,
-!!                            integer(IN)  :: face,
-!!                            real(INOUT)  :: regionData(:,:,:,:),
-!!                            integer(IN)  :: regionSize(:),
-!!                            logical(IN)  :: mask(:),
-!!                            logical(OUT) :: applied,
-!!                            integer(IN)  :: blockHandle,
-!!                            integer(IN)  :: secondDir,
-!!                            integer(IN)  :: thirdDir,
-!!                            integer(IN)  :: endPoints(LOW:HIGH,MDIM),
-!!                            integer(IN)  :: blkLimitsGC(LOW:HIGH,MDIM),
-!!                   OPTIONAL,integer(IN)  :: idest)
+!!  call Grid_bcApplyToRegion(integer(IN)           :: bcType,
+!!                            integer(IN)           :: gridDataStruct,
+!!                            integer(IN)           :: guard,
+!!                            integer(IN)           :: axis,
+!!                            integer(IN)           :: face,
+!!                            real(INOUT)           :: regionData(:,:,:,:),
+!!                            integer(IN)           :: regionSize(:),
+!!                            logical(IN)           :: mask(:),
+!!                            logical(OUT)          :: applied,
+!!                            block_metadata_t(IN)  :: blockDesc,
+!!                            integer(IN)           :: secondDir,
+!!                            integer(IN)           :: thirdDir,
+!!                            integer(IN)           :: endPoints(LOW:HIGH,MDIM),
+!!                   OPTIONAL,integer(IN)           :: idest)
 !!  
 !!                    
 !!  
@@ -114,9 +113,8 @@
 !!  applied - is set true if this routine has handled the given bcType, otherwise it is 
 !!            set to false.
 !!
-!!  blockHandle - Handle for the block for which guardcells are to be filled.
-!!              In grid implementations other than Paramesh 4, this is always
-!!              a local blockID.
+!!  blockDesc - Derived type that encapsulates metadata that uniquely
+!!              characterizes local block to be operated on
 !!
 !!              With Paramesh 4:
 !!              This may be a block actually residing on the local processor,
@@ -147,10 +145,6 @@
 !!                          KAXIS   |    IAXIS             JAXIS
 !!
 !!  endPoints - starting and endpoints of the region of interest.
-!!              See also NOTE (1) below.
-!!
-!!  blkLimitsGC - the starting and endpoint of the whole block including
-!!                the guard cells, as returned by Grid_getBlkIndexLimits.
 !!              See also NOTE (1) below.
 !!
 !!  idest - Only meaningful with PARAMESH 3 or later.  The argument indicates which slot
@@ -203,10 +197,13 @@
 !!
 !!***
 
+#include "constants.h"
+
 subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-     blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, idest)
-#include "constants.h"
+     blockDesc,secondDir,thirdDir,endPoints,idest)
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
   
   integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
@@ -217,9 +214,9 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
-  integer,intent(IN) :: blockHandle
+  type(block_metadata_t),intent(IN) :: blockDesc
   integer,intent(IN) :: secondDir,thirdDir
-  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest
 
   applied = .FALSE.
