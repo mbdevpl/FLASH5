@@ -101,15 +101,13 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       tagData => tag%dataptr(mfi)
       
       associate (lo     => blockDesc%limits(LOW,  :), &
-                 hi     => blockDesc%limits(HIGH, :), &
-                 lo_tag => lbound(tagData), &
-                 hi_tag => ubound(tagData))
+                 hi     => blockDesc%limits(HIGH, :))
 
 #ifdef DEBUG_TAGDATA
         print*,'markRD_cb: lbound(solnData):', lbound(solnData)
         print*,'markRD_cb: ubound(solnData):', ubound(solnData)
-        print*,'markRD_cb: lbound(tagData):', (lo_tag + 1)
-        print*,'markRD_cb: ubound(tagData):', (hi_tag + 1)
+        print*,'markRD_cb: lbound(tagData):', (lbound(tagData) + 1)
+        print*,'markRD_cb: ubound(tagData):', (ubound(tagData) + 1)
 #endif
 
         tagData(:, :, :, :) = clearval
@@ -126,15 +124,13 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             ! There is no means to indicate derefine/stay/refine as with
             ! Paramesh.
             if (error > gr_refine_cutoff(l)) then
-                ! According to Weiquin, when AMReX is setup in octree mode,
+                ! According to Weiqun, when AMReX is setup in octree mode,
                 ! tagging a single cell in a block is sufficient for indicating
-                ! a need to refine.   Tag a cell near to center.
-                i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
-                j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
-                k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
-
-                ! NOTE: last dimension has range 1:1
-                tagData(i, j, k, 1) = tagval
+                ! a need to refine.
+                !
+                ! We err on the side of caution by tagging all cells in box
+                ! array to ensure octree refinement
+                tagData(:, :, :, :) = tagval
 
 #ifdef DEBUG_GRID
                 write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
