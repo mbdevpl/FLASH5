@@ -1,3 +1,52 @@
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_markRefineDerefineCallback
+!!
+!! NAME
+!!  gr_markRefineDerefineCallback
+!!
+!! SYNOPSIS
+!!
+!!  gr_markRefineDerefineCallback(integer(IN) :: lev,
+!!                                c_ptr(IN)   :: tags,
+!!                                real(IN)    :: time,
+!!                                c_char(IN)  :: tagval,
+!!                                c_char(IN)  :: clearval)
+!!  
+!!  DESCRIPTION
+!!  
+!!  This routine is a callback subroutine that is registered with AMReX's
+!!  AMR Core layer at initialization.  AMReX may call this subroutine many times
+!!  during the process of grid refinement so that FLASH may communicate which
+!!  blocks in the given level require refinement.  The final refinement
+!   decisions are made by AMReX based on the information gathered with this
+!!  callback.
+!!
+!!  This routine iterates across all blocks in the given level and determines if
+!!  the current block needs refinement.  If it does, then all cells in the AMReX
+!!  tagbox associated with the block are marked for refinement by setting their
+!!  value to tagval.  If not, then all cells are set to clearval.
+!!
+!!  A block is marked for refinement if the block's error estimate for any
+!!  refinement variable is greater than the variable's associated refinement
+!!  cutoff value.
+!!
+!!  ARGUMENTS 
+!!
+!!    lev - the 0-based level index
+!!    tags - C-pointer to an AMReX tagbox array.  The elements of this are tag
+!!           boxes.  The cells of these tagboxes are set to communicate a need
+!!           to refine the associated block.
+!!    time - not used with FLASH
+!!    tagval - for full, rich AMReX tagging, this values should be assigned to
+!!             each cell that has insufficient resolution.
+!!    clearval - for full, rich AMReX tagging, this values should be assigned to
+!!               each cell that has sufficient resolution.
+!! 
+!!  SEE ALSO
+!!  
+!!    gr_estimateBlkError
+!!
+!!***
+
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
 #endif
