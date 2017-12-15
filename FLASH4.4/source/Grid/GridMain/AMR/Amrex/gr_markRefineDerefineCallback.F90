@@ -22,8 +22,9 @@
 !!
 !!  This routine iterates across all blocks in the given level and determines if
 !!  the current block needs refinement.  If it does, then all cells in the AMReX
-!!  tagbox associated with the block are marked for refinement by setting their
-!!  value to tagval.  If not, then all cells are set to clearval.
+!!  tagbox associated with the block interior are marked for refinement by
+!!  setting their value to tagval.  If not, then all interior cells are set to
+!!  clearval.
 !!
 !!  A block is marked for refinement if the block's error estimate for any
 !!  refinement variable is greater than the variable's associated refinement
@@ -97,6 +98,10 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    integer :: iref
    integer :: i, j, k, l
 
+   ! AMReX uses 0-based spatial indices / FLASH uses 1-based
+   ! The indices agree on inactive dimensions.
+   ! Use K[23]D to do shift only on active dimensions 
+
 #ifdef DEBUG_GRID
    write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                        "      Started on level ", lev + 1
@@ -114,9 +119,26 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
 
       do while(mfi%next())
-         tagData => tag%dataptr(mfi)
-         tagData(:, :, :, :) = tagval
-         nullify(tagData)
+         bx = mfi%fabbox()
+
+         blockDesc%limits(LOW,  :) = 1
+         blockDesc%limits(HIGH, :) = 1
+         blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
+         blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
+
+         associate (lo     => blockDesc%limits(LOW,  :), &
+                    hi     => blockDesc%limits(HIGH, :))
+            tagData => tag%dataptr(mfi)
+            do         k = lo(KAXIS)-K3D, hi(KAXIS)-K3D
+                do     j = lo(JAXIS)-K2D, hi(JAXIS)-K2D
+                    do i = lo(IAXIS)-1,   hi(IAXIS)-1
+                        ! Fourth index is 1:1
+                        tagData(i, j, k, 1) = tagval
+                    end do
+                end do
+            end do
+            nullify(tagData)
+         end associate
       end do
 
       call amrex_mfiter_destroy(mfi)
@@ -144,22 +166,38 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
       call Grid_getBlkPtr(blockDesc, solnData, CENTER)
 
-      ! The width of the halo of gaurdcells included in the tagbox array may
-      ! differ.  According to Weiqun, this is necessary for ensuring proper
-      ! nesting.
       tagData => tag%dataptr(mfi)
-      
+     
       associate (lo     => blockDesc%limits(LOW,  :), &
-                 hi     => blockDesc%limits(HIGH, :))
-
-#ifdef DEBUG_TAGDATA
-        print*,'markRD_cb: lbound(solnData):', lbound(solnData)
-        print*,'markRD_cb: ubound(solnData):', ubound(solnData)
-        print*,'markRD_cb: lbound(tagData):', (lbound(tagData) + 1)
-        print*,'markRD_cb: ubound(tagData):', (ubound(tagData) + 1)
+                 hi     => blockDesc%limits(HIGH, :), &
+                 lo_tag => lbound(tagData), &
+                 hi_tag => ubound(tagData))
+     
+#ifdef DEBUG_GRID
+        ! Tagbox must contain block
+        if (     ((lo_tag(IAXIS) + 1)   > lo(IAXIS))  &
+            .OR. ((lo_tag(JAXIS) + K2D) > lo(JAXIS)) &
+            .OR. ((lo_tag(KAXIS) + K3D) > lo(KAXIS)) &
+            .OR. ((hi_tag(IAXIS) + 1)   < hi(IAXIS)) &
+            .OR. ((hi_tag(JAXIS) + K2D) < hi(JAXIS)) &
+            .OR. ((hi_tag(KAXIS) + K3D) < hi(KAXIS))) then
+            call Driver_abortFlash("[gr_markRefineDerefineCallback] " // &
+                                   "Tagbox is smaller than associated block")
+        end if
 #endif
 
-        tagData(:, :, :, :) = clearval
+        ! Initialize to no refinement on interior
+        do         k = lo(KAXIS)-K3D, hi(KAXIS)-K3D
+            do     j = lo(JAXIS)-K2D, hi(JAXIS)-K2D
+                do i = lo(IAXIS)-1,   hi(IAXIS)-1
+                    ! Fourth index is 1:1
+                    tagData(i, j, k, 1) = clearval
+                end do
+            end do
+        end do
+
+        ! If block's error is too large for any single refinement variable,
+        ! then the block should be refined
  rloop: do l = 1, gr_numRefineVars
             iref = gr_refine_var(l)
             if (iref < 1)   CYCLE
@@ -173,13 +211,24 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             ! There is no means to indicate derefine/stay/refine as with
             ! Paramesh.
             if (error > gr_refine_cutoff(l)) then
-                ! According to Weiqun, when AMReX is setup in octree mode,
-                ! tagging a single cell in a block is sufficient for indicating
-                ! a need to refine.
+                ! According to Weiqun:
+                ! When AMReX is setup in octree mode, tagging a single cell in
+                ! a block is sufficient for indicating a need to refine.
                 !
-                ! We err on the side of caution by tagging all cells in box
-                ! array to ensure octree refinement
-                tagData(:, :, :, :) = tagval
+                ! The width of the halo of gaurdcells included in the tagbox
+                ! array may differ.  This space is needed for ensuring proper
+                ! nesting and is used by AMReX.  Client code need not set those
+                ! when tagging for refinement.
+                !
+                ! We err on the side of caution by tagging all cells in the
+                ! interior to ensure octree refinement
+                do         k = lo(KAXIS)-K3D, hi(KAXIS)-K3D
+                    do     j = lo(JAXIS)-K2D, hi(JAXIS)-K2D
+                        do i = lo(IAXIS)-1,   hi(IAXIS)-1
+                            tagData(i, j, k, 1) = tagval
+                        end do
+                    end do
+                end do
 
 #ifdef DEBUG_GRID
                 write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
