@@ -68,11 +68,7 @@ subroutine Driver_evolveFlash()
     integer,  parameter :: NXCELL_EX   = 64
     integer,  parameter :: NYCELL_EX   = 64
     integer,  parameter :: NZCELL_EX   =  4
-    ! DEVNOTE: FIXME Not able to configure rectangular blocks with octree
-!    integer,  parameter :: NXBLK_EX    =  8
-!    integer,  parameter :: NYBLK_EX    = 16
-!    integer,  parameter :: NZBLK_EX    =  2
-    integer,  parameter :: NXBLK_EX    = 16
+    integer,  parameter :: NXBLK_EX    =  8
     integer,  parameter :: NYBLK_EX    = 16
     integer,  parameter :: NZBLK_EX    =  2
     real,     parameter :: XMIN_EX     = -1.00d0
