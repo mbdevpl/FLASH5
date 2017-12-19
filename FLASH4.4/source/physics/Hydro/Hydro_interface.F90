@@ -21,11 +21,9 @@ Module Hydro_interface
        implicit none
        type(block_metadata_t), intent(IN) :: block
        integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
-
        real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
        real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)), intent(IN) :: y, dy, uygrid
        real, dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)), intent(IN) :: z, dz, uzgrid
-
        real,INTENT(INOUT)    :: dt_check
        integer,INTENT(INOUT)    :: dt_minloc(5)
        real, pointer :: solnData(:,:,:,:) 
@@ -85,6 +83,13 @@ Module Hydro_interface
        real,dimension(MDIM),intent(IN) :: del
      end subroutine Hydro_loop5Body
   end interface
+
+  interface Hydro
+  subroutine Hydro(  timeEndAdv, dt, dtOld,sweepOrder )
+    real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+    integer, INTENT(IN) :: sweepOrder
+  end subroutine Hydro
+  end interface Hydro
 
   interface Hydro_init
      subroutine Hydro_init()
