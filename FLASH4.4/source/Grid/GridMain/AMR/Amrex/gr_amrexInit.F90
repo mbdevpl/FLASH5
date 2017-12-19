@@ -121,12 +121,10 @@ subroutine gr_amrexInit()
   end if
   call pp_geom%addarr("is_periodic", is_periodic)
 
-  ! DEVNOTE: max_grid must be a multiple of blocking_factor.  Error checking in
-  ! AMReX or here?
   call amrex_parmparse_build(pp_amr, "amr")
   call RuntimeParameters_get("gr_amrex_verbosity", verbosity)
   call pp_amr%add   ("v", verbosity)
-  
+
   call RuntimeParameters_get("nrefs", nrefs)
   call pp_amr%add   ("regrid_int", nrefs)
 
@@ -141,13 +139,21 @@ subroutine gr_amrexInit()
                                 NYB * nBlockY, &
                                 NZB * nBlockZ])
 
-  ! DEV: TODO: Set this appropriately based on N[XYZ]B
-  call pp_amr%add   ("max_grid_size", MIN(NXB, NYB)) 
-  call pp_amr%add   ("blocking_factor", 2*MIN(NXB, NYB))
-!  call pp_amr%add   ("n_proper", )
-!  call pp_amr%add   ("grid_eff", ._wp)
-!  call pp_amr%add   ("n_error_buf", )
+  ! Setup AMReX in octree mode
+  call pp_amr%add   ("max_grid_size_x",     NXB) 
+  call pp_amr%add   ("max_grid_size_y",     NYB) 
+  call pp_amr%add   ("max_grid_size_z",     NZB) 
+  call pp_amr%add   ("blocking_factor_x", 2*NXB)
+  call pp_amr%add   ("blocking_factor_y", 2*NYB)
+  call pp_amr%add   ("blocking_factor_z", 2*NZB)
   call pp_amr%add   ("refine_grid_layout", 0)
+ 
+  ! According to Weiqun n_proper=1 is an appropriate setting that will result in
+  ! correct nesting.
+  call pp_amr%add("n_proper", 1)
+  ! We account for data in the guardcells when determining error metric for
+  ! entire block.  Therefore, we do not need to tag guardcells.
+  call pp_amr%add("n_error_buf", 0)
 
   ! desctructors not valid for all compilers
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
