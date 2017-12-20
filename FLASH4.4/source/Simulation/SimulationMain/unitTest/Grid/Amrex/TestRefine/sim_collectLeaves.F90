@@ -1,6 +1,8 @@
 #include "constants.h"
 
 subroutine sim_collectLeaves
+    use Grid_interface,       ONLY : Grid_getBlkIterator, &
+                                     Grid_releaseBlkIterator
     use gr_amrexInterface,    ONLY : gr_getFinestLevel
     use block_iterator,       ONLY : block_iterator_t 
     use block_metadata,       ONLY : block_metadata_t 
@@ -19,7 +21,7 @@ subroutine sim_collectLeaves
     call gr_getFinestLevel(finest_level)
     do lev = MIN_REFINE_LEVEL, MAX_REFINE_LEVEL
         block_count = 0
-        itor = block_iterator_t(LEAF, level=lev)
+        call Grid_getBlkIterator(itor, LEAF, level=lev)
         do while (itor%is_valid())
             call itor%blkMetaData(blockDesc)
  
@@ -27,6 +29,7 @@ subroutine sim_collectLeaves
 
             call itor%next()
         end do
+        call Grid_releaseBlkIterator(itor)
 
         if (allocated(leaves(lev)%blocks)) then
             deallocate(leaves(lev)%blocks)
@@ -39,7 +42,7 @@ subroutine sim_collectLeaves
 
     ! Populate leaf block data structure
     do lev = MIN_REFINE_LEVEL, finest_level 
-        itor = block_iterator_t(LEAF, level=lev)
+        call Grid_getBlkIterator(itor, LEAF, level=lev)
 
         j = 1
         do while (itor%is_valid())
@@ -54,6 +57,8 @@ subroutine sim_collectLeaves
             j = j + 1
             call itor%next()
         end do
+        
+        call Grid_releaseBlkIterator(itor)
     end do
 end subroutine sim_collectLeaves
 

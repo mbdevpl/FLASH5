@@ -67,6 +67,9 @@ contains
     !!  within the current paramesh octree structure.  The iterator is already
     !!  set to the first matching block.
     !!
+    !!  NOTE: Prefer iterator acquisition/destruction via Grid unit public
+    !!        interface --- Grid_getBlkIterator/Grid_releaseBlkIterator.
+    !!
     !! ARGUMENTS
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
@@ -75,6 +78,8 @@ contains
     !!
     !! SEE ALSO
     !!  constants.h
+    !!  Grid_getBlkIterator.F90
+    !!  Grid_releaseBlkIterator.F90
     !!****
     function init_iterator(nodetype, level) result(this)
         integer, intent(IN)           :: nodetype

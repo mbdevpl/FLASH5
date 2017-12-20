@@ -1337,4 +1337,22 @@ Module Grid_interface
      end subroutine Grid_coordTransfm
   end interface
 
+  interface
+     subroutine Grid_getBlkIterator(itor, nodetype, level)
+       use block_iterator, ONLY : block_iterator_t
+       implicit none
+       type(block_iterator_t), intent(OUT)          :: itor
+       integer,                intent(IN)           :: nodetype
+       integer,                intent(IN), optional :: level
+     end subroutine Grid_getBlkIterator
+  end interface
+  
+  interface
+     subroutine Grid_releaseBlkIterator(itor)
+       use block_iterator, ONLY : block_iterator_t
+       implicit none
+       type(block_iterator_t), intent(INOUT) :: itor
+     end subroutine Grid_releaseBlkIterator
+  end interface
+
 end Module Grid_interface
