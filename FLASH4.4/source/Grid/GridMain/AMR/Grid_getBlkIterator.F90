@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/AMR/Amrex/Grid_getBlkIterator
+!!****if* source/Grid/GridMain/AMR/Grid_getBlkIterator
 !!
 !! NAME
 !!  Grid_getBlkIterator
@@ -10,7 +10,7 @@
 !!  
 !! DESCRIPTION 
 !!  Construct an iterator for walking across a specific subset of blocks
-!!  within the current AMReX octree structure.  The iterator is already
+!!  within the current mesh octree structure.  The iterator is already
 !!  set to the first matching block.
 !!
 !!  Once finished, the iterator should be destroyed with
