@@ -237,7 +237,8 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getBlkIterator, Grid_releaseBlkIterator
   use gr_interface, ONLY : gr_setGcFillNLayers
   use paramesh_dimensions, ONLY : l2p5d,ndim
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
