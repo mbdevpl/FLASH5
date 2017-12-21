@@ -8,7 +8,7 @@ module gr_physicalMultifabs
     public :: facevary
     public :: facevarz
 
-    type(amrex_multifab), allocatable :: unk(:)
+    type(amrex_multifab), allocatable,TARGET :: unk(:)
     type(amrex_multifab), allocatable :: facevarx(:)
     type(amrex_multifab), allocatable :: facevary(:)
     type(amrex_multifab), allocatable :: facevarz(:)

@@ -138,7 +138,7 @@ contains
 
     function init_iterator(nodetype, level, tiling) result(this)
       use amrex_multifab_module, ONLY : amrex_multifab
-      use gr_amrextData
+      use gr_physicalMultifabs,  ONLY : Unk
 
         type(block_1lev_iterator_t)        :: this
         integer, intent(IN)           :: nodetype
@@ -154,11 +154,9 @@ contains
  
         allocate(this%mfi)
 
-!!$        call gr_amrextDataInit(10)
-!!$        call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs,lrefine_max,LEAF)
         if (present(level)) then
-           mfArray => gr_amrextUnkMFs
-           mf => gr_amrextUnkMFs(level-1)
+           mfArray => Unk
+           mf => Unk(level-1)
 !!$           print*,'amrex_multifab_nghost(mf)=',mf%nghost()
 !!$           print*,'ABOUT TO call amrex_mfiter_build,size(mfArray)=',size(mfArray)
 !!$           call amrex_mfiter_build(this%mfi,mfArray(level),tiling=tiling)
@@ -166,7 +164,7 @@ contains
 !!$           print*,'amrex_multifab_nghost(mf)=',mf%nghost()
            this%mf => mfArray(level-1)
         else
-           mf => gr_amrextUnkMFs(0)
+           mf => Unk(0)
            call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
            this%mf => mf
         end if

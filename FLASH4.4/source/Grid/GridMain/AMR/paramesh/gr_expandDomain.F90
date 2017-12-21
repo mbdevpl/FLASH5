@@ -32,7 +32,7 @@
 subroutine gr_expandDomain (particlesInitialized)
 
   use Grid_data, ONLY : gr_domainBC,gr_eosModeInit,gr_refineOnParticleCount,&
-       gr_refineOnPdens,gr_maxParticlesPerBlk,gr_minParticlesPerBlk, gr_meshMe,&
+       gr_maxParticlesPerBlk,gr_minParticlesPerBlk, gr_meshMe,&
        gr_meshNumProcs, gr_lrefineMinInit, gr_gcellsUpToDate
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_stampVarMask
