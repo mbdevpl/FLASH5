@@ -537,8 +537,15 @@ contains
         call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC, gds)
 
         blockDesc%id = blockID
-        blockDesc%cid = gr_oneBlock(blockDesc%id)%cornerID
-        blockDesc%stride = 2**(lrefine_max - blockDesc%level)
+        if (blockID .LE. MAXBLOCKS) then ! is this really a handle for a local block?
+           blockDesc%cid    = gr_oneBlock(blockDesc%id)%cornerID
+           blockDesc%level  = lrefine(blockID)
+           blockDesc%stride = 2**(lrefine_max - blockDesc%level)
+        else                 ! blockID was a handle for a remote block...
+           blockDesc%cid = 0 ! cid better not be used for anything then...
+           blockDesc%level = -999 ! better not be used...
+           blockDesc%stride = -999! better not be used...
+        end if
         blockDesc%localLimits   = blkLimits
         blockDesc%localLimitsGC = blkLimitsGC
 
@@ -552,13 +559,13 @@ contains
             hi(:) = blkLimits(HIGH, :)
             loGC(:) = blkLimitsGC(LOW, :)
             hiGC(:) = blkLimitsGC(HIGH, :)
-            if (cellIdxBase==-1) then
+            if (cellIdxBase == -1) then
                cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
                lo(:)   = lo(:)   - 1 + cornerID(:)
                hi(:)   = hi(:)   - 1 + cornerID(:)
                loGC(:) = loGC(:) - 1 + cornerID(:)
                hiGC(:) = hiGC(:) - 1 + cornerID(:)
-            else if (cellIdxBase==-2) then
+            else if (cellIdxBase == -2) then
                cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
                lo(:)   = lo(:)   - 1 + cornerID(:)
                hi(:)   = hi(:)   - 1 + cornerID(:)
@@ -568,7 +575,7 @@ contains
                hi(1:NDIM)   = hi(1:NDIM)   - NGUARD
                loGC(1:NDIM) = loGC(1:NDIM) - NGUARD
                hiGC(1:NDIM) = hiGC(1:NDIM) - NGUARD
-            else if (cellIdxBase==0) then
+            else if (cellIdxBase == 0) then
                lo(:)   = lo(:)   - 1
                hi(:)   = hi(:)   - 1
                loGC(:) = loGC(:) - 1
