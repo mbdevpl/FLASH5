@@ -49,7 +49,6 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
         Grid_bcApplyToRegion.o\
 	Grid_bcApplyToRegionSpecialized.o\
 	Grid_bcApplyToRegionMixedGds.o\
-	Grid_blockMatch.o\
 	Grid_pfft.o Grid_pfftInit.o Grid_pfftFinalize.o\
 	Grid_pfftGetIndexLimits.o Grid_pfftMapToInput.o Grid_pfftMapFromOutput.o \
 	Grid_getMaxCommonRefinement.o Grid_setFluxHandling.o \

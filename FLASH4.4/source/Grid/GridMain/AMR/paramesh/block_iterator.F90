@@ -12,10 +12,6 @@ module block_iterator
 #include "Flash.h"
     use tree, ONLY : lnblocks, lrefine, lrefine_max
     use gr_specificData, ONLY : gr_oneBlock
-    use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-    use Grid_interface, ONLY : Grid_getBlkIndexLimits
-    use Grid_interface, ONLY : Grid_getBlkCornerID
-    use Grid_interface, ONLY : Grid_blockMatch
 
     implicit none
 
@@ -172,18 +168,20 @@ contains
     !!
     !!****
     subroutine next(this)
+        use gr_interface, ONLY : gr_blockMatch
+
         class(block_iterator_t), intent(INOUT) :: this
 
         integer :: j = 0
   
-        ! DEVNOTE: Move this check inside of Grid_blockMatch
         if (this%lev == INVALID_LEVEL) then
+            ! No level given at creation
             do j = this%cur + 1, lnblocks
-                if (Grid_blockMatch(j, this%nodetype)) EXIT
+                if (gr_blockMatch(j, this%nodetype)) EXIT
             end do
         else
             do j = this%cur + 1, lnblocks
-                if (Grid_blockMatch(j, this%nodetype, this%lev)) EXIT
+                if (gr_blockMatch(j, this%nodetype, this%lev)) EXIT
             end do
         end if
 
@@ -204,7 +202,8 @@ contains
     !!
     !!****
     subroutine blkMetaData(this, mData)
-        use block_metadata, ONLY : block_metadata_t
+        use block_metadata,             ONLY : block_metadata_t
+        use Grid_getBlkIndexLimits_mod, ONLY : Grid_getBlkIndexLimits
 
         class(block_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: mData
