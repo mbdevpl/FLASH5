@@ -74,6 +74,7 @@ subroutine Driver_evolveFlash()
         Call Eos_unitTest(fileUnit,thisBlock, Uout, tileLimits)
         print *, "    Returned from Eos_unitTest"
         perfect=perfect.and.thisBlock
+        call itor%next()
      end do
   end do
   

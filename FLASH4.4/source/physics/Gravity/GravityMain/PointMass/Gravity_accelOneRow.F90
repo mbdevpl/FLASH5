@@ -133,11 +133,9 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
   endif
 
 !==============================================================================
-#ifndef FIXEDBLOCKSIZE
   deallocate(xCenter)
   deallocate(yCenter)
   deallocate(zCenter)
-#endif
 
   return
 
@@ -174,7 +172,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 
   integer :: sizeX,sizeY,sizez
 
-  integer :: ii,j,k
+  integer :: i,ii,j,k
   logical :: gcell = .true.
 
 !==============================================================================
@@ -186,9 +184,11 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   sizeX=numCells
   sizeY=numCells
   sizeZ=numCells
-  allocate(xCenter(sizeX))
-  allocate(yCenter(sizeY))
-  allocate(zCenter(sizeZ))
+  blkLimits(:,:)   = blockDesc%Limits
+  blkLimitsGC(:,:) = blockDesc%LimitsGC
+  allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(LOW,IAXIS)+sizeX-1))
+  allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(LOW,JAXIS)+sizeY-1))
+  allocate(zCenter(blkLimitsGC(LOW,KAXIS):blkLimitsGC(LOW,KAXIS)+sizeZ-1))
   zCenter = 0.
   yCenter = 0.
   if (NDIM == 3) then 
@@ -207,12 +207,13 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 
      tmpdr32 = yCenter(j)*yCenter(j) + zCenter(k)*zCenter(k) 
 
-     do ii = 1, numCells
+     do i = 1, numCells
+        ii = blkLimitsGC(LOW,IAXIS) + i - 1
 
         dr32 = sqrt(xCenter(ii)*xCenter(ii) + tmpdr32)
         dr32 = dr32*dr32*dr32
 
-        grav(ii) = grv_factor*xCenter(ii)/dr32
+        grav(i) = grv_factor*xCenter(ii)/dr32
      enddo
 
 
@@ -220,34 +221,34 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 
      tmpdr32 = xCenter(j)*xCenter(j) + zCenter(k)*zCenter(k) 
 
-     do ii = 1, numCells
+     do i = 1, numCells
+        ii = blkLimitsGC(LOW,JAXIS) + i - 1
         
         dr32 = sqrt(yCenter(ii)*yCenter(ii) + tmpdr32)
         dr32 = dr32*dr32*dr32
 
-        grav(ii) = grv_factor*yCenter(ii)/dr32
+        grav(i) = grv_factor*yCenter(ii)/dr32
      enddo
 
   else if (sweepDir .eq. SWEEP_Z) then          ! z-component
 
      tmpdr32 = xCenter(j)*xCenter(j) + yCenter(k)*yCenter(k) 
 
-     do ii = 1, numCells
+     do i = 1, numCells
+        ii = blkLimitsGC(LOW,JAXIS) + i - 1
         
         dr32 = sqrt(zCenter(ii)*zCenter(ii) + tmpdr32)           
         dr32 = dr32*dr32*dr32
         
-        grav(ii) = grv_factor*zCenter(ii)/dr32
+        grav(i) = grv_factor*zCenter(ii)/dr32
      enddo
 
   endif
 
 !==============================================================================
-#ifndef FIXEDBLOCKSIZE
   deallocate(xCenter)
   deallocate(yCenter)
   deallocate(zCenter)
-#endif
 
   return
 

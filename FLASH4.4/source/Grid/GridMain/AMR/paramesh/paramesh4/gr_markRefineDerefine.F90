@@ -68,12 +68,6 @@ subroutine gr_markRefineDerefine(error, refine_cutoff,derefine_cutoff)
   logical :: gcell_on_cc_backup(NUNK_VARS)
 
 
-  newchild(:) = .FALSE.
-  refine(:)   = .FALSE.
-  derefine(:) = .FALSE.
-  stay(:)     = .FALSE.
-
-
   
 ! MARK FOR REFINEMENT OR DEREFINEMENT
 
@@ -159,13 +153,6 @@ subroutine gr_markRefineDerefine(error, refine_cutoff,derefine_cutoff)
      
   end do
 
-  !restore to the state when we came in
-  ! When the flag arrays are passed to Paramesh for processing, only leaf
-  ! blocks should be marked. - KW
-  where (nodetype(:) .NE. LEAF)
-     refine(:)   = .false.
-     derefine(:) = .false.
-  end where
   
   !=========================================================================
   return

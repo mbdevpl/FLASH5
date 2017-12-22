@@ -23,6 +23,8 @@ module block_iterator
 #include "constants.h"
     private
 
+    public :: destroy_iterator
+
     integer,parameter :: ndims=N_DIM
     integer,parameter :: amrex_real=kind(1.0)
 
@@ -49,8 +51,6 @@ module block_iterator
         procedure, public :: blkMetaData
 #if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         final             :: destroy_iterator
-#else
-        procedure         :: destroy_iterator
 #endif
     end type block_iterator_t
 
@@ -110,11 +110,7 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
         type(block_iterator_t), intent(INOUT) :: this
-#else
-      class (block_iterator_t), intent(INOUT) :: this
-#endif
 
         call this%first()
     end subroutine destroy_iterator
@@ -238,13 +234,13 @@ contains
             hi(:) = blkLim(HIGH, :)
             loGC(:) = blkLimGC(LOW, :)
             hiGC(:) = blkLimGC(HIGH, :)
-            if (this%cellIdxBase==-1) then
+            if (this%cellIdxBase == -1) then
                cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
                lo(:)   = lo(:)   - 1 + cornerID(:)
                hi(:)   = hi(:)   - 1 + cornerID(:)
                loGC(:) = loGC(:) - 1 + cornerID(:)
                hiGC(:) = hiGC(:) - 1 + cornerID(:)
-            else if (this%cellIdxBase==-2) then
+            else if (this%cellIdxBase == -2) then
                cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
                lo(:)   = lo(:)   - 1 + cornerID(:)
                hi(:)   = hi(:)   - 1 + cornerID(:)
@@ -254,7 +250,7 @@ contains
                hi(1:ndims)   = hi(1:ndims)   - NGUARD
                loGC(1:ndims) = loGC(1:ndims) - NGUARD
                hiGC(1:ndims) = hiGC(1:ndims) - NGUARD
-            else if (this%cellIdxBase==0) then
+            else if (this%cellIdxBase == 0) then
                lo(:)   = lo(:)   - 1
                hi(:)   = hi(:)   - 1
                loGC(:) = loGC(:) - 1

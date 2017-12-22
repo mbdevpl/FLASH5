@@ -247,6 +247,6 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
   integer, optional,intent(IN) :: selectBlockType
   logical, optional, intent(IN) :: unitReadsMeshDataOnly
   
-  call Driver_abortFlash('Grid_fillGuardCells_blkid: just a stub for this Gird configuration, do not call!')
+  call Driver_abortFlash('Grid_fillGuardCells_blkid: just a stub for this Grid configuration, do not call!')
 
 end subroutine Grid_fillGuardCells_blkid

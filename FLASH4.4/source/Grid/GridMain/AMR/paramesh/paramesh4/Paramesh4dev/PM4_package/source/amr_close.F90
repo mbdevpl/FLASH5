@@ -51,6 +51,9 @@
 !!
 !!   Peter MacNeice and Kevin Olson.
 !!
+!! HISTORY
+!!
+!!   2017-10-04 modified to not call MPI_Finalize for FLASH   - Klaus Weide
 !!***
 
 # include "paramesh_preprocessor.fh"
@@ -65,7 +68,7 @@
       Use prolong_arrays
       Use timings
 
-      Use paramesh_interfaces, Only : comm_finish
+      use paramesh_mpi_interfaces, only : mpi_array_deallocate
 
       Implicit None
 
@@ -311,9 +314,12 @@
       Deallocate(i_divf_fc_vars)
 
 
-! Call the machine/software environment specific closure routine.
+! Instead of calling comm_finish closure routine.
 
-      Call comm_finish()
+      call mpi_array_deallocate
+#ifdef AUTOPACK
+        call AP_FINALIZE
+#endif /* AUTOPACK */
 
       Return
       End Subroutine amr_close

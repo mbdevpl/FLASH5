@@ -28,7 +28,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockID -   the block number to renormalize
+!!  blockDesc -   the block number to renormalize
 !!  blkLimits - the index limits for internal zones of the block to renormalize
 !!  solnData -  Pointer to the block to be renormalized
 !!
@@ -53,19 +53,20 @@
 #define DEBUG_MS
 #endif
 
-subroutine Grid_renormAbundance(blockId,blkLimits,solnData)
+subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
 
 
   use Grid_data, ONLY : gr_smallx
   use Grid_interface, ONLY : Grid_getSingleCellCoords
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata,   ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, INTENT(in) :: blockId
+  type(block_metadata_t), intent(IN) :: blockDesc
   integer, intent(in), dimension(2,MDIM)::blkLimits
   real,pointer :: solnData(:,:,:,:)
 
@@ -78,6 +79,11 @@ subroutine Grid_renormAbundance(blockId,blkLimits,solnData)
   real,dimension(MDIM)::pntCoord
   character(len=120)::log_message
 
+  integer :: blockId
+
+#ifndef FLASH_GRID_AMREX
+  blockId = blockDesc%id
+#endif
 
   do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
      do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
@@ -105,9 +111,20 @@ subroutine Grid_renormAbundance(blockId,blkLimits,solnData)
            if (error >= 0.10) then
               point(IAXIS)=i; point(JAXIS)=j; point(KAXIS)=k
               print*,'get grid single cell coords',point
-              call Grid_getSingleCellCoords&
-                   (point,blockId,CENTER, EXTERIOR, pntCoord)
+#ifdef FLASH_GRID_AMREX
+              call Grid_getSingleCellCoords_lev(point,blockDesc%level,CENTER, pntCoord)
+              print *, 'Error: non-conservation in block at level ', &
+                        blockDesc%level, &
+                        " / grid_index = ", blockDesc%grid_index
+#else
+              if (blockId > 0) then !seems valid, must be in a transitional mode...
+                 call Grid_getSingleCellCoords&
+                      (point,blockId,CENTER, EXTERIOR, pntCoord)
+              else
+                 call Grid_getSingleCellCoords_lev(point,blockDesc%level,CENTER, pntCoord)
+              end if
               print *, 'Error: non-conservation in block ', blockId
+#endif
               print *, 'Abundance non-conservation by ', error
               
               print *, 'x = ', pntCoord(IAXIS)

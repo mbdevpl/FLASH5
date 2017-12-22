@@ -65,7 +65,7 @@
 
 !!REORDER(4):U, V0, scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr, B[xyz]
 
-Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
+Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                                   ogravX,ogravY,ogravZ,&
                                   scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                   hy_SpcR,hy_SpcL,hy_SpcSig,&
@@ -116,10 +116,11 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 
   !! Arguments type declaration ------------------------------------------------------------
   type(block_metadata_t), intent(IN)   :: block
-  integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
+  integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits !, blkLimitsGC
+  integer, intent(IN),dimension(MDIM)  :: loGC, hiGC
   real,    intent(IN)   :: dt
   real,    intent(IN),dimension(MDIM) :: del
-  real, dimension(:,:,:), intent(IN) :: ogravX,ogravY,ogravZ
+  real, dimension(loGC(IAXIS):,loGC(JAXIS):,loGC(KAXIS):), intent(IN) :: ogravX,ogravY,ogravZ
   real, pointer, dimension(:,:,:,:) :: U
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr, scrchFaceYPtr, scrchFaceZPtr
   real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
@@ -149,17 +150,17 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
   logical, parameter :: normalFieldUpdateOnly = .FALSE.
 #endif
 
-  real, dimension(NDIM,blkLimitsGC(HIGH,IAXIS),&
-                       blkLimitsGC(HIGH,JAXIS),&
-                       blkLimitsGC(HIGH,KAXIS)) :: FlatCoeff, FlatTilde
-  real, dimension(     blkLimitsGC(HIGH,IAXIS),&
-                       blkLimitsGC(HIGH,JAXIS),&
-                       blkLimitsGC(HIGH,KAXIS)) :: DivU
+  real, dimension(NDIM,loGC(IAXIS):hiGC(IAXIS),&
+                       loGC(JAXIS):hiGC(JAXIS),&
+                       loGC(KAXIS):hiGC(KAXIS)) :: FlatCoeff, FlatTilde
+  real, dimension(     loGC(IAXIS):hiGC(IAXIS),&
+                       loGC(JAXIS):hiGC(JAXIS),&
+                       loGC(KAXIS):hiGC(KAXIS)) :: DivU
 
   real :: Sp, dv1, dp1, dp2, presL,presR,hdt
 
-  real, dimension(blkLimitsGC(HIGH,IAXIS)) :: xCenter  
-  real, dimension(blkLimitsGC(HIGH,JAXIS)) :: yCenter  
+  real, dimension(loGC(IAXIS):hiGC(IAXIS)) :: xCenter  
+  real, dimension(loGC(JAXIS):hiGC(JAXIS)) :: yCenter  
 
   integer :: k2,k3,kGrav,kHydro,kUSM,order
   integer :: k4,im2,ip2,jm2,jp2,km2,kp2
@@ -198,9 +199,9 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 
   ! GLM fluxes & state updates
 #ifdef FLASH_UGLM_MHD
-  real, dimension(blkLimitsGC(HIGH,IAXIS),&
-                  blkLimitsGC(HIGH,JAXIS),&
-                  blkLimitsGC(HIGH,KAXIS)) :: &
+  real, dimension(loGC(IAXIS):hiGC(IAXIS),&
+                  loGC(JAXIS):hiGC(JAXIS),&
+                  loGC(KAXIS):hiGC(KAXIS)) :: &
        GLMxStar,GLMyStar,GLMzStar,BxStar,ByStar,BzStar
 #endif /* FLASH_UGLM_MHD */
 
@@ -289,6 +290,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 
   if (.NOT. normalFieldUpdateOnly) then
 
+     dataSize(1:MDIM)=hiGC(1:MDIM)-loGC(1:MDIM)+1
      if (hy_geometry /= CARTESIAN) then
         ! Grab cell x-coords for this block  
         call Grid_getCellCoords(IAXIS,block, CENTER,.true.,xCenter,dataSize(IAXIS))
@@ -298,11 +300,10 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
 #endif
      endif
 
-     dataSize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
-     allocate( sig(HY_VARINUMMAX,NDIM,           dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-     allocate( lambda(HY_WAVENUM,NDIM,           dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-     allocate(leftEig(HY_VARINUM,HY_WAVENUM,NDIM,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
-     allocate(rghtEig(HY_VARINUM,HY_WAVENUM,NDIM,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)))
+     allocate( sig(HY_VARINUMMAX,NDIM,           loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)))
+     allocate( lambda(HY_WAVENUM,NDIM,           loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)))
+     allocate(leftEig(HY_VARINUM,HY_WAVENUM,NDIM,loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)))
+     allocate(rghtEig(HY_VARINUM,HY_WAVENUM,NDIM,loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)))
   end if
 
   !! -----------------------------------------------------------------------!
@@ -315,17 +316,17 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
      k4 = hy_order - 1             !cf. hy_uhd_dataReconstOnestep
      if (k4 > 2) k4 = 2 !(i.e., assume order = 3)
      k4 = min(NGUARD-2-kUSM,k4)
-     im2=max(blkLimitsGC(LOW,IAXIS)+1 ,i0  -2+kHydro-k4)
-     ip2=min(blkLimitsGC(HIGH,IAXIS)-1,imax+2-kHydro+k4)
+     im2=max(loGC(IAXIS)+1 ,i0  -2+kHydro-k4)
+     ip2=min(hiGC(IAXIS)-1,imax+2-kHydro+k4)
 #if NDIM > 1
-     jm2=max(blkLimitsGC(LOW,JAXIS)+1 ,j0  -2+kHydro-k4)
-     jp2=min(blkLimitsGC(HIGH,JAXIS)-1,jmax+2-kHydro+k4)
+     jm2=max(loGC(JAXIS)+1 ,j0  -2+kHydro-k4)
+     jp2=min(hiGC(JAXIS)-1,jmax+2-kHydro+k4)
 #else
      jm2=1; jp2=1
 #endif
 #if NDIM > 2
-     km2=max(blkLimitsGC(LOW,KAXIS)+1 ,k0  -2+kHydro-k4)
-     kp2=min(blkLimitsGC(HIGH,KAXIS)-1,kmax+2-kHydro+k4)
+     km2=max(loGC(KAXIS)+1 ,k0  -2+kHydro-k4)
+     kp2=min(hiGC(KAXIS)-1,kmax+2-kHydro+k4)
 #else
      km2=1; kp2=1
 #endif
@@ -505,14 +506,14 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
               !! Reduce order of spatial reconstruction depending on the distance to the solid boundary
               if (order > 2) then
 !!!!! fix this                 
-                 im2=max(blkLimitsGC(LOW,IAXIS),i-2); ip2=min(blkLimitsGC(HIGH,IAXIS),i+2)
+                 im2=max(loGC(IAXIS),i-2); ip2=min(hiGC(IAXIS),i+2)
 #if NDIM > 1
-                 jm2=max(blkLimitsGC(LOW,JAXIS),j-2); jp2=min(blkLimitsGC(HIGH,JAXIS),j+2)
+                 jm2=max(loGC(JAXIS),j-2); jp2=min(hiGC(JAXIS),j+2)
 #else
                  jm2 = 1; jp2=1
 #endif
 #if NDIM > 2
-                 km2=max(blkLimitsGC(LOW,KAXIS),k-2); kp2=min(blkLimitsGC(HIGH,KAXIS),k+2)
+                 km2=max(loGC(KAXIS),k-2); kp2=min(hiGC(KAXIS),k+2)
 #else
                  km2 = 1; kp2=1
 #endif
@@ -533,7 +534,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
               endif
 #if NDIM > 2
               ! Addtional 3D test whether a solid cell is so close
-              ! that we cannot do all the proper transverse158              ! computations for this cell.
+              ! that we cannot do all the proper transverse computations for this cell.
               if (hy_use3dFullCTU) then
                  if (maxval(U(BDRY_VAR,i-1:i+1,j-1:j+1,k-1:k+1)) > 0.) then
                     if (maxval(U(BDRY_VAR,i      ,j-1:j+1,k-1:k+1)) > 0.) lowerCflAtBdry = .TRUE.
@@ -608,7 +609,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                  if (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0 &
                       .AND. present(hy_spcR)) then
                     call hy_uhd_dataReconstOnestep&
-                      (block,U,blkLimitsGC,    &
+                      (block,U,loGC,hiGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
                        DivU,FlatCoeff,         &
@@ -624,7 +625,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                        hy_SpcR,hy_SpcL,hy_SpcSig)
                  else
                     call hy_uhd_dataReconstOnestep&
-                      (block,U,blkLimitsGC,    &
+                      (block,U,loGC,hiGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
                        DivU,FlatCoeff,         &
@@ -798,8 +799,8 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                      Wn(HY_PRES,DIR_X) < 0. .or. Wp(HY_PRES,DIR_X) < 0.) then
                     if(.NOT.TransX_updateOnly) then
                        print*,'[gRSt] afterGeo fallback to order 1 for DIR_X at i,j=',i,j,&
-                            ' in Block''@',hy_meshMe
-                       print*,'[dR1St] afterGeo',Wn(HY_DENS,DIR_X),Wp(HY_DENS,DIR_X), &
+                            ' in Block @',hy_meshMe
+                       print*,'[gRSt] afterGeo',Wn(HY_DENS,DIR_X),Wp(HY_DENS,DIR_X), &
                             Wn(HY_PRES,DIR_X), Wp(HY_PRES,DIR_X)
                          call fallbackToFirstOrder(DIR_X,Wn(:,DIR_X),Wp(:,DIR_X),Vc,hy_SpcL,hy_SpcR,U,i,j,k)
                     end if
@@ -809,8 +810,8 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del,&
                      Wn(HY_PRES,DIR_Y) < 0. .or. Wp(HY_PRES,DIR_Y) < 0.) then
                     if(.NOT.TransY_updateOnly) then
                        print*,'[gRSt] afterGeo fallback to order 1 for DIR_Y at i,j=',i,j,&
-                            ' in Block','@',hy_meshMe
-                       print*,'[dR1St] afterGeo',Wn(HY_DENS,DIR_Y),Wp(HY_DENS,DIR_Y), &
+                            ' in Block @',hy_meshMe
+                       print*,'[gRSt] afterGeo',Wn(HY_DENS,DIR_Y),Wp(HY_DENS,DIR_Y), &
                             Wn(HY_PRES,DIR_Y), Wp(HY_PRES,DIR_Y)
                          call fallbackToFirstOrder(DIR_Y,Wn(:,DIR_Y),Wp(:,DIR_Y),Vc,hy_SpcL,hy_SpcR,U,i,j,k)
                     end if
@@ -1460,7 +1461,7 @@ contains
     real,   intent(OUT), dimension(:)         :: Wleft,Wright
     real,   intent(IN),  dimension(:)         :: Vc
     real,   POINTER_INTENT_IN, dimension(:,:,:,:,:),OPTIONAL :: spcL,spcR
-    real,   intent(IN),  dimension(:,:,:,:)  ,OPTIONAL :: U
+    real,   POINTER_INTENT_IN, dimension(:,:,:,:)  ,OPTIONAL :: U
     integer,intent(IN),                       OPTIONAL :: i,j,k
 
     Wleft (HY_DENS:HY_END_VARS-kGrav) = Vc(HY_DENS:HY_END_VARS-kGrav)

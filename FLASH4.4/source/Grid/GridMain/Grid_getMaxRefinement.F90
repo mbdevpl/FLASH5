@@ -130,8 +130,20 @@ subroutine Grid_getMaxRefinement(maxRefinement, mode, scope, inputComm)
   maxRefinement = 1
 
 #elif defined FLASH_GRID_AMREX
+  ! AMReX uses 0-based level indexing/FLASH uses 1-based
   maxRefinement = amrex_max_level + 1
+
   ! DEVNOTE: TODO/Code other outputs based on myMode
+  if      (present(mode)) then
+    if (mode /= 1)  then
+      call Driver_abortFlash("[Grid_getMaxRefinement] Not coded yet for AMReX")
+    end if
+  else if (present(scope)) then
+    call Driver_abortFlash("[Grid_getMaxRefinement] Not coded yet for AMReX")
+  else if (present(inputComm)) then
+    call Driver_abortFlash("[Grid_getMaxRefinement] Not coded yet for AMReX")
+  end if
+
 #else
 
   if (myMode .LE. 2) then

@@ -1,0 +1,12 @@
+# THis test can be configured with
+# ./setup -auto -2d +cylindrical -nxb=16 -nyb=16 -debug -unitTest/Grid/General +pm4dev
+
+geometry = "cylindrical"
+
+xl_boundary_type = "reflecting"
+xr_boundary_type = "outflow"
+
+smlrho = 0.0
+
+lrefine_min = 2
+lrefine_max = 2

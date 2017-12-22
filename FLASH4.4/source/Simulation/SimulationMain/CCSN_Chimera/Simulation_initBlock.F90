@@ -35,6 +35,7 @@ subroutine Simulation_initBlock(solnData,block)
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
        Grid_getCellCoords, Grid_getDeltas, Grid_getBlkPtr, &
+       Grid_putPointData, &
        Grid_releaseBlkPtr, Grid_getGeometry, Grid_renormAbundance
   use Eos_interface, ONLY : Eos_wrapped, Eos_getAbarZbar, Eos
   use Multispecies_interface, ONLY : Multispecies_getSumFrac,  Multispecies_getSumInv
@@ -69,7 +70,6 @@ subroutine Simulation_initBlock(solnData,block)
   integer :: meshGeom
 
   integer :: i, j, k, n, ivar
-  integer :: istat
 
   real :: suminv
   real :: abar,zbar,sumY
@@ -80,7 +80,9 @@ subroutine Simulation_initBlock(solnData,block)
   real :: radCenter, thtCenter, phiCenter
   real :: radCenterVol, thtCenterVol, phiCenterVol
 
-  blockID = block%id
+!!$#ifndef FLASH_GRID_AMREX
+!!$  blockID = block%id    ! Maybe useful for debugging
+!!$#endif
   blkLimits = block%limits
   blkLimitsGC = block%limitsGC
 
@@ -93,15 +95,15 @@ subroutine Simulation_initBlock(solnData,block)
   kSize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1
 
   !! allocate all needed space
-  allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)),STAT=istat)
-  allocate(xLeft(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)),STAT=istat)
-  allocate(xRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)),STAT=istat)
-  allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)),STAT=istat)
-  allocate(yLeft(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)),STAT=istat)
-  allocate(yRight(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)),STAT=istat)
-  allocate(zCenter(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)),STAT=istat)
-  allocate(zLeft(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)),STAT=istat)
-  allocate(zRight(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)),STAT=istat)
+  allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+  allocate(xLeft(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+  allocate(xRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+  allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+  allocate(yLeft(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+  allocate(yRight(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+  allocate(zCenter(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+  allocate(zLeft(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+  allocate(zRight(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 
   xCenter(:) = 0.e0
   yCenter(:) = 0.e0
@@ -337,15 +339,15 @@ subroutine Simulation_initBlock(solnData,block)
            endif
 
 #if NSPECIES > 0
-!#if defined (YE_MSCALAR)
-!           call renorm_mass_ye(solnData(YE_MSCALAR,i,j,k),solnData(SPECIES_BEGIN:SPECIES_END,i,j,k))
-!#else
+#if defined (YE_MSCALAR)
+           call renorm_mass_ye(solnData(YE_MSCALAR,i,j,k),solnData(SPECIES_BEGIN:SPECIES_END,i,j,k))
+#else
            solnData(SPECIES_BEGIN:SPECIES_END,i,j,k) = &
               & max(sim_smallx,min(1.0,solnData(SPECIES_BEGIN:SPECIES_END,i,j,k)))
            suminv = 1.0 / sum(solnData(SPECIES_BEGIN:SPECIES_END,i,j,k))
            solnData(SPECIES_BEGIN:SPECIES_END,i,j,k) = &
               & max(sim_smallx,min(1.0,suminv*solnData(SPECIES_BEGIN:SPECIES_END,i,j,k)))
-!#endif
+#endif
 
 #endif
 #if defined (SUMY_MSCALAR)
@@ -359,13 +361,15 @@ subroutine Simulation_initBlock(solnData,block)
            rigid_axis(JAXIS) = j
            rigid_axis(KAXIS) = k
            if (radCenter <= sim_r_inner) then
-              call Grid_putPointData(block, CENTER, BDRY_VAR, EXTERIOR, rigid_axis, 1.0)
-              call Grid_putPointData(block, CENTER, DENS_VAR, EXTERIOR, rigid_axis, sim_smlrho) !maybe 1.e11 because PNS?
-              call Grid_putPointData(block, CENTER, TEMP_VAR, EXTERIOR, rigid_axis, sim_smallt) !something else because PNS?
-              call Grid_putPointData(block, CENTER, VELX_VAR, EXTERIOR, rigid_axis, 1.e-100)
-              call Grid_putPointData(block, CENTER, VELY_VAR, EXTERIOR, rigid_axis, 1.e-100)
+              call Grid_putPointData(block, CENTER, BDRY_VAR, DEFAULTIDX, rigid_axis, 1.0)
+              call Grid_putPointData(block, CENTER, DENS_VAR, DEFAULTIDX, rigid_axis, sim_smlrho*1.2) !maybe 1.e11 because PNS?
+              call Grid_putPointData(block, CENTER, TEMP_VAR, DEFAULTIDX, rigid_axis, sim_smallt*1.2) !something else because PNS?
+!!$              call Grid_putPointData(block, CENTER, DENS_VAR, DEFAULTIDX, rigid_axis, 1.59e+05) !maybe 1.e11 because PNS?
+!!$              call Grid_putPointData(block, CENTER, TEMP_VAR, DEFAULTIDX, rigid_axis, 1.e+6) !something else because PNS?
+              call Grid_putPointData(block, CENTER, VELX_VAR, DEFAULTIDX, rigid_axis, 1.e-100)
+              call Grid_putPointData(block, CENTER, VELY_VAR, DEFAULTIDX, rigid_axis, 1.e-100)
            else
-              call Grid_putPointData(block, CENTER, BDRY_VAR, EXTERIOR, rigid_axis, -1.0)
+              call Grid_putPointData(block, CENTER, BDRY_VAR, DEFAULTIDX, rigid_axis, -1.0)
            end if
 #endif
               
@@ -421,7 +425,8 @@ subroutine renorm_mass_ye(ye,xx)
    do i = 1, NSPECIES
       call Multispecies_getProperty(SPECIES_BEGIN + (i-1), Z, zz)
       call Multispecies_getProperty(SPECIES_BEGIN + (i-1), N, nn)
-      xx(i) = xx(i) * (alpha*nn + beta*zz)
+      call Multispecies_getProperty(SPECIES_BEGIN + (i-1), A, aa)
+      xx(i) = xx(i) * (alpha*nn + beta*zz) / aa
       xx(i) = max(sim_smallx,min(1.0,xx(i)))
    end do
 

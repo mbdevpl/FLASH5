@@ -5,15 +5,13 @@
 !!
 !! SYNOPSIS
 !!
-!!  gr_bcApplyToOneFace(integer(IN) :: axis,
-!!                      integer(IN) :: bcType,
-!!                      integer(IN) :: gridDataStruct,
-!!                      integer(IN) :: varCount,
-!!                      integer(IN) :: regionType(MDIM)
-!!                      integer(IN) :: blkLimits(LOW:HIGH,MDIM)
-!!                      integer(IN) :: blkLimitsGC(LOW:HIGH,MDIM)
-!!                      integer(IN) :: blockHandle,
-!!                      integer(IN) :: idest)
+!!  gr_bcApplyToOneFace(integer(IN)          :: axis,
+!!                      integer(IN)          :: bcType,
+!!                      integer(IN)          :: gridDataStruct,
+!!                      integer(IN)          :: varCount,
+!!                      integer(IN)          :: regionType(MDIM)
+!!                      block_metadata_t(IN) :: blockDesc,
+!!                      integer(IN)          :: idest)
 !!  
 !! DESCRIPTION 
 !!
@@ -39,11 +37,10 @@
 !!                     the block and NO_VEC implies that the correspoding dimension is not
 !!                     a part of the region. Normally this value is most likely to be used
 !!                     along KAXIS in a 2D problems, and JAXIS and KAXIS in a 1D problem
-!!    blkLimits      - the endpoints of the block without including the guardcells
-!!    blkLimitsGC    - the endpoints of the block without including the guardcells
-!!    blockHandle        - local block number
-!!    idest         - this is useful in paramesh, when the boundary conditions
-!!                   are being applied to the workspace array WORK
+!!    blockDesc      - Derived type that encapsulates metadata that uniquely
+!!                     characterizes local block to be operated on
+!!    idest          - this is useful in paramesh, when the boundary conditions
+!!                    are being applied to the workspace array WORK
 !!
 !! NOTES
 !!  A specific direction is required in axis - no ALLDIR at this point.
@@ -51,13 +48,14 @@
 !!***
 
 subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
-     regionType,blkLimits,blkLimitsGC,blockHandle,idest)
+     regionType,blockDesc,idest)
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 #include "constants.h"
   
-  integer, intent(in) :: axis,bcType,gridDataStruct,varCount,blockHandle,idest
+  integer, intent(in) :: axis,bcType,gridDataStruct,varCount,idest
   integer,dimension(MDIM),intent(IN) :: regionType
-  integer,dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC,blkLimits
+  type(block_metadata_t), intent(IN) :: blockDesc
 
 end subroutine gr_bcApplyToOneFace

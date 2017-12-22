@@ -86,7 +86,7 @@ DEFLTFLAG = 'OPT'
 
 # unit prefixes which setup knows about
 gridPrefix = "Grid/GridMain"
-gridChoices = ["UG","paramesh","Samrai","Chombo"]
+gridChoices = ["UG","AMR","Samrai","Chombo"]
 simulationPrefix = "Simulation/SimulationMain"
 
 ######## Class for SetupError Exception

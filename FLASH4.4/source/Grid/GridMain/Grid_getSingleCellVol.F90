@@ -62,6 +62,7 @@
 subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
 
   use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellCoords, &
+                             Grid_getBlkRefineLevel,                   &
                              Grid_getGeometry
 
   implicit none
@@ -74,13 +75,15 @@ subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
   real, intent(out) :: cellvolume
 
   integer :: geometry
+  integer :: level
   real :: del(MDIM)
   real :: centerCoords(MDIM), leftCoords(MDIM), rightCoords(MDIM)
   
   del = 1.0
  
   call Grid_getGeometry(geometry)
-  call Grid_getDeltas(blockID, del)
+  call Grid_getBlkRefineLevel(blockID, level)
+  call Grid_getDeltas(level, del)
 
   select case (geometry)
 
@@ -137,7 +140,7 @@ subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
   return
 end subroutine Grid_getSingleCellVol
 
-subroutine Grid_getSingleCellVol_Itor(blockDesc, beginCount, point, cellvolume)
+subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
 
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellCoords, &
@@ -150,23 +153,30 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, beginCount, point, cellvolume)
 #include "Flash.h"
 
   type(block_metadata_t), intent(in) :: blockDesc
-  integer, intent(in) :: beginCount
   integer, intent(in) :: point(MDIM)
   real, intent(out) :: cellvolume
+  integer, intent(in),OPTIONAL :: indexing
 
   integer :: geometry
   integer :: blockID, level
+  integer :: beginCount
   real    :: del(MDIM)
   real    :: centerCoords(MDIM), leftCoords(MDIM), rightCoords(MDIM)
  
+  if (present(indexing)) then
+     beginCount = indexing
+  else
+     beginCount = DEFAULTIDX
+  end if
+
   blockID = blockDesc%id
   level = blockDesc%level
-  if (level < 1) then
+  if (level < 1 .OR. beginCount==EXTERIOR .OR. beginCount==INTERIOR) then
      call Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
      return
   end if
 
-  if (beginCount .NE. EXTERIOR) then
+  if (beginCount .NE. GLOBALIDX1 .AND. beginCount .NE. DEFAULTIDX) then
      call Driver_abortFlash('Grid_getSingleCellVol_Itor: beginCount other than EXTERIOR not supported!')
   end if
 
@@ -199,8 +209,7 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, beginCount, point, cellvolume)
      end if
 
   case (CYLINDRICAL)
-     if (blockID<1) call Driver_abortFlash("Grid_getSingleCellVol: got blockDesc without valid id")
-     call Grid_getSingleCellCoords(point, level, CENTER, centerCoords)
+     call Grid_getSingleCellCoords(point, blockDesc, CENTER, beginCount, centerCoords)
 
      if(NDIM == 1) then
         cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS)

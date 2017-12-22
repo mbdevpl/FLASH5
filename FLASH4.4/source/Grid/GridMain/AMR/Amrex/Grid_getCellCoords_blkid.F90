@@ -112,16 +112,12 @@
 !!
 !!***
 
-#ifdef DEBUG
-#define DEBUG_GRID
-#endif
+#include "constants.h"
+#include "Flash.h"
 
 subroutine Grid_getCellCoords_blkid(axis, blockID, edge, guardcell, coordinates, size)
 
   use Driver_interface, ONLY : Driver_abortFlash
-
-#include "constants.h"
-#include "Flash.h"
 
   implicit none
 

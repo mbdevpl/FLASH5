@@ -251,7 +251,6 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
   use paramesh_mpi_interfaces, ONLY: mpi_amr_comm_setup
   use Eos_interface, ONLY : Eos_guardCells
   use gr_amrextInterface, ONLY : gr_fillMetaData
-  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
   
   implicit none

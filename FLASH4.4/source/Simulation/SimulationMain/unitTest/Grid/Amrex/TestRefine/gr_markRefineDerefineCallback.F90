@@ -8,15 +8,14 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                       amrex_mfiter_destroy, &
                                       amrex_multifab_build
  
+   use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
    use block_metadata,         ONLY : block_metadata_t
    use gr_physicalMultifabs,   ONLY : unk
-   use Grid_data,              ONLY : gr_maxRefine
-   use gr_interface,           ONLY : gr_estimateBlkError  ! to be used RSN
 
    implicit none
  
-#include "constants.h"
 #include "Flash.h"
+#include "constants.h"
 
    integer,           intent(IN), value :: lev
    type(c_ptr),       intent(in), value :: tags 
@@ -34,10 +33,11 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
    integer :: off(1:MDIM)
 
-   integer :: i, j, k, var
-   logical :: refine, derefine, stay
+   integer :: refine_to
+   integer :: i, j
 
-   write(*,*) "[gr_markRefineDerefineCallback] Started on level ", lev + 1
+   write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
+                       "      Started on level ", lev + 1
    
    tag = tags
 
@@ -58,78 +58,43 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       blockDesc%limitsGC(HIGH, :) = 1
       blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
       blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
- 
+
+      call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
       associate (lo => blockDesc%limits(LOW,  :), &
-                 hi => blockDesc%limits(HIGH, :), &
-                 loGC => blockDesc%limitsGC(LOW,  :), &
-                 hiGC => blockDesc%limitsGC(HIGH, :))
-        ! Makes this 1-based cell indexing
-        solnData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev)%dataptr(mfi)
-
-        ! tagData is one cell larger on all borders than interior and 0-based
-        ! Shift to 1-based here
-        off = lo
-        off(1:NDIM) = lo(1:NDIM) - 1
-        tagData(off(1):, off(2):, off(3):, 1:) => tag%dataptr(mfi)
-
-#ifdef DEBUG_TAGDATA
-        print*,'markRD_cb: lbound(solnData):', lbound(solnData)
-        print*,'markRD_cb: ubound(solnData):', ubound(solnData)
-        print*,'markRD_cb: lbound(tagData):', lbound(tagData)
-        print*,'markRD_cb: ubound(tagData):', ubound(tagData)
-        print*,'markRD_cb: tagData in  =', tagData
-#endif
-
+                 hi => blockDesc%limits(HIGH, :))
+        tagData => tag%dataptr(mfi)
         tagData(:, :, :, :) = clearval
-        do         k = lo(3), hi(3)
-            do     j = lo(2), hi(2)
-                do i = lo(1), hi(1)
-                    refine   = .FALSE.
-                    derefine = .FALSE.
-                    stay     = .FALSE.
-                    do var = UNK_VARS_BEGIN, UNK_VARS_END
-                        if (.not.refine.and. .not.stay &
-                            &          .and.(solnData(i, j, k, var) < 0.25*lev)) then
-                           derefine = .TRUE.
-                        else
-                           derefine = .FALSE.
-                        end if
+        do     j = lo(JAXIS), hi(JAXIS)
+            do i = lo(IAXIS), hi(IAXIS)
+                ! Using 0-based AMReX level indexing
+                !
+                ! Stored data is density.  We need to reverse transformation
+                ! back to level of refinement integer that is the same on
+                ! all levels
+                refine_to = INT(solnData(i,j,1,1) * 4.0d0**(4-(lev+1)))
+                if (solnData(i,j,1,1) > 0.0d0) then
+                    write(*,'(A,I3,A,I3,A,F7.5,A,I3)') &
+                          "     Non-zero data at (", &
+                          i, ",", j, ") / density = ", solnData(i,j,1,1), &
+                          " / refine to level ", refine_to
+                end if
 
-                        if (solnData(i, j, k, var) > lev) then
-                           derefine = .FALSE.
-                           refine = .TRUE.
-                        end if
-
-                        if (solnData(i, j, k, var) .GE. 0.25*lev)  &
-                             &           stay = .TRUE.
-
-                        ! DEV: The following relies on gr_maxRefine being properly set, which appears to be not
-                        ! always the case.
-!!$                        if (blockDesc%level.ge.gr_maxRefine)  &
-!!$                             &           refine = .FALSE.
-
-
-                        if (solnData(i, j, k, var) > lev) then
-                            write(*,*) "Tag at (", i, j, k, ") / solnData is", &
-                                        solnData(i, j, k, var)
-                        end if
-                    end do
-                    if (refine) then
-                       write(*,*) "Tag at (", i, j, k, ") / ref,deref,stay is", refine,derefine,stay
-                       tagData(i, j, k, 1) = tagval ! Note: last dimension has the range 1:1 !
-!!$                    else if (derefine) then
-!!$                       write(*,*) "Untag (how??) at (", i, j, k, ") / ref,deref,stay is", refine,derefine,stay
-                    end if
-                end do
+                if (refine_to > (lev+1)) then
+                    write(*,'(A,I3,A,I3,A,F7.5)') "     Tag cell at (", &
+                          i, ",", j, ") for refinement"
+                    ! AMReX uses 0-based spatial indices/FLASH uses 1-based
+                    tagData(i-1, j-1, 1, 1) = tagval
+                end if
             end do
         end do
-#ifdef DEBUG_TAGDATA
-        print*,'markRD_cb: tagData out =', tagData
-#endif
       end associate
+
+      call Grid_releaseBlkPtr(blockDesc, solnData)
    end do
    call amrex_mfiter_destroy(mfi)
 
-   write(*,*) "[gr_markRefineDerefineCallback] Finished on level ", lev + 1
+   write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
+                       "      Finished on level ", lev + 1
 end subroutine gr_markRefineDerefineCallback
 

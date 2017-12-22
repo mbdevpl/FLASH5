@@ -1,6 +1,6 @@
-Grid += amrex_interfaces.o \
+Grid += gr_amrexInterface.o \
         gr_physicalMultifabs.o \
-        gr_amrex_init.o gr_amrex_finalize.o \
+        gr_amrexInit.o gr_amrexFinalize.o \
         gr_clearLevelCallback.o \
         gr_remakeLevelCallback.o \
         gr_initNewLevelCallback.o \
@@ -8,7 +8,13 @@ Grid += amrex_interfaces.o \
         gr_markRefineDerefineCallback.o \
         gr_conserveToPrimitive.o \
         gr_primitiveToConserve.o \
-        gr_fillPhysicalBC.o
+        gr_fillPhysicalBC.o \
+        gr_getFinestLevel.o \
+        gr_averageDownLevels.o \
+        gr_splitFabAtBoundary.o \
+        gr_copyFabInteriorToRegion.o \
+        gr_copyGuardcellRegionToFab.o \
+        gr_writeData.o
 
 Grid += gr_amrextInterface.o
 

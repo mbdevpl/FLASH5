@@ -9,6 +9,9 @@
 !!
 !!****
 
+!! defines IMPURE_ELEMENTAL:
+#include "FortranLangFeatures.fh"
+
 module block_iterator
 
     use amrex_octree_module, ONLY : amrex_octree_iter, &
@@ -21,6 +24,8 @@ module block_iterator
 
 #include "constants.h"
 #include "Flash.h"
+
+    public :: destroy_iterator
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -88,7 +93,6 @@ contains
         call this%next()
     end function init_iterator
 
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
     !!****im* block_iterator_t/destroy_iterator
     !!
     !! NAME
@@ -101,12 +105,11 @@ contains
     !!  Clean-up block interator object at destruction
     !!
     !!****
-    subroutine destroy_iterator(this)
+    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
         type(block_iterator_t), intent(INOUT) :: this
 
         call amrex_octree_iter_destroy(this%oti)
     end subroutine destroy_iterator
-#endif
 
     !!****m* block_iterator_t/first
     !!
@@ -233,10 +236,16 @@ contains
         blockDesc%limitsGC(HIGH, 1:NDIM) =   blockDesc%limits(HIGH, 1:NDIM) &
                                            + n_guards(1:NDIM)
 
-        blockDesc%localLimits(LOW, :)   = blockDesc%limits(LOW, :)   - blockDesc%limitsGC(LOW, :) + 1
-        blockDesc%localLimits(HIGH, :)  = blockDesc%limits(HIGH, :)  - blockDesc%limitsGC(LOW, :) + 1
-        blockDesc%localLimitsGC(LOW, :) = 1
-        blockDesc%localLimitsGC(HIGH, :)= blockDesc%limitsGC(HIGH, :)- blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimits(LOW,  :)      = 1
+        blockDesc%localLimits(HIGH, :)      = 1
+        blockDesc%localLimits(LOW,  1:NDIM) = NGUARD + 1
+        blockDesc%localLimits(HIGH, 1:NDIM) =   blockDesc%limits(HIGH, 1:NDIM) &
+                                              - blockDesc%limits(LOW,  1:NDIM) + NGUARD + 1
+        blockDesc%localLimitsGC(LOW,  :) = 1
+        blockDesc%localLimitsGC(HIGH, :) = 1
+        blockDesc%localLimitsGC(HIGH, 1:NDIM) =   blockDesc%limitsGC(HIGH,1:NDIM) &
+                                                - blockDesc%limitsGC(LOW, 1:NDIM) &
+                                                + 1
 
     end subroutine blkMetaData
  

@@ -73,7 +73,7 @@ subroutine gr_updateRefinement( gridChanged)
                                   amr_prolong
   use Eos_interface, ONLY : Eos_wrapped
   use Particles_interface, ONLY : Particles_updateRefinement 
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -141,6 +141,9 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
   endif
   
   
@@ -190,6 +193,9 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
 
      itor = block_iterator_t(ANCESTOR)
      do while (itor%is_valid())
@@ -198,6 +204,9 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
   endif
 
 #ifndef FLASH_GRID_PARAMESH2
@@ -234,6 +243,9 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+     call destroy_iterator(itor)
+#endif
      call Timers_stop("eos")
   end if
 

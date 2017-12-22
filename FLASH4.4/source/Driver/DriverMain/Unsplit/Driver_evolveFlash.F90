@@ -33,6 +33,7 @@
 #define DEBUG_DRIVER
 #endif
 
+#define DEBUG_GRID_GCMASK
 
 subroutine Driver_evolveFlash()
 
@@ -51,12 +52,16 @@ subroutine Driver_evolveFlash()
                                   dr_useSTSforDiffusion,                 &
                                   dr_tstepChangeFactor,                  &
                                   dr_allowDtSTSDominate,dr_meshComm
+#ifdef DEBUG_GRID_GCMASK
+  use Hydro_data,          ONLY : hy_gcMask, hy_gcMaskSize
+#endif
   use Driver_interface,    ONLY : Driver_sourceTerms, Driver_computeDt, &
                                   Driver_superTimeStep, &
                                   Driver_logMemoryUsage, &
                                   Driver_driftUnk, &
                                   Driver_diagnostics
   use Logfile_interface,   ONLY : Logfile_stamp, Logfile_close
+  use Logfile_interface,   ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop, &
                                   Timers_getSummary
   use Diffuse_interface,   ONLY : Diffuse
@@ -71,13 +76,17 @@ subroutine Driver_evolveFlash()
                                   Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+#ifdef FLASH_GRID_AMREX
+  ! DEV: Temporary ugliness for debugging
+  use gr_amrexInterface,   ONLY : gr_writeData
+#endif
 
 #include "Flash.h"
 #ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
   use gr_amrextData
 #endif
-  use Hydro_interface,     ONLY : Hydro, &
+  use Hydro_interface,     ONLY : Hydro_advanceAll, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
   use IO_interface,        ONLY : IO_output,IO_outputFinal
@@ -114,6 +123,7 @@ subroutine Driver_evolveFlash()
   logical :: endRunPl !Should we end our run on this iteration, based on conditions detected by the IO unit?
   logical :: endRun !Should we end our run on this iteration, based on conditions detected by the IO unit?
   logical :: endRunWallClock !Should we end our run on this iteration, based on wall clock time?
+  logical :: shortenedDt !Is the last timestep being shortened to reach dr_tmax?
 
   ! for super-time-stepping
   integer :: nstepSTS
@@ -166,6 +176,7 @@ subroutine Driver_evolveFlash()
      
      useSTS_local = dr_useSTS
 
+     call dr_shortenLastDt(dr_dt, dr_simTime, dr_tmax, shortenedDt, 1)
      if (dr_globalMe == MASTER_PE) then
         
         write (numToStr(1:), '(I10)') dr_nstep
@@ -207,74 +218,17 @@ subroutine Driver_evolveFlash()
      
 #ifdef DEBUG_GRID_GCMASK
      if (.NOT.gcMaskLogged) then
-        !!        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
+        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[Driver_evolveFlash]', 'gcNeed')
      end if
 #endif
      
-     !! Guardcell filling routine
-!!$     call Grid_fillGuardCells(CENTER,ALLDIR,&
-!!$          maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
-     
-     call Grid_fillGuardCells(CENTER,ALLDIR)
-     call Timers_start("Hydro")
+     !! Guardcell filling routine - the call has been moved into Hydro.
+!!$     call Grid_fillGuardCells(CENTER,ALLDIR)
 
-#ifdef FLASH_GRID_AMREXTRANSITION
-     allocate(phi_mf(maxLev))
-#endif
-!!$     call gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, LEAF)
-#ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
-#endif
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
+     call Hydro_advanceAll(dr_simTime, dr_dt, dr_dtOld)
 
-     do level=1,maxLev
-#ifdef DEBUG_DRIVER
-        print*,' ***************   HYDRO LEVEL', level,'  **********************'
-#endif
+!!!!!! Stuff from here has been MOVED TO Hydro_advanceAll !!!!!!
 
-        itor = block_iterator_t(LEAF, level=level)
-        do while(itor%is_valid())
-           call itor%blkMetaData(block)
-
-           blkLimits(:,:)   = block%localLimits
-           blkLimitsGC(:,:) = block%localLimitsGC
-           
-           call Grid_getBlkPtr(block, Uout,localFlag=.TRUE.)
-!!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
-!!$           call amrex_print(abx)
-!!$           tbx = abx
-
-           call Grid_getDeltas(level,del)
-           Uin => Uout
-           call Hydro(block,blkLimitsGC,Uin, blkLimits, Uout, del,dr_simTime, dr_dt, dr_dtOld,  sweepDummy)
-           call Grid_releaseBlkPtr(block, Uout)
-           nullify(Uout)
- 
-           call itor%next()
-        end do
-        call Timers_stop("Hydro")
-#ifdef DEBUG_DRIVER
-        print*, 'return from Hydro/MHD timestep'  ! DEBUG
-        print*,'returning from hydro myPE=',dr_globalMe
-#endif
-        
-        
-!!$     ! 8. Diagnostics
-!!$     call Timers_start("diagnostics")
-!!$     call Driver_diagnostics(blockCount, blockList, dr_dt)
-!!$     call Timers_stop("diagnostics")
-!!$#ifdef DEBUG_DRIVER
-!!$     print*, 'return from Diagnostics '  ! DEBUG
-!!$#endif
-        
-        !! save for old dt
-     end do
-#ifdef FLASH_GRID_AMREXTRANSITION
-     do level=1,maxLev
-        call amrex_multifab_destroy(phi_mf(level))
-     end do
-     deallocate(phi_mf)
-#endif
 
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
@@ -283,7 +237,7 @@ subroutine Driver_evolveFlash()
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 
      dr_dtOld = dr_dt
-     
+
      !----
      !- End Physics Sequence
      !--------------------------------------------------------------------
@@ -298,6 +252,12 @@ subroutine Driver_evolveFlash()
         call IO_output(dr_simTime, &
              dr_dtSTS, dr_nstep+1, dr_nbegin, endRunPl, PLOTFILE_AND_PARTICLEFILE)
      endif
+
+#ifdef FLASH_GRID_AMREX
+     ! DEV: Temporary ugliness for debugging
+     ! DEV: Moved to IO_writePlotfile for convenient control of frequency with runtime parameters! - KW
+!!$     call gr_writeData(dr_nstep, dr_simTime)
+#endif
      call Timers_stop("IO_output")
      
      
@@ -342,7 +302,9 @@ subroutine Driver_evolveFlash()
      !!*****************************************************************************
      !!  Evolution Loop -- check termination conditions
      !!*****************************************************************************
-     
+
+     !Exit if this step was handled specially as the last step
+     if(shortenedDt) exit
      !Exit if a .dump_restart or .kill was found during the last step
      if(endRun) exit
      
@@ -368,6 +330,8 @@ subroutine Driver_evolveFlash()
         endif
         exit
      end if
+
+     gcMaskLogged = .TRUE.
      
   enddo
   !The value of dr_nstep after the loop is (dr_nend + 1) if the loop iterated for

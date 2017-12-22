@@ -242,7 +242,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_putPlaneData(block, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_putPlaneData(blockDesc, gridDataStruct, structIndex, beginCount, &
      plane, startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
@@ -262,7 +262,7 @@ subroutine Grid_putPlaneData(block, gridDataStruct, structIndex, beginCount, &
 #endif
 
 
-  type(block_metadata_t), intent(in) :: block
+  type(block_metadata_t), intent(in) :: blockDesc
   integer, intent(in) :: structIndex, beginCount, plane, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(2), intent(in) :: dataSize
@@ -280,7 +280,7 @@ subroutine Grid_putPlaneData(block, gridDataStruct, structIndex, beginCount, &
 
 #ifdef DEBUG_GRID
   isget=.true.
-  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
   
   !plane specific stuff
   if(NDIM == 1) then
@@ -474,7 +474,7 @@ subroutine Grid_putPlaneData(block, gridDataStruct, structIndex, beginCount, &
 
 #endif  
 
-  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(blockDesc,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
 
 
   yb=1
@@ -502,13 +502,13 @@ subroutine Grid_putPlaneData(block, gridDataStruct, structIndex, beginCount, &
   end if
 
   if(getIntPtr) then
-     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
      if(plane==XYPLANE)solnData(structIndex,xb:xe,yb:ye,zb) = datablock(:,:)
      if(plane==XZPLANE)solnData(structIndex,xb:xe,yb,zb:ze) = datablock(:,:)
      if(plane==YZPLANE)solnData(structIndex,xb,yb:ye,zb:ze) = datablock(:,:)
-     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        if(plane==XYPLANE)solnData(xb:xe,yb:ye,zb,structIndex) = datablock(:,:)
 !!$        if(plane==XZPLANE)solnData(xb:xe,yb,zb:ze,structIndex) = datablock(:,:)
@@ -518,7 +518,7 @@ subroutine Grid_putPlaneData(block, gridDataStruct, structIndex, beginCount, &
      if(plane==XYPLANE)solnData(structIndex,xb:xe,yb:ye,zb) = datablock(:,:)
      if(plane==XZPLANE)solnData(structIndex,xb:xe,yb,zb:ze) = datablock(:,:)
      if(plane==YZPLANE)solnData(structIndex,xb,yb:ye,zb:ze) = datablock(:,:)
-     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
   end if
 
   return

@@ -72,7 +72,7 @@ subroutine io_writeData (fileID)
        io_fileFormatVersion, tree_data_t
   use Grid_interface, ONLY : Grid_getLocalNumBlks
 
-  use Grid_data, ONLY : gr_globalNumBlocks
+!  use Grid_data, ONLY : gr_globalNumBlocks
 
   use gr_physicalMultifabs, ONLY : unk, &
                                    facevarx, facevary, facevarz

@@ -38,16 +38,21 @@
 !!
 !!***
 
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
+#include "constants.h"
+#include "Flash.h"
+
 subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use amrex_amrcore_module, ONLY : amrex_regrid
 
+  use Grid_interface,       ONLY : Grid_fillGuardCells
   use Grid_data,            ONLY : gr_nrefs, gr_maxRefine
   use Timers_interface,     ONLY : Timers_start, Timers_stop
  
   implicit none
-
-#include "constants.h"
-#include "Flash.h"
 
   integer, intent(in)            :: nstep
   real,    intent(in)            :: time
@@ -55,9 +60,31 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
   ! We only consider refinements every nrefs timesteps.
   if (mod(nstep, gr_nrefs) == 0) then
+#ifdef DEBUG_GRID
+     write(*,'(A,I4,A,E9.3)') "[Grid_updateRefinement] AMReX Regridding @ step=", & 
+                              nstep, " / time = ", time
+#endif
+ 
+     ! DEV: TODO Allow for updates to gr_maxRefine here?
+     ! Does this work for initialization and all callbacks?
+!     if(gr_lrefineMaxRedDoByTime) then
+!        call gr_markDerefineByTime()
+!     end if
+!     
+!     if(gr_lrefineMaxByTime) then
+!        call gr_setMaxRefineByTime()
+!     end if
+!
+!    if(gr_lrefineMaxRedDoByLogR) then
+!       call gr_unmarkRefineByLogRadius(gr_lrefineCenterI, &
+!                                       gr_lrefineCenterJ, &
+!                                       gr_lrefineCenterK)
+!    end if
+
      call Timers_start("Grid_updateRefinement")
 
      ! AMReX uses 0-based level index set
+     call Grid_fillGuardCells(CENTER, ALLDIR)
      call amrex_regrid(0, time)
  
      call Timers_stop("Grid_updateRefinement")

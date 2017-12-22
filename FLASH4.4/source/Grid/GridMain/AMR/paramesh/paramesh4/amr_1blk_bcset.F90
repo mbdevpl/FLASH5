@@ -122,6 +122,8 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
   use Grid_data, ONLY : gr_bndOrder,gr_numDataStruct,gr_gridDataStruct,&
        gr_gridDataStructSize
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
   
 #include "constants.h"      
@@ -134,10 +136,10 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
   integer :: bcDir,bcType
   integer :: leftOrRight, dirToApply
   integer, dimension(MDIM) :: regionType,bnd
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
 
   integer :: blockHandle
-  integer :: i, struct, blockID,varCount,gridDataStruct
+  integer :: i, struct, varCount,gridDataStruct
+  type(block_metadata_t) :: blockDesc
 
   bnd(1)=ibnd
   bnd(2)=jbnd
@@ -213,14 +215,13 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
      call Driver_abortFlash('Internal Error in amr_1blk_bcset')
   end if
   regionType(bcDir)=leftOrRight
-  blockID=blockHandle           !only used for Grid_getBlkIndexLimits, which does not really care - KW
+
   if(iopt==2) then
      varCount=1
      gridDataStruct=WORK
-     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC,&
-          CENTER)
      !! Paramesh supports Work for only cell centered data, so CENTER
      !! is the appropriate gridDataStruct for this call
+     call createBlockMetadata(blockHandle, CENTER, blockDesc)
 
      !! Now that all preparatory work is done, do the calculation.
      !! The three different loops for the three directions are there
@@ -228,16 +229,16 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
      !! and therefore the loops change.
      call gr_bcApplyToOneFace(bcDir,bcType,&
           gridDataStruct,varCount,regionType,&
-          blkLimits,blkLimitsGC,blockHandle,idest)
+          blockDesc,idest)
   else
      do struct=1,gr_numDataStruct
         gridDataStruct=gr_gridDataStruct(struct)
         varCount=gr_gridDataStructSize(struct)
-     
+ 
         !! The next statements gest block index information to 
         !! prepare for the calculation.
-        call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC,&
-             gridDataStruct)
+        call createBlockMetadata(blockHandle, gridDataStruct, blockDesc)
+
         !! Now that all preparatory work is done, call the routine
         !! that will repackage relevant parts of the block data
         !! to pass on the boundary condition routines that do actual
@@ -248,9 +249,10 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
 !!        print*,bcDir,bcType,gridDataStruct,varCount,regionType(1:NDIM)
         call gr_bcApplyToOneFace(bcDir,bcType,&
              gridDataStruct,varCount,regionType,&
-             blkLimits,blkLimitsGC,blockHandle,idest)
+             blockDesc,idest)
      end do
   end if
+
 
   return
 
@@ -509,4 +511,77 @@ contains
       integer,intent(IN) :: surrblks(:,:,:,:)
       extractBCForDirection = gr_extractBCForDirection(surrblks(1,2+ibnd,2+jbnd,2+kbnd), idir,lowOrHigh)
     end function extractBCForDirection
+
+    subroutine createBlockMetadata(blockID, gds, blockDesc)
+        use tree,            ONLY : lrefine, lrefine_max
+        use gr_specificData, ONLY : gr_oneBlock
+
+        ! IMPORTANT: This is essentially a copy of the blkMetaData method in
+        ! block_iterator_t.  This subroutine should be matched to it.
+
+        ! different variants for cell index numbering:
+        !  1 = normal FLASH convention:     per block, leftmost guard cell = 1
+        !  0 = zero-based FLASH convention: per block, leftmost guard cell = 0
+        ! -1 = global convention for a refinement level: leftmost guard cell = 1
+        ! -2 = global convention for a refinement level: leftmost inner cell = 1
+        integer, parameter :: cellIdxBase = 1
+
+        integer,                intent(IN)  :: blockID
+        integer,                intent(IN)  :: gds
+        type(block_metadata_t), intent(OUT) :: blockDesc
+
+        integer :: blkLimits(LOW:HIGH, MDIM)
+        integer :: blkLimitsGC(LOW:HIGH, MDIM)
+        integer :: cornerID(MDIM)
+        
+        call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC, gds)
+
+        blockDesc%id = blockID
+        if (blockID .LE. MAXBLOCKS) then ! is this really a handle for a local block?
+           blockDesc%cid    = gr_oneBlock(blockDesc%id)%cornerID
+           blockDesc%level  = lrefine(blockID)
+           blockDesc%stride = 2**(lrefine_max - blockDesc%level)
+        else                 ! blockID was a handle for a remote block...
+           blockDesc%cid = 0 ! cid better not be used for anything then...
+           blockDesc%level = -999 ! better not be used...
+           blockDesc%stride = -999! better not be used...
+        end if
+        blockDesc%localLimits   = blkLimits
+        blockDesc%localLimitsGC = blkLimitsGC
+
+        associate(lo    => blockDesc%limits(LOW, :), &
+                  hi    => blockDesc%limits(HIGH, :), &
+                  loGC  => blockDesc%limitsGC(LOW, :), &
+                  hiGC  => blockDesc%limitsGC(HIGH, :), &
+                  blkId => blockDesc%id, &
+                  cid   => blockDesc%cid)
+            lo(:) = blkLimits(LOW, :)
+            hi(:) = blkLimits(HIGH, :)
+            loGC(:) = blkLimitsGC(LOW, :)
+            hiGC(:) = blkLimitsGC(HIGH, :)
+            if (cellIdxBase == -1) then
+               cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
+               lo(:)   = lo(:)   - 1 + cornerID(:)
+               hi(:)   = hi(:)   - 1 + cornerID(:)
+               loGC(:) = loGC(:) - 1 + cornerID(:)
+               hiGC(:) = hiGC(:) - 1 + cornerID(:)
+            else if (cellIdxBase == -2) then
+               cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
+               lo(:)   = lo(:)   - 1 + cornerID(:)
+               hi(:)   = hi(:)   - 1 + cornerID(:)
+               loGC(:) = loGC(:) - 1 + cornerID(:)
+               hiGC(:) = hiGC(:) - 1 + cornerID(:)
+               lo(1:NDIM)   = lo(1:NDIM)   - NGUARD
+               hi(1:NDIM)   = hi(1:NDIM)   - NGUARD
+               loGC(1:NDIM) = loGC(1:NDIM) - NGUARD
+               hiGC(1:NDIM) = hiGC(1:NDIM) - NGUARD
+            else if (cellIdxBase == 0) then
+               lo(:)   = lo(:)   - 1
+               hi(:)   = hi(:)   - 1
+               loGC(:) = loGC(:) - 1
+               hiGC(:) = hiGC(:) - 1
+            end if
+        end associate
+    end subroutine createBlockMetadata
+
 end subroutine amr_1blk_bcset

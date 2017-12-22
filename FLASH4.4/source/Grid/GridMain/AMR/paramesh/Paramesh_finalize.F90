@@ -14,6 +14,8 @@
 !!  source/driver/end_flash
 !!***
 subroutine Paramesh_finalize()
-implicit none
+  use paramesh_interfaces, ONLY : amr_close
+  implicit none
+  call amr_close()
 end subroutine Paramesh_finalize
 

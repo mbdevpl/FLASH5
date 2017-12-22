@@ -1,0 +1,126 @@
+# Parameters file for core-collapse SN
+
+# Simulation basics
+basenm			       = "ccsn2d_"
+restart			       = .false.
+checkpointFileNumber           = 0
+plotFileNumber                 = 0
+run_comment                    = "CoreCollapse 2D with Chimera data"
+#output_directory	       = "output"
+
+# IO  
+checkpointFileIntervalStep     = 0
+checkpointFileIntervalTime     = 0.01 
+plotFileIntervalStep           = 0
+plotFileIntervalTime           = 0.0
+# wall_clock_checkpoint          = 43200.
+wall_clock_time_limit          = 7200.
+
+# Time 
+tinitial                       = 0.0
+tmax                           = 100.0
+nend                           = 100000000
+tstep_change_factor            = 1.5
+dtinit                         = 1.E-10 #was E-8
+dtmax                          = 1.E5
+dtmin                          = 1.E-20
+
+# Domain 
+geometry                       = "cylindrical"
+xmax                           = 2.e10 
+xmin                           = 0.e0 
+ymin                           = -2.e10
+ymax                           = 2.e10
+xl_boundary_type               = "reflect" 
+xr_boundary_type               = "outflow"
+yl_boundary_type               = "outflow"
+yr_boundary_type               = "outflow"
+
+# Grid/Refinement
+nblockx                        = 20 
+nblocky                        = 40 
+nblockz                        = 1
+
+
+gr_lrefineMaxRedDoByLogR       = .true.
+gr_lrefineMaxRedDoByTime       = .FALSE.
+gr_lrefineMaxRedLogBase        = 10.0
+gr_lrefineMaxRedRadiusFact     = 0.15
+gr_lrefineMaxRedTRef           = 2.0
+gr_lrefineMaxRedTimeScale      = 0.5
+
+lrefine_max                    = 7
+lrefine_min                    = 1
+refine_var_1                   = "dens"
+refine_var_2                   = "pres"
+refine_var_3                   = "none" 
+refine_var_4                   = "none"
+refine_cutoff_1		       = 0.8
+refine_cutoff_2		       = 0.8
+refine_cutoff_3		       = 0.8
+refine_cutoff_4		       = 0.8
+
+#plot_var_1                     = "dens"
+#plot_var_2                     = "pres"
+#plot_var_3                     = "temp"
+
+
+# Simulation
+progenitor_model_file = "d96InitModel.txt"
+chimera_model_file = "chimera_03670_grid_1_01.h5"
+r_inner = 5.e7 
+rho_inner = 1.e11
+max_r = 2.e9
+
+# Hydro
+useHydro                       = .TRUE.
+cfl                            = 0.5
+updateHydroFluxes              = .true.
+eintSwitch                     = 0.0 # Always use Etot
+convertToConsvdForMeshCalls   = .false.
+
+##  SWITCHES FR SPLIT HYDRO SOLVER               ##
+#       I. INTERPOLATION SCHEME:
+charLimiting    = .true. # Characteristic limiting vs.Primitive limiting
+
+cvisc           = 0.1    # coefficient for artificial viscosity
+use_steepening  = .false. # use contact steepening (originally for PPM)
+flux_correct    = .true.
+
+
+# Gravity
+useGravity                     = .false. 
+
+
+
+#EOS
+eosMode                        = "dens_ie"
+eosModeInit                    = "dens_temp"
+
+# Deleptonization
+useDeleptonize		       = .false.
+
+# RadTrans/Leakage
+useRadTrans		      = .false.
+
+# Neutrino Heating/Cooling
+useHeat			       = .false.
+			      			       
+# Small numbers
+smallt                         = 1.0e4 
+smlrho                         = 1.0e-10
+smallp                         = 1.E-20
+smalle                         = 1.E1
+smallu                         = 1.E-10
+smallx                         = 1.E-10
+small                          = 1.E-100
+
+# Burn Unit
+useBurn                        = .false.
+useShockBurn                   = .false.
+nuclearTempMin                 = 1.0e6 #was 1.1e8
+
+use_cma_advection              = .true.
+
+hy_fluxrepresentation          = "hybrid"
+hybrid_riemann                 = .true.

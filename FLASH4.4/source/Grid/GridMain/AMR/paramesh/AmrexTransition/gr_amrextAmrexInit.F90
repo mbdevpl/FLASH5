@@ -144,11 +144,13 @@ subroutine gr_amrextAmrexInit()
 
     ! Finalization not supported by all compilers.  Look at AMReX iterators for 
     ! preprocessor directives to isolate these.
-!  call amrex_parmpase_destroy(pp_geom)
-!  call amrex_parmpase_destroy(pp_amr)
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+  call amrex_parmparse_destroy(pp_geom)
+  call amrex_parmparse_destroy(pp_amr)
+#endif
 
   call amrex_octree_init()
-!!$  call amrex_amrcore_init()
+  call amrex_amrcore_init()
  
   !!!!!----- REGISTER REFINE CALLBACKS WITH AMReX
 !!$  call amrex_init_virtual_functions(gr_makeNewLevelFromScratch, &

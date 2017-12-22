@@ -26,7 +26,7 @@ MPI_PATH =
 #   You need to edit mpif90 and add .F90 to the test of filename extensions,
 #   or upgrade your MPICH.
 #----------------------------------------------------------------------------
-  FCOMP   = mpif90
+FCOMP   = mpif90
 CCOMP   = mpicc
 CPPCOMP = mpiCC
 LINK    = mpif90 -std=c++11 
@@ -104,9 +104,9 @@ LIB_MPI   =
 #LIB_NCMPI = -L $(NCMPI_PATH)/lib -lpnetcdf
 LIB_MPE   =
 
-#LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
-#LIB_AMREX2D = ${LIB_AMREX}
-#LIB_STDCXX = -lstdc++ 
+LIB_AMREX = -L${AMREX_PATH}/lib -lamrex -lstdc++
+LIB_AMREX2D = ${LIB_AMREX}
+LIB_STDCXX = -lstdc++ 
 
 
 #----------------------------------------------------------------------------

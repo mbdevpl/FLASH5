@@ -1,0 +1,32 @@
+basenm = "AMReXTestRefine2_"
+
+# These exact values are used in the unittest.  They should not be
+# changed here and different values should not be given at setup.
+
+##### PHYSICAL SPACE DISCRETIZATION
+geometry = "cartesian"
+
+xmin     = 0.0
+xmax     = 1.0
+ymin     = 0.0
+ymax     = 1.0
+zmin     = 0.0
+zmax     = 0.0
+
+##### PARTITION OF PHYSICAL SPACE INTO BLOCKS
+nblockx =  2
+nblocky =  2 
+nblockz =  1
+
+##### BOUNDARY CONDITIONS
+xl_boundary_type = "outflow" 
+xr_boundary_type = "outflow"
+yl_boundary_type = "outflow"
+yr_boundary_type = "outflow"
+zl_boundary_type = "outflow"
+zr_boundary_type = "outflow"
+
+##### AMR CONFIGURATION
+lrefine_max = 4
+nrefs       = 2
+

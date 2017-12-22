@@ -109,6 +109,9 @@ subroutine Logfile_init()
 #ifdef FLASH_GRID_PARAMESH3OR4
   call RuntimeParameters_get("enableMaskedGCFill", log_enableGcMaskLogging)
 #endif
+#ifdef FLASH_GRID_AMREX
+  call RuntimeParameters_get("enableMaskedGCFill", log_enableGcMaskLogging)
+#endif
 
   call Logfile_create ()
   

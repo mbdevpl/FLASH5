@@ -74,7 +74,7 @@ Grid += gr_bhInterface.o gr_bhInit.o gr_bhFinalize.o
 
 Grid += gr_xyzToBlockLevel.o gr_xyzToBlock.o
 
-Grid += gr_amrextInterface.o gr_amrextAmrexInit.o
+Grid += gr_amrextInterface.o gr_amrextAmrexInit.o gr_amrextAmrexFinalize.o
 
 Grid += gr_markRefineDerefine.o gr_estimateBlkError.o
 

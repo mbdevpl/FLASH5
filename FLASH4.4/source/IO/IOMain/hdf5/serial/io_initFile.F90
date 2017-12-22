@@ -41,6 +41,7 @@ subroutine io_initFile( filenum, fileID, filename, outputType, forced)
   implicit none
   
 #include "constants.h"
+#include "Flash.h"
 
   integer, intent(in) :: filenum
   integer, intent(inout) :: fileID
@@ -56,10 +57,13 @@ subroutine io_initFile( filenum, fileID, filename, outputType, forced)
   call io_getOutputName(filenum, "hdf5", outputType, filename, forced)
 
   fileID = -1
+
+#ifndef FLASH_GRID_AMREX
   call io_h5init_file(fileID, filename)
   if(fileID == -1) then
      print *, "Error: unable to initialize file"
      call Driver_abortFlash("unable to initialize hdf5 file")
   end if
+#endif
 
 end subroutine io_initFile

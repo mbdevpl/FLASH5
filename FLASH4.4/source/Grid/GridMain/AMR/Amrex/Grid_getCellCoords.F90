@@ -103,7 +103,7 @@
 !!
 !!***
 
-#ifdef DEBUG
+#ifdef DEBUG_ALL
 #define DEBUG_GRID
 #endif
 
@@ -160,7 +160,6 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
       call Driver_abortFlash("[Grid_getCellCoords] - FACES not handled yet")
     end if
 
-    ! DEV: Should we use gr_[ijk]guard instead of NGUARD?
     ! First index should be given in 1-based global indices adjusted according
     ! to edge.  However, make 0-based to simplify calculation in loop.
     x = x_lo + shift - 1

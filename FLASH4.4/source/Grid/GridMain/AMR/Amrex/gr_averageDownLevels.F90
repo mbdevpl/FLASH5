@@ -1,0 +1,62 @@
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_averageDownLevels
+!!
+!! NAME
+!!
+!!  gr_averageDownLevels
+!!
+!! SYNOPSIS
+!!
+!!  call gr_averageDownLevels 
+!!
+!! DESCRIPTION 
+!!
+!!
+!!  
+!!***
+
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
+#include "Flash.h"
+
+subroutine gr_averageDownLevels()
+    use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
+                                          amrex_geom, &
+                                          amrex_ref_ratio
+    use amrex_multifabutil_module, ONLY : amrex_average_down
+
+    use gr_physicalMultifabs,      ONLY : unk
+
+    implicit none
+
+    integer :: lev
+    integer :: finest_level
+
+    ! Work in AMReX 0-based level indexing
+    finest_level = amrex_get_finest_level()
+#ifdef DEBUG_GRID
+    if (finest_level == 0) then
+        write(*,'(A,A)') "[gr_averageDownLevels]", &
+                         "               No need to average"
+    end if
+#endif
+
+    ! DEV: TODO Implement for face variables as well
+    do lev = finest_level, 1, -1
+#ifdef DEBUG_GRID
+        write(*,'(A,A,I2,A,I2)') "[gr_averageDownLevels]", &
+                                 "               From ", &
+                                 lev+1, " down to ", lev
+#endif
+
+        call amrex_average_down(unk(lev  ), &
+                                unk(lev-1), &
+                                amrex_geom(lev  ), &
+                                amrex_geom(lev-1), &
+                                UNK_VARS_BEGIN, NUNK_VARS, &
+                                amrex_ref_ratio(lev-1))
+    end do 
+
+end subroutine gr_averageDownLevels
+

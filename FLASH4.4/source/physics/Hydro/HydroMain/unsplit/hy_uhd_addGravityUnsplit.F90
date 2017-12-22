@@ -43,13 +43,14 @@
 !!REORDER(4):U
 
 Subroutine hy_uhd_addGravityUnsplit&
-     (blockID,blkLimits,dataSize,dt,gravX,gravY,gravZ)
+     (blockDesc,blkLimits,loGC,hiGC,dt,gravX,gravY,gravZ)
 
   use Hydro_data,      ONLY : hy_useGravity,        &
                               hy_useGravHalfUpdate
 
   use Grid_interface,  ONLY : Grid_getBlkPtr,       &
                               Grid_releaseBlkPtr
+  use block_metadata,  ONLY : block_metadata_t
 
   implicit none
 
@@ -58,18 +59,14 @@ Subroutine hy_uhd_addGravityUnsplit&
 #include "UHD.h"
 
   !! ---- Argument List ----------------------------------
-  integer, intent(IN) :: blockID
+  type(block_metadata_t),intent(IN) :: blockDesc
+
   integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
-  integer, dimension(MDIM), intent(IN) :: dataSize
+  integer, intent(IN), dimension(MDIM):: loGC, hiGC
   real,    intent(IN) :: dt
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: &
+  real, dimension(loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)), intent(IN) :: &
        gravX,gravY,gravZ
-#else
-  real, dimension(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)), intent(IN) :: &
-       gravX,gravY,gravZ
-#endif
   !! -----------------------------------------------------
   real :: hdt
   integer :: i,j,k
@@ -79,24 +76,30 @@ Subroutine hy_uhd_addGravityUnsplit&
   hdt = 0.5 * dt
 
   !! Get block pointer for storages of Riemann states
-  call Grid_getBlkPtr(blockID,U,CENTER)
+  call Grid_getBlkPtr(blockDesc,U,CENTER)
 
   do k=blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
      do j=blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
         do i=blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
 
-           velNew(1:3) = U(VELX_VAR:VELZ_VAR,i,j,k)&
+#ifdef BDRY_VAR
+           if (U(BDRY_VAR,i,j,k) .LE. 0.0) then
+#endif
+              velNew(1:3) = U(VELX_VAR:VELZ_VAR,i,j,k)&
                 + hdt*(/gravX(i,j,k),gravY(i,j,k),gravZ(i,j,k)/)
 
-           U(ENER_VAR,i,j,k) = U(ENER_VAR,i,j,k) &
+              U(ENER_VAR,i,j,k) = U(ENER_VAR,i,j,k) &
                 + hdt*dot_product(velNew(1:3),(/gravX(i,j,k),gravY(i,j,k),gravZ(i,j,k)/))
 
-           U(VELX_VAR:VELZ_VAR,i,j,k) = velNew(1:3)
+              U(VELX_VAR:VELZ_VAR,i,j,k) = velNew(1:3)
+#ifdef BDRY_VAR
+           endif
+#endif
         enddo
      enddo
   enddo
 
   !! Release block pointer for storages of Riemann states
-  call Grid_releaseBlkPtr(blockID,U,CENTER)
+  call Grid_releaseBlkPtr(blockDesc,U,CENTER)
 
 end Subroutine hy_uhd_addGravityUnsplit

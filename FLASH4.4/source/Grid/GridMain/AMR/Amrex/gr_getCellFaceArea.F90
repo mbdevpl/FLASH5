@@ -32,6 +32,9 @@
 !!               valid  values are ILO_FACE,IHI_FACE, JLO_FACE etc.
 !!  blockID   : my block number
 !!  dataBlock : storage for returning calculated values
+!!  beginCount : How index argument values are intended.
+!!               EXTERIOR or INTERIOR  relative to the block
+!!               GLOBALIDX1            global 1-based per-level indexing
 !!
 !! NOTES
 !!
@@ -42,7 +45,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
+subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface,   ONLY : Grid_getDeltas, &
                                Grid_getCellCoords, &
@@ -55,6 +58,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
   integer,                intent(IN) :: xb,xe,yb,ye,zb,ze,face
   real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
   real,dimension(MDIM) :: del
+  integer,intent(IN) :: beginCount
 
   integer :: geometry
   real :: areaFactor_1, areaFactor_2, areaFactor_3
@@ -64,6 +68,10 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock)
   real,dimension(:),allocatable :: xCoordLeft, xCoordRight, yCoordLeft, &
        yCoordRight, zCoordLeft, zCoordRight
   logical, parameter :: gCell = .true.
+
+  if (beginCount .NE. GLOBALIDX1 .AND. beginCount .NE. DEFAULTIDX) then
+     call Driver_abortFlash("gr_getCellFaceArea: invalid beginCount: only global indexing is supported in Amrex mode")
+  end if
 
   call Grid_getGeometry(geometry)
   if (geometry==CARTESIAN) then

@@ -34,3 +34,8 @@ PPDEFINE FLASH_GRID_ANYAMREX
 D gr_amrex_verbosity How much output is written out. Higher number is more verbose.
 PARAMETER gr_amrex_verbosity INTEGER 1 [ 0 ... ]
 
+D enableMaskedGCFill When enableMaskedGCFill is FALSE, Grid_fillGuardCells is forced
+D &                  to always ignore optional mask arguments when present in calls.
+D &                  This is the default behavior.
+D &                  Set enableMaskedGCFill TRUE to enable masked guard cell filling.
+PARAMETER enableMaskedGCFill BOOLEAN FALSE

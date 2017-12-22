@@ -141,20 +141,6 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   real, dimension(HY_VARINUMMAX) :: VL,VR 
   real, dimension(NSPECIES)    :: speciesArr
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC, &
-                  GRID_JLO_GC:GRID_JHI_GC, &
-                  GRID_KLO_GC:GRID_KHI_GC) &
-                  :: viscDynamic,cond
-
-#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
-  real, dimension(GRID_ILO_GC:GRID_IHI_GC, &
-                  GRID_JLO_GC:GRID_JHI_GC, &
-                  GRID_KLO_GC:GRID_KHI_GC) &
-                  :: magResist
-#endif
-
-#else
   real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
                   blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
                   blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) &
@@ -167,7 +153,6 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                   :: magResist
 #endif
 
-#endif
   real    :: viscKinematicUnused,dcffUnused
   real    :: cvisc
   integer :: k2,k3,kGrav,kUSM
@@ -184,13 +169,9 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   logical, save :: hy_useBiermann = .false.
 #endif
 
-#ifdef FIXEDBLOCKSIZE
-  real, dimension(GRID_IHI_GC) :: xCenter, xLeft, xRight
-  real, dimension(GRID_JHI_GC) :: yCenter
-#else
-  real, dimension(datasize(IAXIS)) :: xCenter, xLeft, xRight
-  real, dimension(datasize(JAXIS)) :: yCenter
-#endif
+  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)) :: xCenter, xLeft, xRight
+  real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)) :: yCenter
+
   real :: dPdr, rvol, alpha
   real, allocatable :: xcent(:), ycent(:), zcent(:)
   real :: speed, dy, dz
@@ -216,7 +197,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
 #endif
 
 
-  call Grid_getBlkPtr(block,U,CENTER)
+  call Grid_getBlkPtr(block,U,CENTER,localFlag=.fALSE.)
 
   i0   = blkLimits(LOW, IAXIS)
   imax = blkLimits(HIGH,IAXIS)
@@ -298,6 +279,13 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
      call Grid_getCellCoords(JAXIS,block, CENTER,    .true.,yCenter, dataSize(JAXIS))
      call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
      call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+!!$     call block%getCellCoords(xCenter, IAXIS, CENTER    , INTERIOR)
+!!$     print*,'Here it comes:',xCenter,lbound(xcenter),ubound(xcenter),size(xcenter)
+!!$     print*,xCenter
+!!$     stop
+!!$     call block%getCellCoords(yCenter, JAXIS, CENTER    , INTERIOR)
+!!$     call block%getCellCoords(xLeft  , IAXIS, LEFT_EDGE , INTERIOR)
+!!$     call block%getCellCoords(xRight , IAXIS, RIGHT_EDGE, INTERIOR)
   endif
 
   !! Compute intercell fluxes using the updated left & right states
@@ -389,6 +377,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                     if(ierr /= 0) call do_error("hy_uhd_HLLD", VL, VR, i,j,k, DIR_X)
 #endif
                  endif
+!!$                 print*,'After R-solve:',i,j,k,xflux(:,i,j,k)
 #endif
               endif
 
@@ -1190,10 +1179,13 @@ contains
 
     ! Note: We only allocate these arrays here, which is fine because
     !       the code is to be aborted immediately once this routine is called.
-    allocate(xcent(blkLimitsGC(HIGH, IAXIS)))
-    allocate(ycent(blkLimitsGC(HIGH, JAXIS)))
-    allocate(zcent(blkLimitsGC(HIGH, KAXIS)))
+    allocate(xcent(blkLimitsGC(LOW, IAXIS):blkLimitsGC(LOW, IAXIS)))
+    allocate(ycent(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
+    allocate(zcent(blkLimitsGC(HIGH, KAXIS):blkLimitsGC(HIGH, KAXIS)))
 
+!!$    call block%getCellCoords(xcent, IAXIS, CENTER    , INTERIOR)
+!!$    call block%getCellCoords(ycent, JAXIS, CENTER    , INTERIOR)
+!!$    call block%getCellCoords(zcent, KAXIS, CENTER    , INTERIOR)
     call Grid_getCellCoords(IAXIS, block, CENTER, .true., xcent, blkLimitsGC(HIGH, IAXIS)) 
     call Grid_getCellCoords(JAXIS, block, CENTER, .true., ycent, blkLimitsGC(HIGH, JAXIS))
     call Grid_getCellCoords(KAXIS, block, CENTER, .true., zcent, blkLimitsGC(HIGH, KAXIS))

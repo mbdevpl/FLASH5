@@ -80,7 +80,8 @@
 !!               guardcells) and wish to keep loop indicies  
 !!               going from 1 to NXB without having to worry about finding 
 !!               the correct offset for the number of guardcells.) 
-!!               (INTERIOR and EXTERIOR are defined in constants.h)
+!!               Can also be GLOBALIDX1 for global indexing, or DEFAULTIDX.
+!!               (INTERIOR, EXTERIOR, etc. are defined in constants.h)
 !!
 !!
 !!  startingPos(MDIM):
@@ -255,13 +256,14 @@
 !!#define DEBUG_GRID
 
 
-subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getBlkData(blockDesc, gridDataStruct, structIndex, beginCount, &
      startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -269,7 +271,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
 #include "Flash.h"
 #include "constants.h"
 
-  type(block_metadata_t), intent(in) :: block
+  type(block_metadata_t), intent(in) :: blockDesc
   integer, intent(in) :: structIndex, beginCount, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(MDIM), intent(in) :: dataSize
@@ -284,8 +286,9 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   
 #ifdef DEBUG_GRID
 
+  ! DEVNOTE : ALL THIS TESTING NEEDS TO BE UPDATED
   isget = .true.
-  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
 
 
   !verify beginCount is set to a valid value
@@ -390,7 +393,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
      if(NDIM > 1) then
         if ((startingPos(JAXIS) + dataSize(2) -1) > jmax) then
            print *, "Error: Grid_getBlkData"
-           call Driver_abortFlash("Grid_getBlkData indicies too large")
+           call Driver_abortFlash("Grid_getBlkData indices too large")
         end if
      end if
 
@@ -436,7 +439,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   xe = 1
 
 
-  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataSize,beginCount,&
+  call gr_getDataOffsets(blockDesc,gridDataStruct,startingPos,dataSize,beginCount,&
        begOffset,getIntPtr)
 
 #if NDIM > 2
@@ -453,25 +456,24 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   xe = xb + dataSize(IAXIS) -1
 
   if(gridDataStruct == CELL_VOLUME) then
-     call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,datablock)
+     call gr_getCellVol(xb,xe,yb,ye,zb,ze,blockDesc,datablock,beginCount)
 #ifdef DEBUG_GRID
      print*,'the volume calculated is',maxval(datablock)
 #endif
   elseif (gridDataStruct == CELL_FACEAREA) then
-     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,dataBlock)
-  elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,blockDesc,dataBlock,beginCount)
+  elseif(getIntPtr) then        !DEVNOTE: This case should never happen, unless NO_PERMANENT_GUARDCELLS
+     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
-     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
   else
-     
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        datablock(:,:,:)=solnData(xb:xe,yb:ye,zb:ze,structIndex)
 !!$     else
 !!$     end if
-     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
  
   end if
   

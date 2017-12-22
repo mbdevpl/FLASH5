@@ -28,5 +28,5 @@ zr_boundary_type = "periodic"
 
 ##### AMR CONFIGURATION
 lrefine_max = 4
-nrefs       = 1
+nrefs       = 2
 

@@ -126,7 +126,9 @@ subroutine IO_writeCheckpoint()
      call Simulation_mapIntToStr(i, io_unklabels(i),MAPBLOCK_UNK)
   end do
   
+#ifndef FLASH_GRID_AMREX
   call io_writeData( io_chkptFileID)
+#endif
 
   !if particles are  not included in this simulation this
   !function will be empty
@@ -138,9 +140,11 @@ subroutine IO_writeCheckpoint()
   !----------------------------------------------------------------------
   ! close the file
   !----------------------------------------------------------------------
+#ifndef FLASH_GRID_AMREX
   IO_TIMERS_START("close file")
   call io_closeFile( io_chkptFileID)
   IO_TIMERS_STOP("close file")
+#endif
 
   !increment the checkpoint number unless it is a dump checkpoint file
   !DUMP_IOFILE_NUM typically 9999 or some large number, located in constants.h 
@@ -150,7 +154,7 @@ subroutine IO_writeCheckpoint()
 
   call Timers_stop("writeCheckpoint")
 
-
+#ifndef FLASH_GRID_AMREX
   if (io_globalMe == MASTER_PE) then
      write (strBuff(1,1), "(A)") "type"
      write (strBuff(1,2), "(A)") "checkpoint"
@@ -161,6 +165,7 @@ subroutine IO_writeCheckpoint()
      write (strBuff(1,1), "(A)") "file"
      write (strBuff(1,2), "(A)") trim(filename)
   end if
+#endif
 
   return
 end subroutine IO_writeCheckpoint

@@ -50,26 +50,25 @@ subroutine Driver_evolveFlash()
                                       Grid_getBlkPtr, Grid_releaseBlkPtr, &
                                       Grid_updateRefinement
     use Grid_data,             ONLY : gr_iguard, gr_jguard, gr_kguard, &
-                                      gr_meshMe
+                                      gr_meshMe, &
+                                      gr_numRefineVarsMax, gr_numRefineVars, &
+                                      gr_refine_var, &
+                                      gr_refine_cutoff, gr_derefine_cutoff, &
+                                      gr_refine_filter, &
+                                      gr_enforceMaxRefinement, &
+                                      gr_eosMode, &
+                                      gr_eosModeInit
     use block_iterator,        ONLY : block_iterator_t
     use block_metadata,        ONLY : block_metadata_t, bmd_print
+    use ut_testDriverMod
 
     implicit none
-
-    interface assertEqual
-        procedure :: assertEqualInt
-        procedure :: assertEqualReal
-    end interface assertEqual
 
     !!!!! EXPECTED RESULTS BASED ON flash.par AND SETUP VALUES GIVEN ABOVE
     integer,  parameter :: NXCELL_EX   = 64
     integer,  parameter :: NYCELL_EX   = 64
     integer,  parameter :: NZCELL_EX   =  4
-    ! DEVNOTE: FIXME Not able to configure rectangular blocks with octree
-!    integer,  parameter :: NXBLK_EX    =  8
-!    integer,  parameter :: NYBLK_EX    = 16
-!    integer,  parameter :: NZBLK_EX    =  2
-    integer,  parameter :: NXBLK_EX    = 16
+    integer,  parameter :: NXBLK_EX    =  8
     integer,  parameter :: NYBLK_EX    = 16
     integer,  parameter :: NZBLK_EX    =  2
     real,     parameter :: XMIN_EX     = -1.00d0
@@ -88,11 +87,6 @@ subroutine Driver_evolveFlash()
     integer,  parameter :: YH_BC_EX    = DIODE
     integer,  parameter :: ZL_BC_EX    = PERIODIC
     integer,  parameter :: ZH_BC_EX    = DIRICHLET
-
-    integer :: n_tests = 0
-    integer :: n_failed = 0
-    real    :: t_old = 0.0d0
-    real    :: t_new = 0.0d0
 
     integer :: geometry = -100
     real    :: domain(LOW:HIGH, MDIM) = 0.0d0
@@ -141,22 +135,21 @@ subroutine Driver_evolveFlash()
     integer :: var = 0
 
     rank = amrex_parallel_myproc()
- 
-    write(*,*)
-    call cpu_time(t_old)
-
-    !!!!! CONFIRM MPI SETUP
-    call assertEqual(rank, gr_meshMe, "AMReX/FLASH ranks are different")
 
     !!!!! CONFIRM PROPER COORDINATE SYSTEM
     ! Dimensionality
+    write(*,*)
     if (amrex_spacedim /= NDIM) then
         write(*,*) "Wrong dimensionality - ", amrex_spacedim, ' != ', NDIM
         write(*,*) "Recompile AMReX with correct dimensionality"
         write(*,*)
         stop
     end if
-    n_tests = n_tests + 1
+
+    call start_test_run
+
+    !!!!! CONFIRM MPI SETUP
+    call assertEqual(rank, gr_meshMe, "AMReX/FLASH ranks are different")
  
     ! Physical domain
     call Grid_getGeometry(geometry)
@@ -402,8 +395,8 @@ subroutine Driver_evolveFlash()
         call itor%blkMetaData(block)
         call Grid_getBlkPtr(block, solnData)
 
-        associate(lo => block%limitsGC(LOW, :), &
-                  hi => block%limitsGC(HIGH, :))
+        associate(lo => block%limits(LOW, :), &
+                  hi => block%limits(HIGH, :))
             do         k = lo(KAXIS), hi(KAXIS)
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)
@@ -429,13 +422,13 @@ subroutine Driver_evolveFlash()
     block%limits(LOW,  :) = [1, 1, 1]
     call Grid_getSingleCellCoords([1, 1, 1], block, LEFT_EDGE, INTERIOR, c_lo)
     block%limits(LOW,  :) = [61, 61, 2]
-    call Grid_getSingleCellCoords([4, 4, 4], block, RIGHT_EDGE, INTERIOR, c_hi)
+    call Grid_getSingleCellCoords([4, 4, 1], block, RIGHT_EDGE, INTERIOR, c_hi)
     ! Find coordinates of cell as a guard cell of one block ...
     block%limits(LOW,  :) = [61, 61, 2]
     call Grid_getSingleCellCoords([1, 1, 1], block, CENTER, EXTERIOR, c_gc)
     ! and as an interior cell of its neighboring block
     block%limits(LOW,  :) = [57, 57, 2]
-    call Grid_getSingleCellCoords([3, 3, 3], block, CENTER, INTERIOR, c_itr)
+    call Grid_getSingleCellCoords([3, 3, 1], block, CENTER, INTERIOR, c_itr)
 
     call assertEqual(c_gc(IAXIS), c_itr(IAXIS), "Invalid cell X-coordinate")
     call assertEqual(c_gc(JAXIS), c_itr(JAXIS), "Invalid cell Y-coordinate")
@@ -504,75 +497,42 @@ subroutine Driver_evolveFlash()
         call assertEqual(y_coords_gc(j), YMAX_EX - (4-j+NGUARD)*YDELTA_EX, "Bad Y-coordinate")
     end do
 
-    !!!!! OUTPUT RESULTS
-    ! DEVNOTE: reduction to collect number of fails?
-    if (rank == MASTER_PE) then
-        write(*,*)
-        if (n_failed == 0) then
-            write(*,*) "SUCCESS - ", &
-                       (n_tests - n_failed), "/", n_tests, ' passed' 
-        else 
-            write(*,*) "FAILURE - ", &
-                       (n_tests - n_failed), "/", n_tests, ' passed'
-        end if
-        write(*,*)
-        write(*,*) 'Walltime = ', (t_new - t_old), ' s'
-        write(*,*)
-    end if
+    !!!!! CONFIRM REFINEMENT SETUP
+    ! uses default value
+    call assertEqual(gr_numRefineVarsMax, 4, "Incorrect max refinement variables")
+    call assertEqual(gr_numRefineVars, 3, "Incorrect max refinement variables")
 
-contains
+    call assertEqual(gr_refine_var(1), DENS_VAR, "First refine var not DENS")
+    call assertEqual(gr_refine_var(2), TEMP_VAR, "Second refine var not TEMP")
+    call assertEqual(gr_refine_var(3), ENER_VAR, "Third refine var not ENER")
 
-    subroutine assertEqualInt(a, b, msg)
-        implicit none
+    call assertEqual(gr_refine_cutoff(1), 0.8d0, "Incorrect DENS refine cutoff")
+    call assertEqual(gr_refine_cutoff(2), 0.5d0, "Incorrect TEMP refine cutoff")
+    call assertEqual(gr_refine_cutoff(3), 0.6d0, "Incorrect ENER refine cutoff")
 
-        integer,      intent(IN) :: a
-        integer,      intent(IN) :: b
-        character(*), intent(IN) :: msg
+    call assertEqual(gr_derefine_cutoff(1), 0.45d0, &
+                     "Incorrect DENS derefine cutoff")
+    call assertEqual(gr_derefine_cutoff(2), 0.325d0, &
+                     "Incorrect TEMP derefine cutoff")
+    call assertEqual(gr_derefine_cutoff(3), 0.35d0, &
+                     "Incorrect ENER derefine cutoff")
 
-        character(256) :: buffer = ""
+    call assertEqual(gr_refine_filter(1), 0.05d0, &
+                     "Incorrect DENS derefine cutoff")
+    call assertEqual(gr_refine_filter(2), 0.025d0, &
+                     "Incorrect TEMP derefine cutoff")
+    call assertEqual(gr_refine_filter(3), 0.035d0, &
+                     "Incorrect ENER derefine cutoff")
 
-        if (a /= b) then
-            write(buffer,'(A,I5,A,I5)') msg, a, " != ", b
-            write(*,*) TRIM(ADJUSTL(buffer))
-            n_failed = n_failed + 1
-        end if
-        n_tests = n_tests + 1
-    end subroutine assertEqualInt
+    call assertFalse(gr_enforceMaxRefinement, "gr_enforceMaxRefinement True")
 
-    subroutine assertEqualReal(a, b, msg)
-        implicit none
+    !!!!! CONFIRM EoS SETUP
+    call assertEqual(gr_eosMode, MODE_DENS_EI, &
+                     "Incorrect eosMode")
+    call assertEqual(gr_eosModeInit, MODE_DENS_TEMP, &
+                     "Incorrect eosModeInit")
 
-        real,         intent(IN) :: a
-        real,         intent(IN) :: b
-        character(*), intent(IN) :: msg
-
-        character(256) :: buffer = ""
-
-        if (a /= b) then
-            write(buffer,'(A,F15.8,A,F15.8)') msg, a, " != ", b
-            write(*,*) TRIM(ADJUSTL(buffer))
-            n_failed = n_failed + 1
-        end if
-        n_tests = n_tests + 1
-    end subroutine assertEqualReal
-
-    subroutine assert_almost_equal(a, b, prec, msg)
-        implicit none
-
-        real,         intent(IN) :: a
-        real,         intent(IN) :: b
-        real,         intent(IN) :: prec
-        character(*), intent(IN) :: msg
-
-        character(256) :: buffer = ""
-
-        if (ABS(b - a) > prec) then
-            write(buffer,'(A,F15.8,A,F15.8)') msg, a, " != ", b
-            write(*,*) TRIM(ADJUSTL(buffer))
-            n_failed = n_failed + 1
-        end if
-        n_tests = n_tests + 1
-    end subroutine assert_almost_equal
+    call finish_test_run
 
 end subroutine Driver_evolveFlash
 

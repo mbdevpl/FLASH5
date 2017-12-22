@@ -37,7 +37,7 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_getRiemannState(block,U,blkLimits,blkLimitsGC,dt,del, &
+     subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del, &
                                        ogravX,ogravY,ogravZ,&
                                        scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                        hy_SpcR,&
@@ -46,14 +46,15 @@ Module hy_uhd_interface
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN)   :: block
-       integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
+       integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits !, blkLimitsGC
+       integer, intent(IN), dimension(MDIM):: loGC, hiGC
        real,    intent(IN)   :: dt
        real,    intent(IN),dimension(MDIM) :: del
 !!$       real, dimension(blkLimitsGC(HIGH,IAXIS),  &
 !!$                       blkLimitsGC(HIGH,JAXIS),  &
 !!$                       blkLimitsGC(HIGH,KAXIS)), &
 !!$                       intent(IN) :: ogravX,ogravY,ogravZ
-  real, dimension(:,:,:), intent(IN) :: ogravX,ogravY,ogravZ
+  real, dimension(loGC(IAXIS):,loGC(JAXIS):,loGC(KAXIS):), intent(IN) :: ogravX,ogravY,ogravZ
        real,pointer,dimension(:,:,:,:)::U
        real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
@@ -106,7 +107,7 @@ Module hy_uhd_interface
 
 
   interface
-     Subroutine hy_uhd_dataReconstOneStep(block,U,blkLimitsGC,order,ix,iy,iz, &
+     Subroutine hy_uhd_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
                                           dt,del,ogravX,ogravY,ogravZ,&
                                           DivU,FlatCoeff,   &
                                           TransX_updateOnly,&
@@ -121,15 +122,15 @@ Module hy_uhd_interface
        implicit none
        type(block_metadata_t),intent(IN) :: block
        real,dimension(:,:,:,:),pointer :: U
-       integer,intent(IN),dimension(LOW:HIGH,MDIM):: blkLimitsGC
+       integer, intent(IN), dimension(MDIM):: loGC, hiGC
        integer,intent(IN) :: order,ix,iy,iz
        real,   intent(IN) :: dt
        real,   intent(IN), dimension(MDIM) :: del
-       real, dimension(blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
+       real, dimension(loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)), &
             intent(IN), target :: ogravX,ogravY,ogravZ
-       real, dimension(NDIM,blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
+       real, dimension(NDIM,loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)), &
             intent(IN) :: FlatCoeff
-       real, dimension(blkLimitsGC(HIGH,IAXIS),blkLimitsGC(HIGH,JAXIS),blkLimitsGC(HIGH,KAXIS)), &
+       real, dimension(loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)), &
             intent(IN) :: DivU
        logical, intent(IN) ::  TransX_updateOnly, TransY_updateOnly, TransZ_updateOnly
        real, dimension(HY_VARINUMMAX,           NDIM),intent(OUT) :: Wp, Wn
@@ -448,32 +449,24 @@ Module hy_uhd_interface
 
 
   interface
-     subroutine hy_uhd_unsplitUpdate(block,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&    
-                                     blkLimitsGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
+     subroutine hy_uhd_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&    
+                                     blGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                      scrch_Ptr)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
+       type(block_metadata_t), intent(IN)   :: blockDesc
+       real,dimension(:,:,:,:),pointer :: Uin, Uout
        integer,intent(IN) :: rangeSwitch
        real, intent(IN)   :: dt
        real, intent(IN)   :: del(MDIM)
-       real,dimension(:,:,:,:),pointer :: Uin, Uout
        integer,dimension(MDIM),intent(IN) :: dataSize
        integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
-       integer,intent(IN) :: blkLimitsGC(LOW:HIGH,MDIM)
-#ifdef FIXEDBLOCKSIZE
-  real, intent(in) ::xflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-  real, intent(in) ::yflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-  real, intent(in) ::zflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-  real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: gravX,gravY,gravZ
-
-#else
-  real, intent(in) :: xflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))  
-  real, intent(in) :: yflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))  
-  real, intent(in) :: zflux(NFLUXES,dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS))
-  real, dimension(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)),& 
-                  intent(IN) :: gravX,gravY,gravZ
-#endif
+       integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
+    real, intent(in) :: xflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+    real, intent(in) :: yflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))  
+    real, intent(in) :: zflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+    real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),& 
+         intent(IN) :: gravX,gravY,gravZ
        real, pointer, dimension(:,:,:,:) :: scrch_Ptr
      end subroutine hy_uhd_unsplitUpdate
   end interface
@@ -691,22 +684,17 @@ Module hy_uhd_interface
 
     interface
        subroutine hy_uhd_putGravityUnsplit&
-            (blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
+            (blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
              lastCall)
          use block_metadata, ONLY : block_metadata_t
          implicit none
          type(block_metadata_t), intent(IN)   :: blockDesc
-         integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
+         integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blGC
          real,dimension(:,:,:,:),pointer :: Uin
          integer, dimension(MDIM), intent(IN) :: dataSize
          real,    intent(IN) :: dt, dtOld
-#ifdef FIXEDBLOCKSIZE
-         real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(OUT) :: &
-              gravX,gravY,gravZ
-#else
-         real, dimension(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)), intent(OUT) :: &
-              gravX,gravY,gravZ
-#endif
+         real,dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),&
+              intent(OUT) :: gravX,gravY,gravZ
          integer, intent(IN), OPTIONAL :: potentialIndex
          logical, intent(IN), OPTIONAL :: lastCall
        end subroutine hy_uhd_putGravityUnsplit
@@ -716,20 +704,15 @@ Module hy_uhd_interface
 
     interface
        Subroutine hy_uhd_addGravityUnsplit&
-            (block,blkLimitsGC,dataSize,dt,gravX,gravY,gravZ)
+            (blockDesc,blkLimits,loGC,hiGC,dt,gravX,gravY,gravZ)
          use block_metadata, ONLY : block_metadata_t
          implicit none
-         type(block_metadata_t), intent(IN)   :: block
-         integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
-         integer, dimension(MDIM), intent(IN) :: dataSize
+         type(block_metadata_t), intent(IN)   :: blockDesc
+         integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
+         integer, intent(IN), dimension(MDIM):: loGC, hiGC
          real,    intent(IN) :: dt
-#ifdef FIXEDBLOCKSIZE
-         real, dimension(GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC), intent(IN) :: &
+         real, dimension(loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)), intent(IN) :: &
               gravX,gravY,gravZ
-#else
-         real, dimension(dataSize(IAXIS),dataSize(JAXIS),dataSize(KAXIS)), intent(IN) :: &
-              gravX,gravY,gravZ
-#endif
        end Subroutine hy_uhd_addGravityUnsplit
     end interface
 
@@ -740,7 +723,7 @@ Module hy_uhd_interface
        implicit none
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
        real, dimension(:,:,:,:),INTENT(IN) :: Uin
-       real,dimension(:,:,:,:),INTENT(OUT) :: Uout
+       real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
        real,dimension(MDIM),INTENT(IN) :: del
      end subroutine hy_uhd_shockDetect
   end interface

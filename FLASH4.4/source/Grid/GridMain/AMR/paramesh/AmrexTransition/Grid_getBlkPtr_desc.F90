@@ -198,7 +198,7 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
 #ifndef FL_NON_PERMANENT_GUARDCELLS
         case(CENTER)
            if (block%grid_index < 0) then
-              print*,'Grid_getBlkPtr_desc: no valid grid_index!!!!!'
+!!$              print*,'Grid_getBlkPtr_desc: no valid grid_index!!!!!' ! An annoying warning that we are called with a synthetic block descriptor...
               dataPtr(1:, lo(1):, lo(2):, lo(3):) => block%fp
            else
               mf => gr_amrextUnkMFs(block%level-1)

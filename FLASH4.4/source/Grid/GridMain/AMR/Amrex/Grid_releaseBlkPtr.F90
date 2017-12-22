@@ -24,7 +24,8 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
 
   use block_metadata, ONLY : block_metadata_t
 #if DRIFT_ENABLE
-  use Driver_interface, only: Driver_driftBlock
+  use Driver_interface, only: Driver_driftBlock, &
+                              Driver_abortFlash
   use Driver_data, only: dr_driftSrcFile, dr_driftSrcLine
 #endif
 
@@ -38,15 +39,20 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
   integer,                intent(in),    optional :: gridDataStruct
 
   integer :: gds
+ 
+  if (present(gridDataStruct)) then
+     gds = gridDataStruct
+  else
+     gds = CENTER
+  end if
 
-!  if(present(gridDataStruct)) then
-!     gds = gridDataStruct
-!  else
-!     gds = CENTER
-!  end if
+  if (gds /= CENTER) then
+     ! DEV: TODO Implement this
+     call Driver_abortFlash("[Grid_releaseBlkPtr_desc] gridDataStruct not implemented yet")
+  end if
 
 #if DRIFT_ENABLE
-  ! TODO: If this is to stay here, we need to convert Driver_driftBlock
+  ! DEV: TODO If this is to stay here, we need to convert Driver_driftBlock
   ! to take a block instead of blockID.
   if(dr_driftSrcLine >= 0) then
     call Driver_driftBlock(dr_driftSrcFile, dr_driftSrcLine, blockId, &

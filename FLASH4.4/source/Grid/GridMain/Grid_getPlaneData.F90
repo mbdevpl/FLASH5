@@ -83,7 +83,8 @@
 !!               guardcells) and wish to keep loop indicies  
 !!               going from 1 to NXB without having to worry about finding 
 !!               the correct offset for the number of guardcells.) 
-!!               (INTERIOR and EXTERIOR are defined in constants.h)
+!!               Can also be GLOBALIDX1 for global indexing, or DEFAULTIDX.
+!!               (INTERIOR, EXTERIOR, etc. are defined in constants.h)
 !!
 !!  plane :    specifies the plane
 !!             The options are XYPLANE, XZPLANE or YZPLANE defined in constants.h
@@ -263,13 +264,14 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getPlaneData(blockDesc, gridDataStruct, structIndex, beginCount, &
      plane, startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -277,7 +279,7 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
 #include "constants.h"
 #include "Flash.h"
 
-  type(block_metadata_t), intent(in) :: block
+  type(block_metadata_t), intent(in) :: blockDesc
   integer, intent(in) :: structIndex, beginCount, plane, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, dimension(2), intent(in) :: dataSize
@@ -293,8 +295,10 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
   logical :: getIntPtr
 
 #ifdef DEBUG_GRID
+
+  ! DEVNOTE : ALL THIS TESTING NEEDS TO BE UPDATED
   isget = .true.
-  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
   
   !plane specific stuff
   if(NDIM == 1) then
@@ -311,16 +315,6 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
      print *, "Error: Grid_getPlaneData"
      call Driver_abortFlash("Grid_getPlaneData.  Can not get yzplane data for 2d problem")
   end if
-
-
-
-  !verify we have a valid blockid
-  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,"Error: Grid_getPlaneData : invalid blockid "
-     call Driver_abortFlash("Get_getPlaneData : invalid blockid ")
-  end if
- 
- 
   
   !verify beginCount is set to a valid value
   if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
@@ -456,7 +450,7 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
         end if
         if ((startingPos(KAXIS) + dataSize(2) -1) > kmax) then
            print *, "Error: Grid_getPlaneData"
-           call Driver_abortFlash("Grid_getPlaneData indicies too large")
+           call Driver_abortFlash("Grid_getPlaneData indices too large")
         end if
      end if
 
@@ -505,7 +499,7 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
      dataLen(IAXIS)=dataSize(1)
      dataLen(KAXIS)=dataSize(2)
   end if
-  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(blockDesc,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
   
   yb=1
   ye=1
@@ -533,27 +527,27 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
 
   if(gridDataStruct == CELL_VOLUME) then
      allocate(cellvalues(xb:xe,yb:ye,zb:ze))
-     call gr_getCellVol(xb,xe,yb,ye,zb,ze,block,cellvalues)
+     call gr_getCellVol(xb,xe,yb,ye,zb,ze,blockDesc,cellvalues,beginCount)
      if(plane==XYPLANE)datablock(:,:)=cellvalues(xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:)=cellvalues(xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:)=cellvalues(xb,yb:ye,zb:ze)
      deallocate(cellvalues)
   elseif (gridDataStruct == CELL_FACEAREA)then
      allocate(cellvalues(xb:xe,yb:ye,zb:ze))
-     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,block,&
-          cellvalues)
+     call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,blockDesc,&
+          cellvalues,beginCount)
      if(plane==XYPLANE)datablock(:,:)=cellvalues(xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:)=cellvalues(xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:)=cellvalues(xb,yb:ye,zb:ze)
      deallocate(cellvalues)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
      if(plane==XYPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:) = solnData(structIndex,xb,yb:ye,zb:ze)
-     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct)
+     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        if(plane==XYPLANE)datablock(:,:) = solnData(xb:xe,yb:ye,zb,structIndex)
 !!$        if(plane==XZPLANE)datablock(:,:) = solnData(xb:xe,yb,zb:ze,structIndex)
@@ -563,7 +557,7 @@ subroutine Grid_getPlaneData(block, gridDataStruct, structIndex, beginCount, &
      if(plane==XYPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:) = solnData(structIndex,xb,yb:ye,zb:ze)
-     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
   end if
   return
 end subroutine Grid_getPlaneData

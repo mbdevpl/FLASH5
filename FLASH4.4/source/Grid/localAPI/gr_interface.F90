@@ -90,6 +90,28 @@ module gr_interface
   end interface
 
   interface
+     subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,blockDesc,dataBlock,beginCount)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t),intent(IN) :: blockDesc
+       integer,intent(IN) :: xb,xe,yb,ye,zb,ze,face
+       real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
+       integer,intent(IN) :: beginCount
+     end subroutine gr_getCellFaceArea
+  end interface
+
+  interface
+     subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,blockDesc,dataBlock,indexing)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t),intent(IN) :: blockDesc
+       integer,intent(IN) :: xb,xe,yb,ye,zb,ze
+       real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
+       integer,intent(IN) :: indexing
+     end subroutine gr_getCellVol
+  end interface
+
+  interface
      subroutine gr_getBlkHandle(remoteBlockID, pe, blockHandle)
      ! implementation in GridMain/paramesh
        implicit none
@@ -115,6 +137,28 @@ module gr_interface
        integer, intent(IN),OPTIONAL  :: minLayers
        integer,intent(OUT),OPTIONAL  :: returnLayers(MDIM)
      end subroutine gr_setGcFillNLayers
+  end interface
+
+  interface
+     subroutine gr_setMasks_gen(gridDataStruct,maskSize,mask, gcell_on_cc,gcell_on_fc,enableMaskedGCFill)
+       implicit none
+       integer, intent(in) :: gridDataStruct
+       integer, intent(in) :: maskSize
+       logical,dimension(maskSize),intent(in) :: mask
+       logical, intent(INOUT)       :: gcell_on_cc(NUNK_VARS)
+       logical, intent(in),OPTIONAL :: gcell_on_fc(MDIM,NFACE_VARS)
+       logical, intent(in),OPTIONAL :: enableMaskedGCFill
+     end subroutine gr_setMasks_gen
+  end interface
+
+  interface
+     subroutine gr_makeMaskConsistent_gen(gridDataStruct,eosMode,needEos,gcell_on_cc)
+       implicit none
+       integer,intent(IN) :: gridDataStruct
+       integer,intent(IN) :: eosMode
+       logical,intent(INOUT) :: needEos
+       logical,intent(INOUT) :: gcell_on_cc(NUNK_VARS)
+     end subroutine gr_makeMaskConsistent_gen
   end interface
 
   interface

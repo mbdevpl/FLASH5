@@ -52,9 +52,10 @@ subroutine Grid_markRefineDerefine()
                         gr_lrefineMaxRedDoByLogR,&
                         gr_lrefineCenterI,gr_lrefineCenterJ,gr_lrefineCenterK,&
                         gr_eosModeNow
-
+  use tree, ONLY : newchild, refine, derefine, stay, nodetype
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Grid_interface, ONLY : Grid_fillGuardCells
+  use gr_interface,   ONLY : gr_markRefineDerefine
   use Particles_interface, only: Particles_sinkMarkRefineDerefine
   implicit none
 
@@ -106,13 +107,18 @@ subroutine Grid_markRefineDerefine()
        selectBlockType=ACTIVE_BLKS)
   gcMaskArgsLogged = .TRUE.
 !!$  force_consistency = .TRUE.
-  err=0.0
+
+  newchild(:) = .FALSE.
+  refine(:)   = .FALSE.
+  derefine(:) = .FALSE.
+  stay(:)     = .FALSE.
 
   do l = 1,gr_numRefineVars
      iref = gr_refine_var(l)
      ref_cut = gr_refine_cutoff(l)
      deref_cut = gr_derefine_cutoff(l)
      ref_filter = gr_refine_filter(l)
+     err(:)      = 0.0
      call gr_estimateError(err, iref, ref_filter)
      call gr_markRefineDerefine(err, ref_cut, deref_cut)
   end do
@@ -127,6 +133,12 @@ subroutine Grid_markRefineDerefine()
   
   call Particles_sinkMarkRefineDerefine()
 
+  ! When the flag arrays are passed to Paramesh for processing, only leaf
+  ! blocks should be marked. - KW
+  where (nodetype(:) .NE. LEAF)
+     refine(:)   = .false.
+     derefine(:) = .false.
+  end where
   
   return
 end subroutine Grid_markRefineDerefine
