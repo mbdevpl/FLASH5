@@ -12,9 +12,8 @@
 !! ARGUMENTS 
 !!  itor - the block iterator to destroy.
 !!
-!! NOTES
+!! SEE ALSO
 !!  Grid_getBlkIterator.F90
-!!  constants.h
 !!
 !!***
 
