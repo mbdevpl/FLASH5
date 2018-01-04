@@ -70,7 +70,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use IO_interface,     ONLY : IO_writeCheckpoint
   use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
        Grid_getSingleCellCoords,Grid_getMaxRefinement, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr
+       Grid_getBlkPtr, Grid_releaseBlkPtr, &
+       Grid_getBlkIterator, Grid_releaseBlkIterator
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Heat_interface, ONLY : Heat_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
@@ -218,7 +219,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
   call Hydro_consolidateCFL()
   do level=1,maxLev
-     itor = block_iterator_t(LEAF, level=level)
+     call Grid_getBlkIterator(itor, LEAF, level=level)
      do while(itor%is_valid())
         call itor%blkMetaData(block)
 
@@ -338,9 +339,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
         call itor%next()
      enddo
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-     call destroy_iterator(itor)
-#endif
+     call Grid_releaseBlkIterator(itor)
   end do
 !!$     end do
      
