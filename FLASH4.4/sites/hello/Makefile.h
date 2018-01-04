@@ -1,31 +1,29 @@
-# FLASH makefile definitions for x86-64 Linux (GNU compilers)
+# FLASH makefile definitions for x86-64 macOS
 #----------------------------------------------------------------------------
-# Set the HDF5/MPI library paths -- these need to be updated for your system
+# Set the AMReX library path -- manual installation
 #----------------------------------------------------------------------------
-HDF5_PATH = ${SPACK_GCC}/hdf5-1.8.19-w4zx76td5ykzpoifzfdx2x43xt62fa2u
 AMREX_PATH = ${HOME}/Projects/lib_install
 
-HYPRE_PATH = ${SPACK_GCC}/hypre-2.12.1-t5c6do67rsieweqyid6vuis7gv7w62h3
+#----------------------------------------------------------------------------
+# Set the HDF5/MPI library paths -- managed by loading with Spack 
+#----------------------------------------------------------------------------
+HDF5_PATH = 
+HYPRE_PATH = 
 ZLIB_PATH  =
-
 PAPI_PATH  =
 PAPI_FLAGS =
-
 LIB_NCMPI = /usr/local
 
 #----------------------------------------------------------------------------
 # Compiler and linker commands
 #
-#   Use the MPICH wrappers around the compilers -- these will automatically
-#   load the proper libraries and include files.  Version of MPICH prior
-#   to 1.2.2 (?) do not recognize .F90 as a valid Fortran file extension.
-#   You need to edit mpif90 and add .F90 to the test of filename extensions,
-#   or upgrade your MPICH.
+#   Use the parallel HDF5 wrappers which use the mpiXX compiler wrappers 
+#   -- these will automatically load the proper libraries and include files.
 #----------------------------------------------------------------------------
-FCOMP   = mpif90
-CCOMP   = mpicc
+FCOMP   = h5pfc
+CCOMP   = h5pcc
 CPPCOMP = mpiCC
-LINK    = mpif90 -std=c++11
+LINK    = h5pfc -std=c++11
 
 # pre-processor flag
 PP      = -D
@@ -44,38 +42,34 @@ PP      = -D
 
 FFLAGS_OPT = -c -O2 -fdefault-real-8 -fdefault-double-8 -Wuninitialized
 FFLAGS_DEBUG = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
--pedantic -Wall -Wextra -Waliasing \
--Wsurprising -Wconversion -Wunderflow \
--ffpe-trap=invalid,zero,overflow -fbounds-check \
--fimplicit-none -fstack-protector-all \
--fbacktrace -fbounds-check
-
+	-pedantic -Wall -Wextra -Waliasing \
+	-Wsurprising -Wconversion -Wunderflow \
+	-ffpe-trap=invalid,zero,overflow -fbounds-check \
+	-fimplicit-none -fstack-protector-all \
+	-fbacktrace -fbounds-check
 FFLAGS_TEST = -ggdb -c -fdefault-real-8 -fdefault-double-8 \
--ffree-line-length-none
+	-ffree-line-length-none
 
-FFLAGS_HYPRE = -I${HYPRE_PATH}/include
+FFLAGS_HYPRE =
 FFLAGS_AMREX = -I${AMREX_PATH}/include
 FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
 
-#F90FLAGS = -I${HDF5_PATH}/include -DH5_USE_16_API
-F90FLAGS = -I${HDF5_PATH}/include
+F90FLAGS =
 
 #The macro _FORTIFY_SOURCE adds some lightweight checks for buffer
 #overflows at both compile time and run time (only active at -O1 or higher)
 #http://gcc.gnu.org/ml/gcc-patches/2004-09/msg02055.html
 CFLAGS_OPT = -c -O2 -Wuninitialized -D_FORTIFY_SOURCE=2
-
 CFLAGS_DEBUG = -ggdb -c -O0 -Wno-div-by-zero -Wundef \
--Wconversion -Wstrict-prototypes -Wunreachable-code \
--pedantic -Wall -Wextra -Winit-self -ftree-vrp -Wfloat-equal \
--Wunsafe-loop-optimizations -Wpadded -fstack-protector-all
-
+	-Wconversion -Wstrict-prototypes -Wunreachable-code \
+	-pedantic -Wall -Wextra -Winit-self -ftree-vrp -Wfloat-equal \
+	-Wunsafe-loop-optimizations -Wpadded -fstack-protector-all
 CFLAGS_TEST = -c
 
 # Platform symbol
 CDEFINES += -DDarwin
 
-CFLAGS_HDF5 = -I${HDF5_PATH}/include -DH5_USE_16_API
+CFLAGS_HDF5 = -DH5_USE_16_API
 CFLAGS_NCMPI = -I$(LIB_NCMPI)/include
 
 #----------------------------------------------------------------------------
@@ -89,7 +83,6 @@ LFLAGS_OPT   = -o
 LFLAGS_DEBUG = -g -O0 -o
 LFLAGS_TEST  = -o
 
-
 #----------------------------------------------------------------------------
 # Library specific linking
 #
@@ -99,28 +92,23 @@ LFLAGS_TEST  = -o
 #  (incompatible) libraries.  We also create a _OPT, _DEBUG, and _TEST
 #  library macro to add any performance-minded libraries (like fast math),
 #  depending on how FLASH was setup.
+#
+#  Mostly handled by loading modules with Spack and h5pXX wrappers.
 #----------------------------------------------------------------------------
 
 LIB_OPT   =
 LIB_DEBUG =
 LIB_TEST  =
 
-#LIB_HDF5  = -L/usr/local/lib -lhdf5 /usr/lib64/libz.a
-LIB_HDF5  = -L${HDF5_PATH}/lib -lhdf5
-
+LIB_HDF5  =
 LIB_PAPI  =
 LIB_MATH  =
-
 LIB_MPI   = 
-#LIB_NCMPI = -L $(NCMPI_PATH)/lib -lpnetcdf
 LIB_MPE   =
-
-LIB_HYPRE = -L${HYPRE_PATH}/lib -lHYPRE
-
+LIB_HYPRE =
 LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
 LIB_AMREX2D = ${LIB_AMREX}
-LIB_STDCXX = -L${SPACK_CLANG}/gcc-7.1.0-iob425i3dwdibytea2aygtbwswae35mw/lib -lstdc++
-
+LIB_STDCXX = -lstdc++
 
 # Uncomment the following line to use electic fence memory debugger.
 # Need the following environmental variable (see env.sh):
@@ -147,10 +135,3 @@ CD = cd
 RL = ranlib
 ECHO = echo
 
-#----------------------------------------------------------------------------
-# Fake existence of iso_c_bindings module to prevent unnecessary recompilations.
-#---------------------------------------------------------------------------- 
-#ifeq ($(FLASHBINARY),true)
-#iso_c_binding.mod :
-#	touch $@
-#endif
