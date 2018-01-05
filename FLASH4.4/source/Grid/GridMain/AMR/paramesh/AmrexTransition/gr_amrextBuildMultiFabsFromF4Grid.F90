@@ -1,4 +1,4 @@
-subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
+subroutine gr_amrextBuildMultiFabsFromF4Grid(gds, maxLev, nodetype)
   use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
                                   Grid_getListOfBlocks, &
                                   Grid_getBlkIndexLimits, &
@@ -11,6 +11,7 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
                                   Grid_getMaxRefinement
 
   use Grid_data, ONLY : gr_meshMe, gr_meshNumProcs, gr_meshComm
+  use gr_physicalMultifabs, ONLY : Unk
 
   use amrex_multifab_module
   use amrex_distromap_module
@@ -20,7 +21,9 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
 #include "Flash.h"
 #include "constants.h"
 
-  type(amrex_multifab),intent(INOUT) :: phi_mf(0:)
+  integer,intent(IN) :: gds
+!!$  type(amrex_multifab),intent(INOUT) :: phi_mf(0:)
+  type(amrex_multifab),POINTER :: phi_mf(:)
   integer,intent(IN) :: maxLev
   integer,intent(IN),OPTIONAL :: nodetype
 
@@ -52,6 +55,12 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
 
   type(amrex_distromap) :: dm
   type(amrex_boxarray)  :: ba
+
+  if (gds==CENTER) then
+     phi_mf => Unk
+  else                          ! for now
+     call Driver_abortFlash('gr_amrextBuildMultiFabsFromF4Grid: gds must be CENTER!')
+  end if
 
   if (present(nodetype)) then
      myNodetype = nodetype
@@ -156,8 +165,6 @@ subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
   deallocate(oldp)
   deallocate(locLim)
 
-
-!!$  allocate(phi_mf(0:maxLev-1)) ! done by caller!
 
 
   do level=1,maxLev

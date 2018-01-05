@@ -129,17 +129,14 @@ contains
 
     function init_iterator(nodetype, level, tiling) result(this)
       use amrex_multifab_module, ONLY : amrex_multifab
-      use gr_amrextData
+      use gr_physicalMultifabs,  ONLY : Unk
 
         type(block_iterator_t)        :: this
         integer, intent(IN)           :: nodetype
         integer, intent(IN), optional :: level
         logical, intent(IN), optional :: tiling
 
-!!$        type(amrex_multifab),POINTER :: mfArray(:)
-!!$        type(amrex_multifab),POINTER :: mf
-
-        this = init_iterator_mfa(nodetype, gr_amrextUnkMFs, level, tiling)
+        this = init_iterator_mfa(nodetype, Unk, level, tiling)
     end function init_iterator
 
     !!****im* block_iterator_t/destroy_iterator

@@ -17,7 +17,6 @@
 
 
 module gr_amrextInterface
-#include "constants.h"
 #include "Flash.h"
   implicit none
 
@@ -35,10 +34,9 @@ module gr_amrextInterface
 
 #ifdef FLASH_GRID_ANYAMREX
   interface
-     subroutine gr_amrextBuildMultiFabsFromF4Grid(phi_mf, maxLev, nodetype)
-       use amrex_multifab_module, ONLY : amrex_multifab
+     subroutine gr_amrextBuildMultiFabsFromF4Grid(gds, maxLev, nodetype)
        implicit none
-       type(amrex_multifab),intent(INOUT) :: phi_mf(0:)
+       integer,intent(IN) :: gds
        integer,intent(IN) :: maxLev
        integer,intent(IN),OPTIONAL :: nodetype
      end subroutine gr_amrextBuildMultiFabsFromF4Grid

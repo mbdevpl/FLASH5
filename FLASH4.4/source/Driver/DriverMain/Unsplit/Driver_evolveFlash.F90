@@ -84,7 +84,6 @@ subroutine Driver_evolveFlash()
 #include "Flash.h"
 #ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
-  use gr_amrextData
 #endif
   use Hydro_interface,     ONLY : Hydro_advanceAll, &
                                   Hydro_gravPotIsAlreadyUpdated
@@ -103,8 +102,6 @@ subroutine Driver_evolveFlash()
 !  use amrex_box_module
 !  use amrex_fab_module
   use amrex_multifab_module
-#else
-  use Driver_data, ONLY : gr_amrextUnkMFs => dr_simGeneration
 #endif
 
   implicit none
@@ -144,13 +141,10 @@ subroutine Driver_evolveFlash()
   real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
-#ifdef FLASH_GRID_AMREXTRANSITION
-  type(amrex_multifab),allocatable :: phi_mf(:)
-#endif
   integer:: ib, blockID, level, maxLev
 
   type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(block_metadata_t) :: blockDesc
 
 !!$  real(amrex_real)  :: time     !testing...
   logical :: nodal(3)
@@ -232,7 +226,7 @@ subroutine Driver_evolveFlash()
 
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
+     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
 #endif
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 

@@ -33,7 +33,6 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 #include "Flash.h"
 #ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
-  use gr_amrextData
 #endif
 
   implicit none
@@ -109,13 +108,13 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
   if (hy_doUnsplitLoop0) then
 #ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
 #endif
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
      call Hydro_doLoop0()
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
+     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
 #endif
   endif
 
@@ -133,7 +132,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
        maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,&
        doLogMask=.NOT.gcMaskLogged)
 #ifdef FLASH_GRID_AMREXTRANSITION
-  call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+  call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
 #endif
   call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
 
@@ -182,13 +181,13 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   if (hy_useGravity) then
   call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, ACTIVE_BLKS)
+     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
 #endif
      ! The following call invokes Gravity_potentialListOfBlocks and related stuff,
      ! to prepare for retrieving updated accelerations below.
      call hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
 #ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
 #endif
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
   endif
