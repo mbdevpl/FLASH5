@@ -39,10 +39,11 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
   use IO_data, ONLY : io_restart, io_statsFileName, io_globalComm
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getBlkIterator, Grid_releaseBlkIterator, &
                              Grid_getSingleCellVol 
 
   use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -64,7 +65,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   
   integer :: blkLimits(HIGH, MDIM), blkLimitsGC(HIGH, MDIM)
   type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(block_metadata_t) :: blockDesc
 
 #ifdef MAGP_VAR
   integer, parameter ::  nGlobalSumProp = 8              ! Number of globally-summed regular quantities
@@ -93,16 +94,16 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   gsum(1:nGlobalSumUsed) = 0.
   lsum(1:nGlobalSumUsed) = 0.
   
-  itor = block_iterator_t(LEAF)
+  call Grid_getBlkIterator(itor,LEAF)
   do while (itor%is_valid())
-     call itor%blkMetaData(block)
+     call itor%blkMetaData(blockDesc)
 
      !get the index limits of the block
-     blkLimits   = block%limits
-     blkLimitsGC = block%limitsGC
+     blkLimits   = blockDesc%limits
+     blkLimitsGC = blockDesc%limitsGC
 
      ! get a pointer to the current block of data
-     call Grid_getBlkPtr(block, solnData)
+     call Grid_getBlkPtr(blockDesc, solnData)
 
      ! Sum contributions from the indicated blkLimits of cells.
      do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
@@ -114,7 +115,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
               point(KAXIS) = k
 
 !! Get the cell volume for a single cell
-              call Grid_getSingleCellVol(block, point, dvol)
+              call Grid_getSingleCellVol(blockDesc, point, dvol)
      
               ! mass   
 #ifdef DENS_VAR
@@ -195,12 +196,12 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
            enddo
         enddo
      enddo
-     call Grid_releaseBlkPtr(block, solnData)
+     call Grid_releaseBlkPtr(blockDesc, solnData)
 
      call itor%next()
   enddo
 #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call destroy_iterator(itor)
+  call Grid_releaseBlkIterator(itor)
 #endif
 
   ! Now the MASTER_PE sums the local contributions from all of

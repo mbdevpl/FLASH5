@@ -15,8 +15,8 @@
 !!
 !! DESCRIPTION
 !!
-!!  Given a block type specification and a class of data, loop over all of 
-!!  matching blocks and check whether matching solution data in certain
+!!  Given a block node type specification, loop over all of
+!!  the matching blocks and check whether matching solution data in certain
 !!  variableslie in a reasonable range of values.
 !!
 !!  Energies (ENER_VAR and EINT_VAR) are expected to be .ge. gr_smalle,
@@ -29,9 +29,7 @@
 !!
 !! ARGUMENTS
 !!
-!!   ntype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-!!
-!!   count - number of blocks in the blkList
+!!   ntype - the node type of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
 !!
 !!   layers - number of guardcell layers to be included in the check 
 !!
@@ -96,7 +94,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   character(len=32), dimension(4,2) :: block_buff
   character(len=32)                 :: number_to_str
   type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(block_metadata_t) :: blockDesc
 
 111 format (a,a,a1,(1x,a18,'=',a),(1x,a2,'=',a5),(1x,a5,'=',a),(1x,a4,'=',a))
 112 format (i3,1x,24(1x,1G8.2))
@@ -119,8 +117,8 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   ! DEVNOTE: Is it *always* correct to use CENTER here?
   call Grid_getBlkIterator(itor, ntype)
   do while (itor%is_valid())
-     call itor%blkMetaData(block)
-     blockID = block%id
+     call itor%blkMetaData(blockDesc)
+     blockID = blockDesc%id
 
 #ifdef DENS_VAR
      if (gcell_on_cc(DENS_VAR) .OR. gr_sanitizeDataMode == 2) then
