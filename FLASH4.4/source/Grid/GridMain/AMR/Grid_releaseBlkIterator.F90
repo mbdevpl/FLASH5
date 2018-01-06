@@ -12,14 +12,13 @@
 !! ARGUMENTS 
 !!  itor - the block iterator to destroy.
 !!
-!! NOTES
-!!  Grid_getBlkIterator.F90
-!!  constants.h
+!! SEE ALSO
+!!  Grid_getBlkIterator
 !!
 !!***
 
 subroutine Grid_releaseBlkIterator(itor)
-  use block_iterator, ONLY : block_iterator_t
+  use block_iterator, ONLY : block_iterator_t, destroy_iterator
 
   implicit none
 
@@ -27,7 +26,7 @@ subroutine Grid_releaseBlkIterator(itor)
 
   ! Destroy explicitly ONLY for compilers that do not implement destructors
 #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call itor%destroy_iterator()
+  call destroy_iterator(itor)
 #endif
 end subroutine Grid_releaseBlkIterator
 
