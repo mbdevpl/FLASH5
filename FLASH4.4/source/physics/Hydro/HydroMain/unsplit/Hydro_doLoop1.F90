@@ -6,10 +6,11 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
   use Grid_interface,      ONLY : Grid_getDeltas,&
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
+                                  Grid_getBlkIterator, Grid_releaseBlkIterator,&
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_loop1Body
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -34,7 +35,7 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
         print*,' ***************   HYDRO LEVEL', level,'  **********************'
 #endif
 
-        itor = block_iterator_t(LEAF, level=level)
+        call Grid_getBlkIterator(itor, LEAF, level=level)
         call Timers_stop("loop1")
         do while(itor%is_valid())
            call itor%blkMetaData(blockDesc)
@@ -57,7 +58,7 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
         end do
         call Timers_stop("loop1")
 #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-        call destroy_iterator(itor)
+        call Grid_releaseBlkIterator(itor)
 #endif
 #ifdef DEBUG_DRIVER
         print*, 'return from Hydro/MHD timestep'  ! DEBUG

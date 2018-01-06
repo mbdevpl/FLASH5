@@ -43,7 +43,7 @@ subroutine Driver_verifyInitDt()
        Grid_getBlkIterator, Grid_releaseBlkIterator
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none       
@@ -78,7 +78,7 @@ subroutine Driver_verifyInitDt()
   logical :: runVerifyInitDt = .false.
   real :: extraHydroInfo
   type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(block_metadata_t) :: blockDesc
   integer:: ib, level, maxLev
 
 !!$  dr_dtSTS = 0.0     !First use is in a max(dr_dtSTS,...), see Driver_evolveFlash. - KW
@@ -115,11 +115,11 @@ subroutine Driver_verifyInitDt()
      do level=1,maxLev
         call Grid_getBlkIterator(itor, LEAF, level=level)
         do while(itor%is_valid())
-           call itor%blkMetaData(block)
+           call itor%blkMetaData(blockDesc)
           
-           lim=block%Limits
-           limGC=block%LimitsGC
-           call Grid_getBlkPtr(block, solnData)
+           lim=blockDesc%Limits
+           limGC=blockDesc%LimitsGC
+           call Grid_getBlkPtr(blockDesc, solnData)
 
            isize = limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1
            jsize = limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1
@@ -143,21 +143,21 @@ subroutine Driver_verifyInitDt()
            
            
            coordSize = isize
-           call Grid_getCellCoords(IAXIS,block,CENTER,gcell,xCoord,coordSize)
-           call Grid_getCellCoords(IAXIS,block,LEFT_EDGE,gcell,xLeft,isize)
-           call Grid_getCellCoords(IAXIS,block,RIGHT_EDGE,gcell,xRight,isize)
+           call Grid_getCellCoords(IAXIS,blockDesc,CENTER,gcell,xCoord,coordSize)
+           call Grid_getCellCoords(IAXIS,blockDesc,LEFT_EDGE,gcell,xLeft,isize)
+           call Grid_getCellCoords(IAXIS,blockDesc,RIGHT_EDGE,gcell,xRight,isize)
            
            if (NDIM > 1) then
               coordSize = jsize
-              call Grid_getCellCoords(JAXIS,block,CENTER,gcell,yCoord,coordSize)
-              call Grid_getCellCoords(JAXIS,block,LEFT_EDGE,gcell,yLeft,jsize)
-              call Grid_getCellCoords(JAXIS,block,RIGHT_EDGE,gcell,yRight,jsize)
+              call Grid_getCellCoords(JAXIS,blockDesc,CENTER,gcell,yCoord,coordSize)
+              call Grid_getCellCoords(JAXIS,blockDesc,LEFT_EDGE,gcell,yLeft,jsize)
+              call Grid_getCellCoords(JAXIS,blockDesc,RIGHT_EDGE,gcell,yRight,jsize)
               
               if (NDIM > 2) then
                  coordSize = ksize
-                 call Grid_getCellCoords(KAXIS,block,CENTER,gcell,zCoord,coordSize)
-                 call Grid_getCellCoords(KAXIS,block,LEFT_EDGE,gcell,zLeft,ksize)
-                 call Grid_getCellCoords(KAXIS,block,RIGHT_EDGE,gcell,zRight,ksize)              
+                 call Grid_getCellCoords(KAXIS,blockDesc,CENTER,gcell,zCoord,coordSize)
+                 call Grid_getCellCoords(KAXIS,blockDesc,LEFT_EDGE,gcell,zLeft,ksize)
+                 call Grid_getCellCoords(KAXIS,blockDesc,RIGHT_EDGE,gcell,zRight,ksize)
               endif
            endif
            
@@ -172,7 +172,7 @@ subroutine Driver_verifyInitDt()
            uygrid(:) = 0
            uzgrid(:) = 0
            
-           call Hydro_computeDt (block, &
+           call Hydro_computeDt (blockDesc, &
                 xCoord, dx, uxgrid, &
                 yCoord, dy, uygrid, &
                 zCoord, dz, uzgrid, &
@@ -188,7 +188,7 @@ subroutine Driver_verifyInitDt()
 !!$             solnData,      &
 !!$             dtCheck(2), dtMinLoc )
            
-           call Grid_releaseBlkPtr(block, solnData)
+           call Grid_releaseBlkPtr(blockDesc, solnData)
            nullify(solnData)
  
            deallocate(xCoord)

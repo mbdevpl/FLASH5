@@ -80,7 +80,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Particles_interface, ONLY: Particles_computeDt
 
   use IncompNS_interface, ONLY : IncompNS_computeDt
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -164,7 +164,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   real :: extraHydroInfoApp
   real :: dtNewComputed
   type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(block_metadata_t) :: blockDesc
   integer:: ib, level, maxLev
   real :: err
 
@@ -221,11 +221,11 @@ subroutine Driver_computeDt(nbegin, nstep, &
   do level=1,maxLev
      call Grid_getBlkIterator(itor, LEAF, level=level)
      do while(itor%is_valid())
-        call itor%blkMetaData(block)
+        call itor%blkMetaData(blockDesc)
 
-        blkLimits   = block%limits
-        blkLimitsGC = block%limitsGC
-        call Grid_getBlkPtr(block, solnData)
+        blkLimits   = blockDesc%limits
+        blkLimitsGC = blockDesc%limitsGC
+        call Grid_getBlkPtr(blockDesc, solnData)
 
         isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
         jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
@@ -250,25 +250,25 @@ subroutine Driver_computeDt(nbegin, nstep, &
 #ifdef DEBUG_DRIVER
         print*,'before calling get coordinates',isize,gcell
 #endif
-        call Grid_getCellCoords(IAXIS,block,CENTER,gcell,xCenter,isize)
-        call Grid_getCellCoords(IAXIS,block,LEFT_EDGE,gcell,xLeft,isize)
-        call Grid_getCellCoords(IAXIS,block,RIGHT_EDGE,gcell,xRight,isize)
+        call Grid_getCellCoords(IAXIS,blockDesc,CENTER,gcell,xCenter,isize)
+        call Grid_getCellCoords(IAXIS,blockDesc,LEFT_EDGE,gcell,xLeft,isize)
+        call Grid_getCellCoords(IAXIS,blockDesc,RIGHT_EDGE,gcell,xRight,isize)
         
 #ifdef DEBUG_DRIVER
         print*,'before calling get coordinates',jsize,gcell
 #endif
         if (NDIM > 1) then
-           call Grid_getCellCoords(JAXIS,block,CENTER,gcell,yCenter,jsize)
-           call Grid_getCellCoords(JAXIS,block,LEFT_EDGE,gcell,yLeft,jsize)
-           call Grid_getCellCoords(JAXIS,block,RIGHT_EDGE,gcell,yRight,jsize)
+           call Grid_getCellCoords(JAXIS,blockDesc,CENTER,gcell,yCenter,jsize)
+           call Grid_getCellCoords(JAXIS,blockDesc,LEFT_EDGE,gcell,yLeft,jsize)
+           call Grid_getCellCoords(JAXIS,blockDesc,RIGHT_EDGE,gcell,yRight,jsize)
            
            if (NDIM > 2) then
 #ifdef DEBUG_DRIVER
               print*,'before calling get coordinates',ksize,gcell
 #endif
-              call Grid_getCellCoords(KAXIS,block,CENTER,gcell,zCenter,ksize)
-              call Grid_getCellCoords(KAXIS,block,LEFT_EDGE,gcell,zLeft,ksize)
-              call Grid_getCellCoords(KAXIS,block,RIGHT_EDGE,gcell,zRight,ksize)           
+              call Grid_getCellCoords(KAXIS,blockDesc,CENTER,gcell,zCenter,ksize)
+              call Grid_getCellCoords(KAXIS,blockDesc,LEFT_EDGE,gcell,zLeft,ksize)
+              call Grid_getCellCoords(KAXIS,blockDesc,RIGHT_EDGE,gcell,zRight,ksize)
            endif
         endif
         
@@ -286,7 +286,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
         print*,'going to call Hydro timestep'
 #endif
         !extraHydroInfo = 0.
-        call Hydro_computeDt (block, &
+        call Hydro_computeDt (blockDesc, &
              xCenter, dx, uxgrid, &
              yCenter, dy, uygrid, &
              zCenter, dz, uzgrid, &
@@ -334,7 +334,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
         print*,'release blockpointer'
 #endif
         
-        call Grid_releaseBlkPtr(block, solnData)
+        call Grid_releaseBlkPtr(blockDesc, solnData)
         nullify(solnData)
 
         call itor%next()

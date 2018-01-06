@@ -2,7 +2,8 @@
 
 subroutine Hydro_doLoop0
   use Grid_interface, ONLY : Grid_getDeltas, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr
+                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getBlkIterator, Grid_releaseBlkIterator
   use hy_uhd_interface, ONLY : hy_uhd_getRiemannState,  &
                                hy_uhd_getFaceFlux,      &
                                hy_uhd_unsplitUpdate,    &
@@ -12,7 +13,7 @@ subroutine Hydro_doLoop0
                                hy_uhd_putGravityUnsplit,&
                                hy_uhd_addGravityUnsplit,&
                                hy_uhd_shockDetect
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
@@ -52,7 +53,7 @@ subroutine Hydro_doLoop0
 !!$  do i=1,blockCount          !LOOP 0
 !!$     blockID = blockList(i)
 
-  itor = block_iterator_t(LEAF)
+  call Grid_getBlkIterator(itor,LEAF)
 
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
@@ -111,6 +112,7 @@ subroutine Hydro_doLoop0
      call itor%next()
   end do
 #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call destroy_iterator(itor)
+  
+  call Grid_releaseBlkIterator(itor)
 #endif
 end subroutine Hydro_doLoop0
