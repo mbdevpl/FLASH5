@@ -48,7 +48,9 @@ subroutine Driver_evolveFlash()
                                       Grid_getDeltas, &
                                       Grid_getMaxRefinement, &
                                       Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                                      Grid_updateRefinement
+                                      Grid_updateRefinement, &
+                                      Grid_getBlkIterator, &
+                                      Grid_releaseBlkIterator
     use Grid_data,             ONLY : gr_iguard, gr_jguard, gr_kguard, &
                                       gr_meshMe, &
                                       gr_numRefineVarsMax, gr_numRefineVars, &
@@ -210,7 +212,9 @@ subroutine Driver_evolveFlash()
     !!!!! CONFIRM PROPER BLOCK/CELL STRUCTURE
     ! Walk across all blocks to test and collect info
     n_blocks = 0
-    itor = block_iterator_t(LEAF)
+    
+    call Grid_getBlkIterator(itor, LEAF)
+
     call itor%blkMetaData(block)
     xBlkMin = block%limits(LOW,  IAXIS)
     xBlkMax = block%limits(HIGH, IAXIS)
@@ -320,6 +324,8 @@ subroutine Driver_evolveFlash()
 
         call itor%next()
     end do
+
+    call Grid_releaseBlkIterator(itor)
     
     ! Confirm proper number of blocks and cells
     call assertEqual(xBlkMin, 1, "Incorrect origin X-coordinate")
@@ -390,7 +396,7 @@ subroutine Driver_evolveFlash()
     ! TODO: Get nrefs from AMReX
 
     !!!!! CONFIRM PROPER INITIAL CONDITIONS
-    itor = block_iterator_t(LEAF)
+    call Grid_getBlkIterator(itor, LEAF)
     do while (itor%is_valid())
         call itor%blkMetaData(block)
         call Grid_getBlkPtr(block, solnData)
@@ -414,6 +420,7 @@ subroutine Driver_evolveFlash()
 
         call itor%next()
     end do
+    call Grid_releaseBlkIterator(itor)
 
     !!!!! CONFIRM CELL COORDINATE ACCESSORS
     ! DEV: TODO Apply proper Z-info and test in 3D

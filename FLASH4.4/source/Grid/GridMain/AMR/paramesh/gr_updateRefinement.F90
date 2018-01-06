@@ -63,7 +63,8 @@ subroutine gr_updateRefinement( gridChanged)
        gr_convertToConsvdInMeshInterp, gr_eosMode, gr_meshMe, gr_gcellsUpToDate
   use gr_specificData, ONLY : gr_blkList
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getBlkIterator, Grid_releaseBlkIterator
   use Simulation_interface, ONLY : Simulation_customizeProlong
   use tree, ONLY : newchild, nodetype, lnblocks, grid_changed
 #ifndef FLASH_GRID_PARAMESH2
@@ -73,7 +74,7 @@ subroutine gr_updateRefinement( gridChanged)
                                   amr_prolong
   use Eos_interface, ONLY : Eos_wrapped
   use Particles_interface, ONLY : Particles_updateRefinement 
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -129,7 +130,7 @@ subroutine gr_updateRefinement( gridChanged)
   ! that were actually parents up to the amr_refine_derefine call.
   ! The prolonging will stuff the new children.
   if (gr_convertToConsvdForMeshCalls) then
-     itor = block_iterator_t(ALL_BLKS)
+     call Grid_getBlkIterator(itor, ALL_BLKS)
      do while (itor%is_valid())
         call itor%blkMetaData(block)
         blockID = block%id
@@ -141,9 +142,7 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-     call destroy_iterator(itor)
-#endif
+     call Grid_releaseBlkIterator(itor)
   endif
   
   
@@ -186,27 +185,23 @@ subroutine gr_updateRefinement( gridChanged)
   ! even for blocks whose data won't have any impact on further propagation
   ! (but may still be written out to plotfiles etc.).
   if (gr_convertToConsvdForMeshCalls) then
-     itor = block_iterator_t(ACTIVE_BLKS)
+     call Grid_getBlkIterator(itor, ACTIVE_BLKS)
      do while (itor%is_valid())
         call itor%blkMetaData(block)
         call gr_conserveToPrimitive(block, .FALSE.)
 
         call itor%next()
      end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-     call destroy_iterator(itor)
-#endif
+     call Grid_releaseBlkIterator(itor)
 
-     itor = block_iterator_t(ANCESTOR)
+     call Grid_getBlkIterator(itor, ANCESTOR)
      do while (itor%is_valid())
         call itor%blkMetaData(block)
         call gr_conserveToPrimitive(block, .TRUE.)
 
         call itor%next()
      end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-     call destroy_iterator(itor)
-#endif
+     call Grid_releaseBlkIterator(itor)
   endif
 
 #ifndef FLASH_GRID_PARAMESH2
@@ -232,7 +227,7 @@ subroutine gr_updateRefinement( gridChanged)
 
   if (grid_changed .NE. 0) then
      call Timers_start("eos")
-     itor = block_iterator_t(LEAF)
+     call Grid_getBlkIterator(itor, LEAF)
      do while (itor%is_valid())
         call itor%blkMetaData(block)
 
@@ -243,9 +238,7 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-     call destroy_iterator(itor)
-#endif
+     call Grid_releaseBlkIterator(itor)
      call Timers_stop("eos")
   end if
 

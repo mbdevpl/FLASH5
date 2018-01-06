@@ -39,7 +39,8 @@ subroutine Driver_verifyInitDt()
        dr_tstepSlowStartFactor
   use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
        Grid_getSingleCellCoords, Grid_getMaxRefinement, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr
+       Grid_getBlkPtr, Grid_releaseBlkPtr, &
+       Grid_getBlkIterator, Grid_releaseBlkIterator
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
   use block_iterator, ONLY : block_iterator_t, destroy_iterator
@@ -112,7 +113,7 @@ subroutine Driver_verifyInitDt()
         !Hydro_computeDt would be much more costly during the run
         
      do level=1,maxLev
-        itor = block_iterator_t(LEAF, level=level)
+        call Grid_getBlkIterator(itor, LEAF, level=level)
         do while(itor%is_valid())
            call itor%blkMetaData(block)
           
@@ -208,9 +209,7 @@ subroutine Driver_verifyInitDt()
            
            call itor%next()
         end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-        call destroy_iterator(itor)
-#endif
+        call Grid_releaseBlkIterator(itor)
      end do
      
      ! find the minimum across all processors, store it in dtCFL on MasterPE

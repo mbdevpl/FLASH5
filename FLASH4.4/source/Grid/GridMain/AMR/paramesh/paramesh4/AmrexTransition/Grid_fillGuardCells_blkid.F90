@@ -246,7 +246,6 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
   use paramesh_dimensions, ONLY : l2p5d,ndim
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
   use tree,         ONLY : lnblocks
-  use gr_amrextData
   use paramesh_interfaces, ONLY : amr_guardcell, amr_restrict
   use paramesh_mpi_interfaces, ONLY: mpi_amr_comm_setup
   use Eos_interface, ONLY : Eos_guardCells
@@ -523,10 +522,10 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
 
   if ((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
      if (.not. skipThisGcellFill) then
-        call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ACTIVE_BLKS)
+        call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
      else if (present(doEos)) then
         if (doEos .AND. needEos) then
-           call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ACTIVE_BLKS)
+           call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
         end if
      end if
   end if

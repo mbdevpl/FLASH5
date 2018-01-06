@@ -139,7 +139,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use amrex_fillpatch_module,    ONLY : amrex_fillpatch
   use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
-  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                                        Grid_getBlkIterator, &
+                                        Grid_releaseBlkIterator
   use Grid_data,                 ONLY : gr_justExchangedGC, &
                                         gr_eosModeNow, &
                                         gr_enableMaskedGCFill, &
@@ -156,7 +158,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
                                         gr_setMasks_gen, gr_makeMaskConsistent_gen
   use gr_physicalMultifabs,      ONLY : unk
-  use block_iterator,            ONLY : block_iterator_t, destroy_iterator
+  use block_iterator,            ONLY : block_iterator_t
   use block_metadata,            ONLY : block_metadata_t
 
 #include "Flash_mpi_implicitNone.fh"
@@ -386,7 +388,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   if(present(doEos)) then
      if(doEos.and.needEos) then
         call Timers_start("eos gc")
-        itor = block_iterator_t(listBlockType)
+        call Grid_getBlkIterator(itor, listBlockType)
         do while (itor%is_valid())
                 call itor%blkMetaData(blockDesc)
                 
@@ -398,9 +400,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
                 call itor%next()
         end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-        call destroy_iterator(itor)
-#endif
+        call Grid_releaseBlkIterator(itor)
         call Timers_stop("eos gc")
      end if
   end if

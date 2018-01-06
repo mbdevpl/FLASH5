@@ -33,7 +33,7 @@ subroutine gr_expandDomain (particlesInitialized)
 
   use Grid_interface, ONLY : Grid_copyF4DataToMultiFabs
   use Grid_data, ONLY : gr_domainBC,gr_eosModeInit,gr_refineOnParticleCount,&
-       gr_refineOnPdens,gr_maxParticlesPerBlk,gr_minParticlesPerBlk, gr_meshMe,&
+       gr_maxParticlesPerBlk,gr_minParticlesPerBlk, gr_meshMe,&
        gr_meshNumProcs, gr_lrefineMinInit, gr_gcellsUpToDate
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_stampVarMask
@@ -41,7 +41,6 @@ subroutine gr_expandDomain (particlesInitialized)
        Grid_getLocalNumBlks, Grid_getListOfBlocks, &
        Grid_markRefineDerefine, Grid_getBlkPtr, Grid_releaseBlkPtr
   use gr_amrextInterface, ONLY : gr_fillMetaData, gr_amrextBuildMultiFabsFromF4Grid
-  use gr_amrextData
   use gr_specificData, ONLY : gr_ihiGc,gr_jhiGc,gr_khiGc
   use tree, ONLY : lrefine, lrefine_min, lrefine_max, grid_changed
   use paramesh_interfaces, ONLY : amr_refine_derefine, amr_restrict
@@ -58,7 +57,6 @@ subroutine gr_expandDomain (particlesInitialized)
     Particles_updateRefinement
   use Driver_interface, ONLY : Driver_abortFlash
   use RadTrans_interface, ONLY: RadTrans_sumEnergy
-  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -86,7 +84,6 @@ subroutine gr_expandDomain (particlesInitialized)
   character(len=32), dimension(2,2) :: block_buff
   character(len=32)                 :: int_to_str
   integer :: gridDataStruct, whichBlocks
-  type(block_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
 
   !!============================================================================
@@ -221,9 +218,8 @@ subroutine gr_expandDomain (particlesInitialized)
      end if
      if (ntimes .le. lrefine_max+1) then
         ! Guard cell filling and Eos_wrapped are done in Grid_markRefineDerefine as needed.
-        call gr_amrextDataInit(lrefine_max)
-        call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs,lrefine_max,ACTIVE_BLKS)
-        call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, ACTIVE_BLKS)
+        call gr_amrextBuildMultiFabsFromF4Grid(CENTER,lrefine_max,ACTIVE_BLKS)
+        call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
         call Grid_markRefineDerefine()
         grid_changed_anytime = max(grid_changed, grid_changed_anytime)
         grid_changed = 0              ! will be 1 after amr_refine_derefine if the grid actually changed  
@@ -251,7 +247,7 @@ subroutine gr_expandDomain (particlesInitialized)
 
   call gr_ensureValidNeighborInfo(10)
 
-  call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs,lrefine_max,ACTIVE_BLKS)
-  call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, ACTIVE_BLKS)
+  call gr_amrextBuildMultiFabsFromF4Grid(CENTER,lrefine_max,ACTIVE_BLKS)
+  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 
 end subroutine gr_expandDomain

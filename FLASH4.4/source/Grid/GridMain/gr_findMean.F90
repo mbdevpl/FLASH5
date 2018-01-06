@@ -29,7 +29,8 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   
   use Driver_interface, ONLY: Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPhysicalSize, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr
+                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getBlkIterator, Grid_releaseBlkIterator
   use Grid_data, ONLY : gr_meshComm
   use block_iterator, ONLY : block_iterator_t, destroy_iterator
   use block_metadata, ONLY : block_metadata_t
@@ -70,7 +71,7 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   localVolume = 0.
   localSum = 0.
 
-  itor = block_iterator_t(LEAF)
+  call Grid_getBlkIterator(itor, LEAF)
   do while (itor%is_valid())
      call itor%blkMetaData(block)
      
@@ -135,9 +136,7 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
 
      call itor%next()
   enddo
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call destroy_iterator(itor)
-#endif
+  call Grid_releaseBlkIterator(itor)
 
   call mpi_allreduce ( localSum, sum, 1, FLASH_REAL, & 
        MPI_SUM, gr_meshComm, ierr )
