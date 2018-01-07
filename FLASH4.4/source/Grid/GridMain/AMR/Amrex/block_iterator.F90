@@ -102,7 +102,9 @@ contains
         ! DEVNOTE: Presently ignore tiling optimization hint as the octree 
         ! iterator does not have this capability.
         if (present(tiling)) then
-            call Driver_abortFlash("[init_iterator] Tiling not yet implemented for AMReX")
+            if (tiling) then
+                call Driver_abortFlash("[init_iterator] Tiling not yet implemented for AMReX")
+            end if
         end if
 
         ! DEVNOTE: the AMReX iterator is not built based on nodetype.
