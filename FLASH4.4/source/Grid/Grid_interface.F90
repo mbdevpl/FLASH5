@@ -1328,15 +1328,16 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getBlkIterator(itor, nodetype, level)
+     subroutine Grid_getBlkIterator(itor, nodetype, level, tiling)
        use block_iterator, ONLY : block_iterator_t
        implicit none
        type(block_iterator_t), intent(OUT)          :: itor
        integer,                intent(IN)           :: nodetype
        integer,                intent(IN), optional :: level
+       logical,                intent(IN), optional :: tiling
      end subroutine Grid_getBlkIterator
   end interface
-  
+
   interface
      subroutine Grid_releaseBlkIterator(itor)
        use block_iterator, ONLY : block_iterator_t
@@ -1346,3 +1347,4 @@ Module Grid_interface
   end interface
 
 end Module Grid_interface
+

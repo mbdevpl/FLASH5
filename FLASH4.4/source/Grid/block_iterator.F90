@@ -41,26 +41,33 @@ contains
     !!  block_iterator_t
     !!
     !! SYNOPOSIS
-    !!  block_iterator_t itor = block_iterator_t(integer(IN)         :: nodetype,
-    !!                                           level(IN), optional :: level)
+    !!  block_iterator_t itor = block_iterator_t(integer(IN)           :: nodetype,
+    !!                                           integer(IN), optional :: level,
+    !!                                           logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
-    !!  Construct an iterator for walking across a specific subset of blocks
-    !!  within the current paramesh octree structure.  The iterator is already
-    !!  set to the first matching block.
+    !!  Construct an iterator for walking across a specific subset of blocks or
+    !!  tiles within the current AMReX octree structure.  The iterator is already
+    !!  set to the first matching block/tile.
     !!
     !! ARGUMENTS
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks located at this level of 
-    !!             octree structure
+    !!             iterate only over blocks/tiles located at this level of
+    !!             refinement.
+    !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
+    !!             walk across all associated blocks on a tile-by-tile basis *if*
+    !!             the implementation supports this feature.  If a value is not
+    !!             given, is FALSE, or the implementation does not support tiling,
+    !!             the iterator will iterate on a block-by-block basis.
     !!
     !! SEE ALSO
     !!  constants.h
     !!****
-    function init_iterator(nodetype, level) result(this)
+    function init_iterator(nodetype, level, tiling) result(this)
         integer, intent(IN)           :: nodetype
         integer, intent(IN), optional :: level
+        logical, intent(IN), optional :: tiling
         type(block_iterator_t)        :: this
 
         write(*,*) "You are working with a useless block_iterator_t stub"
