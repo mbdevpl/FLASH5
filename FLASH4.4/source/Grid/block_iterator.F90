@@ -47,7 +47,7 @@ contains
     !!
     !! DESCRIPTION
     !!  Construct an iterator for walking across a specific subset of blocks or
-    !!  tiles within the current AMReX octree structure.  The iterator is already
+    !!  tiles within the current octree structure.  The iterator is already
     !!  set to the first matching block/tile.
     !!
     !! ARGUMENTS
