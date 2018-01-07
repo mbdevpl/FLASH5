@@ -19,7 +19,7 @@ module block_iterator
 #include "constants.h"
     private
 
-    public :: destroy_iterator
+    public :: construct_iterator, destroy_iterator
 
     integer,parameter :: ndims=N_DIM
     integer,parameter :: amrex_real=kind(1.0)
@@ -45,26 +45,20 @@ module block_iterator
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
-        final             :: destroy_iterator
-#endif
     end type block_iterator_t
-
-    interface block_iterator_t
-        procedure :: init_iterator
-    end interface block_iterator_t
 
 contains
 
-    !!****im* block_iterator_t/block_iterator_t
+    !!****im* block_iterator_t/construct_iterator
     !!
     !! NAME
-    !!  block_iterator_t
+    !!  construct_iterator
     !!
     !! SYNOPOSIS
-    !!  block_iterator_t itor = block_iterator_t(integer(IN)           :: nodetype,
-    !!                                           integer(IN), optional :: level,
-    !!                                           logical(IN), optional :: tiling)
+    !!  construct_iterator(block_iterator_t(OUT) :: itor,
+    !!                     integer(IN)           :: nodetype,
+    !!                     integer(IN), optional :: level,
+    !!                     logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
     !!  Construct an iterator for walking across a specific subset of blocks or
@@ -82,20 +76,20 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    function init_iterator(nodetype, level, tiling) result(this)
-        integer, intent(IN)           :: nodetype
-        integer, intent(IN), optional :: level
-        logical, intent(IN), optional :: tiling
-        type(block_iterator_t)        :: this
+    subroutine construct_iterator(itor, nodetype, level, tiling)
+        type(block_iterator_t), intent(OUT)          :: itor
+        integer,                intent(IN)           :: nodetype
+        integer,                intent(IN), optional :: level
+        logical,                intent(IN), optional :: tiling
 
-        this%nodetype = nodetype
-        this%lev = INVALID_LEVEL 
+        itor%nodetype = nodetype
+        itor%lev = INVALID_LEVEL 
         if (present(level)) then
-            this%lev = level
+            itor%lev = level
         end if
 
-        call this%first()
-    end function init_iterator
+        call itor%first()
+    end subroutine construct_iterator
 
     !!****im* block_iterator_t/destroy_iterator
     !!
@@ -103,16 +97,16 @@ contains
     !!  destroy_iterator
     !!
     !! SYNPOSIS
-    !!  Called automatically
+    !!  Destroy given iterator.
     !!
     !! DESCRIPTION
     !!  Clean-up block interator object at destruction
     !!
     !!****
-    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-        type(block_iterator_t), intent(INOUT) :: this
+    IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
+        type(block_iterator_t), intent(INOUT) :: itor
 
-        call this%first()
+        call itor%first()
     end subroutine destroy_iterator
 
     !!****m* block_iterator_t/first
