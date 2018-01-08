@@ -21,7 +21,7 @@ module block_iterator
 
     private
 
-    public :: construct_iterator, destroy_iterator
+    public :: build_iterator, destroy_iterator
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -43,24 +43,24 @@ module block_iterator
         procedure, public :: blkMetaData
     end type block_iterator_t
 
-    interface construct_interator
+    interface build_iterator
         procedure :: init_iterator
         procedure :: init_iterator_mfa
-    end interface construct_iterator
+    end interface build_iterator
 
 contains
 
-    !!****im* block_iterator_t/construct_iterator
+    !!****im* block_iterator_t/build_iterator
     !!
     !! NAME
-    !!  construct_iterator
+    !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  construct_iterator(block_iterator_t(OUT) :: itor,
-    !!                     amrex_multifab(IN)    :: mfArray(:),
-    !!                     integer(IN)           :: nodetype,
-    !!                     integer(IN), optional :: level, 
-    !!                     logical(IN), optional :: tiling)
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 amrex_multifab(IN)    :: mfArray(:),
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level, 
+    !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
     !!  Construct an iterator for walking across a specific subset of blocks or
@@ -131,16 +131,16 @@ contains
 !!$        call this%first()
       end subroutine init_iterator_mfa
 
-    !!****im* block_iterator_t/construct_iterator
+    !!****im* block_iterator_t/build_iterator
     !!
     !! NAME
-    !!  construct_iterator
+    !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  construct_iterator(block_iterator_t(OUT) :: itor,
-    !!                     integer(IN)           :: nodetype,
-    !!                     integer(IN), optional :: level, 
-    !!                     logical(IN), optional :: tiling)
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level, 
+    !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
     !!  Construct an iterator for walking across a specific subset of blocks or

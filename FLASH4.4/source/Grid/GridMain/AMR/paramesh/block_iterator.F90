@@ -19,7 +19,7 @@ module block_iterator
 #include "constants.h"
     private
 
-    public :: construct_iterator, destroy_iterator
+    public :: build_iterator, destroy_iterator
 
     integer,parameter :: ndims=N_DIM
     integer,parameter :: amrex_real=kind(1.0)
@@ -49,16 +49,16 @@ module block_iterator
 
 contains
 
-    !!****im* block_iterator_t/construct_iterator
+    !!****im* block_iterator_t/build_iterator
     !!
     !! NAME
-    !!  construct_iterator
+    !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  construct_iterator(block_iterator_t(OUT) :: itor,
-    !!                     integer(IN)           :: nodetype,
-    !!                     integer(IN), optional :: level,
-    !!                     logical(IN), optional :: tiling)
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level,
+    !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
     !!  Construct an iterator for walking across a specific subset of blocks or
@@ -76,7 +76,7 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    subroutine construct_iterator(itor, nodetype, level, tiling)
+    subroutine build_iterator(itor, nodetype, level, tiling)
         type(block_iterator_t), intent(OUT)          :: itor
         integer,                intent(IN)           :: nodetype
         integer,                intent(IN), optional :: level
@@ -89,7 +89,7 @@ contains
         end if
 
         call itor%first()
-    end subroutine construct_iterator
+    end subroutine build_iterator
 
     !!****im* block_iterator_t/destroy_iterator
     !!

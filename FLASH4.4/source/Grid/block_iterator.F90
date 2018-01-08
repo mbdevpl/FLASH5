@@ -13,7 +13,7 @@ module block_iterator
 
     private
 
-    public :: construct_iterator, destroy_iterator
+    public :: build_iterator, destroy_iterator
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -31,16 +31,16 @@ module block_iterator
 
 contains
 
-    !!****im* block_iterator_t/construct_iterator
+    !!****im* block_iterator_t/build_iterator
     !!
     !! NAME
-    !!  construct_iterator
+    !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  construct_iterator(block_iterator_t(OUT) :: itor,
-    !!                     integer(IN)           :: nodetype,
-    !!                     integer(IN), optional :: level,
-    !!                     logical(IN), optional :: tiling)
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level,
+    !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
     !!  Construct an iterator for walking across a specific subset of blocks or
@@ -62,7 +62,7 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    subroutine construct_iterator(itor, nodetype, level, tiling)
+    subroutine build_iterator(itor, nodetype, level, tiling)
         use Driver_interface, ONLY : Driver_abortFlash
 
         type(block_iterator_t), intent(OUT)          :: itor
@@ -70,8 +70,8 @@ contains
         integer,                intent(IN), optional :: level
         logical,                intent(IN), optional :: tiling
 
-        call Driver_abortFlash("[construct_iterator] You are working with a useless block_iterator_t stub")
-    end subroutine construct_iterator
+        call Driver_abortFlash("[build_iterator] You are working with a useless block_iterator_t stub")
+    end subroutine build_iterator
 
     !!****im* block_iterator_t/destroy_iterator
     !!

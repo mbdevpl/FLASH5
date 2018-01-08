@@ -25,7 +25,7 @@ module block_iterator
 #include "constants.h"
 #include "Flash.h"
 
-    public :: construct_iterator, destroy_iterator
+    public :: build_iterator, destroy_iterator
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -46,16 +46,16 @@ module block_iterator
 
 contains
 
-    !!****im* block_iterator_t/construct_iterator
+    !!****im* block_iterator_t/build_iterator
     !!
     !! NAME
-    !!  construct_iterator
+    !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  construct_iterator(block_iterator_t(OUT) :: itor,
-    !!                     integer(IN)           :: nodetype,
-    !!                     integer(IN), optional :: level,
-    !!                     logical(IN), optional :: tiling)
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level,
+    !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
     !!  Construct an iterator for walking across a specific subset of blocks or
@@ -82,7 +82,7 @@ contains
     !!  Grid_getBlkIterator.F90
     !!  Grid_releaseBlkIterator.F90
     !!****
-    subroutine construct_iterator(itor, nodetype, level, tiling)
+    subroutine build_iterator(itor, nodetype, level, tiling)
         use Driver_interface, ONLY : Driver_abortFlash
 
         type(block_iterator_t), intent(OUT)          :: itor
@@ -98,7 +98,7 @@ contains
         ! iterator does not have this capability.
         if (present(tiling)) then
             if (tiling) then
-                call Driver_abortFlash("[init_iterator] Tiling not yet implemented for AMReX")
+                call Driver_abortFlash("[build_iterator] Tiling not yet implemented for AMReX")
             end if
         end if
 
@@ -108,7 +108,7 @@ contains
         ! Initial iterator is not primed.  Advance to first compatible block.
         call amrex_octree_iter_build(itor%oti)
         call itor%next()
-    end subroutine construct_iterator
+    end subroutine build_iterator
 
     !!****im* block_iterator_t/destroy_iterator
     !!

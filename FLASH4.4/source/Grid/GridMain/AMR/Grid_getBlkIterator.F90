@@ -36,7 +36,7 @@
 !!***
 
 subroutine Grid_getBlkIterator(itor, nodetype, level, tiling)
-  use block_iterator, ONLY : block_iterator_t, construct_iterator
+  use block_iterator, ONLY : block_iterator_t, build_iterator
 
   implicit none
 
@@ -45,6 +45,6 @@ subroutine Grid_getBlkIterator(itor, nodetype, level, tiling)
   integer,                intent(IN), optional :: level
   logical,                intent(IN), optional :: tiling
 
-  call construct_iterator(itor, nodetype, level, tiling)
+  call build_iterator(itor, nodetype, level, tiling)
 end subroutine Grid_getBlkIterator
 
