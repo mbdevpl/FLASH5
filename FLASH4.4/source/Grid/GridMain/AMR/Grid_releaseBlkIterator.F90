@@ -24,9 +24,6 @@ subroutine Grid_releaseBlkIterator(itor)
 
   type(block_iterator_t), intent(INOUT) :: itor
 
-  ! Destroy explicitly ONLY for compilers that do not implement destructors
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
   call destroy_iterator(itor)
-#endif
 end subroutine Grid_releaseBlkIterator
 

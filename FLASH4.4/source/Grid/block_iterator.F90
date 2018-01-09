@@ -13,7 +13,7 @@ module block_iterator
 
     private
 
-    public :: destroy_iterator
+    public :: build_iterator, destroy_iterator
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -29,21 +29,18 @@ module block_iterator
         procedure, public :: blkMetaData
     end type block_iterator_t
 
-    interface block_iterator_t
-        procedure :: init_iterator
-    end interface block_iterator_t
-
 contains
 
-    !!****im* block_iterator_t/block_iterator_t
+    !!****im* block_iterator_t/build_iterator
     !!
     !! NAME
-    !!  block_iterator_t
+    !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  block_iterator_t itor = block_iterator_t(integer(IN)           :: nodetype,
-    !!                                           integer(IN), optional :: level,
-    !!                                           logical(IN), optional :: tiling)
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level,
+    !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
     !!  Construct an iterator for walking across a specific subset of blocks or
@@ -51,6 +48,7 @@ contains
     !!  set to the first matching block/tile.
     !!
     !! ARGUMENTS
+    !!  itor     - the constructed iterator
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
     !!             iterate only over blocks/tiles located at this level of
@@ -64,15 +62,36 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    function init_iterator(nodetype, level, tiling) result(this)
-        integer, intent(IN)           :: nodetype
-        integer, intent(IN), optional :: level
-        logical, intent(IN), optional :: tiling
-        type(block_iterator_t)        :: this
+    subroutine build_iterator(itor, nodetype, level, tiling)
+        use Driver_interface, ONLY : Driver_abortFlash
 
-        write(*,*) "You are working with a useless block_iterator_t stub"
-        stop
-    end function init_iterator
+        type(block_iterator_t), intent(OUT)          :: itor
+        integer,                intent(IN)           :: nodetype
+        integer,                intent(IN), optional :: level
+        logical,                intent(IN), optional :: tiling
+
+        call Driver_abortFlash("[build_iterator] You are working with a useless block_iterator_t stub")
+    end subroutine build_iterator
+
+    !!****im* block_iterator_t/destroy_iterator
+    !!
+    !! NAME
+    !!  destroy_iterator
+    !!
+    !! SYNOPOSIS
+    !!  destroy_iterator(block_iterator_t(INOUT) :: itor)
+    !!
+    !! DESCRIPTION
+    !!  Destroy the given iterator.
+    !!
+    !! ARGUMENTS
+    !!  itor     - the iterator to destroy
+    !!
+    !!****
+    IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
+        type(block_iterator_t), intent(INOUT) :: itor
+
+    end subroutine destroy_iterator
 
     !!****m* block_iterator_t/first
     !!
@@ -93,11 +112,6 @@ contains
         stop
     end subroutine first
  
-    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-        type(block_iterator_t), intent(INOUT) :: this
-
-    end subroutine destroy_iterator
-
     !!****m* block_iterator_t/is_valid
     !!
     !! NAME
