@@ -139,13 +139,6 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                         "                  Level ", level
 #endif
 
-    ! DEV: FIXME scomp, which should be 1-based, seems to be always set to zero.
-    ! TBC if this is an AMReX bug
-    if (scomp /= 0) then
-        write(*,*) "scomp not equal to 0!"
-        stop
-    end if
-
     call amrex_mfiter_build(mfi, mfab, tiling=.false.)
     do while(mfi%next())
        ! 0-based, cell-centered, and global indices
@@ -215,11 +208,8 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                  regionSize(STRUCTSIZE)) )
 
              regionData(:, :, :, :) = 0.0d0
-             ! DEV: FIXME manually fixing scomp to 1 (see above)
-!             call gr_copyFabInteriorToRegion(solnData, face, axis, &
-!                                             interior, scomp, ncomp, regionData)
              call gr_copyFabInteriorToRegion(solnData, face, axis, &
-                                             interior, 1, ncomp, regionData)
+                                             interior, scomp, ncomp, regionData)
 
              ! As regionData only contains those physical quantities that AMReX
              ! asks for, no need for masking
@@ -244,11 +234,8 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                           axis2, axis3, endPts, 0)
              end if
 
-             ! DEV: FIXME manually fixing scomp to 1 (see above)
-!             call gr_copyGuardcellRegionToFab(regionData, face, axis, &
-!                                              guardcells, scomp, ncomp, solnData)
              call gr_copyGuardcellRegionToFab(regionData, face, axis, &
-                                              guardcells, 1, ncomp, solnData)
+                                              guardcells, scomp, ncomp, solnData)
 
              deallocate(regionData)
 
