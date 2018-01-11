@@ -87,7 +87,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     integer :: finest_level
     integer :: axis, axis2, axis3
 
-    logical :: mask(NUNK_VARS)
+    logical :: mask(ncomp)
     logical :: applied
 
     integer                       :: endPts(LOW:HIGH, 1:MDIM)
@@ -138,6 +138,13 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     write(*,'(A,A,I3)') "[gr_fillPhysicalBC]", &
                         "                  Level ", level
 #endif
+
+    ! DEV: FIXME scomp, which should be 1-based, seems to be always set to zero.
+    ! TBC if this is an AMReX bug
+    if (scomp /= 0) then
+        write(*,*) "scomp not equal to 0!"
+        stop
+    end if
 
     call amrex_mfiter_build(mfi, mfab, tiling=.false.)
     do while(mfi%next())
@@ -199,7 +206,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              regionSize(BC_DIR)     = endPts(HIGH, axis)  - endPts(LOW, axis)  + 1
              regionSize(SECOND_DIR) = endPts(HIGH, axis2) - endPts(LOW, axis2) + 1
              regionSize(THIRD_DIR)  = endPts(HIGH, axis3) - endPts(LOW, axis3) + 1
-             regionSize(STRUCTSIZE) = NUNK_VARS
+             regionSize(STRUCTSIZE) = ncomp
 
              ! 1-based, cell-centered, and local indices 
              allocate(regionData(regionSize(BC_DIR), &
@@ -208,21 +215,25 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                  regionSize(STRUCTSIZE)) )
 
              regionData(:, :, :, :) = 0.0d0
+             ! DEV: FIXME manually fixing scomp to 1 (see above)
+!             call gr_copyFabInteriorToRegion(solnData, face, axis, &
+!                                             interior, scomp, ncomp, regionData)
              call gr_copyFabInteriorToRegion(solnData, face, axis, &
-                                             interior, NUNK_VARS, regionData)
+                                             interior, 1, ncomp, regionData)
 
-             ! DEV: TODO Implement mask?
+             ! As regionData only contains those physical quantities that AMReX
+             ! asks for, no need for masking
              mask = .TRUE.
-             applied = .FALSE.
 
              ! Let simulation do BC fill if so desired
+             applied = .FALSE.
              call Grid_bcApplyToRegionSpecialized(gr_domainBC(face, axis), &
                                                   CENTER, NGUARD, &
                                                   axis, face, &
                                                   regionData, regionSize, &
                                                   mask, applied, blockDesc, &
                                                   axis2, axis3, endPts, 0)
-             
+
              if (.NOT. applied) then
                 ! Have FLASH fill GC in special data buffer
                 call Grid_bcApplyToRegion(gr_domainBC(face, axis), &
@@ -233,8 +244,11 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                           axis2, axis3, endPts, 0)
              end if
 
+             ! DEV: FIXME manually fixing scomp to 1 (see above)
+!             call gr_copyGuardcellRegionToFab(regionData, face, axis, &
+!                                              guardcells, scomp, ncomp, solnData)
              call gr_copyGuardcellRegionToFab(regionData, face, axis, &
-                                              guardcells, NUNK_VARS, solnData)
+                                              guardcells, 1, ncomp, solnData)
 
              deallocate(regionData)
 
