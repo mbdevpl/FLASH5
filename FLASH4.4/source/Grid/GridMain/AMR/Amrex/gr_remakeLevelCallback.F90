@@ -52,8 +52,8 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     ! DEVNOTE: TODO Include facevars in this process
 
     if (lev == 0) then
-       ! Move all unk data to given ba/dm layout.  Do *not* use sub-cycling.
-       ! -1 because of Fortran variable index starts with 1
+       ! Move all unk data (interior and GC) to given ba/dm layout.
+       ! Do *not* use sub-cycling.
        call amrex_fillpatch(mfab, time+1.0d0, unk(lev), &
                                   time,       unk(lev), &
                                   amrex_geom(lev), gr_fillPhysicalBC, &
@@ -79,6 +79,8 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
                        NGUARD)
 
     call amrex_multifab_destroy(mfab)
+
+    ! DEV: FIXME Should run EoS on the interiors and GC here?
 
     nFab = 0
     call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)

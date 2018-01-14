@@ -1,6 +1,47 @@
-#ifdef DEBUG_ALL
-#define DEBUG_GRID
-#endif
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_initNewLevelCallback
+!!
+!! NAME
+!!
+!!  gr_initNewLevelCallback
+!!
+!! SYNOPSIS
+!!
+!!  gr_initMakeNewLevelCallback(integer(IN)    :: lev,
+!!                              amrex_real(IN) :: time,
+!!                              c_ptr(IN)      :: pba,
+!!                              c_ptr(IN)      :: pdm)
+!!
+!! DESCRIPTION
+!!
+!!  This routine is a callback routine that is registered with AMReX at
+!!  initialization.  AMReX calls this routine to create a new refinement level
+!!  from scratch.
+!!
+!!  Specifically, for the given refinement level it
+!!   (1) creates a multifab for each data type,
+!!   (2) initializes these structures with the initial conditions via
+!!       Simulation_initBlock,
+!!   (3) runs EoS on the interiors of all blocks to make the initial data
+!!       thermodynamically consistent,
+!!   (4) fill all guardcells, and
+!!   (5) run EoS on the guardcells.
+!!
+!!  Note that all EoS runs are done in the mode specified by the eosModeInit
+!!  runtime parameter.
+!!
+!! ARGUMENTS
+!!
+!!  lev - a 0-based number identifying the refinement level to create.  The
+!!        zeroth level is the coarsest level to be used in the simulation and a
+!!        larger integer indicates a finer refinement.
+!!  time - IGNORED
+!!  pba - a C pointer to the AMReX box array object to use for constructing the
+!!        multifab for the given level
+!!  pdm - a C pointer to the AMReX distribution mapping of boxes across
+!!        processors to be used for constructing the multifab for the given
+!!        level.
+!!
+!!***
 
 #include "constants.h"
 #include "Flash.h"
@@ -30,6 +71,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use Grid_data,                 ONLY : gr_eosModeInit, &
                                           lo_bc_amrex, hi_bc_amrex
     use Eos_interface,             ONLY : Eos_wrapped
+    use Logfile_interface,         ONLY : Logfile_stamp
 
     implicit none
 
@@ -55,7 +97,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     ! Create FABS for storing physical data at given level
     call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
-    ! DEVNOTE: TODO Create there w.r.t. proper face-centered boxes
+    ! DEVNOTE: TODO Create these w.r.t. proper face-centered boxes
 #if NFACE_VARS > 0
     call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
@@ -97,6 +139,9 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
         n_blocks = n_blocks + 1
     end do
+    
+    call Logfile_stamp(lev+1, &
+          '[gr_initNewLevelCallback] Initialized data/Interiors EoS level')
 
     call amrex_mfiter_destroy(mfi)
 
@@ -123,6 +168,23 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                       amrex_interp_cell_cons, &
                                       lo_bc_amrex, hi_bc_amrex)
     end if
+
+    ! DEV: TODO Implement this
+!    call Grid_getBlkIterator(itor, ALLBLKS, level=lev)
+!    do while (itor%is_valid())
+!       call itor%blkMetaData(blockDesc)
+!
+!       call Grid_getBlkPtr(blockDesc, solnData)
+!       call Eos_guardCells(gr_eosModeInit, solnData, corners=.true., &
+!                           layers=returnLayers)
+!       call Grid_releaseBlkPtr(blockDesc, solnData)
+!
+!       call itor%next()
+!    end do
+!    call Grid_releaseBlkIterator(itor)
+
+    call Logfile_stamp(lev+1, &
+          '[gr_initNewLevelCallback] GC fill/GC EoS level')
 
     write(*,'(A,I10,A,I0)') "Created and initialized ", n_blocks, &
                            " blocks on level ", lev + 1

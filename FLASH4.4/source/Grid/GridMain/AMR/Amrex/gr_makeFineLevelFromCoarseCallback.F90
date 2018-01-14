@@ -63,6 +63,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                          lo_bc_amrex, hi_bc_amrex) 
 
+    ! DEV: FIXME Should we do an EoS run on interiors and GC here?
+
     nFab = 0
     call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)
     do while(mfi%next())
