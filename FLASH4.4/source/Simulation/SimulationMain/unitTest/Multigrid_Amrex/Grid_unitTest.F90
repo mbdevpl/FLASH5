@@ -29,7 +29,8 @@ subroutine Grid_unitTest(fileUnit,perfect)
   use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, &
 !        Grid_solvePoisson,Grid_getBlkIndexLimits, &
        Grid_getBlkPtr,Grid_releaseBlkPtr, &
-       Grid_getDeltas, Grid_fillGuardCells
+       Grid_getDeltas, Grid_fillGuardCells, &
+       Grid_getBlkIterator, Grid_releaseBlkIterator
   use gr_interface ,ONLY : gr_findMean
   use Grid_data, ONLY : gr_meshMe, gr_meshComm
   use block_iterator, ONLY : block_iterator_t
@@ -98,8 +99,8 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   Linf_err = 0.
   Tvol = 0.
   ! Get Block iterator
-  itor = block_iterator_t(LEAF)
-  !call Grid_getBlkIterator(itor, LEAF)
+!   itor = block_iterator_t(LEAF)
+  call Grid_getBlkIterator(itor, LEAF)
   do while (itor%is_valid())
      call itor%blkMetaData(block)
      !get the index limits of the block
@@ -154,10 +155,10 @@ print *, "calling Grid_getBlkPtr for block:",block
      call Grid_releaseBlkPtr(block,solnData,CENTER)
      call itor%next()
   enddo
-!  call Grid_releaseBlkIterator(itor)
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call destroy_iterator(itor)
-#endif
+ call Grid_releaseBlkIterator(itor)
+! #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+!   call destroy_iterator(itor)
+! #endif
 
 
   ! Sum processors Volumes
