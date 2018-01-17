@@ -31,7 +31,8 @@ subroutine Grid_unitTest(fileUnit,perfect)
                         
   use physicaldata, ONLY : unk,facevarx,facevary,facevarz
   use Grid_interface, ONLY : Grid_getBlkData, &
-       Grid_getPointData, Grid_getRowData, Grid_getMaxRefinement
+       Grid_getPointData, Grid_getRowData, Grid_getMaxRefinement, &
+       Grid_getBlkIterator, Grid_releaseBlkIterator
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
   
@@ -75,7 +76,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
   call Grid_getMaxRefinement(maxLev,mode=1)
 
   do lev=1,maxLev
-     itor = block_iterator_t(LEAF, level=lev)
+     call Grid_getBlkIterator(itor, LEAF, level=lev)
      do while(itor%is_valid())
         call itor%blkMetaData(block)
         limGC=block%limitsGC
@@ -300,6 +301,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
 !!$        print*,'the cumulative error is ',error
         call itor%next()     
      end do
+     call Grid_releaseBlkIterator(itor)
   end do
 !   print*,'the cumulative error is ',error
   

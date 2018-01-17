@@ -4,12 +4,10 @@
 !!
 !!  Grid_initDomain
 !!
-!!
 !! SYNOPSIS
 !!
 !!  Grid_initDomain(logical(IN)  :: restart,
 !!                  logical(INOUT) :: particlesInitialized)
-!!
 !!
 !! DESCRIPTION
 !!

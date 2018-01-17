@@ -59,12 +59,12 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
 
   use Grid_interface, ONLY : Grid_getBlkPtr
   use Grid_interface, ONLY : Grid_copyF4DataToMultiFabs
+  use Grid_interface, ONLY : Grid_getBlkIterator, Grid_releaseBlkIterator
   use Grid_data, ONLY : gr_smallrho,gr_smalle, gr_meshMe
   use gr_specificData, ONLY : gr_sanitizeDataMode, gr_sanitizeVerbosity
   use Logfile_interface, ONLY : Logfile_stamp
   use physicaldata, ONLY: gcell_on_cc
   use paramesh_dimensions, ONLY: il_bnd,iu_bnd,jl_bnd,ju_bnd,kl_bnd,ku_bnd, kl_bndi, ndim
-  use gr_amrextData, ONLY : gr_amrextUnkMFs
   use block_iterator !, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
@@ -97,7 +97,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
 
   if (gr_sanitizeDataMode == 0) return ! IMMEDIATE RETURN
 
-  call Grid_copyF4DataToMultiFabs(CENTER, gr_amrextUnkMFs, nodetype=ACTIVE_BLKS)
+  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 
   iskip = NGUARD - layers(IAXIS)
   jskip = (NGUARD - layers(JAXIS)) * K2D
@@ -107,7 +107,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   count = 0
   
   ! DEVNOTE: Is it *always* correct to use CENTER here?
-  itor = block_iterator_t(ntype)
+  call Grid_getBlkIterator(itor, ntype)
   do while (itor%is_valid())
      count = count + 1
      call itor%blkMetaData(blockDesc)
@@ -273,16 +273,12 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   end do
 
 #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call destroy_iterator(itor)
+  call Grid_releaseBlkIterator(itor)
 #endif
 
   return 
 
 contains
-  integer function nodetype(i)
-    integer,intent(IN) :: i
-    nodetype = 999              !fake for output
-  end function nodetype
   subroutine set_kReorder
     integer :: i,j,k
     if (nReorder==0) then       !We need to do this only once per gr_sanitize... call.

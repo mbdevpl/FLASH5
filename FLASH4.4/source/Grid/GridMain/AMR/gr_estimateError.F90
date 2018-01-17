@@ -40,10 +40,11 @@ subroutine gr_estimateError(error, iref, refine_filter)
   use Grid_data, ONLY: gr_geometry, &
        gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBC, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr
+                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getBlkIterator, Grid_releaseBlkIterator
   use gr_interface,   ONLY : gr_estimateBlkError
   use gr_specificData, ONLY : gr_oneBlock
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -108,7 +109,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
   !==============================================================================
 
 
-  itor = block_iterator_t(ACTIVE_BLKS)
+  call Grid_getBlkIterator(itor, ACTIVE_BLKS)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
 
@@ -117,8 +118,6 @@ subroutine gr_estimateError(error, iref, refine_filter)
 
      call itor%next()
   end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call destroy_iterator(itor)
-#endif
+  call Grid_releaseBlkIterator(itor)
 end subroutine gr_estimateError
 

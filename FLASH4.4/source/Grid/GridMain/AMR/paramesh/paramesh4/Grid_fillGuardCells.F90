@@ -237,14 +237,15 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getBlkIterator, Grid_releaseBlkIterator
   use gr_interface, ONLY : gr_setGcFillNLayers
   use paramesh_dimensions, ONLY : l2p5d,ndim
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
   use paramesh_interfaces, ONLY : amr_guardcell, amr_restrict
   use paramesh_mpi_interfaces, ONLY: mpi_amr_comm_setup
   use Eos_interface, ONLY : Eos_guardCells
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -442,16 +443,14 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
      if((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
         if (.not. skipThisGcellFill) then
-           itor = block_iterator_t(listBlockType) 
+           call Grid_getBlkIterator(itor, listBlockType)
            do while (itor%is_valid())
               call itor%blkMetaData(blockDesc)
               call gr_primitiveToConserve(blockDesc)
 
               call itor%next()
            end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-           call destroy_iterator(itor)
-#endif
+           call Grid_releaseBlkIterator(itor)
         end if
      end if
  
@@ -477,16 +476,14 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
      if ((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
         if (.not. skipThisGcellFill) then
-            itor = block_iterator_t(listBlockType)
+            call Grid_getBlkIterator(itor, listBlockType)
             do while (itor%is_valid())
                 call itor%blkMetaData(blockDesc)
                 call gr_conserveToPrimitive(blockDesc, .TRUE.)
 
                 call itor%next()
             end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-            call destroy_iterator(itor)
-#endif
+            call Grid_releaseBlkIterator(itor)
 
             if (gr_convertToConsvdInMeshInterp) then
                call gr_sanitizeDataAfterInterp(listBlockType, 'after gc filling', layers)
@@ -510,7 +507,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   if(present(doEos)) then
      if(doEos.and.needEos) then
         call Timers_start("eos gc")
-        itor = block_iterator_t(listBlockType)
+        call Grid_getBlkIterator(itor, listBlockType)
         do while (itor%is_valid())
                 call itor%blkMetaData(blockDesc)
                 
@@ -522,9 +519,7 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
                 call itor%next()
         end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-        call destroy_iterator(itor)
-#endif
+        call Grid_releaseBlkIterator(itor)
         call Timers_stop("eos gc")
      end if
   end if

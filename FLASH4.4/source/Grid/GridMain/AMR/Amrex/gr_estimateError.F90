@@ -42,6 +42,8 @@ subroutine gr_estimateError(error, iref, refine_filter)
        gr_meshComm, gr_meshMe, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBC, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getBlkIterator, &
+                             Grid_releaseBlkIterator, &
                              Grid_getDeltas, &
                              Grid_getGeometry
   use gr_interface,   ONLY : gr_estimateBlkError
@@ -117,7 +119,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
 !#define XCOORD(I) (gr_oneBlock(blkID)%firstAxisCoords(CENTER,I))
 !#define YCOORD(I) (gr_oneBlock(blkID)%secondAxisCoords(CENTER,I))
 
-  itor = block_iterator_t(ACTIVE_BLKS)
+  call Grid_getBlkIterator(itor, ACTIVE_BLKS)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
 
@@ -365,5 +367,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
 
         call itor%next()
   end do
+
+  call Grid_releaseBlkIterator(itor)
 end subroutine gr_estimateError
 

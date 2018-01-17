@@ -21,7 +21,7 @@ module block_iterator
 
     private
 
-    public :: destroy_iterator
+    public :: build_iterator, destroy_iterator
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -41,49 +41,53 @@ module block_iterator
         procedure, public :: first
         procedure, public :: next
         procedure, public :: blkMetaData
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
-        final             :: destroy_iterator
-#endif
     end type block_iterator_t
 
-    interface block_iterator_t
+    interface build_iterator
         procedure :: init_iterator
         procedure :: init_iterator_mfa
-    end interface block_iterator_t
-
-    interface block_iterator_destroy
-       procedure :: destroy_iterator
-    end interface block_iterator_destroy
+    end interface build_iterator
 
 contains
 
-    !!****im* block_iterator_t/block_iterator_t
+    !!****im* block_iterator_t/build_iterator
     !!
     !! NAME
-    !!  block_iterator_t
+    !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  block_iterator_t itor = block_iterator_t(integer(IN)         :: nodetype,
-    !!                                           level(IN), optional :: level)
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 amrex_multifab(IN)    :: mfArray(:),
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level, 
+    !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
-    !!  Construct an iterator for walking across a specific subset of blocks
-    !!  within the current paramesh octree structure.  The iterator is already
-    !!  set to the first matching block.
+    !!  Construct an iterator for walking across a specific subset of blocks or
+    !!  tiles within the current AMReX octree structure.  The iterator is already
+    !!  set to the first matching block/tile.
     !!
     !! ARGUMENTS
+    !!  itor     - the constructed iterator
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
+    !!  mfArray  - an array of multfabs on which the iterator shall walk.  The
+    !!             index is a 1-based index of the refinement levels.
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks located at this level of 
-    !!             octree structure
+    !!             iterate only over blocks/tiles located at this level of
+    !!             refinement.
+    !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
+    !!             walk across all associated blocks on a tile-by-tile basis *if*
+    !!             the implementation supports this feature.  If a value is not
+    !!             given, is FALSE, or the implementation does not support tiling,
+    !!             the iterator will iterate on a block-by-block basis.
     !!
     !! SEE ALSO
     !!  constants.h
     !!****
-    function init_iterator_mfa(nodetype, mfArray, level, tiling) result(this)
+    subroutine init_iterator_mfa(itor, nodetype, mfArray, level, tiling)
       use amrex_multifab_module, ONLY : amrex_multifab
 
-        type(block_iterator_t)        :: this
+        type(block_iterator_t), intent(OUT) :: itor
         integer, intent(IN)           :: nodetype
         type(amrex_multifab),intent(IN),CONTIGUOUS :: mfArray(:)
         integer, intent(IN), optional :: level
@@ -100,47 +104,75 @@ contains
             last = size(mfArray)
         end if
  
-        allocate( this%li (first : last) )
+        allocate( itor%li (first : last) )
 
-        this%first_level = first
-        this%last_level = last
-        this%level = first
+        itor%first_level = first
+        itor%last_level = last
+        itor%level = first
 
 !!$        print*,'block_iterator_build: about to build 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
 
         do l=first,last
 !!$           call amrex_mfiter_build(this%li(l),mfArray(l),tiling=tiling)
-            this%li(l) = block_1lev_iterator_t(nodetype, mfArray(l),l,tiling=tiling)
+            itor%li(l) = block_1lev_iterator_t(nodetype, mfArray(l),l,tiling=tiling)
 !!$            call this%li( l )%first()
-            v = this%li( l )%is_valid()
-            if (v .AND. .NOT. this%isValid) then
-               this%isValid = .TRUE.
-               this%level   = l
+            v = itor%li( l )%is_valid()
+            if (v .AND. .NOT. itor%isValid) then
+               itor%isValid = .TRUE.
+               itor%level   = l
             end if
         end do
 
-        if (.NOT. this%isValid) then
-           call destroy_iterator(this)
+        if (.NOT. itor%isValid) then
+           call destroy_iterator(itor)
         end if
 
 !!$        print*,'block_iterator_build: done building 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
 !!$        call this%first()
-      end function init_iterator_mfa
+      end subroutine init_iterator_mfa
 
-    function init_iterator(nodetype, level, tiling) result(this)
+    !!****im* block_iterator_t/build_iterator
+    !!
+    !! NAME
+    !!  build_iterator
+    !!
+    !! SYNOPOSIS
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level, 
+    !!                 logical(IN), optional :: tiling)
+    !!
+    !! DESCRIPTION
+    !!  Construct an iterator for walking across a specific subset of blocks or
+    !!  tiles within the current AMReX octree structure.  The iterator is already
+    !!  set to the first matching block/tile.
+    !!
+    !! ARGUMENTS
+    !!  itor     - the constructed iterator
+    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
+    !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
+    !!             iterate only over blocks/tiles located at this level of
+    !!             refinement.
+    !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
+    !!             walk across all associated blocks on a tile-by-tile basis *if*
+    !!             the implementation supports this feature.  If a value is not
+    !!             given, is FALSE, or the implementation does not support tiling,
+    !!             the iterator will iterate on a block-by-block basis.
+    !!
+    !! SEE ALSO
+    !!  constants.h
+    !!****
+    subroutine init_iterator(itor, nodetype, level, tiling)
       use amrex_multifab_module, ONLY : amrex_multifab
-      use gr_amrextData
+      use gr_physicalMultifabs,  ONLY : Unk
 
-        type(block_iterator_t)        :: this
-        integer, intent(IN)           :: nodetype
-        integer, intent(IN), optional :: level
-        logical, intent(IN), optional :: tiling
+        type(block_iterator_t), intent(OUT)          :: itor
+        integer,                intent(IN)           :: nodetype
+        integer,                intent(IN), optional :: level
+        logical,                intent(IN), optional :: tiling
 
-!!$        type(amrex_multifab),POINTER :: mfArray(:)
-!!$        type(amrex_multifab),POINTER :: mf
-
-        this = init_iterator_mfa(nodetype, gr_amrextUnkMFs, level, tiling)
-    end function init_iterator
+        call init_iterator_mfa(itor, nodetype, Unk, level, tiling)
+    end subroutine init_iterator
 
     !!****im* block_iterator_t/destroy_iterator
     !!
@@ -148,26 +180,26 @@ contains
     !!  destroy_iterator
     !!
     !! SYNPOSIS
-    !!  Called automatically
+    !!  Destroy given iterator
     !!
     !! DESCRIPTION
     !!  Clean-up block interator object at destruction
     !!
     !!****
-    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-      type (block_iterator_t), intent(INOUT) :: this
+    IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
+      type (block_iterator_t), intent(INOUT) :: itor
 
         integer :: l
 
-        if (allocated(this%li)) then
-           do l = this%first_level, this%last_level
+        if (allocated(itor%li)) then
+           do l = itor%first_level, itor%last_level
 
-              call this%li( l )%destroy_iterator()
+              call itor%li( l )%destroy_iterator()
 
            end do
-           deallocate(this%li)
+           deallocate(itor%li)
         end if
-        this%isValid = .FALSE.
+        itor%isValid = .FALSE.
 
     end subroutine destroy_iterator
 

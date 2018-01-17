@@ -1,12 +1,17 @@
 module gr_amrextData
   use amrex_multifab_module, ONLY: amrex_multifab, amrex_multifab_destroy
-  implicit none
 
-  type(amrex_multifab),allocatable,TARGET :: gr_amrextUnkMFs(:)
+
+  use gr_physicalMultifabs, ONLY : gr_amrextUnkMFs => Unk
+  ! sort of like:
+!!$  type(amrex_multifab),allocatable,TARGET :: gr_amrextUnkMFs(:)
+
+  implicit none
+  PUBLIC :: gr_amrextUnkMFs
 
 contains
 
-  subroutine gr_amrextDataInit(maxLev)
+  subroutine gr_amrextDataInit(maxLev) !Not being called any more - KW
     integer,intent(IN) :: maxLev
     if (.not.allocated(gr_amrextUnkMFs)) then
        allocate(gr_amrextUnkMFs(0:maxLev-1))

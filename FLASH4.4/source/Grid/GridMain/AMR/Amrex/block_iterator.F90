@@ -25,7 +25,7 @@ module block_iterator
 #include "constants.h"
 #include "Flash.h"
 
-    public :: destroy_iterator
+    public :: build_iterator, destroy_iterator
 
     !!****ic* block_iterator/block_iterator_t
     !!
@@ -42,56 +42,73 @@ module block_iterator
         procedure, public :: first
         procedure, public :: next
         procedure, public :: blkMetaData
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
-        final             :: destroy_iterator
-#endif
     end type block_iterator_t
-
-    interface block_iterator_t
-        procedure :: init_iterator
-    end interface block_iterator_t
 
 contains
 
-    !!****im* block_iterator_t/block_iterator_t
+    !!****im* block_iterator_t/build_iterator
     !!
     !! NAME
-    !!  block_iterator_t
+    !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  block_iterator_t itor = block_iterator_t(integer(IN)         :: nodetype,
-    !!                                           level(IN), optional :: level)
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level,
+    !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
-    !!  Construct an iterator for walking across a specific subset of blocks
-    !!  within the current paramesh octree structure.  The iterator is already
-    !!  set to the first matching block.
+    !!  Construct an iterator for walking across a specific subset of blocks or
+    !!  tiles within the current AMReX octree structure.  The iterator is already
+    !!  set to the first matching block/tile.
+    !!
+    !!  NOTE: Prefer iterator acquisition/destruction via Grid unit public
+    !!        interface --- Grid_getBlkIterator/Grid_releaseBlkIterator.
     !!
     !! ARGUMENTS
+    !!  itor     - the constructed iterator
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks located at this level of 
-    !!             octree structure
+    !!             iterate only over blocks/tiles located at this level of
+    !!             refinement.
+    !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
+    !!             walk across all associated blocks on a tile-by-tile basis *if*
+    !!             the implementation supports this feature.  If a value is not
+    !!             given, is FALSE, or the implementation does not support tiling,
+    !!             the iterator will iterate on a block-by-block basis.
     !!
     !! SEE ALSO
     !!  constants.h
+    !!  Grid_getBlkIterator.F90
+    !!  Grid_releaseBlkIterator.F90
     !!****
-    function init_iterator(nodetype, level) result(this)
-        integer, intent(IN)           :: nodetype
-        integer, intent(IN), optional :: level
-        type(block_iterator_t)        :: this
+    subroutine build_iterator(itor, nodetype, level, tiling)
+        use Driver_interface, ONLY : Driver_abortFlash
+
+        type(block_iterator_t), intent(OUT)          :: itor
+        integer,                intent(IN)           :: nodetype
+        integer,                intent(IN), optional :: level
+        logical,                intent(IN), optional :: tiling
 
         if (present(level)) then
-            this%level = level
+            itor%level = level
+        end if
+
+        ! DEVNOTE: Presently ignore tiling optimization hint as the octree 
+        ! iterator does not have this capability.
+        if (present(tiling)) then
+            if (tiling) then
+                call Driver_abortFlash("[build_iterator] Tiling not yet implemented for AMReX")
+            end if
         end if
 
         ! DEVNOTE: the AMReX iterator is not built based on nodetype.
         ! It appears that we get leaves every time.
 
         ! Initial iterator is not primed.  Advance to first compatible block.
-        call amrex_octree_iter_build(this%oti)
-        call this%next()
-    end function init_iterator
+        call amrex_octree_iter_build(itor%oti)
+        call itor%next()
+    end subroutine build_iterator
 
     !!****im* block_iterator_t/destroy_iterator
     !!
@@ -99,16 +116,16 @@ contains
     !!  destroy_iterator
     !!
     !! SYNPOSIS
-    !!  Called automatically
+    !!  destroy_iterator(block_iterator_t(INOUT) :: itor)
     !!
     !! DESCRIPTION
     !!  Clean-up block interator object at destruction
     !!
     !!****
-    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-        type(block_iterator_t), intent(INOUT) :: this
+    IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
+        type(block_iterator_t), intent(INOUT) :: itor
 
-        call amrex_octree_iter_destroy(this%oti)
+        call amrex_octree_iter_destroy(itor%oti)
     end subroutine destroy_iterator
 
     !!****m* block_iterator_t/first

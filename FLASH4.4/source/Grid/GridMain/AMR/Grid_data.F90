@@ -42,7 +42,7 @@ Module Grid_data
   integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vartypes
   logical, save :: gr_anyVarToConvert
   logical, save :: gr_justExchangedGC, gr_allPeriodic, gr_isolatedBoundaries
-  logical, save :: gr_useParticles,gr_refineOnParticleCount,gr_refineOnPdens
+  logical, save :: gr_useParticles,gr_refineOnParticleCount !,gr_refineOnPdens - unused
   integer, save :: gr_minParticlesPerBlk, gr_maxParticlesPerBlk
   integer, save :: gr_globalComm, gr_globalMe, gr_globalNumProcs
   integer, save :: gr_meshComm, gr_meshMe, gr_meshNumProcs

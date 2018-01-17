@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_blockMatch
+!!****if* source/Grid/GridMain/paramesh/gr_blockMatch
 !!
 !! NAME
 !!
@@ -53,7 +53,7 @@
 !!
 !!***
 
-function Grid_blockMatch(blkID,ntype,refinementLevel) result(match)
+function gr_blockMatch(blkID,ntype,refinementLevel) result(match)
 
   use tree, ONLY : nodetype,lnblocks,neigh,lrefine
   use gr_specificData, ONLY : gr_oneBlock
@@ -128,4 +128,4 @@ function Grid_blockMatch(blkID,ntype,refinementLevel) result(match)
      call Driver_abortFlash("[Grid_blockMatch] ntype argument not recognized")
   end select
 
-end function Grid_blockMatch
+end function gr_blockMatch

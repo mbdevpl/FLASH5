@@ -12,10 +12,6 @@ module block_iterator
 #include "Flash.h"
     use tree, ONLY : lnblocks, lrefine, lrefine_max
     use gr_specificData, ONLY : gr_oneBlock
-    use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-    use Grid_interface, ONLY : Grid_getBlkIndexLimits
-    use Grid_interface, ONLY : Grid_getBlkCornerID
-    use Grid_interface, ONLY : Grid_blockMatch
 
     implicit none
 
@@ -23,7 +19,7 @@ module block_iterator
 #include "constants.h"
     private
 
-    public :: destroy_iterator
+    public :: build_iterator, destroy_iterator
 
     integer,parameter :: ndims=N_DIM
     integer,parameter :: amrex_real=kind(1.0)
@@ -49,53 +45,51 @@ module block_iterator
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
-#if !defined(__GFORTRAN__) || (__GNUC__ > 4)
-        final             :: destroy_iterator
-#endif
     end type block_iterator_t
-
-    interface block_iterator_t
-        procedure :: init_iterator
-    end interface block_iterator_t
 
 contains
 
-    !!****im* block_iterator_t/block_iterator_t
+    !!****im* block_iterator_t/build_iterator
     !!
     !! NAME
-    !!  block_iterator_t
+    !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  block_iterator_t itor = block_iterator_t(integer(IN)         :: nodetype,
-    !!                                           level(IN), optional :: level)
+    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!                 integer(IN)           :: nodetype,
+    !!                 integer(IN), optional :: level,
+    !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
-    !!  Construct an iterator for walking across a specific subset of blocks
-    !!  within the current paramesh octree structure.  The iterator is already
-    !!  set to the first matching block.
-    !!
+    !!  Construct an iterator for walking across a specific subset of blocks or
+    !!  tiles within the current paramesh octree structure.  The iterator is already
+    !!  set to the first matching block/tile.
+    !!  
     !! ARGUMENTS
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks located at this level of 
-    !!             octree structure
+    !!             iterate only over blocks/tiles located at this level of
+    !!             refinement.
+    !!  tiling   - an optional optimization hint.  Tiling is not implemented for
+    !!             Paramesh and therefore this hint is ignored.
     !!
     !! SEE ALSO
     !!  constants.h
     !!****
-    function init_iterator(nodetype, level) result(this)
-        integer, intent(IN)           :: nodetype
-        integer, intent(IN), optional :: level
-        type(block_iterator_t)        :: this
- 
-        this%nodetype = nodetype
-        this%lev = INVALID_LEVEL 
+    subroutine build_iterator(itor, nodetype, level, tiling)
+        type(block_iterator_t), intent(OUT)          :: itor
+        integer,                intent(IN)           :: nodetype
+        integer,                intent(IN), optional :: level
+        logical,                intent(IN), optional :: tiling
+
+        itor%nodetype = nodetype
+        itor%lev = INVALID_LEVEL 
         if (present(level)) then
-            this%lev = level
+            itor%lev = level
         end if
 
-        call this%first()
-    end function init_iterator
+        call itor%first()
+    end subroutine build_iterator
 
     !!****im* block_iterator_t/destroy_iterator
     !!
@@ -103,16 +97,16 @@ contains
     !!  destroy_iterator
     !!
     !! SYNPOSIS
-    !!  Called automatically
+    !!  Destroy given iterator.
     !!
     !! DESCRIPTION
     !!  Clean-up block interator object at destruction
     !!
     !!****
-    IMPURE_ELEMENTAL subroutine destroy_iterator(this)
-        type(block_iterator_t), intent(INOUT) :: this
+    IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
+        type(block_iterator_t), intent(INOUT) :: itor
 
-        call this%first()
+        call itor%first()
     end subroutine destroy_iterator
 
     !!****m* block_iterator_t/first
@@ -172,18 +166,20 @@ contains
     !!
     !!****
     subroutine next(this)
+        use gr_interface, ONLY : gr_blockMatch
+
         class(block_iterator_t), intent(INOUT) :: this
 
         integer :: j = 0
   
-        ! DEVNOTE: Move this check inside of Grid_blockMatch
         if (this%lev == INVALID_LEVEL) then
+            ! No level given at creation
             do j = this%cur + 1, lnblocks
-                if (Grid_blockMatch(j, this%nodetype)) EXIT
+                if (gr_blockMatch(j, this%nodetype)) EXIT
             end do
         else
             do j = this%cur + 1, lnblocks
-                if (Grid_blockMatch(j, this%nodetype, this%lev)) EXIT
+                if (gr_blockMatch(j, this%nodetype, this%lev)) EXIT
             end do
         end if
 
@@ -204,7 +200,8 @@ contains
     !!
     !!****
     subroutine blkMetaData(this, mData)
-        use block_metadata, ONLY : block_metadata_t
+        use block_metadata,             ONLY : block_metadata_t
+        use Grid_getBlkIndexLimits_mod, ONLY : Grid_getBlkIndexLimits
 
         class(block_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: mData
@@ -234,13 +231,13 @@ contains
             hi(:) = blkLim(HIGH, :)
             loGC(:) = blkLimGC(LOW, :)
             hiGC(:) = blkLimGC(HIGH, :)
-            if (this%cellIdxBase==-1) then
+            if (this%cellIdxBase == -1) then
                cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
                lo(:)   = lo(:)   - 1 + cornerID(:)
                hi(:)   = hi(:)   - 1 + cornerID(:)
                loGC(:) = loGC(:) - 1 + cornerID(:)
                hiGC(:) = hiGC(:) - 1 + cornerID(:)
-            else if (this%cellIdxBase==-2) then
+            else if (this%cellIdxBase == -2) then
                cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
                lo(:)   = lo(:)   - 1 + cornerID(:)
                hi(:)   = hi(:)   - 1 + cornerID(:)
@@ -250,7 +247,7 @@ contains
                hi(1:ndims)   = hi(1:ndims)   - NGUARD
                loGC(1:ndims) = loGC(1:ndims) - NGUARD
                hiGC(1:ndims) = hiGC(1:ndims) - NGUARD
-            else if (this%cellIdxBase==0) then
+            else if (this%cellIdxBase == 0) then
                lo(:)   = lo(:)   - 1
                hi(:)   = hi(:)   - 1
                loGC(:) = loGC(:) - 1
