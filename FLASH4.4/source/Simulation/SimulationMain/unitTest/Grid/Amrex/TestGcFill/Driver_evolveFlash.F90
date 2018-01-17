@@ -73,68 +73,7 @@ subroutine Driver_evolveFlash()
 
     call start_test_run
 
-    !!!!! CONFIRM THAT GC ARE ZERO AFTER INIT 
-    call gr_getFinestLevel(finest_level)
-    call assertEqual(finest_level, FINEST_LEVEL_EX, "Incorrect finest level")
-
-    do lev = 1, finest_level
-        call amrex_mfiter_build(mfi, unk(lev-1), tiling=.FALSE.)
-        do while (mfi%next())
-            bx = mfi%tilebox()
-
-            ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
-            ! Level must be 1-based index and limits/limitsGC must be 1-based also
-            blockDesc%level = lev
-            blockDesc%grid_index = mfi%grid_index()
-            blockDesc%limits(LOW,  :) = 1
-            blockDesc%limits(HIGH, :) = 1
-            blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
-            blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
-            blockDesc%limitsGC(LOW,  :) = 1
-            blockDesc%limitsGC(HIGH, :) = 1
-            blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
-            blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
-
-            call Grid_getBlkPtr(blockDesc, initData)
-            
-            associate(lo   => blockDesc%limits(LOW,  :), &
-                      hi   => blockDesc%limits(HIGH, :), &
-                      loGC => blockDesc%limitsGC(LOW, :), &
-                      hiGC => blockDesc%limitsGC(HIGH, :))
-                do     k = loGC(KAXIS), hiGC(KAXIS)
-                  do   j = loGC(JAXIS), hiGC(JAXIS)
-                    do i = loGC(IAXIS), hiGC(IAXIS)
-                      do var=UNK_VARS_BEGIN, UNK_VARS_END
-                        if (      (lo(IAXIS) <= i) .AND. (i <= hi(IAXIS)) &
-                            .AND. (lo(JAXIS) <= j) .AND. (j <= hi(JAXIS)) &
-                            .AND. (lo(KAXIS) <= k) .AND. (k <= hi(KAXIS))) then
-                            ! Interior has data
-                            idx = [i - lo(IAXIS) + 1, &
-                                   j - lo(JAXIS) + 1, &
-                                   k - lo(KAXIS) + 1]
-                            call Grid_getSingleCellCoords(idx, blockDesc, &
-                                                  CENTER, INTERIOR, coords)
-                            call assertEqual(initData(i, j, k, var), &
-                                             DBLE((coords(IAXIS)+coords(JAXIS)) * var), &
-                                             "Bad data")
-                        else
-                            ! Guardcells not populated yet 
-                            call assertEqual(initData(i, j, k, var), 0.0d0, &
-                                             "GC not zero")
-                        end if
-                      end do
-                    end do
-                  end do
-                end do
-            end associate
-
-            call Grid_releaseBlkPtr(blockDesc, initData)
-        end do
-    end do
-
-    call Grid_fillGuardCells(CENTER, ALLDIR)
- 
-    !!!!! CONFIRM THAT GC ARE NOW FILLED APPROPRIATELY
+    !!!!! CONFIRM THAT GC ARE FILLED APPROPRIATELY
     call gr_getFinestLevel(finest_level)
     call assertEqual(finest_level, FINEST_LEVEL_EX, "Incorrect finest level")
 

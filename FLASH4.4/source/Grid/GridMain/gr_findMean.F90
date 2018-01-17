@@ -29,9 +29,10 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   
   use Driver_interface, ONLY: Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPhysicalSize, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr
+                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getBlkIterator, Grid_releaseBlkIterator
   use Grid_data, ONLY : gr_meshComm
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -55,7 +56,7 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   real, dimension(:,:,:,:), pointer :: solnData
   integer :: nxbBlock, nybBlock, nzbBlock
   type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(block_metadata_t) :: blockDesc
 !!==============================================================================
 
   mean = 0.0
@@ -70,18 +71,18 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   localVolume = 0.
   localSum = 0.
 
-  itor = block_iterator_t(LEAF)
+  call Grid_getBlkIterator(itor, LEAF)
   do while (itor%is_valid())
-     call itor%blkMetaData(block)
+     call itor%blkMetaData(blockDesc)
      
-     blkLimits   = block%limits
-     blkLimitsGC = block%limitsGC
-     call Grid_getBlkPtr(block, solnData)
+     blkLimits   = blockDesc%limits
+     blkLimitsGC = blockDesc%limitsGC
+     call Grid_getBlkPtr(blockDesc, solnData)
 
      ! DEVNOTE: This appears to be for Cartesian only blocks/cells.
      !          Do we need to calculate physical volume or could cell/block
      !          count could be used?
-     call Grid_getBlkPhysicalSize(block, blockSize)
+     call Grid_getBlkPhysicalSize(blockDesc, blockSize)
 
      blockVolume = blockSize(IAXIS)
      nxbBlock = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
@@ -130,14 +131,12 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
 
      localSum = localSum + blockSum * cellVolume
 
-     call Grid_releaseBlkPtr(block, solnData)
+     call Grid_releaseBlkPtr(blockDesc, solnData)
      nullify(solnData)
 
      call itor%next()
   enddo
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call destroy_iterator(itor)
-#endif
+  call Grid_releaseBlkIterator(itor)
 
   call mpi_allreduce ( localSum, sum, 1, FLASH_REAL, & 
        MPI_SUM, gr_meshComm, ierr )

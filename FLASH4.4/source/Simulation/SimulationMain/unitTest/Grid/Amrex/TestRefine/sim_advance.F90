@@ -1,6 +1,8 @@
 subroutine sim_advance(step, points, values, set_msg, leaf_msg)
     use Grid_interface,       ONLY : Grid_updateRefinement, &
-                                     Grid_getBlkPtr, Grid_releaseBlkPtr
+                                     Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                                     Grid_getBlkIterator, &
+                                     Grid_releaseBlkIterator
     use gr_amrexInterface,    ONLY : gr_getFinestLevel, &
                                      gr_averageDownLevels
     use block_iterator,       ONLY : block_iterator_t 
@@ -39,7 +41,7 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
     ! Write to leaf blocks first.  AMReX level indexing is 0-based
     call gr_getFinestLevel(finest_level)
     do lev = 1, finest_level
-        itor = block_iterator_t(LEAF, level=lev)
+        call Grid_getBlkIterator(itor, LEAF, level=lev)
         do while (itor%is_valid())
             call itor%blkMetaData(blockDesc)
             call Grid_getBlkPtr(blockDesc, solnData)
@@ -50,6 +52,7 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
             call Grid_releaseBlkPtr(blockDesc, solnData)
             call itor%next()
         end do
+        call Grid_releaseBlkIterator(itor)
     end do
 
     ! Propogate leaf data to coarse, non-leaf blocks

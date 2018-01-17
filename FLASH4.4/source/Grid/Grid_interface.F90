@@ -1027,16 +1027,6 @@ Module Grid_interface
   end interface
 
   interface
-     function Grid_blockMatch(blkID,ntype,refinementLevel) result(match)
-       implicit none
-       logical               :: match
-       integer,intent(in   ) :: blkID
-       integer,intent(in   ) :: ntype
-       integer,intent(in   ),OPTIONAL :: refinementLevel
-     end function Grid_blockMatch
-  end interface
-
-  interface
      subroutine Grid_pfftGetIndexLimits(configLimits,phaseLimits)
        integer,dimension(LOW:HIGH,MDIM),intent(OUT) :: configLimits, phaseLimits
      end subroutine Grid_pfftGetIndexLimits
@@ -1341,4 +1331,24 @@ Module Grid_interface
      end subroutine Grid_coordTransfm
   end interface
 
+  interface
+     subroutine Grid_getBlkIterator(itor, nodetype, level, tiling)
+       use block_iterator, ONLY : block_iterator_t
+       implicit none
+       type(block_iterator_t), intent(OUT)          :: itor
+       integer,                intent(IN)           :: nodetype
+       integer,                intent(IN), optional :: level
+       logical,                intent(IN), optional :: tiling
+     end subroutine Grid_getBlkIterator
+  end interface
+
+  interface
+     subroutine Grid_releaseBlkIterator(itor)
+       use block_iterator, ONLY : block_iterator_t
+       implicit none
+       type(block_iterator_t), intent(INOUT) :: itor
+     end subroutine Grid_releaseBlkIterator
+  end interface
+
 end Module Grid_interface
+

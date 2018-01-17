@@ -32,12 +32,13 @@
 subroutine gr_expandDomain (particlesInitialized)
 
   use Grid_data, ONLY : gr_domainBC,gr_eosModeInit,gr_refineOnParticleCount,&
-       gr_refineOnPdens,gr_maxParticlesPerBlk,gr_minParticlesPerBlk, gr_meshMe,&
+       gr_maxParticlesPerBlk,gr_minParticlesPerBlk, gr_meshMe,&
        gr_meshNumProcs, gr_lrefineMinInit, gr_gcellsUpToDate
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_stampVarMask
   use Grid_interface, ONLY :  Grid_getLocalNumBlks, Grid_markRefineDerefine, &
-                              Grid_getBlkPtr, Grid_releaseBlkPtr
+                              Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                              Grid_getBlkIterator, Grid_releaseBlkIterator
   use gr_specificData, ONLY : gr_ihiGc,gr_jhiGc,gr_khiGc
   use tree, ONLY : lrefine, lrefine_min, lrefine_max, grid_changed
   use paramesh_interfaces, ONLY : amr_refine_derefine, amr_restrict
@@ -54,7 +55,7 @@ subroutine gr_expandDomain (particlesInitialized)
     Particles_updateRefinement
   use Driver_interface, ONLY : Driver_abortFlash
   use RadTrans_interface, ONLY: RadTrans_sumEnergy
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -155,7 +156,7 @@ subroutine gr_expandDomain (particlesInitialized)
      end if
 #endif
 
-     itor = block_iterator_t(whichBlocks)
+     call Grid_getBlkIterator(itor, whichBlocks)
      do while(itor%is_valid())
         call itor%blkMetaData(block)
         
@@ -173,9 +174,7 @@ subroutine gr_expandDomain (particlesInitialized)
 
         call itor%next()
      end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-     call destroy_iterator(itor)
-#endif
+     call Grid_releaseBlkIterator(itor)
 
 #ifdef ERAD_VAR
      ! Sum radiation energy density over all meshes. This call is

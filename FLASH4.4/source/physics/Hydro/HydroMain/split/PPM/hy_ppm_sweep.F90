@@ -101,7 +101,8 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
   use gr_amrextData
   use amrex_multifab_module
 #endif
-  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs, &
+                                  Grid_getBlkIterator, Grid_releaseBlkIterator
 
   implicit none
 
@@ -220,7 +221,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
   call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
   
   do lev=1,maxLev
-     itor = block_iterator_t(LEAF, level=lev)
+     call Grid_getBlkIterator(itor, LEAF, level=lev)
      do while(itor%is_valid())
         call itor%blkMetaData(block)
         
@@ -552,6 +553,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
         deallocate(isGc)
         call itor%next()
      end do
+     call Grid_releaseBlkIterator(itor)
   end do
   
 #ifdef FLASH_GRID_AMREXTRANSITION
@@ -577,7 +579,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
 
 
      do lev=1,maxLev
-        itor = block_iterator_t(ACTIVE_BLKS, level=lev)
+        call Grid_getBlkIterator(itor, ACTIVE_BLKS, level=lev)
         do while(itor%is_valid())
            call itor%blkMetaData(block)
            
@@ -646,7 +648,7 @@ subroutine hy_ppm_sweep ( timeEndAdv, dt, dtOld,  &
         call itor%next()
 
      end do !!END LOOP OVER BLOCKS
-
+     call Grid_releaseBlkIterator(itor)
   end do
 end if
   call Timers_stop("hy_ppm_sweep")

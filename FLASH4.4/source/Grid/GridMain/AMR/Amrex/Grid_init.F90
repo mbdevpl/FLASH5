@@ -1,15 +1,14 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_init
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_init
 !!
 !! NAME
 !!  Grid_init
 !!
 !! SYNOPSIS
-!!
 !!  Grid_init()
-!!           
 !!
 !! DESCRIPTION
-!!  Initialize Grid_data
+!!  Initialize the Grid unit and set initial values to all variables declared 
+!!  in Grid_data
 !!
 !! ARGUMENTS
 !!
@@ -212,11 +211,7 @@ subroutine Grid_init()
   call gr_initGeometry()
 
 !----------------------------------------------------------------------------------
-! Init AMReX so that it can 
-!    (1) expose the data it controls through the grid interfaces,
-!    (2) setup adaptive mesh structures,
-!    (3) load initial conditions, and
-!    (4) do initial refinement of mesh (?).
+! Initialize AMReX
 !----------------------------------------------------------------------------------
   call gr_amrexInit()
 
@@ -385,6 +380,13 @@ subroutine Grid_init()
      end if
   end do
 
+  if (gr_numRefineVars == 0) then
+     if (gr_meshMe == MASTER_PE) then
+        print*,'WARNING : Adaptive Grid did not find any refinement variables'
+     end if
+     call Logfile_stampMessage("WARNING : Adaptive Grid did not find any variable to refine")
+  end if
+
   gr_enforceMaxRefinement = .FALSE.
 
   call RuntimeParameters_get('lrefine_min', gr_minRefine)
@@ -430,13 +432,6 @@ subroutine Grid_init()
 !        end if
 !     end do
 !  end if
-
-  if (gr_numRefineVars == 0) then
-     if (gr_meshMe == MASTER_PE) then
-        print*,'WARNING : Adaptive Grid did not find any refinement variables'
-     end if
-     call Logfile_stampMessage("WARNING : Adaptive Grid did not find any variable to refine")
-  end if
 
 !  call RuntimeParameters_get("gr_restrictAllMethod", gr_restrictAllMethod)
 

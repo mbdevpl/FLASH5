@@ -31,10 +31,11 @@
   
 subroutine gr_bcApplyToAllBlks(axis,isWork)
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkBC
+  use Grid_interface, ONLY : Grid_getBlkBC, &
+                             Grid_getBlkIterator, Grid_releaseBlkIterator
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
   use Grid_data,ONLY : gr_numDataStruct,gr_gridDataStruct,gr_gridDataStructSize
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
   
   implicit none
@@ -74,7 +75,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
      face(LOW)=LOW
      face(HIGH)=HIGH
 
-     itor = block_iterator_t(ALL_BLKS)
+     call Grid_getBlkIterator(itor, ALL_BLKS)
      do while (itor%is_valid())
         call itor%blkMetaData(blockDesc) 
 
@@ -102,9 +103,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
            end do
         end if
      end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-     call destroy_iterator(itor)
-#endif
+     call Grid_releaseBlkIterator(itor)
   end do
 #endif
 

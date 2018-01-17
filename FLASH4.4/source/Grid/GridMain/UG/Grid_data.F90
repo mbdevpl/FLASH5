@@ -150,7 +150,7 @@ Module Grid_data
   integer, save, allocatable :: gr_nToLeft(:) !array holding local blocks on each proc, used to calc blk offset for IO
   real, save :: gr_smallx
   real, save :: gr_smalle, gr_smallrho
-  logical, save :: gr_refineOnParticleCount=.false.,gr_refineOnPdens=.false.
+  logical, save :: gr_refineOnParticleCount=.false.
 
   real, save, dimension(LOW:HIGH,MDIM) :: gr_region
   integer, save :: surr_blks(3,3,1+2*K2D,1+2*K3D,1)

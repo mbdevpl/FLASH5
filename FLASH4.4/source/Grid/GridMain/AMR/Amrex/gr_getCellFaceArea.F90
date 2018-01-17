@@ -102,9 +102,12 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
      sizeY = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
      sizeZ = blkLimitsGC(HIGH,KAXIS) - blkLimitsGC(LOW,KAXIS) + 1
 
-     allocate(xCoordLeft(sizeX),xCoordRight(sizeX))
-     allocate(yCoordLeft(sizeY),yCoordRight(sizeY))
-     allocate(zCoordLeft(sizeZ),zCoordRight(sizeZ))
+     allocate(xCoordLeft (blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)),&
+              xCoordRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+     allocate(yCoordLeft (blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)),&
+              yCoordRight(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+     allocate(zCoordLeft (blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)),&
+              zCoordRight(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 
      call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xCoordLeft, sizeX)
      call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xCoordRight, sizeX)

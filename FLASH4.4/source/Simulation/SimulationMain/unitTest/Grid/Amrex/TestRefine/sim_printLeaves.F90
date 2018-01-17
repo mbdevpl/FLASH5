@@ -1,6 +1,5 @@
 subroutine sim_printLeaves(title)
     use gr_amrexInterface, ONLY : gr_getFinestLevel
-    use block_iterator,    ONLY : block_iterator_t
     use block_metadata,    ONLY : block_metadata_t
     use Simulation_data,   ONLY : leaves, &
                                   MIN_REFINE_LEVEL
@@ -11,7 +10,6 @@ subroutine sim_printLeaves(title)
 
     character(*), intent(IN)    :: title
 
-    type(block_iterator_t) :: itor
     type(block_metadata_t) :: blockDesc
 
     integer :: level, j

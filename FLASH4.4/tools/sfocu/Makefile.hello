@@ -1,10 +1,10 @@
-CCOMP = gcc
+CCOMP = h5pcc 
 LFLAGS = -o
 CDEFINES = 
 
-CFLAGS = -c -I$(SPACK_GCC)/hdf5-1.8.19-ssqe5xh5xgs5oxvng4wtmm243mxseclz/include -DNO_NCDF -DNO_HDF4 -DH5_USE_16_API
+CFLAGS = -c -DNO_NCDF -DNO_HDF4 -DH5_USE_16_API
 
-LIBS = -L$(SPACK_GCC)/hdf5-1.8.19-ssqe5xh5xgs5oxvng4wtmm243mxseclz/lib -lhdf5 -lm
+LIBS = 
 
 EXENAME = sfocu
 OBJS = main.o sfocu.o flash_reader.o namecmp.o flash_reader_hdf5.o flash_reader_chombo.o sameblock.o options.o
