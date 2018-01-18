@@ -8,7 +8,6 @@ Hydro += Hydro_data.o\
 	hy_uhd_addThermalFluxes.o\
 	hy_uhd_entropyFix.o\
 	hy_uhd_slopeLimiters.o\
-	hy_uhd_unsplit.o\
 	hy_uhd_getRiemannState.o\
 	hy_uhd_dataReconstOneStep.o\
 	hy_uhd_eigenParameters.o\

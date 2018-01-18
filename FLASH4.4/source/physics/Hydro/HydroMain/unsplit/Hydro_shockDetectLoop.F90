@@ -1,6 +1,6 @@
 #include "constants.h"
 
-subroutine Hydro_doLoop0
+subroutine Hydro_shockDetectLoop
   use Grid_interface, ONLY : Grid_getDeltas, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr, &
                              Grid_getBlkIterator, Grid_releaseBlkIterator
@@ -79,4 +79,4 @@ subroutine Hydro_doLoop0
   
   call Grid_releaseBlkIterator(itor)
 #endif
-end subroutine Hydro_doLoop0
+end subroutine Hydro_shockDetectLoop
