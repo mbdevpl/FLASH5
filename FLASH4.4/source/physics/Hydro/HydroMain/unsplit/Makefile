@@ -39,4 +39,5 @@ Hydro += Hydro_data.o\
 	hy_uhd_DataReconstructNormalDir_PPM.o\
 	hy_uhd_DataReconstructNormalDir_WENO.o\
 	hy_uhd_DataReconstructNormalDir_GP.o\
+	hy_uhd_computeFluxes.o\
 	hy_uhd_initializeGP.o

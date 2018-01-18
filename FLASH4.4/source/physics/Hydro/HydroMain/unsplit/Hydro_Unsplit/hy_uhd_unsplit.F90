@@ -434,7 +434,7 @@ Subroutine hy_uhd_unsplit (blockDesc,Uin,blkLimitsGC,&
 !!$     deallocate(gravZ)
 !!$#endif
 !!$
-!!$  end do !! End of the loop over blocks
+!!$  end do !! End of the loopm over blocks
 !!$#endif /* End of n+1 gravity coupling */
 !!$
 !!$
