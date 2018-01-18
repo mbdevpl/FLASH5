@@ -397,19 +397,6 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
            "hybrid, Marquina, or MarquinaModified.")
   endif
 
-  ! Do Loop 0 in hy_uhd_unsplit if hy_shockDetectOn is true or if certain UNK variables exist
-  hy_doUnsplitLoop0 = hy_shockDetectOn
-#if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)
-  if (hy_updateHydrofluxes) hy_doUnsplitLoop0 = .TRUE.
-#endif
-#if defined(CFL_VAR)
-  if (hy_updateHydrofluxes .AND. hy_useVaryingCFL) hy_doUnsplitLoop0 = .TRUE.
-#endif
-  ! ... or if unit conversion is requested.
-  if (.NOT. hy_doUnsplitLoop0) then
-     if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) hy_doUnsplitLoop0 = .TRUE.
-  end if
-
 
   !! Geometry ------------------------------------------------------------------
   call RuntimeParameters_get("geometry", str)

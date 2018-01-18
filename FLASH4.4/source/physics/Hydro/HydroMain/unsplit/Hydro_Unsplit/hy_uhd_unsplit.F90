@@ -85,8 +85,7 @@ Subroutine hy_uhd_unsplit (blockDesc,Uin,blkLimitsGC,&
                          hy_dtmin,            &
                          hy_simTime,          &
                          hy_simGeneration,    &
-                         hy_shockDetectOn,    &
-                         hy_doUnsplitLoop0
+                         hy_shockDetectOn
 
 
   use Driver_interface, ONLY : Driver_abortFlash, Driver_getSimTime
@@ -172,15 +171,6 @@ Subroutine hy_uhd_unsplit (blockDesc,Uin,blkLimitsGC,&
 #endif
 
 
-  
-  if (hy_doUnsplitLoop0) then
-
-! ********** STUFF MOVED TO Hydro_doLoop0 **********
-     
-  endif
-  
-  
-  
   
   
   

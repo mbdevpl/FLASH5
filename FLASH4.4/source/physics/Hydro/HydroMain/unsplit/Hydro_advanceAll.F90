@@ -26,8 +26,8 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
                          hy_dtmin,             &
                          hy_simTime,           &
                          hy_simGeneration,     &
-                         hy_shockDetectOn,     &
-                         hy_doUnsplitLoop0
+                         hy_shockDetectOn
+
   use Hydro_data,       ONLY : hy_useHydro, hy_gpotAlreadyUpToDate
 
 #include "Flash.h"
@@ -89,11 +89,8 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
           doLogMask=.NOT.gcMaskLogged)
      
      hy_cfl = hy_cfl_original
-  end if
 
 
-
-  if (hy_doUnsplitLoop0) then
 #ifdef FLASH_GRID_AMREXTRANSITION
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
