@@ -63,26 +63,6 @@ Module Hydro_interface
      end subroutine Hydro_doLoop5
   end interface
 
-  interface
-     subroutine Hydro_loop1Body (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
-          sweepOrder )
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t) :: blockDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
-       real, pointer, dimension(:,:,:,:) :: Uout,Uin
-       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-       integer, INTENT(IN) :: sweepOrder
-       real,dimension(MDIM),intent(IN) :: del
-     end subroutine Hydro_loop1Body
-     subroutine Hydro_loop5Body (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld )
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t) :: blockDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
-       real, pointer, dimension(:,:,:,:) :: Uout,Uin
-       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-       real,dimension(MDIM),intent(IN) :: del
-     end subroutine Hydro_loop5Body
-  end interface
 
   interface Hydro
   subroutine Hydro(  timeEndAdv, dt, dtOld,sweepOrder )

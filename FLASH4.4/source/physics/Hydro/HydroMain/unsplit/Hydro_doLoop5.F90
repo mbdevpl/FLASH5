@@ -9,7 +9,7 @@ subroutine Hydro_doLoop5(simTime, dt, dtOld)
                                   Grid_getLeafIterator, Grid_releaseLeafIterator,&
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
-  use Hydro_interface,     ONLY : Hydro_loop5Body
+  use hy_uhd_interface,    ONLY : Hydro_loop5Body
   use leaf_iterator,       ONLY : leaf_iterator_t
   use block_metadata,      ONLY : block_metadata_t
 
