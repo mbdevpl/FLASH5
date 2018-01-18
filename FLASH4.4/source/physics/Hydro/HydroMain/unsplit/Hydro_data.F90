@@ -41,7 +41,6 @@ Module Hydro_data
                    hy_useAuxEintEqn,      hy_hydroComputeDtFirstCall = .true.,&
                    hy_conserveAngMom,                          &
                    hy_fullSpecMsFluxHandling, hy_EOSforRiemann
-  logical, save :: hy_doUnsplitLoop0
 
   logical, save :: hy_useParticles,       hy_useCosmology
 
