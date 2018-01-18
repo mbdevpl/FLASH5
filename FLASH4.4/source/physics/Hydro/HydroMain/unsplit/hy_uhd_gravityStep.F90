@@ -1,14 +1,14 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/Hydro_loop5Body
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_gravityStep
 !!
 !!
 !! NAME
 !!
-!!  Hydro_loop5Body
+!!  hy_uhd_gravityStep
 !!
 !!
 !! SYNOPSIS
 !!
-!!  Hydro_loop5Body(integer(IN) :: blockCount, 
+!!  hy_uhd_gravityStep(integer(IN) :: blockCount, 
 !!        integer(IN) :: blockList(blockCount)
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
@@ -39,7 +39,7 @@
 !!***
 
 
-Subroutine Hydro_loop5Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
+Subroutine hy_uhd_gravityStep(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
 
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -154,4 +154,4 @@ Subroutine Hydro_loop5Body(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
   call Timers_stop("loop5 body")
 
 
-End Subroutine Hydro_loop5Body
+End Subroutine hy_uhd_gravityStep

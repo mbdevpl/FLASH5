@@ -30,7 +30,6 @@ Hydro += Hydro_data.o\
 	hy_uhd_shockDetect.o\
 	hy_uhd_prim2con.o\
 	hy_uhd_prim2flx.o\
-	hy_uhd_interface.o\
 	hy_uhd_MultiTempInit.o\
 	hy_uhd_checkRHjumpCond.o\
 	hy_uhd_setMinTimeStep.o\
@@ -40,4 +39,5 @@ Hydro += Hydro_data.o\
 	hy_uhd_DataReconstructNormalDir_WENO.o\
 	hy_uhd_DataReconstructNormalDir_GP.o\
 	hy_uhd_computeFluxes.o\
+	hy_uhd_gravityStep.o\
 	hy_uhd_initializeGP.o
