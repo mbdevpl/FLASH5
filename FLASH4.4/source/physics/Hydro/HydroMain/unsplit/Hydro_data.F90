@@ -106,7 +106,7 @@ Module Hydro_data
   !! For WENO method, one can also specify wenoMethod="WENO5" or "WENOZ"
   integer, save :: hy_order, hy_transOrder, hy_3Torder
   integer, save :: hy_gcMaskSize
-  logical,dimension(NUNK_VARS+NDIM*NFACE_VARS),save :: hy_gcMask
+  logical,dimension(NUNK_VARS+NDIM*NFACE_VARS),save :: hy_gcMask, hy_gcMaskSD
 
   integer, dimension(NFLUXES), save :: hy_fluxCorVars
 

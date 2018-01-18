@@ -544,6 +544,22 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
 #endif
 #endif /* for MHD */
 
+  if (hy_shockDetectOn) then
+     
+     !! Call guardcell filling to properly detect shocks
+     hy_gcMaskSD = .false.
+     hy_gcMaskSD(DENS_VAR) = .true.
+     hy_gcMaskSD(PRES_VAR) = .true.
+     hy_gcMaskSD(GAMC_VAR) = .true.
+     hy_gcMaskSD(VELX_VAR:VELZ_VAR) = .true.
+#ifdef CFL_VAR
+     gcMaskSD(CFL_VAR)  = .true.
+#endif
+#if NSPECIES > 1
+     hy_gcMaskSD(SPECIES_BEGIN:SPECIES_END) = .true.
+#endif
+
+  end if
 #if NSPECIES == 1
 #ifdef SPECIES_BEGIN
   hy_gcMask(SPECIES_BEGIN) = .FALSE.
