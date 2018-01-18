@@ -52,13 +52,9 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_amr_module,          ONLY : amrex_geom, &
                                           amrex_problo
     use amrex_amrcore_module,      ONLY : amrex_ref_ratio
-    use amrex_box_module,          ONLY : amrex_box
     use amrex_boxarray_module,     ONLY : amrex_boxarray
     use amrex_distromap_module,    ONLY : amrex_distromap
-    use amrex_multifab_module,     ONLY : amrex_mfiter, &
-                                          amrex_mfiter_build, &
-                                          amrex_mfiter_destroy, &
-                                          amrex_multifab_build
+    use amrex_multifab_module,     ONLY : amrex_multifab_build
     use amrex_fillpatch_module,    ONLY : amrex_fillpatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
     
@@ -66,8 +62,12 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           facevarx, facevary, facevarz
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
+    use block_iterator,            ONLY : block_iterator_t
     use block_metadata,            ONLY : block_metadata_t
     use Simulation_interface,      ONLY : Simulation_initBlock
+    use Grid_interface,            ONLY : Grid_getBlkIterator, &
+                                          Grid_releaseBlkIterator, &
+                                          Grid_getBlkPtr, Grid_releaseBlkPtr
     use Grid_data,                 ONLY : gr_eosModeInit, &
                                           lo_bc_amrex, hi_bc_amrex
     use Eos_interface,             ONLY : Eos_wrapped
@@ -82,9 +82,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
-    type(amrex_mfiter)    :: mfi
-    type(amrex_box)       :: bx
 
+    type(block_iterator_t)        :: itor
     type(block_metadata_t)        :: block
     real(wp), contiguous, pointer :: initData(:,:,:,:)
 
@@ -104,29 +103,13 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
 #endif
 
-    ! Write initial data across domain at coarsest level
-    call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
-
+    ! Write initial data across domain at given level
     n_blocks = 0
-    do while (mfi%next())
-        bx = mfi%fabbox()
+    call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1, tiling=.FALSE.)
+    do while (itor%is_valid())
+        call itor%blkMetadata(block)
 
-        ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
-        ! Level must be 1-based index and limits/limitsGC must be 1-based also
-        block%level = lev + 1
-        block%grid_index = mfi%grid_index()
-        block%limits(LOW,  :) = 1
-        block%limits(HIGH, :) = 1
-        block%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
-        block%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
-        block%limitsGC(LOW,  :) = 1
-        block%limitsGC(HIGH, :) = 1
-        block%limitsGC(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
-        block%limitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
-
-        associate(lo => block%limitsGC(LOW, :))
-            initData(lo(1):, lo(2):, lo(3):, 1:) => unk(lev)%dataptr(mfi)
-        end associate
+        call Grid_getBlkPtr(block, initData, CENTER)
  
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
@@ -135,15 +118,17 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
         initData = 0.0d0
         call Simulation_initBlock(initData, block)
         call Eos_wrapped(gr_eosModeInit, block%limits, initData)
-        nullify(initData)
+
+        call Grid_releaseBlkPtr(block, initData, CENTER)
 
         n_blocks = n_blocks + 1
+
+        call itor%next()
     end do
+    call Grid_releaseBlkIterator(itor)
     
     call Logfile_stamp(lev+1, &
           '[gr_initNewLevelCallback] Initialized data/Interiors EoS level')
-
-    call amrex_mfiter_destroy(mfi)
 
     ! Subsequent AMReX calls to gr_markRefineDerefineCallback require that the
     ! GC be filled.  We do *not* ask client code to do this, so fill GC here
