@@ -1,7 +1,7 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine Hydro_doLoop1(simTime, dt, dtOld)
+subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
 
   use Grid_interface,      ONLY : Grid_getDeltas,&
                                   Grid_getBlkPtr,&
@@ -9,7 +9,7 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
                                   Grid_getLeafIterator, Grid_releaseLeafIterator,&
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
-  use hy_uhd_interface,    ONLY : hy_uhd_computeFluxes
+  use hy_uhd_interface,    ONLY : hy_uhd_gravityStep
   use leaf_iterator,       ONLY : leaf_iterator_t
   use block_metadata,      ONLY : block_metadata_t
 
@@ -20,8 +20,6 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
-
-  integer,save :: sweepDummy = SWEEP_ALL
 
   integer:: level, maxLev
 
@@ -36,7 +34,7 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
 #endif
 
         call Grid_getLeafIterator(itor, level=level)
-        call Timers_stop("loop1")
+        call Timers_stop("loop5")
         do while(itor%is_valid())
            call itor%blkMetaData(blockDesc)
 
@@ -44,29 +42,22 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
            blkLimitsGC(:,:) = blockDesc%limitsGC
            
            call Grid_getBlkPtr(blockDesc, Uout)
-!!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
-!!$           call amrex_print(abx)
-!!$           tbx = abx
 
            call Grid_getDeltas(level,del)
            Uin => Uout
-           call hy_uhd_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+           call hy_uhd_gravityStep(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld)
            call Grid_releaseBlkPtr(blockDesc, Uout)
            nullify(Uout)
 !!$           call IO_writecheckpoint;stop
            call itor%next()
         end do
-        call Timers_stop("loop1")
+        call Timers_stop("loop5")
 #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
         call Grid_releaseLeafIterator(itor)
 #endif
-#ifdef DEBUG_DRIVER
-        print*, 'return from Hydro/MHD timestep'  ! DEBUG
-        print*,'returning from hydro myPE=',dr_globalMe
-#endif
-        
-        
+
+
      end do
 
 
-end subroutine Hydro_doLoop1
+end subroutine Hydro_gravityStepLoop
