@@ -82,7 +82,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   call mpi_barrier(gr_meshComm,ierr)
   if (gr_meshMe .eq. 0) CALL SYSTEM_CLOCK(TA(1),count_rate)  
   poisfact=1.
-!   call Grid_solvePoisson(PFFT_VAR,DENS_VAR,bcTypes,bcValues,poisfact)
+   call Grid_solvePoisson(PFFT_VAR,DENS_VAR,bcTypes,bcValues,poisfact)
   call mpi_barrier(gr_meshComm,ierr)
   if (gr_meshMe .eq. 0) then
      CALL SYSTEM_CLOCK(TA(2),count_rate)
@@ -109,7 +109,6 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
 
      ! get a pointer to the current block of data
 !     call Grid_getBlkPtr(block, solnData)
-print *, "calling Grid_getBlkPtr for block:",block
      call Grid_getBlkPtr(block,solnData,CENTER)
 
      call Grid_getDeltas(block%level,del)
