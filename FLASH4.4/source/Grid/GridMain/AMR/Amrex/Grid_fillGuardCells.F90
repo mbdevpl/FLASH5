@@ -19,9 +19,21 @@
 !!
 !! DESCRIPTION 
 !!  
-!!  Fill the guardcells of the physical quantities indicated with the given mask
-!!  parameters and that are of the indicated grid data structure type.  Note
-!!  that the fill can be restricted to a given direction.
+!!  Restrict data from leaf blocks down to all ancestors and fill the guardcells
+!!  of the physical quantities indicated with the given mask parameters and that
+!!  are of the indicated grid data structure type.  The fill can be restricted 
+!!  to a given direction.
+!!
+!!  Note that the fill step might require that AMReX execute prolongation operations
+!!  using the AMReX conservative linear interpolation algorithm for guardcells
+!!  at fine/coarse boundaries.
+!!
+!!  It is assumed that the data in all leaf block interiors is correct and that EoS
+!!  has been run for these.  No assumptions are made about the quality of
+!!  guardcell data nor ancestor blocks.
+!!
+!!  Note that while the interior data of ancestor blocks are improved through
+!!  restriction, EoS has not been run on them.
 !!
 !!  If EoS is run on the guardcells, it is done on all levels for all affected
 !!  variables and all affected blocks.  If doEos is set to true but eosMode is
@@ -353,8 +365,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                  amrex_geom(lev), gr_fillPhysicalBC, &
                                  0.0d0, scompCC, scompCC, ncompCC)
 
-  if(present(doEos)) then
-     if(doEos.and.needEos) then
+  if (present(doEos) .AND. needEos) then
+     if (doEos) then
         call Timers_start("eos gc")
         call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1)
         do while (itor%is_valid())
@@ -385,8 +397,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                     amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                     lo_bc_amrex, hi_bc_amrex) 
   
-     if(present(doEos)) then
-        if(doEos.and.needEos) then
+     if (present(doEos) .AND. needEos) then
+        if (doEos) then
            call Timers_start("eos gc")
            call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1)
            do while (itor%is_valid())

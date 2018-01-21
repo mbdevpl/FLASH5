@@ -6,28 +6,29 @@
 !!
 !! SYNOPSIS
 !!
-!!  gr_initMakeNewLevelCallback(integer(IN)    :: lev,
-!!                              amrex_real(IN) :: time,
-!!                              c_ptr(IN)      :: pba,
-!!                              c_ptr(IN)      :: pdm)
+!!  gr_initNewLevelCallback(integer(IN)    :: lev,
+!!                          amrex_real(IN) :: time,
+!!                          c_ptr(IN)      :: pba,
+!!                          c_ptr(IN)      :: pdm)
 !!
 !! DESCRIPTION
 !!
-!!  This routine is a callback routine that is registered with AMReX at
-!!  initialization.  AMReX calls this routine to create a new refinement level
-!!  from scratch.
+!!  This routine is a callback routine that is registered with the AMReX AMR
+!!  core at initialization.  AMReX calls this routine to create a new refinement
+!!  level from scratch.
 !!
 !!  Specifically, for the given refinement level it
 !!   (1) creates a multifab for each data type,
 !!   (2) initializes these structures with the initial conditions via
 !!       Simulation_initBlock,
-!!   (3) runs EoS on the interiors of all blocks to make the initial data
-!!       thermodynamically consistent,
 !!   (4) fill all guardcells, and
-!!   (5) run EoS on the guardcells.
+!!   (3) runs EoS on the interiors and GCs of all blocks to make the initial
+!!       data thermodynamically consistent.
 !!
 !!  Note that all EoS runs are done in the mode specified by the eosModeInit
 !!  runtime parameter.
+!!
+!!  This routine should only be invoked by AMReX.
 !!
 !! ARGUMENTS
 !!
@@ -109,16 +110,14 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     do while (itor%is_valid())
         call itor%blkMetadata(block)
 
-        call Grid_getBlkPtr(block, initData, CENTER)
  
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.
+        call Grid_getBlkPtr(block, initData, CENTER)
         initData = 0.0d0
         call Simulation_initBlock(initData, block)
-        call Eos_wrapped(gr_eosModeInit, block%limits, initData)
-
         call Grid_releaseBlkPtr(block, initData, CENTER)
 
         n_blocks = n_blocks + 1
@@ -154,22 +153,21 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                       lo_bc_amrex, hi_bc_amrex)
     end if
 
-    ! DEV: TODO Implement this
-!    call Grid_getBlkIterator(itor, ALLBLKS, level=lev)
-!    do while (itor%is_valid())
-!       call itor%blkMetaData(blockDesc)
-!
-!       call Grid_getBlkPtr(blockDesc, solnData)
-!       call Eos_guardCells(gr_eosModeInit, solnData, corners=.true., &
-!                           layers=returnLayers)
-!       call Grid_releaseBlkPtr(blockDesc, solnData)
-!
-!       call itor%next()
-!    end do
-!    call Grid_releaseBlkIterator(itor)
+    ! Run EoS on interiors and GCs in preparation for refinement check
+    call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1, tiling=.FALSE.)
+    do while (itor%is_valid())
+       call itor%blkMetaData(block)
+
+       call Grid_getBlkPtr(block, initData, CENTER)
+       call Eos_wrapped(gr_eosModeInit, block%limitsGC, initData)
+       call Grid_releaseBlkPtr(block, initData, CENTER)
+
+       call itor%next()
+    end do
+    call Grid_releaseBlkIterator(itor)
 
     call Logfile_stamp(lev+1, &
-          '[gr_initNewLevelCallback] GC fill/GC EoS level')
+          '[gr_initNewLevelCallback] GC fill/Full EoS level')
 
     write(*,'(A,I10,A,I0)') "Created and initialized ", n_blocks, &
                            " blocks on level ", lev + 1
