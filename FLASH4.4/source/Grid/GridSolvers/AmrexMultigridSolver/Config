@@ -1,0 +1,66 @@
+D DEFAULT testProb
+
+D USESETUPVARS Grid
+D IF Grid=='UG'
+D    DEFAULT UG
+D ENDIF
+
+D CHILDORDER paramesh UG multiScalar
+
+D EXCLUSIVE paramesh UG
+
+D Params for amrex multigrid solve
+PARAMETER gr_amrexLs_max_level	INTEGER 2
+PARAMETER gr_amrexLs_ref_ratio	INTEGER 4
+PARAMETER gr_amrexLs_n_cell		INTEGER 128
+PARAMETER gr_amrexLs_max_grid_size	INTEGER 64
+
+D composite solve or level by level?
+PARAMETER gr_amrexLs_composite_solve	BOOLEAN	TRUE
+
+D 1=Poisson 2=ABEC
+PARAMETER gr_amrexLs_prob_type	INTEGER 1
+
+D For MLMG
+PARAMETER gr_amrexLs_verbose	INTEGER 2
+PARAMETER gr_amrexLs_cg_verbose	INTEGER 0
+PARAMETER gr_amrexLs_max_iter	INTEGER 100
+
+D number of F-cycles before switching to V.  To do pure V-cycle, set to 0
+PARAMETER gr_amrexLs_max_fmg_iter	INTEGER 0
+PARAMETER gr_amrexLs_linop_maxorder	INTEGER 2
+
+D Do agglomeration on AMR Level 0?
+PARAMETER gr_amrexLs_agglomeration	BOOLEAN TRUE
+
+D Do consolidation?
+PARAMETER gr_amrexLs_consolidation	BOOLEAN TRUE
+
+
+
+D gr_hypreSolverType : Type of HYPRE solver to be used.
+D PARAMETER gr_hypreSolverType STRING "HYPRE_PCG" [HYPRE_PCG,HYPRE_AMG,HYPRE_GMRES,HYPRE_BICGSTAB,HYPRE_SPLIT,hypre_pcg,hypre_amg,hypre_gmres,hypre_bicgstab,hypre_split]
+
+D gr_hyprePcType Type of HYPRE Preconditioner to be used.
+D PARAMETER gr_hyprePCType STRING "HYPRE_AMG" [HYPRE_NONE, HYPRE_ILU,HYPRE_AMG,HYPRE_PARASAILS,hypre_ilu,hypre_amg,hypre_parasails,hypre_none]
+
+D gr_hypreRelTol Relative tolerence r_tol of HYPRE linear solver.
+D PARAMETER gr_hypreRelTol REAL 1.0e-8
+
+D gr_hypreAbsTol If > 0.0, directly sets a_tol (absolute tolerance) for the HYPRE iterative solver.
+D & Convergence criteria:  <C*r,r>  <= max( a_tol^2, r_tol^2 * <C*b,b> ).
+D & Note: default for a_tol is 0.0, so relative residual criteria is used unless
+D & user specifies a_tol, or sets r_tol = 0.0, which means absolute
+D & tol only is checked. See also gr_hypreSolverAutoAbsTolFact, for another
+D & way of setting a_tol.
+D & Currently only used when gr_hypreSolverType is "HYPRE_PCG".
+D PARAMETER gr_hypreAbsTol REAL	0.0
+
+D   gr_hyprePrintSolveInfo : Flag to output solver specific
+D & information such as Relative Residue, num-iterations.
+D PARAMETER gr_hyprePrintSolveInfo BOOLEAN FALSE
+
+D   gr_hypreInfoLevel : Flag to output solver specific
+D & information such as Relative Residue, num-iterations.
+D  PARAMETER gr_hypreInfoLevel INTEGER 1
+
