@@ -160,8 +160,6 @@ subroutine Simulation_initBlock(solnData,block)
   ! set values for u,v velocities and pressure
   solnData(:,:,:,DIFF_VAR) = 0.0
   solnData(:,:,:,PFFT_VAR) = 0.0
-print*,"solndata in Simulation_initBlock lbounds",lbound(solnData)
-print*,"solndata in Simulation_initBlock ubounds",ubound(solnData)
 
 !!$  write(*,*) 'BlockID=',blockID
 !!$  write(*,*) 'Center coordinates=',coord
