@@ -151,24 +151,14 @@ use gr_amrexLsInterface, ONLY : gr_amrexLsInitPoisson, gr_amrexLsInitGeom, &
     call gr_amrexLsInitMf()
     if (gr_amrexLs_prob_type .eq. 1) then
        call gr_amrexLsInitPoisson(gr_amrexLs_geom,gr_amrexLs_solution, gr_amrexLs_rhs, gr_amrexLs_exact_solution)
-!        call gr_amrexLsSolvePoisson()
+       call gr_amrexLsSolvePoisson()
     else
 !        call init_prob_abeclaplacian(gr_amrexLs_geom,solution, gr_amrexLs_rhs, gr_amrexLs_exact_solution, &
 !        gr_amrexLs_acoef, gr_amrexLs_bcoef, gr_amrexLs_ascalar, gr_amrexLs_bscalar)
 !          TODO :: abec solve
          call Driver_abortFlash('Abec problem not implemnted yet!! Program will abort!!!!')
     end if
-!     call gr_amrexLsInitPoisson (gr_amrexLs_geom, gr_amrexLs_solution, gr_amrexLs_rhs, gr_amrexLs_exact_solution)
-    
-    
-    
-  ! allocate data
-  call init()
-  call solve()
-  call finalize()
 
-
-!   call amrex_finalize()
   
   
   
