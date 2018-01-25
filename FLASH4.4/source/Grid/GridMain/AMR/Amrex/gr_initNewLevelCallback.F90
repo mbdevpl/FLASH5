@@ -127,7 +127,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call Grid_releaseBlkIterator(itor)
     
     call Logfile_stamp(lev+1, &
-          '[gr_initNewLevelCallback] Initialized data/Interiors EoS level')
+          '[gr_initNewLevelCallback] Initialized data on level')
 
     ! Subsequent AMReX calls to gr_markRefineDerefineCallback require that the
     ! GC be filled.  We do *not* ask client code to do this, so fill GC here
@@ -167,7 +167,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call Grid_releaseBlkIterator(itor)
 
     call Logfile_stamp(lev+1, &
-          '[gr_initNewLevelCallback] GC fill/Full EoS level')
+          '[gr_initNewLevelCallback] GC fill/Full EoS on level')
 
     write(*,'(A,I10,A,I0)') "Created and initialized ", n_blocks, &
                            " blocks on level ", lev + 1
