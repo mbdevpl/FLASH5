@@ -34,13 +34,19 @@ Module gr_amrexLsInterface
         type(amrex_multifab), intent(inout) :: rhs(0:)
         type(amrex_multifab), intent(inout) :: exact_solution(0:)
     end subroutine gr_amrexLsInitPoisson
-  end interface
+    end interface
+
+    interface
+    subroutine gr_amrexLsSolvePoisson ()
+        implicit none
+    end subroutine gr_amrexLsSolvePoisson
+    end interface
 
     interface
     subroutine gr_amrexLsInitGeom ()
         implicit none
     end subroutine gr_amrexLsInitGeom
-  end interface
+    end interface
 
   interface
     subroutine gr_amrexLsInitGrid ()
