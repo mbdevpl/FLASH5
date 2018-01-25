@@ -13,8 +13,14 @@
 !! DESCRIPTION
 !!
 !!  If the indicated step qualifies as a refinement step, then this routine
-!!    (1) fills all guardcells at all levels with EoS run on the guardcells and
-!!    (2) triggers AMReX to execute grid refinement.
+!!    (1) restricts data from leaf blocks down to all ancestors,
+!!    (2) fills all guardcells at all levels,
+!!    (3) runs EoS on all interiors and all guardcells, and
+!!    (4) triggers AMReX to execute grid refinement.
+!!
+!!  It is assumed that the data in all leaf block interiors is correct and that
+!!  EoS has been run for these.  No assumptions are made about the quality of
+!!  guardcell data nor ancestor blocks.
 !!
 !!  Note that all EoS runs are done in the mode specified by the eosMode
 !!  runtime parameter.
@@ -55,12 +61,19 @@
 subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use amrex_amrcore_module, ONLY : amrex_regrid
 
-  use Grid_interface,       ONLY : Grid_fillGuardCells
+  use Grid_interface,       ONLY : Grid_fillGuardCells, &
+                                   Grid_getBlkIterator, &
+                                   Grid_releaseBlkIterator, &
+                                   Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data,            ONLY : gr_nrefs, &
 !                                   gr_maxRefine, &
                                    gr_refine_var, &
                                    gr_numRefineVars, &
-                                   gr_eosMode
+                                   gr_eosMode, &
+                                   gr_amrexDidRefinement
+  use block_iterator,       ONLY : block_iterator_t
+  use block_metadata,       ONLY : block_metadata_t
+  use Eos_interface,        ONLY : Eos_wrapped
   use Timers_interface,     ONLY : Timers_start, Timers_stop
  
   implicit none
@@ -70,12 +83,16 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   logical, intent(out), OPTIONAL :: gridChanged
 
   integer, parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
-  
+
   logical, save :: gcMaskArgsLogged = .FALSE.
-  
+
   logical :: gcMask(maskSize)
   integer :: iref
   integer :: i
+
+  type(block_iterator_t)         :: itor
+  type(block_metadata_t)         :: blockDesc
+  real,                  pointer :: solnData(:, :, :, :) => null()
 
   ! We only consider refinements every nrefs timesteps.
   if (mod(nstep, gr_nrefs) == 0) then
@@ -113,18 +130,36 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                               maskSize=maskSize, mask=gcMask, &
                               makeMaskConsistent=.TRUE., &
                               doLogMask=(.NOT. gcMaskArgsLogged))
+
+     ! Run EoS on non-leaf interiors to get best possible refinement decisions
+     ! DEV: TODO This should be over all ANCESTOR blocks as the leaves were
+     ! given to us with EoS run.
+     ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
+     ! influence refinement decisions.  If no, then we need only apply EoS to
+     ! parent blocks.
+     call Grid_getBlkIterator(itor, ALL_BLKS)
+     do while (itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+
+        call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+        call Eos_wrapped(gr_eosMode, blockDesc%limits, solnData)
+        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+
+        call itor%next()
+     end do
+     call Grid_releaseBlkIterator(itor)
+
+     gr_amrexDidRefinement = .FALSE.
      call amrex_regrid(0, time)
      call Timers_stop("Grid_updateRefinement")
 
      ! Only log on the first call
      gcMaskArgsLogged = .TRUE.
 
-    ! DEV: TODO What happens with particles here?
+     ! DEV: TODO What happens with particles here?
 
      if (present(gridChanged)) then
-        ! DEV: FIXME: Shouldn't this actually check if AMReX
-        ! decided to regrid based on the contents of the physical quantities?
-        gridChanged = .TRUE.
+        gridChanged = gr_amrexDidRefinement
      end if
   else
      if (present(gridChanged)) then

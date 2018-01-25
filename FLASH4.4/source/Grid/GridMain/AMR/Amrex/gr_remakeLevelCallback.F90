@@ -72,7 +72,8 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
     use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex, &
-                                          gr_eosMode
+                                          gr_eosMode, &
+                                          gr_amrexDidRefinement
     use Grid_interface,            ONLY : Grid_getBlkIterator, &
                                           Grid_releaseBlkIterator, &
                                           Grid_getBlkPtr, Grid_releaseBlkPtr
@@ -99,6 +100,9 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     type(block_metadata_t)        :: blockDesc
     real(wp), contiguous, pointer :: solnData(:,:,:,:)
     integer                       :: nFab
+
+    ! Communicate to Grid_updateRefinement that we are regridding
+    gr_amrexDidRefinement = .TRUE.
 
     ba = pba
     dm = pdm
