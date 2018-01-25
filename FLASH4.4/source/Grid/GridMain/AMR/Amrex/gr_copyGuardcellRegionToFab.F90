@@ -104,8 +104,8 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
 
                 do j = lo(JAXIS), hi(JAXIS)
                     n = j - lo(JAXIS) + 1
-                    do var = scomp, scomp + ncomp - 1
-                        fab(strt:fin, j, k, var) = region(rStrt:rFin, n, m, var)
+                    do var = 1, ncomp
+                        fab(strt:fin, j, k, var+scomp-1) = region(rStrt:rFin, n, m, var)
                     end do
                 end do
 
@@ -116,8 +116,8 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
                 
                 do i = lo(IAXIS), hi(IAXIS)
                     n = i - lo(IAXIS) + 1
-                    do var = scomp, scomp + ncomp - 1
-                        fab(i, strt:fin, k, var) = region(rStrt:rFin, n, m, var)
+                    do var = 1, ncomp
+                        fab(i, strt:fin, k, var+scomp-1) = region(rStrt:rFin, n, m, var)
                     end do
                 end do
 
@@ -128,8 +128,8 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
                 
                 do i = lo(IAXIS), hi(IAXIS)
                     n = i - lo(IAXIS) + 1
-                    do var = scomp, scomp + ncomp - 1
-                        fab(i, j, strt:fin, var) = region(rStrt:rFin, n, m, var)
+                    do var = 1, ncomp
+                        fab(i, j, strt:fin, var+scomp-1) = region(rStrt:rFin, n, m, var)
                     end do
                 end do
             end do
