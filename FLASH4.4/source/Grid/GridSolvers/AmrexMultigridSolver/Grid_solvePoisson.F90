@@ -146,9 +146,9 @@ use gr_amrexLsInterface, ONLY : gr_amrexLsInitPoisson, gr_amrexLsInitGeom, &
     if (gr_amrexLs_prob_type .eq. 2) then
        call Driver_abortFlash('Abec problem not implemnted yet!! Program will abort!!!!')
     end if
-!      call gr_amrexLsInitGeom ()
-!     call gr_amrexLsInitGrid()
-!     call init_mf()
+    call gr_amrexLsInitGeom ()
+    call gr_amrexLsInitGrid()
+    call gr_amrexLsInitMf()
 !     if (prob_type .eq. 1) then
 !        call init_prob_poisson(geom,solution, rhs, exact_solution)
 !     else
