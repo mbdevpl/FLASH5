@@ -125,13 +125,10 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      gcMask(NUNK_VARS+1:min(maskSize,NUNK_VARS+NDIM*NFACE_VARS)) = .TRUE.
 
      call Timers_start("Grid_updateRefinement")
-     call Grid_fillGuardCells(CENTER, ALLDIR, &
-                              eosMode=gr_eosMode, doEos=.TRUE., &
-                              maskSize=maskSize, mask=gcMask, &
-                              makeMaskConsistent=.TRUE., &
-                              doLogMask=(.NOT. gcMaskArgsLogged))
+     call Grid_fillGuardCells(CENTER, ALLDIR, doEos=.FALSE.)
 
-     ! Run EoS on non-leaf interiors to get best possible refinement decisions
+     ! Run EoS on non-leaf interiors/GC to get best possible 
+     ! refinement decisions
      ! DEV: TODO This should be over all ANCESTOR blocks as the leaves were
      ! given to us with EoS run.
      ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
@@ -142,7 +139,8 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
         call itor%blkMetaData(blockDesc)
 
         call Grid_getBlkPtr(blockDesc, solnData, CENTER)
-        call Eos_wrapped(gr_eosMode, blockDesc%limits, solnData)
+        ! DEV: TODO Add masking as in Grid_fillGuardCell?
+        call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
         call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
 
         call itor%next()
