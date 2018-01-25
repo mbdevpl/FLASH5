@@ -20,7 +20,8 @@
 !!
 !!  It is assumed that the multifab data at the given level is correct and has
 !!  had EoS run on it.  Upon returning, the remade multifab will have correct
-!!  data on all interiors/guardcells and these will have had EoS run on them.
+!!  data on all interiors and these will have had EoS run on them.  No guarantee 
+!!  is made with respect to the quality of guardcell data.
 !!
 !!  In detail, for the given refinement level this routine
 !!   (1) uses AMReX patchfill to copy data from the original multifab to a
@@ -146,10 +147,10 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
        call itor%blkMetaData(blockDesc)
 
        call Grid_getBlkPtr(blockDesc, solnData, CENTER)
-       call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
+       call Eos_wrapped(gr_eosMode, blockDesc%limits, solnData)
        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
 
-        nFab = nFab + 1 
+       nFab = nFab + 1 
        call itor%next()
     end do
     call Grid_releaseBlkIterator(itor)
