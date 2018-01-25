@@ -129,6 +129,8 @@ use gr_amrexLsInterface, ONLY : gr_amrexLsInitPoisson, gr_amrexLsInitGeom, &
   call Timers_start("Grid_solvePoisson")    
   print*, "Inside Grid_solvePoisson using amrex solvers"
   !!*********************----------------*******************!!
+  !initialize the variables
+    call gr_amrexLsInit()
   !allocate data
     allocate(gr_amrexLs_geom(0:gr_amrexLs_max_level))
     allocate(gr_amrexLs_ba(0:gr_amrexLs_max_level))
