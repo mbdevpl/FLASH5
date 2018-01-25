@@ -79,9 +79,6 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
   use Grid_data,        ONLY : gr_meshMe, gr_meshcomm
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Driver_interface, ONLY : Driver_abortFlash
-!   use gr_interface,     ONLY : gr_hypreCreateMatrix, gr_hypreComputeB,    &
-!                                gr_hypreGridStatus
-!   use gr_hypreLocalInterface, ONLY: gr_hypreExchangeFacB
   use Grid_interface,   ONLY : Grid_fillGuardCells, Grid_getListOfBlocks, &
                                Grid_getBlkPtr, Grid_releaseBlkPtr,        &
                                Grid_getBlkIndexLimits, Grid_getBlkData,   &
@@ -91,10 +88,6 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
                                             gr_amrexLs_ascalar, gr_amrexLs_bscalar, &
                                             gr_amrexLs_max_level, gr_amrexLs_prob_type, &
                                             gr_amrexLs_exact_solution, gr_amrexLs_rhs, gr_amrexLs_solution
-!   use gr_hypreData,   ONLY   : gr_hypreLower, gr_hypreUpper, &
-!                                gr_hypreMatA, gr_hypreVecB, gr_hypreRefineMIN, &
-!                                gr_hypreUseFloor
-!   
   use Grid_interface,   ONLY : GRID_PDE_BND_PERIODIC,  &
        GRID_PDE_BND_NEUMANN,   &
        GRID_PDE_BND_DIRICHLET
@@ -159,14 +152,11 @@ use gr_amrexLsInterface, ONLY : gr_amrexLsInitPoisson, gr_amrexLsInitGeom, &
          call Driver_abortFlash('Abec problem not implemnted yet!! Program will abort!!!!')
     end if
 
-  
-  
-  
-  !!*********************----------------*******************!!
-  
-  
+  !!Finalize to remove allocated space
+  call gr_amrexLsFinalize()
   
   call Timers_stop("Grid_solvePoisson") 
   
   return
+
 end subroutine Grid_solvePoisson

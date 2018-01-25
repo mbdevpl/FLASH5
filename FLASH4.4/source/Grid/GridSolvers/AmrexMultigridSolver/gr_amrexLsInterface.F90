@@ -59,16 +59,17 @@ Module gr_amrexLsInterface
         implicit none
     end subroutine gr_amrexLsInitMf
   end interface
-!   interface
-!      subroutine gr_hypreGetFaceBFcB (direction, blkLimits, blkLimitsGC, facBptr, flux, iVar)
-!        implicit none
-!        integer, intent(IN) :: direction
-!        integer, intent(IN) :: blkLimits (2,MDIM) 
-!        integer, intent(IN) :: blkLimitsGC (2,MDIM)
-!        real, POINTER_INTENT_IN :: facBptr(:,:,:)   
-!        real, intent(INOUT) :: flux(:,:,:,:)
-!        integer, intent(IN) :: iVar
-!      end subroutine gr_hypreGetFaceBFcB
-!   end interface
+
+  interface
+    subroutine gr_amrexLsInit ()
+        implicit none
+    end subroutine gr_amrexLsInit
+  end interface
+
+  interface
+    subroutine gr_amrexLsFinalize ()
+        implicit none
+    end subroutine gr_amrexLsFinalize
+  end interface
 
 end Module gr_amrexLsInterface
