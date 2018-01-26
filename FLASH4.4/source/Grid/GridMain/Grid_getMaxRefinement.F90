@@ -75,7 +75,7 @@ subroutine Grid_getMaxRefinement(maxRefinement, mode, scope, inputComm)
   use tree, ONLY : lnblocks, lrefine_min,lrefine_max, lrefine
 #endif
 #ifdef FLASH_GRID_AMREX
-  use amrex_amrcore_module, ONLY : amrex_max_level
+  use amrex_amrcore_module, ONLY : amrex_max_level, amrex_get_finest_level
   use Grid_data, ONLY :  gr_maxRefine, gr_enforceMaxRefinement
 #endif
 #ifdef FLASH_GRID_CHOMBO
@@ -131,14 +131,19 @@ subroutine Grid_getMaxRefinement(maxRefinement, mode, scope, inputComm)
 
 #elif defined FLASH_GRID_AMREX
   ! AMReX uses 0-based level indexing/FLASH uses 1-based
+  
+  ! Assume mode 1
   maxRefinement = amrex_max_level + 1
 
-  ! DEVNOTE: TODO/Code other outputs based on myMode
-  if      (present(mode)) then
-    if (mode /= 1)  then
-      call Driver_abortFlash("[Grid_getMaxRefinement] Not coded yet for AMReX")
-    end if
-  else if (present(scope)) then
+  if      ((myMode == 2) .AND. gr_enforceMaxRefinement)  then
+    maxRefinement = MIN(maxRefinement, gr_maxRefine)
+  else if  (myMode == 3) then
+    maxRefinement = gr_maxRefine
+  else if  (myMode == 4) then
+    maxRefinement = amrex_get_finest_level() + 1
+  end if
+
+  if (present(scope)) then
     call Driver_abortFlash("[Grid_getMaxRefinement] Not coded yet for AMReX")
   else if (present(inputComm)) then
     call Driver_abortFlash("[Grid_getMaxRefinement] Not coded yet for AMReX")

@@ -10,7 +10,8 @@
 !!                                  integer(IN) :: face,
 !!                                  integer(IN) :: axis,
 !!                                  integer(IN) :: interior(LOW:HIGH, MDIM),
-!!                                  integer(IN) :: nVars,
+!!                                  integer(IN) :: scomp,
+!!                                  integer(IN) :: ncomp,
 !!                                  real(INOUT) :: region(:,:,:,:))
 !!
 !! DESCRIPTION 
@@ -31,7 +32,8 @@
 !!  interior - the specification of the region from which data shall be copied. 
 !!             It is defined by its lower and upper points in a 0-based, 
 !!             cell-centered index space.
-!!  nVars - the number of physical quantities in FAB to be copied to region
+!!  scomp - the 1-based index of the first physical quantity to copy
+!!  ncomp - the number of physical quantities to copy starting from scomp
 !!  region - Data structure that receives data.  Please see
 !!           Grid_bcApplyToRegion.
 !!
@@ -40,7 +42,8 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, nVars, region)
+subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, &
+                                      scomp, ncomp, region)
     use amrex_fort_module, ONLY : wp => amrex_real
 
     implicit none
@@ -49,7 +52,8 @@ subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, nVars, region)
     integer,                       intent(IN)    :: face
     integer,                       intent(IN)    :: axis
     integer,                       intent(IN)    :: interior(LOW:HIGH, 1:MDIM)
-    integer,                       intent(IN)    :: nVars
+    integer,                       intent(IN)    :: scomp
+    integer,                       intent(IN)    :: ncomp
     real(wp), pointer, contiguous, intent(INOUT) :: region(:, :, :, :)
 
     integer :: lo(1:MDIM)
@@ -94,8 +98,8 @@ subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, nVars, region)
 
                 do j = lo(JAXIS), hi(JAXIS)
                     n = j - lo(JAXIS) + 1
-                    do var = 1, nVars
-                        region(rStrt:rFin, n, m, var) = fab(strt:fin, j, k, var)
+                    do var = 1, ncomp
+                        region(rStrt:rFin, n, m, var) = fab(strt:fin, j, k, var+scomp-1)
                     end do
                 end do
 
@@ -106,8 +110,8 @@ subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, nVars, region)
 
                 do i = lo(IAXIS), hi(IAXIS)
                     n = i - lo(IAXIS) + 1
-                    do var = 1, nVars
-                        region(rStrt:rFin, n, m, var) = fab(i, strt:fin, k, var)
+                    do var = 1, ncomp
+                        region(rStrt:rFin, n, m, var) = fab(i, strt:fin, k, var+scomp-1)
                     end do
                 end do
 
@@ -118,8 +122,8 @@ subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, nVars, region)
 
                 do i = lo(IAXIS), hi(IAXIS)
                     n = i - lo(IAXIS) + 1
-                    do var = 1, nVars
-                        region(rStrt:rFin, n, m, var) = fab(i, j, strt:fin, var)
+                    do var = 1, ncomp
+                        region(rStrt:rFin, n, m, var) = fab(i, j, strt:fin, var+scomp-1)
                     end do
                 end do
 

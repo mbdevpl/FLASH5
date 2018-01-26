@@ -6,11 +6,12 @@
 !!
 !! SYNOPSIS
 !!
-!!  call gr_copyGuardcellRegionToFab(real(IN)   :: region(:,:,:,:)
+!!  call gr_copyGuardcellRegionToFab(real(IN)   :: region(:,:,:,:),
 !!                                  integer(IN) :: face,
 !!                                  integer(IN) :: axis,
 !!                                  integer(IN) :: guardcells(LOW:HIGH, MDIM),
-!!                                  integer(IN) :: nVars,
+!!                                  integer(IN) :: scomp,
+!!                                  integer(IN) :: ncomp,
 !!                                  real(INOUT) :: fab(:,:,:,:))
 !!
 !! DESCRIPTION 
@@ -29,7 +30,8 @@
 !!  guardcells - the specification of the GC region into which data shall be
 !!               copied.  It is defined by its lower and upper points in a
 !!               0-based, cell-centered index space.
-!!  nVars - the number of physical quantities in region to be copied to FAB
+!!  scomp - the 1-based index of the first physical quantity to copy
+!!  ncomp - the number of physical quantities to copy starting from scomp
 !!  fab - a pointer to the FAB to which data will be transferred.  Since
 !!        it is an AMReX-related element, the spatial indices are 0-based
 !!        and have absolute, global indices.  The fourth index is 1-based.
@@ -40,7 +42,7 @@
 #include "Flash.h"
 
 subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
-                                       nVars, fab)
+                                       scomp, ncomp, fab)
     use amrex_fort_module, ONLY : wp => amrex_real
 
 #ifdef DEBUG_GRID
@@ -53,7 +55,8 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
     integer,  intent(IN)                         :: face
     integer,  intent(IN)                         :: axis
     integer,  intent(IN)                         :: guardcells(LOW:HIGH, 1:MDIM)
-    integer,  intent(IN)                         :: nVars
+    integer,  intent(IN)                         :: scomp
+    integer,  intent(IN)                         :: ncomp
     real(wp), intent(INOUT), pointer, contiguous :: fab(:, :, :, :)
 
     integer :: lo(1:MDIM)
@@ -101,8 +104,8 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
 
                 do j = lo(JAXIS), hi(JAXIS)
                     n = j - lo(JAXIS) + 1
-                    do var = 1, nVars
-                        fab(strt:fin, j, k, var) = region(rStrt:rFin, n, m, var)
+                    do var = 1, ncomp
+                        fab(strt:fin, j, k, var+scomp-1) = region(rStrt:rFin, n, m, var)
                     end do
                 end do
 
@@ -113,8 +116,8 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
                 
                 do i = lo(IAXIS), hi(IAXIS)
                     n = i - lo(IAXIS) + 1
-                    do var=1, nVars
-                        fab(i, strt:fin, k, var) = region(rStrt:rFin, n, m, var)
+                    do var = 1, ncomp
+                        fab(i, strt:fin, k, var+scomp-1) = region(rStrt:rFin, n, m, var)
                     end do
                 end do
 
@@ -125,8 +128,8 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
                 
                 do i = lo(IAXIS), hi(IAXIS)
                     n = i - lo(IAXIS) + 1
-                    do var = 1, nVars
-                        fab(i, j, strt:fin, var) = region(rStrt:rFin, n, m, var)
+                    do var = 1, ncomp
+                        fab(i, j, strt:fin, var+scomp-1) = region(rStrt:rFin, n, m, var)
                     end do
                 end do
             end do

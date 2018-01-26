@@ -1,6 +1,56 @@
-#ifdef DEBUG_ALL
-#define DEBUG_GRID
-#endif
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_remakeLevelCallback
+!!
+!! NAME
+!!
+!!  gr_remakeLevelCallback
+!!
+!! SYNOPSIS
+!!
+!!  gr_remakeLevelCallback(integer(IN)    :: lev,
+!!                         amrex_real(IN) :: time,
+!!                         c_ptr(IN)      :: pba,
+!!                         c_ptr(IN)      :: pdm)
+!!
+!! DESCRIPTION
+!!
+!!  This routine is a callback routine that is registered with the AMReX AMR
+!!  core at initialization.  AMReX calls this routine to reestablish the data in
+!!  a multifab at the given level onto a new multifab specified through the given
+!!  box array and distribution map.
+!!
+!!  It is assumed that the multifab data at the given level is correct and has
+!!  had EoS run on it.  Upon returning, the remade multifab will have correct
+!!  data on all interiors and these will have had EoS run on them.  No guarantee 
+!!  is made with respect to the quality of guardcell data.
+!!
+!!  In detail, for the given refinement level this routine
+!!   (1) uses AMReX patchfill to copy data from the original multifab to a
+!!       buffer multifab built with the new box layout and distribution mapping,
+!!   (2) rebuild the original multifab,
+!!   (3) copy the new interior/GC data from the buffer to the rebuilt multifab, and
+!!   (4) run EoS on the interiors of all blocks to make the data 
+!!       thermodynamically consistent.
+!!
+!!  Note that step (1) might require that AMReX execute prolongation operations
+!!  using the AMReX conservative linear interpolation algorithm if new boxes are
+!!  added to the level.  All EoS runs are done in the mode specified by the
+!!  eosMode runtime parameter.
+!!
+!!  This routine should only be invoked by AMReX.
+!!
+!! ARGUMENTS
+!!
+!!  lev - a 0-based number identifying the refinement level to create.  The
+!!        zeroth level is the coarsest level to be used in the simulation and a
+!!        larger integer indicates a finer refinement.
+!!  time - IGNORED
+!!  pba - a C pointer to the AMReX box array object to use for constructing the
+!!        multifab for the given level
+!!  pdm - a C pointer to the AMReX distribution mapping of boxes across
+!!        processors to be used for constructing the multifab for the given
+!!        level.
+!!
+!!***
 
 #include "Flash.h"
 #include "constants.h"
@@ -22,11 +72,18 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_fillpatch_module,    ONLY : amrex_fillpatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
-    use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex
+    use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex, &
+                                          gr_eosMode, &
+                                          gr_amrexDidRefinement
+    use Grid_interface,            ONLY : Grid_getBlkIterator, &
+                                          Grid_releaseBlkIterator, &
+                                          Grid_getBlkPtr, Grid_releaseBlkPtr
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
-    use gr_physicalMultifabs,      ONLY : unk, &
-                                          facevarx, facevary, facevarz
+    use gr_physicalMultifabs,      ONLY : unk
+    use block_iterator,            ONLY : block_iterator_t
+    use block_metadata,            ONLY : block_metadata_t
+    use Eos_interface,             ONLY : Eos_wrapped
 
     implicit none
 
@@ -34,14 +91,19 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     real(wp),    intent(IN), value :: time
     type(c_ptr), intent(IN), value :: pba
     type(c_ptr), intent(IN), value :: pdm
- 
+
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
     type(amrex_box)       :: bx
     type(amrex_multifab)  :: mfab
-    type(amrex_mfiter)    :: mfi
 
-    integer :: nFab
+    type(block_iterator_t)        :: itor
+    type(block_metadata_t)        :: blockDesc
+    real(wp), contiguous, pointer :: solnData(:,:,:,:)
+    integer                       :: nFab
+
+    ! Communicate to Grid_updateRefinement that we are regridding
+    gr_amrexDidRefinement = .TRUE.
 
     ba = pba
     dm = pdm
@@ -52,8 +114,8 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     ! DEVNOTE: TODO Include facevars in this process
 
     if (lev == 0) then
-       ! Move all unk data to given ba/dm layout.  Do *not* use sub-cycling.
-       ! -1 because of Fortran variable index starts with 1
+       ! Move all unk data (interior and GC) to given ba/dm layout.
+       ! Do *not* use sub-cycling.
        call amrex_fillpatch(mfab, time+1.0d0, unk(lev), &
                                   time,       unk(lev), &
                                   amrex_geom(lev), gr_fillPhysicalBC, &
@@ -74,18 +136,24 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     call gr_clearLevelCallback(lev)
     call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
 
-    ! Only copy interior
-    call unk(lev)%copy(mfab, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                       NGUARD)
+    ! If GC are not copied, then Hydro_computeDt fails
+    call unk(lev)%copy(mfab, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, NGUARD)
 
     call amrex_multifab_destroy(mfab)
 
     nFab = 0
-    call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)
-    do while(mfi%next())
-        nFab = nFab + 1 
+    call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1, tiling=.FALSE.)
+    do while (itor%is_valid())
+       call itor%blkMetaData(blockDesc)
+
+       call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+       call Eos_wrapped(gr_eosMode, blockDesc%limits, solnData)
+       call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+
+       nFab = nFab + 1 
+       call itor%next()
     end do
-    call amrex_mfiter_destroy(mfi)
+    call Grid_releaseBlkIterator(itor)
 
     write(*,'(A,I0,A,I0,A)') "Remade level ", (lev+1), " - ", nFab, " blocks"
 
