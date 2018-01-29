@@ -72,4 +72,28 @@ Module gr_amrexLsInterface
     end subroutine gr_amrexLsFinalize
   end interface
 
+  interface
+    subroutine gr_amrexGetGeom(geom)
+      use amrex_geometry_module,     ONLY : amrex_geometry
+      implicit none
+      type(amrex_geometry), intent(inout) :: geom(:)
+    end subroutine gr_amrexGetGeom
+  end interface
+
+  interface
+    subroutine gr_amrexGetBa(ba)
+      use amrex_boxarray_module,     ONLY : amrex_boxarray
+      implicit none
+      type(amrex_boxarray), intent(inout) :: ba(:)
+    end subroutine gr_amrexGetBa
+  end interface
+
+  interface
+    subroutine gr_amrexGetDm(dm)
+      use amrex_distromap_module,     ONLY : amrex_distromap
+      implicit none
+      type(amrex_distromap), intent(inout) :: dm(:)
+    end subroutine gr_amrexGetDm
+  end interface
+
 end Module gr_amrexLsInterface
