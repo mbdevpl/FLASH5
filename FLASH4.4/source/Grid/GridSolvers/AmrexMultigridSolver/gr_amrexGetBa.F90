@@ -26,8 +26,9 @@
 
 subroutine gr_amrexGetBa(ba)
       use amrex_boxarray_module,     ONLY : amrex_boxarray
+      use gr_physicalMultifabs, ONLY : unk
       implicit none
-!       type(amrex_boxarray), allocatable,  :: gr_amrexLs_ba(:)
       type(amrex_boxarray), intent(inout) :: ba(:)
-  return
+      ba=unk%ba
+      return
 end subroutine gr_amrexGetBa
