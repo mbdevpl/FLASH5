@@ -67,6 +67,16 @@ subroutine gr_amrexLsSolvePoissonUnk ()
           call poisson % set_level_bc(ilev, unk(ilev))  !!Not sure if this is correct because unk multifab has other vars
        end do
 
+       call amrex_multigrid_build(multigrid, poisson)
+       call multigrid % set_verbose(gr_amrexLs_verbose)
+       call multigrid % set_cg_verbose(gr_amrexLs_cg_verbose)
+       call multigrid % set_max_iter(gr_amrexLs_max_iter)
+       call multigrid % set_max_fmg_iter(gr_amrexLs_max_fmg_iter)
+
+       print*, "calling multigrid solve, maxlev", maxLevel
+!        err = multigrid % solve(gr_amrexLs_solution, gr_amrexLs_rhs, 1.e-10_amrex_real, 0.0_amrex_real)
+        print*, err
+       call amrex_multigrid_destroy(multigrid)
        call amrex_poisson_destroy(poisson)
        
   call Timers_stop("gr_amrexLsInitPoissonUnk")
