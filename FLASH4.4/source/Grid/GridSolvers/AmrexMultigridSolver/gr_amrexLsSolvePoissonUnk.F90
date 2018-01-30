@@ -61,6 +61,11 @@ subroutine gr_amrexLsSolvePoissonUnk ()
           call poisson % set_domain_bc([amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic], &
                &                       [amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic])
 
+       print* , "Refinement level max",maxLevel
+       do ilev = 0, maxLevel
+          ! solution multifab's ghost cells at physical boundaries have been set to bc values.
+          call poisson % set_level_bc(ilev, unk(ilev))  !!Not sure if this is correct because unk multifab has other vars
+       end do
 
        call amrex_poisson_destroy(poisson)
        
