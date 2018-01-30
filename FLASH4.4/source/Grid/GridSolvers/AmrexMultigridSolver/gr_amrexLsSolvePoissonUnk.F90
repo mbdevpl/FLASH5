@@ -41,5 +41,5 @@ subroutine gr_amrexLsSolvePoissonUnk ()
   call Timers_start("gr_amrexLsInitPoissonUnk")
   
 
-  call Timers_end("gr_amrexLsInitPoissonUnk")
+  call Timers_stop("gr_amrexLsInitPoissonUnk")
 end subroutine gr_amrexLsSolvePoissonUnk
