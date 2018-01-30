@@ -43,14 +43,16 @@ subroutine gr_amrexLsSolvePoissonUnk ()
   
     type(amrex_poisson) :: poisson
     type(amrex_multigrid) :: multigrid
-    integer :: ilev
+    integer :: ilev, maxLevel
     real(amrex_real) :: err
 #include "Flash.h"
 #include "constants.h"   
   
   call Timers_start("gr_amrexLsInitPoissonUnk")
 !   Build poisson object with the geometry amrex_geom, boxarray unk%ba  and distromap unk%dm
-       call amrex_poisson_build(poisson, amrex_geom(0:amrex_get_finest_level()), unk%ba, unk%dm, &
+       maxLevel = amrex_get_finest_level() !! TODO :: Check with Jared if this is the best wat to get max level of current 
+                                                                   !! grid. There is likely a flash ssubroutine for same Grid_getMaxRefinement?
+       call amrex_poisson_build(poisson, amrex_geom(0:maxLevel), unk%ba, unk%dm, &
             metric_term=.false., agglomeration=gr_amrexLs_agglomeration, consolidation=gr_amrexLs_consolidation)
        
        call poisson % set_maxorder(gr_amrexLs_linop_maxorder)
