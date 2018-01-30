@@ -43,6 +43,12 @@ Module gr_amrexLsInterface
     end interface
 
     interface
+    subroutine gr_amrexLsSolvePoissonUnk ()
+        implicit none
+    end subroutine gr_amrexLsSolvePoissonUnk
+    end interface
+
+    interface
     subroutine gr_amrexLsInitGeom ()
         implicit none
     end subroutine gr_amrexLsInitGeom
