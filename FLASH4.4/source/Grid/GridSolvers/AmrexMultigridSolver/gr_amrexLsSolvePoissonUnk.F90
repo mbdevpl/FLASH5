@@ -57,16 +57,16 @@ subroutine gr_amrexLsSolvePoissonUnk ()
      maxLevel = amrex_get_finest_level() !! TODO :: Check with Jared if this is the best wat to get max level of current 
                                                                    !! grid. There is likely a flash ssubroutine for same Grid_getMaxRefinement?
 !   Allocate space for multifab array storing phi (solution) and rhs
-    allocate(solution(0:amrex_max_level))
-    allocate(rhs(0:amrex_max_level))
+    allocate(solution(0:maxLevel))
+    allocate(rhs(0:maxLevel))
 !     Create alias from multifab unk to rhs and solution with respective components in unk
-    do ilev = 0, amrex_max_level
+    do ilev = 0, maxLevel
         call amrex_multifab_build_alias(solution(ilev), unk(ilev), PHI_VAR,1)
         call amrex_multifab_build_alias(rhs(ilev), unk(ilev), DENS_VAR,1)
         call solution(ilev)%setVal(0.0_amrex_real)
     end do
 !   Build poisson object with the geometry amrex_geom, boxarray unk%ba  and distromap unk%dm
-       call amrex_poisson_build(poisson, amrex_geom(0:maxLevel), unk%ba, unk%dm, &
+       call amrex_poisson_build(poisson, amrex_geom(0:maxLevel), rhs%ba, rhs%dm, &
             metric_term=.false., agglomeration=gr_amrexLs_agglomeration, consolidation=gr_amrexLs_consolidation)
        
        call poisson % set_maxorder(gr_amrexLs_linop_maxorder)
@@ -78,7 +78,7 @@ subroutine gr_amrexLsSolvePoissonUnk ()
        print* , "Refinement level max",maxLevel
        do ilev = 0, maxLevel
           ! solution multifab's ghost cells at physical boundaries have been set to bc values.
-          call poisson % set_level_bc(ilev, unk(ilev))  !!Not sure if this is correct because unk multifab has other vars
+          call poisson % set_level_bc(ilev, solution(ilev))  !!Not sure if this is correct because unk multifab has other vars
        end do
 
        call amrex_multigrid_build(multigrid, poisson)
@@ -88,10 +88,10 @@ subroutine gr_amrexLsSolvePoissonUnk ()
        call multigrid % set_max_fmg_iter(gr_amrexLs_max_fmg_iter)
 
        print*, "calling multigrid solve, maxlev", maxLevel
-!        err = multigrid % solve(gr_amrexLs_solution, gr_amrexLs_rhs, 1.e-10_amrex_real, 0.0_amrex_real)
+       err = multigrid % solve(solution, rhs, 1.e-10_amrex_real, 0.0_amrex_real)
         print*, err
 !      !!Finalize objects
-        do ilev = 0, amrex_max_level
+        do ilev = 0, maxLevel
             call amrex_multifab_destroy(solution(ilev))
             call amrex_multifab_destroy(rhs(ilev))
         end do
