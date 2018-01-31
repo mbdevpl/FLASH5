@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/Grid_getSingleCellVol
+!!****if* source/Grid/GridMain/AMR/paramesh/Grid_getSingleCellVol
 !!
 !! NAME
 !!  Grid_getSingleCellVol

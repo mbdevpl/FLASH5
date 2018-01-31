@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_getCellCoords
+!!****if* source/Grid/GridMain/Grid_getCellCoords
 !!
 !! NAME
 !!  Grid_getCellCoords
