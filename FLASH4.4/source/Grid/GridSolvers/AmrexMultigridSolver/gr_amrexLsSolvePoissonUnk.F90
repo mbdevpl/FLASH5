@@ -32,12 +32,14 @@ subroutine gr_amrexLsSolvePoissonUnk ()
   use amrex_multigrid_module, ONLY : amrex_multigrid, amrex_multigrid_build, amrex_multigrid_destroy
   use amrex_poisson_module, ONLY : amrex_poisson, amrex_poisson_build, amrex_poisson_destroy
   use amrex_lo_bctypes_module, ONLY : amrex_lo_periodic
-  use amrex_amr_module, ONLY : amrex_geom, amrex_get_finest_level
+  use amrex_amr_module, ONLY : amrex_geom, amrex_get_finest_level, amrex_max_level
   use amrex_fort_module,     ONLY : amrex_real
   use gr_amrexLsData, ONLY : gr_amrexLs_agglomeration, gr_amrexLs_consolidation, &
                                     gr_amrexLs_linop_maxorder, gr_amrexLs_verbose, gr_amrexLs_cg_verbose, &
                                     gr_amrexLs_max_iter, gr_amrexLs_max_fmg_iter
   use gr_physicalMultifabs,  ONLY : unk
+  !!
+  use amrex_multifab_module, ONLY : amrex_multifab, amrex_multifab_destroy, amrex_multifab_build_alias
 
   implicit none
   
@@ -45,13 +47,25 @@ subroutine gr_amrexLsSolvePoissonUnk ()
     type(amrex_multigrid) :: multigrid
     integer :: ilev, maxLevel
     real(amrex_real) :: err
+    type(amrex_multifab), allocatable, save :: solution(:)
+    type(amrex_multifab), allocatable, save :: rhs(:)
+
 #include "Flash.h"
 #include "constants.h"   
   
   call Timers_start("gr_amrexLsInitPoissonUnk")
-!   Build poisson object with the geometry amrex_geom, boxarray unk%ba  and distromap unk%dm
-       maxLevel = amrex_get_finest_level() !! TODO :: Check with Jared if this is the best wat to get max level of current 
+     maxLevel = amrex_get_finest_level() !! TODO :: Check with Jared if this is the best wat to get max level of current 
                                                                    !! grid. There is likely a flash ssubroutine for same Grid_getMaxRefinement?
+!   Allocate space for multifab array storing phi (solution) and rhs
+    allocate(solution(0:amrex_max_level))
+    allocate(rhs(0:amrex_max_level))
+!     Create alias from multifab unk to rhs and solution with respective components in unk
+    do ilev = 0, amrex_max_level
+        call amrex_multifab_build_alias(solution(ilev), unk(ilev), PHI_VAR,1)
+        call amrex_multifab_build_alias(rhs(ilev), unk(ilev), DENS_VAR,1)
+        call solution(ilev)%setVal(0.0_amrex_real)
+    end do
+!   Build poisson object with the geometry amrex_geom, boxarray unk%ba  and distromap unk%dm
        call amrex_poisson_build(poisson, amrex_geom(0:maxLevel), unk%ba, unk%dm, &
             metric_term=.false., agglomeration=gr_amrexLs_agglomeration, consolidation=gr_amrexLs_consolidation)
        
@@ -76,6 +90,11 @@ subroutine gr_amrexLsSolvePoissonUnk ()
        print*, "calling multigrid solve, maxlev", maxLevel
 !        err = multigrid % solve(gr_amrexLs_solution, gr_amrexLs_rhs, 1.e-10_amrex_real, 0.0_amrex_real)
         print*, err
+!      !!Finalize objects
+        do ilev = 0, amrex_max_level
+            call amrex_multifab_destroy(solution(ilev))
+            call amrex_multifab_destroy(rhs(ilev))
+        end do
        call amrex_multigrid_destroy(multigrid)
        call amrex_poisson_destroy(poisson)
        
