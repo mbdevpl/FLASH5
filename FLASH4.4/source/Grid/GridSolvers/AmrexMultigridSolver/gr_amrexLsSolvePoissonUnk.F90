@@ -38,6 +38,7 @@
 !! NOTES:
 !!  Currently, solver only works for GRID_PDE_BND_PERIODIC i.e. periodic boundary conditions
 !!  Other BCs to be implemented later
+!!  Relative and absolute tolerences for multigrid sovle - 1.e-10, 0.0
 !!
 !!***
 
@@ -82,7 +83,7 @@ subroutine gr_amrexLsSolvePoissonUnk (iSoln, iSrc, bcTypes, bcValues, poisfact)
 !   Allocate space for multifab array storing phi (solution) and rhs
     allocate(solution(0:maxLevel))
     allocate(rhs(0:maxLevel))
-    print*,"iSoln, iSrc", iSoln, iSrc
+
 !     Create alias from multifab unk to rhs and solution with respective components in unk
     do ilev = 0, maxLevel
         call amrex_multifab_build_alias(solution(ilev), unk(ilev), iSoln, 1)
@@ -103,10 +104,9 @@ subroutine gr_amrexLsSolvePoissonUnk (iSoln, iSrc, bcTypes, bcValues, poisfact)
        case default
           call Driver_abortFlash('Only periodic BC implemented for AMReX poisson solver!')
        end select
-       print* , "Refinement level max",maxLevel
        do ilev = 0, maxLevel
-          ! solution multifab's ghost cells at physical boundaries have been set to bc values.
-          call poisson % set_level_bc(ilev, solution(ilev))  !!Not sure if this is correct because unk multifab has other vars
+! solution multifab's ghost cells at physical boundaries have been set to bc values.
+          call poisson % set_level_bc(ilev, solution(ilev))
        end do
 
        call amrex_multigrid_build(multigrid, poisson)
@@ -115,7 +115,7 @@ subroutine gr_amrexLsSolvePoissonUnk (iSoln, iSrc, bcTypes, bcValues, poisfact)
        call multigrid % set_max_iter(gr_amrexLs_max_iter)
        call multigrid % set_max_fmg_iter(gr_amrexLs_max_fmg_iter)
 
-       print*, "calling multigrid solve, maxlev", maxLevel
+       print*, "Calling multigrid solve, maxlev", maxLevel
        err = multigrid % solve(solution, rhs, 1.e-10_amrex_real, 0.0_amrex_real)
         print*, err
 !      !!Finalize objects
