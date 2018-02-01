@@ -196,8 +196,8 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   !call outtotecplot(gr_meshMe,0.0,1.,1,0,0.0,blkList,blkCount,0)
 
 
-!   call gr_findMean(ASOL_VAR,2,.false.,meanASOL)
-!   call gr_findMean(PFFT_VAR,2,.false.,meanPFFT)
+   call gr_findMean(ASOL_VAR,2,.false.,meanASOL)
+   call gr_findMean(PFFT_VAR,2,.false.,meanPFFT)
 
   !Unit test gives a mean analytical solution of zero.  Ensure the absolute
   !value of the mean numerical solution is between 0 and the tolerance value.
