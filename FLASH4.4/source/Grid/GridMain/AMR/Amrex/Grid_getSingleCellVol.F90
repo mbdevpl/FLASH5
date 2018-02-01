@@ -104,7 +104,8 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
   call Grid_getGeometry(geometry)
   call Grid_getDeltas(blockDesc%level, del)
 
-  if ((geometry /= CARTESIAN) .AND. (NDIM /= 2)) then
+  if (     ((geometry /= CARTESIAN) .AND. (geometry /= CYLINDRICAL)) &
+      .OR. (NDIM /= 2) ) then
     call Driver_abortFlash("[Grid_getSingleCellVol] Not tested yet")
   end if
 
