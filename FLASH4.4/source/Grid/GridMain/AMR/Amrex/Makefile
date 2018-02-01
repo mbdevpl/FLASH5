@@ -14,7 +14,8 @@ Grid += gr_amrexInterface.o \
         gr_splitFabAtBoundary.o \
         gr_copyFabInteriorToRegion.o \
         gr_copyGuardcellRegionToFab.o \
-        gr_writeData.o
+        gr_writeData.o \
+        block_1lev_iterator.o \
 
 Grid += gr_amrextInterface.o
 

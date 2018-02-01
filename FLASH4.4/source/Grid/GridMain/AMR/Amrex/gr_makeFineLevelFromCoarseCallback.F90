@@ -1,7 +1,3 @@
-#ifdef DEBUG_ALL
-#define DEBUG_GRID
-#endif
-
 #include "constants.h"
 #include "Flash.h"
 
@@ -24,6 +20,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz
+    use Driver_interface,          ONLY : Driver_abortFlash
 
     implicit none
 
@@ -37,6 +34,9 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     type(amrex_mfiter)    :: mfi
 
     integer :: nFab
+
+    call Driver_abortFlash("[gr_makeFileLevelFromCoarseCallback] " // &
+                           "Callback has never been tested")
 
     ba = pba
     dm = pdm
@@ -62,6 +62,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                          UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                          lo_bc_amrex, hi_bc_amrex) 
+
+    ! DEV: FIXME Should we do an EoS run on interiors and GC here?
 
     nFab = 0
     call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)

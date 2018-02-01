@@ -315,9 +315,6 @@ subroutine Grid_init()
   call RuntimeParameters_get("eosModeInit", eosModeString)
   call RuntimeParameters_mapStrToInt(eosModeString, gr_eosModeInit)
 
-  ! DEV: FIXME Leave commented for now to see if it is being set
-  gr_eosModeNow = gr_eosModeInit ! may change after initialization is done
-
 !  call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
   gr_justExchangedGC = .FALSE.
 
