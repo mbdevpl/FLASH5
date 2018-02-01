@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_getCellCoords
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_getCellCoords
 !!
 !! NAME
 !!  Grid_getCellCoords
@@ -17,6 +17,7 @@
 !!
 !!    This subroutine is an accessor function that gets the coordinates of
 !!    the cells in a given block.
+!!
 !!    Coordinates are retrieved one axis at a time, 
 !!    meaning you can get the i, j, _or_ k coordinates with one call.  
 !!    If you want all the coordinates, all axes, you
@@ -25,8 +26,8 @@
 !!    It is possible to get coordinates for CENTER, only LEFT_EDGE,
 !!    only RIGHT_EDGE or for all FACES along a dimension.
 !!
-!!
-!!
+!!    Note that radial coordinates obtained for guardcells beyond the r=0
+!!    boundary will be negative.
 !!
 !! ARGUMENTS
 !!            
@@ -67,7 +68,6 @@
 !!
 !!   #include "constants.h"
 !!   #include "Flash.h"
-!!
 !!      
 !!      integer :: coordSize
 !!      integer :: xCoord(coordSize) !sized to be number of coords returned
@@ -83,7 +83,6 @@
 !! 
 !!   #include "constants.h"
 !!   #include "Flash.h"
-!!
 !!      
 !!      integer :: coordSize
 !!      integer :: xCoord(coordSize) !sized to be number of coords returned
@@ -93,13 +92,6 @@
 !!          call Grid_getCellCoords(IAXIS, cid, stride, FACES, .true., xCoord, coordSize) 
 !!
 !!     end do    
-!!
-!!
-!!  NOTES
-!!   variables that start with "gr_" are variables of Grid unit scope
-!!   and are stored in the FORTRAN module Grid_data. Variables that are not
-!!   starting with gr_ are local variables or arguments passed to the 
-!!   routine.
 !!
 !!***
 
@@ -112,6 +104,7 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
   use amrex_geometry_module, ONLY : amrex_problo
 
   use Driver_interface,      ONLY : Driver_abortFlash
+  use Grid_interface,        ONLY : Grid_getGeometry
   use block_metadata,        ONLY : block_metadata_t
 
 #include "constants.h"
@@ -126,9 +119,11 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
   integer,                intent(in)  :: size
   real,                   intent(out) :: coordinates(size)
 
-  real    :: shift = 0.0d0
-  real    :: x = 0.0d0
-  integer :: i = 0
+  real    :: shift
+  real    :: x
+  integer :: i
+
+  integer :: geometry
 
 #ifdef DEBUG_GRID
   print*,' get coordinates', axis, edge, guardcell, size
@@ -136,41 +131,40 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
 !  if((blockID<1).or.(blockID>MAXBLOCKS)) then
 !     call Driver_abortFlash("Grid_getCellCoords :invalid blockID ")
 !  end if
-  if((edge/=LEFT_EDGE) .and. (edge/=RIGHT_EDGE) .and. (edge/=CENTER)) then
-     call Driver_abortFlash("Get Coords : invalid edge specification, must be LEFT_EDGE &
-          RIGHT_EDGE, or CENTER")
-  end if
 
   if((axis/=IAXIS) .and. (axis/=JAXIS) .and. (axis/=KAXIS)) then
      call Driver_abortFlash("Get Coords : invalid axis, must be IAXIS, JAXIS or KAXIS ")
   end if
 #endif
-
+  
   associate (x0   => amrex_problo(axis), &
              x_lo => block%limits(LOW, axis), &
              dx   => amrex_geom(block%level - 1)%dx(axis))
     ! x_lo is 1-based cell-index of lower-left cell in block 
 
-    shift = 0.0d0
-    if (edge == CENTER) then
-      shift = 0.5d0
+    if      (edge == LEFT_EDGE) then
+      shift = 0.0
+    else if (edge == CENTER) then
+      shift = 0.5
     else if (edge == RIGHT_EDGE) then
-      shift = 1.0d0
+      shift = 1.0
     else if (edge == FACES) then
-      call Driver_abortFlash("[Grid_getCellCoords] - FACES not handled yet")
+      call Driver_abortFlash("[Grid_getCellCoords] FACES not handled yet")
+    else
+      call Driver_abortFlash('[Grid_getCellCoods] invalid edge')
     end if
 
     ! First index should be given in 1-based global indices adjusted according
     ! to edge.  However, make 0-based to simplify calculation in loop.
-    x = x_lo + shift - 1
+    x = x_lo + shift - 1.0
     if (guardcell) then
       x = x - NGUARD
     end if
 
-    coordinates(:) = 0.0d0
+    coordinates(:) = 0.0
     do i = 1, size
         coordinates(i) = x0 + x*dx
-        x = x + 1.0d0
+        x = x + 1.0
     end do
   end associate
 
