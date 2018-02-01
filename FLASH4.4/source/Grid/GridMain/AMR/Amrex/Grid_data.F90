@@ -62,6 +62,10 @@ Module Grid_data
 
   integer, save :: gr_minRefine
 
+  ! This is variable is for purely internal use with AMReX callbacks
+  ! Do *not* use this directly
+  logical, save :: gr_amrexDidRefinement = .FALSE.
+
 !  integer,save,dimension(MDIM)::gr_bndOrder
 !  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars
   integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vartypes
@@ -79,7 +83,6 @@ Module Grid_data
 
   integer, save :: gr_eosMode
   integer, save :: gr_eosModeInit
-  integer, save :: gr_eosModeNow
 !  integer, save :: gr_oneRefLev=1 !! To be used with the multigrid
 !  logical ,save :: gr_convertToConsvdInMeshInterp
 !  logical ,save :: gr_earlyBlockDistAdjustment

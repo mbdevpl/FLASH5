@@ -1,40 +1,53 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_updateRefinement
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_updateRefinement
 !!
 !! NAME
 !!
 !!  Grid_updateRefinement
 !!
-!!
 !! SYNOPSIS
 !!  
-!!  call Grid_updateRefinement(integer(IN) :: nstep,
-!!                             real(IN)    :: time,
-!!                    OPTIONAL,logical(OUT):: gridChanged)
-!!
+!!  call Grid_updateRefinement(integer(IN)            :: nstep,
+!!                             real(IN)               :: time,
+!!                             logical(OUT), optional :: gridChanged)
 !!
 !! DESCRIPTION
 !!
-!!  Apply the user-defined refinment critera to determine which blocks need 
-!!  to be refined and derefined.  Once the blocks are marked, call 
-!!  gr_updateGridRefinement to carry out the rest of the routine.
-!!  The internal routine does the refinements (amr_refine_derefine)
-!!  During this
-!!  stage, the blocks are redistributed across processors (if needed).  
-!!  After the refinement, the newly created child blocks are filled via
-!!  prolongation from the coarse parents.  This prolongation step can use
-!!  prolongation routines from paramesh, or defined by the user
-!!  Once the prolongation is done, the guardcells are filled.  Finally, the
-!!  EOS is called on the block interiors to make them thermodynamically
-!!  consistent. The internal routine also calls Particles_updateRefinement to
-!!  move the particles to the correct block after the grid refines.
+!!  If the indicated step qualifies as a refinement step, then this routine
+!!    (1) restricts data from leaf blocks down to all ancestors,
+!!    (2) fills all guardcells at all levels,
+!!    (3) runs EoS on all interiors and all guardcells, and
+!!    (4) triggers AMReX to execute grid refinement.
 !!
+!!  It is assumed that the data in all leaf block interiors is correct and that
+!!  EoS has been run for these.  No assumptions are made about the quality of
+!!  guardcell data nor ancestor blocks.
 !!
+!!  Note that all EoS runs are done in the mode specified by the eosMode
+!!  runtime parameter.
+!!
+!!  Note also that a step qualifies as a refinement step if the given step
+!!  number is a multiple of the nrefs runtime parameter.
+!!
+!!  AMReX has FLASH identify blocks requiring refinement via the 
+!!  gr_markRefineDerefineCallback routine.
+!!
+!!  After the refinement, AMReX fills cell-centered data in newly-created child
+!!  blocks via conservative linear interpolation from the coarse parents.
+!!  This step also includes filling guardcells.  Finally, the
+!!  EoS is called on the block interiors to make them thermodynamically
+!!  consistent. 
+!!
+!!  Presently, this routine does not alter any particle information.
 !!
 !! ARGUMENTS
 !!
-!!  nstep : current step number
-!!  time  : current evolution time
-!!  gridChanged : returns TRUE if grid may actually have changed.
+!!  nstep - current step number
+!!  time  - current evolution time
+!!  gridChanged - returns TRUE if grid may actually have changed.
+!!
+!! SEE ALSO
+!!  Grid_fillGuardCells
+!!  gr_markRefineDerefineCallback
 !!
 !!***
 
@@ -48,8 +61,19 @@
 subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use amrex_amrcore_module, ONLY : amrex_regrid
 
-  use Grid_interface,       ONLY : Grid_fillGuardCells
-  use Grid_data,            ONLY : gr_nrefs, gr_maxRefine
+  use Grid_interface,       ONLY : Grid_fillGuardCells, &
+                                   Grid_getBlkIterator, &
+                                   Grid_releaseBlkIterator, &
+                                   Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_data,            ONLY : gr_nrefs, &
+!                                   gr_maxRefine, &
+                                   gr_refine_var, &
+                                   gr_numRefineVars, &
+                                   gr_eosMode, &
+                                   gr_amrexDidRefinement
+  use block_iterator,       ONLY : block_iterator_t
+  use block_metadata,       ONLY : block_metadata_t
+  use Eos_interface,        ONLY : Eos_wrapped
   use Timers_interface,     ONLY : Timers_start, Timers_stop
  
   implicit none
@@ -57,6 +81,18 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   integer, intent(in)            :: nstep
   real,    intent(in)            :: time
   logical, intent(out), OPTIONAL :: gridChanged
+
+  integer, parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
+
+  logical, save :: gcMaskArgsLogged = .FALSE.
+
+  logical :: gcMask(maskSize)
+  integer :: iref
+  integer :: i
+
+  type(block_iterator_t)         :: itor
+  type(block_metadata_t)         :: blockDesc
+  real,                  pointer :: solnData(:, :, :, :) => null()
 
   ! We only consider refinements every nrefs timesteps.
   if (mod(nstep, gr_nrefs) == 0) then
@@ -81,18 +117,47 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 !                                       gr_lrefineCenterK)
 !    end if
 
-     call Timers_start("Grid_updateRefinement")
+     gcMask = .FALSE.
+     do i = 1, gr_numRefineVars
+        iref = gr_refine_var(i)
+        gcMask(iref) = (iref > 0)
+     end do
+     gcMask(NUNK_VARS+1:min(maskSize,NUNK_VARS+NDIM*NFACE_VARS)) = .TRUE.
 
-     ! AMReX uses 0-based level index set
-     call Grid_fillGuardCells(CENTER, ALLDIR)
+     call Timers_start("Grid_updateRefinement")
+     call Grid_fillGuardCells(CENTER, ALLDIR, doEos=.FALSE.)
+
+     ! Run EoS on non-leaf interiors/GC to get best possible 
+     ! refinement decisions
+     ! DEV: TODO This should be over all ANCESTOR blocks as the leaves were
+     ! given to us with EoS run.
+     ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
+     ! influence refinement decisions.  If no, then we need only apply EoS to
+     ! parent blocks.
+     call Grid_getBlkIterator(itor, ALL_BLKS)
+     do while (itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+
+        call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+        ! DEV: TODO Add masking as in Grid_fillGuardCell?
+        call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
+        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+
+        call itor%next()
+     end do
+     call Grid_releaseBlkIterator(itor)
+
+     gr_amrexDidRefinement = .FALSE.
      call amrex_regrid(0, time)
- 
      call Timers_stop("Grid_updateRefinement")
 
+     ! Only log on the first call
+     gcMaskArgsLogged = .TRUE.
+
+     ! DEV: TODO What happens with particles here?
+
      if (present(gridChanged)) then
-        ! DEV: FIXME: Shouldn't this actually check if AMReX
-        ! decided to regrid based on the contents of the physical quantities?
-        gridChanged = .TRUE.
+        gridChanged = gr_amrexDidRefinement
      end if
   else
      if (present(gridChanged)) then

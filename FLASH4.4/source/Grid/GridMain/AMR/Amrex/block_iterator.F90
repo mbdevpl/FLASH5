@@ -1,29 +1,55 @@
 !!****ih* source/Grid/GridMain/AMR/Amrex/block_iterator
 !!
-!! This module is a facade pattern that maps the AMReX Fortran iterator onto 
-!! the interface required presently by FLASH.
+!! NAME
+!!  block_iterator
 !!
-!! Ideally, we will be able to use the AMReX iterator directly in the code 
-!! and client code will gain access to it through implementation-specific 
-!! code like Grid_getBlkIterator.
+!! DESCRIPTION
+!!  A class that defines a full-featured iterator for sequentially accessing
+!!  blocks or tiles in the physical domain.  At initialization, the client code
+!!  informs the initialization routine what blocks/tiles need to be accessed by
+!!  the client code via the iterator.
+!!
+!!  Please refer to the documentation of Grid_getBlkIterator for more
+!!  information regarding iterator initialization.
+!!
+!! EXAMPLE
+!!  The following example demonstrates looping over all leaf blocks defined on
+!!  the coarsest level.
+!!
+!!  type(block_metadata_t) :: blockDesc 
+!!
+!!  call Grid_getBlkIterator(itor, LEAF, level=1)
+!!  do while (itor%is_valid())
+!!    call itor%blkMetaData(blockDesc)
+!!
+!!    call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+!!                          ...
+!!      work with cell-centered data of current block
+!!                          ... 
+!!    call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+!!
+!!    call itor%next()
+!!  end do
+!!  call Grid_releaseBlkIterator(itor)
+!!
+!! SEE ALSO
+!!  Grid_getBlkIterator
+!!  Grid_releaseBlkIterator
+!!  block_descriptor_t
 !!
 !!****
 
-!! defines IMPURE_ELEMENTAL:
 #include "FortranLangFeatures.fh"
+#include "constants.h"
+#include "Flash.h"
 
 module block_iterator
 
-    use amrex_octree_module, ONLY : amrex_octree_iter, &
-                                    amrex_octree_iter_build, &
-                                    amrex_octree_iter_destroy
+    use block_1lev_iterator, ONLY : block_1lev_iterator_t
 
     implicit none
 
     private
-
-#include "constants.h"
-#include "Flash.h"
 
     public :: build_iterator, destroy_iterator
 
@@ -32,17 +58,28 @@ module block_iterator
     !! NAME
     !!  block_iterator_t
     !!
+    !! DESCRIPTION
+    !!  This class maintains a set of single-level iterators, which are used
+    !!  internally to walk blocks/tiles.
+    !!
+    !!  NOTE: The three level integers as well as the index of li use FLASH's
+    !!        1-based level indexing.
     !!****
     type, public :: block_iterator_t
-        type(amrex_octree_iter) :: oti
-        integer                 :: level    = INVALID_LEVEL
-        logical                 :: is_itor_valid = .FALSE.
+        type(block_1lev_iterator_t), private, allocatable :: li(:)
+        integer,                     private              :: first_level = INVALID_LEVEL
+        integer,                     private              :: last_level  = INVALID_LEVEL
+        integer,                     private              :: level       = INVALID_LEVEL
+        logical,                     private              :: isValid     = .FALSE.
     contains
         procedure, public :: is_valid
-        procedure, public :: first
         procedure, public :: next
         procedure, public :: blkMetaData
     end type block_iterator_t
+
+    interface build_iterator
+        procedure :: init_iterator
+    end interface build_iterator
 
 contains
 
@@ -54,7 +91,7 @@ contains
     !! SYNOPOSIS
     !!  build_iterator(block_iterator_t(OUT) :: itor,
     !!                 integer(IN)           :: nodetype,
-    !!                 integer(IN), optional :: level,
+    !!                 integer(IN), optional :: level, 
     !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
@@ -70,7 +107,8 @@ contains
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
     !!             iterate only over blocks/tiles located at this level of
-    !!             refinement.
+    !!             refinement.  Note that the level value must be given with
+    !!             respect to FLASH's 1-based level index scheme.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
     !!             walk across all associated blocks on a tile-by-tile basis *if*
     !!             the implementation supports this feature.  If a value is not
@@ -79,36 +117,50 @@ contains
     !!
     !! SEE ALSO
     !!  constants.h
-    !!  Grid_getBlkIterator.F90
-    !!  Grid_releaseBlkIterator.F90
     !!****
-    subroutine build_iterator(itor, nodetype, level, tiling)
-        use Driver_interface, ONLY : Driver_abortFlash
+    subroutine init_iterator(itor, nodetype, level, tiling)
+      use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
-        type(block_iterator_t), intent(OUT)          :: itor
-        integer,                intent(IN)           :: nodetype
-        integer,                intent(IN), optional :: level
-        logical,                intent(IN), optional :: tiling
+      type(block_iterator_t), intent(OUT)            :: itor
+      integer,                intent(IN)             :: nodetype
+      integer,                intent(IN), optional   :: level
+      logical,                intent(IN), optional   :: tiling
 
+      integer :: lev
+      integer :: finest_level
+      logical :: is_lev_valid
+            
+      finest_level = amrex_get_finest_level() + 1
+
+      associate(first => itor%first_level, &
+                last  => itor%last_level)
         if (present(level)) then
-            itor%level = level
-        end if
+            ! Construct do nothing iterator if no blocks on level
+            if (level > finest_level) then
+                itor%isValid = .FALSE. 
+                RETURN
+            end if 
 
-        ! DEVNOTE: Presently ignore tiling optimization hint as the octree 
-        ! iterator does not have this capability.
-        if (present(tiling)) then
-            if (tiling) then
-                call Driver_abortFlash("[build_iterator] Tiling not yet implemented for AMReX")
+            first = level
+            last = level
+        else
+            first = 1
+            last = amrex_get_finest_level() + 1
+        end if
+        itor%level = first
+ 
+        allocate( itor%li(first : last) )
+
+        do lev=first, last
+            itor%li(lev) = block_1lev_iterator_t(nodetype, lev, tiling=tiling)
+            is_lev_valid = itor%li(lev)%is_valid()
+            if (is_lev_valid .AND. .NOT. itor%isValid) then
+               itor%isValid = .TRUE.
+               itor%level   = lev
             end if
-        end if
-
-        ! DEVNOTE: the AMReX iterator is not built based on nodetype.
-        ! It appears that we get leaves every time.
-
-        ! Initial iterator is not primed.  Advance to first compatible block.
-        call amrex_octree_iter_build(itor%oti)
-        call itor%next()
-    end subroutine build_iterator
+        end do
+      end associate
+    end subroutine init_iterator
 
     !!****im* block_iterator_t/destroy_iterator
     !!
@@ -116,39 +168,27 @@ contains
     !!  destroy_iterator
     !!
     !! SYNPOSIS
-    !!  destroy_iterator(block_iterator_t(INOUT) :: itor)
+    !!  Destroy given iterator
     !!
     !! DESCRIPTION
     !!  Clean-up block interator object at destruction
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
-        type(block_iterator_t), intent(INOUT) :: itor
+      type (block_iterator_t), intent(INOUT) :: itor
 
-        call amrex_octree_iter_destroy(itor%oti)
+      integer :: lev
+
+      if (allocated(itor%li)) then
+         do lev = itor%first_level, itor%last_level
+
+            call itor%li(lev)%destroy_iterator()
+
+         end do
+         deallocate(itor%li)
+      end if
+      itor%isValid = .FALSE.
     end subroutine destroy_iterator
-
-    !!****m* block_iterator_t/first
-    !!
-    !! NAME
-    !!  first
-    !!
-    !! SYNPOSIS
-    !!  call itor%first()
-    !!
-    !! DESCRIPTION
-    !!  Reset iterator to the initial block managed by process
-    !!
-    !!****
-    subroutine first(this)
-        class(block_iterator_t), intent(INOUT) :: this
-
-        ! reset to before first valid block
-        call this%oti%clear()   !method added to amrex_octree_iter - KW 2017-08-23
-        this%is_itor_valid = .FALSE.  !DEV: ??
-        ! Initial iterator is not primed.  Advance to first compatible block.
-        call this%next()
-    end subroutine first
 
     !!****m* block_iterator_t/is_valid
     !!
@@ -169,7 +209,7 @@ contains
         class(block_iterator_t), intent(IN) :: this
         logical :: ans
 
-        ans = this%is_itor_valid
+        ans = this%isValid
     end function is_valid
 
     !!****m* block_iterator_t/next
@@ -188,19 +228,21 @@ contains
     subroutine next(this)
         class(block_iterator_t), intent(INOUT) :: this
 
-        this%is_itor_valid = this%oti%next()
+        logical :: is_li_valid
 
-        if (this%level /= INVALID_LEVEL) then
-            ! Search for leaves on given level
-            do while (this%is_itor_valid)
-                ! oti has 0-based level indexing, while this has 1-based
-                if (this%oti%level() == (this%level - 1)) then
-                    exit
-                end if
+        associate(lev => this%level)
+            call this%li( lev )%next()
+            is_li_valid = this%li( lev )%is_valid()
 
-                this%is_itor_valid = this%oti%next()
+            ! Search for next allowable level that has blocks meeting our
+            ! criteria
+            do while ((lev .LT. this%last_level) .AND. (.NOT. is_li_valid))
+               lev = lev + 1
+               is_li_valid = this%li( lev )%is_valid()
             end do
-        end if
+
+            this%isValid = is_li_valid
+        end associate
     end subroutine next
 
     !!****m* block_iterator_t/blkMetaData
@@ -212,58 +254,42 @@ contains
     !!  call itor%blkMetaData(block_metadata_t(OUT) : block)
     !!
     !! DESCRIPTION
-    !!  Obtain meta data that characterizes the block currently set in the
+    !!  Obtain meta data that characterizes the block/tile currently set in the
     !!  iterator.
     !!
     !!****
     subroutine blkMetaData(this, blockDesc)
-        use amrex_box_module,     ONLY : amrex_box
-
-        use block_metadata,       ONLY : block_metadata_t
-        use gr_physicalMultifabs, ONLY : unk
+        use amrex_box_module, ONLY : amrex_box
+        use block_metadata,   ONLY : block_metadata_t
 
         class(block_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: blockDesc
 
-        integer         :: n_guards(MDIM) = 0
-        type(amrex_box) :: box
-   
-        box = this%oti%box()
+        type(amrex_box) :: box, fabbox
+       
+        box    = this%li( this%level )%tilebox()
+        fabbox = this%li( this%level )%fabbox()
 
-        ! Block descriptor provides FLASH-compliant 1-based level index set,
-        ! but AMReX uses 0-based index set.
-        blockDesc%level             = this%oti%level() + 1
-        blockDesc%grid_index        = this%oti%grid_index()
-        ! Block descriptor provides FLASH-compliant 1-based cell index set,
-        ! but AMReX uses 0-based index set.
+        blockDesc%grid_index = this%li( this%level )%grid_index()
+        blockDesc%level      = this%level
+        
+        ! FLASH uses 1-based spatial indices / AMReX uses 0-based
         blockDesc%limits(LOW,  :) = 1
         blockDesc%limits(HIGH, :) = 1
         blockDesc%limits(LOW,  1:NDIM) = box%lo(1:NDIM) + 1
         blockDesc%limits(HIGH, 1:NDIM) = box%hi(1:NDIM) + 1
-
-        ! DEVNOTE: KW says that box with GC available through newer AMReX
-        ! fortran interface.
-        n_guards(:) = 0
-        ! Multifab arrays are 0-based (AMReX) instead of 1-based(FLASH)
-        n_guards(1:NDIM) = unk(blockDesc%level-1)%nghost() 
-        blockDesc%limitsGC(LOW,  :) = 1 
+        blockDesc%limitsGC(LOW,  :) = 1
         blockDesc%limitsGC(HIGH, :) = 1
-        blockDesc%limitsGC(LOW,  1:NDIM) =   blockDesc%limits(LOW,  1:NDIM) &
-                                           - n_guards(1:NDIM)
-        blockDesc%limitsGC(HIGH, 1:NDIM) =   blockDesc%limits(HIGH, 1:NDIM) &
-                                           + n_guards(1:NDIM)
+        blockDesc%limitsGC(LOW,  1:NDIM) = fabbox%lo(1:NDIM) + 1
+        blockDesc%limitsGC(HIGH, 1:NDIM) = fabbox%hi(1:NDIM) + 1
 
-        blockDesc%localLimits(LOW,  :)      = 1
-        blockDesc%localLimits(HIGH, :)      = 1
-        blockDesc%localLimits(LOW,  1:NDIM) = NGUARD + 1
-        blockDesc%localLimits(HIGH, 1:NDIM) =   blockDesc%limits(HIGH, 1:NDIM) &
-                                              - blockDesc%limits(LOW,  1:NDIM) + NGUARD + 1
-        blockDesc%localLimitsGC(LOW,  :) = 1
-        blockDesc%localLimitsGC(HIGH, :) = 1
-        blockDesc%localLimitsGC(HIGH, 1:NDIM) =   blockDesc%limitsGC(HIGH,1:NDIM) &
-                                                - blockDesc%limitsGC(LOW, 1:NDIM) &
-                                                + 1
-
+        blockDesc%localLimits(LOW, :)    =   blockDesc%limits(LOW, :) &
+                                           - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimits(HIGH, :)   =   blockDesc%limits(HIGH, :) &
+                                           - blockDesc%limitsGC(LOW, :) + 1
+        blockDesc%localLimitsGC(LOW, :)  = 1
+        blockDesc%localLimitsGC(HIGH, :) =   blockDesc%limitsGC(HIGH, :) &
+                                           - blockDesc%limitsGC(LOW, :) + 1
     end subroutine blkMetaData
  
 end module block_iterator

@@ -137,28 +137,30 @@ module gr_amrexInterface
 
   interface
     subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, &
-                                          nVars, region)
+                                          scomp, ncomp, region)
       use amrex_fort_module, ONLY : wp => amrex_real
       implicit none
       real(wp), pointer, contiguous, intent(IN)    :: fab(:, :, :, :)
       integer,                       intent(IN)    :: face
       integer,                       intent(IN)    :: axis
       integer,                       intent(IN)    :: interior(LOW:HIGH, 1:MDIM)
-      integer,                       intent(IN)    :: nVars
+      integer,                       intent(IN)    :: scomp
+      integer,                       intent(IN)    :: ncomp
       real(wp), pointer, contiguous, intent(INOUT) :: region(:, :, :, :)
     end subroutine gr_copyFabInteriorToRegion
   end interface
  
   interface
     subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
-                                           nVars, fab)
+                                           scomp, ncomp, fab)
       use amrex_fort_module, ONLY : wp => amrex_real
       implicit none
       real(wp), intent(IN),    pointer, contiguous :: region(:, :, :, :)
       integer,  intent(IN)                         :: face
       integer,  intent(IN)                         :: axis
       integer,  intent(IN)                         :: guardcells(LOW:HIGH, 1:MDIM)
-      integer,  intent(IN)                         :: nVars
+      integer,                       intent(IN)    :: scomp
+      integer,                       intent(IN)    :: ncomp
       real(wp), intent(INOUT), pointer, contiguous :: fab(:, :, :, :)
     end subroutine gr_copyGuardcellRegionToFab
   end interface
