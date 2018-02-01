@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/Chombo/Grid_getSingleCellCoords
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_getSingleCellCoords
 !!
 !! NAME
 !!  Grid_getSingleCellCoords
@@ -15,6 +15,8 @@
 !!
 !!  Returns the coordinates of a single cell of a given block.
 !!
+!!  Note that radial coordinates obtained for guardcells beyond the r=0
+!!  boundary will be negative.
 !!
 !! ARGUMENTS
 !!
@@ -72,6 +74,8 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
   use amrex_amrcore_module,  ONLY : amrex_geom
   use amrex_geometry_module, ONLY : amrex_problo
 
+  use Driver_interface,      ONLY : Driver_abortFlash
+  use Grid_interface,        ONLY : Grid_getGeometry
   use block_metadata,        ONLY : block_metadata_t
 
   implicit none
@@ -82,15 +86,13 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
   integer, intent(in)  :: beginCount
   real,    intent(out) :: coords(MDIM)
 
-  real    :: ind_t(1:MDIM) = 0.0d0
-  real    :: shift = 0.0d0
-  integer :: axis = 1
+  real    :: ind_t(1:MDIM)
+  real    :: shift
+  integer :: axis
+  integer :: geometry
 
 #ifdef DEBUG_GRID
   print*,' inside Grid_getSingleCellCoords', ind, edge, beginCount
-  if ((edge /= LEFT_EDGE) .and. (edge /= CENTER) .and. (edge /= RIGHT_EDGE)) then
-    call Driver_abortFlash('Grid_getSingleCellCoods : invalid edge')
-  end if
   if(beginCount == EXTERIOR) then
      if((ind(IAXIS)<GRID_ILO_GC).or.(ind(IAXIS)>GRID_IHI_GC))&
           call Driver_abortFlash('GetSingleCellCoords : I index out of blkLimits')
@@ -114,12 +116,15 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
              x_blk_lo => block%limits(LOW, :), &
              dx       => amrex_geom(block%level - 1)%dx)
     ! x_blk_lo is 1-based cell-index of lower-left cell in block 
-    
-    shift = 0.0d0
-    if (edge == CENTER) then
-      shift = 0.5d0
+
+    if      (edge == LEFT_EDGE) then
+      shift = 0.0
+    else if (edge == CENTER) then
+      shift = 0.5
     else if (edge == RIGHT_EDGE) then
-      shift = 1.0d0
+      shift = 1.0
+    else
+      call Driver_abortFlash('[Grid_getSingleCellCoods] invalid edge')
     end if
 
     ! Translate indices to 1-based global indices adjusted according to edge
@@ -128,9 +133,9 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
       ind_t = ind_t - NGUARD
     end if
 
-    coords(:) = 0.0d0
+    coords(:) = 0.0
     coords(1:NDIM) = x0(1:NDIM) + (ind_t(1:NDIM) - 1) * dx(1:NDIM)
   end associate
- 
+
 end subroutine Grid_getSingleCellCoords_Itor
 
