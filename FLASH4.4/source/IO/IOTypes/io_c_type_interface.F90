@@ -31,7 +31,10 @@ module io_c_type_interface
           (pMyPE, pFileID, pFileFormat) &
           bind(c)
        use iso_c_binding, only : c_int
-       integer(c_int), intent(IN) :: pMyPE, pFileID
+       use io_intfTypesModule, ONLY : io_fileID_t
+       implicit none
+       integer(c_int), intent(IN) :: pMyPE
+       integer(io_fileID_t), intent(IN) :: pFileID
        integer(c_int), intent(OUT) :: pFileFormat
      end subroutine io_h5_read_file_format
   end interface
@@ -44,7 +47,10 @@ module io_c_type_interface
           memOffset, memVarOffset, datasetName, pDsetNameLen, pData) &
           bind(c)
        use iso_c_binding, only : c_int, c_char, c_ptr
-       integer(c_int), intent(IN) :: pMyPE, pFileID, pLibType, pXferType, &
+       use io_intfTypesModule, ONLY : io_fileID_t
+       implicit none
+       integer(io_fileID_t), intent(IN) :: pFileID
+       integer(c_int), intent(IN) :: pMyPE, pLibType, pXferType, &
             pFileType, pFileFmt, pGridDataStruct, pNumDataDims, pNumGridVars, &
             pNonBlocking, pPrePackData
        integer(c_int), dimension(*), intent(IN) :: diskOffset, &
@@ -81,7 +87,10 @@ module io_c_type_interface
           (pFileID, pDimVal, dimName, pDimNameLen) &
           bind(c)
        use iso_c_binding, only : c_int, c_char
-       integer(c_int), intent(IN) :: pFileID, pDimVal
+       use io_intfTypesModule, ONLY : io_fileID_t
+       implicit none
+       integer(io_fileID_t), intent(IN) :: pFileID
+       integer(c_int), intent(IN) :: pDimVal
        character(kind=c_char), dimension(*), intent(IN) :: dimName
        integer(c_int), intent(IN) :: pDimNameLen
      end subroutine io_ncmpi_create_dimids
@@ -92,7 +101,10 @@ module io_c_type_interface
           (pMyPE, pFileID, pFileFmt, pGridStruct, dimIDs) &
           bind(c)
        use iso_c_binding, only : c_int
-       integer(c_int), intent(IN) :: pMyPE, pFileID, pFileFmt, pGridStruct
+       use io_intfTypesModule, ONLY : io_fileID_t
+       implicit none
+       integer(io_fileID_t), intent(IN) :: pFileID
+       integer(c_int), intent(IN) :: pMyPE, pFileFmt, pGridStruct
        integer(c_int), dimension(*) :: dimIDs      
      end subroutine io_ncmpi_retrieve_dimids
   end interface
@@ -111,7 +123,9 @@ module io_c_type_interface
           (pFileID) &
           bind(c)
        use iso_c_binding, only : c_int
-       integer(c_int), intent(IN) :: pFileID
+       use io_intfTypesModule, ONLY : io_fileID_t
+       implicit none
+       integer(io_fileID_t), intent(IN) :: pFileID
      end subroutine io_ncmpi_nonblocking_complete_requests
   end interface
 

@@ -54,6 +54,7 @@ subroutine io_xfer_mesh_data(fileID, fileFmt, fileType, &
   use io_c_type_interface, ONLY : io_ncmpi_nonblocking_complete_requests, &
        io_xfer_mesh_dataset
 #endif
+  use io_intfTypesModule, ONLY : io_fileID_t
   use physicaldata, ONLY : unk, facevarx, facevary, facevarz
   use Grid_data, ONLY : scratch
   use io_typeInterface, ONLY : io_getZeroBasedBlkSubarray, &
@@ -68,7 +69,8 @@ subroutine io_xfer_mesh_data(fileID, fileFmt, fileType, &
   use IO_data, ONLY : io_globalMe
 
   implicit none
-  integer, intent(IN) :: fileID, fileFmt, fileType, libType, &
+  integer(io_fileID_t), intent(IN) :: fileID
+  integer, intent(IN) :: fileFmt, fileType, libType, &
        xferType, localNumBlocks, globalBlockOffset
 #ifndef USE_IO_C_INTERFACE
 #define c_loc(x) x

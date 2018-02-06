@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "hdf5_flash.h"
 
-void FTOC(io_h5write_raydata)(int * pFileID,
+void FTOC(io_h5write_raydata)(hid_t * pFileID,
 			      int * totalPos,
 			      int *ierr,
 			      int *startPos,
@@ -99,6 +99,7 @@ void FTOC(io_h5write_raydata)(int * pFileID,
   free(data);
 				  
 
+  H5Pclose(plist_id);
   H5Sclose(dataspace);
   H5Sclose(filespace);
   H5Dclose(dset);

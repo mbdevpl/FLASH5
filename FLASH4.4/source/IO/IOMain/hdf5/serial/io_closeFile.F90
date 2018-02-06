@@ -20,11 +20,12 @@
 subroutine io_closeFile( fileID)
 
   use IO_data, ONLY : io_globalMe
+  use io_intfTypesModule, ONLY : io_fileID_t
   implicit none
 
 #include "constants.h"
 
-  integer, intent(in) :: fileID
+  integer(io_fileID_t), intent(in) :: fileID
 
   if(io_globalMe /= MASTER_PE) then
       return

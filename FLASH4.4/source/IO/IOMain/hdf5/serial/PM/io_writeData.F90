@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call io_writeData(integer(in) :: fileID)
+!!  call io_writeData(integer(io_fileID_t)(in) :: fileID)
 !!
 !!
 !! DESCRIPTION
@@ -40,6 +40,12 @@
 !! 
 !!  fileID - integer file identifier for hdf5 file
 !!
+!! NOTES
+!!
+!!  The KIND type parameter io_fileID_t is defined in Fortran module io_intfTypesModule.
+!!  It should ensure that fileID is compatible with the hid_t of the HDF5 library version
+!!  used.
+!!
 !!***
 
 !!REORDER(5): unk, scratch, facevar[xyz], scratchBuf
@@ -70,6 +76,7 @@ subroutine io_writeData (fileID)
        io_faceXVarLabels, io_faceYVarLabels, io_faceZVarLabels, &
        io_plotFaceVarStr, io_plotfileMetadataDP, io_plotfileGridQuantityDP, &
        io_fileFormatVersion, tree_data_t
+  use io_intfTypesModule, ONLY : io_fileID_t
   use Grid_interface, ONLY : Grid_getLocalNumBlks
 
   use gr_specificData, ONLY :  gr_gid, scratch
@@ -91,7 +98,7 @@ subroutine io_writeData (fileID)
 #include "Flash_mpi.h"
 
 
-  integer, INTENT(in) :: fileID
+  integer(io_fileID_t), INTENT(in) :: fileID
 
   type(tree_data_t) :: tree_data
   integer :: jproc, i, j, blockID

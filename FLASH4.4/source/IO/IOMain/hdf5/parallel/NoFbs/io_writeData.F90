@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call io_writeData(integer(in) :: fileID)
+!!  call io_writeData(integer(io_fileID_t)(in) :: fileID)
 !!
 !!
 !! DESCRIPTION
@@ -53,6 +53,9 @@
 !!  conditions with the Uniform Grid and then perform the bulk of the
 !!  calculation with an amr package.
 !!
+!!  The KIND type parameter io_fileID_t is defined in Fortran module io_intfTypesModule.
+!!  It should ensure that fileID is compatible of the hid_t of the HDF5 library version
+!!  used.
 !!
 !!***
 
@@ -74,11 +77,12 @@ subroutine io_writeData(fileID)
        io_setupTimeStamp, io_buildTimeStamp, io_doublePrecision, &
        io_unklabelsGlobal, &
        io_faceXVarLabels,io_faceYVarLabels,io_faceZVarLabels,&
-       io_plotVarStr, io_nPlotVars, io_bytePack, io_outputSplitNum, &
+       io_plotVarStr, io_nPlotVars, io_outputSplitNum, &
        io_ilo, io_ihi, io_jlo, io_jhi, io_klo, io_khi, io_plotGridVarStr, &
        io_iguard, io_jguard, io_kguard, io_plotfileMetadataDP, &
        io_plotfileGridQuantityDP, io_fileFormatVersion, io_meshMe, io_acrossMe, &
        io_unkNonRep, tree_data_t
+  use io_intfTypesModule, ONLY : io_fileID_t
   use Simulation_interface, ONLY : Simulation_mapStrToInt
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
   use Grid_interface, ONLY : Grid_getGlobalIndexLimits, &
@@ -97,7 +101,8 @@ subroutine io_writeData(fileID)
 #include "Flash.h"
 #include "io_flash.h"
 
-  integer, intent(in) :: fileID
+  integer(io_fileID_t), INTENT(in) :: fileID
+
   type (tree_data_t) :: tree_data
 
   integer :: isize, jsize, ksize, temp

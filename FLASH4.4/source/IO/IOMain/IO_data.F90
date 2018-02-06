@@ -24,6 +24,7 @@
 module IO_data
 
   use nameValueLL_data
+  use io_intfTypesModule, ONLY : io_fileID_t
 
 #ifdef USE_IO_C_INTERFACE
   use iso_c_binding
@@ -64,7 +65,7 @@ module IO_data
   integer, save :: io_splitFileNum
 
   !checkpoint file io handle
-  integer, save :: io_chkptFileID
+  integer(io_fileID_t), save :: io_chkptFileID
 
   !communicator for io if necessary!
   integer, save :: io_comm = 0
@@ -82,7 +83,7 @@ module IO_data
   character(len=MAX_STRING_LENGTH), save :: io_geometry
   real, save :: io_redshift = 1.0
   real, save :: io_CPUSeconds, io_lastCPUSeconds, io_lastWallClockCheckpoint
-  logical, save :: io_restart, io_bytePack, io_justCheckpointed
+  logical, save :: io_restart, io_justCheckpointed
   
   !For clean exit when memory usage gets scary
   real, save :: io_maxRSS, io_measRSS
@@ -228,8 +229,8 @@ module IO_data
    ! The name of the plot file that was just written
    character(len=MAX_STRING_LENGTH), save :: io_oldPlotFileName
 
-   integer, save :: io_rayFileId
-   integer, save :: io_protonFileId
+   integer(io_fileID_t), save :: io_rayFileId
+   integer(io_fileID_t), save :: io_protonFileId
 
    logical, save :: io_reduceGcellFills
    logical, save :: io_summaryOutputOnly
