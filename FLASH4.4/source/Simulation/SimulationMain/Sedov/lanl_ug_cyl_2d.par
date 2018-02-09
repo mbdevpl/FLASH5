@@ -1,0 +1,156 @@
+#	Runtime parameters for the Sedov explosion problem.
+#./setup Sedov -site=eugenia.asci.uchicago.edu -auto -test -2d +cylindrical +uhd -noc +nofbs -objdir=sedov_lanl_ug2d -parfile=lanl_ug_cyl_2d.par
+#./setup Sedov -makefile=gnu                   -auto -test -2d +cylindrical +uhd -noc +nofbs -objdir=sedov_lanl_ug2d -parfile=lanl_ug_cyl_2d.par
+
+#	Parameters for initial model
+
+#		Ambient pressure and density, explosion energy, initial
+#		radius of perturbation, and location of explosion center
+
+sim_pAmbient	= 1.E-5
+sim_rhoAmbient	= 1.
+sim_expEnergy	= 1.
+tinitial        = 0.01
+
+sim_xctr		= 0.0
+sim_yctr		= 0.0
+#sim_zctr		= 0.5
+
+sim_nsubzones           = 1 # 7 # 10000
+
+sim_profFileName        = "sedovSolutionModLong.dat"
+sim_minRhoInit          = 1.0E-5
+smlRho                  = 1.0E-10
+
+#eosModeInit = "eos_nop"
+eosModeInit = "dens_ie"
+
+#		Gas ratio of specific heats
+
+gamma           = 1.4
+
+#	Computational volume parameters
+
+#		Grid dimensionality and geometry
+
+geometry = "cylindrical"
+
+#		Size of computational volume
+
+xmin		= 0.
+xmax		= 0.5
+ymin		= -0.5
+ymax		= 0.5
+
+sim_smallestNormRadius = 0.16
+#sim_largestNormRadius  = 1.0
+sim_earliestLSTime     = 0.021
+sim_latestLSTime       = 0.026
+
+
+#		Boundary conditions
+#
+xl_boundary_type      = "reflecting"
+xr_boundary_type      = "outflow"
+
+yl_boundary_type = "outflow"
+yr_boundary_type = "outflow"
+
+#	Simulation time, I/O  parameters
+
+cfl		= 0.8
+#hy_cflFallbackFactor           = 0.9
+basenm          = "sedov_"
+restart         = .false.
+
+#	integral quantities & errors write frequency
+wr_integrals_freq              = 1
+
+#	checkpoint file output parameters
+checkpointFileIntervalTime = 0.01
+checkpointFileIntervalStep = 0
+checkpointFileNumber = 1
+
+#	plotfile output parameters
+plotfileIntervalTime = 0.0004
+plotfileIntervalStep = 0
+plotfileNumber = 0
+
+memory_stat_freq               = 1000
+
+#tstep_change_factor = 1.1
+nend            = 2000000
+tmax            = 0.05
+dr_shortenLastStepBeforeTMax   = .TRUE.
+
+run_comment     = "2D Sedov explosion from tinitial=0.01"
+log_file        = "sedov.log"
+eintSwitch     = 0.0 # 1.e-4
+use_auxEintEqn = .FALSE.
+
+plot_var_1 = "dens"
+plot_var_2 = "dena"
+plot_var_3 = "pres"
+plot_var_4 = "prsa"
+plot_var_5 = "velx"
+plot_var_6 = "vlxa"
+plot_var_7 = "eint"
+plot_var_8 = "eina"
+plot_var_9 = "ener"
+plot_var_10 = "enra"
+plot_var_11 = "temp"
+
+#  Adaptive Grid refinement parameters
+
+#lrefine_max     = 7
+#refine_var_1 = "dens"
+#refine_var_2 = "pres"
+
+
+# Uniform Grid specific parameters 
+# see note below for more explanation
+
+iGridSize = 512   #global number of gridpoints along x, excluding gcells
+jGridSize = 1024  #global number of gridpoints along y, excluding gcells
+iProcs = 4	#num procs in i direction
+jProcs = 8	#num procs in j direction
+
+
+# When using UG, iProcs and jProcs must be specified.
+# These are the processors along each of the dimensions
+#FIXEDBLOCKSIZE mode ::
+# When using fixed blocksize, iGridSize etc are redundant in
+# runtime parameters. These quantities are calculated as 
+# iGridSize = NXB*iprocs
+# jGridSize = NYB*jprocs
+#NONFIXEDBLOCKSIZE mode ::
+# iGridSize etc must be specified. They constitute the global
+# number of grid points in the physical domain without taking 
+# the guard cell into account. The local blocksize is calculated
+# as iGridSize/iprocs  etc.
+ 
+ 
+## -------------------------------------------------------------##
+##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
+#	I. INTERPOLATION SCHEME:
+order		= 2      # Interpolation order (first/second/third/fifth order)
+sim_bcSetBdryVar = .FALSE.
+slopeLimiter    = "vanLeer1.5" # Slope limiters (minmod,mc,vanLeer,vanLeer1.5,hybrid,limited)
+LimitedSlopeBeta= 1.     # Slope parameter for the "limited" slope by Toro
+charLimiting	= .FALSE. # Characteristic limiting vs. Primitive limiting
+
+use_avisc	= .FALSE. # Do not use artificial viscosity (originally for PPM)
+cvisc		= 0.1     # coefficient for artificial viscosity
+use_flattening	= .false. # use flattening (dissipative) (originally for PPM)
+use_steepening	= .false. # use contact steepening (originally for PPM)
+use_upwindTVD	= .false. # use upwind biased TVD slope for PPM (need nguard=6)
+
+hy_fPresInMomFlux = 0.0      # Percentage of pressure gradient for the momentum equation that is handled in momentum fluxes
+
+#       II. RIEMANN SOLVERS:
+RiemannSolver	= "hllc"       # Roe, HLL, HLLC, LLF, Marquina
+entropy         = .false.     # Entropy fix for the Roe solver
+
+#	III. STRONG SHOCK HANDLING SCHEME:
+shockDetect	= .false.     # Shock Detect for numerical stability
+## -------------------------------------------------------------##
