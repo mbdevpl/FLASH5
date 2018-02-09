@@ -6,6 +6,8 @@
 Module Simulation_interface
   implicit none
 #include "constants.h"
+#include "FortranLangFeatures.fh"
+
   interface
      subroutine Simulation_defineDomain(initialDomain,boundaries,nblks)
        implicit none
@@ -114,10 +116,12 @@ Module Simulation_interface
   end interface
 
   interface
-     subroutine Simulation_computeAnalytical(blockID,  tcurr)
-      implicit none
-      integer, intent (IN) :: blockID
-      real   , intent (IN) :: tcurr
+     subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       real,dimension(:,:,:,:),POINTER_INTENT_IN :: solnData
+       type(block_metadata_t), intent(in) :: blockDesc
+       real   , intent (IN) :: tcurr
      end subroutine Simulation_computeAnalytical
   end interface
 

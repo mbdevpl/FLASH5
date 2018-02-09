@@ -14,7 +14,7 @@
 !!
 !! DESCRIPTION
 !!
-!!  Compute an analytical solution.
+!!  Compute an analytical solution for a given block.
 !!
 !!  This is simulation-dependent, there is no general implementation.
 !! 
@@ -30,15 +30,19 @@
 !!
 !! NOTES
 !! 
-!!  By default this is just a stub that doesn't do anything.
+!!  By default this is just a stub that does not do anything.
 !!
 !!***
 
-subroutine Simulation_computeAnalytical(blockId, tcurr)
+subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
 
+  use block_metadata,   ONLY : block_metadata_t
   implicit none
 
-  integer, intent(in) :: blockId
+#include "FortranLangFeatures.fh"
+  
+  real,dimension(:,:,:,:),POINTER_INTENT_IN :: solnData
+  type(block_metadata_t), intent(in) :: blockDesc
   real,    intent(in) :: tcurr
 
 end subroutine Simulation_computeAnalytical

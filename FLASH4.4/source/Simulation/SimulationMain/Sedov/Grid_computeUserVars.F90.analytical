@@ -1,0 +1,131 @@
+!!****if* source/Simulation/SimulationMain/Sedov/Grid_computeUserVars
+!!
+!! NAME
+!!  Grid_computeUserVars
+!!
+!!
+!! SYNOPSIS
+!!
+!!  call Grid_computeUserVars() 
+!!
+!!  
+!! DESCRIPTION 
+!!  
+!!  Prepare user variables for output.
+!!
+!! ARGUMENTS 
+!!  none
+!!  
+!! EXAMPLE
+!!
+!!
+!!
+!! NOTES
+!!  
+!!***
+
+subroutine Grid_computeUserVars()
+  use Simulation_data,      ONLY: sim_analyticGen
+  use Simulation_interface, ONLY: Simulation_computeAnalytical
+  use Driver_data,         ONLY : dr_simGeneration
+  use Timers_interface, ONLY : Timers_start, Timers_stop
+  use Grid_interface, ONLY : Grid_getLocalNumBlks, &
+    Grid_getBlkData, &
+    Grid_getListOfBlocks, &
+    Grid_getBlkIndexLimits, Grid_getBlkPtr, &
+    Grid_releaseBlkPtr
+  use Driver_interface, ONLY: Driver_getSimTime
+!  use Grid_data, ONLY : gr_meshMe
+  implicit none
+
+#include "Flash.h"
+#include "constants.h"
+  
+  real    :: tnew
+  integer :: simGen
+  integer :: lb, blockID
+  integer :: localNumBlocks, blockCount
+
+  integer,allocatable,dimension(:) :: blockList
+  integer,dimension(2,MDIM) :: bl,blkLimitsGC
+  integer,dimension(  MDIM) :: bsize
+  real, pointer, dimension(:,:,:,:) :: solnData
+  real,allocatable :: cellVol(:,:,:)
+
+  call Timers_start("computeUserVars")
+  call Driver_getSimTime(tnew, simGen)
+
+  call Grid_getLocalNumBlks(localNumBlocks)
+  allocate(blockList(localNumBlocks))
+  call Grid_getListOfBlocks(LEAF,blockList,blockCount)
+
+  do lb=1,blockCount
+     blockID = blockList(lb)
+     call Simulation_computeAnalytical(blockID, tnew)
+
+#if defined(DEND_VAR) || defined(PRSD_VAR) || defined(VLRD_VAR)
+     call Grid_getBlkIndexLimits(blockID,bl,blkLimitsGC)
+
+     call Grid_getBlkPtr(blockID,solnData)     
+
+#if defined(DENC_VAR) || defined(PRSC_VAR) || defined(VLRC_VAR)
+     bsize(:) = bl(HIGH,:) - bl(LOW,:) + 1
+     allocate( cellVol(bl(LOW,IAXIS):bl(HIGH,IAXIS), &
+                       bl(LOW,JAXIS):bl(HIGH,JAXIS), &
+                       bl(LOW,KAXIS):bl(HIGH,KAXIS)) )
+     call Grid_getBlkData(blockID, CELL_VOLUME, 0, EXTERIOR, &
+            (/bl(LOW,IAXIS),bl(LOW,JAXIS),bl(LOW,KAXIS)/), &
+            cellVol   (bl(LOW,IAXIS):bl(HIGH,IAXIS), &
+                       bl(LOW,JAXIS):bl(HIGH,JAXIS), &
+                       bl(LOW,KAXIS):bl(HIGH,KAXIS)), &
+            dataSize=bsize )
+#endif
+
+!!$
+#if defined(DEND_VAR) && defined(DENA_VAR)
+     solnData(DEND_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS)) = &
+          solnData(DENS_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS)) - &
+          solnData(DENA_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS))
+#ifdef DENC_VAR
+     solnData(DENC_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS)) = &
+          abs(solnData(DEND_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS))) * &
+              cellVol(         bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS))
+#endif
+#endif
+!!$
+#if defined(PRSD_VAR) && defined(PRSA_VAR)
+     solnData(PRSD_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS)) = &
+          solnData(PRES_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS)) - &
+          solnData(PRSA_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS))
+#ifdef PRSC_VAR
+     solnData(PRSC_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS)) = &
+          abs(solnData(PRSD_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS))) * &
+              cellVol(         bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS))
+#endif
+#endif
+!!$
+#if defined(VLRD_VAR) && defined(VLXA_VAR)
+     solnData(VLRD_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS)) = &
+          solnData(VELX_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS)) - &
+          solnData(VLXA_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS))
+#ifdef VLRC_VAR
+     solnData(VLRC_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS)) = &
+          abs(solnData(VLRD_VAR,bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS))) * &
+              cellVol(         bl(1,IAXIS):bl(2,IAXIS),bl(1,JAXIS):bl(2,JAXIS),bl(1,KAXIS):bl(2,KAXIS))
+#endif
+#endif
+
+#if defined(DENC_VAR) || defined(PRSC_VAR) || defined(VLRC_VAR)
+     deallocate( cellVol )
+#endif
+
+     call Grid_releaseBlkPtr(blockID,solnData)
+#endif
+  end do
+
+  deallocate(blockList)
+  dr_simGeneration = simGen + 1
+  sim_analyticGen  = dr_simGeneration
+  call Timers_stop("computeUserVars")
+
+end subroutine Grid_computeUserVars

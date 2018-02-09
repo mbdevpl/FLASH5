@@ -1,0 +1,662 @@
+!!****if* source/Simulation/SimulationMain/Sedov/IO_writeIntegralQuantities
+!!
+!!
+!!  NAME
+!!    IO_writeIntegralQuantities
+!!
+!!  SYNOPSIS
+!!    call IO_writeIntegralQuantities(integer(in) :: isFirst,
+!!                                    real(in)    :: simTime)
+!!
+!!  DESCRIPTION
+!!
+!!   Compute the values of integral quantities (eg. total energy)
+!!   and write them to an ASCII file.  If this is the initial step,
+!!   create the file and write a header to it before writing the data.
+!!
+!!   Presently, this supports 1, 2, and 3-d Cartesian geometry and 2-d
+!!   cylindrical geometry (r,z).  More geometries can be added by
+!!   modifying the volume of each zone (dvol).
+!!
+!!   Users should modify this routine if they want to store any
+!!   quantities other than default values in the flash.dat.  Make sure
+!!   to modify the nGlobalSum parameter to match the number of
+!!   quantities written.  Also make sure to modify the header to match
+!!   the names of quantities with those calculated in the lsum and
+!!   gsum arrays.
+!!  
+!!  ARGUMENTS
+!!    
+!!   isFirst - if 1 then write header info plus data, otherwise just write data
+!!   simTime - simulation time
+!!
+!!
+!!***
+
+!!REORDER(4):solnData
+
+subroutine IO_writeIntegralQuantities ( isFirst, simTime)
+
+  use IO_data, ONLY : io_restart, io_statsFileName, io_globalComm
+  use Driver_interface, ONLY : Driver_getDt
+  use Timers_interface, ONLY : Timers_start, Timers_stop
+  use Grid_interface, ONLY : Grid_getListOfBlocks, &
+    Grid_getMaxRefinement, Grid_getBlkRefineLevel, &
+    Grid_getBlkIndexLimits, Grid_getBlkPtr, Grid_getSingleCellVol, &
+    Grid_getCellCoords, &
+    Grid_releaseBlkPtr
+
+   use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
+   use Simulation_data, ONLY : sim_testInitialized, &
+        nLargestMaxSummary,&
+        sim_earliestLSTime, sim_latestLSTime, &
+        sim_smallestNormRadius, sim_largestNormRadius, &
+        sim_testFirstVals, &
+        sim_testLastVals, &
+        sim_testLargestVals, &
+        sim_testLargestWhen, &
+        sim_xCenter,sim_yCenter,sim_zCenter
+   use Simulation_data, ONLY : sim_oneLevelIntegralsOnly, &
+        sim_integralsLevel
+   use Simulation_data, ONLY : sim_smallu
+  implicit none
+
+#include "Flash_mpi.h"
+#include "constants.h"
+#include "Flash.h"
+  
+  
+  real, intent(in) :: simTime
+
+  integer, intent(in) :: isFirst
+
+  integer :: currentLevel, blkLevel
+
+  integer :: lb, count
+  
+  integer :: funit = 99
+  integer :: recl
+  integer :: error
+  integer :: nGlobalSumUsed, iSum
+  
+  character (len=MAX_STRING_LENGTH), save :: fname 
+  
+  integer :: blockList(MAXBLOCKS)
+
+  integer :: blkLimits(HIGH, MDIM), blkLimitsGC(HIGH, MDIM)
+  real, dimension(:), allocatable :: xCenter, yCenter, zCenter
+
+#ifdef MAGP_VAR
+  integer, parameter ::  nGlobalSumProp = 20             ! Number of globally-summed regular quantities
+#else
+  integer, parameter ::  nGlobalSumProp = 19             ! Number of globally-summed regular quantities
+#endif
+  integer, parameter ::  nGlobalSum = nGlobalSumProp + NMASS_SCALARS ! Number of globally-summed quantities
+  real :: gsum(nGlobalSum) !Global summed quantities
+  real :: lsum(nGlobalSum) !Global summed quantities
+
+  integer, parameter ::  nGlobalErrSumProp = 8              ! Number of globally-summed error quantities
+  integer, parameter ::  nRelErrSumProp = 5              ! Number of relative globally-summed error quantities
+  integer, parameter ::  nRelErrMaxProp = 3              ! Number of relative max-error quantities
+  integer, parameter ::  nRelErrProp = nRelErrSumProp+nRelErrMaxProp ! Number of relative error quantities
+  real :: gRelErrSum(nRelErrSumProp) !relative summed error quantities
+
+  integer, parameter ::  nGlobalExtProp = 15              ! Number of global extrema quantities
+!!$  real :: gErrSum(nGlobalSum) !Global summed error quantities
+!!$  real :: lErrSum(nGlobalSum) !Global summed error quantities
+!!$  real :: gMax(nGlobalErrSumProp) !Global extrema quantities
+!!$  real :: lMax(nGlobalErrSumProp) !Global extrema quantities
+  real :: gMax(nGlobalExtProp) !Global extrema quantities
+  real :: lMax(nGlobalExtProp) !Global extrema quantities
+  real :: gRelErrMax(nRelErrMaxProp) !relative max error quantities, relative Linf norm
+
+  real :: currentTimeLargest(0:nLargestMaxSummary)
+  real :: dt
+  real :: xdist,ydist,zdist, radius, radius2
+
+  integer :: ivar
+  integer :: i, j, k
+  integer :: il, jl, kl, ih, jh, kh
+  real :: dvol             !, del(MDIM)
+  real, DIMENSION(:,:,:,:), POINTER :: solnData
+
+  integer :: point(MDIM)
+  integer :: ioStat
+
+  call Timers_start("writeIntegQ")
+  if (sim_oneLevelIntegralsOnly) then
+     if (sim_integralsLevel > 0) then
+        currentLevel = sim_integralsLevel
+     else
+        call Grid_getMaxRefinement(currentLevel, 4, scope=2, inputComm=io_globalComm)
+     end if
+  end if
+
+  call Grid_computeUserVars()
+
+  if (io_writeMscalarIntegrals) then
+     nGlobalSumUsed = nGlobalSum
+  else
+     nGlobalSumUsed = nGlobalSumProp
+  end if
+
+  ! Sum quantities over all locally held leaf-node blocks.
+  gsum(1:nGlobalSumUsed) = 0.
+  lsum(1:nGlobalSumUsed) = 0.
+  gRelErrSum(1:nRelErrSumProp) = 0.
+  lMax(1:nGlobalExtProp) = -HUGE(1.0)
+  
+  call Grid_getListOfBlocks(LEAF, blockList, count)
+  
+  do lb = 1, count
+     
+     if (sim_oneLevelIntegralsOnly) then
+        call Grid_getBlkRefineLevel(blockList(lb), blkLevel)
+        if (blkLevel .NE. currentLevel) CYCLE ! Skip to the next block
+     end if
+
+     !get the index limits of the block
+     call Grid_getBlkIndexLimits(blockList(lb), blkLimits, blkLimitsGC)
+
+     il = blkLimits(LOW,IAXIS); ih = blkLimits(HIGH,IAXIS)
+     jl = blkLimits(LOW,JAXIS); jh = blkLimits(HIGH,JAXIS)
+     kl = blkLimits(LOW,KAXIS); kh = blkLimits(HIGH,KAXIS)
+     allocate(xCenter(il:ih))
+     allocate(yCenter(jl:jh))
+     allocate(zCenter(kl:kh))
+     !! Get the cell coordinates
+     call Grid_getCellCoords(IAXIS,blockList(lb),CENTER, .false., xCenter, ih-il+1)
+     call Grid_getCellCoords(JAXIS,blockList(lb),CENTER, .false., yCenter, jh-jl+1)
+     call Grid_getCellCoords(KAXIS,blockList(lb),CENTER, .false., zCenter, kh-kl+1)
+
+     ! get a pointer to the current block of data
+     call Grid_getBlkPtr(blockList(lb), solnData)
+
+     ! Sum contributions from the indicated blkLimits of cells.
+     do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
+        zdist = zCenter(k) - sim_zCenter
+        do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
+           ydist = yCenter(j) - sim_yCenter
+           do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
+              xdist = xCenter(i) - sim_xCenter
+#if NDIM==1
+              radius = xdist
+#else
+              radius2 = xdist**2+ydist**2
+#if NDIM==3
+              radius2 = radius2 +zdist**2
+#endif
+              radius = sqrt(radius2)
+#endif
+              if (.NOT.(radius .GE. sim_smallestNormRadius .AND. &
+                        radius .LE. sim_largestNormRadius)) then
+                 CYCLE
+              end if
+
+              
+              point(IAXIS) = i
+              point(JAXIS) = j
+              point(KAXIS) = k
+
+!! Get the cell volume for a single cell
+              call Grid_getSingleCellVol(blockList(lb), EXTERIOR, point, dvol)
+     
+              ! mass   
+#ifdef DENS_VAR
+              lsum(1) = lsum(1) + solnData(DENS_VAR,i,j,k)*dvol 
+#endif           
+
+
+#ifdef DENS_VAR
+#ifdef VELX_VAR      
+              ! momentum
+              lsum(2) = lsum(2) + solnData(DENS_VAR,i,j,k) * & 
+                   &                                solnData(VELX_VAR,i,j,k)*dvol 
+           
+#endif
+#ifdef VELY_VAR      
+
+              lsum(3) = lsum(3) + solnData(DENS_VAR,i,j,k) * & 
+                   &                                solnData(VELY_VAR,i,j,k)*dvol
+           
+#endif
+#ifdef VELZ_VAR      
+              lsum(4) = lsum(4) + solnData(DENS_VAR,i,j,k) * & 
+                   &                                solnData(VELZ_VAR,i,j,k)*dvol
+#endif
+
+              ! total energy
+#ifdef ENER_VAR
+              lsum(5) = lsum(5) + solnData(ENER_VAR,i,j,k) * & 
+                   &                                solnData(DENS_VAR,i,j,k)*dvol
+#ifdef MAGP_VAR
+              ! total plasma energy
+!!$              lsum(5) = lsum(5) + (solnData(ENER_VAR,i,j,k) * & 
+!!$                   &    solnData(DENS_VAR,i,j,k) + solnData(MAGP_VAR,i,j,k))*dvol
+
+              lsum(5) = lsum(5) + solnData(MAGP_VAR,i,j,k)*dvol
+#endif
+#endif
+
+           
+#ifdef VELX_VAR      
+#ifdef VELY_VAR      
+#ifdef VELZ_VAR      
+              ! kinetic energy
+              lsum(6) = lsum(6) + 0.5*solnData(DENS_VAR,i,j,k) * & 
+                   &                             (solnData(VELX_VAR,i,j,k)**2+ & 
+                   &                              solnData(VELY_VAR,i,j,k)**2+ & 
+                   &                              solnData(VELZ_VAR,i,j,k)**2)*dvol           
+
+#endif
+#endif
+#endif
+
+
+#ifdef EINT_VAR
+              ! internal energy
+              lsum(7) = lsum(7) + solnData(DENS_VAR,i,j,k) * & 
+                   &                                solnData(EINT_VAR,i,j,k)*dvol
+#endif
+#endif ! ifdef DENS_VAR
+
+#ifdef PRES_VAR      
+              ! pressure
+              lsum(8) = lsum(8) + solnData(PRES_VAR,i,j,k)*dvol 
+           
+#endif
+
+#ifdef VELX_VAR      
+              ! velocity
+              lsum(9) = lsum(9) + solnData(VELX_VAR,i,j,k)*dvol 
+           
+#endif
+
+#ifdef DENA_VAR      
+              ! analytic density
+              lsum(10) = lsum(10) + abs(solnData(DENA_VAR,i,j,k))*dvol 
+           
+#endif
+
+#ifdef PRSA_VAR      
+              ! analytic pressure
+              lsum(11) = lsum(11) + abs(solnData(PRSA_VAR,i,j,k))*dvol 
+           
+#endif
+
+#ifdef VLXA_VAR      
+              ! analytic velocity
+              lsum(12) = lsum(12) + abs(solnData(VLXA_VAR,i,j,k))*dvol 
+           
+#endif
+
+#ifdef VLYA_VAR      
+              ! analytic Y-velocity
+              lsum(13) = lsum(13) + abs(solnData(VLYA_VAR,i,j,k))*dvol 
+           
+#endif
+
+#ifdef VLZA_VAR      
+              ! analytic Z-velocity
+              lsum(14) = lsum(14) + abs(solnData(VLZA_VAR,i,j,k))*dvol 
+           
+#endif
+
+#if defined(DENA_VAR) && defined(DENA_VAR)
+              ! density L1 error
+              lsum(15) = lsum(15) + abs(solndata(DENS_VAR,i,j,k)-solnData(DENA_VAR,i,j,k))*dvol 
+           
+#endif
+
+#if defined(PRES_VAR) && defined(PRSA_VAR)
+              ! pressure L1 error
+              lsum(16) = lsum(16) + abs(solndata(PRES_VAR,i,j,k)-solnData(PRSA_VAR,i,j,k))*dvol
+           
+#endif
+
+#if defined(VELX_VAR) && defined(VLXA_VAR)
+              ! velocity L1 error
+              lsum(17) = lsum(17) + abs(solndata(VELX_VAR,i,j,k)-solnData(VLXA_VAR,i,j,k))*dvol
+           
+#endif
+
+#if defined(VELY_VAR) && defined(VLYA_VAR)
+              ! velocity L1 error
+              lsum(18) = lsum(18) + abs(solndata(VELY_VAR,i,j,k)-solnData(VLYA_VAR,i,j,k))*dvol
+           
+#endif
+
+#if defined(VELZ_VAR) && defined(VLZA_VAR)
+              ! velocity L1 error
+              lsum(19) = lsum(19) + abs(solndata(VELZ_VAR,i,j,k)-solnData(VLZA_VAR,i,j,k))*dvol
+           
+#endif
+
+#ifdef MAGP_VAR
+              ! magnetic energy
+              lsum(20) = lsum(20) + solnData(MAGP_VAR,i,j,k)*dvol
+#endif
+
+#ifdef DENS_VAR
+              if (io_writeMscalarIntegrals) then
+                 iSum = nGlobalSumProp
+!!$                 do ivar=MASS_SCALARS_BEGIN,MASS_SCALARS_END
+                    lsum(iSum+1:iSum+NMASS_SCALARS) = &
+                         lsum(iSum+1:iSum+NMASS_SCALARS) + &
+                           solnData(DENS_VAR,i,j,k) * & 
+                           solnData(MASS_SCALARS_BEGIN: &
+                                    MASS_SCALARS_END,i,j,k)*dvol
+!!$                 end do
+              end if
+#endif
+
+#ifdef DENS_VAR      
+              ! density
+              lMax(1) = max(lMax(1), solnData(DENS_VAR,i,j,k))
+              lMax(2) = max(lMax(2),-solnData(DENS_VAR,i,j,k))
+#endif
+
+#ifdef PRES_VAR      
+              ! pressure
+              lMax(3) = max(lMax(3), solnData(PRES_VAR,i,j,k))
+              lMax(4) = max(lMax(4),-solnData(PRES_VAR,i,j,k))
+#endif
+
+#ifdef VELX_VAR      
+              ! velocity
+              lMax(5) = max(lMax(5), solnData(VELX_VAR,i,j,k))
+              lMax(6) = max(lMax(6),-solnData(VELX_VAR,i,j,k))
+#endif
+
+#ifdef DENA_VAR      
+              ! analytic density
+              lMax(7) = max(lMax(7), solnData(DENA_VAR,i,j,k))
+              lMax(8) = max(lMax(8),-solnData(DENA_VAR,i,j,k))
+#endif
+
+#ifdef PRSA_VAR      
+              ! analytic pressure
+              lMax(9) = max(lMax(9), solnData(PRSA_VAR,i,j,k))
+              lMax(10) = max(lMax(10),-solnData(PRSA_VAR,i,j,k))
+#endif
+
+#ifdef VLXA_VAR      
+              ! analytic velocity
+              lMax(11) = max(lMax(11), solnData(VLXA_VAR,i,j,k))
+              lMax(12) = max(lMax(12),-solnData(VLXA_VAR,i,j,k))
+#endif
+
+#if defined(DENS_VAR) && defined(DENA_VAR)
+              ! density Linf error
+              lMax(13) = max(lMax(13), abs(solndata(DENS_VAR,i,j,k)-solnData(DENA_VAR,i,j,k)))
+           
+#endif
+
+#if defined(PRES_VAR) && defined(PRSA_VAR)
+              ! pressure Linf error
+              lMax(14) = max(lMax(14),  abs(solndata(PRES_VAR,i,j,k)-solnData(PRSA_VAR,i,j,k)))
+           
+#endif
+
+#if defined(VELX_VAR) && defined(VLXA_VAR)
+              ! velocity Linf error
+              lMax(15) = max(lMax(15), abs(solndata(VELX_VAR,i,j,k)-solnData(VLXA_VAR,i,j,k)))
+#endif
+           enddo
+        enddo
+     enddo
+     call Grid_releaseBlkPtr(blockList(lb), solnData)
+
+     deallocate(xCenter)
+     deallocate(yCenter)
+     deallocate(zCenter)
+  enddo
+  
+
+  
+  ! Now the MASTER_PE sums the local contributions from all of
+  ! the processors and writes the total to a file.
+  
+  call MPI_Reduce (lsum, gsum, nGlobalSumUsed, FLASH_REAL, MPI_SUM, & 
+       &                MASTER_PE, io_globalComm, error)
+  call MPI_Reduce (lMax, gMax, nGlobalExtProp, FLASH_REAL, MPI_MAX, & 
+       &                MASTER_PE, io_globalComm, error)
+  
+
+  if (io_globalMe  == MASTER_PE) then
+     
+#if defined(DENS_VAR) && defined(DENA_VAR)
+     ! density L1 error
+     gRelErrSum(1) = gsum(15) / gsum(10)
+#endif
+
+#if defined(PRES_VAR) && defined(PRSA_VAR)
+     ! pressure L1 error
+     gRelErrSum(2) = gsum(16) / gsum(11)
+#endif
+
+#if defined(VELX_VAR) && defined(VLXA_VAR)
+     ! velocity L1 error
+     gRelErrSum(3) = gsum(17) / max(gsum(12),sim_smallu)
+#endif
+
+#if defined(VELY_VAR) && defined(VLYA_VAR)
+     ! Y-velocity L1 error
+     gRelErrSum(4) = gsum(18) / max(gsum(13),sim_smallu)
+#endif
+
+#if defined(VELZ_VAR) && defined(VLZA_VAR)
+     ! Z-velocity L1 error
+     gRelErrSum(5) = gsum(19) / max(gsum(14),sim_smallu)
+#endif
+
+#ifdef DENS_VAR      
+     ! density
+     lMax(2) =  gMax(2)
+     gMax(2) = -gMax(2)
+#endif
+
+#ifdef PRES_VAR      
+     ! pressure
+     lMax(4) =  gMax(4)
+     gMax(4) = -gMax(4)
+#endif
+
+#ifdef VELX_VAR      
+     ! velocity
+     lMax(6) =  gMax(6)
+     gMax(6) = -gMax(6)
+#endif
+
+#ifdef DENA_VAR      
+     ! analytic density
+     lMax(8) =  gMax(8)
+     gMax(8) = -gMax(8)
+#endif
+
+#ifdef PRSA_VAR      
+     ! analytic pressure
+     lMax(10) =  gMax(10)
+     gMax(10) = -gMax(10)
+#endif
+
+#ifdef VLXA_VAR      
+     ! analytic velocity
+     lMax(12) =  gMax(12)
+     gMax(12) = -gMax(12)
+#endif
+
+#if defined(DENA_VAR) && defined(DENA_VAR)
+     ! density Linf error
+     gRelErrMax(1) = gMax(13) / max(gMax(7),lMax(8))
+#endif
+
+#if defined(PRES_VAR) && defined(PRSA_VAR)
+     ! pressure Linf error
+     gRelErrMax(2) = gMax(14) / max(gMax(9),lMax(10))
+#endif
+
+#if defined(VELX_VAR) && defined(VLXA_VAR)
+     ! velocity Linf error
+     gRelErrMax(3) = gMax(15) / max(gMax(11),lMax(12),sim_smallu)
+#endif
+
+     ! create the file from scratch if it is a not a restart simulation, 
+     ! otherwise append to the end of the file
+     
+     recl = max(1024,43*26+2)
+     !No matter what, we are opening the file. Check to see if already there
+     ioStat = 0
+     open(funit, file=trim(io_statsFileName), position='APPEND', status='OLD', iostat=ioStat,RECL=recl)
+     if(ioStat .NE. 0) then
+        !print *, 'FILE FOUND'
+        open(funit, file=trim(io_statsFileName), position='APPEND',RECL=recl)
+     endif
+     
+     if (isFirst .EQ. 1 .AND. (.NOT. io_restart .or. ioStat .NE. 0)) then
+        
+#ifndef MAGP_VAR
+        write (funit, 10)               &
+             '#time                     ', &
+             'mass                      ', &
+             'x-momentum                ', &
+             'y-momentum                ', & 
+             'z-momentum                ', &
+             'E_total                   ', &
+             'E_kinetic                 ', &
+             'E_internal                ', &
+             '|| pres ||_1              ', &
+             '|| velx ||_1              ', &
+             '|| dens_ana ||_1          ', &
+             '|| pres_ana ||_1          ', &
+             '|| velx_ana ||_1          ','|| vely_ana ||_1          ','|| velz_ana ||_1          ', &
+             '|| Density Error ||_1     ', &
+             '|| Pressure Error ||_1    ','|| x-velocity error ||_1  ','|| y-velocity error ||_1  ', &
+             '|| z-velocity error ||_1  ', &
+             'rel density error L1      ', &
+             'rel pressure error L1     ','rel x-velocity error L1   ','rel y-velocity error L1   ', &
+             'rel z-velocity error L1   ', &
+             'rel density error Linf    ', &
+             'rel pressure error Linf   ', &
+             'rel x-velocity error Linf ', &
+             'max dens                  ',             'min dens                  ', &
+             'max pres                  ',             'min pres                  ', &
+             'max velx                  ',             'min velx                  ', &
+             'max dens_ana              ',             'min dens_ana              ', &
+             'max pres_ana              ',             'min pres_ana              ', &
+             'max velx_ana              ',             'min velx_ana              ', &
+             '|| Density Error ||_infty ', &
+             '|| Pressure Error ||_infty', &
+             '|| x-velocity error ||_inf', &
+             (msName(ivar),ivar=MASS_SCALARS_BEGIN,&
+              min(MASS_SCALARS_END,&
+                  MASS_SCALARS_BEGIN+nGlobalSumUsed-nGlobalSumProp-1))
+
+#else
+        
+        write (funit, 10)               &
+             '#time                     ', &
+             'mass                      ', &
+             'x-momentum                ', &
+             'y-momentum                ', & 
+             'z-momentum                ', &
+             'E_total                   ', &
+             'E_kinetic                 ', &
+             'E_internal                ', &
+             'MagEnergy                 ', &
+             '|| pres ||_1              ', &
+             '|| velx ||_1              ', &
+             '|| dens_ana ||_1          ', &
+             '|| pres_ana ||_1          ', &
+             '|| velx_ana ||_1          ','|| vely_ana ||_1          ','|| velz_ana ||_1          ', &
+             '|| Density Error ||_1     ', &
+             '|| Pressure Error ||_1    ', &
+             '|| x-velocity error ||_1  ','|| y-velocity error ||_1  ','|| z-velocity error ||_1  ', &
+             'rel density error L1      ', &
+             'rel pressure error L1     ', &
+             'rel x-velocity error L1   ','rel y-velocity error L1   ','rel z-velocity error L1   ', &
+             'rel density error Linf    ', &
+             'rel pressure error Linf   ', &
+             'rel x-velocity error Linf ', &
+             'max dens                  ',             'min dens                  ', &
+             'max pres                  ',             'min pres                  ', &
+             'max velx                  ',             'min velx                  ', &
+             'max dens_ana              ',             'min dens_ana              ', &
+             'max pres_ana              ',             'min pres_ana              ', &
+             'max velx_ana              ',             'min velx_ana              ', &
+             '|| Density Error ||_infty ', &
+             '|| Pressure Error ||_infty', &
+             '|| x-velocity error ||_inf', &
+             (msName(ivar),ivar=MASS_SCALARS_BEGIN,&
+              min(MASS_SCALARS_END,&
+                  MASS_SCALARS_BEGIN+nGlobalSumUsed-nGlobalSumProp-1))
+#endif
+        
+10         format (2x,99(a25, :, 1X))
+
+     else if(isFirst .EQ. 1) then
+        write (funit, 11) 
+11      format('# simulation restarted')
+     endif
+     
+     ! Write the global sums to the file.
+     if (nGlobalSumProp+1 .LE. nGlobalSumUsed) then
+        write (funit, 12) simtime, gsum(1:nGlobalSumProp),gRelErrSum, &
+          gRelErrMax, &
+          gMax,       &
+          gsum(nGlobalSumProp+1:nGlobalSumUsed)
+     else
+        write (funit, 12) simtime, gsum(1:nGlobalSumProp),gRelErrSum, &
+          gRelErrMax, &
+          gMax
+     end if
+
+12   format (1x, 50(es25.18, :, 1x))
+ 
+     close (funit)          ! Close the file.
+     
+     if (simTime .GE. sim_earliestLSTime .AND. &
+         simTime .LE. sim_latestLSTime) then
+        call Driver_getDt(dt)
+        currentTimeLargest(0)                = dt
+        currentTimeLargest(1:nGlobalSumProp) = gsum(:nGlobalSumProp)
+        currentTimeLargest(nGlobalSumProp+  1                : nGlobalSumProp+  nRelErrSumProp) = gRelErrSum(:)
+        currentTimeLargest(nGlobalSumProp+  nRelErrSumProp+1 : nGlobalSumProp+  nRelErrProp   ) = gRelErrMax(:)
+        currentTimeLargest(nGlobalSumProp+  nRelErrProp   +1 :              nLargestMaxSummary) = gMax(:)
+
+        if (.NOT.sim_testInitialized) then
+           sim_testFirstVals(0:nLargestMaxSummary) = currentTimeLargest(0:nLargestMaxSummary)
+           sim_testLargestVals(0:nLargestMaxSummary) = currentTimeLargest(0:nLargestMaxSummary)
+           sim_testLargestWhen(0:nLargestMaxSummary) = simTime
+           sim_testInitialized = .TRUE.
+        end if
+        sim_testLastVals(0:nLargestMaxSummary) = currentTimeLargest(0:nLargestMaxSummary)
+        do i=0,nLargestMaxSummary
+           if (sim_testLastVals(i) > sim_testLargestVals(i)) then
+!!$           print*,'sim_testLastVals increases for',i,' from',sim_testLargestVals(i),' to',sim_testLastVals(i),'at', simTime,dt
+              sim_testLargestVals(i) = sim_testLastVals(i)
+              sim_testLargestWhen(i) = simTime
+           end if
+        end do
+     endif
+  end if
+  
+  call MPI_Barrier (io_globalComm, error)
+
+  call Timers_stop("writeIntegQ")
+
+  !=============================================================================
+  
+  return
+
+  contains
+    character(len=25) function msName(ivar)
+      integer,intent(in) :: ivar
+      character(len=25) :: str
+      call Simulation_mapIntToStr(ivar,str,MAPBLOCK_UNK)
+      msName = str
+    end function msName
+end subroutine IO_writeIntegralQuantities
+
+
+
