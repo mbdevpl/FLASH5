@@ -71,4 +71,3 @@ subroutine Grid_getBlkPhysicalSize(block, blockSize)
   blockSize(1:NDIM) = (hi(1:NDIM) - lo(1:NDIM) + 1) * dx(1:NDIM)
   end associate
 end subroutine Grid_getBlkPhysicalSize
->>>>>>> testAmrexRun
