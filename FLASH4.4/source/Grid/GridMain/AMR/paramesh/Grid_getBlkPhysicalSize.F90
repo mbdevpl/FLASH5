@@ -70,7 +70,21 @@ subroutine Grid_getBlkPhysicalSize(block, blockSize)
 end subroutine Grid_getBlkPhysicalSize
 
 
+subroutine Grid_getBlkPhysicalSize_blkId(blockID, blockSize)
 
+  use tree, ONLY : bsize
+
+  implicit none
+
+#include "constants.h"
+
+  integer,intent(in) :: blockId
+  real,dimension(MDIM),intent(out) :: blockSize
+
+  blockSize = bsize(:,blockId)
+
+  return
+end subroutine Grid_getBlkPhysicalSize_blkId
 
 
 

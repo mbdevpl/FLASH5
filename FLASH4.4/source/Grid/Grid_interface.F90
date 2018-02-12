@@ -277,6 +277,10 @@ Module Grid_interface
        type(block_metadata_t), intent(in) :: block
        real,dimension(MDIM),intent(out) :: blockSize
      end subroutine Grid_getBlkPhysicalSize
+     subroutine Grid_getBlkPhysicalSize_blkId(blockId, blockSize)
+       integer, intent(in) :: blockId
+       real,dimension(MDIM),intent(out) :: blockSize
+     end subroutine Grid_getBlkPhysicalSize_blkId
   end interface
 
   interface Grid_getBlkPtr
