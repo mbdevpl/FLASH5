@@ -230,6 +230,12 @@ Module Grid_interface
        integer,intent(in) :: blockId
        real,dimension(MDIM),intent(out) :: blockCenter
      end subroutine Grid_getBlkCenterCoords
+     subroutine Grid_getBlkCenterCoords_desc(blockDesc,blockCenter)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(in) :: blockDesc
+       real, dimension(MDIM), intent(out) :: blockCenter
+     end subroutine Grid_getBlkCenterCoords_desc
   end interface
 
   interface Grid_getBlkCornerID
