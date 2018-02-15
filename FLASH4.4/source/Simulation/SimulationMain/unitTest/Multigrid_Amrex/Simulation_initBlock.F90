@@ -120,7 +120,7 @@ subroutine Simulation_initBlock(solnData,block)
   call Grid_getBlkBoundBox(block,boundBox)
   bsize(:) = boundBox(2,:) - boundBox(1,:)
 
-  call Grid_getBlkCenterCoords(blockId,coord)
+  call Grid_getBlkCenterCoords(block,coord)
 
   ! Point to Blocks centered variables:
 !  call Grid_getBlkPtr(blockID,solnData,CENTER)
