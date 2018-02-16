@@ -479,4 +479,22 @@ module gr_interface
      end function gr_blockMatch
   end interface
 
+  interface
+    subroutine gr_getBlkIterator(itor, level, tiling)
+      use gr_iterator, ONLY : gr_iterator_t
+      implicit none
+      type(gr_iterator_t), intent(OUT)          :: itor
+      integer,             intent(IN), optional :: level
+      logical,             intent(IN), optional :: tiling
+    end subroutine gr_getBlkIterator
+  end interface
+
+  interface
+    subroutine gr_releaseBlkIterator(itor)
+      use gr_iterator, ONLY : gr_iterator_t
+      implicit none
+      type(gr_iterator_t), intent(INOUT) :: itor
+    end subroutine gr_releaseBlkIterator
+  end interface
+
 end module gr_interface
