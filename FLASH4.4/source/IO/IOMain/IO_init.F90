@@ -88,6 +88,7 @@ subroutine IO_init()
   call RuntimeParameters_get('alwaysRestrictCheckpoint', io_alwaysRestrictCheckpoint)
   call RuntimeParameters_get('alwaysComputeUserVars', io_alwaysComputeUserVars)
   call RuntimeParameters_get('ignoreForcedPlot', io_ignoreForcedPlot)
+  if (allocated(io_unklabelsGlobal)) RETURN ! We most have been here before, SKIP THE REMAINDER OF THIS FILE
   call RuntimeParameters_get('plotFileNumber', io_plotFileNumber)
   call RuntimeParameters_get('checkpointFileNumber', io_checkpointFileNumber)
   call RuntimeParameters_get('forcedPlotFileNumber', io_forcedPlotFileNumber)
@@ -299,11 +300,6 @@ subroutine IO_init()
 
 
 
-  !get the runtime parameter to indicate if bytepacking is turned on or
-  !off in plotfiles
-  call RuntimeParameters_get('bytePack', io_bytePack)
-
-
   !get the runtime parameter for the number of files to split
   !and hdf5 file into
   call RuntimeParameters_get('outputSplitNum', io_outputSplitNum)
@@ -498,6 +494,8 @@ subroutine IO_init()
   !if particles are not included in a simulation this is a stub
   call io_ptInit()
 
+  !initialzie subunit for writing single cell values
+  call io_wsInit()
 
   !------------------------------------------------------------------------------
   ! Dump out memory usage statistics again if we are monitoring them

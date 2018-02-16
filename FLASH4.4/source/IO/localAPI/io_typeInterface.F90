@@ -18,11 +18,14 @@
 #include "io_flash.h"
 
 module io_typeInterface
+
   interface
      subroutine io_xfer_mesh_data(fileID, fileFmt, fileType, &
      libType, xferType, localNumBlocks, globalBlockOffset)
+       use io_intfTypesModule, ONLY : io_fileID_t
        implicit none
-       integer, intent(IN) :: fileID, fileFmt, fileType, libType, &
+       integer(io_fileID_t),intent(IN) :: fileID
+       integer, intent(IN) :: fileFmt, fileType, libType, &
             xferType, localNumBlocks, globalBlockOffset
      end subroutine io_xfer_mesh_data
   end interface
@@ -31,9 +34,11 @@ module io_typeInterface
      subroutine io_xfer_tree_data(tree_data, fileID, libType, xferType, &
           localNumBlocksIn, localOffsetIn, presentDims)
        use IO_data, ONLY : tree_data_t
+       use io_intfTypesModule, ONLY : io_fileID_t
        implicit none
        type(tree_data_t), intent(INOUT) :: tree_data
-       integer, intent(IN) :: fileID, libType, xferType, &
+       integer(io_fileID_t),intent(IN) :: fileID
+       integer, intent(IN) :: libType, xferType, &
             localNumBlocksIn, localOffsetIn, presentDims
      end subroutine io_xfer_tree_data
   end interface
@@ -41,8 +46,10 @@ module io_typeInterface
   interface
      subroutine io_create_grid_header(myPE, fileID, fileFmt, fileType, &
           libType, dataFloatingPointType, metadataFloatingPointType)
+       use io_intfTypesModule, ONLY : io_fileID_t
        implicit none
-       integer, intent(IN) :: myPE, fileID, fileFmt, fileType, &
+       integer(io_fileID_t),intent(IN) :: fileID
+       integer, intent(IN) :: myPE, fileFmt, fileType, &
             libType, dataFloatingPointType, metadataFloatingPointType
      end subroutine io_create_grid_header
   end interface

@@ -1,6 +1,6 @@
 #include "io_h5_xfer_wrapper.h"
 
-int io_h5_xfer_wrapper(const int myPE, const int fileID, const int xferType,
+int io_h5_xfer_wrapper(const int myPE, const io_fileID_t fileID, const int xferType,
 		       const int typeMatchedXfer,
 		       const char datasetName[], const int memType,
 		       const int memSize[], const int memStart[],
@@ -22,10 +22,11 @@ int io_h5_xfer_wrapper(const int myPE, const int fileID, const int xferType,
   char nullTermDebugStr[1000];
 
 
-  /* We make hid_t == int assumption everywhere in FLASH.  This is
-     safe because hid_t is a typedef of int in HDF5.  The assert
-     will notify us of possible future changes to hid_t */
-  assert (sizeof(int) == sizeof(hid_t));
+  /* We used to make the assumption hid_t == int everywhere in FLASH.
+     This used to be okay because hid_t was a typedef of int in HDF5.
+     The next assert notified us when hid_t changed in HDF5 1.10.x. */
+  /*assert (sizeof(int) == sizeof(hid_t));*/
+  assert (sizeof(io_fileID_t) == sizeof(hid_t));
   hFileID = (hid_t) fileID;
 
 

@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  io_createDatasets(integer(in) :: fileID,
+!!  call io_createDatasets(integer(io_fileID_t)(in) :: fileID,
 !!                    integer(in) :: numFileBlks,
 !!                    integer(in) :: presentDims) 
 !!          
@@ -26,6 +26,12 @@
 !!  presentDims - number of dimensions in certain FLASH datasets
 !!                (provided for backwards compatibility)
 !!
+!! NOTES
+!!
+!!  The KIND type parameter io_fileID_t is defined in Fortran module io_intfTypesModule.
+!!  It should ensure that fileID is compatible with the integer type needed by
+!!  implementation routines.
+!!  used.
 !!***
 
 #include "constants.h"
@@ -39,6 +45,7 @@ subroutine io_createDatasets(fileID, numFileBlks, presentDims)
   use io_c_interface, ONLY : io_create_dataset
 #endif
   use IO_data, ONLY : io_globalMe, io_doublePrecision, io_plotfileMetadataDP
+  use io_intfTypesModule, ONLY : io_fileID_t
 #ifdef FLASH_GRID_PARAMESH
   use tree, ONLY : nfaces, nchild
 #ifdef FLASH_GRID_PARAMESH3OR4
@@ -48,7 +55,8 @@ subroutine io_createDatasets(fileID, numFileBlks, presentDims)
   use Timers_interface, ONLY : Timers_start, Timers_stop
 
   implicit none
-  integer, intent(in) :: fileID, numFileBlks, presentDims
+  integer(io_fileID_t), intent(in) :: fileID
+  integer, intent(in) :: numFileBlks, presentDims
 
   integer :: treeFP
   integer, parameter :: libType = IO_FILE_HDF5

@@ -15,7 +15,7 @@
 !!  linked list implemented under
 !!  the hood.  
 !!
-!!  In FLASH3 what we mean by scalars are single value variables
+!!  In FLASH4 what we mean by scalars are single value variables
 !!  associated with an entire flash run.
 !!  These scalars are in contrast to Grid scope variables which
 !!  need to be stored at each zone of each block in the simulation.
@@ -24,8 +24,8 @@
 !!  associated with the entire run. 
 !!
 !!  Scalars of this type can be integers, reals, strings or logical
-!!  values.  An example of a string scalar might be the FLASH3 run
-!!  comment, name of the logfile or setup line
+!!  values.  An example of a string scalar might be the FLASH4 run
+!!  comment, name of the logfile, or setup line.
 !!
 !!
 !! ARGUMENTS

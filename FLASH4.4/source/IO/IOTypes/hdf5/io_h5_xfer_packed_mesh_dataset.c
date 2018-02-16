@@ -12,7 +12,7 @@
 */
 
 void io_h5_xfer_packed_mesh_dataset(const int myPE,
-				    const int fileID,
+				    const hid_t fileID,
 				    const int xferType,
 				    const int fileFmt,
 				    const int fileType,
@@ -23,7 +23,7 @@ void io_h5_xfer_packed_mesh_dataset(const int myPE,
 				    const int localSubSize[],
 				    double * pData)
 {
-  const hid_t hFileID = (hid_t) fileID;
+  const hid_t hFileID = fileID;
   MPI_Datatype *pMPI_DataType = NULL;
   void *pHdf5Buf = NULL;
   /* pTmpDbleBuf and pTmpFltBuf must be set to NULL so that free() can be
