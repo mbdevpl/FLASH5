@@ -93,8 +93,6 @@ subroutine Driver_evolveFlash()
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
-  use block_iterator, ONLY : block_iterator_t
-  use block_metadata, ONLY : block_metadata_t
 
 #ifdef FLASH_GRID_AMREXTRANSITION
 !!$  use amrex_amr_module,    ONLY : amrex_real
@@ -142,9 +140,6 @@ subroutine Driver_evolveFlash()
   real,dimension(MDIM) :: del
 
   integer:: ib, blockID, level, maxLev
-
-  type(block_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
 
 !!$  real(amrex_real)  :: time     !testing...
   logical :: nodal(3)

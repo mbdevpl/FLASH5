@@ -39,11 +39,11 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
   use IO_data, ONLY : io_restart, io_statsFileName, io_globalComm
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getBlkIterator, Grid_releaseBlkIterator, &
+                             Grid_getLeafIterator, Grid_releaseLeafIterator, &
                              Grid_getSingleCellVol 
 
   use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
-  use block_iterator, ONLY : block_iterator_t
+  use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -64,7 +64,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   character (len=MAX_STRING_LENGTH), save :: fname 
   
   integer :: blkLimits(HIGH, MDIM), blkLimitsGC(HIGH, MDIM)
-  type(block_iterator_t) :: itor
+  type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
 #ifdef MAGP_VAR
@@ -94,7 +94,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   gsum(1:nGlobalSumUsed) = 0.
   lsum(1:nGlobalSumUsed) = 0.
   
-  call Grid_getBlkIterator(itor,LEAF)
+  call Grid_getLeafIterator(itor)
   do while (itor%is_valid())
      call itor%blkMetaData(blockDesc)
 
@@ -201,7 +201,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
      call itor%next()
   enddo
 #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call Grid_releaseBlkIterator(itor)
+  call Grid_releaseLeafIterator(itor)
 #endif
 
   ! Now the MASTER_PE sums the local contributions from all of
