@@ -1,38 +1,46 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/Grid_fillGuardCells
 !!
 !! NAME
+!!
 !!  Grid_fillGuardCells
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_fillGuardCells(integer(IN) :: gridDataStruct,
-!!                           integer(IN) :: idir,
-!!                  optional,integer(IN) :: minLayers,
-!!                  optional,integer(IN) :: eosMode,
-!!                  optional,logical(IN) :: doEos,
-!!                  optional,integer(IN) :: maskSize,
-!!                  optional,logical(IN) :: mask(maskSize),
-!!                  optional,logical(IN) :: makeMaskConsistent,
-!!                  optional,integer(IN) :: selectBlockType,
-!!                  optional,logical(IN) :: unitReadsMeshDataOnly)
-!!
+!!  call Grid_fillGuardCells(integer(IN)           :: gridDataStruct,
+!!                           integer(IN)           :: idir,
+!!                           integer(IN), optional :: minLayers,
+!!                           integer(IN), optional :: eosMode,
+!!                           logical(IN), optional :: doEos,
+!!                           integer(IN), optional :: maskSize,
+!!                           logical(IN), optional :: mask(maskSize),
+!!                           logical(IN), optional :: makeMaskConsistent,
+!!                           integer(IN), optional :: selectBlockType,
+!!                           logical(IN), optional :: unitReadsMeshDataOnly)
 !!
 !! DESCRIPTION 
 !!  
-!!  The argument "gridDataStruct" can take on one of many valid 
-!!  values to determine a specific grid data structure on which to apply
-!!  the guardcell fill operation. The currently available options are listed with
-!!  the arguments. Most users will use CENTER as the option, 
-!!  since applications typically use the cell centered grid data, and they want
-!!  guardcells to be filled for all the variables.
-!!  More specialized applications, such as the unsplit methods, may want to use
-!!  other options. 
-!!  The user can also choose to fill guard cells either in a single direction,
-!!  or all of them. 
+!!  Restrict data from leaf blocks down to all ancestors and fill the guardcells
+!!  of the physical quantities indicated with the given mask parameters and that
+!!  are of the indicated grid data structure type.  The fill can be restricted 
+!!  to a given direction.
 !!
+!!  Note that the fill step might require that AMReX execute prolongation operations
+!!  using the AMReX conservative linear interpolation algorithm for guardcells
+!!  at fine/coarse boundaries.
+!!
+!!  It is assumed that the data in all leaf block interiors is correct and that EoS
+!!  has been run for these.  No assumptions are made about the quality of
+!!  guardcell data nor ancestor blocks.
+!!
+!!  Note that while the interior data of ancestor blocks are improved through
+!!  restriction, EoS has not been run on them.
+!!
+!!  If EoS is run on the guardcells, it is done on all levels for all affected
+!!  variables and all affected blocks.  If doEos is set to true but eosMode is
+!!  not given, then EoS is run using the mode given by the eosMode runtime
+!!  parameter.
 !!
 !! ARGUMENTS 
-!!  
 !!
 !!  gridDataStruct - integer constant, defined in "constants.h", 
 !!                   indicating which grid data structure 
@@ -143,7 +151,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         Grid_getBlkIterator, &
                                         Grid_releaseBlkIterator
   use Grid_data,                 ONLY : gr_justExchangedGC, &
-                                        gr_eosModeNow, &
+                                        gr_eosMode, &
                                         gr_enableMaskedGCFill, &
                                         gr_meshMe, gr_meshComm, &
                                         gr_gcellsUpToDate, &
@@ -152,7 +160,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use Driver_interface,          ONLY : Driver_abortFlash
   use Timers_interface,          ONLY : Timers_start, Timers_stop
   use Logfile_interface,         ONLY : Logfile_stampMessage, &
-                                        Logfile_stampVarMask
+                                        Logfile_stampVarMask, &
+                                        Logfile_stamp
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_averageDownLevels
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
@@ -178,7 +187,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   logical,dimension(NUNK_VARS) :: gcell_on_cc
   integer :: guard, gcEosMode
   integer,dimension(MDIM) :: layers, returnLayers
-  integer :: listBlockType
   real,dimension(:,:,:,:),pointer::solnData
   type(block_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
@@ -242,7 +250,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   if(present(eosMode)) then
      gcEosMode=eosMode
   else
-     gcEosMode=gr_eosModeNow
+     gcEosMode=gr_eosMode
   end if
 
   needEos=.true.
@@ -333,26 +341,13 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end if
 
   guard = NGUARD
-  listBlockType = ACTIVE_BLKS
 
   !----------------------------------------------------------------
   ! Figure out nlayers arguments to amr_guardcell based on our arguments
   call gr_setGcFillNLayers(layers, idir, guard, minLayers, returnLayers)
 
   if (present(selectBlockType)) then
-     listBlockType = selectBlockType
-     select case (selectBlockType)
-     case(LEAF)
-        ! ok
-     case(ACTIVE_BLKS)
-        ! ok
-     case(ALL_BLKS)
-        call Driver_abortFlash('Grid_fillGuardCells: unsupported value ALL_BLKS for selectBlockType!')
-#ifdef DEBUG_GRID
-     case default
-        call Driver_abortFlash("[Grid_fillGuardCells] selectBlockType *not* implemented for yet AMReX") 
-#endif
-     end select
+     call Driver_abortFlash("[Grid_fillGuardCells] selectBlockType *not* implemented for yet AMReX") 
   end if
 
   ! Restrict data from leaves to coarser blocks
@@ -362,50 +357,72 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! the domain were zero (no periodic BC).  AMReX recommended using fillpatch,
   ! which is copying *all* data, including the GC.
   call Timers_start("amr_guardcell")
-  
+
+  ! GC Fill with GC EoS on coarsest level
   lev = 0
   call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
                                  0.0d0, unk(lev), &
                                  amrex_geom(lev), gr_fillPhysicalBC, &
                                  0.0d0, scompCC, scompCC, ncompCC)
 
-  finest_level = amrex_get_finest_level()
-  do lev=1, finest_level
-    call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
-                                   0.0d0, unk(lev-1), &
-                                   amrex_geom(lev-1), gr_fillPhysicalBC, &
-                                   1.0e0, unk(lev  ), &
-                                   0.0d0, unk(lev  ), &
-                                   amrex_geom(lev  ), gr_fillPhysicalBC, &
-                                   0.0d0, scompCC, scompCC, ncompCC, &
-                                   amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                   lo_bc_amrex, hi_bc_amrex) 
-  end do
-  call Timers_stop("amr_guardcell")
-
-  gr_justExchangedGC = .TRUE.
-
-  if(present(doEos)) then
-     if(doEos.and.needEos) then
+  if (present(doEos) .AND. needEos) then
+     if (doEos) then
         call Timers_start("eos gc")
-        call Grid_getBlkIterator(itor, listBlockType)
+        call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1)
         do while (itor%is_valid())
-                call itor%blkMetaData(blockDesc)
-                
-                call Grid_getBlkPtr(blockDesc, solnData)
-                call Eos_guardCells(gcEosMode, solnData, corners=.true., &
-                                    layers=returnLayers)
-                call Grid_releaseBlkPtr(blockDesc, solnData)
-                nullify(solnData)
+           call itor%blkMetaData(blockDesc)
+           
+           call Grid_getBlkPtr(blockDesc, solnData)
+           call Eos_guardCells(gcEosMode, solnData, corners=.true., &
+                               layers=returnLayers)
+           call Grid_releaseBlkPtr(blockDesc, solnData)
 
-                call itor%next()
+           call itor%next()
         end do
         call Grid_releaseBlkIterator(itor)
         call Timers_stop("eos gc")
      end if
   end if
 
+  ! GC Fill with GC EoS up to finest level
+  finest_level = amrex_get_finest_level()
+  do lev=1, finest_level
+     call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
+                                    0.0d0, unk(lev-1), &
+                                    amrex_geom(lev-1), gr_fillPhysicalBC, &
+                                    1.0e0, unk(lev  ), &
+                                    0.0d0, unk(lev  ), &
+                                    amrex_geom(lev  ), gr_fillPhysicalBC, &
+                                    0.0d0, scompCC, scompCC, ncompCC, &
+                                    amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                    lo_bc_amrex, hi_bc_amrex) 
   
+     if (present(doEos) .AND. needEos) then
+        if (doEos) then
+           call Timers_start("eos gc")
+           call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1)
+           do while (itor%is_valid())
+              call itor%blkMetaData(blockDesc)
+              
+              call Grid_getBlkPtr(blockDesc, solnData)
+              call Eos_guardCells(gcEosMode, solnData, corners=.true., &
+                                  layers=returnLayers)
+              call Grid_releaseBlkPtr(blockDesc, solnData)
+
+              call itor%next()
+           end do
+           call Grid_releaseBlkIterator(itor)
+           call Timers_stop("eos gc")
+        end if
+     end if
+  end do
+  call Timers_stop("amr_guardcell")
+
+  gr_justExchangedGC = .TRUE.
+
+  call Logfile_stamp(finest_level+1, &
+          '[Grid_fillGuardCells] GC fill/GC EoS up to level ')
+
   !We now test whether we can skip the next guard cell fill.
   skipNextGcellFill = .false.
   if(present(unitReadsMeshDataOnly)) then

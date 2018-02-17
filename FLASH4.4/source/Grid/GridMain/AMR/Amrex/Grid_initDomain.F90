@@ -6,25 +6,21 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_initDomain(logical(IN)  :: restart,
+!!  Grid_initDomain(logical(IN)    :: restart,
 !!                  logical(INOUT) :: particlesInitialized)
 !!
 !! DESCRIPTION
 !!
-!!  Create the mesh, initialize all the mesh data structures
-!!  and apply initial conditions
+!!  Create the coarsest mesh, initialize all the mesh data structures,
+!!  apply initial conditions, and run EoS on interior and guardcells to make
+!!  them thermodynamically consistent.
 !!
-!!  Initially very few blocks are created (number supplied at runtime).
-!!  then user-defined refinment critera is applied to determine the 
-!!  blocks that need to be refined and derefined.  
+!!  User-defined refinement critera is applied to determine the 
+!!  blocks that require refinement.  All new child blocks are filled
+!!  with the initial conditions and EoS is run on interior and guardcells.
 !!
-!!  After the refinement, the newly created child blocks are filled via
-!!  prolongation from the coarse parents.  This prolongation step can use
-!!  prolongation routine supplied with paramesh or defined by the user.
-!!
-!!  Once the prolongation is done, the guardcells are filled.  Finally, the
-!!  EOS is called on the block interiors to make them thermodynamically
-!!  consistent.
+!!  Please see the documentation for gr_initNewLevelCallback for more
+!!  information regarding how the EoS runs are done.
 !!
 !!  In simulations with particles, under certain conditions particle
 !!  positions will also be initialized.  Currently this is the case
@@ -57,8 +53,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
 
   use gr_physicalMultifabs, ONLY : unk, &
                                    facevarx, facevary, facevarz
-
-  use Grid_data, ONLY : gr_eosMode, gr_eosModeNow
+  use Driver_interface,     ONLY : Driver_abortFlash
 
   implicit none
 
@@ -66,8 +61,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   logical, intent(INOUT) :: particlesInitialized
 
   real(wp), parameter :: T_INIT = 0.0_wp
-
-  ! DEV: TODO Implement parameters
 
   !!!!!----- ALLOCATE DATA STRUCTURES
   ! multifabs 
@@ -81,9 +74,16 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   allocate(facevary(0:amrex_max_level))
   allocate(facevarz(0:amrex_max_level))
 
-  ! Setup grids and initialize the data
-  call amrex_init_from_scratch(T_INIT)
+  ! DEV: TODO Implement parameters
+  if (.NOT. restart) then
+    !  This creates all refinement levels needed based on ICs,
+    !  runs EoS on interiors, fills GCs, and runs EoS on GCs.
+    !  All this is done through the callback functions.
+    call amrex_init_from_scratch(T_INIT)
+  else 
+    call Driver_abortFlash("[Grid_initDomain] restarts not yet implemented")
+  end if
 
-  gr_eosModeNow = gr_eosMode !may be different from gr_eosModeInit
+  particlesInitialized = .FALSE.
 end subroutine Grid_initDomain
 

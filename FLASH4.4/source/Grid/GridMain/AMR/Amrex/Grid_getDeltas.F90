@@ -1,23 +1,23 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_getDeltas
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_getDeltas
 !!
 !! NAME
 !!  Grid_getDeltas
 !!
 !! SYNOPSIS
-!!
-!!  Grid_getDeltas(integer(IN) :: blockId,
+!!  Grid_getDeltas(integer(IN) :: level,
 !!                 real(OUT)   :: del(MDIM))
 !!  
 !! DESCRIPTION 
-!!  
-!!  Gets the grid spacing dx/dy/dz for a given blockId on the Grid.
-!!  dx is the size of one cell in the x direction of a block.
-!!  
-!!  
-!! ARGUMENTS 
+!!  Gets the size (dX, dY, dZ) of cells in the given refinement level where dX
+!!  is the width of the cell along the first dimension (IAXIS).
+!! 
+!!  If a dimension is Cartesian, then the returned size is the length of any
+!!  cell along that direction.  If a dimension is angular, then the size is the
+!!  angle expressed in radians (as opposed to the arclength).
 !!
-!!  blockId - local block number
-!!  del - array of size MDIM returned holding the dx, dy, and dz values
+!! ARGUMENTS 
+!!  level - local block number
+!!  del - array of size MDIM returned holding the dX, dY, and dZ values
 !!
 !!***
 
@@ -32,7 +32,7 @@ subroutine Grid_getDeltas(lev, del)
   real,    intent(OUT) :: del(MDIM)
 
   ! AMReX uses zero-based level indexing, but FLASH assumes one-based
-  del = 0.0d0
+  del = 0.0
   del(1:MDIM) = amrex_geom(lev-1)%dx(1:MDIM)
 end subroutine Grid_getDeltas
 
