@@ -41,8 +41,8 @@ subroutine gr_estimateError(error, iref, refine_filter)
        gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBC, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_amrexInterface, ONLY :  gr_getBlkIterator, gr_releaseBlkIterator
-  use gr_interface,   ONLY : gr_estimateBlkError
+  use gr_interface, ONLY :  gr_getBlkIterator, gr_releaseBlkIterator, &
+                            gr_estimateBlkError
   use gr_specificData, ONLY : gr_oneBlock
   use gr_iterator, ONLY : gr_iterator_t
   use block_metadata, ONLY : block_metadata_t
@@ -108,9 +108,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
      
   !==============================================================================
 
-  ! FIXME: This was set to iterate over ACTIVE_BLKS, which is not available
-  ! for AMReX.  AMReX has its own stub, so move this to Paramesh and let it use ACTIVE_BLKS.
-  call gr_getBlkIterator(itor)
+  call gr_getBlkIterator(itor, nodetype=ACTIVE_BLKS)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
 

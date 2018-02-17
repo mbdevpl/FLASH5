@@ -5,11 +5,12 @@
 !!
 !! SYNOPSIS
 !!  gr_getBlkIterator(gr_iterator_t(OUT)    :: itor,
+!!                    integer(IN), optional :: nodetype,
 !!                    integer(IN), optional :: level,
 !!                    logical(IN), optional :: tiling)
 !!  
 !! DESCRIPTION 
-!!  Construct an iterator for walking across a specific subset of all blocks or
+!!  Construct an iterator for walking across a specific subset of blocks or
 !!  tiles within the current octree structure.  The iterator is already
 !!  set to the first matching block/tile.
 !!
@@ -18,8 +19,9 @@
 !!
 !! ARGUMENTS 
 !!  itor     - the requested block iterator
-!!  level    - iterate only over all blocks/tiles located at this level of
-!!             refinement.
+!!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
+!!  level    - iterate only over blocks/tiles located at this level of
+!!             refinement and that match the given nodetype.
 !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
 !!             walk across all associated blocks on a tile-by-tile basis *if*
 !!             the implementation supports this feature.  If a value is not
@@ -32,12 +34,13 @@
 !!
 !!***
 
-subroutine gr_getBlkIterator(itor, level, tiling)
+subroutine gr_getBlkIterator(itor, nodetype, level, tiling)
   use gr_iterator, ONLY : gr_iterator_t, build_iterator
 
   implicit none
 
   type(gr_iterator_t), intent(OUT)          :: itor
+  integer,             intent(IN), optional :: nodetype
   integer,             intent(IN), optional :: level
   logical,             intent(IN), optional :: tiling
 

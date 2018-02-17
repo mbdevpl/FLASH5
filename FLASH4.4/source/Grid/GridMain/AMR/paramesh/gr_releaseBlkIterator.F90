@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/AMR/Amrex/gr_releaseBlkIterator
+!!****if* source/Grid/GridMain/AMR/paramesh/gr_releaseBlkIterator
 !!
 !! NAME
 !!  gr_releaseBlkIterator

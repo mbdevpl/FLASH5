@@ -61,8 +61,8 @@ subroutine gr_updateRefinement( gridChanged)
        gr_convertToConsvdInMeshInterp, gr_eosMode, gr_meshMe, gr_gcellsUpToDate
   use gr_specificData, ONLY : gr_blkList
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getBlkIterator, Grid_releaseBlkIterator
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
   use Simulation_interface, ONLY : Simulation_customizeProlong
   use tree, ONLY : newchild, nodetype, lnblocks, grid_changed, lrefine_max
@@ -74,7 +74,7 @@ subroutine gr_updateRefinement( gridChanged)
   use Eos_interface, ONLY : Eos_wrapped
   use Particles_interface, ONLY : Particles_updateRefinement 
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
-  use block_iterator, ONLY : block_iterator_t, destroy_iterator
+  use gr_iterator, ONLY : gr_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -89,7 +89,7 @@ subroutine gr_updateRefinement( gridChanged)
   integer, dimension(MDIM) :: layers
   integer :: blockID
   real,dimension(:,:,:,:),pointer :: solnData
-  type(block_iterator_t) :: itor
+  type(gr_iterator_t) :: itor
   type(block_metadata_t) :: block
 !=============================================================================
 
@@ -133,7 +133,7 @@ subroutine gr_updateRefinement( gridChanged)
   if (gr_convertToConsvdForMeshCalls) then
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, lrefine_max, ALL_BLKS)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ALL_BLKS)
-     call Grid_getBlkIterator(itor, ALL_BLKS)
+     call gr_getBlkIterator(itor, nodetype=ALL_BLKS)
      do while (itor%is_valid())
         call itor%blkMetaData(block)
         blockID = block%id
@@ -145,7 +145,7 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
-     call Grid_releaseBlkIterator(itor)
+     call gr_releaseBlkIterator(itor)
      
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ALL_BLKS,reverse=.TRUE.)
   endif
@@ -194,26 +194,26 @@ subroutine gr_updateRefinement( gridChanged)
   ! even for blocks whose data won't have any impact on further propagation
   ! (but may still be written out to plotfiles etc.).
   if (gr_convertToConsvdForMeshCalls) then
-     call Grid_getBlkIterator(itor, ACTIVE_BLKS)
+     call gr_getBlkIterator(itor, nodetype=ACTIVE_BLKS)
      do while (itor%is_valid())
         call itor%blkMetaData(block)
         call gr_conserveToPrimitive(block, .FALSE.)
 
         call itor%next()
      end do
-     call Grid_releaseBlkIterator(itor)
+     call gr_releaseBlkIterator(itor)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS,reverse=.TRUE.)
 
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, lrefine_max, ANCESTOR)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ANCESTOR)
-     call Grid_getBlkIterator(itor, ANCESTOR)
+     call gr_getBlkIterator(itor, nodetype=ANCESTOR)
      do while (itor%is_valid())
         call itor%blkMetaData(block)
         call gr_conserveToPrimitive(block, .TRUE.)
 
         call itor%next()
      end do
-     call Grid_releaseBlkIterator(itor)
+     call gr_releaseBlkIterator(itor)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ANCESTOR,reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, lrefine_max, ACTIVE_BLKS)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
@@ -245,7 +245,7 @@ subroutine gr_updateRefinement( gridChanged)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, lrefine_max, LEAF)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
      call Timers_start("eos")
-     call Grid_getBlkIterator(itor, LEAF)
+     call gr_getBlkIterator(itor, nodetype=LEAF)
      do while (itor%is_valid())
         call itor%blkMetaData(block)
 
@@ -256,7 +256,7 @@ subroutine gr_updateRefinement( gridChanged)
 
         call itor%next()
      end do
-     call Grid_releaseBlkIterator(itor)
+     call gr_releaseBlkIterator(itor)
      call Timers_stop("eos")
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, lrefine_max, ACTIVE_BLKS)

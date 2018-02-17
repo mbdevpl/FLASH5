@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/AMR/Amrex/gr_releaseBlkIterator
+!!****if* source/Grid/GridMain/AMR/gr_releaseBlkIterator
 !!
 !! NAME
 !!  gr_releaseBlkIterator
@@ -13,7 +13,7 @@
 !!  itor - the block iterator to destroy.
 !!
 !! SEE ALSO
-!!  gr_getBlkIterator
+!!  gr_getBlkIterator.F90
 !!
 !!***
 
@@ -24,6 +24,9 @@ subroutine gr_releaseBlkIterator(itor)
 
   type(gr_iterator_t), intent(INOUT) :: itor
 
+  ! Destroy explicitly ONLY for compilers that do not implement destructors
+#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
   call destroy_iterator(itor)
+#endif
 end subroutine gr_releaseBlkIterator
 

@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/AMR/Amrex/gr_getBlkIterator
+!!****if* source/Grid/GridMain/AMR/paramesh/gr_getBlkIterator
 !!
 !! NAME
 !!  gr_getBlkIterator
@@ -19,7 +19,9 @@
 !!
 !! ARGUMENTS 
 !!  itor     - the requested block iterator
-!!  nodetype - for AMReX, if given, the nodetype must be ALL_BLKS
+!!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS).  If
+!!             no block class is given, then the iterator defaults to iterating
+!!             over all blocks.
 !!  level    - iterate only over all blocks/tiles located at this level of
 !!             refinement.
 !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
@@ -37,8 +39,7 @@
 #include "constants.h"
 
 subroutine gr_getBlkIterator(itor, nodetype, level, tiling)
-  use Driver_interface, ONLY : Driver_abortFlash
-  use gr_iterator,      ONLY : gr_iterator_t, build_iterator
+  use gr_iterator, ONLY : gr_iterator_t, build_iterator
 
   implicit none
 
@@ -47,12 +48,14 @@ subroutine gr_getBlkIterator(itor, nodetype, level, tiling)
   integer,             intent(IN), optional :: level
   logical,             intent(IN), optional :: tiling
 
+  integer :: ntype
+
   if (present(nodetype)) then
-    if (nodetype /= ALL_BLKS) then
-      call Driver_abortFlash("[gr_getBlkIterator] This AMReX iterator walks only over all blocks")
-    end if
+    ntype = nodetype
+  else
+    ntype = ALL_BLKS
   end if
 
-  call build_iterator(itor, level, tiling)
+  call build_iterator(itor, ntype, level, tiling)
 end subroutine gr_getBlkIterator
 
