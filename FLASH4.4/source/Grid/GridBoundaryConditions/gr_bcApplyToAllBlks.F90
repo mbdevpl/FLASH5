@@ -31,13 +31,13 @@
   
 subroutine gr_bcApplyToAllBlks(axis,isWork)
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkBC, &
-                             Grid_getBlkIterator, Grid_releaseBlkIterator
+  use Grid_interface, ONLY : Grid_getBlkBC
+  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
   use Grid_data,ONLY : gr_numDataStruct,gr_gridDataStruct,gr_gridDataStructSize
-  use block_iterator, ONLY : block_iterator_t
+  use gr_iterator, ONLY : gr_iterator_t
   use block_metadata, ONLY : block_metadata_t
-  
+
   implicit none
   
   integer, intent(in) :: axis
@@ -52,7 +52,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
   integer :: idest=0
   integer,dimension(gr_numDataStruct) :: localDataStruct,localStructSize
   integer :: localNum
-  type(block_iterator_t) :: itor
+  type(gr_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
 
 #ifdef FLASH_GRID_AMREX
@@ -75,7 +75,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
      face(LOW)=LOW
      face(HIGH)=HIGH
 
-     call Grid_getBlkIterator(itor, ALL_BLKS)
+     call gr_getBlkIterator(itor)
      do while (itor%is_valid())
         call itor%blkMetaData(blockDesc) 
 
@@ -103,7 +103,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
            end do
         end if
      end do
-     call Grid_releaseBlkIterator(itor)
+     call gr_releaseBlkIterator(itor)
   end do
 #endif
 
