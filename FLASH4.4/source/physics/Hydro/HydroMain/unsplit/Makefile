@@ -8,7 +8,6 @@ Hydro += Hydro_data.o\
 	hy_uhd_addThermalFluxes.o\
 	hy_uhd_entropyFix.o\
 	hy_uhd_slopeLimiters.o\
-	hy_uhd_unsplit.o\
 	hy_uhd_getRiemannState.o\
 	hy_uhd_dataReconstOneStep.o\
 	hy_uhd_eigenParameters.o\
@@ -30,7 +29,6 @@ Hydro += Hydro_data.o\
 	hy_uhd_shockDetect.o\
 	hy_uhd_prim2con.o\
 	hy_uhd_prim2flx.o\
-	hy_uhd_interface.o\
 	hy_uhd_MultiTempInit.o\
 	hy_uhd_checkRHjumpCond.o\
 	hy_uhd_setMinTimeStep.o\
@@ -39,4 +37,6 @@ Hydro += Hydro_data.o\
 	hy_uhd_DataReconstructNormalDir_PPM.o\
 	hy_uhd_DataReconstructNormalDir_WENO.o\
 	hy_uhd_DataReconstructNormalDir_GP.o\
+	hy_uhd_computeFluxes.o\
+	hy_uhd_gravityStep.o\
 	hy_uhd_initializeGP.o

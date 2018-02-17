@@ -4,5 +4,4 @@ Hydro += Hydro_interface.o Hydro.o Hydro_init.o Hydro.o Hydro_sendOutputData.o H
          Hydro_gravPotIsAlreadyUpdated.o\
          Hydro_mapBcType.o
 Hydro += Hydro_advanceAll.o Hydro_prepareBuffers.o Hydro_freeBuffers.o \
-	 Hydro_doLoop0.o Hydro_doLoop1.o Hydro_doLoop4.o Hydro_doLoop5.o
-Hydro += Hydro_loop1Body.o Hydro_loop5Body.o
+	 Hydro_shockDetectLoop.o Hydro_computeFluxLoop.o Hydro_doLoop4.o Hydro_gravityStepLoop.o
