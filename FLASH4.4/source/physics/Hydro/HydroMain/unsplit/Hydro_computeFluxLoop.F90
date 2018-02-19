@@ -7,7 +7,7 @@ subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getBlkIterator, Grid_releaseBlkIterator,&
-                                  Grid_getMaxRefinement
+                                  Grid_getMaxRefinement. Grid_conserveFluxes
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use hy_uhd_interface,        ONLY : hy_uhd_computeFluxes
   use block_iterator, ONLY : block_iterator_t
@@ -39,20 +39,36 @@ subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
         call Timers_stop("loop1")
         do while(itor%is_valid())
            call itor%blkMetaData(blockDesc)
-
+           
            blkLimits(:,:)   = blockDesc%limits
            blkLimitsGC(:,:) = blockDesc%limitsGC
            
+!!$ DEV-AD the burden of having separate uin and uout managed here, perhaps an additional argument needed. 
+!!$ Perhaps Uout can be made to be just blocksize, the question is who should have the intelligence to 
+!!$ to return the right pointer.
            call Grid_getBlkPtr(blockDesc, Uout)
+!!$           call Grid_getBlkPtr(blockDesc, Uin)
+           
+!!$ DEV-AD Here we get the storage for the faces where computed fluxes will be stored.
+!!$ DEV-AD call Grid_getFaceBlkPtr(blockDesc,flxx, flxy, flxz)
+
 !!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
 !!$           call amrex_print(abx)
 !!$           tbx = abx
-
+           
            call Grid_getDeltas(level,del)
            Uin => Uout
            call hy_uhd_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+
+!!$           call Grid_conserveFluxes(ALLDIR,level)
+!!$           call hy_uhd_advance(blockDesc,blkLimitsGC,blkLimits, uin, Uout, flxx, flxy, flxz,&
+!!$                               del,simTime, dt, dtOld,  sweepDummy)
+
            call Grid_releaseBlkPtr(blockDesc, Uout)
            nullify(Uout)
+!!$           call Grid_releaseBlkPtr(blockDesc, Uin)
+
+
 !!$           call IO_writecheckpoint;stop
            call itor%next()
         end do
