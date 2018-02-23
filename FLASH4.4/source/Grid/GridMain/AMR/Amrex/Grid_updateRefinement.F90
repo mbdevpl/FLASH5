@@ -62,8 +62,6 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use amrex_amrcore_module, ONLY : amrex_regrid
 
   use Grid_interface,       ONLY : Grid_fillGuardCells, &
-                                   Grid_getBlkIterator, &
-                                   Grid_releaseBlkIterator, &
                                    Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data,            ONLY : gr_nrefs, &
 !                                   gr_maxRefine, &
@@ -71,7 +69,9 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                    gr_numRefineVars, &
                                    gr_eosMode, &
                                    gr_amrexDidRefinement
-  use block_iterator,       ONLY : block_iterator_t
+  use gr_interface,         ONLY : gr_getBlkIterator, &
+                                   gr_releaseBlkIterator
+  use gr_iterator,          ONLY : gr_iterator_t
   use block_metadata,       ONLY : block_metadata_t
   use Eos_interface,        ONLY : Eos_wrapped
   use Timers_interface,     ONLY : Timers_start, Timers_stop
@@ -90,7 +90,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   integer :: iref
   integer :: i
 
-  type(block_iterator_t)         :: itor
+  type(gr_iterator_t)            :: itor
   type(block_metadata_t)         :: blockDesc
   real,                  pointer :: solnData(:, :, :, :) => null()
 
@@ -134,7 +134,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
      ! influence refinement decisions.  If no, then we need only apply EoS to
      ! parent blocks.
-     call Grid_getBlkIterator(itor, ALL_BLKS)
+     call gr_getBlkIterator(itor)
      do while (itor%is_valid())
         call itor%blkMetaData(blockDesc)
 
@@ -145,7 +145,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
         call itor%next()
      end do
-     call Grid_releaseBlkIterator(itor)
+     call gr_releaseBlkIterator(itor)
 
      gr_amrexDidRefinement = .FALSE.
      call amrex_regrid(0, time)

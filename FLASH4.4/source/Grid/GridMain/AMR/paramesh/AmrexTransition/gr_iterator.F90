@@ -1,4 +1,4 @@
-!!****ih* source/Grid/GridMain/AMR/Amrex/block_iterator
+!!****ih* source/Grid/GridMain/AMR/Amrex/gr_iterator
 !!
 !! This module is a facade pattern that maps the AMReX Fortran iterator onto 
 !! the interface required presently by FLASH.
@@ -13,7 +13,7 @@
 #include "FortranLangFeatures.fh"
 #include "constants.h"
 
-module block_iterator
+module gr_iterator
 
     use block_1lev_iterator, ONLY : block_1lev_iterator_t
 
@@ -23,13 +23,13 @@ module block_iterator
 
     public :: build_iterator, destroy_iterator
 
-    !!****ic* block_iterator/block_iterator_t
+    !!****ic* gr_iterator/gr_iterator_t
     !!
     !! NAME
-    !!  block_iterator_t
+    !!  gr_iterator_t
     !!
     !!****
-    type, public :: block_iterator_t
+    type, public :: gr_iterator_t
         type(block_1lev_iterator_t),allocatable :: li(:)
         integer                 :: first_level   = INVALID_LEVEL
         integer                 :: last_level    = INVALID_LEVEL
@@ -41,7 +41,7 @@ module block_iterator
         procedure, public :: first
         procedure, public :: next
         procedure, public :: blkMetaData
-    end type block_iterator_t
+    end type gr_iterator_t
 
     interface build_iterator
         procedure :: init_iterator
@@ -50,13 +50,13 @@ module block_iterator
 
 contains
 
-    !!****im* block_iterator_t/build_iterator
+    !!****im* gr_iterator_t/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!  build_iterator(gr_iterator_t(OUT) :: itor,
     !!                 amrex_multifab(IN)    :: mfArray(:),
     !!                 integer(IN)           :: nodetype,
     !!                 integer(IN), optional :: level, 
@@ -87,7 +87,7 @@ contains
     subroutine init_iterator_mfa(itor, nodetype, mfArray, level, tiling)
       use amrex_multifab_module, ONLY : amrex_multifab
 
-        type(block_iterator_t), intent(OUT) :: itor
+        type(gr_iterator_t), intent(OUT) :: itor
         integer, intent(IN)           :: nodetype
         type(amrex_multifab),intent(IN),CONTIGUOUS :: mfArray(:)
         integer, intent(IN), optional :: level
@@ -110,7 +110,7 @@ contains
         itor%last_level = last
         itor%level = first
 
-!!$        print*,'block_iterator_build: about to build 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
+!!$        print*,'gr_iterator_build: about to build 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
 
         do l=first,last
 !!$           call amrex_mfiter_build(this%li(l),mfArray(l),tiling=tiling)
@@ -127,17 +127,17 @@ contains
            call destroy_iterator(itor)
         end if
 
-!!$        print*,'block_iterator_build: done building 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
+!!$        print*,'gr_iterator_build: done building 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
 !!$        call this%first()
       end subroutine init_iterator_mfa
 
-    !!****im* block_iterator_t/build_iterator
+    !!****im* gr_iterator_t/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(block_iterator_t(OUT) :: itor,
+    !!  build_iterator(gr_iterator_t(OUT) :: itor,
     !!                 integer(IN)           :: nodetype,
     !!                 integer(IN), optional :: level, 
     !!                 logical(IN), optional :: tiling)
@@ -166,7 +166,7 @@ contains
       use amrex_multifab_module, ONLY : amrex_multifab
       use gr_physicalMultifabs,  ONLY : Unk
 
-        type(block_iterator_t), intent(OUT)          :: itor
+        type(gr_iterator_t), intent(OUT)          :: itor
         integer,                intent(IN)           :: nodetype
         integer,                intent(IN), optional :: level
         logical,                intent(IN), optional :: tiling
@@ -174,7 +174,7 @@ contains
         call init_iterator_mfa(itor, nodetype, Unk, level, tiling)
     end subroutine init_iterator
 
-    !!****im* block_iterator_t/destroy_iterator
+    !!****im* gr_iterator_t/destroy_iterator
     !!
     !! NAME
     !!  destroy_iterator
@@ -187,7 +187,7 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
-      type (block_iterator_t), intent(INOUT) :: itor
+      type (gr_iterator_t), intent(INOUT) :: itor
 
         integer :: l
 
@@ -203,7 +203,7 @@ contains
 
     end subroutine destroy_iterator
 
-    !!****m* block_iterator_t/first
+    !!****m* gr_iterator_t/first
     !!
     !! NAME
     !!  first
@@ -216,19 +216,19 @@ contains
     !!
     !!****
     subroutine first(this)
-        class(block_iterator_t), intent(INOUT) :: this
+        class(gr_iterator_t), intent(INOUT) :: this
 
         integer :: l
         logical :: v
 
-        call Driver_abortFlash('block_iterator: Attempting first(), not implemented!')
-        print*,'block_iterator%first: about to do 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
+        call Driver_abortFlash('gr_iterator: Attempting first(), not implemented!')
+        print*,'gr_iterator%first: about to do 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
 
         do l = this%first_level, this%last_level
            call this%li( l )%first()
         end do
 
-        print*,'block_iterator%first: done 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
+        print*,'gr_iterator%first: done 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
 
         if (this%first_level .LE. this%last_level) then
            l = this%first_level
@@ -251,7 +251,7 @@ contains
 
     end subroutine first
  
-    !!****m* block_iterator_t/is_valid
+    !!****m* gr_iterator_t/is_valid
     !!
     !! NAME
     !!  is_valid
@@ -267,13 +267,13 @@ contains
     !!
     !!****
     function is_valid(this) result(ans)
-        class(block_iterator_t), intent(IN) :: this
+        class(gr_iterator_t), intent(IN) :: this
         logical :: ans
 
         ans = this%isValid
     end function is_valid
 
-    !!****m* block_iterator_t/next
+    !!****m* gr_iterator_t/next
     !!
     !! NAME
     !!  next
@@ -287,12 +287,12 @@ contains
     !!
     !!****
     subroutine next(this)
-        class(block_iterator_t), intent(INOUT) :: this
+        class(gr_iterator_t), intent(INOUT) :: this
 
         integer :: l
         logical :: v
 
-!!$        print*,'block_iterator%next: about to do 1lev%next on this=',this%isValid,this%level,allocated(this%li)
+!!$        print*,'gr_iterator%next: about to do 1lev%next on this=',this%isValid,this%level,allocated(this%li)
 
         l = this%level
 
@@ -310,7 +310,7 @@ contains
 
     end subroutine next
 
-    !!****m* block_iterator_t/blkMetaData
+    !!****m* gr_iterator_t/blkMetaData
     !!
     !! NAME
     !!  blkMetaData 
@@ -328,7 +328,7 @@ contains
         use block_metadata, ONLY : block_metadata_t
         use tree,           ONLY : lrefine_max
 
-        class(block_iterator_t), intent(IN)  :: this
+        class(gr_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: blockDesc
 
         type(amrex_box) :: box, fabbox
@@ -357,5 +357,5 @@ contains
 
     end subroutine blkMetaData
  
-end module block_iterator
+end module gr_iterator
 

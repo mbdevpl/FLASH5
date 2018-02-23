@@ -73,8 +73,7 @@ contains
     !!  block_1lev_iterator_t
     !!
     !! SYNOPOSIS
-    !!  itor = block_1lev_iterator_t(integer(IN)           :: nodetype,
-    !!                               integer(IN)           :: level, 
+    !!  itor = block_1lev_iterator_t(integer(IN)           :: level, 
     !!                               logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
@@ -82,13 +81,8 @@ contains
     !!  tiles within the the given refinement level.  The iterator is already
     !!  set to the first matching block/tile.
     !!
-    !!  DEV: Note that the nodetype parameter is *not* presently implemented.
-    !!       Client code will get all blocks in the given level.
-    !!
     !! ARGUMENTS
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-    !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks/tiles located at this level of
+    !!  level    - iterate only over blocks/tiles located at this level of
     !!             refinement.  Note that the level value must be given with
     !!             respect to FLASH's 1-based level index scheme.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
@@ -103,11 +97,10 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    function init_iterator(nodetype, level, tiling) result(this)
+    function init_iterator(level, tiling) result(this)
       use gr_physicalMultifabs,  ONLY : unk
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
-      integer, intent(IN)           :: nodetype
       integer, intent(IN)           :: level
       logical, intent(IN), optional :: tiling
       type(block_1lev_iterator_t)   :: this
