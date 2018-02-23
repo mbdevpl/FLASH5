@@ -102,6 +102,8 @@ Module Grid_data
   real,    save :: gr_refine_filter(MAXREFVARS)
 !  integer, save :: gr_globalNumBlocks !
 
+  logical, save :: gr_doFluxCorrection
+
   logical, save :: gr_enableMaskedGCFill
 
 #ifdef GRID_WITH_MONOTONIC
