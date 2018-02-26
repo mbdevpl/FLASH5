@@ -155,7 +155,6 @@ subroutine Grid_init()
   integer :: refVar
   integer :: nonrep
 
-  character(len=MAX_STRING_LENGTH) :: str_geometry = ""
  
   call Driver_getMype(GLOBAL_COMM, gr_globalMe)
   call Driver_getNumProcs(GLOBAL_COMM, gr_globalNumProcs)
@@ -184,8 +183,8 @@ subroutine Grid_init()
 !------------------------------------------------------------------------------
 ! Load into local Grid variables all runtime parameters needed by gr_initGeometry
 !------------------------------------------------------------------------------
-  call RuntimeParameters_get("geometry", str_geometry)
-  call RuntimeParameters_mapStrToInt(str_geometry, gr_geometry)
+  call RuntimeParameters_get("geometry",gr_str_geometry)
+  call RuntimeParameters_mapStrToInt(gr_str_geometry, gr_geometry)
 
   !get the boundary conditions stored as strings in the flash.par file
   call RuntimeParameters_get("xl_boundary_type", xl_bcString)
@@ -317,6 +316,8 @@ subroutine Grid_init()
 
 !  call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
   gr_justExchangedGC = .FALSE.
+
+  call gr_initSpecific()
 
   !! This section of the code identifies the variables to used in
   !! the refinement criterion. If a variable is a refinement variable

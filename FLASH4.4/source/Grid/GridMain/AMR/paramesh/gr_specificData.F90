@@ -129,7 +129,6 @@ Module gr_specificData
 
   !below values needed to make data structures for IO output
   integer,save,allocatable,target,dimension(:,:) :: gr_gid  !holds neigh, child, parent info for checkpoint files
-  integer, save :: gr_globalNumBlocks !
   integer, save, allocatable :: gr_nToLeft(:) !holds 
 
 #ifdef BSS_GRID_ARRAYS

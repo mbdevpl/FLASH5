@@ -79,7 +79,7 @@ Module Grid_data
   integer, save :: gr_meshAcrossComm, gr_meshAcrossMe, gr_meshAcrossNumProcs
 
 !  logical, save :: gr_useEnergyDeposition
-!  real, save, dimension(LOW:HIGH,MDIM) :: gr_boxContainingLeafNodes
+  real, save, dimension(LOW:HIGH,MDIM) :: gr_boxContainingLeafNodes
 
   integer, save :: gr_eosMode
   integer, save :: gr_eosModeInit
@@ -96,11 +96,12 @@ Module Grid_data
 !  integer,save,dimension(2,MDIM) :: gr_blkBC
   logical, save :: gr_dirIsAngular(MDIM)
 !  logical, save :: gr_geometryOverride
+  character(len=MAX_STRING_LENGTH) :: gr_str_geometry
   integer, save :: gr_refine_var(MAXREFVARS)
   real,    save :: gr_refine_cutoff(MAXREFVARS)
   real,    save :: gr_derefine_cutoff(MAXREFVARS)
   real,    save :: gr_refine_filter(MAXREFVARS)
-!  integer, save :: gr_globalNumBlocks !
+  integer, save :: gr_globalNumBlocks !
 
   logical, save :: gr_enableMaskedGCFill
 
