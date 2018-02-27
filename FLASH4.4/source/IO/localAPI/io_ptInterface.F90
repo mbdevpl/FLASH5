@@ -52,8 +52,10 @@ module io_ptInterface
      subroutine io_ptWriteParticleData( fileID, &
           globalNumParticles, localNumParticles, particleOffset, &
           partAttributeLabels, particlesToCheckpoint)
+       use io_intfTypesModule, ONLY : io_fileID_t
        implicit none
-       integer, intent(IN) :: fileID, globalNumParticles, &
+       integer(io_fileID_t),intent(IN) :: fileID
+       integer, intent(IN) :: globalNumParticles, &
             localNumParticles, particleOffset
        character (len=OUTPUT_PROP_LENGTH), intent(IN) :: partAttributeLabels(NPART_PROPS)
        logical, intent(IN):: particlesToCheckpoint

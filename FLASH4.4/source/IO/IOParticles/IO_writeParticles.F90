@@ -66,6 +66,7 @@ subroutine IO_writeParticles( particlesToCheckpoint)
   use Cosmology_interface, ONLY : Cosmology_getRedshift
   use IO_interface, ONLY : IO_updateScalars  
   use io_ptInterface, ONLY : io_ptWriteParticleData
+  use io_intfTypesModule, ONLY : io_fileID_t
   use Particles_data, ONLY : pt_numLocal
   implicit none
 
@@ -78,7 +79,7 @@ subroutine IO_writeParticles( particlesToCheckpoint)
   integer :: i , ierr
 
   character (len=MAX_STRING_LENGTH) :: filename
-  integer :: pptFileID
+  integer(io_fileID_t) :: pptFileID
 
  ! for logfile output
   character(len=MAX_STRING_LENGTH), dimension(2,2) :: strBuff

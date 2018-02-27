@@ -4,7 +4,7 @@
 #include <hdf5.h>
 
 
-void FTOC(io_h5create_raydset)(const int * const pFileID)
+void FTOC(io_h5create_raydset)(const hid_t * const pFileID)
 {
   /* Create the data space with unlimited dimensions. */
   hsize_t dims[2] = {0, 5};
@@ -22,5 +22,6 @@ void FTOC(io_h5create_raydset)(const int * const pFileID)
 			    cparms);
 
   H5Sclose(dataspace);
+  H5Pclose(cparms);
   H5Dclose(dsetid);
 }

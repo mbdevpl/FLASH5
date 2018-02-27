@@ -6,12 +6,12 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
   use Grid_interface,      ONLY : Grid_getDeltas,&
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
-                                  Grid_getBlkIterator, Grid_releaseBlkIterator,&
+                                  Grid_getLeafIterator, Grid_releaseLeafIterator,&
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_loop1Body
-  use block_iterator, ONLY : block_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use leaf_iterator,       ONLY : leaf_iterator_t
+  use block_metadata,      ONLY : block_metadata_t
 
   implicit none
 
@@ -25,7 +25,7 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
 
   integer:: level, maxLev
 
-  type(block_iterator_t) :: itor
+  type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
@@ -35,7 +35,7 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
         print*,' ***************   HYDRO LEVEL', level,'  **********************'
 #endif
 
-        call Grid_getBlkIterator(itor, LEAF, level=level)
+        call Grid_getLeafIterator(itor, level=level)
         call Timers_stop("loop1")
         do while(itor%is_valid())
            call itor%blkMetaData(blockDesc)
@@ -58,7 +58,7 @@ subroutine Hydro_doLoop1(simTime, dt, dtOld)
         end do
         call Timers_stop("loop1")
 #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-        call Grid_releaseBlkIterator(itor)
+        call Grid_releaseLeafIterator(itor)
 #endif
 #ifdef DEBUG_DRIVER
         print*, 'return from Hydro/MHD timestep'  ! DEBUG

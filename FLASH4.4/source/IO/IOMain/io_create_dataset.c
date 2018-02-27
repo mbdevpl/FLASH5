@@ -1,7 +1,7 @@
 #include "io_create_dataset.h"
 
 void FTOC(io_create_dataset)(const int * const pMyPE,
-			     const int * const pFileID,
+			     const io_fileID_t * const pFileID,
 			     const int * const pLibType,
 			     const int * const pDiskType,
 			     const int * const pDims,
@@ -10,7 +10,7 @@ void FTOC(io_create_dataset)(const int * const pMyPE,
 			     const int * const pDsetNameLen)
 {
   const int myPE = *pMyPE;
-  const int fileID = *pFileID;
+  const io_fileID_t fileID = *pFileID;
   const int libType = *pLibType;
   const int diskType = *pDiskType;
   const int dims = *pDims;

@@ -355,7 +355,7 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
        (io_plotFileIntervalTime > 0.e0 .AND. simTime >= io_nextPlotFileTime) ) .and. outputPlotfile) then
      
      call Timers_start("plotfile")
-     !call Grid_computeUserVars()
+     !call Grid_computeUserVars() ! this is done inside IO_writePlotfile
 
 
      if ( io_plotFileIntervalTime > 0.e0 ) then
@@ -421,7 +421,7 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
      end if
      
      call Timers_start("plotfile")     
-     call Grid_computeUserVars()
+     !call Grid_computeUserVars() ! this is done inside IO_writePlotfile
      !Note that this plotfile is considered "forced"
      call IO_writePlotfile( .true.)
      call Timers_stop("plotfile")
@@ -511,8 +511,8 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
   ! set for MASTER_PE in io_memoryReport()
 
   if (  io_globalMe == MASTER_PE) then
-    rssMaxExceeded = .false.
-    if ( (io_memoryStatFreq > 0) .and. &
+     rssMaxExceeded = .false.
+     if ( (io_memoryStatFreq > 0) .and. &
          (mod(nstep,io_memoryStatFreq) == 0) .and. &
          (io_maxRSS > 0.0) .and.  &
          ( io_measRSS .ge. io_maxRSS) ) rssMaxExceeded = .true. 

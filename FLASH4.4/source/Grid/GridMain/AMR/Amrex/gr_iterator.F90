@@ -1,24 +1,26 @@
-!!****ih* source/Grid/GridMain/AMR/Amrex/block_iterator
+!!****ih* source/Grid/GridMain/AMR/Amrex/gr_iterator
 !!
 !! NAME
-!!  block_iterator
+!!  gr_iterator
 !!
 !! DESCRIPTION
-!!  A class that defines a full-featured iterator for sequentially accessing
+!!  A class that defines a full-featured iterator for sequentially accessing all
 !!  blocks or tiles in the physical domain.  At initialization, the client code
 !!  informs the initialization routine what blocks/tiles need to be accessed by
 !!  the client code via the iterator.
 !!
-!!  Please refer to the documentation of Grid_getBlkIterator for more
+!!  Please refer to the documentation of gr_getBlkIterator for more
 !!  information regarding iterator initialization.
 !!
+!!  NOTE: This iterator is meant for use only within the Grid unit.
+!!
 !! EXAMPLE
-!!  The following example demonstrates looping over all leaf blocks defined on
+!!  The following example demonstrates looping over all blocks defined on
 !!  the coarsest level.
 !!
 !!  type(block_metadata_t) :: blockDesc 
 !!
-!!  call Grid_getBlkIterator(itor, LEAF, level=1)
+!!  call gr_getBlkIterator(itor, level=1)
 !!  do while (itor%is_valid())
 !!    call itor%blkMetaData(blockDesc)
 !!
@@ -30,11 +32,11 @@
 !!
 !!    call itor%next()
 !!  end do
-!!  call Grid_releaseBlkIterator(itor)
+!!  call gr_releaseBlkIterator(itor)
 !!
 !! SEE ALSO
-!!  Grid_getBlkIterator
-!!  Grid_releaseBlkIterator
+!!  gr_getBlkIterator
+!!  gr_releaseBlkIterator
 !!  block_descriptor_t
 !!
 !!****
@@ -43,7 +45,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-module block_iterator
+module gr_iterator
 
     use block_1lev_iterator, ONLY : block_1lev_iterator_t
 
@@ -53,10 +55,10 @@ module block_iterator
 
     public :: build_iterator, destroy_iterator
 
-    !!****ic* block_iterator/block_iterator_t
+    !!****ic* gr_iterator/gr_iterator_t
     !!
     !! NAME
-    !!  block_iterator_t
+    !!  gr_iterator_t
     !!
     !! DESCRIPTION
     !!  This class maintains a set of single-level iterators, which are used
@@ -65,7 +67,7 @@ module block_iterator
     !!  NOTE: The three level integers as well as the index of li use FLASH's
     !!        1-based level indexing.
     !!****
-    type, public :: block_iterator_t
+    type, public :: gr_iterator_t
         type(block_1lev_iterator_t), private, allocatable :: li(:)
         integer,                     private              :: first_level = INVALID_LEVEL
         integer,                     private              :: last_level  = INVALID_LEVEL
@@ -75,7 +77,7 @@ module block_iterator
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
-    end type block_iterator_t
+    end type gr_iterator_t
 
     interface build_iterator
         procedure :: init_iterator
@@ -83,30 +85,27 @@ module block_iterator
 
 contains
 
-    !!****im* block_iterator_t/build_iterator
+    !!****im* gr_iterator_t/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(block_iterator_t(OUT) :: itor,
-    !!                 integer(IN)           :: nodetype,
+    !!  build_iterator(gr_iterator_t(OUT)    :: itor,
     !!                 integer(IN), optional :: level, 
     !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
-    !!  Construct an iterator for walking across a specific subset of blocks or
+    !!  Construct an iterator for walking across a specific subset of all blocks or
     !!  tiles within the current AMReX octree structure.  The iterator is already
     !!  set to the first matching block/tile.
     !!
-    !!  NOTE: Prefer iterator acquisition/destruction via Grid unit public
-    !!        interface --- Grid_getBlkIterator/Grid_releaseBlkIterator.
+    !!  NOTE: Prefer iterator acquisition/destruction via Grid unit local 
+    !!        interface --- gr_getBlkIterator/gr_releaseBlkIterator.
     !!
     !! ARGUMENTS
     !!  itor     - the constructed iterator
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-    !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks/tiles located at this level of
+    !!  level    - iterate only over all blocks/tiles located at this level of
     !!             refinement.  Note that the level value must be given with
     !!             respect to FLASH's 1-based level index scheme.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
@@ -118,13 +117,12 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    subroutine init_iterator(itor, nodetype, level, tiling)
+    subroutine init_iterator(itor, level, tiling)
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
-      type(block_iterator_t), intent(OUT)            :: itor
-      integer,                intent(IN)             :: nodetype
-      integer,                intent(IN), optional   :: level
-      logical,                intent(IN), optional   :: tiling
+      type(gr_iterator_t), intent(OUT)          :: itor
+      integer,             intent(IN), optional :: level
+      logical,             intent(IN), optional :: tiling
 
       integer :: lev
       integer :: finest_level
@@ -152,7 +150,7 @@ contains
         allocate( itor%li(first : last) )
 
         do lev=first, last
-            itor%li(lev) = block_1lev_iterator_t(nodetype, lev, tiling=tiling)
+            itor%li(lev) = block_1lev_iterator_t(lev, tiling=tiling)
             is_lev_valid = itor%li(lev)%is_valid()
             if (is_lev_valid .AND. .NOT. itor%isValid) then
                itor%isValid = .TRUE.
@@ -162,7 +160,7 @@ contains
       end associate
     end subroutine init_iterator
 
-    !!****im* block_iterator_t/destroy_iterator
+    !!****im* gr_iterator_t/destroy_iterator
     !!
     !! NAME
     !!  destroy_iterator
@@ -175,7 +173,7 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
-      type (block_iterator_t), intent(INOUT) :: itor
+      type (gr_iterator_t), intent(INOUT) :: itor
 
       integer :: lev
 
@@ -190,7 +188,7 @@ contains
       itor%isValid = .FALSE.
     end subroutine destroy_iterator
 
-    !!****m* block_iterator_t/is_valid
+    !!****m* gr_iterator_t/is_valid
     !!
     !! NAME
     !!  is_valid
@@ -206,13 +204,13 @@ contains
     !!
     !!****
     function is_valid(this) result(ans)
-        class(block_iterator_t), intent(IN) :: this
+        class(gr_iterator_t), intent(IN) :: this
         logical :: ans
 
         ans = this%isValid
     end function is_valid
 
-    !!****m* block_iterator_t/next
+    !!****m* gr_iterator_t/next
     !!
     !! NAME
     !!  next
@@ -226,7 +224,7 @@ contains
     !!
     !!****
     subroutine next(this)
-        class(block_iterator_t), intent(INOUT) :: this
+        class(gr_iterator_t), intent(INOUT) :: this
 
         logical :: is_li_valid
 
@@ -245,7 +243,7 @@ contains
         end associate
     end subroutine next
 
-    !!****m* block_iterator_t/blkMetaData
+    !!****m* gr_iterator_t/blkMetaData
     !!
     !! NAME
     !!  blkMetaData 
@@ -262,8 +260,8 @@ contains
         use amrex_box_module, ONLY : amrex_box
         use block_metadata,   ONLY : block_metadata_t
 
-        class(block_iterator_t), intent(IN)  :: this
-        type(block_metadata_t),  intent(OUT) :: blockDesc
+        class(gr_iterator_t),   intent(IN)  :: this
+        type(block_metadata_t), intent(OUT) :: blockDesc
 
         type(amrex_box) :: box, fabbox
        
@@ -292,5 +290,5 @@ contains
                                            - blockDesc%limitsGC(LOW, :) + 1
     end subroutine blkMetaData
  
-end module block_iterator
+end module gr_iterator
 

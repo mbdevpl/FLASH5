@@ -10,7 +10,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  IO_writePlotfile(logical(in), optional :: forced)
+!!  call IO_writePlotfile(logical(in), optional :: forced)
 !!
 !!
 !!
@@ -58,10 +58,6 @@
 !!
 !! NOTES
 !!  
-!!  We have added functionality to compress plotfile data further.  Byte packing
-!!  is currently only available with hdf5 and the uniform grid.  To use
-!!  byte packing set the runtime parameter bytePack to .true. in your flash.par
-!!
 !!  For those familiar with FLASH2, breaking up the plotfile routine into
 !!  these four different methods is a change.  Because FLASH3 now supports
 !!  different grid packages and we are committed to supporting both
@@ -79,6 +75,7 @@ subroutine IO_writePlotfile( forced)
        io_doublePrecision, io_nPlotVars, io_forcedPlotFileNumber, &
        io_ignoreForcedPlot, io_flashRelease, io_globalMe, io_wrotePlot, &
        io_oldPlotFileName
+  use io_intfTypesModule, ONLY : io_fileID_t
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stamp
   use Grid_interface, ONLY : Grid_computeUserVars, &
     Grid_restrictAllLevels
@@ -93,7 +90,7 @@ subroutine IO_writePlotfile( forced)
 
   logical, optional, intent(in) :: forced
   
-  integer :: fileID
+  integer(io_fileID_t) :: fileID
   logical :: fileIsForced
   character (len=MAX_STRING_LENGTH) :: filename
   
@@ -111,12 +108,11 @@ subroutine IO_writePlotfile( forced)
   ! If FLASH version string has not been initialized yet...
   if (io_flashRelease(1:1) == ' ') call io_prepareSimInfo()
   
-  ! Ensure the Grid is in a consistient state for plotfile output.
+  ! Ensure the Grid is in a consistent state for plotfile output.
   call io_restrictBeforeWrite( restrictNeeded)
   if (restrictNeeded .eqv. .true.) then
      call Grid_restrictAllLevels()
   end if
-  call Grid_computeUserVars()
   
   
   io_doublePrecision = .false.
@@ -154,6 +150,7 @@ subroutine IO_writePlotfile( forced)
 
 
 
+  ! Ensure that user variables always get computed for plotfile output.
   call Grid_computeUserVars()
 
   call io_writeData( fileID)

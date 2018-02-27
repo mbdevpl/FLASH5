@@ -1,7 +1,7 @@
 #include "io_h5_xfer_mesh_dataset.h"
 
 void io_h5_xfer_mesh_dataset(const int myPE,
-			     const int fileID,
+			     const hid_t fileID,
 			     const int xferType,
 			     const int fileFmt,
 			     const int fileType,
@@ -16,7 +16,7 @@ void io_h5_xfer_mesh_dataset(const int myPE,
 			     const char datasetName[],
 			     double * pData)
 {
-  const hid_t hFileID = (hid_t) fileID;
+  const hid_t hFileID = fileID;
   herr_t (*old_func)(void*) = NULL;
   void *old_client_data = NULL;
   hsize_t memStart[IO_MESH_DIMS], diskStart[IO_MESH_DIMS],

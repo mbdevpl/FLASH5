@@ -40,11 +40,11 @@ subroutine gr_estimateError(error, iref, refine_filter)
   use Grid_data, ONLY: gr_geometry, &
        gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBC, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getBlkIterator, Grid_releaseBlkIterator
-  use gr_interface,   ONLY : gr_estimateBlkError
+                             Grid_getBlkPtr, Grid_releaseBlkPtr
+  use gr_interface, ONLY :  gr_getBlkIterator, gr_releaseBlkIterator, &
+                            gr_estimateBlkError
   use gr_specificData, ONLY : gr_oneBlock
-  use block_iterator, ONLY : block_iterator_t
+  use gr_iterator, ONLY : gr_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -80,7 +80,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
 
   integer :: idest, iopt, nlayers, icoord
   logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
-  type(block_iterator_t) :: itor
+  type(gr_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
   integer :: blkLevel, blkID
 
@@ -108,8 +108,7 @@ subroutine gr_estimateError(error, iref, refine_filter)
      
   !==============================================================================
 
-
-  call Grid_getBlkIterator(itor, ACTIVE_BLKS)
+  call gr_getBlkIterator(itor, nodetype=ACTIVE_BLKS)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
 
@@ -118,6 +117,6 @@ subroutine gr_estimateError(error, iref, refine_filter)
 
      call itor%next()
   end do
-  call Grid_releaseBlkIterator(itor)
+  call gr_releaseBlkIterator(itor)
 end subroutine gr_estimateError
 

@@ -11,10 +11,13 @@
 !!
 !! DESCRIPTION
 !!
-!!  Accessor routine that sets a scalar value to a scalar list which
-!!  will then be checkpointed or written to a plotfile.
+!!  Accessor routine that adds a named scalar value to a list
+!!  of (name, scalar value) pairs, or changes the value if
+!!  the name already exists in the list.
+!!  The scalar lists constructed by calls to IO_setScalar
+!!  will be checkpointed or written to a plotfile.
 !!
-!!  In FLASH3 what we mean by scalars are single value variables
+!!  In FLASH4 what we mean by scalars are single value variables
 !!  associated with an entire flash run.
 !!  These scalars are in contrast to Grid scope variables which
 !!  need to be stored at each zone of each block in the simulation.

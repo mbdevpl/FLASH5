@@ -63,12 +63,12 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           facevarx, facevary, facevarz
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
-    use block_iterator,            ONLY : block_iterator_t
+    use gr_iterator,               ONLY : gr_iterator_t
     use block_metadata,            ONLY : block_metadata_t
     use Simulation_interface,      ONLY : Simulation_initBlock
-    use Grid_interface,            ONLY : Grid_getBlkIterator, &
-                                          Grid_releaseBlkIterator, &
-                                          Grid_getBlkPtr, Grid_releaseBlkPtr
+    use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+    use gr_interface,              ONLY : gr_getBlkIterator, &
+                                          gr_releaseBlkIterator
     use Grid_data,                 ONLY : gr_eosModeInit, &
                                           lo_bc_amrex, hi_bc_amrex
     use Eos_interface,             ONLY : Eos_wrapped
@@ -84,7 +84,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
 
-    type(block_iterator_t)        :: itor
+    type(gr_iterator_t)           :: itor
     type(block_metadata_t)        :: block
     real(wp), contiguous, pointer :: initData(:,:,:,:)
 
@@ -106,7 +106,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     ! Write initial data across domain at given level
     n_blocks = 0
-    call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1, tiling=.FALSE.)
+    call gr_getBlkIterator(itor, level=lev+1, tiling=.FALSE.)
     do while (itor%is_valid())
         call itor%blkMetadata(block)
 
@@ -124,7 +124,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
         call itor%next()
     end do
-    call Grid_releaseBlkIterator(itor)
+    call gr_releaseBlkIterator(itor)
     
     call Logfile_stamp(lev+1, &
           '[gr_initNewLevelCallback] Initialized data on level')
@@ -154,7 +154,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     end if
 
     ! Run EoS on interiors and GCs in preparation for refinement check
-    call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1, tiling=.FALSE.)
+    call gr_getBlkIterator(itor, level=lev+1, tiling=.FALSE.)
     do while (itor%is_valid())
        call itor%blkMetaData(block)
 
@@ -164,7 +164,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
        call itor%next()
     end do
-    call Grid_releaseBlkIterator(itor)
+    call gr_releaseBlkIterator(itor)
 
     call Logfile_stamp(lev+1, &
           '[gr_initNewLevelCallback] GC fill/Full EoS on level')

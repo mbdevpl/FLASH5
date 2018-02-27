@@ -20,7 +20,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz
-    use Driver_interface,          ONLY : Driver_abortFlash
 
     implicit none
 
@@ -34,9 +33,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     type(amrex_mfiter)    :: mfi
 
     integer :: nFab
-
-    call Driver_abortFlash("[gr_makeFileLevelFromCoarseCallback] " // &
-                           "Callback has never been tested")
 
     ba = pba
     dm = pdm

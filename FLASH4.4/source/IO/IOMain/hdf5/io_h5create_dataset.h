@@ -7,11 +7,12 @@
 #include <string.h>
 #include "constants.h"
 #include "Flash.h"
+#include "hdf5_flash.h"
 #include "io_flash.h"
 #include "io_h5_type.h"
 
 void io_h5create_dataset(const int myPE,
-			 const int fileID,
+			 const hid_t fileID,
 			 const int diskType,
 			 const int dims,
 			 const int diskSize[],

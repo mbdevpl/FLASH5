@@ -117,7 +117,7 @@ subroutine io_readData()
   integer :: splitOffset, localOffset
   integer :: doread
 
-  integer :: fileID, presentDims
+  integer :: presentDims
   integer, parameter :: xferType = IO_READ_XFER, libType = IO_FILE_HDF5
 
 
