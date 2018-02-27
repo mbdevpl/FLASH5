@@ -11,7 +11,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
-  use Hydro_interface,     ONLY : Hydro_doLoop0, Hydro_doLoop1, Hydro_doLoop4
+  use Hydro_interface,     ONLY : Hydro_shockDetectLoop, Hydro_computeFluxLoop, Hydro_doLoop4
   use Hydro_data, ONLY : hy_gcMaskSize,       &
                          hy_gcMask
 
@@ -54,9 +54,9 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 #endif
   call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
 
-  call Hydro_doLoop0()
+  call Hydro_shockDetectLoop()
 
-  call Hydro_doLoop1(simTime, dt, dtOld)
+  call Hydro_computeFluxLoop(simTime, dt, dtOld)
 
   call Hydro_doLoop4()
 
