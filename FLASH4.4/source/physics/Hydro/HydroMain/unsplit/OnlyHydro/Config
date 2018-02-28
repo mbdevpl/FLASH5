@@ -1,17 +1,6 @@
 # Config file for the Unsplit Hydro solver unit.
 
 # We must use a special customized version of hy_uhd_unsplit.
-USESETUPVARS threadBlockList, threadWithinBlock
-IF threadBlockList
-   REQUIRES physics/Hydro/HydroMain/unsplit/Hydro_Unsplit/threadBlockList
-ENDIF
-IF threadWithinBlock
-   REQUIRES physics/Hydro/HydroMain/unsplit/Hydro_Unsplit/threadWithinBlock
-ENDIF
-IF threadBlockList and threadWithinBlock
-#   SETUPERROR "Choose either threadBlockList or threadWithinBlock - different versions of hy_uhd_unsplit"
-    CHILDORDER threadWithinBlock threadBlockList
-ENDIF
 
 # Fluxes
 FLUX F01Dens

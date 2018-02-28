@@ -1,16 +1,5 @@
 # Config file for the Unsplit Staggered Mesh MHD solver unit.
 
-USESETUPVARS threadBlockList, threadWithinBlock
-IF threadBlockList
-   REQUIRES physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/threadBlockList
-ENDIF
-IF threadWithinBlock
-   REQUIRES physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/threadWithinBlock
-ENDIF
-IF threadBlockList and threadWithinBlock
-#   SETUPERROR "Choose either threadBlockList or threadWithinBlock - different versions of hy_uhd_unsplit"
-    CHILDORDER threadWithinBlock threadBlockList
-ENDIF
 
 VARIABLE magx TYPE: PER_VOLUME 		      # x-magnetic field
 VARIABLE magy TYPE: PER_VOLUME 		      # y-magnetic field
