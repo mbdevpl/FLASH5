@@ -81,7 +81,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
      
 #ifdef DEBUG_GRID_GCMASK
      if (.NOT.gcMaskLogged) then
-        call Logfile_stampVarMask(hy_gcMaskSD, .FALSE., '[hy_unsplit]', 'gcWant[Detect]')
+        call Logfile_stampVarMask(hy_gcMaskSD, .FALSE., '[hy_uhd_unsplit]', 'gcWant[Detect]')
      end if
 #endif
      
@@ -109,7 +109,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   !! ***************************************************************************
 #ifdef DEBUG_GRID_GCMASK
   if (.NOT.gcMaskLogged) then
-     call Logfile_stampVarMask(hy_gcMask, .TRUE., '[hy_unsplit]', 'gcNeed')
+     call Logfile_stampVarMask(hy_gcMask, .TRUE., '[hy_uhd_unsplit]', 'gcNeed')
   end if
 #endif
 
