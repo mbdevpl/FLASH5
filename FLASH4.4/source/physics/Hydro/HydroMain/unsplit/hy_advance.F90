@@ -1,7 +1,7 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
+subroutine hy_advance(simTime, dt, dtOld)
 
   use Grid_interface,      ONLY : Grid_getDeltas,&
                                   Grid_getBlkPtr,&
@@ -69,4 +69,4 @@ subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
      end do
 
 
-end subroutine Hydro_computeFluxLoop
+end subroutine hy_advance

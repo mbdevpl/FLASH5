@@ -38,6 +38,7 @@ Hydro += Hydro_data.o\
 	hy_DataReconstructNormalDir_WENO.o\
 	hy_DataReconstructNormalDir_GP.o\
 	hy_advanceBlk.o\
+	hy_advance.o\
 	hy_unsplitUpdate.o\
 	hy_gravityStep.o\
 	hy_initializeGP.o

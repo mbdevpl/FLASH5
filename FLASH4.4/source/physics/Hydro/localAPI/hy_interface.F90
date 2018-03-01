@@ -72,7 +72,12 @@ Module hy_interface
      end subroutine hy_entropyFix
   end interface
 
-
+  interface
+     subroutine hy_advance(simTime, dt, dtOld)
+       implicit none
+       real, intent(IN) ::  simTime, dt, dtOld
+     end subroutine hy_advance
+  end interface
 
   interface
      subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&

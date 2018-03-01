@@ -11,8 +11,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
-  use Hydro_interface,     ONLY : Hydro_computeFluxLoop,&
-                                  Hydro_doLoop4, Hydro_gravityStepLoop
+  use Hydro_interface,     ONLY : Hydro_doLoop4, Hydro_gravityStepLoop
   use Hydro_data, ONLY : hy_fluxCorrect,       &
                          hy_fluxCorrectPerLevel, &
                          hy_gref,              &
@@ -147,7 +146,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   !! First part of advancement                                                 *
   !! ***************************************************************************
   !! Loop over the blocks
-  call Hydro_computeFluxLoop(simTime, dt, dtOld)
+  call hy_advance(simTime, dt, dtOld)
 !!$  call IO_writeCheckpoint()
 !!$  stop
 
