@@ -101,7 +101,7 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
 
-!!$  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
+  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
   real, pointer, dimension(:,:,:,:) :: scrch_Ptr
   real, pointer, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
 
@@ -192,10 +192,10 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
 !!$     call hy_memAllocScratch(SCRATCH_CTR,HY_VAR1_SCRATCHCTR_VAR,2, 0,0,0, &
 !!$          blockList(1:blockCount) )
      allocate(scrch_Ptr    (2,               loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
-!!$     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
-!!$     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
-!!$     allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
-!!$     endif
+     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+!!$  endif
 
 !!$#if (NSPECIES+NMASS_SCALARS) > 0
 !!$     if (hy_fullSpecMsFluxHandling) then
@@ -290,7 +290,7 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
 #endif
      call hy_getFaceFlux(blockDesc,blkLimits,blkLimitsGC,datasize,del,&
                              flx,fly,flz,&
-                             scrch_Ptr,hy_SpcR,hy_SpcL)
+                             scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
 #ifdef DEBUG_UHD
      print*,'got face flux'
      print*,'_unsplit Aft "call getFaceFlux": associated(Uin ) is',associated(Uin )
@@ -298,37 +298,37 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
 #endif
      call Timers_stop("getFaceFlux")
 
-     if (hy_geometry /= CARTESIAN) then
-        ! we are using consv_fluxes and need to divide by face areas
-        call Grid_getBlkData(blockDesc,CELL_FACEAREA,ILO_FACE, EXTERIOR, &
-             (/1,1,1/), faceAreas, datasize)
-        
-        call Grid_putFluxData(blockDesc,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
-        call Grid_getFluxData(blockDesc,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
-        if (NDIM > 1) then
-           call Grid_getBlkData(blockDesc,CELL_FACEAREA,JLO_FACE, EXTERIOR, &
-                (/1,1,1/), faceAreas, datasize)
-           call Grid_putFluxData(blockDesc,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
-           call Grid_getFluxData(blockDesc,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
-           if (NDIM > 2) then
-              call Grid_getBlkData(blockDesc,CELL_FACEAREA,KLO_FACE, EXTERIOR, &
-                   (/1,1,1/), faceAreas, datasize)
-              call Grid_putFluxData(blockDesc,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
-              call Grid_getFluxData(blockDesc,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
-           endif
-        endif
-     else ! Cartesian geometry
-        call Grid_putFluxData(blockDesc,IAXIS,flx,datasize)
-        call Grid_getFluxData(blockDesc,IAXIS,flx,datasize)
-        if (NDIM > 1) then
-           call Grid_putFluxData(blockDesc,JAXIS,fly,datasize)
-           call Grid_getFluxData(blockDesc,JAXIS,fly,datasize)
-           if (NDIM > 2) then
-              call Grid_putFluxData(blockDesc,KAXIS,flz,datasize)
-              call Grid_getFluxData(blockDesc,KAXIS,flz,datasize)
-           endif
-        endif
-     end if
+!!$     if (hy_geometry /= CARTESIAN) then
+!!$        ! we are using consv_fluxes and need to divide by face areas
+!!$        call Grid_getBlkData(blockDesc,CELL_FACEAREA,ILO_FACE, EXTERIOR, &
+!!$             (/1,1,1/), faceAreas, datasize)
+!!$        
+!!$        call Grid_putFluxData(blockDesc,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
+!!$        call Grid_getFluxData(blockDesc,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
+!!$        if (NDIM > 1) then
+!!$           call Grid_getBlkData(blockDesc,CELL_FACEAREA,JLO_FACE, EXTERIOR, &
+!!$                (/1,1,1/), faceAreas, datasize)
+!!$           call Grid_putFluxData(blockDesc,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
+!!$           call Grid_getFluxData(blockDesc,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
+!!$           if (NDIM > 2) then
+!!$              call Grid_getBlkData(blockDesc,CELL_FACEAREA,KLO_FACE, EXTERIOR, &
+!!$                   (/1,1,1/), faceAreas, datasize)
+!!$              call Grid_putFluxData(blockDesc,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
+!!$              call Grid_getFluxData(blockDesc,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
+!!$           endif
+!!$        endif
+!!$     else ! Cartesian geometry
+!!$        call Grid_putFluxData(blockDesc,IAXIS,flx,datasize)
+!!$        call Grid_getFluxData(blockDesc,IAXIS,flx,datasize)
+!!$        if (NDIM > 1) then
+!!$           call Grid_putFluxData(blockDesc,JAXIS,fly,datasize)
+!!$           call Grid_getFluxData(blockDesc,JAXIS,fly,datasize)
+!!$           if (NDIM > 2) then
+!!$              call Grid_putFluxData(blockDesc,KAXIS,flz,datasize)
+!!$              call Grid_getFluxData(blockDesc,KAXIS,flz,datasize)
+!!$           endif
+!!$        endif
+!!$     end if
 
 
      !! ************************************************************************

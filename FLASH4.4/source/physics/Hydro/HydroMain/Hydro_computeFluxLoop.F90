@@ -58,7 +58,7 @@ subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
            
            call Grid_getDeltas(level,del)
            Uin => Uout
-           call hy_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+           call hy_advance(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
 
 !!$           call Grid_conserveFluxes(ALLDIR,level)
 !!$           call hy_advance(blockDesc,blkLimitsGC,blkLimits, uin, Uout, flxx, flxy, flxz,&
