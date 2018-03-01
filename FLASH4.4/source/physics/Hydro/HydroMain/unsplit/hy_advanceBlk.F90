@@ -273,6 +273,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
 
      if(hy_fluxCorrectPerLevel) then
         updateMode=UPDATE_ALL
+        call Grid_getFluxData(blockDesc,flx,fly,flz,datasize)
      else
         
         updateMode = UPDATE_INTERIOR
