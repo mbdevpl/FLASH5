@@ -24,7 +24,7 @@ subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
   integer,save :: sweepDummy = SWEEP_ALL
 
   integer:: level, maxLev
-
+  
   type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
@@ -57,9 +57,8 @@ subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
            call itor%next()
         end do
         call Timers_stop("loop1")
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
         call Grid_releaseLeafIterator(itor)
-#endif
+
 #ifdef DEBUG_DRIVER
         print*, 'return from Hydro/MHD timestep'  ! DEBUG
         print*,'returning from hydro myPE=',dr_globalMe

@@ -52,10 +52,7 @@ subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
            call itor%next()
         end do
         call Timers_stop("loop5")
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
         call Grid_releaseLeafIterator(itor)
-#endif
-
 
      end do
 

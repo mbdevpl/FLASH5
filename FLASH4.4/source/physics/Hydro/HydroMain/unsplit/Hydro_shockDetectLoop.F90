@@ -54,7 +54,6 @@ subroutine Hydro_shockDetectLoop
 !!$     blockID = blockList(i)
 
   call Grid_getLeafIterator(itor)
-
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
 
@@ -75,8 +74,6 @@ subroutine Hydro_shockDetectLoop
 
      call itor%next()
   end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  
   call Grid_releaseLeafIterator(itor)
-#endif
+  
 end subroutine Hydro_shockDetectLoop
