@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_shockDetect
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_shockDetect
 !!
 !! NAME
 !!
-!!  hy_uhd_shockDetect
+!!  hy_shockDetect
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_shockDetect( integer (IN) :: blockID )
+!!  hy_shockDetect( integer (IN) :: blockID )
 !!
 !! DESCRIPTION
 !!
@@ -15,7 +15,7 @@
 !!  velocity fields. Two parameters beta and delta have been set 
 !!  to detect strong shocks. If such shocks exist then the unsplit
 !!  scheme applies its robust flux differencings using limited slopes
-!!  in data reconstruction step (see hy_uhd_dataReconstruct.F90).
+!!  in data reconstruction step (see hy_dataReconstruct.F90).
 !!  Different shock strengths can also be detected by lowering/increasing
 !!  beta and delta values.
 !!
@@ -39,7 +39,7 @@
 
 !!REORDER(4): Uin,Uout
 
-Subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
+Subroutine hy_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
 
 
   use Hydro_data,        ONLY : hy_cfl, hy_cfl_original,&
@@ -115,7 +115,7 @@ Subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
 #else
   if (hy_RiemannSolver == HYBR) then
      call Driver_abortFlash&
-          ("[hy_uhd_shockDetect]: SHOK_VAR has not been defined for shock detection")
+          ("[hy_shockDetect]: SHOK_VAR has not been defined for shock detection")
   endif
 #endif
 
@@ -236,4 +236,4 @@ Subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
 
   endif
 
-End Subroutine hy_uhd_shockDetect
+End Subroutine hy_shockDetect

@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_checkRHjumpCond
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_checkRHjumpCond
 !!
 !! NAME
 !!
-!!  hy_uhd_checkRHjumpCond
+!!  hy_checkRHjumpCond
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_checkRHjumpCond(integer(IN)   :: dir,
+!!  hy_checkRHjumpCond(integer(IN)   :: dir,
 !!                         real(IN)      :: dens,
 !!                         real(IN)      :: velocity(MDIM),
 !!                         real(IN)      :: pres,
@@ -71,7 +71,7 @@
 !!***
 
 
-Subroutine hy_uhd_checkRHjumpCond(dir,dens,velocity,pres,gamc,Wp,Wn,SWp,SWn)
+Subroutine hy_checkRHjumpCond(dir,dens,velocity,pres,gamc,Wp,Wn,SWp,SWn)
 
   implicit none
 
@@ -107,4 +107,4 @@ Subroutine hy_uhd_checkRHjumpCond(dir,dens,velocity,pres,gamc,Wp,Wn,SWp,SWn)
      if (   gammaRatio*Wp(HY_DENS) < dens) SWp = .true.
   endif
 
-End Subroutine hy_uhd_checkRHjumpCond
+End Subroutine hy_checkRHjumpCond

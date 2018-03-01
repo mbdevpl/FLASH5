@@ -110,8 +110,8 @@ Subroutine Hydro_computeDt( block,       &
   !! Case 2a: we pass the already computed dt information to Driver_computeDt
   !!          if it appears valid and the saved location's block ID matches the block argument.
   !!         In this case, hydro dt gets computed in either 
-  !!          (i) hy_uhd_energyFix (hy_hydroComputeDtOption=0), or 
-  !!         (ii) hy_uhd_getFaceFlux (hy_hydroComputeDtOption=1)
+  !!          (i) hy_energyFix (hy_hydroComputeDtOption=0), or 
+  !!         (ii) hy_getFaceFlux (hy_hydroComputeDtOption=1)
 
   if ((hy_hydroComputeDtOption .ne. -1) .and. &
        hy_dtminValid .and. &
@@ -125,8 +125,8 @@ Subroutine Hydro_computeDt( block,       &
 
   !! Case 2: we simply pass the already computed dt information to Driver_computeDt.
   !!         In this case, hydro dt gets computed in either 
-  !!          (i) hy_uhd_energyFix (hy_hydroComputeDtOption=0), or 
-  !!         (ii) hy_uhd_getFaceFlux (hy_hydroComputeDtOption=1)
+  !!          (i) hy_energyFix (hy_hydroComputeDtOption=0), or 
+  !!         (ii) hy_getFaceFlux (hy_hydroComputeDtOption=1)
   else if ((hy_hydroComputeDtOption .ne. -1) .and. &
        hy_dtminValid .and. &
       (.not. hy_hydroComputeDtFirstCall)) then

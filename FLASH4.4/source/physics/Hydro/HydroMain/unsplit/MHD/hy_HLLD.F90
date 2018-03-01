@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_uhd_HLLD
+!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_HLLD
 !!
 !! NAME
 !!
-!!  hy_uhd_HLLD
+!!  hy_HLLD
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_HLLD( integer(IN) :: dir,
+!!  hy_HLLD( integer(IN) :: dir,
 !!               real(IN)    :: Vm(HY_VARINUMMAX),
 !!               real(IN)    :: Vp(HY_VARINUMMAX),
 !!               real(OUT)   :: Fstar(HY_VARINUM1),
@@ -49,11 +49,11 @@
 !!
 !!***
 
-Subroutine hy_uhd_HLLD(dir,Vm,Vp,Fstar,speed,ierr)
+Subroutine hy_HLLD(dir,Vm,Vp,Fstar,speed,ierr)
   
-  use hy_uhd_interface, ONLY : hy_uhd_prim2con,hy_uhd_prim2flx,hy_uhd_HLLC
+  use hy_interface, ONLY : hy_prim2con,hy_prim2flx,hy_HLLC
   use Driver_interface, ONLY : Driver_abortFlash
-  use hy_uhd_slopeLimiters, ONLY : signum
+  use hy_slopeLimiters, ONLY : signum
   use Hydro_data,       ONLY : hy_tiny
 
   implicit none
@@ -152,10 +152,10 @@ Subroutine hy_uhd_HLLD(dir,Vm,Vp,Fstar,speed,ierr)
   speed = max(abs(SL),abs(SR))
 
   ! Convert primitive variables to conservative variables
-  call hy_uhd_prim2con(Vm(HY_DENS:HY_GAME),UL(HY_DENS:HY_MAGZ))
-  call hy_uhd_prim2con(Vp(HY_DENS:HY_GAME),UR(HY_DENS:HY_MAGZ))
-  call hy_uhd_prim2flx(dir,Vm(HY_DENS:HY_GAME),FL(F01DENS_FLUX:HY_P_FLUX))
-  call hy_uhd_prim2flx(dir,Vp(HY_DENS:HY_GAME),FR(F01DENS_FLUX:HY_P_FLUX))
+  call hy_prim2con(Vm(HY_DENS:HY_GAME),UL(HY_DENS:HY_MAGZ))
+  call hy_prim2con(Vp(HY_DENS:HY_GAME),UR(HY_DENS:HY_MAGZ))
+  call hy_prim2flx(dir,Vm(HY_DENS:HY_GAME),FL(F01DENS_FLUX:HY_P_FLUX))
+  call hy_prim2flx(dir,Vp(HY_DENS:HY_GAME),FR(F01DENS_FLUX:HY_P_FLUX))
 
 
   ! Get magnetic field components of HLL states for Bn_hll
@@ -221,7 +221,7 @@ Subroutine hy_uhd_HLLD(dir,Vm,Vp,Fstar,speed,ierr)
      degeneracyHLLD=.true.
   endif
   if (degeneracyHLLD) then
-     call hy_uhd_HLLC(dir,Vm,Vp,Fstar,speed,ierr)
+     call hy_HLLC(dir,Vm,Vp,Fstar,speed,ierr)
      return
   endif
 
@@ -473,4 +473,4 @@ Subroutine hy_uhd_HLLD(dir,Vm,Vp,Fstar,speed,ierr)
   Fstar(F06MAGX_FLUX+dir-1) = 0.
 
 
-End Subroutine hy_uhd_HLLD
+End Subroutine hy_HLLD

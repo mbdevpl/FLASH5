@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_avgState
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_avgState
 !!
 !! NAME
 !!
-!!  hy_uhd_avgState
+!!  hy_avgState
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_avgState( integer(IN) :: sweepDir,
+!!  hy_avgState( integer(IN) :: sweepDir,
 !!                   real(IN)  :: VL(HY_VARINUM3),
 !!                   real(IN)  :: VR(HY_VARINUM3),
 !!                   real(OUT) :: Vavg(HY_VARINUM2) )
@@ -32,12 +32,12 @@
 #include "Flash.h"
 #include "UHD.h"
 
-Subroutine hy_uhd_avgState(sweepDir,VL,VR,Vavg)
+Subroutine hy_avgState(sweepDir,VL,VR,Vavg)
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
   use Hydro_data,           ONLY : hy_forceHydroLimit
 #endif
-  use hy_uhd_slopeLimiters, ONLY : signum
+  use hy_slopeLimiters, ONLY : signum
 
   implicit none
 
@@ -63,4 +63,4 @@ Subroutine hy_uhd_avgState(sweepDir,VL,VR,Vavg)
   Vavg(HY_GAMC:HY_GAME) = 0.5*( (1.+sig)*VL(HY_GAMC:HY_GAME) &
                                +(1.-sig)*VR(HY_GAMC:HY_GAME) )
 
-End Subroutine hy_uhd_avgState
+End Subroutine hy_avgState

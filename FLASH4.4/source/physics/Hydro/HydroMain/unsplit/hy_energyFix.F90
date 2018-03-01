@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_energyFix
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_energyFix
 !!
 !! NAME
 !!
-!!  hy_uhd_energyFix
+!!  hy_energyFix
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_energyFix( integer (IN) :: blockID,
+!!  call hy_energyFix( integer (IN) :: blockID,
 !!                    integer (IN) :: blkLimits(2,MDIM),
 !!                    real(IN)     :: dt,
 !!                    real(IN)     :: dtOld,
@@ -62,7 +62,7 @@
 #include "constants.h"
 #include "UHD.h"
 
-Subroutine hy_uhd_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
+Subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
 
   use Hydro_data,     ONLY : hy_eswitch, hy_irenorm, hy_geometry,&
                              hy_dtmin, hy_dtminloc, hy_dtminValid, hy_dtminCfl, hy_meshMe, &
@@ -189,7 +189,7 @@ Subroutine hy_uhd_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
            if (U(BDRY_VAR,i,j,k) .LE. 0.0) then
 #endif
 
-              ! In case 3T is used then the energy updates are already done in hy_uhd_unsplitUpdate
+              ! In case 3T is used then the energy updates are already done in hy_unsplitUpdate
               ! and are not needed here.
               ekin = 0.5*dot_product(U(VELX_VAR:VELZ_VAR,i,j,k),U(VELX_VAR:VELZ_VAR,i,j,k))
               emag = 0.0
@@ -199,7 +199,7 @@ Subroutine hy_uhd_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
               !! emag is a magnetic pressure calculated using divergence-free
               !! face-centered B fields on the staggered grid and take 
               !! an arithmetic average to get cell-centered B fields 
-              !! (see hy_uhd_staggeredDivb.F90)
+              !! (see hy_staggeredDivb.F90)
 
               !! MAGP_VAR is a magnetic pressure calculated using a standard Godunov
               !! update based on a cell-centered B fields, which are non-divergence-free.
@@ -453,4 +453,4 @@ Subroutine hy_uhd_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
      deallocate(yCtr)
   endif
   return
-End Subroutine hy_uhd_energyFix
+End Subroutine hy_energyFix

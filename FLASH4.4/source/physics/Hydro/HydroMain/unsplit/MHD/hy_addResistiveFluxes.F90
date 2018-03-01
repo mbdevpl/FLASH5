@@ -1,15 +1,15 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_uhd_addResistiveFluxes
+!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_addResistiveFluxes
 !!
 !! NAME
 !!
-!!  hy_uhd_addResistiveFluxes
+!!  hy_addResistiveFluxes
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_addResistiveFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,magVisc,sweepDir)
+!!  hy_addResistiveFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,magVisc,sweepDir)
 !!
-!!  hy_uhd_addResistiveFluxes(integer(IN) :: blockID,
+!!  hy_addResistiveFluxes(integer(IN) :: blockID,
 !!                            integer(IN) :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                            integer(IN) :: ix,
 !!                            integer(IN) :: iy,
@@ -38,14 +38,14 @@
 
 !!REORDER(4): U
 
-Subroutine hy_uhd_addResistiveFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,eta,sweepDir)
+Subroutine hy_addResistiveFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,eta,sweepDir)
 
   use Grid_interface, ONLY : Grid_getBlkPtr, &
                              Grid_releaseBlkPtr, &
                              Grid_getDeltas, &
                              Grid_getCellCoords
                              
-  use hy_uhd_slopeLimiters, ONLY : mc, &
+  use hy_slopeLimiters, ONLY : mc, &
                                    minmod, &
                                    vanLeer, &
                                    signum, &
@@ -343,4 +343,4 @@ Subroutine hy_uhd_addResistiveFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,eta,sweep
 !!$  call Grid_releaseBlkPtr(blockID,bx,FACEX)
 !!$  call Grid_releaseBlkPtr(blockID,by,FACEY)
 
-End Subroutine hy_uhd_addResistiveFluxes
+End Subroutine hy_addResistiveFluxes

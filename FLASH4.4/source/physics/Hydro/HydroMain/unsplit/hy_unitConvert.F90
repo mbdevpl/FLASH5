@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_unitConvert
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_unitConvert
 !!
 !! NAME
 !!
-!!  hy_uhd_unitConvert
+!!  hy_unitConvert
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_unitConvert( integer (IN) :: blockID, 
+!!  hy_unitConvert( integer (IN) :: blockID, 
 !!                      integer (IN) :: convertDir)                    
 !!
 !! DESCRIPTION
@@ -23,7 +23,7 @@
 
 !!REORDER(4): U,B[xyz]
 
-Subroutine hy_uhd_unitConvert(U,blkLimitsGC,convertDir)
+Subroutine hy_unitConvert(U,blkLimitsGC,convertDir)
 
   use Hydro_data,     ONLY : hy_dref, hy_eref, hy_pref, &
                              hy_vref, hy_bref
@@ -118,6 +118,6 @@ Subroutine hy_uhd_unitConvert(U,blkLimitsGC,convertDir)
 !!$#endif
 !!$#endif
 
-End Subroutine hy_uhd_unitConvert
+End Subroutine hy_unitConvert
 
   

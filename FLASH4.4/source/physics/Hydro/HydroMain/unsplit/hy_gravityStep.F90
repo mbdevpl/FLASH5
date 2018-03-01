@@ -1,14 +1,14 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_gravityStep
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_gravityStep
 !!
 !!
 !! NAME
 !!
-!!  hy_uhd_gravityStep
+!!  hy_gravityStep
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_gravityStep(integer(IN) :: blockCount, 
+!!  hy_gravityStep(integer(IN) :: blockCount, 
 !!        integer(IN) :: blockList(blockCount)
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
@@ -39,18 +39,18 @@
 !!***
 
 
-Subroutine hy_uhd_gravityStep(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
+Subroutine hy_gravityStep(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
 
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use block_metadata,   ONLY : block_metadata_t
-  use hy_uhd_interface, ONLY : hy_uhd_getRiemannState,  &
-                               hy_uhd_getFaceFlux,      &
-                               hy_uhd_unsplitUpdate,    &
-                               hy_uhd_unitConvert,      &
-                               hy_uhd_energyFix,        &
-                               hy_uhd_putGravityUnsplit,&
-                               hy_uhd_addGravityUnsplit
+  use hy_interface, ONLY : hy_getRiemannState,  &
+                               hy_getFaceFlux,      &
+                               hy_unsplitUpdate,    &
+                               hy_unitConvert,      &
+                               hy_energyFix,        &
+                               hy_putGravityUnsplit,&
+                               hy_addGravityUnsplit
 
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
@@ -112,20 +112,20 @@ Subroutine hy_uhd_gravityStep(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_uhd_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,&
+        call hy_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,&
              lastCall=.TRUE.)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
 
-        call hy_uhd_addGravityUnsplit(blockDesc,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,&
+        call hy_addGravityUnsplit(blockDesc,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,&
              gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:))
      endif
 
 
      !! *********************************************************************
      !! Correct energy if necessary
-     call hy_uhd_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
+     call hy_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
      
 #ifdef DEBUG_UHD
      print*,'_l5 Aft "call energyFix": associated(Uin ) is',associated(Uin )
@@ -134,7 +134,7 @@ Subroutine hy_uhd_gravityStep(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,
      !! *********************************************************************
      !! Correct energy if necessary
      if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
-        call hy_uhd_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
+        call hy_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
      endif
      
      !! Call to Eos
@@ -154,4 +154,4 @@ Subroutine hy_uhd_gravityStep(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,
   call Timers_stop("loop5 body")
 
 
-End Subroutine hy_uhd_gravityStep
+End Subroutine hy_gravityStep

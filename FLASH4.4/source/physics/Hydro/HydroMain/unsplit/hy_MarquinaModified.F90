@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_MarquinaModified
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_MarquinaModified
 !!
 !! NAME
 !!
-!!  hy_uhd_MarquinaModified
+!!  hy_MarquinaModified
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_MarquinaModified( integer(IN) :: dir,
+!!  call hy_MarquinaModified( integer(IN) :: dir,
 !!                           real(IN)    :: Vm(HY_VARINUMMAX),
 !!                           real(IN)    :: Vp(HY_VARINUMMAX),
 !!                           real(OUT)   :: Fstar(HY_VARINUM1),
@@ -38,13 +38,13 @@
 !!
 !!***
 
-Subroutine hy_uhd_MarquinaModified(dir,Vm,Vp,Fstar,speed,ierr)
+Subroutine hy_MarquinaModified(dir,Vm,Vp,Fstar,speed,ierr)
 
-  use hy_uhd_interface, ONLY : hy_uhd_eigenParameters,&
-                               hy_uhd_eigenValue,     &
-                               hy_uhd_eigenVector,    &
-                               hy_uhd_prim2con,       &
-                               hy_uhd_prim2flx
+  use hy_interface, ONLY : hy_eigenParameters,&
+                               hy_eigenValue,     &
+                               hy_eigenVector,    &
+                               hy_prim2con,       &
+                               hy_prim2flx
 
   use Hydro_data,       ONLY : hy_entropy
 
@@ -107,54 +107,54 @@ Subroutine hy_uhd_MarquinaModified(dir,Vm,Vp,Fstar,speed,ierr)
   cons=.true.
 
   ! Left state
-  call hy_uhd_eigenParameters&
+  call hy_eigenParameters&
        (Vm(HY_DENS:HY_GAME),dir,uN,cf&
 #ifdef FLASH_USM_MHD /* extra optional arguments for MHD */
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
 #endif
        )
 
-  call hy_uhd_eigenValue&
+  call hy_eigenValue&
        (lambdaL,uN,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs&
 #endif
        )
 
-  call hy_uhd_eigenVector&
+  call hy_eigenVector&
        (leigL,reigL,Vm(HY_DENS:HY_GAME),dir,cons,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
 #endif
        )
 
-  call hy_uhd_prim2con(Vm(HY_DENS:HY_GAME),Um(HY_DENS:hyEndVar))
-  call hy_uhd_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
+  call hy_prim2con(Vm(HY_DENS:HY_GAME),Um(HY_DENS:hyEndVar))
+  call hy_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
 
   ! Right state
-  call hy_uhd_eigenParameters&
+  call hy_eigenParameters&
        (Vp(HY_DENS:HY_GAME),dir,uN,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
 #endif
        )
 
-  call hy_uhd_eigenValue&
+  call hy_eigenValue&
        (lambdaR,uN,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs&
 #endif
        )
 
-  call hy_uhd_eigenVector&
+  call hy_eigenVector&
        (leigR,reigR,Vp(HY_DENS:HY_GAME),dir,cons,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
 #endif
        )
 
-  call hy_uhd_prim2con(Vp(HY_DENS:HY_GAME),Up(HY_DENS:hyEndVar))
-  call hy_uhd_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
+  call hy_prim2con(Vp(HY_DENS:HY_GAME),Up(HY_DENS:hyEndVar))
+  call hy_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
 
 
   ! Output maximum local wave speed for dt calculation
@@ -183,4 +183,4 @@ Subroutine hy_uhd_MarquinaModified(dir,Vm,Vp,Fstar,speed,ierr)
   Fstar(F06MAGX_FLUX+dir-1) = 0.
 #endif
 
-End Subroutine hy_uhd_MarquinaModified
+End Subroutine hy_MarquinaModified

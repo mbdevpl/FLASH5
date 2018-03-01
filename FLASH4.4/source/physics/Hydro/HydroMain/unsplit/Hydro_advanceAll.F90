@@ -81,7 +81,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
      
 #ifdef DEBUG_GRID_GCMASK
      if (.NOT.gcMaskLogged) then
-        call Logfile_stampVarMask(hy_gcMaskSD, .FALSE., '[hy_uhd_unsplit]', 'gcWant[Detect]')
+        call Logfile_stampVarMask(hy_gcMaskSD, .FALSE., '[hy_unsplit]', 'gcWant[Detect]')
      end if
 #endif
      
@@ -109,7 +109,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   !! ***************************************************************************
 #ifdef DEBUG_GRID_GCMASK
   if (.NOT.gcMaskLogged) then
-     call Logfile_stampVarMask(hy_gcMask, .TRUE., '[hy_uhd_unsplit]', 'gcNeed')
+     call Logfile_stampVarMask(hy_gcMask, .TRUE., '[hy_unsplit]', 'gcNeed')
   end if
 #endif
 
@@ -170,7 +170,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 #endif
      ! The following call invokes Gravity_potentialListOfBlocks and related stuff,
      ! to prepare for retrieving updated accelerations below.
-     call hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
+     call hy_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
 #ifdef FLASH_GRID_AMREXTRANSITION
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)

@@ -4,15 +4,15 @@ subroutine Hydro_shockDetectLoop
   use Grid_interface, ONLY : Grid_getDeltas, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr, &
                              Grid_getBlkIterator, Grid_releaseBlkIterator
-  use hy_uhd_interface, ONLY : hy_uhd_getRiemannState,  &
-                               hy_uhd_getFaceFlux,      &
-                               hy_uhd_unsplitUpdate,    &
-                               hy_uhd_unitConvert,      &
-                               hy_uhd_energyFix,        &
-                               hy_uhd_prepareNewGravityAccel,&
-                               hy_uhd_putGravityUnsplit,&
-                               hy_uhd_addGravityUnsplit,&
-                               hy_uhd_shockDetect
+  use hy_interface, ONLY : hy_getRiemannState,  &
+                               hy_getFaceFlux,      &
+                               hy_unsplitUpdate,    &
+                               hy_unitConvert,      &
+                               hy_energyFix,        &
+                               hy_prepareNewGravityAccel,&
+                               hy_putGravityUnsplit,&
+                               hy_addGravityUnsplit,&
+                               hy_shockDetect
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Hydro_data, ONLY : hy_fluxCorrect,      &
@@ -67,7 +67,7 @@ subroutine Hydro_shockDetectLoop
      !! Detect shocks
      if (hy_shockDetectOn) then
         call Grid_getDeltas(blockDesc%level,del)
-        call hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del)
+        call hy_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del)
      end if
 
      

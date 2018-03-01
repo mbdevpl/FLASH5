@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_upwindTransverseFlux
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_upwindTransverseFlux
 !!
 !! NAME
 !!
-!!  hy_uhd_upwindTransverseFlux
+!!  hy_upwindTransverseFlux
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_upwindTransverseFlux( integer(IN) :: dir,
+!!  hy_upwindTransverseFlux( integer(IN) :: dir,
 !!                               integer(IN) :: order,
 !!                               real,pointer:: vm1,
 !!                               real,pointer:: vc0,
@@ -40,11 +40,11 @@
 !!
 !!*** 
 
-Subroutine hy_uhd_upwindTransverseFlux&
+Subroutine hy_upwindTransverseFlux&
      (dir,order,vm1,vc0,vp1,lambda,leig,reig,sigSize,sig,speciesScalar)
 
   use Hydro_data,           ONLY : hy_transOrder, hy_useAuxEintEqn
-  use hy_uhd_slopeLimiters, ONLY : minmod, mc, vanLeer, signum
+  use hy_slopeLimiters, ONLY : minmod, mc, vanLeer, signum
   use Driver_interface,     ONLY : Driver_abortFlash
 
   implicit none
@@ -117,7 +117,7 @@ Subroutine hy_uhd_upwindTransverseFlux&
 
   if (order > 1) then
      call Driver_abortFlash&
-          ("[hy_uhd_upwindTransverseFlux]: No high-order transFlux support! Please set transOrder=1.")
+          ("[hy_upwindTransverseFlux]: No high-order transFlux support! Please set transOrder=1.")
   endif
 
 
@@ -208,4 +208,4 @@ Subroutine hy_uhd_upwindTransverseFlux&
 
 
 
-End Subroutine hy_uhd_upwindTransverseFlux
+End Subroutine hy_upwindTransverseFlux

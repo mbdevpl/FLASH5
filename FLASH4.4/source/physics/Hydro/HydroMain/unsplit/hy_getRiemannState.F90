@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_getRiemannState
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_getRiemannState
 !!
 !! NAME
 !!
-!!  hy_uhd_getRiemannState
+!!  hy_getRiemannState
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_getRiemannState( integer(IN) :: blockID,
+!!  hy_getRiemannState( integer(IN) :: blockID,
 !!                          integer(IN) :: blkLimits,
 !!                          integer(IN) :: blkLimitsGC,
 !!                          real(IN)    :: dt,
@@ -65,7 +65,7 @@
 
 !!REORDER(4):U, V0, scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr, B[xyz]
 
-Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
+Subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                                   ogravX,ogravY,ogravZ,&
                                   scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                   hy_SpcR,hy_SpcL,hy_SpcSig,&
@@ -97,13 +97,13 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
   use Hydro_data,           ONLY : hy_C_hyp, hy_C_par
 #endif
 
-  use hy_uhd_slopeLimiters, ONLY : mc
-  use hy_uhd_interface,     ONLY : hy_uhd_dataReconstOnestep, &
-                                   hy_uhd_shockDetect,        &
-                                   hy_uhd_eigenParameters,    &
-                                   hy_uhd_eigenValue,         &
-                                   hy_uhd_eigenVector,        &
-                                   hy_uhd_upwindTransverseFlux
+  use hy_slopeLimiters, ONLY : mc
+  use hy_interface,     ONLY : hy_dataReconstOnestep, &
+                                   hy_shockDetect,        &
+                                   hy_eigenParameters,    &
+                                   hy_eigenValue,         &
+                                   hy_eigenVector,        &
+                                   hy_upwindTransverseFlux
   use Grid_interface,       ONLY : Grid_getBlkPtr,     &
                                    Grid_releaseBlkPtr, &
                                    Grid_getCellCoords
@@ -313,7 +313,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
   !if (hy_upwindTVD) kHydro = -1
 !! Note --- fix all these indices
   if (hy_useHybridOrder .AND. .NOT. normalFieldUpdateOnly) then
-     k4 = hy_order - 1             !cf. hy_uhd_dataReconstOnestep
+     k4 = hy_order - 1             !cf. hy_dataReconstOnestep
      if (k4 > 2) k4 = 2 !(i.e., assume order = 3)
      k4 = min(NGUARD-2-kUSM,k4)
      im2=max(loGC(IAXIS)+1 ,i0  -2+kHydro-k4)
@@ -608,7 +608,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                  !! Left and right Riemann state reconstructions
                  if (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0 &
                       .AND. present(hy_spcR)) then
-                    call hy_uhd_dataReconstOnestep&
+                    call hy_dataReconstOnestep&
                       (block,U,loGC,hiGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
@@ -624,7 +624,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                        cellCfl, &
                        hy_SpcR,hy_SpcL,hy_SpcSig)
                  else
-                    call hy_uhd_dataReconstOnestep&
+                    call hy_dataReconstOnestep&
                       (block,U,loGC,hiGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
@@ -1003,7 +1003,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                  SigcPtr => sig(:,DIR_Z,i,j  ,k)
                  SigpPtr => sig(:,DIR_Z,i,j+1,k)
 
-                 call  hy_uhd_upwindTransverseFlux&
+                 call  hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_Y,i,j,k),&
@@ -1016,7 +1016,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                  SigcPtr => sig(:,DIR_Y,i,j,k  )
                  SigpPtr => sig(:,DIR_Y,i,j,k+1)
 
-                 call hy_uhd_upwindTransverseFlux&
+                 call hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_Z,i,j,k),&
@@ -1060,7 +1060,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                     SigcPtr => hy_SpcSig(:,i,j  ,k,DIR_Z)
                     SigpPtr => hy_SpcSig(:,i,j+1,k,DIR_Z)
 
-                    call hy_uhd_upwindTransverseFlux&
+                    call hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_Y,i,j,k),&
@@ -1074,7 +1074,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                     SigcPtr => hy_SpcSig(:,i,j,k  ,DIR_Y)
                     SigpPtr => hy_SpcSig(:,i,j,k+1,DIR_Y)
 
-                    call hy_uhd_upwindTransverseFlux&
+                    call hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_Z,i,j,k),&
@@ -1105,7 +1105,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                  SigcPtr => sig(:,DIR_X,i,j,k  )
                  SigpPtr => sig(:,DIR_X,i,j,k+1)
 
-                 call  hy_uhd_upwindTransverseFlux&
+                 call  hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_Z,i,j,k),&
@@ -1118,7 +1118,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                  SigcPtr => sig(:,DIR_Z,i  ,j,k)
                  SigpPtr => sig(:,DIR_Z,i+1,j,k)
 
-                 call  hy_uhd_upwindTransverseFlux&
+                 call  hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_X,i,j,k),&
@@ -1162,7 +1162,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                     SigcPtr => hy_SpcSig(:,i,j,k  ,DIR_X)
                     SigpPtr => hy_SpcSig(:,i,j,k+1,DIR_X)
 
-                    call hy_uhd_upwindTransverseFlux&
+                    call hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_Z,i,j,k),&
@@ -1176,7 +1176,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                     SigcPtr => hy_SpcSig(:,i  ,j,k,DIR_Z)
                     SigpPtr => hy_SpcSig(:,i+1,j,k,DIR_Z)
 
-                    call hy_uhd_upwindTransverseFlux&
+                    call hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_X,i,j,k),&
@@ -1208,7 +1208,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                  SigcPtr => sig(:,DIR_Y,i  ,j,k)
                  SigpPtr => sig(:,DIR_Y,i+1,j,k)
 
-                 call  hy_uhd_upwindTransverseFlux&
+                 call  hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_X,i,j,k),&
@@ -1221,7 +1221,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                  SigcPtr => sig(:,DIR_X,i,j  ,k)
                  SigpPtr => sig(:,DIR_X,i,j+1,k)
 
-                 call  hy_uhd_upwindTransverseFlux&
+                 call  hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_Y,i,j,k),&
@@ -1268,7 +1268,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                     SigcPtr => hy_SpcSig(:,i,  j,k,DIR_Y)
                     SigpPtr => hy_SpcSig(:,i+1,j,k,DIR_Y)
 
-                    call hy_uhd_upwindTransverseFlux&
+                    call hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_X,i,j,k),&
@@ -1282,7 +1282,7 @@ Subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                     SigcPtr => hy_SpcSig(:,i,j,  k,DIR_X)
                     SigpPtr => hy_SpcSig(:,i,j+1,k,DIR_X)
 
-                    call hy_uhd_upwindTransverseFlux&
+                    call hy_upwindTransverseFlux&
                       (dir,transOrder3D,&
                        SigmPtr,SigcPtr,SigpPtr,&
                        lambda   (1,DIR_Y,i,j,k),&
@@ -1476,4 +1476,4 @@ contains
     cellCfl = min(cellCfl, hy_cflFallbackFactor / real(NDIM))
 
   end subroutine fallbackToFirstOrder
-End Subroutine hy_uhd_getRiemannState
+End Subroutine hy_getRiemannState

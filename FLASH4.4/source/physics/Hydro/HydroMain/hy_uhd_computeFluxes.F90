@@ -43,17 +43,17 @@
 
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
-Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
+Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use block_metadata,   ONLY : block_metadata_t
-  use hy_uhd_interface, ONLY : hy_uhd_getRiemannState,  &
-                               hy_uhd_getFaceFlux,      &
-                               hy_uhd_unsplitUpdate,    &
-                               hy_uhd_unitConvert,      &
-                               hy_uhd_energyFix,        &
-                               hy_uhd_putGravityUnsplit
+  use hy_interface, ONLY : hy_getRiemannState,  &
+                               hy_getFaceFlux,      &
+                               hy_unsplitUpdate,    &
+                               hy_unitConvert,      &
+                               hy_energyFix,        &
+                               hy_putGravityUnsplit
 
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
@@ -145,7 +145,7 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
 #endif
 
      if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
-        call hy_uhd_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
+        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
      endif
 
      datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
@@ -171,7 +171,7 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_uhd_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+        call hy_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
@@ -205,7 +205,7 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
 #ifdef DEBUG_UHD
         print*,'going into RiemannState'
 #endif
-        call hy_uhd_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,del, &
+        call hy_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,del, &
                                     gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
                                     scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                     hy_SpcR,hy_SpcL,hy_SpcSig)
@@ -218,10 +218,10 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
         !! DEV: DL-This note seems to be outdated and wrong for the optimized code.
         ! Note: Two different ways of handling gravity:
         ! 1. With gravity calculated potential at n+1/2, Riemann states do not include gravity
-        !    source terms at this point, and will include them in hy_uhd_addGravityUnsplit later
+        !    source terms at this point, and will include them in hy_addGravityUnsplit later
         !    to the primitive Riemann variables (not available for conservative formulation).
         ! 2. With gravity extrapolated from n-1 & n states, gravity source terms have been
-        !    included to Riemann states in conservative formulation in hy_uhd_getRiemannState.
+        !    included to Riemann states in conservative formulation in hy_getRiemannState.
 
      endif !! End of if (hy_updateHydroFluxes) then
 
@@ -242,7 +242,7 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
 #ifdef DEBUG_UHD
      print*,'getting face flux'
 #endif
-     call hy_uhd_getFaceFlux(blockDesc,blkLimits,blkLimitsGC,datasize,del,&
+     call hy_getFaceFlux(blockDesc,blkLimits,blkLimitsGC,datasize,del,&
                              flx,fly,flz,&
                              scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
 #ifdef DEBUG_UHD
@@ -269,7 +269,7 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
      print*,'and now update'
 #endif
 
-     call hy_uhd_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
+     call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
 !!$     call io_writeCheckpoint
@@ -283,7 +283,7 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
      call Timers_stop("unsplitUpdate")
 !!$#ifdef FLASH_UHD_3T
 !!$        call Timers_start("unsplitUpdate 3T")
-!!$        call hy_uhd_unsplitUpdateMultiTemp&
+!!$        call hy_unsplitUpdateMultiTemp&
 !!$             (blockID,updateMode,blkLimits,dataSize,dt,del,flx,fly,flz, scrch_Ptr)
 !!$        call Timers_stop("unsplitUpdate 3T")
 !!$#endif
@@ -295,7 +295,7 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
 #ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
         !! Correct energy if necessary
-     call hy_uhd_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
+     call hy_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
      
 #ifdef DEBUG_UHD
      print*,'_unsplit Aft "call energyFix": associated(Uin ) is',associated(Uin )
@@ -303,7 +303,7 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
 #endif
      if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
         !! Convert unit
-        call hy_uhd_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
+        call hy_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
      endif
      
      !#ifndef FLASH_EOS_GAMMA
@@ -381,7 +381,7 @@ Subroutine hy_uhd_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, de
   call Timers_stop("loop1 body")
 
 
-End Subroutine hy_uhd_computeFluxes
+End Subroutine hy_computeFluxes
 
 
 !!$     if (hy_fluxCorrect .AND. updateEarly) then

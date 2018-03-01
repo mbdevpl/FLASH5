@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_uhd_staggeredDivb
+!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_staggeredDivb
 !!
 !! NAME
 !!
-!!  hy_uhd_staggeredDivb
+!!  hy_staggeredDivb
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_staggeredDivb( integer(IN) :: blockID,
+!!  hy_staggeredDivb( integer(IN) :: blockID,
 !!                        real(IN)    :: dt,
 !!                        real(IN)    :: del(MDIM),
 !!                        integer(IN) :: blkLimits,
@@ -47,7 +47,7 @@
 
 !!REORDER(4): B[xyz], E, U
 
-Subroutine hy_uhd_staggeredDivb(blockID,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
+Subroutine hy_staggeredDivb(blockID,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
 
   use Grid_interface,    ONLY : Grid_releaseBlkPtr,Grid_getBlkPtr, Grid_getCellCoords
   use Hydro_data,        ONLY : hy_energyFixSwitch, hy_geometry
@@ -217,4 +217,4 @@ Subroutine hy_uhd_staggeredDivb(blockID,dt,del,blkLimits,blkLimitsGC,halfTimeAdv
 !end of #if NDIM > 1
 #endif
 !end of #if NFACE_VARS > 0
-End Subroutine hy_uhd_staggeredDivb
+End Subroutine hy_staggeredDivb

@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_LLF
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_LLF
 !!
 !! NAME
 !!
-!!  hy_uhd_LLF
+!!  hy_LLF
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_LLF(integer(IN) :: dir,
+!!  hy_LLF(integer(IN) :: dir,
 !!             real(IN)    :: Vm(HY_VARINUMMAX),
 !!             real(IN)    :: Vp(HY_VARINUMMAX),
 !!             real(OUT)   :: Fstar(HY_VARINUM1),
@@ -36,13 +36,13 @@
 !!
 !!***
 
-Subroutine hy_uhd_LLF(dir,Vm,Vp,Fstar,speed,ierr)
+Subroutine hy_LLF(dir,Vm,Vp,Fstar,speed,ierr)
 
-  use hy_uhd_interface, ONLY : hy_uhd_avgState,       &
-                               hy_uhd_prim2con,       &
-                               hy_uhd_prim2flx,       &
-                               hy_uhd_eigenParameters,&
-                               hy_uhd_eigenValue
+  use hy_interface, ONLY : hy_avgState,       &
+                               hy_prim2con,       &
+                               hy_prim2flx,       &
+                               hy_eigenParameters,&
+                               hy_eigenValue
 
   implicit none
 
@@ -101,17 +101,17 @@ Subroutine hy_uhd_LLF(dir,Vm,Vp,Fstar,speed,ierr)
   cons=.true.
 
   ! Averaged state
-  call hy_uhd_avgState&
+  call hy_avgState&
        (dir,Vm(HY_DENS:HY_EINT),Vp(HY_DENS:HY_EINT),Vavg(HY_DENS:HY_GAME))
 
-  call hy_uhd_eigenParameters&
+  call hy_eigenParameters&
        (Vavg(HY_DENS:HY_GAME),dir,uN,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
 #endif
        )
 
-  call hy_uhd_eigenValue&
+  call hy_eigenValue&
        (lambda,uN,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs&
@@ -119,16 +119,16 @@ Subroutine hy_uhd_LLF(dir,Vm,Vp,Fstar,speed,ierr)
        )
 
   ! Left state
-  call hy_uhd_prim2con(Vm(HY_DENS:HY_GAME),Um(HY_DENS:hyEndVar))
-  call hy_uhd_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
-  call hy_uhd_eigenParameters&
+  call hy_prim2con(Vm(HY_DENS:HY_GAME),Um(HY_DENS:hyEndVar))
+  call hy_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
+  call hy_eigenParameters&
        (Vm(HY_DENS:HY_GAME),dir,uN,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
 #endif
        )
 
-  call hy_uhd_eigenValue&
+  call hy_eigenValue&
        (lambdaL,uN,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs&
@@ -136,15 +136,15 @@ Subroutine hy_uhd_LLF(dir,Vm,Vp,Fstar,speed,ierr)
        )
 
   ! Right state
-  call hy_uhd_prim2con(Vp(HY_DENS:HY_GAME),Up(HY_DENS:hyEndVar))
-  call hy_uhd_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
-  call hy_uhd_eigenParameters&
+  call hy_prim2con(Vp(HY_DENS:HY_GAME),Up(HY_DENS:hyEndVar))
+  call hy_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
+  call hy_eigenParameters&
        (Vp(HY_DENS:HY_GAME),dir,uN,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
 #endif
        )
-  call hy_uhd_eigenValue&
+  call hy_eigenValue&
        (lambdaR,uN,cf&
 #ifdef FLASH_USM_MHD
        ,C_alfn=ca,C_slow=cs&
@@ -173,4 +173,4 @@ Subroutine hy_uhd_LLF(dir,Vm,Vp,Fstar,speed,ierr)
   Fstar(F06MAGX_FLUX+dir-1) = 0.
 #endif
 
-End Subroutine hy_uhd_LLF
+End Subroutine hy_LLF

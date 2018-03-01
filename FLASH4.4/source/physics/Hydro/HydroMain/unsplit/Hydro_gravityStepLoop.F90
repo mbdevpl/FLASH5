@@ -9,7 +9,7 @@ subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
                                   Grid_getBlkIterator, Grid_releaseBlkIterator,&
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
-  use hy_uhd_interface,     ONLY : hy_uhd_gravityStep
+  use hy_interface,     ONLY : hy_gravityStep
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
@@ -45,7 +45,7 @@ subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
 
            call Grid_getDeltas(level,del)
            Uin => Uout
-           call hy_uhd_gravityStep(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld)
+           call hy_gravityStep(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld)
            call Grid_releaseBlkPtr(blockDesc, Uout)
            nullify(Uout)
 !!$           call IO_writecheckpoint;stop

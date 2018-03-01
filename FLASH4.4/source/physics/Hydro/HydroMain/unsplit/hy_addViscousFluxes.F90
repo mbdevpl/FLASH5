@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_addViscousFluxes
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_addViscousFluxes
 !!
 !! NAME
 !!
-!!  hy_uhd_addViscousFluxes
+!!  hy_addViscousFluxes
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_addViscousFluxes(integer(IN) :: blockID,
+!!  hy_addViscousFluxes(integer(IN) :: blockID,
 !!                          integer(IN) :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                          integer(IN) :: ix,
 !!                          integer(IN) :: iy,
@@ -37,7 +37,7 @@
 
 !!REORDER(4): U
 
-Subroutine hy_uhd_addViscousFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
+Subroutine hy_addViscousFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
 
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas
 
@@ -229,4 +229,4 @@ Subroutine hy_uhd_addViscousFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir
   !! Release pointer
   call Grid_releaseBlkPtr(blockID,U,CENTER)
 
-End Subroutine hy_uhd_addViscousFluxes
+End Subroutine hy_addViscousFluxes

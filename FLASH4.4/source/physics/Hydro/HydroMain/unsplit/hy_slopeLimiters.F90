@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_slopeLimiters
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_slopeLimiters
 !!
 !! NAME
 !!
-!!  hy_uhd_slopeLimiters
+!!  hy_slopeLimiters
 !!
 !!
 !! SYNOPSIS
 !!
-!!  MODULE hy_uhd_slopeLimiters()
+!!  MODULE hy_slopeLimiters()
 !!
 !!
 !! ARGUMENTS
@@ -21,7 +21,7 @@
 !!***
 
 
-Module hy_uhd_slopeLimiters
+Module hy_slopeLimiters
 
   implicit none
 
@@ -113,4 +113,4 @@ contains
   end function get_upwind
 
 
-End Module hy_uhd_slopeLimiters
+End Module hy_slopeLimiters

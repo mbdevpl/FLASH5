@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_entropyFix
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_entropyFix
 !!
 !! NAME
 !!
-!!  hy_uhd_entropyFix
+!!  hy_entropyFix
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_entropyFix ( real(INOUT) :: lambda (HY_WAVENUM),
+!!  hy_entropyFix ( real(INOUT) :: lambda (HY_WAVENUM),
 !!                      real(IN)    :: lambdaL(HY_WAVENUM),
 !!                      real(IN)    :: lambdaR(HY_WAVENUM))
 !!
@@ -38,7 +38,7 @@
 !!
 !!***
 
-Subroutine hy_uhd_entropyFix(lambda,lambdaL,lambdaR)
+Subroutine hy_entropyFix(lambda,lambdaL,lambdaR)
 
   use Hydro_data, ONLY : hy_entropyFixMethod
 
@@ -90,4 +90,4 @@ Subroutine hy_uhd_entropyFix(lambda,lambdaL,lambdaR)
 
   enddo
 
-End Subroutine hy_uhd_entropyFix
+End Subroutine hy_entropyFix

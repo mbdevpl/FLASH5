@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_uhd_addBiermannBatteryTerms
+!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_addBiermannBatteryTerms
 !!
 !! NAME
 !!
-!!  hy_uhd_addBiermannBatteryTerms
+!!  hy_addBiermannBatteryTerms
 !!
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_addBiermannBatteryTerms(integer(IN) :: blockID,
+!!  call hy_addBiermannBatteryTerms(integer(IN) :: blockID,
 !!                            integer(IN) :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                            integer(IN) :: ix,
 !!                            integer(IN) :: iy,
@@ -49,7 +49,7 @@
 !!***
 
 
-Subroutine hy_uhd_addBiermannBatteryTerms(blockID,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
+Subroutine hy_addBiermannBatteryTerms(blockID,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
 
 
   implicit none
@@ -66,12 +66,12 @@ Subroutine hy_uhd_addBiermannBatteryTerms(blockID,blkLimitsGC,ix,iy,iz,Flux,swee
 
   return
   
-End Subroutine hy_uhd_addBiermannBatteryTerms
+End Subroutine hy_addBiermannBatteryTerms
 
 
 Subroutine get_upwind(vel,pe_L,pe_R,pe_Up)
 
-  use hy_uhd_slopeLimiters, ONLY : signum
+  use hy_slopeLimiters, ONLY : signum
 
   implicit none
   real, intent(IN)  :: vel,pe_L,pe_R

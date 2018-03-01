@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_unsplitUpdate
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_unsplitUpdate
 !!
 !! NAME
 !!
-!!  hy_uhd_unsplitUpdate
+!!  hy_unsplitUpdate
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_unsplitUpdate( integer(IN) :: blockID,
+!!  call hy_unsplitUpdate( integer(IN) :: blockID,
 !!                        integer(IN) :: rangeSwitch,
 !!                        real(IN)    :: dt,
 !!                        real(IN)    :: del(MDM),
@@ -72,7 +72,7 @@
 #include "Eos.h"
 #include "UHD.h"
 
-  Subroutine hy_uhd_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
+  Subroutine hy_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
                                   blGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                   scrch_Ptr)
 
@@ -89,15 +89,15 @@
                                      hy_useMagneticResistivity, hy_conserveAngField
   use MagneticResistivity_interface, &
                               ONLY : MagneticResistivity
-  use hy_uhd_interface,       ONLY : hy_uhd_addOhmicHeating 
+  use hy_interface,       ONLY : hy_addOhmicHeating 
 #endif
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD) 
     use Hydro_data,           ONLY : hy_forceHydroLimit
 #endif
-    use hy_uhd_interface,     ONLY : hy_uhd_updateSpeciesMassScalar
+    use hy_interface,     ONLY : hy_updateSpeciesMassScalar
 #ifdef FLASH_UHD_3T
 #ifdef FLASH_USM_MHD
-  use hy_uhd_interface,       ONLY : hy_uhd_getCurrents
+  use hy_interface,       ONLY : hy_getCurrents
 #endif
 #endif
     use Grid_interface,       ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
@@ -615,7 +615,7 @@
                    speciesArr => Uin(SPECIES_BEGIN:SPECIES_END,i,j,k)
                    call MagneticResistivity(Uin(TEMP_VAR,i,j,k),Uin(DENS_VAR,i,j,k),&
                         speciesArr,res_eta(i,j,k))
-                   call hy_uhd_addOhmicHeating(blockDesc,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
+                   call hy_addOhmicHeating(blockDesc,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
                    Qohm = Qohm*Uin(DENS_VAR,i,j,k)
                 endif
 #endif
@@ -653,8 +653,8 @@
                    scrch_Ptr(HY_XN05_SCRATCHCTR_VAR,i,j,k) = zbar
 
                    ! correct the energy fluxes with current terms
-                   !! Note: hy_uhd_getCurrent sets Jp and Jm for many cells, unless called with mode_switch=4.
-                   call hy_uhd_getCurrents(blockDesc, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
+                   !! Note: hy_getCurrent sets Jp and Jm for many cells, unless called with mode_switch=4.
+                   call hy_getCurrents(blockDesc, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
                                            scrch_Ptr,&
                                            i, j, k)
                    Sphys(HY_ENER) = ( Jp(1,i,j,k) - Jm(1,i,j,k) ) / dx
@@ -828,7 +828,7 @@
                    enddo
                 else
                 !! Note that the velocity fields here are old velocities at time step n, not n+1
-                   call hy_uhd_updateSpeciesMassScalar&
+                   call hy_updateSpeciesMassScalar&
                      (hy_order,newDens,&
                       SpOld(1:hy_numXN,i-3:i+3,j-3*ky:j+3*ky,k-3*kz:k+3*kz),&
                       Uold(1:6,        i-3:i+3,j-3*ky:j+3*ky,k-3*kz:k+3*kz),&
@@ -861,7 +861,7 @@
 
 #ifdef FLASH_UHD_3T
 #ifdef FLASH_UHD_HYDRO
-                !! Perform energy updates here for 3T.  For 1T energy is updated in hy_uhd_energyFix.
+                !! Perform energy updates here for 3T.  For 1T energy is updated in hy_energyFix.
                 !! We only perform the energy updates here for pure hydro only.
                 !! MHD still needs to update magnetic fields after the current cell-centered
                 !! variable updates. Therefore, the energy updates should be done after
@@ -1104,7 +1104,7 @@
 
                 else
                 !! Note that the velocity fields here are old velocities at time step n, not n+1
-                   call hy_uhd_updateSpeciesMassScalar&
+                   call hy_updateSpeciesMassScalar&
                      (hy_order,0.0,&
                       SpOld(1:hy_numXN,i-3:i+3,j-3*ky:j+3*ky,k-3*kz:k+3*kz),&
                       Uold(1:6,        i-3:i+3,j-3*ky:j+3*ky,k-3*kz:k+3*kz),&
@@ -1136,7 +1136,7 @@
 
 
 
-  End Subroutine hy_uhd_unsplitUpdate
+  End Subroutine hy_unsplitUpdate
 
 
 

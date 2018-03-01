@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_uhd_biermannSource
+!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_biermannSource
 !!
 !! NAME
 !!
-!!  hy_uhd_biermannSource
+!!  hy_biermannSource
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_biermannSource( integer (IN) :: blockCount,
+!!  hy_biermannSource( integer (IN) :: blockCount,
 !!                         integer (IN) :: blockList(blockCount),
 !!                         real    (IN) :: dt )
 !!
@@ -21,7 +21,7 @@
 !!  dt         -  timestep
 !!***
 
-Subroutine hy_uhd_biermannSource ( blockCount, blockList, dt )
+Subroutine hy_biermannSource ( blockCount, blockList, dt )
   use Grid_interface, ONLY: Grid_getBlkIndexLimits, &
                             Grid_getDeltas,         &
                             Grid_getBlkPtr,         &
@@ -36,7 +36,7 @@ Subroutine hy_uhd_biermannSource ( blockCount, blockList, dt )
                          hy_qele,          &
                          hy_speedOfLight
 
-  use hy_uhd_slopeLimiters, ONLY : minmod
+  use hy_slopeLimiters, ONLY : minmod
 
   use Eos_interface, ONLY : Eos_wrapped
   
@@ -53,4 +53,4 @@ Subroutine hy_uhd_biermannSource ( blockCount, blockList, dt )
 
   return
 
-End Subroutine hy_uhd_biermannSource
+End Subroutine hy_biermannSource

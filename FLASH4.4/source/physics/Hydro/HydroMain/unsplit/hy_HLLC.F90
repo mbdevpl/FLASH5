@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_HLLC
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_HLLC
 !!
 !! NAME
 !!
-!!  hy_uhd_HLLC
+!!  hy_HLLC
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_HLLC( integer(IN) :: dir,
+!!  hy_HLLC( integer(IN) :: dir,
 !!               real(IN)    :: Vm(HY_VARINUMMAX),
 !!               real(IN)    :: Vp(HY_VARINUMMAX),
 !!               real(OUT)   :: Fstar(HY_VARINUM1),
@@ -50,9 +50,9 @@
 !!
 !!***
 
-Subroutine hy_uhd_HLLC(dir,Vm,Vp,Fstar,speed,ierr)
+Subroutine hy_HLLC(dir,Vm,Vp,Fstar,speed,ierr)
 
-  use hy_uhd_interface, ONLY : hy_uhd_prim2con,hy_uhd_prim2flx
+  use hy_interface, ONLY : hy_prim2con,hy_prim2flx
   use Driver_interface, ONLY : Driver_abortFlash
   use Hydro_data,       ONLY : hy_tiny, fP => hy_fPresInMomFlux
 
@@ -154,10 +154,10 @@ Subroutine hy_uhd_HLLC(dir,Vm,Vp,Fstar,speed,ierr)
 
 
   ! Convert primitive variables to conservative variables
-  call hy_uhd_prim2con(Vm(HY_DENS:HY_GAME),UL(HY_DENS:hyEndVar))
-  call hy_uhd_prim2con(Vp(HY_DENS:HY_GAME),UR(HY_DENS:hyEndVar))
-  call hy_uhd_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
-  call hy_uhd_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
+  call hy_prim2con(Vm(HY_DENS:HY_GAME),UL(HY_DENS:hyEndVar))
+  call hy_prim2con(Vp(HY_DENS:HY_GAME),UR(HY_DENS:hyEndVar))
+  call hy_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
+  call hy_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
 
 
   ! Get HLL states for later use
@@ -321,4 +321,4 @@ Subroutine hy_uhd_HLLC(dir,Vm,Vp,Fstar,speed,ierr)
   Fstar(F06MAGX_FLUX+dir-1) = 0.
 #endif
 
-End Subroutine hy_uhd_HLLC
+End Subroutine hy_HLLC

@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_eigenParameters
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_eigenParameters
 !!
 !! NAME
 !!
-!!  hy_uhd_eigenParameters
+!!  hy_eigenParameters
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_eigenParameters( real (IN)           :: V(HY_VARINUM2),
+!!  hy_eigenParameters( real (IN)           :: V(HY_VARINUM2),
 !!                          integer(IN)         :: dir,
 !!                          real (OUT)          :: U_normal,
 !!                          real (OUT)          :: C_fast,
@@ -39,7 +39,7 @@
 !!***
 
 
-Subroutine hy_uhd_eigenParameters(V,dir,U_normal,C_fast,C_alfn,C_slow,A_f,A_s,B_beta,C_hyp)
+Subroutine hy_eigenParameters(V,dir,U_normal,C_fast,C_alfn,C_slow,A_f,A_s,B_beta,C_hyp)
 
   use Hydro_data!,        ONLY : hy_meshMe,hy_forceHydroLimit
   use Driver_data,       ONLY : dr_nStep 
@@ -82,7 +82,7 @@ Subroutine hy_uhd_eigenParameters(V,dir,U_normal,C_fast,C_alfn,C_slow,A_f,A_s,B_
 
   if (a2 .le. 0.) then
      call Driver_abortFlash&
-          ("[hy_uhd_eigenParameters-A]: Zero or imaginary sound speed has obtained! "//&
+          ("[hy_eigenParameters-A]: Zero or imaginary sound speed has obtained! "//&
            "Please try other (more diffusive) slope limiter, flux, order, cfl, etc.")
   else
      C_fast = sqrt(a2)
@@ -121,7 +121,7 @@ Subroutine hy_uhd_eigenParameters(V,dir,U_normal,C_fast,C_alfn,C_slow,A_f,A_s,B_
 
   if ((a2 .le. 0.) .or. (C_fast2 < C_slow2)) then
      call Driver_abortFlash&
-          ("[hy_uhd_eigenParameters-B]: Zero or imaginary sound speed has obtained! "//&
+          ("[hy_eigenParameters-B]: Zero or imaginary sound speed has obtained! "//&
            "Please try other (more diffusive) slope limiter, flux, order, cfl, etc.")
   else
      !! Renormalization coefficients
@@ -163,7 +163,7 @@ Subroutine hy_uhd_eigenParameters(V,dir,U_normal,C_fast,C_alfn,C_slow,A_f,A_s,B_
      else
         !! This is the hydro limit with all magnetic components are exactly zero.
         !! In this case, we make sure that the MHD eigensystem reduces to that of
-        !! the pure hydro case. See also MHD_StaggeredMesh/hy_uhd_eigenVector.F90.
+        !! the pure hydro case. See also MHD_StaggeredMesh/hy_eigenVector.F90.
         B_beta = 0.
      endif
 
@@ -210,30 +210,30 @@ Subroutine hy_uhd_eigenParameters(V,dir,U_normal,C_fast,C_alfn,C_slow,A_f,A_s,B_
 
 !!$  if (V(HY_PRES)<0. ) then
 !!$     call Logfile_open(logUnit,logUnitLocal)
-!!$     write(logUnit,*)'[hy_uhd_eigenParameters] ERROR: negative pressure at nstep=',V(HY_PRES),dr_nStep
+!!$     write(logUnit,*)'[hy_eigenParameters] ERROR: negative pressure at nstep=',V(HY_PRES),dr_nStep
 !!$     call Logfile_close(logUnitLocal)
 !!$     call Driver_abortFlash&
-!!$          ("[hy_uhd_eigenParameters] Negative pressure: Please lower CFL or try different limiter.")
+!!$          ("[hy_eigenParameters] Negative pressure: Please lower CFL or try different limiter.")
 !!$  endif
 !!$  if (V(HY_DENS)<0. ) then
 !!$     call Logfile_open(logUnit,logUnitLocal)
-!!$     write(logUnit,*)'[hy_uhd_eigenParameters] ERROR: negative density at nstep=',V(HY_DENS),dr_nStep
+!!$     write(logUnit,*)'[hy_eigenParameters] ERROR: negative density at nstep=',V(HY_DENS),dr_nStep
 !!$     call Logfile_close(logUnitLocal)
 !!$     call Driver_abortFlash&
-!!$          ("[hy_uhd_eigenParameters] Negative density: Please lower CFL or try different limiter.")
+!!$          ("[hy_eigenParameters] Negative density: Please lower CFL or try different limiter.")
 !!$  endif
 !!$  if (V(HY_GAMC)<0. ) then
 !!$     call Logfile_open(logUnit,logUnitLocal)
-!!$     write(logUnit,*)'[hy_uhd_eigenParameters] ERROR: negative gamc at nstep=',V(HY_GAMC),dr_nStep
+!!$     write(logUnit,*)'[hy_eigenParameters] ERROR: negative gamc at nstep=',V(HY_GAMC),dr_nStep
 !!$     call Logfile_close(logUnitLocal)
 !!$     call Driver_abortFlash&
-!!$          ("[hy_uhd_eigenParameters] Negative gamc: Please lower CFL or try different limiter.")
+!!$          ("[hy_eigenParameters] Negative gamc: Please lower CFL or try different limiter.")
 !!$  endif
 
 
 !!$  if (a2 .le. 0.) then
 !!$     call Driver_abortFlash&
-!!$          ("[hy_uhd_eigenParameters]: Zero or imaginary sound speed has obtained! "//&
+!!$          ("[hy_eigenParameters]: Zero or imaginary sound speed has obtained! "//&
 !!$           "Please try other (more diffusive) slope limiter, flux, order, cfl, etc.")
 !!$  else
 !     C_fast = sqrt(a2)
@@ -243,7 +243,7 @@ Subroutine hy_uhd_eigenParameters(V,dir,U_normal,C_fast,C_alfn,C_slow,A_f,A_s,B_
   !a2      = V(HY_GAMC)*V(HY_PRES)/V(HY_DENS)
 !!$  if (a2 .le. 0.) then
 !!$     call Driver_abortFlash&
-!!$          ("[hy_uhd_eigenParameters]: Zero or imaginary sound speed has obtained! "//&
+!!$          ("[hy_eigenParameters]: Zero or imaginary sound speed has obtained! "//&
 !!$           "Please try other (more diffusive) slope limiter, flux, order, cfl, etc.")
 !!$  else
 
@@ -285,4 +285,4 @@ Subroutine hy_uhd_eigenParameters(V,dir,U_normal,C_fast,C_alfn,C_slow,A_f,A_s,B_
 #endif /* for MHD */
 #endif /*ifdef DONGWOOK*/
 
-End Subroutine hy_uhd_eigenParameters
+End Subroutine hy_eigenParameters

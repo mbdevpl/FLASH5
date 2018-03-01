@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_uhd_getFluxDeriv
+!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_getFluxDeriv
 !!
 !! NAME
 !!
-!!  hy_uhd_getFluxDeriv
+!!  hy_getFluxDeriv
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_getFluxDeriv ( integer(IN)  :: ix,
+!!  hy_getFluxDeriv ( integer(IN)  :: ix,
 !!                        integer(IN)  :: iy,
 !!                        integer(IN)  :: iz,
 !!                        integer(IN)  :: blkLimitsGC(2,MDIM)
@@ -42,7 +42,7 @@
 
 !!REORDER(4): faceFlux
 
-Subroutine hy_uhd_getFluxDeriv( ix,iy,iz,blkLimitsGC,&
+Subroutine hy_getFluxDeriv( ix,iy,iz,blkLimitsGC,&
                                 fluxType,DerivDir,   &
                                 faceFlux,            &
                                 Flux1Deriv,Flux2Deriv)
@@ -136,4 +136,4 @@ Subroutine hy_uhd_getFluxDeriv( ix,iy,iz,blkLimitsGC,&
 
   end select
 
-End Subroutine hy_uhd_getFluxDeriv
+End Subroutine hy_getFluxDeriv

@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_DataReconstructNormalDir_WENO
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_DataReconstructNormalDir_WENO
 !!
 !! NAME
 !!
-!!  hy_uhd_DataReconstructNormalDir_WENO
+!!  hy_DataReconstructNormalDir_WENO
 !!
 !! SYNOPSIS
 !!
-!! hy_uhd_DataReconstructNormalDir_WENO(integer(IN) :: wenoMethod,
+!! hy_DataReconstructNormalDir_WENO(integer(IN) :: wenoMethod,
 !!                                    integer(IN) :: dir,
 !!                                    real(IN)    :: dt,
 !!                                    real(IN)    :: delta,
@@ -71,7 +71,7 @@
 !!
 !!***
 
-Subroutine hy_uhd_DataReconstructNormalDir_WENO&
+Subroutine hy_DataReconstructNormalDir_WENO&
      (wenoMethod,dir,dt,delta,Data1D,DataGrav1D,&
       FlatCoeff,TransUpdateOnly, &
       lambda0,leig0,reig0,&
@@ -93,14 +93,14 @@ Subroutine hy_uhd_DataReconstructNormalDir_WENO&
                                    hy_useAuxEintEqn,  &
                                    hy_fullSpecMsFluxHandling
 
-  use hy_uhd_interface,     ONLY : hy_uhd_TVDslope,       &
-                                   hy_uhd_TVDslopeUpwind, & 
-                                   hy_uhd_upwindTransverseFlux,&
-                                   hy_uhd_eigenParameters, &
-                                   hy_uhd_eigenValue,      &
-                                   hy_uhd_eigenVector
+  use hy_interface,     ONLY : hy_TVDslope,       &
+                                   hy_TVDslopeUpwind, & 
+                                   hy_upwindTransverseFlux,&
+                                   hy_eigenParameters, &
+                                   hy_eigenValue,      &
+                                   hy_eigenVector
 
-  use hy_uhd_slopeLimiters, ONLY : checkMedian, minmod, mc, vanLeer
+  use hy_slopeLimiters, ONLY : checkMedian, minmod, mc, vanLeer
   use Timers_interface,     ONLY : Timers_start, Timers_stop
 
   implicit none
@@ -351,7 +351,7 @@ Endif
   vecL=0.;    vecR=0.
   Wp=0.;      Wm=0.
 
-  call hy_uhd_eigenParameters&
+  call hy_eigenParameters&
        (Vc(HY_DENS:HY_GAME),dir,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -360,7 +360,7 @@ Endif
 #endif
 #endif
        )
-  call hy_uhd_eigenValue&
+  call hy_eigenValue&
        (lambda0,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs&
@@ -369,7 +369,7 @@ Endif
 #endif
 #endif
        )
-  call hy_uhd_eigenVector&
+  call hy_eigenVector&
        (leig0,reig0,Vc(HY_DENS:HY_GAME),dir,.false.,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -389,7 +389,7 @@ Endif
      vc0Ptr => Vc (:)
      vp1Ptr => Vp (:)
 
-     call hy_uhd_upwindTransverseFlux&
+     call hy_upwindTransverseFlux&
           (dir,hy_transOrder,vm1Ptr,vc0Ptr,vp1Ptr,lambda0,leig0,reig0,HY_END_VARS,sig)
 
 #if (NSPECIES+NMASS_SCALARS) > 0
@@ -398,7 +398,7 @@ Endif
         vc0Ptr => Sc (:)
         vp1Ptr => Sp (:)
 
-        call hy_uhd_upwindTransverseFlux&
+        call hy_upwindTransverseFlux&
           (dir,hy_transOrder,vm1Ptr,vc0Ptr,vp1Ptr,lambda0,leig0,reig0,HY_NSPEC,SpcSig,speciesScalar=.true.)
      endif
 #endif
@@ -410,7 +410,7 @@ Endif
   !! [2] Apply TVD slope limiter for normal gradients ------------------------------------!
   !! -------------------------------------------------------------------------------------!
   IF (.not. TransUpdateOnly) THEN
-     call hy_uhd_TVDslope(dir,Vm, Vc, Vp, lambda0,leig0,delbar0)
+     call hy_TVDslope(dir,Vm, Vc, Vp, lambda0,leig0,delbar0)
 
      !! First initialize flattening coefficients
      if (hy_flattening) then
@@ -905,4 +905,4 @@ Endif
 
   ENDIF ! end of IF (.not. TransUpdateOnly) THEN
 
-End Subroutine hy_uhd_DataReconstructNormalDir_WENO
+End Subroutine hy_DataReconstructNormalDir_WENO

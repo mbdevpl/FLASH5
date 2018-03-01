@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_prim2flx
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_prim2flx
 !!
 !! NAME
 !!
-!!  hy_uhd_prim2flx
+!!  hy_prim2flx
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_prim2flx( integer(IN)           :: dir,
+!!  hy_prim2flx( integer(IN)           :: dir,
 !!                   real(IN),dimension(*) :: V(HY_VARINUM2),
 !!                   real(OUT)             :: F(HY_VARINUM1))
 !!
@@ -22,7 +22,7 @@
 !!
 !!***
 
-Subroutine hy_uhd_prim2flx(dir,V,F)
+Subroutine hy_prim2flx(dir,V,F)
 
 #include "Flash.h"
 #include "UHD.h"
@@ -137,4 +137,4 @@ Subroutine hy_uhd_prim2flx(dir,V,F)
   endif
 #endif
 
-End Subroutine hy_uhd_prim2flx
+End Subroutine hy_prim2flx

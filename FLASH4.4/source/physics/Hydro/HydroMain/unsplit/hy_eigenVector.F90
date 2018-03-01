@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_eigenVector
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_eigenVector
 !!
 !! NAME
 !!
-!!  hy_uhd_eigenVector
+!!  hy_eigenVector
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_eigenVector( real (OUT)         :: LeftEigvec(HY_WAVENUM,HY_VARINUM),
+!!  hy_eigenVector( real (OUT)         :: LeftEigvec(HY_WAVENUM,HY_VARINUM),
 !!                      real (OUT)         :: RightEigvec(HY_VARINUM,HY_WAVENUM)
 !!                      real (IN)          :: V(HY_VARINUM2),
 !!                      integer(IN)        :: dir,
@@ -42,7 +42,7 @@
 !!
 !!***
 
-Subroutine hy_uhd_eigenVector&
+Subroutine hy_eigenVector&
      (LeftEigvec,RightEigvec,V,dir,cons,C_fast,C_alfn,C_slow,A_f,A_s,B_beta)
 
   implicit none
@@ -62,4 +62,4 @@ Subroutine hy_uhd_eigenVector&
   real, dimension(MDIM), intent(IN), optional  :: B_beta
   !! ------------------------------------------------------------------
 
-End Subroutine hy_uhd_eigenVector
+End Subroutine hy_eigenVector

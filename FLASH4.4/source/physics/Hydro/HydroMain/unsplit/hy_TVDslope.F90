@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_TVDslope
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_TVDslope
 !!
 !! NAME
 !!
-!!  hy_uhd_TVDslope
+!!  hy_TVDslope
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_TVDslope(integer(IN) :: dir,
+!!  hy_TVDslope(integer(IN) :: dir,
 !!                  real(IN)    :: VL (HY_VARINUMMAX),
 !!                  real(IN)    :: V0 (HY_VARINUMMAX),
 !!                  real(IN)    :: VR (HY_VARINUMMAX),
@@ -51,9 +51,9 @@
 !!
 !!***
 
-Subroutine hy_uhd_TVDslope(dir,VL,V0,VR,lambda,leig,delbar)
+Subroutine hy_TVDslope(dir,VL,V0,VR,lambda,leig,delbar)
 
-  use hy_uhd_slopeLimiters, ONLY : minmod,mc,vanLeer
+  use hy_slopeLimiters, ONLY : minmod,mc,vanLeer
   use Hydro_data,           ONLY : hy_limiter,hy_charLimiting,hy_LimitedSlopeBeta
 
   implicit none
@@ -262,4 +262,4 @@ Subroutine hy_uhd_TVDslope(dir,VL,V0,VR,lambda,leig,delbar)
 !!$#endif
 
 
-End Subroutine hy_uhd_TVDslope
+End Subroutine hy_TVDslope

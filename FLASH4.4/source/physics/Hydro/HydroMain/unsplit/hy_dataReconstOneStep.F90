@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_dataReconstOneStep
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_dataReconstOneStep
 !!
 !! NAME
 !!
-!!  hy_uhd_dataReconstOneStep
+!!  hy_dataReconstOneStep
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_dataReconstOneStep(integer(IN) :: block,
+!!  hy_dataReconstOneStep(integer(IN) :: block,
 !!                            integer(IN) :: blkLimitsGC(:,:),
 !!                            integer(IN) :: order,
 !!                            integer(IN) :: ix,
@@ -79,7 +79,7 @@
 #ifdef FLASH_USM_MHD
 !! REORDER(4): B[xyz],U
 #endif
-Subroutine hy_uhd_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
+Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
                                      dt,del,ogravX,ogravY,ogravZ,&
                                      DivU, FlatCoeff,  &
                                      TransX_updateOnly,&
@@ -111,11 +111,11 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
 
   !! Use short nicknames for the reconstruction subroutines.
   !! Some compilers (e.g., Absoft) can be confused with similar subroutine names.
-  use hy_uhd_interface,  ONLY : hy_uhd_checkRHjumpCond,&
-                                MH   => hy_uhd_DataReconstructNormalDir_MH,&
-                                PPM  => hy_uhd_DataReconstructNormalDir_PPM,&
-                                WENO => hy_uhd_DataReconstructNormalDir_WENO,&
-                                GP   => hy_uhd_DataReconstructNormalDir_GP
+  use hy_interface,  ONLY : hy_checkRHjumpCond,&
+                                MH   => hy_DataReconstructNormalDir_MH,&
+                                PPM  => hy_DataReconstructNormalDir_PPM,&
+                                WENO => hy_DataReconstructNormalDir_WENO,&
+                                GP   => hy_DataReconstructNormalDir_GP
 
   use block_metadata,   ONLY : block_metadata_t
 
@@ -867,7 +867,7 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
 
      if (minval(DivU(ix-k4:ix+k4,iy-k4*k2:iy+k4*k2,iz-k4*k3:iz+k4*k3)) < epsilon ) then
         DO iDim = DIR_X,NDIM
-           call hy_uhd_checkRHjumpCond(iDim,U(DENS_VAR,ix,iy,iz),&
+           call hy_checkRHjumpCond(iDim,U(DENS_VAR,ix,iy,iz),&
                                             U(VELX_VAR:VELZ_VAR,ix,iy,iz),&
                                             U(PRES_VAR,ix,iy,iz),&
 !!$#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
@@ -1067,7 +1067,7 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
 
      if (minval(DivU(ix-k4:ix+k4,iy-k4*k2:iy+k4*k2,iz-k4*k3:iz+k4*k3)) < epsilon ) then
         DO iDim = DIR_X,NDIM
-           call hy_uhd_checkRHjumpCond(iDim,U(DENS_VAR,ix,iy,iz),&
+           call hy_checkRHjumpCond(iDim,U(DENS_VAR,ix,iy,iz),&
                                             U(VELX_VAR:VELZ_VAR,ix,iy,iz),&
                                             U(PRES_VAR,ix,iy,iz),&
                                             U(GAMC_VAR,ix,iy,iz),&
@@ -1208,4 +1208,4 @@ Subroutine hy_uhd_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
 #endif /* NFACE_VARS > 0 */
 #endif
 
-End Subroutine hy_uhd_dataReconstOneStep
+End Subroutine hy_dataReconstOneStep

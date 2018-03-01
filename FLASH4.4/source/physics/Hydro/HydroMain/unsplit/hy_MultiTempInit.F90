@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_MultiTempInit
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_MultiTempInit
 !!
 !! NAME
 !!
-!!  hy_uhd_MultiTempInit
+!!  hy_MultiTempInit
 !!
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_MultiTempInit()
+!!  call hy_MultiTempInit()
 !!  
 !!
 !! DESCRIPTION
@@ -28,6 +28,6 @@
 !!  may live in a subdirectory).
 !!***
 
-subroutine hy_uhd_MultiTempInit()
+subroutine hy_MultiTempInit()
   implicit none
-end subroutine hy_uhd_MultiTempInit
+end subroutine hy_MultiTempInit

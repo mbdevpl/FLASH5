@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_setMinTimeStep
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_setMinTimeStep
 !!
 !! NAME
 !!
-!!  hy_uhd_setMinTimeStep
+!!  hy_setMinTimeStep
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_setMinTimeStep(integer(in) :: blockID,
+!!  hy_setMinTimeStep(integer(in) :: blockID,
 !!                        integer(in) :: i,
 !!                        integer(in) :: j,
 !!                        integer(in) :: k,
@@ -32,7 +32,7 @@
 
 
 
-subroutine hy_uhd_setMinTimeStep(blockID,i,j,k,delta,speed)
+subroutine hy_setMinTimeStep(blockID,i,j,k,delta,speed)
 
   use Hydro_data, ONLY : hy_dtmin, hy_dtminloc, hy_dtminValid, hy_dtminCfl, hy_cfl, &
                          hy_meshMe
@@ -58,4 +58,4 @@ subroutine hy_uhd_setMinTimeStep(blockID,i,j,k,delta,speed)
     hy_dtminValid = .TRUE.
   end if
 
-end subroutine hy_uhd_setMinTimeStep
+end subroutine hy_setMinTimeStep

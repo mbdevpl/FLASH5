@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_DataReconstructNormalDir_PPM
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_DataReconstructNormalDir_PPM
 !!
 !! NAME
 !!
-!!  hy_uhd_DataReconstructNormalDir_PPM
+!!  hy_DataReconstructNormalDir_PPM
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_DataReconstructNormalDir_PPM(integer(IN) :: dir,
+!!  call hy_DataReconstructNormalDir_PPM(integer(IN) :: dir,
 !!                                    real(IN)    :: dt,
 !!                                    real(IN)    :: delta,
 !!                                    pointer(IN) :: Data1D(:,:),
@@ -70,7 +70,7 @@
 
 !! REORDER(2): Data1D
 
-Subroutine hy_uhd_DataReconstructNormalDir_PPM&
+Subroutine hy_DataReconstructNormalDir_PPM&
      (dir,dt,delta,Data1D,DataGrav1D,&
       FlatCoeff,TransUpdateOnly, &
       lambda0,leig0,reig0,&
@@ -92,14 +92,14 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
                                    hy_useAuxEintEqn,  &
                                    hy_fullSpecMsFluxHandling
 
-  use hy_uhd_interface,     ONLY : hy_uhd_TVDslope,       &
-                                   hy_uhd_TVDslopeUpwind, & 
-                                   hy_uhd_upwindTransverseFlux,&
-                                   hy_uhd_eigenParameters, &
-                                   hy_uhd_eigenValue,      &
-                                   hy_uhd_eigenVector
+  use hy_interface,     ONLY : hy_TVDslope,       &
+                                   hy_TVDslopeUpwind, & 
+                                   hy_upwindTransverseFlux,&
+                                   hy_eigenParameters, &
+                                   hy_eigenValue,      &
+                                   hy_eigenVector
 
-  use hy_uhd_slopeLimiters, ONLY : minmod
+  use hy_slopeLimiters, ONLY : minmod
   use Timers_interface,     ONLY : Timers_start, Timers_stop
 
   implicit none
@@ -316,7 +316,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
   Wp=0.;      Wm=0.
 !!$ delbar0=0.; delbarN=0.; delbarP=0.
 
-  call hy_uhd_eigenParameters&
+  call hy_eigenParameters&
        (Vc(HY_DENS:HY_GAME),dir,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -325,7 +325,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
 #endif
 #endif
        )
-  call hy_uhd_eigenValue&
+  call hy_eigenValue&
        (lambda0,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs&
@@ -334,7 +334,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
 #endif
 #endif
        )
-  call hy_uhd_eigenVector&
+  call hy_eigenVector&
        (leig0,reig0,Vc(HY_DENS:HY_GAME),dir,.false.,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -354,7 +354,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
      vc0Ptr => Vc (:)
      vp1Ptr => Vp (:)
 
-     call hy_uhd_upwindTransverseFlux&
+     call hy_upwindTransverseFlux&
           (dir,hy_transOrder,vm1Ptr,vc0Ptr,vp1Ptr,lambda0,leig0,reig0,HY_END_VARS,sig)
 
 
@@ -364,7 +364,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
         vc0Ptr => Sc (:)
         vp1Ptr => Sp (:)
 
-        call hy_uhd_upwindTransverseFlux&
+        call hy_upwindTransverseFlux&
           (dir,hy_transOrder,vm1Ptr,vc0Ptr,vp1Ptr,lambda0,leig0,reig0,HY_NSPEC,SpcSig,speciesScalar=.true.)
      endif ! (hy_fullSpecMsFluxHandling)
 #endif
@@ -377,7 +377,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
   !! -------------------------------------------------------------------------------------!
   IF (.not. TransUpdateOnly) THEN
 
-  call hy_uhd_eigenParameters&
+  call hy_eigenParameters&
        (Vp(HY_DENS:HY_GAME),dir,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -386,7 +386,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
 #endif
 #endif
        )
-  call hy_uhd_eigenValue&
+  call hy_eigenValue&
        (lambdaP,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs&
@@ -395,7 +395,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
 #endif
 #endif
        )
-  call hy_uhd_eigenVector&
+  call hy_eigenVector&
        (leigP,reigP,Vp(HY_DENS:HY_GAME),dir,.false.,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -406,7 +406,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
        )
 
 
-  call hy_uhd_eigenParameters&
+  call hy_eigenParameters&
        (Vm(HY_DENS:HY_GAME),dir,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -415,7 +415,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
 #endif
 #endif
        )
-  call hy_uhd_eigenValue&
+  call hy_eigenValue&
        (lambdaN,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs&
@@ -424,7 +424,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
 #endif
 #endif
        )
-  call hy_uhd_eigenVector&
+  call hy_eigenVector&
        (leigN,reigN,Vm(HY_DENS:HY_GAME),dir,.false.,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
        ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -436,14 +436,14 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
 
 
      if (.not. hy_upwindTVD) then        
-        call hy_uhd_TVDslope(dir,Vmm,Vm, Vc, lambdaN,leigN,delbarN)
-        call hy_uhd_TVDslope(dir,Vm, Vc, Vp, lambda0,leig0,delbar0)
-        call hy_uhd_TVDslope(dir,Vc, Vp, Vpp,lambdaP,leigP,delbarP)
+        call hy_TVDslope(dir,Vmm,Vm, Vc, lambdaN,leigN,delbarN)
+        call hy_TVDslope(dir,Vm, Vc, Vp, lambda0,leig0,delbar0)
+        call hy_TVDslope(dir,Vc, Vp, Vpp,lambdaP,leigP,delbarP)
      else
 
 
         !! lambdaNN
-        call hy_uhd_eigenParameters&
+        call hy_eigenParameters&
              (Vmm(HY_DENS:HY_GAME),dir,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
              ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -452,7 +452,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
 #endif
 #endif
              )
-        call hy_uhd_eigenValue&
+        call hy_eigenValue&
              (lambdaNN,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
              ,C_alfn=ca,C_slow=cs&
@@ -463,7 +463,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
              )
 
         !! lambdaPP
-        call hy_uhd_eigenParameters&
+        call hy_eigenParameters&
              (Vpp(HY_DENS:HY_GAME),dir,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
              ,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta&
@@ -472,7 +472,7 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
 #endif
 #endif
              )
-        call hy_uhd_eigenValue&
+        call hy_eigenValue&
              (lambdaPP,uN,cf&
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
              ,C_alfn=ca,C_slow=cs&
@@ -487,30 +487,30 @@ Subroutine hy_uhd_DataReconstructNormalDir_PPM&
         if ((lambdaN(HY_FASTRGHT) > 0. .and. lambdaP(HY_FASTLEFT) < 0.) .or. &
             (lambdaN(HY_FASTRGHT) > 0. .and. lambda0(HY_FASTLEFT) < 0.) .or. &
             (lambda0(HY_FASTRGHT) > 0. .and. lambdaP(HY_FASTLEFT) < 0.)) then
-           call hy_uhd_TVDslopeUpwind&
+           call hy_TVDslopeUpwind&
                 (dir,Vmm,Vm,Vc,Vp,Vpp,lambdaN,lambda0,lambdaP,leig0,delbar0)
         else
-           call hy_uhd_TVDslope(dir,Vm,Vc,Vp,lambda0,leig0,delbar0)
+           call hy_TVDslope(dir,Vm,Vc,Vp,lambda0,leig0,delbar0)
         endif
 
         !! Upwinded TVD for PPM ---
         if ((lambda0(HY_FASTRGHT) > 0. .and. lambdaPP(HY_FASTLEFT) < 0.) .or. &
             (lambda0(HY_FASTRGHT) > 0. .and. lambdaP (HY_FASTLEFT) < 0.) .or. &
             (lambdaP(HY_FASTRGHT) > 0. .and. lambdaPP(HY_FASTLEFT) < 0.)) then
-           call hy_uhd_TVDslopeUpwind&
+           call hy_TVDslopeUpwind&
                 (dir,Vm,Vc,Vp,Vpp,Vppp,lambda0,lambdaP,lambdaPP,leigP,delbarP)
         else
-           call hy_uhd_TVDslope(dir,Vc,Vp,Vpp,lambdaP,leigP,delbarP)
+           call hy_TVDslope(dir,Vc,Vp,Vpp,lambdaP,leigP,delbarP)
         endif
 
         !! Upwinded TVD for PPM ---
         if ((lambdaNN(HY_FASTRGHT) > 0. .and. lambda0(HY_FASTLEFT) < 0.) .or. &
             (lambdaNN(HY_FASTRGHT) > 0. .and. lambdaN(HY_FASTLEFT) < 0.) .or. &
             (lambdaN (HY_FASTRGHT) > 0. .and. lambda0(HY_FASTLEFT) < 0.)) then
-           call hy_uhd_TVDslopeUpwind&
+           call hy_TVDslopeUpwind&
                 (dir,Vmmm,Vmm,Vm,Vc,Vp,lambdaNN,lambdaN,lambda0,leigN,delbarN)
         else
-           call hy_uhd_TVDslope(dir,Vmm,Vm,Vc,lambdaN,leigN,delbarN)
+           call hy_TVDslope(dir,Vmm,Vm,Vc,lambdaN,leigN,delbarN)
         endif
 
      endif !end of if (.not. hy_upwindTVD) then
@@ -955,4 +955,4 @@ print*,'i am not supposed to be here'
      !! End of advancing the interpolated interface values by 1/2 time step for PPM
   ENDIF ! end of IF (.not. TransUpdateOnly) THEN
 
-End Subroutine Hy_uhd_DataReconstructNormalDir_PPM
+End Subroutine Hy_DataReconstructNormalDir_PPM

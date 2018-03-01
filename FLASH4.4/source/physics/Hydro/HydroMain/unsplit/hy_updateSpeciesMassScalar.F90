@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_updateSpeciesMassScalar
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_updateSpeciesMassScalar
 !!
 !! NAME
 !!
-!!  hy_uhd_updateSpeciesMassScalar
+!!  hy_updateSpeciesMassScalar
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_updateSpeciesMassScalar( integer(IN) :: order,
+!!  hy_updateSpeciesMassScalar( integer(IN) :: order,
 !!                                  real(IN)    :: densNew,
 !!                                  real(IN)    :: Sp(NSPECIES+NMASS_SCALARS,-3:3,*),
 !!                                  real(IN)    :: U(6,-3:3,...*),
@@ -50,11 +50,11 @@
 
 !!REORDER(4): Sp, U
 
-Subroutine hy_uhd_updateSpeciesMassScalar&
+Subroutine hy_updateSpeciesMassScalar&
      (order,densNew,Sp,U,FL,FR,GL,GR,HL,HR,dx,dy,dz,dt,SpNew)
 
   use Hydro_data, ONLY : hy_ContactSteepening, hy_tiny, hy_transOrder
-  use hy_uhd_slopeLimiters, ONLY : mc,signum
+  use hy_slopeLimiters, ONLY : mc,signum
 
   implicit none
 
@@ -969,7 +969,7 @@ Subroutine hy_uhd_updateSpeciesMassScalar&
      enddo
   end if
 
-end Subroutine hy_uhd_updateSpeciesMassScalar
+end Subroutine hy_updateSpeciesMassScalar
 
 
 

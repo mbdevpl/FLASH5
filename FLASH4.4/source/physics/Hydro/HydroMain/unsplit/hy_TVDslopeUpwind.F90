@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_TVDslopeUpwind
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_TVDslopeUpwind
 !!
 !! NAME
 !!
-!!  hy_uhd_TVDslopeUpwind
+!!  hy_TVDslopeUpwind
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_TVDslopeUpwind(integer(IN) :: dir,
+!!  hy_TVDslopeUpwind(integer(IN) :: dir,
 !!                        real(IN)    :: VLL(HY_VARINUMMAX),
 !!                        real(IN)    :: VL (HY_VARINUMMAX),
 !!                        real(IN)    :: V0 (HY_VARINUMMAX),
@@ -63,10 +63,10 @@
 !!***
 
 
-Subroutine hy_uhd_TVDslopeUpwind(dir,VLL,VL,V0,VR,VRR,lambdaL,lambda,lambdaR,leig,delbar)
+Subroutine hy_TVDslopeUpwind(dir,VLL,VL,V0,VR,VRR,lambdaL,lambda,lambdaR,leig,delbar)
 
   use Hydro_data,           ONLY : hy_limiter,hy_ContactSteepening
-  use hy_uhd_slopeLimiters, ONLY : minmod,mc,vanLeer
+  use hy_slopeLimiters, ONLY : minmod,mc,vanLeer
   use Hydro_data,           ONLY : hy_charLimiting,hy_LimitedSlopeBeta
 
   implicit none
@@ -515,4 +515,4 @@ Subroutine hy_uhd_TVDslopeUpwind(dir,VLL,VL,V0,VR,VRR,lambdaL,lambda,lambdaR,lei
 
 
 
-End Subroutine hy_uhd_TVDslopeUpwind
+End Subroutine hy_TVDslopeUpwind

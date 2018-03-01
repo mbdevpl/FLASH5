@@ -44,7 +44,7 @@
 Subroutine Hydro(block, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtold,sweepOrder)
 
   use Hydro_data,       ONLY : hy_useHydro, hy_gpotAlreadyUpToDate
-  use hy_uhd_interface, ONLY : hy_uhd_unsplit
+  use hy_interface, ONLY : hy_unsplit
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use block_metadata,   ONLY : block_metadata_t
 
@@ -69,7 +69,7 @@ Subroutine Hydro(block, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dto
 
   call Timers_start("hydro_unsplit")
   
-  call hy_uhd_unsplit(block, Uin,blkLimitsGC,&
+  call hy_unsplit(block, Uin,blkLimitsGC,&
                       Uout,blkLimits,&
                       del,dt, dtOld )
 

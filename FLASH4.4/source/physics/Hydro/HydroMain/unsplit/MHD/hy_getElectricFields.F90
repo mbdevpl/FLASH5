@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_uhd_getElectricFields
+!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_getElectricFields
 !!
 !! NAME
 !!
-!!  hy_uhd_getElecticFields
+!!  hy_getElecticFields
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_getElectricFields( integer(IN) :: blockID,
+!!  hy_getElectricFields( integer(IN) :: blockID,
 !!                            integer(IN) :: blkLimits(2,MDIM),
 !!                            integer(IN) :: blkLimitsGC(2,MDIM),
 !!                            integer(IN) :: del(MDIM),
@@ -51,12 +51,12 @@
 !!REORDER(4):U
 !!REORDER(4): fl[xyz], B[xyz]
 
-Subroutine hy_uhd_getElectricFields( blockID,blkLimits,blkLimitsGC,del,flx,fly,flz)
+Subroutine hy_getElectricFields( blockID,blkLimits,blkLimitsGC,del,flx,fly,flz)
 
   use Hydro_data,       ONLY : hy_E_modification, hy_E_upwind
-  use hy_uhd_interface, ONLY : hy_uhd_getFluxDeriv
+  use hy_interface, ONLY : hy_getFluxDeriv
   use Grid_interface,   ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
-  use hy_uhd_slopeLimiters, ONLY : signum
+  use hy_slopeLimiters, ONLY : signum
 
   implicit none
   
@@ -162,14 +162,14 @@ Subroutine hy_uhd_getElectricFields( blockID,blkLimits,blkLimitsGC,del,flx,fly,f
 #endif
         do j=j0-1,jmax+1
            do i=i0-1,imax+1
-              call hy_uhd_getFluxDeriv(i,j,k,blkLimitsGC,DIR_X,DIR_Y,flx,dyF(i,j,k),dy2F(i,j,k))
-              call hy_uhd_getFluxDeriv(i,j,k,blkLimitsGC,DIR_Y,DIR_X,fly,dxG(i,j,k),dx2G(i,j,k))
+              call hy_getFluxDeriv(i,j,k,blkLimitsGC,DIR_X,DIR_Y,flx,dyF(i,j,k),dy2F(i,j,k))
+              call hy_getFluxDeriv(i,j,k,blkLimitsGC,DIR_Y,DIR_X,fly,dxG(i,j,k),dx2G(i,j,k))
 #if NDIM == 3
-              call hy_uhd_getFluxDeriv(i,j,k,blkLimitsGC,DIR_X,DIR_Z,flx,dzF(i,j,k),dz2F(i,j,k))
-              call hy_uhd_getFluxDeriv(i,j,k,blkLimitsGC,DIR_Z,DIR_X,flz,dxH(i,j,k),dx2H(i,j,k))
+              call hy_getFluxDeriv(i,j,k,blkLimitsGC,DIR_X,DIR_Z,flx,dzF(i,j,k),dz2F(i,j,k))
+              call hy_getFluxDeriv(i,j,k,blkLimitsGC,DIR_Z,DIR_X,flz,dxH(i,j,k),dx2H(i,j,k))
 
-              call hy_uhd_getFluxDeriv(i,j,k,blkLimitsGC,DIR_Z,DIR_Y,flz,dyH(i,j,k),dy2H(i,j,k))
-              call hy_uhd_getFluxDeriv(i,j,k,blkLimitsGC,DIR_Y,DIR_Z,fly,dzG(i,j,k),dz2G(i,j,k))
+              call hy_getFluxDeriv(i,j,k,blkLimitsGC,DIR_Z,DIR_Y,flz,dyH(i,j,k),dy2H(i,j,k))
+              call hy_getFluxDeriv(i,j,k,blkLimitsGC,DIR_Y,DIR_Z,fly,dzG(i,j,k),dz2G(i,j,k))
 #endif
            enddo
         enddo
@@ -497,4 +497,4 @@ Subroutine hy_uhd_getElectricFields( blockID,blkLimits,blkLimitsGC,del,flx,fly,f
 #endif
 ! end of #if FLASH_NEDGE_VAR > 0
 
-End Subroutine hy_uhd_getElectricFields
+End Subroutine hy_getElectricFields

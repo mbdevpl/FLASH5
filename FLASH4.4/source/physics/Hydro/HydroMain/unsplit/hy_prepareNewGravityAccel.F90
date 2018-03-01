@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_prepareNewGravityAccel
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_prepareNewGravityAccel
 !!
 !! NAME
 !!
-!!  hy_uhd_prepareNewGravityAccel
+!!  hy_prepareNewGravityAccel
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_prepareNewGravityAccel(integer, INTENT(IN)  :: blockCount,
+!!  call hy_prepareNewGravityAccel(integer, INTENT(IN)  :: blockCount,
 !!                                     integer, INTENT(IN), dimension(blockCount)  :: blocklist,
 !!                                     logical(in) :: gcMaskLogged)
 !!
@@ -27,7 +27,7 @@
 !!  agreement on which variable to use for storing the potential (whether "gpot",
 !!  "gpoh", or "gpol"), as well as other auxiliary variables if needed.
 !!  The reason for having this wrapper in the Hydro implementation
-!!  is to achieve this agreement (in cooperation with the hy_uhd_putGravityUnsplit
+!!  is to achieve this agreement (in cooperation with the hy_putGravityUnsplit
 !!  wrapper).
 !!
 !! ARGUMENTS
@@ -50,7 +50,7 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
+subroutine hy_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
 
   use Grid_interface, ONLY : Grid_fillGuardCells,    &
                              Grid_addToVar
@@ -112,7 +112,7 @@ subroutine hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
 
 #ifdef DEBUG_GRID_GCMASK
      if (.NOT.gcMaskLogged) then
-        call Logfile_stampVarMask(gcMask, .FALSE., '[hy_uhd_unsplit]', 'gcWant[Pot]')
+        call Logfile_stampVarMask(gcMask, .FALSE., '[hy_unsplit]', 'gcWant[Pot]')
      end if
 #endif
 
@@ -123,4 +123,4 @@ subroutine hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
   endif
 #endif
 
-end subroutine hy_uhd_prepareNewGravityAccel
+end subroutine hy_prepareNewGravityAccel

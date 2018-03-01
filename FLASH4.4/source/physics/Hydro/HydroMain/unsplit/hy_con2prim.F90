@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_con2prim
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_con2prim
 !!
 !! NAME
 !!
-!!  hy_uhd_con2prim
+!!  hy_con2prim
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_con2prim( real(IN)  :: CU(HY_VARINUM),
+!!  hy_con2prim( real(IN)  :: CU(HY_VARINUM),
 !!                   real(IN)  :: game,
 !!                   real(OUT) :: V(HY_VARINUM))
 !!
@@ -23,7 +23,7 @@
 !!
 !!***
 
-Subroutine hy_uhd_con2prim(CU,game,V)
+Subroutine hy_con2prim(CU,game,V)
 
   implicit none
 
@@ -51,4 +51,4 @@ Subroutine hy_uhd_con2prim(CU,game,V)
 #endif
   V(HY_PRES) = (game-1.)*(CU(HY_ENER)-.5 *CU(HY_DENS)*u2-.5 *B2)
 
-End Subroutine hy_uhd_con2prim
+End Subroutine hy_con2prim

@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_eigenValue
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_eigenValue
 !!
 !! NAME
 !!
-!!  hy_uhd_eigenValue
+!!  hy_eigenValue
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_eigenValue( real (OUT)          :: EigValue(HY_WAVENUM),
+!!  hy_eigenValue( real (OUT)          :: EigValue(HY_WAVENUM),
 !!                     real (IN)           :: U_normal,
 !!                     real (IN)           :: C_fast,
 !!                     real (IN), optional :: C_alfn,
@@ -30,7 +30,7 @@
 !!***
 
 
-Subroutine hy_uhd_eigenValue(EigValue,U_normal,C_fast,C_alfn,C_slow,C_hyp)
+Subroutine hy_eigenValue(EigValue,U_normal,C_fast,C_alfn,C_slow,C_hyp)
     
   implicit none
 
@@ -61,4 +61,4 @@ Subroutine hy_uhd_eigenValue(EigValue,U_normal,C_fast,C_alfn,C_slow,C_hyp)
 #endif
 
 
-End Subroutine hy_uhd_eigenValue
+End Subroutine hy_eigenValue

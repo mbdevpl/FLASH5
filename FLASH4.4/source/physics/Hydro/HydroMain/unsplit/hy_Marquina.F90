@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_Marquina
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_Marquina
 !!
 !! NAME
 !!
-!!  hy_uhd_Marquina
+!!  hy_Marquina
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_Marquina( integer(IN) :: dir,
+!!  call hy_Marquina( integer(IN) :: dir,
 !!                   real(IN)    :: Vm(HY_VARINUMMAX),
 !!                   real(IN)    :: Vp(HY_VARINUMMAX),
 !!                   real(OUT)   :: Fstar(HY_VARINUM1),
@@ -38,14 +38,14 @@
 !!
 !!***
 
-Subroutine hy_uhd_Marquina(dir,Vm,Vp,Fstar,speed,ierr)
+Subroutine hy_Marquina(dir,Vm,Vp,Fstar,speed,ierr)
 
-  use hy_uhd_interface, ONLY : hy_uhd_avgState,       &
-                               hy_uhd_eigenParameters,&
-                               hy_uhd_eigenValue,     &
-                               hy_uhd_eigenVector,    &
-                               hy_uhd_prim2con,       &
-                               hy_uhd_prim2flx
+  use hy_interface, ONLY : hy_avgState,       &
+                               hy_eigenParameters,&
+                               hy_eigenValue,     &
+                               hy_eigenVector,    &
+                               hy_prim2con,       &
+                               hy_prim2flx
 
   use Hydro_data,       ONLY : hy_entropy
 
@@ -110,38 +110,38 @@ Subroutine hy_uhd_Marquina(dir,Vm,Vp,Fstar,speed,ierr)
 
 #ifndef FLASH_USM_MHD
   ! Left state
-  call hy_uhd_eigenParameters(Vm(HY_DENS:HY_GAME),dir,uN,cf)
-  call hy_uhd_eigenValue(lambdaL,uN,cf)
-  call hy_uhd_eigenVector(leigL,reigL,Vm(HY_DENS:HY_GAME),dir,cons,cf)
+  call hy_eigenParameters(Vm(HY_DENS:HY_GAME),dir,uN,cf)
+  call hy_eigenValue(lambdaL,uN,cf)
+  call hy_eigenVector(leigL,reigL,Vm(HY_DENS:HY_GAME),dir,cons,cf)
 
   ! Right state
-  call hy_uhd_eigenParameters(Vp(HY_DENS:HY_GAME),dir,uN,cf)
-  call hy_uhd_eigenValue(lambdaR,uN,cf)
-  call hy_uhd_eigenVector(leigR,reigR,Vp(HY_DENS:HY_GAME),dir,cons,cf)
+  call hy_eigenParameters(Vp(HY_DENS:HY_GAME),dir,uN,cf)
+  call hy_eigenValue(lambdaR,uN,cf)
+  call hy_eigenVector(leigR,reigR,Vp(HY_DENS:HY_GAME),dir,cons,cf)
 #else
   ! Avg state for MHD
-  call hy_uhd_avgState(dir,Vm(HY_DENS:HY_EINT),Vp(HY_DENS:HY_EINT),Vavg(HY_DENS:HY_GAME))
-  call hy_uhd_eigenParameters(Vavg(HY_DENS:HY_GAME),dir,uN,cf,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta)
-  call hy_uhd_eigenVector(leigL,reigL,Vavg(HY_DENS:HY_GAME),dir,cons,cf,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta)
+  call hy_avgState(dir,Vm(HY_DENS:HY_EINT),Vp(HY_DENS:HY_EINT),Vavg(HY_DENS:HY_GAME))
+  call hy_eigenParameters(Vavg(HY_DENS:HY_GAME),dir,uN,cf,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta)
+  call hy_eigenVector(leigL,reigL,Vavg(HY_DENS:HY_GAME),dir,cons,cf,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta)
 
   leigR = leigL
   reigR = reigL
 
   ! Left state
-  call hy_uhd_eigenParameters(Vm(HY_DENS:HY_GAME),dir,uN,cf,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta)
-  call hy_uhd_eigenValue(lambdaL,uN,cf,C_alfn=ca,C_slow=cs)
+  call hy_eigenParameters(Vm(HY_DENS:HY_GAME),dir,uN,cf,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta)
+  call hy_eigenValue(lambdaL,uN,cf,C_alfn=ca,C_slow=cs)
 
   ! Right state
-  call hy_uhd_eigenParameters(Vp(HY_DENS:HY_GAME),dir,uN,cf,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta)
-  call hy_uhd_eigenValue(lambdaR,uN,cf,C_alfn=ca,C_slow=cs)
+  call hy_eigenParameters(Vp(HY_DENS:HY_GAME),dir,uN,cf,C_alfn=ca,C_slow=cs,A_f=af,A_s=as,B_beta=beta)
+  call hy_eigenValue(lambdaR,uN,cf,C_alfn=ca,C_slow=cs)
 #endif
 
 
   ! Fluxes
-  call hy_uhd_prim2con(Vm(HY_DENS:HY_GAME),Um(HY_DENS:hyEndVar))
-  call hy_uhd_prim2con(Vp(HY_DENS:HY_GAME),Up(HY_DENS:hyEndVar))
-  call hy_uhd_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
-  call hy_uhd_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
+  call hy_prim2con(Vm(HY_DENS:HY_GAME),Um(HY_DENS:hyEndVar))
+  call hy_prim2con(Vp(HY_DENS:HY_GAME),Up(HY_DENS:hyEndVar))
+  call hy_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
+  call hy_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
 
 
  ! Output maximum local wave speed for dt calculation
@@ -215,4 +215,4 @@ Subroutine hy_uhd_Marquina(dir,Vm,Vp,Fstar,speed,ierr)
   Fstar(F06MAGX_FLUX+dir-1) = 0.
 #endif
 
-End Subroutine hy_uhd_Marquina
+End Subroutine hy_Marquina

@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_HLL
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_HLL
 !!
 !! NAME
 !!
-!!  hy_uhd_HLL
+!!  hy_HLL
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_HLL(integer(IN) :: dir,
+!!  hy_HLL(integer(IN) :: dir,
 !!             real(IN)    :: Vm(HY_VARINUMMAX),
 !!             real(IN)    :: Vp(HY_VARINUMMAX),
 !!             real(OUT)   :: Fstar(HY_VARINUM1),
@@ -50,9 +50,9 @@
 !!
 !!***
 
-Subroutine hy_uhd_HLL(dir,Vm,Vp,Fstar,speed,ierr)
+Subroutine hy_HLL(dir,Vm,Vp,Fstar,speed,ierr)
   
-  use hy_uhd_interface, ONLY : hy_uhd_prim2con,hy_uhd_prim2flx
+  use hy_interface, ONLY : hy_prim2con,hy_prim2flx
 
   implicit none
 
@@ -141,11 +141,11 @@ Subroutine hy_uhd_HLL(dir,Vm,Vp,Fstar,speed,ierr)
   speed = max(abs(SL),abs(SR))
 
   ! Convert primitive variables to conservative variables
-  call hy_uhd_prim2con(Vm(HY_DENS:HY_GAME),UL(HY_DENS:hyEndVar))
-  call hy_uhd_prim2con(Vp(HY_DENS:HY_GAME),UR(HY_DENS:hyEndVar))
+  call hy_prim2con(Vm(HY_DENS:HY_GAME),UL(HY_DENS:hyEndVar))
+  call hy_prim2con(Vp(HY_DENS:HY_GAME),UR(HY_DENS:hyEndVar))
   UL(hyEndVar+1) = 0.0; UR(hyEndVar+1) = 0.0
-  call hy_uhd_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
-  call hy_uhd_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
+  call hy_prim2flx(dir,Vm,FL(F01DENS_FLUX:hyEndFlux))
+  call hy_prim2flx(dir,Vp,FR(F01DENS_FLUX:hyEndFlux))
 
 
   if (SL > 0.) then
@@ -168,4 +168,4 @@ Subroutine hy_uhd_HLL(dir,Vm,Vp,Fstar,speed,ierr)
   Fstar(F06MAGX_FLUX+dir-1) = 0.
 #endif
 
-End Subroutine hy_uhd_HLL
+End Subroutine hy_HLL

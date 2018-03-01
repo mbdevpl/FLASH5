@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_getFaceFlux
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_getFaceFlux
 !!
 !! NAME
 !!
-!!  hy_uhd_getFaceFlux
+!!  hy_getFaceFlux
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_getFaceFlux( integer(IN) :: blockID,
+!!  hy_getFaceFlux( integer(IN) :: blockID,
 !!                      integer(IN) :: blkLimits(2,MDIM),
 !!                      integer(IN) :: blkLimitsGC(2,MDIM), 
 !!                      integer(IN) :: datasize(MDIM),
@@ -50,7 +50,7 @@
 !#define COMPUTE_DT_FLUX
 
 #include "Flash.h"
-subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
+subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                                 xflux,yflux,zflux,&
                                 scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                 hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
@@ -72,15 +72,15 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                                             hy_hydroComputeDtOption,  &
                                             hy_EOSforRiemann
 
-  use hy_uhd_interface,              ONLY : hy_uhd_addViscousFluxes,  &
-                                            hy_uhd_addThermalFluxes,  &
-                                            hy_uhd_Roe, &
-                                            hy_uhd_LLF, &
-                                            hy_uhd_HLL, &
-                                            hy_uhd_HLLC,&
-                                            hy_uhd_Marquina,&
-                                            hy_uhd_MarquinaModified,&
-                                            hy_uhd_setMinTimeStep
+  use hy_interface,              ONLY : hy_addViscousFluxes,  &
+                                            hy_addThermalFluxes,  &
+                                            hy_Roe, &
+                                            hy_LLF, &
+                                            hy_HLL, &
+                                            hy_HLLC,&
+                                            hy_Marquina,&
+                                            hy_MarquinaModified,&
+                                            hy_setMinTimeStep
 
   use Grid_interface,                ONLY : Grid_getBlkPtr, &
                                             Grid_releaseBlkPtr, &
@@ -97,9 +97,9 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                                             hy_useBiermann,            &
                                             hy_useBiermann1T,          &
                                             hy_biermannSource
-  use hy_uhd_interface,              ONLY : hy_uhd_addResistiveFluxes, &
-                                            hy_uhd_HLLD,&
-                                            hy_uhd_addBiermannBatteryTerms
+  use hy_interface,              ONLY : hy_addResistiveFluxes, &
+                                            hy_HLLD,&
+                                            hy_addBiermannBatteryTerms
   use MagneticResistivity_interface, ONLY : MagneticResistivity
 #endif
   use block_metadata, ONLY : block_metadata_t
@@ -332,49 +332,49 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
               end if
 
               if (hy_RiemannSolver == ROE) then
-                 call hy_uhd_Roe(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_Roe", VL, VR, i,j,k, DIR_X)
+                 call hy_Roe(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_Roe", VL, VR, i,j,k, DIR_X)
 
               elseif (hy_RiemannSolver == HLL) then
-                 call hy_uhd_HLL(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_HLL", VL, VR, i,j,k, DIR_X)
+                 call hy_HLL(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_HLL", VL, VR, i,j,k, DIR_X)
 
               elseif (hy_RiemannSolver == HLLC) then
-                 call hy_uhd_HLLC(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_HLLC", VL, VR, i,j,k, DIR_X)
+                 call hy_HLLC(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_HLLC", VL, VR, i,j,k, DIR_X)
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
               elseif (hy_RiemannSolver == HLLD) then
-                 call hy_uhd_HLLD(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_HLLD", VL, VR, i,j,k, DIR_X)
+                 call hy_HLLD(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_HLLD", VL, VR, i,j,k, DIR_X)
 #endif
               elseif (hy_RiemannSolver == MARQ) then
-                 call hy_uhd_Marquina(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_Marquina", VL, VR, i,j,k, DIR_X)
+                 call hy_Marquina(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_Marquina", VL, VR, i,j,k, DIR_X)
 
               elseif (hy_RiemannSolver == MARM) then
-                 call hy_uhd_MarquinaModified(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_Marquina", VL, VR, i,j,k, DIR_X)
+                 call hy_MarquinaModified(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_Marquina", VL, VR, i,j,k, DIR_X)
 
               elseif (hy_RiemannSolver == LLF) then
-                 call hy_uhd_LLF(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_LLF", VL, VR, i,j,k, DIR_X)
+                 call hy_LLF(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_LLF", VL, VR, i,j,k, DIR_X)
 
 #ifdef SHOK_VAR
               elseif (hy_RiemannSolver == HYBR) then
                  if (U(SHOK_VAR,i-1,j,k) + U(SHOK_VAR,i,j,k) > 0.) then
                     !! use diffusive HLL solver for a local strong shock/rarefaction region
-                    call hy_uhd_HLL(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                    if(ierr /= 0) call do_error("hy_uhd_HLL", VL, VR, i,j,k, DIR_X)
+                    call hy_HLL(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                    if(ierr /= 0) call do_error("hy_HLL", VL, VR, i,j,k, DIR_X)
                  else
 #ifdef FLASH_UHD_HYDRO
                     ! Hydro
-                    call hy_uhd_HLLC(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                    if(ierr /= 0) call do_error("hy_uhd_HLLC", VL, VR, i,j,k, DIR_X)
+                    call hy_HLLC(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                    if(ierr /= 0) call do_error("hy_HLLC", VL, VR, i,j,k, DIR_X)
 #else
                     ! MHD
-                    call hy_uhd_HLLD(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                    if(ierr /= 0) call do_error("hy_uhd_HLLD", VL, VR, i,j,k, DIR_X)
+                    call hy_HLLD(DIR_X,VL,VR,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                    if(ierr /= 0) call do_error("hy_HLLD", VL, VR, i,j,k, DIR_X)
 #endif
                  endif
 !!$                 print*,'After R-solve:',i,j,k,xflux(:,i,j,k)
@@ -389,7 +389,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
 !#ifdef COMPUTE_DT_FLUX
               if (hy_hydroComputeDtOption == 1) then
                  !! Call for dt calculation
-                 call hy_uhd_setMinTimeStep(block,i,j,k,del(DIR_X),speed)
+                 call hy_setMinTimeStep(block,i,j,k,del(DIR_X),speed)
               endif
 !#endif
 
@@ -481,18 +481,18 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
 
            if (hy_useDiffuse) then
               if (hy_useViscosity) then
-                 call hy_uhd_addViscousFluxes&
+                 call hy_addViscousFluxes&
                       (block,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),viscDynamic,DIR_X)
               endif
 
               if (hy_useConductivity .and. hy_addThermalFlux) then
-                 call hy_uhd_addThermalFluxes&
+                 call hy_addThermalFluxes&
                       (block,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),cond,DIR_X)
               endif
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
               if (hy_useMagneticResistivity) then
-                 call hy_uhd_addResistiveFluxes&
+                 call hy_addResistiveFluxes&
                       (block,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),magResist,DIR_X)
               endif
 #endif
@@ -500,7 +500,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
 
 #ifdef FLASH_USM_MHD           
            if ((hy_useBiermann .or. hy_useBiermann1T) .and. (.not. hy_biermannSource)) then
-              call hy_uhd_addBiermannBatteryTerms &
+              call hy_addBiermannBatteryTerms &
                    (block,blkLimitsGC,i,j,k,xflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k), DIR_X)
            endif 
 #endif
@@ -515,7 +515,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
      if (lastCall) then
 #endif
         if (hy_useAuxEintEqn .OR. hy_geometry /= CARTESIAN) then
-           !! Obtain an averaged pressure for internal energy update in hy_uhd_unsplitUpdate
+           !! Obtain an averaged pressure for internal energy update in hy_unsplitUpdate
 
            do k=blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
               do j=blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
@@ -631,49 +631,49 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
            end if
 
            if (hy_RiemannSolver == ROE) then
-              call hy_uhd_Roe(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_Roe", VL, VR, i,j,k, DIR_Y)
+              call hy_Roe(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_Roe", VL, VR, i,j,k, DIR_Y)
 
            elseif (hy_RiemannSolver == HLL) then
-              call hy_uhd_HLL(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_HLL", VL, VR, i,j,k, DIR_Y)
+              call hy_HLL(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_HLL", VL, VR, i,j,k, DIR_Y)
 
            elseif (hy_RiemannSolver == HLLC) then
-              call hy_uhd_HLLC(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_HLLC", VL, VR, i,j,k, DIR_Y)
+              call hy_HLLC(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_HLLC", VL, VR, i,j,k, DIR_Y)
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
            elseif (hy_RiemannSolver == HLLD) then
-              call hy_uhd_HLLD(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_HLLD", VL, VR, i,j,k, DIR_Y)
+              call hy_HLLD(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_HLLD", VL, VR, i,j,k, DIR_Y)
 #endif
            elseif (hy_RiemannSolver == MARQ) then
-              call hy_uhd_Marquina(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_Marquina", VL, VR, i,j,k, DIR_Y)
+              call hy_Marquina(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_Marquina", VL, VR, i,j,k, DIR_Y)
 
            elseif (hy_RiemannSolver == MARM) then
-              call hy_uhd_MarquinaModified(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_Marquina", VL, VR, i,j,k, DIR_Y)
+              call hy_MarquinaModified(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_Marquina", VL, VR, i,j,k, DIR_Y)
 
            elseif (hy_RiemannSolver == LLF) then
-              call hy_uhd_LLF(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_LLF", VL, VR, i,j,k, DIR_Y)
+              call hy_LLF(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_LLF", VL, VR, i,j,k, DIR_Y)
 
 #ifdef SHOK_VAR
            elseif (hy_RiemannSolver == HYBR) then
               if (U(SHOK_VAR,i,j-1,k) + U(SHOK_VAR,i,j,k) > 0.) then
                  !! use diffusive HLL solver for a local strong shock/rarefaction region
-                 call hy_uhd_HLL(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_HLL", VL, VR, i,j,k, DIR_Y)
+                 call hy_HLL(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_HLL", VL, VR, i,j,k, DIR_Y)
               else
 #ifdef FLASH_UHD_HYDRO
                  ! for hydro
-                 call hy_uhd_HLLC(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_HLLC", VL, VR, i,j,k, DIR_Y)
+                 call hy_HLLC(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_HLLC", VL, VR, i,j,k, DIR_Y)
 #else
                  ! for MHD
-                 call hy_uhd_HLLD(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_HLLD", VL, VR, i,j,k, DIR_Y)
+                 call hy_HLLD(DIR_Y,VL,VR,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_HLLD", VL, VR, i,j,k, DIR_Y)
 #endif
               endif
 #endif
@@ -694,7 +694,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
               else ! Angular coordinates in 2D: Spherical or Polar
                  dy = xCenter(i)*del(DIR_Y)
               endif
-              call hy_uhd_setMinTimeStep(block,i,j,k,dy,speed)
+              call hy_setMinTimeStep(block,i,j,k,dy,speed)
            endif
 !#endif
 
@@ -780,25 +780,25 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
 
            if (hy_useDiffuse) then
               if (hy_useViscosity) then
-                 call hy_uhd_addViscousFluxes&
+                 call hy_addViscousFluxes&
                       (block,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),viscDynamic,DIR_Y)
               endif
 
               if (hy_useConductivity .and. hy_addThermalFlux) then
-                 call hy_uhd_addThermalFluxes&
+                 call hy_addThermalFluxes&
                       (block,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),cond,DIR_Y)
               endif
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
               if (hy_useMagneticResistivity) then
-                 call hy_uhd_addResistiveFluxes&
+                 call hy_addResistiveFluxes&
                       (block,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),magResist,DIR_Y)
               endif
 #endif
            endif
 #ifdef FLASH_USM_MHD           
            if ((hy_useBiermann .or. hy_useBiermann1T) .and. (.not. hy_biermannSource)) then
-              call hy_uhd_addBiermannBatteryTerms &
+              call hy_addBiermannBatteryTerms &
                    (block,blkLimitsGC,i,j,k,yflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k), DIR_Y)
            endif 
 #endif
@@ -891,49 +891,49 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
            end if
 
            if (hy_RiemannSolver == ROE) then
-              call hy_uhd_Roe(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_Roe", VL, VR, i,j,k, DIR_Z)
+              call hy_Roe(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_Roe", VL, VR, i,j,k, DIR_Z)
 
            elseif (hy_RiemannSolver == HLL) then
-              call hy_uhd_HLL(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_HLL", VL, VR, i,j,k, DIR_Z)
+              call hy_HLL(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_HLL", VL, VR, i,j,k, DIR_Z)
 
            elseif (hy_RiemannSolver == HLLC) then
-              call hy_uhd_HLLC(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_HLLC", VL, VR, i,j,k, DIR_Z)
+              call hy_HLLC(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_HLLC", VL, VR, i,j,k, DIR_Z)
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
            elseif (hy_RiemannSolver == HLLD) then
-              call hy_uhd_HLLD(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_HLLD", VL, VR, i,j,k, DIR_Z)
+              call hy_HLLD(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_HLLD", VL, VR, i,j,k, DIR_Z)
 #endif
            elseif (hy_RiemannSolver == MARQ) then
-              call hy_uhd_Marquina(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_Marquina", VL, VR, i,j,k, DIR_Z)
+              call hy_Marquina(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_Marquina", VL, VR, i,j,k, DIR_Z)
 
            elseif (hy_RiemannSolver == MARM) then
-              call hy_uhd_MarquinaModified(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_Marquina", VL, VR, i,j,k, DIR_Z)
+              call hy_MarquinaModified(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_Marquina", VL, VR, i,j,k, DIR_Z)
 
            elseif (hy_RiemannSolver == LLF) then
-              call hy_uhd_LLF(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-              if(ierr /= 0) call do_error("hy_uhd_LLF", VL, VR, i,j,k, DIR_Z)
+              call hy_LLF(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+              if(ierr /= 0) call do_error("hy_LLF", VL, VR, i,j,k, DIR_Z)
 
 #ifdef SHOK_VAR
            elseif (hy_RiemannSolver == HYBR) then
               if (U(SHOK_VAR,i,j,k-1) + U(SHOK_VAR,i,j,k) > 0.) then
                  !! use diffusive HLL solver for a local strong shock/rarefaction region
-                 call hy_uhd_HLL(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_HLL", VL, VR, i,j,k, DIR_Z)
+                 call hy_HLL(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_HLL", VL, VR, i,j,k, DIR_Z)
               else
 #ifdef FLASH_UHD_HYDRO
                  ! for hydro
-                 call hy_uhd_HLLC(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_HLLC", VL, VR, i,j,k, DIR_Z)
+                 call hy_HLLC(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_HLLC", VL, VR, i,j,k, DIR_Z)
 #else
                  ! for MHD
-                 call hy_uhd_HLLD(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
-                 if(ierr /= 0) call do_error("hy_uhd_HLLD", VL, VR, i,j,k, DIR_Z)
+                 call hy_HLLD(DIR_Z,VL,VR,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM,i,j,k),speed,ierr)
+                 if(ierr /= 0) call do_error("hy_HLLD", VL, VR, i,j,k, DIR_Z)
 #endif
               endif
 #endif
@@ -951,7 +951,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
               else ! Angular coordinates in 2D: Spherical or Polar
                  dz = xCenter(i)*sin(yCenter(j))*del(DIR_Z) ! z is phi
               endif
-              call hy_uhd_setMinTimeStep(block,i,j,k,dz,speed)
+              call hy_setMinTimeStep(block,i,j,k,dz,speed)
            endif
 !#endif
            !! Artificial viscosity as in PPM, Colella and Woodward, 1984.
@@ -1027,18 +1027,18 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
 
            if (hy_useDiffuse) then
               if (hy_useViscosity) then
-                 call hy_uhd_addViscousFluxes&
+                 call hy_addViscousFluxes&
                       (block,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),viscDynamic,DIR_Z)
               endif
 
               if (hy_useConductivity .and. hy_addThermalFlux) then
-                 call hy_uhd_addThermalFluxes&
+                 call hy_addThermalFluxes&
                       (block,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),cond,DIR_Z)
               endif
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
               if (hy_useMagneticResistivity) then
-                 call hy_uhd_addResistiveFluxes&
+                 call hy_addResistiveFluxes&
                       (block,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k),magResist,DIR_Z)
               endif
 #endif
@@ -1046,7 +1046,7 @@ subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
 #ifdef FLASH_USM_MHD
            
            if ((hy_useBiermann .or. hy_useBiermann1T) .and. (.not. hy_biermannSource)) then
-              call hy_uhd_addBiermannBatteryTerms &
+              call hy_addBiermannBatteryTerms &
                    (block,blkLimitsGC,i,j,k,zflux(F01DENS_FLUX:F01DENS_FLUX+HY_VARINUM-1,i,j,k), DIR_Z)
            endif 
 #endif
@@ -1224,7 +1224,7 @@ contains
 
 
     call Driver_abortFlash( &
-         "[hy_uhd_getFaceFlux]: Imaginary sound speed has obtained in " // &
+         "[hy_getFaceFlux]: Imaginary sound speed has obtained in " // &
          trim(solver) // " solver. " // &
          "Please try other (more diffusive) slope limiter, flux, order, cfl, etc. "//&
          "in order to increase numerical stability. LOOK AT THE LOG FILE")
@@ -1281,4 +1281,4 @@ contains
 
   end subroutine faceStatesEOS
 
-End Subroutine hy_uhd_getFaceFlux
+End Subroutine hy_getFaceFlux

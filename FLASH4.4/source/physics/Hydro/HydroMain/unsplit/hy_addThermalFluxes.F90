@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_uhd_addThermalFluxes
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_addThermalFluxes
 !!
 !! NAME
 !!
-!!  hy_uhd_addThermalFluxes
+!!  hy_addThermalFluxes
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_addThermalFluxes(integer(IN) :: blockID,
+!!  hy_addThermalFluxes(integer(IN) :: blockID,
 !!                          integer(IN) :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                          integer(IN) :: ix,
 !!                          integer(IN) :: iy,
@@ -35,7 +35,7 @@
 
 !!REORDER(4): U
 
-Subroutine hy_uhd_addThermalFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
+Subroutine hy_addThermalFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
 
   use Hydro_data,     ONLY : hy_qref
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas
@@ -112,4 +112,4 @@ Subroutine hy_uhd_addThermalFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,kappa,sweep
 
   call Grid_releaseBlkPtr(blockID,U,CENTER)
 
-End Subroutine hy_uhd_addThermalFluxes
+End Subroutine hy_addThermalFluxes

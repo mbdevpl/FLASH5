@@ -1,15 +1,15 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_uhd_addOhmicHeating
+!!****if* source/physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh/hy_addOhmicHeating
 !!
 !! NAME
 !!
-!!  hy_uhd_addOhmicHeating
+!!  hy_addOhmicHeating
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_addOhmicHeating(blockID,blkLimitsGC,ix,iy,iz,Qohm,eta)
+!!  hy_addOhmicHeating(blockID,blkLimitsGC,ix,iy,iz,Qohm,eta)
 !!
-!!  hy_uhd_addOhmicHeating(integer(IN) :: blockID,
+!!  hy_addOhmicHeating(integer(IN) :: blockID,
 !!                         integer(IN) :: blkLimits(LOW:HIGH,MDIM),
 !!                         integer(IN) :: ix,
 !!                         integer(IN) :: iy,
@@ -36,7 +36,7 @@
 
 !!REORDER(4): U
 
-Subroutine hy_uhd_addOhmicHeating(blockID,blkLimits,ix,iy,iz,Qohm,eta)
+Subroutine hy_addOhmicHeating(blockID,blkLimits,ix,iy,iz,Qohm,eta)
 
   use Grid_interface, ONLY : Grid_getBlkPtr, &
                              Grid_releaseBlkPtr, &
@@ -154,4 +154,4 @@ Subroutine hy_uhd_addOhmicHeating(blockID,blkLimits,ix,iy,iz,Qohm,eta)
   !! Release pointer
   call Grid_releaseBlkPtr(blockID,U,CENTER)
 
-End Subroutine hy_uhd_addOhmicHeating
+End Subroutine hy_addOhmicHeating
