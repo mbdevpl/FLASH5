@@ -93,7 +93,7 @@
 !!***
 
 !!REORDER(5): flux_[xyz],gr_[xyz]flx
-!!REORDER(4): fluxes
+!!REORDER(4): fluxx,fluxy,fluxz
 !!REORDER(5): gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 #include "Flash.h"
 subroutine Grid_putFluxData(block, fluxx, fluxy, fluxz, dataSize, axis, pressureSlots, areaLeft)
@@ -138,7 +138,6 @@ subroutine Grid_putFluxData(block, fluxx, fluxy, fluxz, dataSize, axis, pressure
      presP => presDefault
   end if
 
-  blockID=block%id
   sx = NGUARD+1
   sy = NGUARD*K2D+1
   sz = NGUARD*K3D+1
@@ -146,6 +145,7 @@ subroutine Grid_putFluxData(block, fluxx, fluxy, fluxz, dataSize, axis, pressure
   ey = dataSize(2)-NGUARD*K2D
   ez = dataSize(3)-NGUARD*K3D
 
+  blockID=block%id
   xtrue=.true.
   ytrue= (NDIM>1)
   ztrue= (NDIM>2)
