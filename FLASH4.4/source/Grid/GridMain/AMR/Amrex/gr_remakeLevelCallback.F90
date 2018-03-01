@@ -82,7 +82,8 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
                                           gr_releaseBlkIterator
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
-    use gr_physicalMultifabs,      ONLY : unk
+    use gr_physicalMultifabs,      ONLY : unk, &
+                                          flux_registers
     use gr_iterator,               ONLY : gr_iterator_t
     use block_metadata,            ONLY : block_metadata_t
     use Eos_interface,             ONLY : Eos_wrapped
