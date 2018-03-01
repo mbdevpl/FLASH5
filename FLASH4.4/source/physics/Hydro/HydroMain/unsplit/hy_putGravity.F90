@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_putGravityUnsplit
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_putGravity
 !!
 !! NAME
 !!
-!!  hy_PutGravityUnsplit
+!!  hy_PutGravity
 !!
 !! SYNOPSIS
 !!
-!!  hy_putGravityUnsplit( integer(IN) :: Uin,
+!!  hy_putGravity( integer(IN) :: Uin,
 !!                            integer(IN) :: blkLimitsGC(2,MDIM),
 !!                            integer(IN) :: dataSize(MDIM),
 !!                            real   (IN) :: dt,
@@ -34,7 +34,7 @@
 !!
 !!*** 
 
-Subroutine hy_putGravityUnsplit(blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
+Subroutine hy_putGravity(blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
 
   use Gravity_interface, ONLY : Gravity_accelOneRow
 
@@ -168,4 +168,4 @@ Subroutine hy_putGravityUnsplit(blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY
         enddo
      endif
   endif
-End Subroutine hy_putGravityUnsplit
+End Subroutine hy_putGravity

@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/localAPI/hy_uhd_biermannSource
+!!****if* source/physics/Hydro/localAPI/hy_biermannSource
 !!
 !! NAME
 !!
-!!  hy_uhd_biermannSource
+!!  hy_biermannSource
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_biermannSource( integer (IN) :: blockCount,
+!!  call hy_biermannSource( integer (IN) :: blockCount,
 !!                         integer (IN) :: blockList(blockCount),
 !!                         real    (IN) :: dt )
 !!
@@ -21,7 +21,7 @@
 !!  dt         -  timestep
 !!***
 
-Subroutine hy_uhd_biermannSource ( blockCount, blockList, dt )
+Subroutine hy_biermannSource ( blockCount, blockList, dt )
   
   implicit none
 
@@ -32,4 +32,4 @@ Subroutine hy_uhd_biermannSource ( blockCount, blockList, dt )
 
   return
 
-End Subroutine hy_uhd_biermannSource
+End Subroutine hy_biermannSource

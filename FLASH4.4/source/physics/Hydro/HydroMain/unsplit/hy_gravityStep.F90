@@ -49,8 +49,8 @@ Subroutine hy_gravityStep(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,time
                                hy_unsplitUpdate,    &
                                hy_unitConvert,      &
                                hy_energyFix,        &
-                               hy_putGravityUnsplit,&
-                               hy_addGravityUnsplit
+                               hy_putGravity,&
+                               hy_addGravity
 
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
@@ -112,13 +112,13 @@ Subroutine hy_gravityStep(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,time
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,&
+        call hy_putGravity(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,&
              lastCall=.TRUE.)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
 
-        call hy_addGravityUnsplit(blockDesc,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,&
+        call hy_addGravity(blockDesc,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,&
              gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:))
      endif
 

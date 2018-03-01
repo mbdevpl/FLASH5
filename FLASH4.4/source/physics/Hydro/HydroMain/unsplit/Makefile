@@ -3,8 +3,8 @@ Hydro += Hydro_data.o\
 	hy_addViscousFluxes.o\
 	hy_updateSpeciesMassScalar.o\
 	hy_prepareNewGravityAccel.o\
-	hy_putGravityUnsplit.o\
-	hy_addGravityUnsplit.o\
+	hy_putGravity.o\
+	hy_addGravity.o\
 	hy_addThermalFluxes.o\
 	hy_entropyFix.o\
 	hy_slopeLimiters.o\
@@ -36,6 +36,6 @@ Hydro += Hydro_data.o\
 	hy_DataReconstructNormalDir_PPM.o\
 	hy_DataReconstructNormalDir_WENO.o\
 	hy_DataReconstructNormalDir_GP.o\
-	hy_computeFluxes.o\
+	hy_advance.o\
 	hy_gravityStep.o\
 	hy_initializeGP.o

@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/localAPI/hy_uhd_DataReconstructNormalDir_GP
+!!****if* source/physics/Hydro/localAPI/hy_DataReconstructNormalDir_GP
 !!
 !! NAME
 !!
-!!  hy_uhd_DataReconstructNormalDir_GP
+!!  hy_DataReconstructNormalDir_GP
 !!
 !! SYNOPSIS
 !!
-!! call hy_uhd_DataReconstructNormalDir_GP(integer(IN) :: dir,
+!! call hy_DataReconstructNormalDir_GP(integer(IN) :: dir,
 !!                                    real(IN)    :: dt,
 !!                                    real(IN)    :: delta,
 !!                                    pointer(IN) :: DataMultiD(:,:),
@@ -62,7 +62,7 @@
 !!
 !!***
 
-Subroutine hy_uhd_DataReconstructNormalDir_GP&
+Subroutine hy_DataReconstructNormalDir_GP&
      (dir,dt,delta,DataMultiD,DataGravMultiD,&
       x1,x2,x3,radius, &
       FlatCoeff,TransUpdateOnly,&
@@ -114,4 +114,4 @@ Subroutine hy_uhd_DataReconstructNormalDir_GP&
   if (present(Sr)) Sr(:) = 0.0
   if (present(Sl)) Sl(:) = 0.0
   if (present(SpcSig)) SpcSig(:) = 0.0
-End Subroutine Hy_uhd_DataReconstructNormalDir_GP
+End Subroutine Hy_DataReconstructNormalDir_GP

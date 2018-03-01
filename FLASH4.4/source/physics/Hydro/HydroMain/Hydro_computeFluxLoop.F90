@@ -7,7 +7,7 @@ subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getBlkIterator, Grid_releaseBlkIterator,&
-                                  Grid_getMaxRefinement. Grid_conserveFluxes
+                                  Grid_getMaxRefinement, Grid_conserveFluxes
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use hy_interface,        ONLY : hy_computeFluxes
   use block_iterator, ONLY : block_iterator_t

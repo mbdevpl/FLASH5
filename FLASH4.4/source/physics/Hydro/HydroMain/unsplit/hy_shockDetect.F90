@@ -10,8 +10,8 @@ subroutine Hydro_shockDetectLoop
                                hy_unitConvert,      &
                                hy_energyFix,        &
                                hy_prepareNewGravityAccel,&
-                               hy_putGravityUnsplit,&
-                               hy_addGravityUnsplit,&
+                               hy_putGravity,&
+                               hy_addGravity,&
                                hy_shockDetect
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t

@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/localAPI/hy_uhd_addBiermannBatteryTerms
+!!****if* source/physics/Hydro/localAPI/hy_addBiermannBatteryTerms
 !!
 !! NAME
 !!
-!!  hy_uhd_addBiermannBatteryTerms
+!!  hy_addBiermannBatteryTerms
 !!
 !!
 !! SYNOPSIS
 !!
-!!  call hy_uhd_addBiermannBatteryTerms(integer(IN) :: blockID,
+!!  call hy_addBiermannBatteryTerms(integer(IN) :: blockID,
 !!                            integer(IN) :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                            integer(IN) :: ix,
 !!                            integer(IN) :: iy,
@@ -41,7 +41,7 @@
 !!***
 
 
-Subroutine hy_uhd_addBiermannBatteryTerms(blockID,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
+Subroutine hy_addBiermannBatteryTerms(blockID,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
 
 
   implicit none
@@ -58,5 +58,5 @@ Subroutine hy_uhd_addBiermannBatteryTerms(blockID,blkLimitsGC,ix,iy,iz,Flux,swee
 
   return
   
-End Subroutine hy_uhd_addBiermannBatteryTerms
+End Subroutine hy_addBiermannBatteryTerms
 

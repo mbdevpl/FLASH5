@@ -72,11 +72,11 @@ usm:--with-unit=physics/Hydro/HydroMain/unsplit/MHD_StaggeredMesh:--without-unit
 usmr:--with-unit=physics/Hydro/HydroMain/unsplit_rad/MHD_StaggeredMesh:--without-unit=physics/Hydro/HydroMain/split/MHD_8Wave
 pureHydro:physicsMode=hydro
 
-unsplitHydro:--with-unit=physics/Hydro/HydroMain/unsplit/Hydro_Unsplit:-without-unit=physics/Hydro/HydroMain/split
-uhd:--with-unit=physics/Hydro/HydroMain/unsplit/Hydro_Unsplit:-without-unit=physics/Hydro/HydroMain/split
-uhdr:--with-unit=physics/Hydro/HydroMain/unsplit_rad/Hydro_Unsplit:-without-unit=physics/Hydro/HydroMain/split
+unsplitHydro:--with-unit=physics/Hydro/HydroMain/unsplit/OnlyHydro:-without-unit=physics/Hydro/HydroMain/split
+uhd:--with-unit=physics/Hydro/HydroMain/unsplit/OnlyHydro:-without-unit=physics/Hydro/HydroMain/split
+uhdr:--with-unit=physics/Hydro/HydroMain/unsplit_rad/OnlyHydro:-without-unit=physics/Hydro/HydroMain/split
 #unoptimized codes
-uhdold:--with-unit=physics/Hydro/HydroMain/unsplit_old/Hydro_Unsplit:FullScratchUseInUHD=True
+uhdold:--with-unit=physics/Hydro/HydroMain/unsplit_old/OnlyHydro:FullScratchUseInUHD=True
 usmold:--with-unit=physics/Hydro/HydroMain/unsplit_old/MHD_StaggeredMesh:--without-unit=physics/Hydro/HydroMain/split/MHD_8Wave
 uhdoldWithGravPotUp:+uhdold:FullScratchUseInUHD=True
 uhdoldWithSpeciesMassScalar:+uhdold:FullScratchUseInUHD=True

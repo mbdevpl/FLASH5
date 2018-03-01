@@ -1,13 +1,13 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_addGravityUnsplit
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_addGravity
 !!
 !!
 !! NAME
 !!
-!!  hy_addGravityUnsplit
+!!  hy_addGravity
 !!
 !! SYNOPSIS
 !!
-!!  call hy_addGravityUnsplit( integer(IN) :: blockID,
+!!  call hy_addGravity( integer(IN) :: blockID,
 !!                            integer(IN) :: blkLimits(LOW:HIGH,MDIM),
 !!                            integer(IN) :: dataSize(MDIM),
 !!                            real(IN)    :: dt,
@@ -42,7 +42,7 @@
 
 !!REORDER(4):U
 
-Subroutine hy_addGravityUnsplit&
+Subroutine hy_addGravity&
      (blockDesc,blkLimits,loGC,hiGC,dt,gravX,gravY,gravZ)
 
   use Hydro_data,      ONLY : hy_useGravity,        &
@@ -102,4 +102,4 @@ Subroutine hy_addGravityUnsplit&
   !! Release block pointer for storages of Riemann states
   call Grid_releaseBlkPtr(blockDesc,U,CENTER)
 
-end Subroutine hy_addGravityUnsplit
+end Subroutine hy_addGravity

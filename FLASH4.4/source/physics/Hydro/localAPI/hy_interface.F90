@@ -1,10 +1,10 @@
-!!****ih* source/physics/Hydro/HydroMain/unsplit/hy_uhd_interface
+!!****ih* source/physics/Hydro/HydroMain/unsplit/hy_interface
 !!
 !! NAME
-!!  hy_uhd_interface
+!!  hy_interface
 !!
 !! SYNOPSIS
-!!  use hy_uhd_interface
+!!  use hy_interface
 !!
 !! DESCRIPTION
 !!  This is an interface specific for the two unsplit solvers:
@@ -16,7 +16,7 @@
 
 !!REORDER(4): [xyz]flux, faceFlux, fl[xyz], Sp, U
 
-Module hy_uhd_interface
+Module hy_interface
 
   implicit none
 
@@ -26,18 +26,18 @@ Module hy_uhd_interface
 #include "UHD.h"
 
   interface
-     subroutine hy_uhd_avgState(sweepDir,VL,VR,Vavg)
+     subroutine hy_avgState(sweepDir,VL,VR,Vavg)
        implicit none
        integer, intent(IN) :: sweepDir
        real, dimension(HY_VARINUM3), intent(IN)  :: VL,VR
        real, dimension(HY_VARINUM2), intent(OUT) :: Vavg
-     end subroutine hy_uhd_avgState
+     end subroutine hy_avgState
   end interface
 
 
 
   interface
-     subroutine hy_uhd_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del, &
+     subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del, &
                                        ogravX,ogravY,ogravZ,&
                                        scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                        hy_SpcR,&
@@ -59,23 +59,23 @@ Module hy_uhd_interface
        real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
        logical, intent(IN), optional :: normalFieldUpdate
-     end subroutine hy_uhd_getRiemannState
+     end subroutine hy_getRiemannState
  end interface
 
 
 
   interface
-     subroutine hy_uhd_entropyFix(lambda,lambdaL,lambdaR)
+     subroutine hy_entropyFix(lambda,lambdaL,lambdaR)
        implicit none
        real, dimension(HY_WAVENUM), intent(INOUT) :: lambda
        real, dimension(HY_WAVENUM), intent(IN)    :: lambdaL,lambdaR
-     end subroutine hy_uhd_entropyFix
+     end subroutine hy_entropyFix
   end interface
 
 
 
   interface
-     subroutine hy_uhd_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
+     subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                                      xflux, yflux,zflux,&
                                      scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                      hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
@@ -101,13 +101,13 @@ Module hy_uhd_interface
        real, pointer, dimension(:,:,:,:) :: scrch_Ptr
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
        logical, optional, intent(IN) :: lastCall
-     end subroutine hy_uhd_getFaceFlux
+     end subroutine hy_getFaceFlux
   end interface
 
 
 
   interface
-     Subroutine hy_uhd_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
+     Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
                                           dt,del,ogravX,ogravY,ogravZ,&
                                           DivU,FlatCoeff,   &
                                           TransX_updateOnly,&
@@ -140,13 +140,13 @@ Module hy_uhd_interface
        real, dimension(HY_VARINUM,   HY_WAVENUM,NDIM),intent(OUT) :: rghtEig
        real, optional, intent(INOUT) :: cellCfl ! We may pass back a lowered CFL factor here - KW
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
-     end subroutine hy_uhd_dataReconstOnestep
+     end subroutine hy_dataReconstOnestep
   end interface
 
 
 
   interface
-     Subroutine hy_uhd_DataReconstructNormalDir_MH&
+     Subroutine hy_DataReconstructNormalDir_MH&
           (dir,dt,delta,Data1D,DataGrav1D,&
           FlatCoeff,TransUpdateOnly, &
           lambda0,leig0,reig0,&
@@ -172,14 +172,14 @@ Module hy_uhd_interface
        !-------------------------------
        real,intent(OUT),dimension(HY_NSPEC),   optional :: Sr,Sl
        real,intent(OUT),dimension(:),          optional :: SpcSig
-     End Subroutine Hy_uhd_DataReconstructNormalDir_MH
+     End Subroutine Hy_DataReconstructNormalDir_MH
   end interface
 
 
 
 
   interface
-     Subroutine hy_uhd_DataReconstructNormalDir_PPM&
+     Subroutine hy_DataReconstructNormalDir_PPM&
           (dir,dt,delta,Data1D,DataGrav1D,&
           FlatCoeff,TransUpdateOnly, &
           lambda0,leig0,reig0,&
@@ -205,13 +205,13 @@ Module hy_uhd_interface
        !-------------------------------
        real,intent(OUT),dimension(HY_NSPEC),   optional :: Sr,Sl
        real,intent(OUT),dimension(:),          optional :: SpcSig
-     End Subroutine Hy_uhd_DataReconstructNormalDir_PPM
+     End Subroutine Hy_DataReconstructNormalDir_PPM
   end interface
 
 
 
   interface
-     Subroutine hy_uhd_DataReconstructNormalDir_WENO&
+     Subroutine hy_DataReconstructNormalDir_WENO&
           (wenoMethod,dir,dt,delta,Data1D,DataGrav1D,&
           FlatCoeff,TransUpdateOnly, &
           lambda0,leig0,reig0,&
@@ -237,13 +237,13 @@ Module hy_uhd_interface
        !-------------------------------
        real,intent(OUT),dimension(HY_NSPEC),   optional :: Sr,Sl
        real,intent(OUT),dimension(:),          optional :: SpcSig
-     End Subroutine Hy_uhd_DataReconstructNormalDir_WENO
+     End Subroutine Hy_DataReconstructNormalDir_WENO
   end interface
 
 
 
   interface
-     Subroutine hy_uhd_DataReconstructNormalDir_GP&
+     Subroutine hy_DataReconstructNormalDir_GP&
           (dir,dt,delta,DataMultiD,DataGravMultiD,&
           x1,x2,x3,radius, &
           FlatCoeff,TransUpdateOnly, &
@@ -279,102 +279,102 @@ Module hy_uhd_interface
        !-------------------------------
        real,intent(OUT),dimension(HY_NSPEC),   optional :: Sr,Sl
        real,intent(OUT),dimension(:),          optional :: SpcSig
-     end Subroutine hy_uhd_DataReconstructNormalDir_GP
+     end Subroutine hy_DataReconstructNormalDir_GP
     end interface
 
 
 
   interface
-     subroutine hy_uhd_Roe(dir,Vm,Vp,Fstar,speed,ierr)
+     subroutine hy_Roe(dir,Vm,Vp,Fstar,speed,ierr)
        implicit none
        integer, intent(IN) :: dir
        real, dimension(HY_VARINUMMAX), intent(IN) :: Vm,Vp
        real, dimension(HY_VARINUM1), intent(OUT):: Fstar
        real, intent(OUT) :: speed
        integer, intent(OUT) :: ierr
-     end subroutine hy_uhd_Roe
+     end subroutine hy_Roe
   end interface
 
 
 
   interface
-     subroutine hy_uhd_HLL(dir,Vm,Vp,Fstar,speed,ierr)
+     subroutine hy_HLL(dir,Vm,Vp,Fstar,speed,ierr)
        implicit none
        integer, intent(IN) :: dir
        real, dimension(HY_VARINUMMAX), intent(IN) :: Vm, Vp
        real, dimension(HY_VARINUM1),  intent(OUT) :: Fstar
        real, intent(OUT) :: speed
        integer, intent(OUT) :: ierr
-     end subroutine hy_uhd_HLL
+     end subroutine hy_HLL
   end interface
 
 
 
   interface
-     subroutine hy_uhd_HLLC(dir,Vm,Vp,Fstar,speed,ierr)
+     subroutine hy_HLLC(dir,Vm,Vp,Fstar,speed,ierr)
        implicit none
        integer, intent(IN) :: dir
        real, dimension(HY_VARINUMMAX), intent(IN) :: Vm, Vp
        real, dimension(HY_VARINUM1), intent(OUT):: Fstar
        real, intent(OUT) :: speed
        integer, intent(OUT) :: ierr
-     end subroutine hy_uhd_HLLC
+     end subroutine hy_HLLC
   end interface
 
 
 
   interface
-     subroutine hy_uhd_Marquina(dir,Vm,Vp,Fstar,speed,ierr)
+     subroutine hy_Marquina(dir,Vm,Vp,Fstar,speed,ierr)
        implicit none
        integer, intent(IN) :: dir
        real, dimension(HY_VARINUMMAX), intent(IN) :: Vm, Vp
        real, dimension(HY_VARINUM1), intent(OUT):: Fstar
        real, intent(OUT) :: speed
        integer, intent(OUT) :: ierr
-     end subroutine hy_uhd_Marquina
+     end subroutine hy_Marquina
   end interface
 
 
   interface
-     subroutine hy_uhd_MarquinaModified(dir,Vm,Vp,Fstar,speed,ierr)
+     subroutine hy_MarquinaModified(dir,Vm,Vp,Fstar,speed,ierr)
        implicit none
        integer, intent(IN) :: dir
        real, dimension(HY_VARINUMMAX), intent(IN) :: Vm, Vp
        real, dimension(HY_VARINUM1), intent(OUT):: Fstar
        real, intent(OUT) :: speed
        integer, intent(OUT) :: ierr
-     end subroutine hy_uhd_MarquinaModified
+     end subroutine hy_MarquinaModified
   end interface
 
 
   interface
-     subroutine hy_uhd_LLF(dir,Vm,Vp,Fstar,speed,ierr)
+     subroutine hy_LLF(dir,Vm,Vp,Fstar,speed,ierr)
        implicit none
        integer, intent(IN) :: dir
        real, dimension(HY_VARINUMMAX), intent(IN) :: Vm, Vp
        real, dimension(HY_VARINUM1), intent(OUT):: Fstar
        real, intent(OUT) :: speed
        integer, intent(OUT) :: ierr
-     end subroutine hy_uhd_LLF
+     end subroutine hy_LLF
   end interface
 
 
 
   interface
-     subroutine hy_uhd_setMinTimeStep(block,i,j,k,delta,speed)
+     subroutine hy_setMinTimeStep(block,i,j,k,delta,speed)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN)   :: block
        integer, INTENT(in) :: i,j,k
        real, INTENT(in) :: delta,speed
-     end subroutine hy_uhd_setMinTimeStep
+     end subroutine hy_setMinTimeStep
   end interface
 
 
 
 
 !!$  interface
-!!$     subroutine hy_uhd_upwindTransverseFlux(order,vector,lambda,leig,reig,sig)
+!!$     subroutine hy_upwindTransverseFlux(order,vector,lambda,leig,reig,sig)
 !!$       implicit none
 !!$       integer,intent(IN) :: order
 !!$       real,intent(IN),dimension(HY_VARINUMMAX,-2:2)   :: vector
@@ -382,12 +382,12 @@ Module hy_uhd_interface
 !!$       real,intent(IN),dimension(HY_VARINUM,HY_WAVENUM) :: leig
 !!$       real,intent(IN),dimension(HY_VARINUM,HY_WAVENUM) :: reig
 !!$       real,intent(OUT), dimension(HY_VARINUMMAX) :: sig
-!!$     end subroutine hy_uhd_upwindTransverseFlux
+!!$     end subroutine hy_upwindTransverseFlux
 !!$  end interface
 
 
   interface
-     subroutine hy_uhd_upwindTransverseFlux&
+     subroutine hy_upwindTransverseFlux&
           (dir,order,vm1,vc0,vp1,lambda,leig,reig,sigSize,sig,speciesScalar)
        implicit none
        integer,intent(IN) :: dir,order
@@ -400,38 +400,38 @@ Module hy_uhd_interface
        integer,intent(IN) :: sigSize
        real,intent(OUT),dimension(sigSize) :: sig
        logical, intent(IN),optional :: speciesScalar
-     end subroutine hy_uhd_upwindTransverseFlux
+     end subroutine hy_upwindTransverseFlux
   end interface
 
 
 
   interface
-     subroutine hy_uhd_TVDslope(dir,VL,V0,VR,lambda,leig,delbar)
+     subroutine hy_TVDslope(dir,VL,V0,VR,lambda,leig,delbar)
        implicit none
        integer, intent(IN) :: dir
        real, dimension(HY_VARINUMMAX),intent(IN)  :: VL,V0,VR
        real, dimension(HY_WAVENUM),   intent(IN)  :: lambda
        real, dimension(HY_VARINUM,HY_WAVENUM), intent(IN) :: leig
        real, dimension(HY_VARINUMMAX),intent(OUT) :: delbar
-     end subroutine hy_uhd_TVDslope
+     end subroutine hy_TVDslope
   end interface
 
 
   interface
-     subroutine hy_uhd_TVDslopeUpwind(dir,VLL,VL,V0,VR,VRR,lambdaL,lambda,lambdaR,leig,delbar)
+     subroutine hy_TVDslopeUpwind(dir,VLL,VL,V0,VR,VRR,lambdaL,lambda,lambdaR,leig,delbar)
        implicit none
        integer, intent(IN) :: dir
        real,dimension(HY_VARINUMMAX),intent(IN)  :: VLL,VL,V0,VR,VRR
        real,dimension(HY_WAVENUM),  intent(IN)  :: lambdaL,lambda,lambdaR
        real,dimension(HY_VARINUM,HY_WAVENUM),intent(IN) :: leig
        real,dimension(HY_VARINUMMAX),intent(OUT) :: delbar
-     end subroutine hy_uhd_TVDslopeUpwind
+     end subroutine hy_TVDslopeUpwind
   end interface
 
 
 
   interface
-     subroutine hy_uhd_unsplit( blockDesc,Uin,blkLimitsGC,&
+     subroutine hy_unsplit( blockDesc,Uin,blkLimitsGC,&
                       Uout,blkLimits,&
                       del,dt, dtOld )
        use block_metadata,   ONLY : block_metadata_t
@@ -443,13 +443,13 @@ Module hy_uhd_interface
        real, dimension(:,:,:,:),pointer :: Uin
        real,dimension(:,:,:,:), pointer :: Uout
        real,dimension(MDIM),INTENT(IN) :: del
-     end subroutine hy_uhd_unsplit
+     end subroutine hy_unsplit
   end interface
 
 
 
   interface
-     subroutine hy_uhd_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&    
+     subroutine hy_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&    
                                      blGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                      scrch_Ptr)
        use block_metadata, ONLY : block_metadata_t
@@ -468,7 +468,7 @@ Module hy_uhd_interface
     real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),& 
          intent(IN) :: gravX,gravY,gravZ
        real, pointer, dimension(:,:,:,:) :: scrch_Ptr
-     end subroutine hy_uhd_unsplitUpdate
+     end subroutine hy_unsplitUpdate
   end interface
 
 
@@ -476,7 +476,7 @@ Module hy_uhd_interface
 
 
     interface
-       subroutine hy_uhd_unsplitUpdateMultiTemp&
+       subroutine hy_unsplitUpdateMultiTemp&
             (block,rangeSwitch,blkLimits,datasize,dt,del,xflux,yflux,zflux, scrch_Ptr)
        use block_metadata, ONLY : block_metadata_t
        implicit none
@@ -496,20 +496,20 @@ Module hy_uhd_interface
          real, intent(in) :: zflux(NFLUXES,datasize(IAXIS),datasize(JAXIS),datasize(KAXIS))
 #endif
          real, pointer, dimension(:,:,:,:) :: scrch_Ptr
-       end subroutine hy_uhd_unsplitUpdateMultiTemp
+       end subroutine hy_unsplitUpdateMultiTemp
     end interface
 
     interface
-       subroutine hy_uhd_multiTempAfter(blockCount, blockList, dt)
+       subroutine hy_multiTempAfter(blockCount, blockList, dt)
          implicit none
          integer, intent(in) :: blockCount
          integer, intent(in) :: blockList(blockCount)
          real,    intent(in) :: dt
-       end subroutine hy_uhd_multiTempAfter
+       end subroutine hy_multiTempAfter
     end interface
 
     interface
-       subroutine hy_uhd_ragelike(uextra, soln, dens_old, &
+       subroutine hy_ragelike(uextra, soln, dens_old, &
             duele_adv, duion_adv, durad_adv, &
             xc, yc, zc, &
             uele_new, uion_new, urad_new, &
@@ -528,11 +528,11 @@ Module hy_uhd_interface
          real, intent(out) :: uion_new
          real, intent(out) :: urad_new
          real, intent(in),OPTIONAL  :: stepFactor
-       end subroutine hy_uhd_ragelike
+       end subroutine hy_ragelike
     end interface
 
   interface
-     subroutine hy_uhd_updateSpeciesMassScalar&
+     subroutine hy_updateSpeciesMassScalar&
           (order,densNew,Sp,U,FL,FR,GL,GR,HL,HR,dx,dy,dz,dt,SpNew)
   implicit none
   integer, intent(IN) :: order
@@ -549,12 +549,12 @@ Module hy_uhd_interface
 #endif
   real, intent(IN)  :: FL,FR,GL,GR,HL,HR,dx,dy,dz,dt
   real, intent(OUT), dimension(NSPECIES+NMASS_SCALARS) :: SpNew
-     end subroutine hy_uhd_updateSpeciesMassScalar
+     end subroutine hy_updateSpeciesMassScalar
   end interface
 
 
   interface
-     subroutine hy_uhd_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
+     subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        
@@ -564,24 +564,24 @@ Module hy_uhd_interface
        real, intent(IN) :: dt,dtOld
        real, dimension(MDIM), intent(IN) :: del
        integer, intent(IN) :: eosMode
-     end subroutine hy_uhd_energyFix
+     end subroutine hy_energyFix
   end interface
 
 
 
   interface 
-     subroutine hy_uhd_unitConvert(Uin,blkLimitsGC,convertDir)
+     subroutine hy_unitConvert(Uin,blkLimitsGC,convertDir)
        implicit none
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC
        integer, intent(IN) :: convertDir
        real, dimension(:,:,:,:) :: Uin
-     end subroutine hy_uhd_unitConvert
+     end subroutine hy_unitConvert
   end interface
   
 
 
   interface
-     subroutine hy_uhd_addViscousFluxes&
+     subroutine hy_addViscousFluxes&
           (block,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
        use block_metadata, ONLY : block_metadata_t
        implicit none
@@ -600,13 +600,13 @@ Module hy_uhd_interface
                   intent(IN) :: mu
 #endif 
        integer, INTENT(IN) :: sweepDir
-     end subroutine hy_uhd_addViscousFluxes
+     end subroutine hy_addViscousFluxes
     end interface
 
 
 
   interface
-     subroutine hy_uhd_addThermalFluxes&
+     subroutine hy_addThermalFluxes&
           (block,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
        use block_metadata, ONLY : block_metadata_t
        implicit none
@@ -625,13 +625,13 @@ Module hy_uhd_interface
                   intent(IN) :: kappa
 #endif 
        integer, INTENT(IN) :: sweepDir
-     end subroutine hy_uhd_addThermalFluxes
+     end subroutine hy_addThermalFluxes
     end interface
 
 
 
     interface
-       subroutine hy_uhd_eigenParameters&
+       subroutine hy_eigenParameters&
             (V,dir,U_normal,C_fast,C_alfn,C_slow,A_f,A_s,B_beta,C_hyp)
          implicit none
          real, dimension(HY_VARINUM2), intent(IN)  :: V
@@ -640,24 +640,24 @@ Module hy_uhd_interface
          real, intent(OUT), optional :: C_alfn,C_slow,A_f,A_s
          real, dimension(MDIM), intent(OUT),optional :: B_beta
          real, intent(OUT), optional :: C_hyp
-       end subroutine hy_uhd_eigenParameters
+       end subroutine hy_eigenParameters
     end interface
 
 
 
     interface
-       subroutine hy_uhd_eigenValue(EigValue,U_normal,C_fast,C_alfn,C_slow,C_hyp)
+       subroutine hy_eigenValue(EigValue,U_normal,C_fast,C_alfn,C_slow,C_hyp)
          implicit none
          real,dimension(HY_WAVENUM), intent(OUT) :: EigValue
          real,intent(IN) :: U_normal,C_fast
          real,intent(IN), optional :: C_alfn,C_slow,C_hyp
-       end subroutine hy_uhd_eigenValue
+       end subroutine hy_eigenValue
     end interface
 
 
 
     interface
-       subroutine hy_uhd_eigenVector&
+       subroutine hy_eigenVector&
             (LeftEigvec,RightEigvec,V,dir,cons,C_fast,C_alfn,C_slow,A_f,A_s,B_beta,C_hyp)
          implicit none
          real, dimension(HY_VARINUM,HY_WAVENUM), intent(OUT) :: LeftEigvec
@@ -669,21 +669,21 @@ Module hy_uhd_interface
          real,    intent(IN), optional :: C_alfn,C_slow,A_f,A_s
          real, dimension(MDIM), intent(IN), optional  :: B_beta
          real,    intent(IN), optional :: C_hyp
-       end subroutine hy_uhd_eigenVector
+       end subroutine hy_eigenVector
     end interface
 
 
     interface
-       subroutine hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
+       subroutine hy_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
          integer, INTENT(IN) ::  blockCount
          integer, INTENT(IN), dimension(blockCount) :: blockList
          logical,intent(in) :: gcMaskLogged
-       end subroutine hy_uhd_prepareNewGravityAccel
+       end subroutine hy_prepareNewGravityAccel
     end interface
 
 
     interface
-       subroutine hy_uhd_putGravityUnsplit&
+       subroutine hy_putGravity&
             (blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
              lastCall)
          use block_metadata, ONLY : block_metadata_t
@@ -697,13 +697,13 @@ Module hy_uhd_interface
               intent(OUT) :: gravX,gravY,gravZ
          integer, intent(IN), OPTIONAL :: potentialIndex
          logical, intent(IN), OPTIONAL :: lastCall
-       end subroutine hy_uhd_putGravityUnsplit
+       end subroutine hy_putGravity
     end interface
 
 
 
     interface
-       Subroutine hy_uhd_addGravityUnsplit&
+       Subroutine hy_addGravity&
             (blockDesc,blkLimits,loGC,hiGC,dt,gravX,gravY,gravZ)
          use block_metadata, ONLY : block_metadata_t
          implicit none
@@ -713,70 +713,70 @@ Module hy_uhd_interface
          real,    intent(IN) :: dt
          real, dimension(loGC(IAXIS):hiGC(IAXIS),loGC(JAXIS):hiGC(JAXIS),loGC(KAXIS):hiGC(KAXIS)), intent(IN) :: &
               gravX,gravY,gravZ
-       end Subroutine hy_uhd_addGravityUnsplit
+       end Subroutine hy_addGravity
     end interface
 
 
 
     interface
-       subroutine hy_uhd_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
+       subroutine hy_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
        implicit none
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
        real, dimension(:,:,:,:),INTENT(IN) :: Uin
        real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
        real,dimension(MDIM),INTENT(IN) :: del
-     end subroutine hy_uhd_shockDetect
+     end subroutine hy_shockDetect
   end interface
 
 
 
     interface
-       subroutine hy_uhd_prim2con(V,CU)
+       subroutine hy_prim2con(V,CU)
          implicit none
          real ,dimension(HY_VARINUM2), intent(IN) :: V
          real ,dimension(HY_VARINUM),  intent(OUT) :: CU
-       end subroutine hy_uhd_prim2con
+       end subroutine hy_prim2con
     end interface
 
 
 
     interface
-       subroutine hy_uhd_con2prim(CU,game,V)
+       subroutine hy_con2prim(CU,game,V)
          implicit none
          real ,dimension(HY_VARINUM), intent(IN)  :: CU
          real, intent(IN) :: game
          real ,dimension(HY_VARINUM), intent(OUT) :: V
-       end subroutine hy_uhd_con2prim
+       end subroutine hy_con2prim
     end interface
 
 
 
     interface
-       subroutine hy_uhd_prim2flx(dir,V,F)
+       subroutine hy_prim2flx(dir,V,F)
          implicit none
          integer, intent(IN)  :: dir
          real, dimension(*),            intent(IN) :: V
          real, dimension(HY_VARINUM1),  intent(OUT) :: F
-       end subroutine hy_uhd_prim2flx
+       end subroutine hy_prim2flx
     end interface
 
 
 
     interface
-       Subroutine hy_uhd_checkRHjumpCond(dir,dens,velocity,pres,gamc,Wp,Wn,SWp,SWn)
+       Subroutine hy_checkRHjumpCond(dir,dens,velocity,pres,gamc,Wp,Wn,SWp,SWn)
          implicit none
          integer, intent(IN)  :: dir
          real, dimension(MDIM), intent(IN) :: velocity
          real, intent(IN) :: dens, pres, gamc
          real, dimension(HY_DENS:HY_EINT), intent(IN) :: Wp,Wn
          logical, intent(OUT) :: SWp,SWn
-       end Subroutine hy_uhd_checkRHjumpCond
+       end Subroutine hy_checkRHjumpCond
     end interface
 
 
 #ifdef FLASH_UGLM_MHD
     interface
-       Subroutine hy_uhd_updateSourceGLM(block,dt,del,blkLimits,blkLimitsGC,C_hyp,C_par)
+       Subroutine hy_updateSourceGLM(block,dt,del,blkLimits,blkLimitsGC,C_hyp,C_par)
        use block_metadata, ONLY : block_metadata_t
          implicit none
          type(block_metadata_t), intent(IN)   :: block
@@ -784,7 +784,7 @@ Module hy_uhd_interface
          real,    dimension(MDIM),   intent(IN) :: del
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
          real,    intent(IN) :: C_hyp,C_par
-       end Subroutine hy_uhd_updateSourceGLM
+       end Subroutine hy_updateSourceGLM
     end interface
 #endif
 
@@ -792,29 +792,29 @@ Module hy_uhd_interface
   ! Dongwook thinks that the following two interfaces should be taken care of for
   ! general implementation later.
 !!$  interface
-!!$     Subroutine hy_uhd_counterGP_init(radiusGP, counterGP, blkLimitsGC)
+!!$     Subroutine hy_counterGP_init(radiusGP, counterGP, blkLimitsGC)
 !!$       implicit none
 !!$       real,    intent(IN)  :: radiusGP
 !!$       integer, intent(OUT) :: counterGP
 !!$       integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimitsGC
-!!$     end subroutine hy_uhd_counterGP_init
+!!$     end subroutine hy_counterGP_init
 !!$  end interface
 !!$
   interface
-     Subroutine hy_uhd_initGP(RinvGP, WpGP, WmGP, blkLimitsGC)
+     Subroutine hy_initGP(RinvGP, WpGP, WmGP, blkLimitsGC)
        implicit none
        real, intent(INOUT), dimension(:,:) :: RinvGP
        real, intent(INOUT), dimension(:,:) :: WpGP
        real, intent(INOUT), dimension(:,:) :: WmGP
        integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimitsGC
-     end Subroutine hy_uhd_initGP
+     end Subroutine hy_initGP
   end interface
 
 
 !! FOR UNSPLIT STAGGERED MESH MHD SOLVER -------------------------------------------
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
   interface
-     subroutine hy_uhd_addResistiveFluxes&
+     subroutine hy_addResistiveFluxes&
           (block,blkLimitsGC,ix,iy,iz,Flux,eta,sweepDir)
        use block_metadata, ONLY : block_metadata_t
        implicit none
@@ -833,13 +833,13 @@ Module hy_uhd_interface
                   intent(IN) :: eta
 #endif 
        integer, INTENT(IN) :: sweepDir
-     end subroutine hy_uhd_addResistiveFluxes
+     end subroutine hy_addResistiveFluxes
     end interface
 
 
 
   interface
-     subroutine hy_uhd_addOhmicHeating&
+     subroutine hy_addOhmicHeating&
           (block,blkLimits,ix,iy,iz,Qohm,eta)
        use block_metadata, ONLY : block_metadata_t
      implicit none
@@ -848,12 +848,12 @@ Module hy_uhd_interface
      integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits
      real, intent(INOUT) :: Qohm
      real, intent(IN)    :: eta  
-     end subroutine hy_uhd_addOhmicHeating
+     end subroutine hy_addOhmicHeating
   end interface
 
 
   interface
-     subroutine hy_uhd_staggeredDivb(block,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
+     subroutine hy_staggeredDivb(block,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN)   :: block
@@ -862,26 +862,26 @@ Module hy_uhd_interface
        real,    dimension(MDIM),   intent(IN) :: del
        integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
        logical, intent(IN) :: halfTimeAdvance
-     end subroutine hy_uhd_staggeredDivb
+     end subroutine hy_staggeredDivb
   end interface
 
 
 
   interface
-     subroutine hy_uhd_HLLD(dir,Vm,Vp,Fstar,speed,ierr)
+     subroutine hy_HLLD(dir,Vm,Vp,Fstar,speed,ierr)
        implicit none
        integer, intent(IN) :: dir
        real, dimension(HY_VARINUMMAX), intent(IN) :: Vm, Vp
        real, dimension(HY_VARINUM1), intent(OUT):: Fstar
        real, intent(OUT) :: speed
        integer, intent(OUT) :: ierr
-     end subroutine hy_uhd_HLLD
+     end subroutine hy_HLLD
   end interface
 
 
 
   interface
-     subroutine hy_uhd_getElectricFields( block,blkLimits,blkLimitsGC,del,flx,fly,flz)
+     subroutine hy_getElectricFields( block,blkLimits,blkLimitsGC,del,flx,fly,flz)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN)   :: block
@@ -900,13 +900,13 @@ Module hy_uhd_interface
                        blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)), &
                        intent(IN) :: flx,fly,flz
 #endif
-     end subroutine hy_uhd_getElectricFields
+     end subroutine hy_getElectricFields
   end interface
 
 
 
   interface
-     subroutine hy_uhd_getCurrents( &
+     subroutine hy_getCurrents( &
         block, rangeSwitch, blkLimits,datasize, del, Jp, Jm, mode_switch,&
         scrch_Ptr,&
         ix,iy,iz)
@@ -927,13 +927,13 @@ Module hy_uhd_interface
 #endif
         real, pointer, dimension(:,:,:,:) :: scrch_Ptr
         integer, intent(in), OPTIONAL :: ix,iy,iz 
-     end subroutine hy_uhd_getCurrents
+     end subroutine hy_getCurrents
   end interface
 
 
 
   interface
-     subroutine hy_uhd_getFluxDeriv( ix,iy,iz,blkLimitsGC,&
+     subroutine hy_getFluxDeriv( ix,iy,iz,blkLimitsGC,&
                                      fluxType,DerivDir,   &
                                      faceFlux,            &
                                      Flux1Deriv,          &
@@ -956,13 +956,13 @@ Module hy_uhd_interface
                           intent(IN) :: faceFlux
 #endif
        real,    intent(OUT):: Flux1Deriv,Flux2Deriv
-     end subroutine hy_uhd_getFluxDeriv
+     end subroutine hy_getFluxDeriv
   end interface
 
 
 
   interface
-     Subroutine hy_uhd_addBiermannBatteryTerms(block,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
+     Subroutine hy_addBiermannBatteryTerms(block,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        integer, INTENT(IN) :: ix,iy,iz
@@ -971,30 +971,30 @@ Module hy_uhd_interface
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
        integer, INTENT(IN) :: sweepDir
-     end Subroutine hy_uhd_addBiermannBatteryTerms
+     end Subroutine hy_addBiermannBatteryTerms
   end interface
   
   interface
-     subroutine hy_uhd_biermannSource(blockCount, blockList, dt)
+     subroutine hy_biermannSource(blockCount, blockList, dt)
        implicit none
        integer, INTENT(IN) :: blockCount  
        integer, INTENT(IN), dimension(blockCount) :: blockList
        real,    INTENT(IN) :: dt
-     end subroutine hy_uhd_biermannSource
+     end subroutine hy_biermannSource
   end interface
   interface
-     subroutine hy_uhd_putGravityUnsplit(blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+     subroutine hy_putGravity(blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
        integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimitsGC
        integer, dimension(MDIM), intent(IN) :: dataSize
        real,    intent(IN) :: dt, dtOld
        real,dimension(:,:,:,:),pointer :: Uin
-     end subroutine hy_uhd_putGravityUnsplit
+     end subroutine hy_putGravity
   end interface
 #endif 
 !endif #ifdef FLASH_USM_MHD
 
   interface
-     subroutine hy_uhd_computeFluxes (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+     subroutine hy_computeFluxes (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t) :: blockDesc
@@ -1003,15 +1003,15 @@ Module hy_uhd_interface
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
-     end subroutine hy_uhd_computeFluxes
-     subroutine hy_uhd_gravityStep (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld )
+     end subroutine hy_computeFluxes
+     subroutine hy_gravityStep (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld )
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t) :: blockDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        real,dimension(MDIM),intent(IN) :: del
-     end subroutine hy_uhd_gravityStep
+     end subroutine hy_gravityStep
   end interface
 
-End Module hy_uhd_interface
+End Module hy_interface

@@ -43,7 +43,7 @@
 
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
-Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy, flxz, &
+Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy, flxz, &
      del,timeEndAdv,dt,dtOld,sweepOrder)
 
   use Eos_interface, ONLY : Eos_wrapped
@@ -54,7 +54,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx,
                                hy_unsplitUpdate,    &
                                hy_unitConvert,      &
                                hy_energyFix,        &
-                               hy_putGravityUnsplit
+                               hy_putGravity
 
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
@@ -217,7 +217,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx,
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_putGravityUnsplit(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+        call hy_putGravity(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
@@ -264,7 +264,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx,
         !! DEV: DL-This note seems to be outdated and wrong for the optimized code.
         ! Note: Two different ways of handling gravity:
         ! 1. With gravity calculated potential at n+1/2, Riemann states do not include gravity
-        !    source terms at this point, and will include them in hy_addGravityUnsplit later
+        !    source terms at this point, and will include them in hy_addGravity later
         !    to the primitive Riemann variables (not available for conservative formulation).
         ! 2. With gravity extrapolated from n-1 & n states, gravity source terms have been
         !    included to Riemann states in conservative formulation in hy_getRiemannState.
@@ -435,4 +435,4 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx,
   call Timers_stop("loop1 body")
 
 
-End Subroutine hy_computeFluxes
+End Subroutine hy_advance

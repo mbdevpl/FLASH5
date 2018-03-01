@@ -1,4 +1,4 @@
-Subroutine hy_uhd_counterGP_init(radiusGP, counterGP, blkLimitsGC)
+Subroutine hy_counterGP_init(radiusGP, counterGP, blkLimitsGC)
 
   implicit none
 
@@ -10,12 +10,12 @@ Subroutine hy_uhd_counterGP_init(radiusGP, counterGP, blkLimitsGC)
   integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimitsGC
   !!--------------------------------------------------------------
   counterGP = 0
-end subroutine hy_uhd_counterGP_init
+end subroutine hy_counterGP_init
 
 
 
 ! *****************************************************************
-Subroutine hy_uhd_initGP(RinvGP, WpGP, WmGP, blkLimitsGC)
+Subroutine hy_initGP(RinvGP, WpGP, WmGP, blkLimitsGC)
 
 ! * Main init of GP interpolation. Here we set up one-time 
 ! * initialized arrays and matrices. This is the only place
@@ -32,4 +32,4 @@ Subroutine hy_uhd_initGP(RinvGP, WpGP, WmGP, blkLimitsGC)
   integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimitsGC
   !!--------------------------------------------------------------
 
-end subroutine hy_uhd_initGP
+end subroutine hy_initGP

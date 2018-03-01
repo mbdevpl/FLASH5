@@ -27,7 +27,7 @@
 !!  agreement on which variable to use for storing the potential (whether "gpot",
 !!  "gpoh", or "gpol"), as well as other auxiliary variables if needed.
 !!  The reason for having this wrapper in the Hydro implementation
-!!  is to achieve this agreement (in cooperation with the hy_putGravityUnsplit
+!!  is to achieve this agreement (in cooperation with the hy_putGravity
 !!  wrapper).
 !!
 !! ARGUMENTS
