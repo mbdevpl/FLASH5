@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_shockDetect
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_shockDetectBlk
 !!
 !! NAME
 !!
-!!  hy_shockDetect
+!!  hy_shockDetectBlk
 !!
 !! SYNOPSIS
 !!
-!!  hy_shockDetect( integer (IN) :: blockID )
+!!  hy_shockDetectBlk( integer (IN) :: blockID )
 !!
 !! DESCRIPTION
 !!
@@ -39,7 +39,7 @@
 
 !!REORDER(4): Uin,Uout
 
-Subroutine hy_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
+Subroutine hy_shockDetectBlk(Uin,blkLimitsGC,Uout,blkLimits,del )
 
 
   use Hydro_data,        ONLY : hy_cfl, hy_cfl_original,&
@@ -100,14 +100,14 @@ Subroutine hy_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
   if (NDIM > 2) k3=1
 
 #ifdef DEBUG_UHD
-!!$     print*,'_shockDetect top: associated(Uin ) is',associated(Uin )
-!!$     print*,'_shockDetect top: associated(Uout) is',associated(Uout)
-     print*,'_shockDetect top: lbound(Uin ):',lbound(Uin )
-     print*,'_shockDetect top: ubound(Uin ):',ubound(Uin )
-     print*,'_shockDetect top: lbound(Uout):',lbound(Uout)
-     print*,'_shockDetect top: ubound(Uout):',ubound(Uout)
-     print*,'_shockDetect top: lbound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke)):',lbound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke))
-     print*,'_shockDetect top: ubound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke)):',ubound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke))
+!!$     print*,'_shockDetectBlk top: associated(Uin ) is',associated(Uin )
+!!$     print*,'_shockDetectBlk top: associated(Uout) is',associated(Uout)
+     print*,'_shockDetectBlk top: lbound(Uin ):',lbound(Uin )
+     print*,'_shockDetectBlk top: ubound(Uin ):',ubound(Uin )
+     print*,'_shockDetectBlk top: lbound(Uout):',lbound(Uout)
+     print*,'_shockDetectBlk top: ubound(Uout):',ubound(Uout)
+     print*,'_shockDetectBlk top: lbound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke)):',lbound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke))
+     print*,'_shockDetectBlk top: ubound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke)):',ubound(Uout(SHOK_VAR,ib:ie,jb:je,kb:ke))
 #endif
 
 #ifdef SHOK_VAR
@@ -115,7 +115,7 @@ Subroutine hy_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
 #else
   if (hy_RiemannSolver == HYBR) then
      call Driver_abortFlash&
-          ("[hy_shockDetect]: SHOK_VAR has not been defined for shock detection")
+          ("[hy_shockDetectBlk]: SHOK_VAR has not been defined for shock detection")
   endif
 #endif
 
@@ -236,4 +236,4 @@ Subroutine hy_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
 
   endif
 
-End Subroutine hy_shockDetect
+End Subroutine hy_shockDetectBlk

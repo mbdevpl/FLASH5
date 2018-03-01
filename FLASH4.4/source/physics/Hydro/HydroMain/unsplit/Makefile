@@ -26,6 +26,7 @@ Hydro += Hydro_data.o\
 	hy_energyFix.o\
 	hy_unitConvert.o\
 	hy_shockDetect.o\
+	hy_shockDetectBlk.o\
 	hy_prim2con.o\
 	hy_prim2flx.o\
 	hy_MultiTempInit.o\
@@ -37,5 +38,6 @@ Hydro += Hydro_data.o\
 	hy_DataReconstructNormalDir_WENO.o\
 	hy_DataReconstructNormalDir_GP.o\
 	hy_advance.o\
+	hy_unsplitUpdate.o\
 	hy_gravityStep.o\
 	hy_initializeGP.o

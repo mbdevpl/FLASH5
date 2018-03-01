@@ -719,16 +719,20 @@ Module hy_interface
 
 
     interface
-       subroutine hy_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del )
+       subroutine hy_shockDetectBlk(Uin,blkLimitsGC,Uout,blkLimits,del )
        implicit none
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
        real, dimension(:,:,:,:),INTENT(IN) :: Uin
        real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
        real,dimension(MDIM),INTENT(IN) :: del
-     end subroutine hy_shockDetect
+     end subroutine hy_shockDetectBlk
   end interface
 
-
+  interface
+     subroutine hy_shockDetect()
+       implicit none
+     end subroutine hy_shockDetect
+  end interface
 
     interface
        subroutine hy_prim2con(V,CU)

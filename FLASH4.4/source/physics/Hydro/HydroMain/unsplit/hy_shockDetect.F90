@@ -1,6 +1,6 @@
 #include "constants.h"
 
-subroutine Hydro_shockDetectLoop
+subroutine hy_shockDetect
   use Grid_interface, ONLY : Grid_getDeltas, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr, &
                              Grid_getBlkIterator, Grid_releaseBlkIterator
@@ -12,7 +12,7 @@ subroutine Hydro_shockDetectLoop
                                hy_prepareNewGravityAccel,&
                                hy_putGravity,&
                                hy_addGravity,&
-                               hy_shockDetect
+                               hy_shockDetectBlk
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Hydro_data, ONLY : hy_fluxCorrect,      &
@@ -67,7 +67,7 @@ subroutine Hydro_shockDetectLoop
      !! Detect shocks
      if (hy_shockDetectOn) then
         call Grid_getDeltas(blockDesc%level,del)
-        call hy_shockDetect(Uin,blkLimitsGC,Uout,blkLimits,del)
+        call hy_shockDetectBlk(Uin,blkLimitsGC,Uout,blkLimits,del)
      end if
 
      
@@ -79,4 +79,4 @@ subroutine Hydro_shockDetectLoop
   
   call Grid_releaseBlkIterator(itor)
 #endif
-end subroutine Hydro_shockDetectLoop
+end subroutine hy_shockDetect

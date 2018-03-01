@@ -11,7 +11,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
-  use Hydro_interface,     ONLY : Hydro_shockDetectLoop, Hydro_computeFluxLoop,&
+  use Hydro_interface,     ONLY : Hydro_computeFluxLoop,&
                                   Hydro_doLoop4, Hydro_gravityStepLoop
   use Hydro_data, ONLY : hy_fluxCorrect,       &
                          hy_gref,              &
@@ -96,7 +96,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
 #endif
-     call Hydro_shockDetectLoop()
+     call hy_shockDetect()
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)

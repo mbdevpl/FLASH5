@@ -1,12 +1,12 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/Hydro_Unsplit/hy_uhd_eigenVector
+!!****if* source/physics/Hydro/HydroMain/unsplit/Hydro_Unsplit/hy_eigenVector
 !!
 !! NAME
 !!
-!!  hy_uhd_eigenVector
+!!  hy_eigenVector
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_eigenVector( real (OUT)         :: LeftEigvec (HY_VARINUM,HY_WAVENUM),
+!!  hy_eigenVector( real (OUT)         :: LeftEigvec (HY_VARINUM,HY_WAVENUM),
 !!                      real (OUT)         :: RightEigvec(HY_VARINUM,HY_WAVENUM)
 !!                      real (IN)          :: V(HY_VARINUM2),
 !!                      integer(IN)        :: dir,
@@ -43,7 +43,7 @@
 
 !#define DEBUG_HY_EIGEN
 
-Subroutine hy_uhd_eigenVector&
+Subroutine hy_eigenVector&
      (LeftEigvec,RightEigvec,V,dir,cons,C_fast,C_alfn,C_slow,A_f,A_s,B_beta)
 
   use Hydro_data,           ONLY : hy_meshMe
@@ -267,4 +267,4 @@ Subroutine hy_uhd_eigenVector&
 
   endif
 
-End Subroutine hy_uhd_eigenVector
+End Subroutine hy_eigenVector
