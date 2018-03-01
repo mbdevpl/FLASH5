@@ -147,11 +147,11 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   !! ***************************************************************************
   !! Loop over the blocks
   call hy_advance(simTime, dt, dtOld)
+
   if(.not.hy_fluxCorrectPerLevel)then
      call hy_updateBoundaries()
   end if
   
-  call Hydro_doLoop4()
 
 
 

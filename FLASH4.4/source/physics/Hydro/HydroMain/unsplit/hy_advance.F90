@@ -12,6 +12,7 @@ subroutine hy_advance(simTime, dt, dtOld)
   use hy_interface,        ONLY : hy_advanceBlk
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
+  use Hydro_data, ONLY : hy_fluxCorrectPerLevel
 
   implicit none
 
@@ -34,7 +35,9 @@ subroutine hy_advance(simTime, dt, dtOld)
 #ifdef DEBUG_DRIVER
         print*,' ***************   HYDRO LEVEL', level,'  **********************'
 #endif
-
+        !! if(hy_fluxCorrectPerLevel) then
+        !! if(level !=maxLev) then
+        !!   do a synchronization step here
         call Grid_getBlkIterator(itor, LEAF, level=level)
         call Timers_stop("loop1")
         do while(itor%is_valid())

@@ -56,6 +56,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
                                hy_putGravity
 
   use Hydro_data, ONLY : hy_fluxCorrect,      &
+                         hy_fluxCorrectPerLevel,             &
                          hy_gref,             &
                          hy_useGravity,       &
                          hy_units,            &
@@ -304,7 +305,13 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
 !!$        else
 !!$           updateMode = UPDATE_ALL
 !!$        end if
-     updateMode = UPDATE_ALL
+
+     if(.not.hy_fluxCorrectPerLevel) then
+        updateMode=UPDATE_INTERIOR
+     else
+        updateMode = UPDATE_ALL
+        !! get the corrected flux replaced here
+     end if
      call Timers_start("unsplitUpdate")
 #ifdef DEBUG_UHD
      print*,'and now update'
@@ -385,14 +392,15 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
 !!$              endif
 !!$           endif
 !!$        else ! Cartesian geometry
-!!$     call Grid_putFluxData(blockDesc,IAXIS,flx,datasize)
-!!$     if (NDIM > 1) then
-!!$        call Grid_putFluxData(blockDesc,JAXIS,fly,datasize)
-!!$        if (NDIM > 2) then
-!!$           call Grid_putFluxData(blockDesc,KAXIS,flz,datasize)
-!!$        endif
-!!$     endif
-!!$     
+
+     call Grid_putFluxData(blockDesc,IAXIS,flx,datasize)
+     if (NDIM > 1) then
+        call Grid_putFluxData(blockDesc,JAXIS,fly,datasize)
+        if (NDIM > 2) then
+           call Grid_putFluxData(blockDesc,KAXIS,flz,datasize)
+        endif
+     endif
+     
      
      deallocate(flx)
      deallocate(fly)
