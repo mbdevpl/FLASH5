@@ -998,7 +998,7 @@ Module hy_interface
 !endif #ifdef FLASH_USM_MHD
 
   interface
-     subroutine hy_advance (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+     subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t) :: blockDesc
@@ -1007,7 +1007,7 @@ Module hy_interface
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
-     end subroutine hy_advance
+     end subroutine hy_advanceBlk
      subroutine hy_gravityStep (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld )
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t) :: blockDesc

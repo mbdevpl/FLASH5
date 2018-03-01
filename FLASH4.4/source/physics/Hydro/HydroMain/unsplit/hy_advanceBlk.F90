@@ -1,14 +1,14 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/Hydro_loop1Body
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_advanceBlk
 !!
 !!
 !! NAME
 !!
-!!  hy_advance
+!!  hy_advanceBlk
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_advance(integer(IN) :: blockCount, 
+!!  hy_advanceBlk(integer(IN) :: blockCount, 
 !!        integer(IN) :: blockList(blockCount)
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
@@ -23,7 +23,7 @@
 !!  The blockList and blockCount arguments tell this routine on 
 !!  which blocks and on how many to operate.  blockList is an 
 !!  integer array of size blockCount that contains the local 
-!!  block numbers of blocks on which to advance.
+!!  block numbers of blocks on which to advanceBlk.
 !!
 !!  dt gives the timestep through which this update should advance,
 !!  and timeEndAdv tells the time that this update will reach when
@@ -43,7 +43,7 @@
 
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
-Subroutine hy_advance(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
+Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -422,4 +422,4 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndA
   call Timers_stop("loop1 body")
 
 
-End Subroutine hy_advance
+End Subroutine hy_advanceBlk

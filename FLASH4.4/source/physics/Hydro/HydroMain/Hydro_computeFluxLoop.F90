@@ -9,7 +9,7 @@ subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
                                   Grid_getBlkIterator, Grid_releaseBlkIterator,&
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
-  use hy_interface,        ONLY : hy_advance
+  use hy_interface,        ONLY : hy_advanceBlk
   use block_iterator, ONLY : block_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
@@ -50,7 +50,7 @@ subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
 
            call Grid_getDeltas(level,del)
            Uin => Uout
-           call hy_advance(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+           call hy_advanceBlk(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
            call Grid_releaseBlkPtr(blockDesc, Uout)
            nullify(Uout)
 !!$           call IO_writecheckpoint;stop
