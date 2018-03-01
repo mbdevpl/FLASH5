@@ -405,6 +405,7 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
      print *, "[Hydro_init]: Using non-Cartesian Geometry!"
   endif
   call RuntimeParameters_get("flux_correct", hy_fluxCorrect)
+  call RuntimeParameters_get("flux_correct_perLevel", hy_fluxCorrectPerLevel)
   if (NDIM > 1) then
      if (hy_fluxCorrect) then
         if (hy_geometry == CARTESIAN) then

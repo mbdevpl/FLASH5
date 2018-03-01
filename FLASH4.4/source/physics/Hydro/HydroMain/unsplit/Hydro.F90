@@ -14,6 +14,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   use Hydro_interface,     ONLY : Hydro_computeFluxLoop,&
                                   Hydro_doLoop4, Hydro_gravityStepLoop
   use Hydro_data, ONLY : hy_fluxCorrect,       &
+                         hy_fluxCorrectPerLevel, &
                          hy_gref,              &
                          hy_useGravity,        &
                          hy_units,             &
