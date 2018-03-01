@@ -56,11 +56,13 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_boxarray_module,     ONLY : amrex_boxarray
     use amrex_distromap_module,    ONLY : amrex_distromap
     use amrex_multifab_module,     ONLY : amrex_multifab_build
+    use amrex_fluxregister_module, ONLY : amrex_fluxregister_build
     use amrex_fillpatch_module,    ONLY : amrex_fillpatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
-    
+
     use gr_physicalMultifabs,      ONLY : unk, &
-                                          facevarx, facevary, facevarz
+                                          facevarx, facevary, facevarz, &
+                                          flux_registers
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_iterator,               ONLY : gr_iterator_t
@@ -70,6 +72,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use gr_interface,              ONLY : gr_getBlkIterator, &
                                           gr_releaseBlkIterator
     use Grid_data,                 ONLY : gr_eosModeInit, &
+                                          gr_doFluxCorrection, &
                                           lo_bc_amrex, hi_bc_amrex
     use Eos_interface,             ONLY : Eos_wrapped
     use Logfile_interface,         ONLY : Logfile_stamp
@@ -104,12 +107,17 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
 #endif
 
+    if ((lev > 0) .AND. (gr_doFluxCorrection)) then
+        call amrex_fluxregister_build(flux_registers(lev), ba, dm, &
+                                      amrex_ref_ratio(lev-1), &
+                                      lev, NUNK_VARS)
+    end if
+
     ! Write initial data across domain at given level
     n_blocks = 0
     call gr_getBlkIterator(itor, level=lev+1, tiling=.FALSE.)
     do while (itor%is_valid())
         call itor%blkMetadata(block)
-
  
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
