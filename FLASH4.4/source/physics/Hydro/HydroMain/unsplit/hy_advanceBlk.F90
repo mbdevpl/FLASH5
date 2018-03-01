@@ -74,6 +74,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
                          hy_fullRiemannStateArrays,    &
                          hy_fullSpecMsFluxHandling
 
+  use Grid_interface, ONLY : Grid_putFluxData
   implicit none
 
 #include "constants.h"
@@ -149,44 +150,8 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
         call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
      endif
 
-!!$     if (hy_fluxCorrect .AND. updateEarly) then
-!!$        ! Test whether neighbors are at different refinement levels, and if so,
-!!$        ! decide on what we have to do with this block for flux correction.
-!!$        call Grid_getBlkNeighLevels(blockID,neighLev)
-!!$        myRefine = neighLev(0,0,0)
-!!$        blockNeedsFluxCorrect(blockID) = (neighLev(-1,0,0) < myRefine .OR. neighLev(1,0,0) < myRefine)
-!!$        blockMustStoreFluxes (blockID) = (neighLev(-1,0,0) .NE. myRefine .OR. neighLev(1,0,0) .NE. myRefine)
-!!$#if NDIM > 1
-!!$        blockNeedsFluxCorrect(blockID) = blockNeedsFluxCorrect(blockID) &
-!!$             .OR. (neighLev(0,-1,0) < myRefine .OR. neighLev(0,1,0) < myRefine)
-!!$        blockMustStoreFluxes (blockID) = blockMustStoreFluxes(blockID) &
-!!$             .OR. (neighLev(0,-1,0) .NE. myRefine .OR. neighLev(0,1,0) .NE. myRefine)
-!!$#endif
-!!$#if NDIM > 2
-!!$        blockNeedsFluxCorrect(blockID) = blockNeedsFluxCorrect(blockID) &
-!!$             .OR. (neighLev(0,0,-1) < myRefine .OR. neighLev(0,0,1) < myRefine)
-!!$        blockMustStoreFluxes (blockID) = blockMustStoreFluxes(blockID) &
-!!$             .OR. (neighLev(0,0,-1) .NE. myRefine .OR. neighLev(0,0,1) .NE. myRefine)
-!!$#endif
-!!$     else if (hy_fluxCorrect) then
-!!$        blockNeedsFluxCorrect(blockID) = .TRUE.
-!!$        blockMustStoreFluxes (blockID) = .TRUE.
-!!$     else
-!!$        blockNeedsFluxCorrect(blockID) = .FALSE.
-!!$        blockMustStoreFluxes (blockID) = .FALSE.
-!!$     end if
-
-!!$     call Grid_getDeltas(blockID,del)
-!!$     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
      datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
-!!$     if (hy_fullRiemannStateArrays) then
-!!$        call hy_memGetBlkPtr(blockID,scrchFaceXPtr,SCRATCH_FACEX)
-!!$        if (NDIM > 1) call hy_memGetBlkPtr(blockID,scrchFaceYPtr,SCRATCH_FACEY)
-!!$        if (NDIM > 2) call hy_memGetBlkPtr(blockID,scrchFaceZPtr,SCRATCH_FACEZ)
-!!$     else
-!!$     call hy_memAllocScratch(SCRATCH_CTR,HY_VAR1_SCRATCHCTR_VAR,2, 0,0,0, &
-!!$          blockList(1:blockCount) )
      allocate(scrch_Ptr    (2,               loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
@@ -306,12 +271,15 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
 !!$           updateMode = UPDATE_ALL
 !!$        end if
 
-     if(.not.hy_fluxCorrectPerLevel) then
-        updateMode=UPDATE_INTERIOR
+     if(hy_fluxCorrectPerLevel) then
+        updateMode=UPDATE_ALL
      else
-        updateMode = UPDATE_ALL
-        !! get the corrected flux replaced here
+        
+        updateMode = UPDATE_INTERIOR
      end if
+
+        updateMode = UPDATE_ALL
+
      call Timers_start("unsplitUpdate")
 #ifdef DEBUG_UHD
      print*,'and now update'
@@ -320,8 +288,8 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
      call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
-!!$     call io_writeCheckpoint
-!!$     stop
+
+
 !#define DEBUG_UHD
 #ifdef DEBUG_UHD
      print*,'done update'
@@ -393,13 +361,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
 !!$           endif
 !!$        else ! Cartesian geometry
 
-     call Grid_putFluxData(blockDesc,IAXIS,flx,datasize)
-     if (NDIM > 1) then
-        call Grid_putFluxData(blockDesc,JAXIS,fly,datasize)
-        if (NDIM > 2) then
-           call Grid_putFluxData(blockDesc,KAXIS,flz,datasize)
-        endif
-     endif
+     call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
      
      
      deallocate(flx)
