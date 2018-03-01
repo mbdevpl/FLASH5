@@ -11,23 +11,24 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
-  use Hydro_interface,     ONLY : Hydro_doLoop0, Hydro_doLoop1, Hydro_doLoop4, Hydro_doLoop5
-  use Hydro_data, ONLY : hy_fluxCorrect,      &
-                         hy_gref,             &
-                         hy_useGravity,       &
-                         hy_units,            &
-                         hy_gcMaskSize,       &
-                         hy_gcMask,    &
-                         hy_eosModeGc,        &
-                         hy_eosModeAfter,     &
-                         hy_updateHydroFluxes,&
-                         hy_cfl,              &
-                         hy_cfl_original,     &
-                         hy_dtmin,            &
-                         hy_simTime,          &
-                         hy_simGeneration,    &
-                         hy_shockDetectOn,    &
-                         hy_doUnsplitLoop0
+  use Hydro_interface,     ONLY : Hydro_shockDetectLoop, Hydro_computeFluxLoop,&
+                                  Hydro_doLoop4, Hydro_gravityStepLoop
+  use Hydro_data, ONLY : hy_fluxCorrect,       &
+                         hy_gref,              &
+                         hy_useGravity,        &
+                         hy_units,             &
+                         hy_gcMaskSize,        &
+                         hy_gcMask,hy_gcMaskSD,&
+                         hy_eosModeGc,         &
+                         hy_eosModeAfter,      &
+                         hy_updateHydroFluxes, &
+                         hy_cfl,               &
+                         hy_cfl_original,      &
+                         hy_dtmin,             &
+                         hy_simTime,           &
+                         hy_simGeneration,     &
+                         hy_shockDetectOn
+
   use Hydro_data,       ONLY : hy_useHydro, hy_gpotAlreadyUpToDate
 
 #include "Flash.h"
@@ -39,7 +40,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
   real, intent(IN) ::  simTime, dt, dtOld
 
-  logical :: gcMask(hy_gcMaskSize)
+!!  logical :: gcMask(hy_gcMaskSize)
 
 #ifdef DEBUG_GRID_GCMASK
   logical,save :: gcMaskLogged =.FALSE.
@@ -78,40 +79,24 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   !! other preparations of UNK data if necessary.
   if (hy_shockDetectOn) then
      
-     !! Call guardcell filling to properly detect shocks
-     gcMask = .false.
-     gcMask(DENS_VAR) = .true.
-     gcMask(PRES_VAR) = .true.
-     gcMask(GAMC_VAR) = .true.
-     gcMask(VELX_VAR:VELZ_VAR) = .true.
-#ifdef CFL_VAR
-     gcMask(CFL_VAR)  = .true.
-#endif
-#if NSPECIES > 1
-     gcMask(SPECIES_BEGIN:SPECIES_END) = .true.
-#endif
-     
 #ifdef DEBUG_GRID_GCMASK
      if (.NOT.gcMaskLogged) then
-        call Logfile_stampVarMask(gcMask, .FALSE., '[hy_uhd_unsplit]', 'gcWant[Detect]')
+        call Logfile_stampVarMask(hy_gcMaskSD, .FALSE., '[hy_uhd_unsplit]', 'gcWant[Detect]')
      end if
 #endif
      
      call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.false.,&
-          maskSize=NUNK_VARS, mask=gcMask,makeMaskConsistent=.false.,&
+          maskSize=NUNK_VARS, mask=hy_gcMaskSD,makeMaskConsistent=.false.,&
           doLogMask=.NOT.gcMaskLogged)
      
      hy_cfl = hy_cfl_original
-  end if
 
 
-
-  if (hy_doUnsplitLoop0) then
 #ifdef FLASH_GRID_AMREXTRANSITION
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
-#endif
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
-     call Hydro_doLoop0()
+#endif
+     call Hydro_shockDetectLoop()
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
@@ -133,8 +118,8 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
        doLogMask=.NOT.gcMaskLogged)
 #ifdef FLASH_GRID_AMREXTRANSITION
   call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
-#endif
   call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
+#endif
 
 
   call Timers_stop("Head")
@@ -160,7 +145,7 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
   !! First part of advancement                                                 *
   !! ***************************************************************************
   !! Loop over the blocks
-  call Hydro_doLoop1(simTime, dt, dtOld)
+  call Hydro_computeFluxLoop(simTime, dt, dtOld)
 !!$  call IO_writeCheckpoint()
 !!$  stop
 
@@ -179,8 +164,8 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
 
 #ifdef GPOT_VAR
   if (hy_useGravity) then
-  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
 #endif
      ! The following call invokes Gravity_potentialListOfBlocks and related stuff,
@@ -188,12 +173,12 @@ subroutine Hydro_advanceAll(simTime, dt, dtOld)
      call hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
 #ifdef FLASH_GRID_AMREXTRANSITION
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
-#endif
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
+#endif
   endif
 #endif
 
-  call Hydro_doLoop5(simTime, dt, dtOld)
+  call Hydro_gravityStepLoop(simTime, dt, dtOld)
 
 #endif /* End of n+1 gravity coupling */
 

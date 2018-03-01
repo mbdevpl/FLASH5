@@ -993,4 +993,25 @@ Module hy_uhd_interface
 #endif 
 !endif #ifdef FLASH_USM_MHD
 
+  interface
+     subroutine hy_uhd_computeFluxes (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+          sweepOrder )
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t) :: blockDesc
+       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       real, pointer, dimension(:,:,:,:) :: Uout,Uin
+       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+       integer, INTENT(IN) :: sweepOrder
+       real,dimension(MDIM),intent(IN) :: del
+     end subroutine hy_uhd_computeFluxes
+     subroutine hy_uhd_gravityStep (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld )
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t) :: blockDesc
+       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       real, pointer, dimension(:,:,:,:) :: Uout,Uin
+       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+       real,dimension(MDIM),intent(IN) :: del
+     end subroutine hy_uhd_gravityStep
+  end interface
+
 End Module hy_uhd_interface

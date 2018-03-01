@@ -47,42 +47,22 @@ Module Hydro_interface
      subroutine Hydro_freeBuffers()
        implicit none
      end subroutine Hydro_freeBuffers
-     subroutine Hydro_doLoop0()
+     subroutine Hydro_shockDetectLoop()
        implicit none
-     end subroutine Hydro_doLoop0
-     subroutine Hydro_doLoop1(simTime, dt, dtOld)
+     end subroutine Hydro_shockDetectLoop
+     subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
        implicit none
        real, intent(IN) ::  simTime, dt, dtOld
-     end subroutine Hydro_doLoop1
+     end subroutine Hydro_computeFluxLoop
      subroutine Hydro_doLoop4()
        implicit none
      end subroutine Hydro_doLoop4
-     subroutine Hydro_doLoop5(simTime, dt, dtOld)
+     subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
        implicit none
        real, intent(IN) ::  simTime, dt, dtOld
-     end subroutine Hydro_doLoop5
+     end subroutine Hydro_gravityStepLoop
   end interface
 
-  interface
-     subroutine Hydro_loop1Body (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
-          sweepOrder )
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t) :: blockDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
-       real, pointer, dimension(:,:,:,:) :: Uout,Uin
-       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-       integer, INTENT(IN) :: sweepOrder
-       real,dimension(MDIM),intent(IN) :: del
-     end subroutine Hydro_loop1Body
-     subroutine Hydro_loop5Body (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld )
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t) :: blockDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
-       real, pointer, dimension(:,:,:,:) :: Uout,Uin
-       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-       real,dimension(MDIM),intent(IN) :: del
-     end subroutine Hydro_loop5Body
-  end interface
 
   interface Hydro
   subroutine Hydro(  timeEndAdv, dt, dtOld,sweepOrder )
