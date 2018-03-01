@@ -6,12 +6,12 @@ subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
   use Grid_interface,      ONLY : Grid_getDeltas,&
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
-                                  Grid_getBlkIterator, Grid_releaseBlkIterator,&
+                                  Grid_getLeafIterator, Grid_releaseLeafIterator,&
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
-  use hy_uhd_interface,     ONLY : hy_uhd_gravityStep
-  use block_iterator, ONLY : block_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use hy_uhd_interface,    ONLY : hy_uhd_gravityStep
+  use leaf_iterator,       ONLY : leaf_iterator_t
+  use block_metadata,      ONLY : block_metadata_t
 
   implicit none
 
@@ -23,7 +23,7 @@ subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
 
   integer:: level, maxLev
 
-  type(block_iterator_t) :: itor
+  type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
@@ -33,7 +33,7 @@ subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
         print*,' ***************   HYDRO LEVEL', level,'  **********************'
 #endif
 
-        call Grid_getBlkIterator(itor, LEAF, level=level)
+        call Grid_getLeafIterator(itor, level=level)
         call Timers_stop("loop5")
         do while(itor%is_valid())
            call itor%blkMetaData(blockDesc)
@@ -52,10 +52,7 @@ subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
            call itor%next()
         end do
         call Timers_stop("loop5")
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-        call Grid_releaseBlkIterator(itor)
-#endif
-
+        call Grid_releaseLeafIterator(itor)
 
      end do
 

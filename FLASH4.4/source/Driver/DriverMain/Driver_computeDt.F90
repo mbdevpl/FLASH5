@@ -71,7 +71,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
        Grid_getSingleCellCoords,Grid_getMaxRefinement, &
        Grid_getBlkPtr, Grid_releaseBlkPtr, &
-       Grid_getBlkIterator, Grid_releaseBlkIterator
+       Grid_getLeafIterator, Grid_releaseLeafIterator
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Heat_interface, ONLY : Heat_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
@@ -80,7 +80,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Particles_interface, ONLY: Particles_computeDt
 
   use IncompNS_interface, ONLY : IncompNS_computeDt
-  use block_iterator, ONLY : block_iterator_t
+  use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -163,7 +163,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   real :: extraHydroInfoMin
   real :: extraHydroInfoApp
   real :: dtNewComputed
-  type(block_iterator_t) :: itor
+  type(leaf_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
   integer:: ib, level, maxLev
   real :: err
@@ -219,7 +219,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
   call Hydro_consolidateCFL()
   do level=1,maxLev
-     call Grid_getBlkIterator(itor, LEAF, level=level)
+     call Grid_getLeafIterator(itor, level=level)
      do while(itor%is_valid())
         call itor%blkMetaData(blockDesc)
 
@@ -339,7 +339,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
         call itor%next()
      enddo
-     call Grid_releaseBlkIterator(itor)
+     call Grid_releaseLeafIterator(itor)
   end do
 !!$     end do
      

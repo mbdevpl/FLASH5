@@ -1,4 +1,4 @@
-!!****ih* source/Grid/GridMain/AMR/paramesh/block_iterator
+!!****ih* source/Grid/GridMain/AMR/paramesh/leaf_iterator
 !!
 !!
 !!
@@ -7,7 +7,7 @@
 !! defines IMPURE_ELEMENTAL:
 #include "FortranLangFeatures.fh"
 
-module block_iterator
+module leaf_iterator
 
 #include "Flash.h"
     use tree, ONLY : lnblocks, lrefine, lrefine_max
@@ -24,15 +24,14 @@ module block_iterator
     integer,parameter :: ndims=N_DIM
     integer,parameter :: amrex_real=kind(1.0)
 
-    !!****ic* block_iterator/block_iterator_t
+    !!****ic* leaf_iterator/leaf_iterator_t
     !!
     !! NAME
-    !!  block_iterator_t
+    !!  leaf_iterator_t
     !!
     !!****
-    type, public :: block_iterator_t
+    type, public :: leaf_iterator_t
         integer :: cur         = 1
-        integer :: nodetype    = LEAF 
         integer :: lev         = INVALID_LEVEL
         integer :: cellIdxBase = -2
         ! different variants for cell index numbering:
@@ -45,30 +44,28 @@ module block_iterator
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
-    end type block_iterator_t
+    end type leaf_iterator_t
 
 contains
 
-    !!****im* block_iterator_t/build_iterator
+    !!****im* leaf_iterator_t/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(block_iterator_t(OUT) :: itor,
-    !!                 integer(IN)           :: nodetype,
+    !!  build_iterator(leaf_iterator_t(OUT)  :: itor,
     !!                 integer(IN), optional :: level,
     !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
-    !!  Construct an iterator for walking across a specific subset of blocks or
+    !!  Construct an iterator for walking across a specific subset of leaf blocks or
     !!  tiles within the current paramesh octree structure.  The iterator is already
     !!  set to the first matching block/tile.
     !!  
     !! ARGUMENTS
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-    !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks/tiles located at this level of
+    !!  itor     - the iterator
+    !!  level    - iterate only over leaf blocks/tiles located at this level of
     !!             refinement.
     !!  tiling   - an optional optimization hint.  Tiling is not implemented for
     !!             Paramesh and therefore this hint is ignored.
@@ -76,13 +73,11 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    subroutine build_iterator(itor, nodetype, level, tiling)
-        type(block_iterator_t), intent(OUT)          :: itor
-        integer,                intent(IN)           :: nodetype
-        integer,                intent(IN), optional :: level
-        logical,                intent(IN), optional :: tiling
+    subroutine build_iterator(itor, level, tiling)
+        type(leaf_iterator_t), intent(OUT)          :: itor
+        integer,               intent(IN), optional :: level
+        logical,               intent(IN), optional :: tiling
 
-        itor%nodetype = nodetype
         itor%lev = INVALID_LEVEL 
         if (present(level)) then
             itor%lev = level
@@ -91,7 +86,7 @@ contains
         call itor%first()
     end subroutine build_iterator
 
-    !!****im* block_iterator_t/destroy_iterator
+    !!****im* leaf_iterator_t/destroy_iterator
     !!
     !! NAME
     !!  destroy_iterator
@@ -104,12 +99,12 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
-        type(block_iterator_t), intent(INOUT) :: itor
+        type(leaf_iterator_t), intent(INOUT) :: itor
 
         call itor%first()
     end subroutine destroy_iterator
 
-    !!****m* block_iterator_t/first
+    !!****m* leaf_iterator_t/first
     !!
     !! NAME
     !!  first
@@ -122,14 +117,14 @@ contains
     !!
     !!****
     subroutine first(this)
-        class(block_iterator_t), intent(INOUT) :: this
+        class(leaf_iterator_t), intent(INOUT) :: this
 
         ! Search for the first valid block
         this%cur = 0
         call this%next()
     end subroutine first
  
-    !!****m* block_iterator_t/is_valid
+    !!****m* leaf_iterator_t/is_valid
     !!
     !! NAME
     !!  is_valid
@@ -147,12 +142,12 @@ contains
     logical function is_valid(this)
         use tree, ONLY : lnblocks
 
-        class(block_iterator_t), intent(IN) :: this
+        class(leaf_iterator_t), intent(IN) :: this
 
         is_valid = (this%cur <= lnblocks)
     end function is_valid
 
-    !!****m* block_iterator_t/next
+    !!****m* leaf_iterator_t/next
     !!
     !! NAME
     !!  next
@@ -166,27 +161,27 @@ contains
     !!
     !!****
     subroutine next(this)
-        use gr_interface, ONLY : gr_blockMatch
+        use gr_parameshInterface, ONLY : gr_blockMatch
 
-        class(block_iterator_t), intent(INOUT) :: this
+        class(leaf_iterator_t), intent(INOUT) :: this
 
         integer :: j = 0
   
         if (this%lev == INVALID_LEVEL) then
             ! No level given at creation
             do j = this%cur + 1, lnblocks
-                if (gr_blockMatch(j, this%nodetype)) EXIT
+                if (gr_blockMatch(j, LEAF)) EXIT
             end do
         else
             do j = this%cur + 1, lnblocks
-                if (gr_blockMatch(j, this%nodetype, this%lev)) EXIT
+                if (gr_blockMatch(j, LEAF, this%lev)) EXIT
             end do
         end if
 
         this%cur = j
     end subroutine next
 
-    !!****m* block_iterator_t/blkMetaData
+    !!****m* leaf_iterator_t/blkMetaData
     !!
     !! NAME
     !!  blkMetaData 
@@ -203,7 +198,7 @@ contains
         use block_metadata,             ONLY : block_metadata_t
         use Grid_getBlkIndexLimits_mod, ONLY : Grid_getBlkIndexLimits
 
-        class(block_iterator_t), intent(IN)  :: this
+        class(leaf_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: mData
 
         integer, dimension(MDIM)           :: cornerID
@@ -256,4 +251,4 @@ contains
         end associate
     end subroutine blkMetaData
     
-end module block_iterator
+end module leaf_iterator

@@ -3,7 +3,7 @@
 subroutine Hydro_shockDetectLoop
   use Grid_interface, ONLY : Grid_getDeltas, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getBlkIterator, Grid_releaseBlkIterator
+                             Grid_getLeafIterator, Grid_releaseLeafIterator
   use hy_uhd_interface, ONLY : hy_uhd_getRiemannState,  &
                                hy_uhd_getFaceFlux,      &
                                hy_uhd_unsplitUpdate,    &
@@ -13,7 +13,7 @@ subroutine Hydro_shockDetectLoop
                                hy_uhd_putGravityUnsplit,&
                                hy_uhd_addGravityUnsplit,&
                                hy_uhd_shockDetect
-  use block_iterator, ONLY : block_iterator_t
+  use leaf_iterator,  ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
@@ -42,7 +42,7 @@ subroutine Hydro_shockDetectLoop
 
   real, dimension(MDIM) :: del
 
-  type(block_iterator_t) :: itor
+  type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
@@ -53,8 +53,7 @@ subroutine Hydro_shockDetectLoop
 !!$  do i=1,blockCount          !LOOP 0
 !!$     blockID = blockList(i)
 
-  call Grid_getBlkIterator(itor,LEAF)
-
+  call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
 
@@ -75,8 +74,6 @@ subroutine Hydro_shockDetectLoop
 
      call itor%next()
   end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+  call Grid_releaseLeafIterator(itor)
   
-  call Grid_releaseBlkIterator(itor)
-#endif
 end subroutine Hydro_shockDetectLoop
