@@ -85,7 +85,7 @@ subroutine Driver_evolveFlash()
 #ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
 #endif
-  use Hydro_interface,     ONLY : Hydro_advanceAll, &
+  use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
   use IO_interface,        ONLY : IO_output,IO_outputFinal
@@ -219,9 +219,9 @@ subroutine Driver_evolveFlash()
      !! Guardcell filling routine - the call has been moved into Hydro.
 !!$     call Grid_fillGuardCells(CENTER,ALLDIR)
 
-     call Hydro_advanceAll(dr_simTime, dr_dt, dr_dtOld)
+     call Hydro(dr_simTime, dr_dt, dr_dtOld)
 
-!!!!!! Stuff from here has been MOVED TO Hydro_advanceAll !!!!!!
+!!!!!! Stuff from here has been MOVED TO Hydro !!!!!!
 
 
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
