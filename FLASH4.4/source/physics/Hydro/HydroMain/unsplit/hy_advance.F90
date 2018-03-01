@@ -1,14 +1,14 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_advance
+!!****if* source/physics/Hydro/HydroMain/unsplit/Hydro_loop1Body
 !!
 !!
 !! NAME
 !!
-!!  Hydro_loop1Body
+!!  hy_advance
 !!
 !!
 !! SYNOPSIS
 !!
-!!  Hydro_loop1Body(integer(IN) :: blockCount, 
+!!  hy_advance(integer(IN) :: blockCount, 
 !!        integer(IN) :: blockList(blockCount)
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
@@ -43,8 +43,7 @@
 
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
-Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy, flxz, &
-     del,timeEndAdv,dt,dtOld,sweepOrder)
+Subroutine hy_advance(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -85,10 +84,6 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
 
   real, pointer, dimension(:,:,:,:) :: Uout
   real, pointer, dimension(:,:,:,:) :: Uin
-
-  real, pointer, dimension(:,:,:,:) :: flxx
-  real, pointer, dimension(:,:,:,:) :: flxy
-  real, pointer, dimension(:,:,:,:) :: flxz
 
   real,dimension(MDIM),intent(IN) :: del
   integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
@@ -195,20 +190,20 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
      allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
-!!$  endif
+!!$     endif
 
-!!$#if (NSPECIES+NMASS_SCALARS) > 0
-!!$     if (hy_fullSpecMsFluxHandling) then
-!!$        allocate(  hy_SpcR(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
-!!$        allocate(  hy_SpcL(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
-!!$        allocate(hy_SpcSig(HY_NSPEC,blkLimits(LOW,IAXIS)-2:blkLimits(HIGH,IAXIS)+2, loyGC:hiyGC, lozGC:hizGC,NDIM))
-!!$     end if
-!!$#endif
+#if (NSPECIES+NMASS_SCALARS) > 0
+     if (hy_fullSpecMsFluxHandling) then
+        allocate(  hy_SpcR(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
+        allocate(  hy_SpcL(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
+        allocate(hy_SpcSig(HY_NSPEC,blkLimits(LOW,IAXIS)-2:blkLimits(HIGH,IAXIS)+2, loyGC:hiyGC, lozGC:hizGC,NDIM))
+     end if
+#endif
 
      allocate(gravX(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
      allocate(gravY(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
      allocate(gravZ(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
-#ifdef DEBUG_UHD
+#ifdef DEBUG
      print*,'came upto this point'
 #endif
      !! ************************************************************************
@@ -253,7 +248,7 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
 #endif
         call hy_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,del, &
                                     gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
-                                    flxx,flxy,flxz,&
+                                    scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                     hy_SpcR,hy_SpcL,hy_SpcSig)
 #ifdef DEBUG_UHD
         print*,'returning from RiemannState'
@@ -297,40 +292,6 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
      print*,'_unsplit Aft "call getFaceFlux": associated(Uout) is',associated(Uout)
 #endif
      call Timers_stop("getFaceFlux")
-
-!!$     if (hy_geometry /= CARTESIAN) then
-!!$        ! we are using consv_fluxes and need to divide by face areas
-!!$        call Grid_getBlkData(blockDesc,CELL_FACEAREA,ILO_FACE, EXTERIOR, &
-!!$             (/1,1,1/), faceAreas, datasize)
-!!$        
-!!$        call Grid_putFluxData(blockDesc,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
-!!$        call Grid_getFluxData(blockDesc,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
-!!$        if (NDIM > 1) then
-!!$           call Grid_getBlkData(blockDesc,CELL_FACEAREA,JLO_FACE, EXTERIOR, &
-!!$                (/1,1,1/), faceAreas, datasize)
-!!$           call Grid_putFluxData(blockDesc,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
-!!$           call Grid_getFluxData(blockDesc,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
-!!$           if (NDIM > 2) then
-!!$              call Grid_getBlkData(blockDesc,CELL_FACEAREA,KLO_FACE, EXTERIOR, &
-!!$                   (/1,1,1/), faceAreas, datasize)
-!!$              call Grid_putFluxData(blockDesc,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
-!!$              call Grid_getFluxData(blockDesc,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
-!!$           endif
-!!$        endif
-!!$     else ! Cartesian geometry
-!!$        call Grid_putFluxData(blockDesc,IAXIS,flx,datasize)
-!!$        call Grid_getFluxData(blockDesc,IAXIS,flx,datasize)
-!!$        if (NDIM > 1) then
-!!$           call Grid_putFluxData(blockDesc,JAXIS,fly,datasize)
-!!$           call Grid_getFluxData(blockDesc,JAXIS,fly,datasize)
-!!$           if (NDIM > 2) then
-!!$              call Grid_putFluxData(blockDesc,KAXIS,flz,datasize)
-!!$              call Grid_getFluxData(blockDesc,KAXIS,flz,datasize)
-!!$           endif
-!!$        endif
-!!$     end if
-
-
      !! ************************************************************************
      !! Unsplit update for conservative variables from n to n+1 time step
 !!$#ifndef FLASH_GRID_UG
@@ -363,7 +324,7 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
      call Timers_stop("unsplitUpdate")
 !!$#ifdef FLASH_UHD_3T
 !!$        call Timers_start("unsplitUpdate 3T")
-!!$        call hy_unsplitUpdateMultiTemp&
+!!$        call hy_uhd_unsplitUpdateMultiTemp&
 !!$             (blockID,updateMode,blkLimits,dataSize,dt,del,flx,fly,flz, scrch_Ptr)
 !!$        call Timers_stop("unsplitUpdate 3T")
 !!$#endif
@@ -406,10 +367,36 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
         !! Correct fluxes at each block boundary where coarse and fine
         !! blocks are neighboring each other.
         
+!!$        if (hy_geometry /= CARTESIAN) then
+!!$           ! we are using consv_fluxes and need to divide by face areas
+!!$           call Grid_getBlkData(blockID,CELL_FACEAREA,ILO_FACE, EXTERIOR, &
+!!$                                (/1,1,1/), faceAreas, datasize)
+!!$
+!!$           call Grid_putFluxData(blockID,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
+!!$
+!!$           if (NDIM > 1) then
+!!$              call Grid_getBlkData(blockID,CELL_FACEAREA,JLO_FACE, EXTERIOR, &
+!!$                                   (/1,1,1/), faceAreas, datasize)
+!!$              call Grid_putFluxData(blockID,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
+!!$              if (NDIM > 2) then
+!!$                 call Grid_getBlkData(blockID,CELL_FACEAREA,KLO_FACE, EXTERIOR, &
+!!$                                      (/1,1,1/), faceAreas, datasize)
+!!$                 call Grid_putFluxData(blockID,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
+!!$              endif
+!!$           endif
+!!$        else ! Cartesian geometry
+!!$     call Grid_putFluxData(blockDesc,IAXIS,flx,datasize)
+!!$     if (NDIM > 1) then
+!!$        call Grid_putFluxData(blockDesc,JAXIS,fly,datasize)
+!!$        if (NDIM > 2) then
+!!$           call Grid_putFluxData(blockDesc,KAXIS,flz,datasize)
+!!$        endif
+!!$     endif
+!!$     
      
-!!$     deallocate(flx)
-!!$     deallocate(fly)
-!!$     deallocate(flz)
+     deallocate(flx)
+     deallocate(fly)
+     deallocate(flz)
      deallocate(gravX)
      deallocate(gravY)
      deallocate(gravZ)
@@ -420,9 +407,9 @@ Subroutine hy_advance(blockDesc, blkLimitsGC, blkLimits, Uin,  Uout, flxx, flxy,
 !!$        if (NDIM > 1) call hy_memReleaseBlkPtr(blockID,scrchFaceYPtr,SCRATCH_FACEY)
 !!$        if (NDIM > 2) call hy_memReleaseBlkPtr(blockID,scrchFaceZPtr,SCRATCH_FACEZ)
 !!$     else
-!!$     deallocate(scrchFaceXPtr)
-!!$     deallocate(scrchFaceYPtr)
-!!$     deallocate(scrchFaceZPtr)
+     deallocate(scrchFaceXPtr)
+     deallocate(scrchFaceYPtr)
+     deallocate(scrchFaceZPtr)
      
 #if (NSPECIES+NMASS_SCALARS) > 0
      if (hy_fullSpecMsFluxHandling) then
