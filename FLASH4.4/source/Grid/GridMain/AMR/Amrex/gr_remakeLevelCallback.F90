@@ -69,18 +69,21 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
                                           amrex_mfiter, &
                                           amrex_mfiter_build, &
                                           amrex_mfiter_destroy
+    use amrex_fluxregister_module, ONLY : amrex_fluxregister_build
     use amrex_fillpatch_module,    ONLY : amrex_fillpatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
     use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex, &
                                           gr_eosMode, &
-                                          gr_amrexDidRefinement
+                                          gr_amrexDidRefinement, &
+                                          gr_doFluxCorrection
     use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
     use gr_interface,              ONLY : gr_getBlkIterator, &
                                           gr_releaseBlkIterator
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
-    use gr_physicalMultifabs,      ONLY : unk
+    use gr_physicalMultifabs,      ONLY : unk, &
+                                          flux_registers
     use gr_iterator,               ONLY : gr_iterator_t
     use block_metadata,            ONLY : block_metadata_t
     use Eos_interface,             ONLY : Eos_wrapped
@@ -154,6 +157,13 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
        call itor%next()
     end do
     call gr_releaseBlkIterator(itor)
+
+    !!!!! REBUILD FLUX REGISTER
+    if ((lev > 0) .AND. (gr_doFluxCorrection)) then
+        call amrex_fluxregister_build(flux_registers(lev), ba, dm, &
+                                      amrex_ref_ratio(lev-1), &
+                                      lev, NUNK_VARS)
+    end if
 
     write(*,'(A,I0,A,I0,A)') "Remade level ", (lev+1), " - ", nFab, " blocks"
 
