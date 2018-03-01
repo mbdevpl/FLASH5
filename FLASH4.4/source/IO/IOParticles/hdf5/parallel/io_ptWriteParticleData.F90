@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!! io_ptWriteParticleData(integer(in) :: fileID,
+!! call io_ptWriteParticleData(integer(io_fileID_t)(in) :: fileID,
 !!                     integer(in) :: globalNumParticles,
 !!                     integer(in) :: localNumParticles,
 !!                     integer(in) :: particleOffset,
@@ -27,7 +27,7 @@
 !! ARGUMENTS 
 !!
 !!   
-!!   fileID - file handler to open file, in this case the fortran logical unit number
+!!   fileID - file handle to an open file, in this case an HDF5 file identifier
 !!   
 !!   globalNumParticles - the total number of particles in the simulation
 !!   
@@ -45,7 +45,7 @@
 !!   particlesToCheckpoint - logical value indicating if particles should be written
 !!                           to a checkpoint file or to a plotfile. (not used in this 
 !!                           implementation)
-!!                           
+!!
 !!
 !! NOTES
 !!   To control particle output there are a few different parameters
@@ -75,6 +75,7 @@ subroutine io_ptWriteParticleData( fileID, globalNumParticles, &
        io_fflags, io_setupTimeStamp, io_buildTimeStamp, io_comm, io_outputSplitNum, &
        io_splitNumBlks, io_splitParts, io_fileFormatVersion, io_globalMe
   use IOParticles_data, ONLY : io_writeParticleSubset, io_writeParticleAll
+  use io_intfTypesModule, ONLY : io_fileID_t
 
   use Grid_data, ONLY : gr_globalOffset, gr_globalNumBlocks
   use Grid_interface, ONLY : Grid_getLocalNumBlks, Grid_sortParticles
@@ -92,7 +93,7 @@ subroutine io_ptWriteParticleData( fileID, globalNumParticles, &
   implicit none
   include "Flash_mpi.h"
 
-  integer, intent(in) ::  fileID
+  integer(io_fileID_t), intent(in) ::  fileID
   integer, intent(in) :: globalNumParticles, localNumParticles, particleOffset
   character (len=OUTPUT_PROP_LENGTH), intent(in) :: partAttributeLabels(NPART_PROPS)
   logical, intent(in) :: particlesToCheckpoint

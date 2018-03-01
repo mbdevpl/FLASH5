@@ -7,9 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  io_writeData(integer(in) :: fileID) 
-!!          
-!!
+!!  call io_writeData(integer(io_fileID_t)(in) :: fileID)
 !!
 !!
 !! DESCRIPTION
@@ -40,6 +38,10 @@
 !!
 !!
 !! NOTES
+!!  The KIND type parameter io_fileID_t is defined in Fortran module io_intfTypesModule.
+!!  It should ensure that fileID is compatible of the hid_t of the HDF5 library version
+!!  used.
+!!
 !!  variables that start with "io_" belong to the data module IO_data.
 !!  the "io_" is meant to indicate that these variables have IO unit 
 !!  scope.   For performance purposes IO particularly, io_writeData
@@ -79,6 +81,7 @@ subroutine io_writeData(fileID)
        io_faceZVarLabels, io_comm, io_splitNumBlks, io_useCollectiveHDF5, &
        io_plotfileGridQuantityDP, io_plotfileMetadataDP, io_fileFormatVersion, &
        tree_data_t, io_meshMe, io_acrossMe
+  use io_intfTypesModule, ONLY : io_fileID_t
 
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
   use Driver_interface, ONLY : Driver_abortFlash
@@ -105,7 +108,9 @@ subroutine io_writeData(fileID)
 
 #include "Flash_mpi.h"
 
-  integer, intent(in) :: fileID
+
+  integer(io_fileID_t), intent(in) :: fileID
+
   type (tree_data_t) :: tree_data
 
 #ifndef USE_IO_C_INTERFACE

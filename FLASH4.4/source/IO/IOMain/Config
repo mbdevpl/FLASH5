@@ -49,11 +49,6 @@ ENDIF
 
 
 
-D bytePack compress plotfile data to bytes
-D & !!Only implemented with UG in hdf5 !!!
-D & !!Not tested
-PARAMETER bytePack BOOLEAN FALSE
-
 D memory_stat_freq Specify the number of timesteps between memory statistic
 D & dumps to flash.log !!NOT Yet Implemented in F3
 PARAMETER memory_stat_freq INTEGER 100000

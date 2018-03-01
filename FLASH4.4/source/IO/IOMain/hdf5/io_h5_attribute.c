@@ -3,14 +3,14 @@
 /* WARNING: The caller must null-terminate all strings */
 
 void io_h5_attribute_create(const int myPE,
-			    const int fileID,
+			    const hid_t fileID,
 			    const int diskType,
 			    const int dims,
 			    const int diskSize[],
 			    const char datasetName[],
 			    const char attDatasetName[])
 {
-  const hid_t hFileID = (hid_t) fileID;
+  const hid_t hFileID = fileID;
   hsize_t hDiskSize[IO_MAX_DIMS];
   hid_t hDiskType, dsetID, attID, attDataspace;
   herr_t err;
@@ -76,13 +76,13 @@ void io_h5_attribute_create(const int myPE,
 /* We pass the memory datatype so that the HDF5 library can
    convert between double in memory and float in file */
 void io_h5_attribute_write(const int myPE,
-			   const int fileID,
+			   const hid_t fileID,
 			   const int memType,
 			   const char datasetName[],
 			   const char attDatasetName[],
 			   const void * const pData)
 {
-  const hid_t hFileID = (hid_t) fileID;
+  const hid_t hFileID = fileID;
   hid_t hMemType, dsetID, attID;
   herr_t err;
   int parallelIO;

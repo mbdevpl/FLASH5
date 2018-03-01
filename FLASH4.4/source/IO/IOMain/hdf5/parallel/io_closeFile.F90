@@ -19,9 +19,10 @@
 
 subroutine io_closeFile( fileID)
 
+  use io_intfTypesModule, ONLY : io_fileID_t
   implicit none
 
-  integer, intent(in) :: fileID
+  integer(io_fileID_t), intent(in) :: fileID
   call io_h5close_file(fileID)
 
 end subroutine io_closeFile

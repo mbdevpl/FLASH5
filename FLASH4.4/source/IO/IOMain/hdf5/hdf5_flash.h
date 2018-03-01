@@ -31,7 +31,7 @@
 */
 
 #include "constants.h"
-
+#include <hdf5.h>
 
 #define FILE_FORMAT_VERSION 9
 
@@ -76,7 +76,7 @@ typedef struct sim_info_t {
   char build_time_stamp[MAX_STRING_LENGTH];
 } sim_info_t;
 
-
+typedef hid_t io_fileID_t;
 
 
 
