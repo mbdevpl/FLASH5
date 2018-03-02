@@ -52,5 +52,5 @@ implicit none
 #include "constants.h"
   
   real,    INTENT(IN) :: simTime, dt, dtOld
-  integet, optional, intent(IN) :: sweeporder
+  integer, optional, intent(IN) :: sweeporder
 end subroutine Hydro
