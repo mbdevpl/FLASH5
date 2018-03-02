@@ -59,13 +59,13 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
 
   use Grid_interface, ONLY : Grid_getBlkPtr
   use Grid_interface, ONLY : Grid_copyF4DataToMultiFabs
-  use Grid_interface, ONLY : Grid_getBlkIterator, Grid_releaseBlkIterator
+  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
   use Grid_data, ONLY : gr_smallrho,gr_smalle, gr_meshMe
   use gr_specificData, ONLY : gr_sanitizeDataMode, gr_sanitizeVerbosity
   use Logfile_interface, ONLY : Logfile_stamp
   use physicaldata, ONLY: gcell_on_cc
   use paramesh_dimensions, ONLY: il_bnd,iu_bnd,jl_bnd,ju_bnd,kl_bnd,ku_bnd, kl_bndi, ndim
-  use block_iterator !, ONLY : block_iterator_t
+  use gr_iterator !, ONLY : gr_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -88,7 +88,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   integer :: kwrite,locs(3),kReorder(1:ku_bnd-kl_bnd+1),nReorder
   character(len=32), dimension(4,2) :: block_buff
   character(len=32)                 :: number_to_str
-  type(block_iterator_t) :: itor
+  type(gr_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
 
 111 format (a,a,a1,(1x,a18,'=',a),(1x,a2,'=',a5),(1x,a5,'=',a),(1x,a4,'=',a))
@@ -106,8 +106,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   nReorder = 0
   count = 0
   
-  ! DEVNOTE: Is it *always* correct to use CENTER here?
-  call Grid_getBlkIterator(itor, ntype)
+  call gr_getBlkIterator(itor, nodetype=ntype)
   do while (itor%is_valid())
      count = count + 1
      call itor%blkMetaData(blockDesc)
@@ -272,9 +271,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
      call itor%next()
   end do
 
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call Grid_releaseBlkIterator(itor)
-#endif
+  call gr_releaseBlkIterator(itor)
 
   return 
 

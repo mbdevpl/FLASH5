@@ -5,7 +5,7 @@ interoperability requirements.  In Fortran we are specifically
 passing a memory address rather than an array. */
 
 void FTOC(io_xfer_mesh_dataset)(const int * const pMyPE,
-				const int * const pFileID,
+				const io_fileID_t * const pFileID,
 				const int * const pLibType,
 				const int * const pXferType,
 				const int * const pFileType,
@@ -25,7 +25,7 @@ void FTOC(io_xfer_mesh_dataset)(const int * const pMyPE,
 				void * pData)
 {
   const int myPE = *pMyPE;
-  const int fileID = *pFileID;
+  const io_fileID_t fileID = *pFileID;
   const int libType = *pLibType;
   const int xferType = *pXferType;
   const int fileType = *pFileType;

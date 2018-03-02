@@ -6,7 +6,7 @@
 !! SYNOPSIS
 !!
 !!  io_initFile(integer(in)      :: filenum,
-!!              integer(out)     :: fileID, 
+!!              integer(io_fileID_t)(INOUT)   :: fileID, 
 !!              character(out)   :: filename(MAX_STRING_LENGTH),
 !!              character(in)    :: outputType
 !!              logical(in)      :: forced)
@@ -27,7 +27,7 @@
 !!
 !!  outputType - string indicating output type, usually "chk" or "plt_cnt" or "part"
 !!
-!!  forced - .true. if this file is "forced."
+!!  forced - .true. if this file is considered "forced."
 !!
 !!***
 
@@ -36,13 +36,14 @@ subroutine io_initFile( filenum, fileID, filename, outputType, forced)
 
   use IO_data, ONLY : io_comm, io_outputSplitNum
   use Driver_interface, ONLY : Driver_abortFlash
+  use io_intfTypesModule, ONLY : io_fileID_t
 
   implicit none
   
 #include "constants.h"
 
   integer, intent(IN) :: filenum
-  integer, intent(INOUT) :: fileID
+  integer(io_fileID_t), intent(INOUT) :: fileID
   character(len=*), intent(in) :: outputType
   character (len=MAX_STRING_LENGTH), intent(inout) :: filename
   logical, intent(IN) :: forced

@@ -166,6 +166,14 @@ Module IO_interface
   end interface
   
   interface
+     subroutine IO_writeSingleCells(nblk, blklst)
+       implicit none
+       integer, intent(in) :: nblk
+       integer, intent(in) :: blklst(nblk)
+     end subroutine IO_writeSingleCells
+  end interface
+
+  interface
      subroutine IO_writeUserArray ()
      end subroutine IO_writeUserArray
   end interface

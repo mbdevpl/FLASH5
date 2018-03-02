@@ -4,7 +4,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-void FTOC(io_h5read_present_dims)(const int * const pFileID,
+void FTOC(io_h5read_present_dims)(const hid_t * const pFileID,
 				  int *pDims)
 {
   hsize_t dimens_2d[2], maxdimens_2d[2];
@@ -12,8 +12,10 @@ void FTOC(io_h5read_present_dims)(const int * const pFileID,
   herr_t herr;
   int ierr;
 
-  assert (sizeof(int) == sizeof(hid_t));
-  fileID = (hid_t) *pFileID;
+  /* We used to make the assumption hid_t == int everywhere in FLASH.
+     This used to be okay because hid_t was a typedef of int in HDF5 up to 1.8.x */
+  /*assert (sizeof(int) == sizeof(hid_t));*/
+  fileID = *pFileID;
 
   dataset = H5Dopen(fileID, "coordinates");
   assert (dataset >= 0);

@@ -26,7 +26,7 @@
 #endif
 
 void FTOC(io_xfer_cont_slab)(const int * const pMyPE,
-                             const int * const pFileID,
+                             const io_fileID_t * const pFileID,
                              const int * const pLibType,
                              const int * const pXferType,
 			     const int * const pTypeMatchedXfer,

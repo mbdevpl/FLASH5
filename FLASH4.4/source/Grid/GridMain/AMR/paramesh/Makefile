@@ -12,5 +12,7 @@ Grid += Grid_getBlkType.o \
         gr_updateRefinement.o gr_findWhichChild.o gr_getBlkHandle.o \
 	gr_findWhichChildren.o \
 	gr_unmarkRefineByLogRadius.o gr_markDerefineByLogRadius.o gr_markDerefineByTime.o gr_enforceMaxRefine.o \
-	gr_setMaxRefineByTime.o gr_specificData.o gr_initSpecific.o
+	gr_setMaxRefineByTime.o gr_specificData.o gr_initSpecific.o \
+	gr_parameshInterface.o \
+	gr_iterator.o
 

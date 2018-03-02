@@ -43,8 +43,6 @@
 !!
 !!   basenm [STRING]
 !!        Base name for checkpoint files
-!!    bytePack [BOOLEAN]
-!!        compress plotfile data to bytes !!Only implemented with UG in hdf5 !!!
 !!    checkpointFileIntervalStep [INTEGER]
 !!        Checkpoint after this many steps
 !!    checkpointFileIntervalTime [REAL]

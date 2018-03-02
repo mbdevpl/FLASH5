@@ -1,4 +1,4 @@
-!!****ih* source/Grid/block_iterator
+!!****ih* source/Grid/gr_iterator
 !!
 !!
 !!
@@ -7,7 +7,7 @@
 !! defines IMPURE_ELEMENTAL:
 #include "FortranLangFeatures.fh"
 
-module block_iterator
+module gr_iterator
 
     implicit none
 
@@ -15,43 +15,39 @@ module block_iterator
 
     public :: build_iterator, destroy_iterator
 
-    !!****ic* block_iterator/block_iterator_t
+    !!****ic* gr_iterator/leaf_iterator_t
     !!
     !! NAME
-    !!  block_iterator_t
+    !!  gr_iterator_t
     !!
     !!****
-    type, public :: block_iterator_t
+    type, public :: gr_iterator_t
     contains
-        procedure, public :: first
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
-    end type block_iterator_t
+    end type gr_iterator_t
 
 contains
 
-    !!****im* block_iterator_t/build_iterator
+    !!****im* gr_iterator_t/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(block_iterator_t(OUT) :: itor,
-    !!                 integer(IN)           :: nodetype,
+    !!  build_iterator(gr_iterator_t(OUT) :: itor,
     !!                 integer(IN), optional :: level,
     !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
-    !!  Construct an iterator for walking across a specific subset of blocks or
+    !!  Construct an iterator for walking across a specific subset of leaf blocks or
     !!  tiles within the current octree structure.  The iterator is already
-    !!  set to the first matching block/tile.
+    !!  set to the first matching leaf block/tile.
     !!
     !! ARGUMENTS
     !!  itor     - the constructed iterator
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-    !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks/tiles located at this level of
+    !!  level    - iterate only over leaf blocks/tiles located at this level of
     !!             refinement.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
     !!             walk across all associated blocks on a tile-by-tile basis *if*
@@ -62,24 +58,23 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    subroutine build_iterator(itor, nodetype, level, tiling)
+    subroutine build_iterator(itor, level, tiling)
         use Driver_interface, ONLY : Driver_abortFlash
 
-        type(block_iterator_t), intent(OUT)          :: itor
-        integer,                intent(IN)           :: nodetype
-        integer,                intent(IN), optional :: level
-        logical,                intent(IN), optional :: tiling
+        type(gr_iterator_t), intent(OUT)          :: itor
+        integer,               intent(IN), optional :: level
+        logical,               intent(IN), optional :: tiling
 
-        call Driver_abortFlash("[build_iterator] You are working with a useless block_iterator_t stub")
+        call Driver_abortFlash("[build_iterator] You are working with a useless gr_iterator_t stub")
     end subroutine build_iterator
 
-    !!****im* block_iterator_t/destroy_iterator
+    !!****im* gr_iterator_t/destroy_iterator
     !!
     !! NAME
     !!  destroy_iterator
     !!
     !! SYNOPOSIS
-    !!  destroy_iterator(block_iterator_t(INOUT) :: itor)
+    !!  destroy_iterator(gr_iterator_t(INOUT) :: itor)
     !!
     !! DESCRIPTION
     !!  Destroy the given iterator.
@@ -89,30 +84,11 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
-        type(block_iterator_t), intent(INOUT) :: itor
+        type(gr_iterator_t), intent(INOUT) :: itor
 
     end subroutine destroy_iterator
 
-    !!****m* block_iterator_t/first
-    !!
-    !! NAME
-    !!  first
-    !!
-    !! SYNPOSIS
-    !!  call itor%first() 
-    !!
-    !! DESCRIPTION
-    !!  Reset iterator to the initial block managed by process
-    !!
-    !!****
-    subroutine first(this)
-        class(block_iterator_t), intent(INOUT) :: this
-
-        write(*,*) "You are working with a useless block_iterator_t stub"
-        stop
-    end subroutine first
- 
-    !!****m* block_iterator_t/is_valid
+    !!****m* gr_iterator_t/is_valid
     !!
     !! NAME
     !!  is_valid
@@ -128,13 +104,13 @@ contains
     !!
     !!****
     logical function is_valid(this)
-        class(block_iterator_t), intent(IN) :: this
+        class(gr_iterator_t), intent(IN) :: this
 
-        write(*,*) "You are working with a useless block_iterator_t stub"
+        write(*,*) "You are working with a useless gr_iterator_t stub"
         stop
     end function is_valid
 
-    !!****m* block_iterator_t/next
+    !!****m* gr_iterator_t/next
     !!
     !! NAME
     !!  next
@@ -148,13 +124,13 @@ contains
     !!
     !!****
     subroutine next(this)
-        class(block_iterator_t), intent(INOUT) :: this
+        class(gr_iterator_t), intent(INOUT) :: this
 
-        write(*,*) "You are working with a useless block_iterator_t stub"
+        write(*,*) "You are working with a useless gr_iterator_t stub"
         stop
     end subroutine next
 
-    !!****m* block_iterator_t/blkMetaData
+    !!****m* gr_iterator_t/blkMetaData
     !!
     !! NAME
     !!  blkMetaData 
@@ -168,12 +144,12 @@ contains
     !!
     !!****
     subroutine blkMetaData(this, mData)
-        class(block_iterator_t), intent(IN)  :: this
-        type(block_metadata_t),  intent(OUT) :: mData
+        class(gr_iterator_t), intent(IN)  :: this
+        type(block_metadata_t), intent(OUT) :: mData
 
-        write(*,*) "You are working with a useless block_iterator_t stub"
+        write(*,*) "You are working with a useless gr_iterator_t stub"
         stop
     end subroutine blkMetaData
     
-end module block_iterator
+end module gr_iterator
 

@@ -1328,22 +1328,21 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getBlkIterator(itor, nodetype, level, tiling)
-       use block_iterator, ONLY : block_iterator_t
+     subroutine Grid_getLeafIterator(itor, level, tiling)
+       use leaf_iterator, ONLY : leaf_iterator_t
        implicit none
-       type(block_iterator_t), intent(OUT)          :: itor
-       integer,                intent(IN)           :: nodetype
-       integer,                intent(IN), optional :: level
-       logical,                intent(IN), optional :: tiling
-     end subroutine Grid_getBlkIterator
+       type(leaf_iterator_t), intent(OUT)          :: itor
+       integer,               intent(IN), optional :: level
+       logical,               intent(IN), optional :: tiling
+     end subroutine Grid_getLeafIterator
   end interface
 
   interface
-     subroutine Grid_releaseBlkIterator(itor)
-       use block_iterator, ONLY : block_iterator_t
+     subroutine Grid_releaseLeafIterator(itor)
+       use leaf_iterator, ONLY : leaf_iterator_t
        implicit none
-       type(block_iterator_t), intent(INOUT) :: itor
-     end subroutine Grid_releaseBlkIterator
+       type(leaf_iterator_t), intent(INOUT) :: itor
+     end subroutine Grid_releaseLeafIterator
   end interface
 
 end Module Grid_interface

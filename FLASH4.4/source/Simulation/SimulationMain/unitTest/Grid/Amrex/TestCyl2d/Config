@@ -1,3 +1,4 @@
+REQUIRES  Grid/GridMain/AMR/Amrex
 REQUIRES  flashUtilities/testing
 
 GUARDCELLS 2

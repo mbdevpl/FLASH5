@@ -76,7 +76,7 @@ a few arrays dynamic.
 
 
 #if 0
-Print debugging information - Need to move DEBUG_IO defintion.
+Print debugging information - Need to move DEBUG_IO definition.
 #define DEBUG_IO
 #endif
 

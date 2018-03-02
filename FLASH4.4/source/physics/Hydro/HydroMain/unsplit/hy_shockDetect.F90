@@ -3,7 +3,7 @@
 subroutine hy_shockDetect
   use Grid_interface, ONLY : Grid_getDeltas, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getBlkIterator, Grid_releaseBlkIterator
+                             Grid_getLeafIterator, Grid_releaseLeafIterator
   use hy_interface, ONLY : hy_getRiemannState,  &
                                hy_getFaceFlux,      &
                                hy_unsplitUpdate,    &
@@ -13,7 +13,7 @@ subroutine hy_shockDetect
                                hy_putGravity,&
                                hy_addGravity,&
                                hy_shockDetectBlk
-  use block_iterator, ONLY : block_iterator_t
+  use leaf_iterator,  ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
@@ -42,7 +42,7 @@ subroutine hy_shockDetect
 
   real, dimension(MDIM) :: del
 
-  type(block_iterator_t) :: itor
+  type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
@@ -50,33 +50,27 @@ subroutine hy_shockDetect
   real,dimension(:,:,:,:), pointer :: Uout
 
 
-!!$  do i=1,blockCount          !LOOP 0
-!!$     blockID = blockList(i)
-
-  call Grid_getBlkIterator(itor,LEAF)
-
+  call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
-
+     
      blkLimits(:,:)   = blockDesc%localLimits
      blkLimitsGC(:,:) = blockDesc%localLimitsGC
-
+     
      call Grid_getBlkPtr(blockDesc, Uout,localFlag=.TRUE.)
      Uin => Uout
-
+     
      !! Detect shocks
      if (hy_shockDetectOn) then
         call Grid_getDeltas(blockDesc%level,del)
         call hy_shockDetectBlk(Uin,blkLimitsGC,Uout,blkLimits,del)
      end if
-
+     
      
      call Grid_releaseBlkPtr(blockDesc, Uout)
-
+     
      call itor%next()
   end do
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
+  call Grid_releaseLeafIterator(itor)
   
-  call Grid_releaseBlkIterator(itor)
-#endif
 end subroutine hy_shockDetect

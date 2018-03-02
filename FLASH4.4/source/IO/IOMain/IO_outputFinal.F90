@@ -30,6 +30,7 @@ subroutine IO_outputFinal()
 
 #include "constants.h"  
   use IO_data, ONLY : io_justCheckpointed, io_outputInStack, &
+       io_memoryStatFreq,  &
        io_summaryOutputOnly
   use IO_interface, ONLY : IO_writeCheckpoint, IO_writePlotfile, &
     IO_writeParticles
@@ -51,5 +52,11 @@ subroutine IO_outputFinal()
   end if
 
   io_outputInStack = .false.
+
+  !------------------------------------------------------------------------------
+  ! Dump out memory usage statistics if we are monitoring them,
+  ! after writing binary output files for the last time.
+  !------------------------------------------------------------------------------
+  if (io_memoryStatFreq > 0) call io_memoryReport()
 
 end subroutine IO_outputFinal

@@ -15,7 +15,7 @@
 */
 
 void FTOC(io_attribute_create)(const int * const pMyPE,
-			       const int * const pFileID,
+			       const io_fileID_t * const pFileID,
 			       const int * const pLibType,
 			       const int * const pDiskType,
 			       const int * const pDims,
@@ -26,7 +26,7 @@ void FTOC(io_attribute_create)(const int * const pMyPE,
   			       const int * const pAttNameLen)
 {
   const int myPE = *pMyPE;
-  const int fileID = *pFileID;
+  const io_fileID_t fileID = *pFileID;
   const int libType = *pLibType;
   const int diskType = *pDiskType;
   const int dims = *pDims;
@@ -68,7 +68,7 @@ void FTOC(io_attribute_create)(const int * const pMyPE,
 
 
 void FTOC(io_attribute_write)(const int * const pMyPE,
-			      const int * const pFileID,
+			      const io_fileID_t * const pFileID,
 			      const int * const pLibType,
 			      const int * const pMemType,
 			      const char datasetName[],
@@ -78,7 +78,7 @@ void FTOC(io_attribute_write)(const int * const pMyPE,
 			      const void * const pData)
 {
   const int myPE = *pMyPE;
-  const int fileID = *pFileID;
+  const io_fileID_t fileID = *pFileID;
   const int libType = *pLibType;
   const int memType = *pMemType;
   const size_t dsetNameLen = (size_t)*pDsetNameLen;

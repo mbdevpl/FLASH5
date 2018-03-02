@@ -12,15 +12,17 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           amrex_mfiter, &
                                           amrex_mfiter_build, &
                                           amrex_mfiter_destroy
+    use amrex_fluxregister_module, ONLY : amrex_fluxregister_build
     use amrex_fillpatch_module,    ONLY : amrex_fillcoarsepatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
-    use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex
+    use Grid_data,                 ONLY : gr_doFluxCorrection, &
+                                          lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
-                                          facevarx, facevary, facevarz
-    use Driver_interface,          ONLY : Driver_abortFlash
+                                          facevarx, facevary, facevarz, &
+                                          flux_registers
 
     implicit none
 
@@ -35,9 +37,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     integer :: nFab
 
-    call Driver_abortFlash("[gr_makeFileLevelFromCoarseCallback] " // &
-                           "Callback has never been tested")
-
     ba = pba
     dm = pdm
 
@@ -48,6 +47,12 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
+
+    if ((lev > 0) .AND. (gr_doFluxCorrection)) then
+        call amrex_fluxregister_build(flux_registers(lev), ba, dm, &
+                                      amrex_ref_ratio(lev-1), &
+                                      lev, NUNK_VARS)
+    end if
 
     !!!!!----- Fill new refinement level via interpolation from parent block
     ! This *hopefully* will do the guard cell fill as well

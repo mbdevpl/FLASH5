@@ -25,3 +25,13 @@ IO += io_h5write_header.o\
 	io_createDatasets.o
 
 io_h5_attribute.o: constants.h Flash.h io_flash.h io_h5_type.h
+
+# The following GNU make special prevents that apparent dependencies
+# on the file hdf5.mod trigger unnecessary recompilation of files that
+# refer to the HDF5 module. The file hdf5.mod does usually not
+# actually exist in the object directory but refers to the HDF5 module
+# that is part of the FORTRAN interface of HDF5 and often resides in a
+# directory that should be pointed to with a '-I' FORTRAN compiler
+# option.
+.SECONDARY: hdf5.mod
+
