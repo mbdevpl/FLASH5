@@ -6,7 +6,7 @@
 !! SYNOPSIS
 !!
 !!  call io_xfer_tree_data(type(tree_data_t)(INOUT) :: tree_data,
-!!                         integer(in)              :: fileID,
+!!                         integer(io_fileID_t)(in) :: fileID,
 !!                         integer(in)              :: libType,
 !!                         integer(in)              :: xferType,
 !!                         integer(in)              :: localNumBlocks,
@@ -66,10 +66,12 @@ subroutine io_xfer_tree_data(tree_data, fileID, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use IO_data, ONLY : io_type_matched_xfer, io_globalMe, tree_data_t
+  use io_intfTypesModule, ONLY : io_fileID_t
 
   implicit none
   type(tree_data_t), intent(INOUT) :: tree_data
-  integer, intent(IN) :: fileID, libType, xferType, localNumBlocks, &
+  integer(io_fileID_t),intent(IN)  :: fileID
+  integer, intent(IN) :: libType, xferType, localNumBlocks, &
        localOffset, presentDims
 
 #ifndef USE_IO_C_INTERFACE
