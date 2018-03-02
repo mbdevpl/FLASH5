@@ -74,7 +74,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
                          hy_fullRiemannStateArrays,    &
                          hy_fullSpecMsFluxHandling
 
-  use Grid_interface, ONLY : Grid_putFluxData
+  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxData
   implicit none
 
 #include "constants.h"

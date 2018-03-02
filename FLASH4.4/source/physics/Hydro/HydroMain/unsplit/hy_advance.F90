@@ -38,6 +38,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         !! if(hy_fluxCorrectPerLevel) then
         !! if(level !=maxLev) then
         !!   do a synchronization step here
+        if(hy_fluxCorrectPerLevel)call Grid_conserveFluxes(ALLDIR,level)
         call Grid_getBlkIterator(itor, LEAF, level=level)
         call Timers_stop("loop1")
         do while(itor%is_valid())
