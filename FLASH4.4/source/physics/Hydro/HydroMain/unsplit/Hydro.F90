@@ -11,7 +11,6 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
-  use Hydro_interface,     ONLY : Hydro_doLoop4, Hydro_gravityStepLoop
   use Hydro_data, ONLY : hy_fluxCorrect,       &
                          hy_fluxCorrectPerLevel, &
                          hy_gref,              &
@@ -30,6 +29,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
                          hy_shockDetectOn
 
   use Hydro_data,       ONLY : hy_useHydro, hy_gpotAlreadyUpToDate
+  use hy_interface, ONLY : hy_gravityStep
 
 #include "Flash.h"
 #ifdef FLASH_GRID_AMREXTRANSITION
@@ -180,7 +180,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   endif
 #endif
 
-  call Hydro_gravityStepLoop(simTime, dt, dtOld)
+  call hy_gravityStep(simTime, dt, dtOld)
 
 #endif /* End of n+1 gravity coupling */
 

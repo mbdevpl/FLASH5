@@ -3,5 +3,4 @@ Hydro += Hydro_interface.o Hydro.o Hydro_init.o Hydro.o Hydro_sendOutputData.o H
          Hydro_consolidateCFL.o\
          Hydro_gravPotIsAlreadyUpdated.o\
          Hydro_mapBcType.o
-Hydro += Hydro_prepareBuffers.o Hydro_freeBuffers.o \
-	 Hydro_gravityStepLoop.o
+Hydro += Hydro_prepareBuffers.o Hydro_freeBuffers.o 

@@ -782,6 +782,24 @@ Module hy_interface
        end Subroutine hy_checkRHjumpCond
     end interface
 
+    interface
+     subroutine hy_gravityStep(simTime, dt, dtOld)
+       implicit none
+       real, intent(IN) ::  simTime, dt, dtOld
+     end subroutine Hy_gravityStep
+     
+     subroutine hy_gravityStepBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
+       use block_metadata, ONLY : block_metadata_t
+       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+       
+       real, pointer, dimension(:,:,:,:) :: Uout
+       real, pointer, dimension(:,:,:,:) :: Uin
+       
+       real,dimension(MDIM),intent(IN) :: del
+       integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
+       type(block_metadata_t), intent(IN) :: blockDesc
+     end subroutine hy_gravityStepBlk
+  end interface
 
 #ifdef FLASH_UGLM_MHD
     interface
@@ -1013,14 +1031,6 @@ Module hy_interface
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
      end subroutine hy_advanceBlk
-     subroutine hy_gravityStep (blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld )
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t) :: blockDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
-       real, pointer, dimension(:,:,:,:) :: Uout,Uin
-       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-       real,dimension(MDIM),intent(IN) :: del
-     end subroutine hy_gravityStep
   end interface
 
 End Module hy_interface

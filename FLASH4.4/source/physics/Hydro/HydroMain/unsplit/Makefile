@@ -42,4 +42,5 @@ Hydro += Hydro_data.o\
 	hy_updateBoundaries.o\
 	hy_unsplitUpdate.o\
 	hy_gravityStep.o\
+	hy_gravityStepBlk.o\
 	hy_initializeGP.o

@@ -46,13 +46,6 @@ Module Hydro_interface
      end subroutine Hydro_freeBuffers
 
 
-     subroutine Hydro_doLoop4()
-       implicit none
-     end subroutine Hydro_doLoop4
-     subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
-       implicit none
-       real, intent(IN) ::  simTime, dt, dtOld
-     end subroutine Hydro_gravityStepLoop
   end interface
 
 
