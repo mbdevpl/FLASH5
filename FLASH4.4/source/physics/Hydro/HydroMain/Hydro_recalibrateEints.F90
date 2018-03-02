@@ -109,7 +109,7 @@ subroutine Hydro_recalibrateEints(range,blockID)
 
 #if HYDRO_NUM_EINT_COMPONENTS > 1
 #ifdef FLASH_UHD_3T
-  use hy_uhd_MultiTempData, ONLY : hy_3Ttry_D
+  use hy_MultiTempData, ONLY : hy_3Ttry_D
 #else
   use Hydro_data, ONLY : hy_3Ttry_D
 #endif

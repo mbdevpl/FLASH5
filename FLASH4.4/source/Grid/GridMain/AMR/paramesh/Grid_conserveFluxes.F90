@@ -37,10 +37,15 @@ subroutine Grid_conserveFluxes( axis, level)
 #ifndef FLASH_GRID_PARAMESH2
   use physicaldata, ONLY: no_permanent_guardcells
 #endif
-  use Grid_data, ONLY : gr_meshMe
+  use Grid_data, ONLY : gr_meshMe,gr_maxRefine
 implicit none
   integer, intent(in) ::  axis, level
   integer :: gridDataStruct
+
+  !! DEV-AD We are going to make the behaviour of Paramesh and AMReX identical by making flux
+  !! arrays in PARAMESH be global face arrays, so that all of fluxes are carried around.
+  !! so the real global communitation will happen only 
+  if(level == gr_maxRefine) return
 
   if (axis == ALLDIR) then
      call amr_flux_conserve(gr_meshMe, 0, 0)          

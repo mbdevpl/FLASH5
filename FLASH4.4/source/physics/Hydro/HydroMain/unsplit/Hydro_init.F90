@@ -37,7 +37,7 @@ Subroutine Hydro_init()
                                           Grid_getBlkIndexLimits
   use IO_interface,                ONLY : io_getScalar
   use hy_memInterface,             ONLY :  hy_memScratchInitialize
-  use hy_uhd_interface,            ONLY : hy_uhd_initGP !, hy_uhd_counterGP_init
+  use hy_interface,            ONLY : hy_initGP !, hy_counterGP_init
 
   implicit none
 
@@ -405,6 +405,7 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
      print *, "[Hydro_init]: Using non-Cartesian Geometry!"
   endif
   call RuntimeParameters_get("flux_correct", hy_fluxCorrect)
+  call RuntimeParameters_get("flux_correct_perLevel", hy_fluxCorrectPerLevel)
   if (NDIM > 1) then
      if (hy_fluxCorrect) then
         if (hy_geometry == CARTESIAN) then
@@ -555,7 +556,7 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
 
 
 #ifdef FLASH_UHD_3T
-  call hy_uhd_MultiTempInit()
+  call hy_MultiTempInit()
 #endif
 
   call Logfile_stampVarMask(hy_gcMask, .FALSE., '[Hydro_init]', 'gcNeed')
@@ -670,7 +671,7 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
      call Grid_getBlkIndexLimits(1,blkLimits,blkLimitsGC)
 
      ! get counter size
-     call hy_uhd_counterGP_init(hy_radiusGP, hy_counterGP, blkLimitsGC)
+     call hy_counterGP_init(hy_radiusGP, hy_counterGP, blkLimitsGC)
 
      ! allocate the arrays and matrices
      allocate(hy_RinvGP(hy_counterGP,hy_counterGP))
@@ -678,7 +679,7 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
      allocate(hy_WmGP(NDIM,hy_counterGP))
 
      ! get weights and Rinv     
-     call hy_uhd_initGP(hy_RinvGP, hy_WpGP, hy_WmGP, blkLimitsGC)
+     call hy_initGP(hy_RinvGP, hy_WpGP, hy_WmGP, blkLimitsGC)
   endif
 
 End Subroutine Hydro_init

@@ -7,18 +7,13 @@
 REQUIRES Driver/DriverMain/Unsplit
 REQUIRES physics/Eos
 
-DEFAULT Hydro_Unsplit
+DEFAULT OnlyHydro
 
-EXCLUSIVE MHD_StaggeredMesh Hydro_Unsplit
+EXCLUSIVE MHD OnlyHydro
 
 #Signal that the Hydro implementation is an unsplit implementation 
 # (used for flux handlings in paramesh_preprocessor.fh)
 PPDEFINE FLASH_HYDRO_UNSPLIT
-
-USESETUPVARS threadWithinBlock
-IF threadWithinBlock
-   REQUIRES physics/Hydro/HydroMain/unsplit/threadWithinBlock
-ENDIF
 
 USESETUPVARS ThreeT
 

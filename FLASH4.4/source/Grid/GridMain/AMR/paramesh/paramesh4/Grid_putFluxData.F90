@@ -93,10 +93,10 @@
 !!***
 
 !!REORDER(5): flux_[xyz],gr_[xyz]flx
-!!REORDER(4): fluxes
+!!REORDER(4): fluxx,fluxy,fluxz
 !!REORDER(5): gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 #include "Flash.h"
-subroutine Grid_putFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLeft)
+subroutine Grid_putFluxData(block, fluxx, fluxy, fluxz, dataSize, axis, pressureSlots, areaLeft)
 
   use physicaldata, ONLY : flux_x, flux_y, flux_z, nfluxes
   use tree, ONLY : surr_blks, nodetype
@@ -116,26 +116,28 @@ subroutine Grid_putFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLe
 #include "constants.h"
 
   type(block_metadata_t), intent(IN) :: block
-  integer, intent(IN) :: axis
   integer, intent(IN), dimension(3) :: dataSize
-  real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes
+  real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxx,fluxy,fluxz
+  integer, intent(IN),optional :: axis
   integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
   real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
   integer :: blockID
 
-#if NFLUXES > 0
   integer :: presVar, np
   integer,save,dimension(1),target :: presDefault = (/-1/)
   integer,pointer,dimension(:) :: presP
   integer :: sx,ex,sy,ey,sz,ez
+  logical :: xtrue,ytrue,ztrue
 
+  if(NFLUXES<1)return
+  
+  
   if (present(pressureSlots)) then
      presP => pressureSlots
   else
      presP => presDefault
   end if
 
-  blockID=block%id
   sx = NGUARD+1
   sy = NGUARD*K2D+1
   sz = NGUARD*K3D+1
@@ -143,123 +145,116 @@ subroutine Grid_putFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLe
   ey = dataSize(2)-NGUARD*K2D
   ez = dataSize(3)-NGUARD*K3D
 
-  select case(axis)
-  case(IAXIS)
-     flux_x(:nfluxes,1,:,:,blockID) = fluxes(:,sx,sy:ey,sz:ez) 
-     flux_x(:nfluxes,2,:,:,blockID) = fluxes(:,ex+1,sy:ey,sz:ez) 
-#ifdef CHOMBO_COMPATIBLE_HYDRO
-     gr_xflx(:,1,:,:,blockID) = fluxes(:,sx,sy:ey,sz:ez)
-     gr_xflx(:,2,:,:,blockID) = fluxes(:,ex+1,sy:ey,sz:ez)
-#else
-     gr_xflx(:,1,:,:,blockID) = fluxes(:,sx+1,sy:ey,sz:ez)
-     gr_xflx(:,2,:,:,blockID) = fluxes(:,ex,sy:ey,sz:ez)
+  blockID=block%id
+  xtrue=.true.
+  ytrue= (NDIM>1)
+  ztrue= (NDIM>2)
+
+  if(present(axis))then
+     xtrue = (axis==IAXIS)
+     ytrue = (axis==JAXIS)     
+     ztrue = (axis==KAXIS)
+  end if
+
+  if(xtrue) then
+     flux_x(:nfluxes,1,:,:,blockID) = fluxx(:,sx,sy:ey,sz:ez) 
+     flux_x(:nfluxes,2,:,:,blockID) = fluxx(:,ex+1,sy:ey,sz:ez) 
+     gr_xflx(:,1,:,:,blockID) = fluxx(:,sx+1,sy:ey,sz:ez)
+     gr_xflx(:,2,:,:,blockID) = fluxx(:,ex,sy:ey,sz:ez)
 #ifdef FLASH_HYDRO_UNSPLIT
      !! Store transverse components for the faces in global scratch arrays.
-#if NDIM >= 2
-     gr_xflx_yface(:,:,1,:,blockID) = fluxes(:,sx+1:ex,sy,sz:ez)
-     gr_xflx_yface(:,:,2,:,blockID) = fluxes(:,sx+1:ex,ey,sz:ez)
-#if NDIM == 3
-     gr_xflx_zface(:,:,:,1,blockID) = fluxes(:,sx+1:ex,sy:ey,sz)
-     gr_xflx_zface(:,:,:,2,blockID) = fluxes(:,sx+1:ex,sy:ey,ez)
+#if NDIM >=2
+     gr_xflx_yface(:,:,1,:,blockID) = fluxx(:,sx+1:ex,sy,sz:ez)
+     gr_xflx_yface(:,:,2,:,blockID) = fluxx(:,sx+1:ex,ey,sz:ez)
+#if NDIM>2
+     gr_xflx_zface(:,:,:,1,blockID) = fluxx(:,sx+1:ex,sy:ey,sz)
+     gr_xflx_zface(:,:,:,2,blockID) = fluxx(:,sx+1:ex,sy:ey,ez)
 #endif
 #endif
 #endif
-#endif
+
      do np = 1,size(presP,1)
         presVar = presP(np)
         if (presVar > 0) then
            if (.NOT.(surr_blks(1,1,1+K2D,1+K3D,blockID) > 0 .AND. &
-             surr_blks(3,1,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
+                surr_blks(3,1,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
               where (areaLeft(sx,sy:ey,sz:ez).NE.0.0)
                  flux_x(presVar,1,:,:,blockID) = flux_x(presVar,1,:,:,blockID) * areaLeft(sx,sy:ey,sz:ez)
               end where
            end if
            if (.NOT.(surr_blks(1,3,1+K2D,1+K3D,blockID) > 0 .AND. &
-             surr_blks(3,3,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
+                surr_blks(3,3,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
               flux_x(presVar,2,:,:,blockID) = flux_x(presVar,2,:,:,blockID) * areaLeft(ex+1,sy:ey,sz:ez)
            end if
         end if
      end do
+        
+  end if
 
-  case(JAXIS)
-     flux_y(:nfluxes,:,1,:,blockID)  = fluxes(:,sx:ex,sy,sz:ez)
-     flux_y(:nfluxes,:,2,:,blockID)  = fluxes(:,sx:ex,ey+1,sz:ez) 
-#ifdef CHOMBO_COMPATIBLE_HYDRO
-     gr_yflx(:,:,1,:,blockID) =  fluxes(:,sx:ex,sy,sz:ez)
-     gr_yflx(:,:,2,:,blockID) =  fluxes(:,sx:ex,ey+1,sz:ez)
-#else
-     gr_yflx(:,:,1,:,blockID) =  fluxes(:,sx:ex,sy+1,sz:ez)
-     gr_yflx(:,:,2,:,blockID) =  fluxes(:,sx:ex,ey,sz:ez)
+#if NDIM>1
+  if(ytrue) then
+     flux_y(:nfluxes,:,1,:,blockID)  = fluxy(:,sx:ex,sy,sz:ez)
+     flux_y(:nfluxes,:,2,:,blockID)  = fluxy(:,sx:ex,ey+1,sz:ez) 
+     gr_yflx(:,:,1,:,blockID) =  fluxy(:,sx:ex,sy+1,sz:ez)
+     gr_yflx(:,:,2,:,blockID) =  fluxy(:,sx:ex,ey,sz:ez)
 #ifdef FLASH_HYDRO_UNSPLIT
-#if NDIM >= 2
      !! Store transverse components for the faces in global scratch arrays.
-     gr_yflx_xface(:,1,:,:,blockID) = fluxes(:,sx,sy+1:ey,sz:ez)
-     gr_yflx_xface(:,2,:,:,blockID) = fluxes(:,ex,sy+1:ey,sz:ez)
-#if NDIM == 3
-     gr_yflx_zface(:,:,:,1,blockID) = fluxes(:,sx:ex,sy+1:ey,sz)
-     gr_yflx_zface(:,:,:,2,blockID) = fluxes(:,sx:ex,sy+1:ey,ez)
+     gr_yflx_xface(:,1,:,:,blockID) = fluxy(:,sx,sy+1:ey,sz:ez)
+     gr_yflx_xface(:,2,:,:,blockID) = fluxy(:,ex,sy+1:ey,sz:ez)
+#if NDIM>2
+     gr_yflx_zface(:,:,:,1,blockID) = fluxy(:,sx:ex,sy+1:ey,sz)
+     gr_yflx_zface(:,:,:,2,blockID) = fluxy(:,sx:ex,sy+1:ey,ez)
 #endif
 #endif
-#endif
-#endif
-#if NDIM > 1
      do np = 1,size(presP,1)
         presVar = presP(np)
         if (presVar > 0) then
            if (.NOT.(surr_blks(1,2,1,1+K3D,blockID) > 0 .AND. &
-             surr_blks(3,2,1,1+K3D,blockID) == nodetype(blockID))) then
+                surr_blks(3,2,1,1+K3D,blockID) == nodetype(blockID))) then
               where (areaLeft(sx:ex,sy,sz:ez).NE.0.0)
                  flux_y(presVar,:,1,:,blockID) = flux_y(presVar,:,1,:,blockID) * areaLeft(sx:ex,sy,sz:ez)
               end where
            end if
            if (.NOT.(surr_blks(1,2,3,1+K3D,blockID) > 0 .AND. &
-             surr_blks(3,2,3,1+K3D,blockID) == nodetype(blockID))) then
+                surr_blks(3,2,3,1+K3D,blockID) == nodetype(blockID))) then
               where (areaLeft(sx:ex,ey+1,sz:ez).NE.0.0)
                  flux_y(presVar,:,2,:,blockID) = flux_y(presVar,:,2,:,blockID) * areaLeft(sx:ex,ey+1,sz:ez)
-
+                 
               end where
            end if
         end if
      end do
+  end if
 #endif
 
-  case(KAXIS)
-     flux_z(:nfluxes,:,:,1,blockID) = fluxes(:,sx:ex,sy:ey,sz) 
-     flux_z(:nfluxes,:,:,2,blockID) = fluxes(:,sx:ex,sy:ey,ez+1) 
-#ifdef CHOMBO_COMPATIBLE_HYDRO
-     gr_zflx(:,:,:,1,blockID) = fluxes(:,sx:ex,sy:ey,sz)
-     gr_zflx(:,:,:,2,blockID) = fluxes(:,sx:ex,sy:ey,ez+1)
-#else
-     gr_zflx(:,:,:,1,blockID) = fluxes(:,sx:ex,sy:ey,sz+1)
-     gr_zflx(:,:,:,2,blockID) = fluxes(:,sx:ex,sy:ey,ez)
+#if NDIM>2
+  if(ztrue) then
+     flux_z(:nfluxes,:,:,1,blockID) = fluxz(:,sx:ex,sy:ey,sz) 
+     flux_z(:nfluxes,:,:,2,blockID) = fluxz(:,sx:ex,sy:ey,ez+1) 
+     gr_zflx(:,:,:,1,blockID) = fluxz(:,sx:ex,sy:ey,sz+1)
+     gr_zflx(:,:,:,2,blockID) = fluxz(:,sx:ex,sy:ey,ez)
 #ifdef FLASH_HYDRO_UNSPLIT
-#if NDIM == 3
      !! Store transverse components for the faces in global scratch arrays.
-     gr_zflx_xface(:,1,:,:,blockID) = fluxes(:,sx,sy:ey,sz+1:ez)
-     gr_zflx_xface(:,2,:,:,blockID) = fluxes(:,ex,sy:ey,sz+1:ez)
-
-     gr_zflx_yface(:,:,1,:,blockID) = fluxes(:,sx:ex,sy,sz+1:ez)
-     gr_zflx_yface(:,:,2,:,blockID) = fluxes(:,sx:ex,ey,sz+1:ez)
+     gr_zflx_xface(:,1,:,:,blockID) = fluxz(:,sx,sy:ey,sz+1:ez)
+     gr_zflx_xface(:,2,:,:,blockID) = fluxz(:,ex,sy:ey,sz+1:ez)
+     
+     gr_zflx_yface(:,:,1,:,blockID) = fluxz(:,sx:ex,sy,sz+1:ez)
+     gr_zflx_yface(:,:,2,:,blockID) = fluxz(:,sx:ex,ey,sz+1:ez)
 #endif
-#endif
-#endif
-#if NDIM > 2
      do np = 1,size(presP,1)
         presVar = presP(np)
         if (presVar > 0) then
            if (.NOT.(surr_blks(1,2,2,1,blockID) > 0 .AND. &
-             surr_blks(3,2,2,1,blockID) == nodetype(blockID))) then
+                surr_blks(3,2,2,1,blockID) == nodetype(blockID))) then
               flux_z(presVar,:,:,1,blockID) = flux_z(presVar,:,:,1,blockID) * areaLeft(sx:ex,sy:ey,sz)
            end if
            if (.NOT.(surr_blks(1,2,2,3,blockID) > 0 .AND. &
-             surr_blks(3,2,2,3,blockID) == nodetype(blockID))) then
+                surr_blks(3,2,2,3,blockID) == nodetype(blockID))) then
               flux_z(presVar,:,:,2,blockID) = flux_z(presVar,:,:,2,blockID) * areaLeft(sx:ex,sy:ey,ez+1)
            end if
         end if
      end do
+  end if
 #endif
-  end select
-#endif
-
   return
 end subroutine Grid_putFluxData
