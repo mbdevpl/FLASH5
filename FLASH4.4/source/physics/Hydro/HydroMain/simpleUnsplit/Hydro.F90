@@ -1,115 +1,71 @@
-!!****if* source/physics/Hydro/HydroMain/simpleUnsplit/Hydro
-!!
-!!
-!! NAME
-!!
-!!  Hydro
-!!
-!!
-!! SYNOPSIS
-!!
-!!  Hydro(integer(IN) :: blockCount, 
-!!        integer(IN) :: blockList(blockCount)
-!!        real(IN)    :: timeEndAdv,
-!!        real(IN)    :: dt,
-!!        real(IN)    :: dtOld,
-!!        integer(IN) :: sweepOrder)
-!!
-!!
-!! DESCRIPTION
-!! 
-!!  Performs physics update in a directionally unsplit fashion.
-!!
-!!  The blockList and blockCount arguments tell this routine on 
-!!  which blocks and on how many to operate.  blockList is an 
-!!  integer array of size blockCount that contains the local 
-!!  block numbers of blocks on which to advance.
-!!
-!!  dt gives the timestep through which this update should advance,
-!!  and timeEndAdv tells the time that this update will reach when
-!!  it finishes.  dtOld gives the previously taken timestep.
-!!
-!! ARGUMENTS
-!!
-!!  blockCount - the number of blocks in blockList
-!!  blockList  - array holding local IDs of blocks on which to advance
-!!  timeEndAdv - end time
-!!  dt         - timestep
-!!  dtOld      - old timestep
-!!  sweepOrder - argument for the unsplit scheme, for unsplit Hydro this
-!!               just a dummy variable to be consistent with the API.
-!!
-!!***
+#define DEBUG_GRID_GCMASK
 
-Subroutine Hydro(block, blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,  dtOld, sweeporder )
+#include "constants.h"
 
-  use Hydro_data,       ONLY : hy_useHydro, hy_riemannSolver
-  use Grid_interface, ONLY : Grid_getDeltas,         &
-                             Grid_getListOfBlocks,    &
-                             Grid_getBlkPtr,          &
-                             Grid_getBlkIndexLimits,  &
-                             Grid_releaseBlkPtr
 
-  use hy_simpleInterface, ONLY : hy_hllUnsplit, hy_llfUnsplit
-  use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Driver_interface, ONLY : Driver_abortFlash
-  use Eos_interface, ONLY : Eos_wrapped
-  use Hydro_data, ONLY :hy_meshComm
-  use Hydro_data, ONLY :hy_gcMaskSize,       &
-                         hy_gcMask,           &
-                         hy_unsplitEosMode,   &
-                         hy_eosModeAfter
-  use block_metadata, ONLY : block_metadata_t
-                        
+subroutine Hydro(simTime, dt, dtOld)
+
+  use Grid_interface,      ONLY : Grid_fillGuardCells
+  use Grid_interface,      ONLY : Grid_getMaxRefinement
+  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+  use Logfile_interface, ONLY : Logfile_stampVarMask
+  use Timers_interface,    ONLY : Timers_start, Timers_stop
+  use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
+  use hy_interface, ONLY : hy_advance, hy_shockDetect
+  use Hydro_data, ONLY : hy_gcMaskSize,       &
+                         hy_gcMask
+
+#include "Flash.h"
+#ifdef FLASH_GRID_AMREXTRANSITION
+  use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
+  use gr_amrextData
+#endif
 
   implicit none
 
-#include "UHD.h"
+  real, intent(IN) ::  simTime, dt, dtOld
 
-  integer, INTENT(IN) :: sweeporder
-  real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+#ifdef DEBUG_GRID_GCMASK
+  logical,save :: gcMaskLogged =.FALSE.
+#else
+  logical,save :: gcMaskLogged =.TRUE.
+#endif
+  integer:: maxLev
 
-  integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits,blkLimitsGC
-  real, pointer, dimension(:,:,:,:) :: Uout
-  real,dimension(MDIM),intent(IN) :: del
-  real, pointer, dimension(:,:,:,:) :: Uin
-  type(block_metadata_t) :: block
+  call Timers_start("Hydro")
 
+#ifdef FLASH_GRID_AMREXTRANSITION
+  call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
+#endif
 
-  if (.not. hy_useHydro) return 
+  call Hydro_prepareBuffers()
 
-!!  call Timers_start("hydro_sUnsplit")
+#ifdef DEBUG_GRID_GCMASK
+  if (.NOT.gcMaskLogged) then
+     call Logfile_stampVarMask(hy_gcMask, .TRUE., '[Hydro_advanceAll]', 'gcNeed')
+  end if
+#endif
+  call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.true.,&
+       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,&
+       doLogMask=.NOT.gcMaskLogged)
 
-  
-  select case (hy_riemannSolver)
-  case(HLL)
-     call hy_hllUnsplit(blkLimits, Uin, lbound(Uin), Uout, del, dt)
-  case(LLF)
-     call hy_llfUnsplit(blkLimits, Uin, Uout, del, dt)
-  case default
-     call Driver_abortFlash("Hydro: what?")
-  end select
-  
-  !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
-  call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout)
+#ifdef FLASH_GRID_AMREXTRANSITION
+  call gr_amrextBuildMultiFabsFromF4Grid(gr_amrextUnkMFs, maxLev, LEAF)
+#endif
+  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
 
+!!$  call hy_shockDetect()
 
-!!$#ifdef DEBUG_GRID_GCMASK
-!!$  if (.NOT.gcMaskLogged) then
-!!$     gcMaskLogged = .TRUE.
-!!$  end if
-!!$#endif
+  call hy_advance(simTime, dt, dtOld)
 
-!!$  select case (hy_riemannSolver)
-!!$  case(HLL)
-!!$     call hy_hllUnsplit(blockCount, blockList, dt, dtOld)
-!!$  case(LLF)
-!!$     call hy_llfUnsplit(blockCount, blockList, dt, dtOld)
-!!$  case default
-!!$     call Driver_abortFlash("Hydro: what?")
-!!$  end select
+  call Hydro_freeBuffers()
 
-!!  call Timers_stop("hydro_sUnsplit")
+#ifdef DEBUG_GRID_GCMASK
+  if (.NOT.gcMaskLogged) then
+     gcMaskLogged = .TRUE.
+  end if
+#endif
 
+  call Timers_stop("Hydro")
 
-End Subroutine Hydro
+end subroutine Hydro

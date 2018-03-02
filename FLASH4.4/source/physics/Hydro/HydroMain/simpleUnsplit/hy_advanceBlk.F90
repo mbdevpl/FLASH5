@@ -1,14 +1,14 @@
-!!****if* source/physics/Hydro/HydroMain/simpleUnsplit/hy_uhd_computeFluxes
+!!****if* source/physics/Hydro/HydroMain/simpleUnsplit/hy_advanceBlk
 !!
 !!
 !! NAME
 !!
-!!  hy_uhd_computeFluxes
+!!  hy_advanceBlk
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_uhd_computeFluxes(integer(IN) :: blockCount, 
+!!  hy_advanceBlk(integer(IN) :: blockCount, 
 !!        integer(IN) :: blockList(blockCount)
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
@@ -41,7 +41,7 @@
 !!
 !!***
 
-Subroutine hy_uhd_computeFluxes(block, blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,  dtOld, sweepOrder )
+Subroutine hy_advanceBlk(block, blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,  dtOld, sweepOrder )
 
   use Hydro_data,       ONLY : hy_useHydro, hy_riemannSolver
   use Grid_interface, ONLY : Grid_getDeltas,         &
@@ -87,7 +87,7 @@ Subroutine hy_uhd_computeFluxes(block, blkLimitsGC, Uin, blkLimits, Uout,  del, 
   case(LLF)
      call hy_llfUnsplit(blkLimits, Uin, Uout, del, dt)
   case default
-     call Driver_abortFlash("hy_uhd_computeFluxes: what?")
+     call Driver_abortFlash("hy_advanceBlk: what?")
   end select
   
   !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
@@ -95,4 +95,4 @@ Subroutine hy_uhd_computeFluxes(block, blkLimitsGC, Uin, blkLimits, Uout,  del, 
 
 
 
-End Subroutine hy_uhd_computeFluxes
+End Subroutine hy_advanceBlk
