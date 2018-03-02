@@ -27,6 +27,7 @@ Module Hydro_data
 #include "UHD.h"
 
   logical, save :: hy_fluxCorrect,        hy_charLimiting,     &
+                   hy_fluxCorrectPerLevel,                     &
                    hy_shockDetectOn,      hy_shockLowerCFL,&
                    hy_fallbackLowerCFL,                        &
                    hy_useDiffuse,         hy_useViscosity,     &

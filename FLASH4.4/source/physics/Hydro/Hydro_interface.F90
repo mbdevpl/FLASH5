@@ -37,38 +37,23 @@ Module Hydro_interface
   end interface
 
   interface
-     subroutine Hydro_advanceAll(simTime, dt, dtOld)
-       implicit none
-       real, intent(IN) ::  simTime, dt, dtOld
-     end subroutine Hydro_advanceAll
+
      subroutine Hydro_prepareBuffers()
        implicit none
      end subroutine Hydro_prepareBuffers
      subroutine Hydro_freeBuffers()
        implicit none
      end subroutine Hydro_freeBuffers
-     subroutine Hydro_shockDetectLoop()
-       implicit none
-     end subroutine Hydro_shockDetectLoop
-     subroutine Hydro_computeFluxLoop(simTime, dt, dtOld)
-       implicit none
-       real, intent(IN) ::  simTime, dt, dtOld
-     end subroutine Hydro_computeFluxLoop
-     subroutine Hydro_doLoop4()
-       implicit none
-     end subroutine Hydro_doLoop4
-     subroutine Hydro_gravityStepLoop(simTime, dt, dtOld)
-       implicit none
-       real, intent(IN) ::  simTime, dt, dtOld
-     end subroutine Hydro_gravityStepLoop
+
+
   end interface
 
 
   interface Hydro
-  subroutine Hydro(  timeEndAdv, dt, dtOld,sweepOrder )
-    real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-    integer, INTENT(IN) :: sweepOrder
-  end subroutine Hydro
+     subroutine Hydro(  timeEndAdv, dt, dtOld,sweepOrder )
+       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+       integer, optional, INTENT(IN) :: sweepOrder
+     end subroutine Hydro
   end interface Hydro
 
   interface Hydro_init
