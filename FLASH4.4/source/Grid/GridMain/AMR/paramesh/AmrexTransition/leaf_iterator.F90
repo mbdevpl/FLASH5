@@ -1,7 +1,7 @@
-!!****ih* source/Grid/GridMain/AMR/paramesh/AmrexTransition/gr_iterator
+!!****ih* source/Grid/GridMain/AMR/paramesh/AmrexTransition/leaf_iterator
 !!
 !! NAME
-!!  gr_iterator
+!!  leaf_iterator
 !!
 !! Ideally, we will be able to use the AMReX iterator directly in the code 
 !! and client code will gain access to it through implementation-specific 
@@ -19,7 +19,7 @@
 #include "FortranLangFeatures.fh"
 #include "constants.h"
 
-module gr_iterator
+module leaf_iterator
 
     use block_1lev_iterator, ONLY : block_1lev_iterator_t
 
@@ -29,19 +29,18 @@ module gr_iterator
 
     public :: build_iterator, destroy_iterator
 
-    !!****ic* gr_iterator/gr_iterator_t
+    !!****ic* leaf_iterator/leaf_iterator_t
     !!
     !! NAME
-    !!  gr_iterator_t
+    !!  leaf_iterator_t
     !!
     !! DESCRIPTION
     !!  This class maintains a set of single-level iterators, which are used
     !!  internally to walk blocks/tiles.
     !!
     !!****
-    type, public :: gr_iterator_t
+    type, public :: leaf_iterator_t
         type(block_1lev_iterator_t),allocatable :: li(:)
-        integer :: nodetype    = LEAF 
         integer                 :: first_level   = INVALID_LEVEL
         integer                 :: last_level    = INVALID_LEVEL
         integer                 :: level    = INVALID_LEVEL
@@ -52,7 +51,7 @@ module gr_iterator
         procedure, public :: first
         procedure, public :: next
         procedure, public :: blkMetaData
-    end type gr_iterator_t
+    end type leaf_iterator_t
 
     interface build_iterator
         procedure :: init_iterator
@@ -61,15 +60,14 @@ module gr_iterator
 
 contains
 
-    !!****im* gr_iterator_t/build_iterator
+    !!****im* leaf_iterator_t/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(gr_iterator_t(OUT) :: itor,
+    !!  build_iterator(leaf_iterator_t(OUT) :: itor,
     !!                 amrex_multifab(IN)    :: mfArray(:),
-    !!                 integer(IN)           :: nodetype,
     !!                 integer(IN), optional :: level, 
     !!                 logical(IN), optional :: tiling)
     !!
@@ -80,11 +78,9 @@ contains
     !!
     !! ARGUMENTS
     !!  itor     - the constructed iterator
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  mfArray  - an array of multfabs on which the iterator shall walk.  The
     !!             index is a 1-based index of the refinement levels.
-    !!  level    - if nodetype is LEAF, PARENT_BLK, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks/tiles located at this level of
+    !!  level    - iterate only over LEAF blocks/tiles located at this level of
     !!             refinement.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
     !!             walk across all associated blocks on a tile-by-tile basis *if*
@@ -95,11 +91,10 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    subroutine init_iterator_mfa(itor, nodetype, mfArray, level, tiling)
+    subroutine init_iterator_mfa(itor, mfArray, level, tiling)
       use amrex_multifab_module, ONLY : amrex_multifab
 
-        type(gr_iterator_t), intent(OUT) :: itor
-        integer, intent(IN)           :: nodetype
+        type(leaf_iterator_t), intent(OUT) :: itor
         type(amrex_multifab),intent(IN),CONTIGUOUS :: mfArray(:)
         integer, intent(IN), optional :: level
         logical, intent(IN), optional :: tiling
@@ -121,11 +116,11 @@ contains
         itor%last_level = last
         itor%level = first
 
-!!$        print*,'gr_iterator_build: about to build 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
+!!$        print*,'leaf_iterator_build: about to build 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
 
         do lev=first,last
 !!$           call amrex_mfiter_build(this%li(lev),mfArray(lev),tiling=tiling)
-            itor%li(lev) = block_1lev_iterator_t(nodetype, mfArray(lev),lev,tiling=tiling)
+            itor%li(lev) = block_1lev_iterator_t(LEAF, mfArray(lev),lev,tiling=tiling)
 !!$            call this%li( lev )%first()
             v = itor%li( lev )%is_valid()
             if (v .AND. .NOT. itor%isValid) then
@@ -138,18 +133,17 @@ contains
            call destroy_iterator(itor)
         end if
 
-!!$        print*,'gr_iterator_build: done building 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
+!!$        print*,'leaf_iterator_build: done building 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
 !!$        call this%first()
       end subroutine init_iterator_mfa
 
-    !!****im* gr_iterator_t/build_iterator
+    !!****im* leaf_iterator_t/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(gr_iterator_t(OUT) :: itor,
-    !!                 integer(IN)           :: nodetype,
+    !!  build_iterator(leaf_iterator_t(OUT) :: itor,
     !!                 integer(IN), optional :: level, 
     !!                 logical(IN), optional :: tiling)
     !!
@@ -160,9 +154,7 @@ contains
     !!
     !! ARGUMENTS
     !!  itor     - the constructed iterator
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-    !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks/tiles located at this level of
+    !!  level    - iterate only over blocks/tiles located at this level of
     !!             refinement.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
     !!             walk across all associated blocks on a tile-by-tile basis *if*
@@ -173,19 +165,18 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    subroutine init_iterator(itor, nodetype, level, tiling)
+    subroutine init_iterator(itor, level, tiling)
       use amrex_multifab_module, ONLY : amrex_multifab
       use gr_physicalMultifabs,  ONLY : Unk
 
-        type(gr_iterator_t), intent(OUT)          :: itor
-        integer,                intent(IN)           :: nodetype
+        type(leaf_iterator_t), intent(OUT)          :: itor
         integer,                intent(IN), optional :: level
         logical,                intent(IN), optional :: tiling
 
-        call init_iterator_mfa(itor, nodetype, Unk, level, tiling)
+        call init_iterator_mfa(itor, Unk, level, tiling)
     end subroutine init_iterator
 
-    !!****im* gr_iterator_t/destroy_iterator
+    !!****im* leaf_iterator_t/destroy_iterator
     !!
     !! NAME
     !!  destroy_iterator
@@ -198,7 +189,7 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
-      type (gr_iterator_t), intent(INOUT) :: itor
+      type (leaf_iterator_t), intent(INOUT) :: itor
 
       integer :: lev
 
@@ -214,7 +205,7 @@ contains
 
     end subroutine destroy_iterator
 
-    !!****m* gr_iterator_t/first
+    !!****m* leaf_iterator_t/first
     !!
     !! NAME
     !!  first
@@ -227,19 +218,19 @@ contains
     !!
     !!****
     subroutine first(this)
-        class(gr_iterator_t), intent(INOUT) :: this
+        class(leaf_iterator_t), intent(INOUT) :: this
 
         integer :: l
         logical :: v
 
-        call Driver_abortFlash('gr_iterator: Attempting first(), not implemented!')
-        print*,'gr_iterator%first: about to do 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
+        call Driver_abortFlash('leaf_iterator: Attempting first(), not implemented!')
+        print*,'leaf_iterator%first: about to do 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
 
         do l = this%first_level, this%last_level
            call this%li( l )%first()
         end do
 
-        print*,'gr_iterator%first: done 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
+        print*,'leaf_iterator%first: done 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
 
         if (this%first_level .LE. this%last_level) then
            l = this%first_level
@@ -262,7 +253,7 @@ contains
 
     end subroutine first
  
-    !!****m* gr_iterator_t/is_valid
+    !!****m* leaf_iterator_t/is_valid
     !!
     !! NAME
     !!  is_valid
@@ -278,13 +269,13 @@ contains
     !!
     !!****
     function is_valid(this) result(ans)
-        class(gr_iterator_t), intent(IN) :: this
+        class(leaf_iterator_t), intent(IN) :: this
         logical :: ans
 
         ans = this%isValid
     end function is_valid
 
-    !!****m* gr_iterator_t/next
+    !!****m* leaf_iterator_t/next
     !!
     !! NAME
     !!  next
@@ -298,12 +289,12 @@ contains
     !!
     !!****
     subroutine next(this)
-        class(gr_iterator_t), intent(INOUT) :: this
+        class(leaf_iterator_t), intent(INOUT) :: this
 
         integer :: l
         logical :: v
 
-!!$        print*,'gr_iterator%next: about to do 1lev%next on this=',this%isValid,this%level,allocated(this%li)
+!!$        print*,'leaf_iterator%next: about to do 1lev%next on this=',this%isValid,this%level,allocated(this%li)
 
         l = this%level
 
@@ -321,7 +312,7 @@ contains
 
     end subroutine next
 
-    !!****m* gr_iterator_t/blkMetaData
+    !!****m* leaf_iterator_t/blkMetaData
     !!
     !! NAME
     !!  blkMetaData 
@@ -339,7 +330,7 @@ contains
         use block_metadata, ONLY : block_metadata_t
         use tree,           ONLY : lrefine_max
 
-        class(gr_iterator_t), intent(IN)  :: this
+        class(leaf_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: blockDesc
 
         type(amrex_box) :: box, fabbox
@@ -368,5 +359,5 @@ contains
 
     end subroutine blkMetaData
  
-end module gr_iterator
+end module leaf_iterator
 

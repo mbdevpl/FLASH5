@@ -69,6 +69,7 @@ module gr_iterator
     !!****
     type, public :: gr_iterator_t
         type(block_1lev_iterator_t), private, allocatable :: li(:)
+        integer :: nodetype    = LEAF 
         integer,                     private              :: first_level = INVALID_LEVEL
         integer,                     private              :: last_level  = INVALID_LEVEL
         integer,                     private              :: level       = INVALID_LEVEL
@@ -92,11 +93,12 @@ contains
     !!
     !! SYNOPOSIS
     !!  build_iterator(gr_iterator_t(OUT)    :: itor,
+    !!                 integer(IN)           :: nodetype,
     !!                 integer(IN), optional :: level, 
     !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
-    !!  Construct an iterator for walking across a specific subset of all blocks or
+    !!  Construct an iterator for walking across a specific subset of blocks or
     !!  tiles within the current AMReX octree structure.  The iterator is already
     !!  set to the first matching block/tile.
     !!
@@ -105,6 +107,7 @@ contains
     !!
     !! ARGUMENTS
     !!  itor     - the constructed iterator
+    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - iterate only over all blocks/tiles located at this level of
     !!             refinement.  Note that the level value must be given with
     !!             respect to FLASH's 1-based level index scheme.
@@ -117,10 +120,11 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    subroutine init_iterator(itor, level, tiling)
+    subroutine init_iterator(itor, nodetype, level, tiling)
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
       type(gr_iterator_t), intent(OUT)          :: itor
+        integer,                intent(IN)           :: nodetype
       integer,             intent(IN), optional :: level
       logical,             intent(IN), optional :: tiling
 
@@ -130,6 +134,7 @@ contains
             
       finest_level = amrex_get_finest_level() + 1
 
+        itor%nodetype = nodetype
       associate(first => itor%first_level, &
                 last  => itor%last_level)
         if (present(level)) then
@@ -150,7 +155,7 @@ contains
         allocate( itor%li(first : last) )
 
         do lev=first, last
-            itor%li(lev) = block_1lev_iterator_t(lev, tiling=tiling)
+            itor%li(lev) = block_1lev_iterator_t(nodetype, lev, tiling=tiling)
             is_lev_valid = itor%li(lev)%is_valid()
             if (is_lev_valid .AND. .NOT. itor%isValid) then
                itor%isValid = .TRUE.
