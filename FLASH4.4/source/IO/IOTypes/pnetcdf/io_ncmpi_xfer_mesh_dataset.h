@@ -47,6 +47,8 @@
 
 #endif
 
+typedef int io_fileID_t;
+
 void io_ncmpi_xfer_mesh_dataset(const int myPE,
 				const int fileID,
 				const int xferType,

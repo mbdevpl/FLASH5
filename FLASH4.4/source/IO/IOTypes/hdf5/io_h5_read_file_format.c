@@ -2,11 +2,11 @@
 #define DEBUG_IO
 
 void FTOC(io_h5_read_file_format)(const int * const pMyPE,
-				  const int * const pFileID,
+				  const hid_t * const pFileID,
 				  int *pFileFormat)
 {
   const int myPE = *pMyPE;
-  const hid_t fileID = (hid_t) *pFileID;
+  const hid_t fileID = *pFileID;
   hid_t dset, dtypeInt;
   int err;
 #ifdef DEBUG_IO

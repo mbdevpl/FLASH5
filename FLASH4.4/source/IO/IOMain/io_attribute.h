@@ -26,7 +26,7 @@
 #endif
 
 void FTOC(io_attribute_create)(const int * const pMyPE,
-			       const int * const pFileID,
+			       const io_fileID_t * const pFileID,
 			       const int * const pLibType,
 			       const int * const pDiskType,
 			       const int * const pDims,
@@ -37,7 +37,7 @@ void FTOC(io_attribute_create)(const int * const pMyPE,
   			       const int * const pAttNameLen);
 
 void FTOC(io_attribute_write)(const int * const pMyPE,
-			      const int * const pFileID,
+			      const io_fileID_t * const pFileID,
 			      const int * const pLibType,
 			      const int * const pMemType,
 			      const char datasetName[],

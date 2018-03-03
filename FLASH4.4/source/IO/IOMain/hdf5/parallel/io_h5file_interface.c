@@ -191,7 +191,7 @@ void FTOC(io_h5init_file)(hid_t* file_identifier,
   }
 
 #ifdef DEBUG_IO
-  printf("openned the file, identifier = %d\n", (int) *file_identifier);
+  printf("opened the file, identifier = %d\n", (int) *file_identifier);
 #endif
 
   /* release the file access template */

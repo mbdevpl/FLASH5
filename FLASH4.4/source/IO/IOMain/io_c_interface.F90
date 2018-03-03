@@ -35,7 +35,9 @@ module io_c_interface
           pDsetNameLen) &
           bind(c)
        use iso_c_binding, only : c_int, c_char
-       integer(c_int), intent(IN) :: pMyPE, pFileID, pLibType, pDiskType, pDims
+       use io_intfTypesModule, ONLY : io_fileID_t
+       integer(c_int), intent(IN) :: pMyPE, pLibType, pDiskType, pDims
+       integer(io_fileID_t), intent(IN) :: pFileID
        integer(c_int), dimension(*), intent(IN) :: dimIDs
        character(kind=c_char), dimension(*), intent(IN) :: datasetName
        integer(c_int), intent(IN) :: pDsetNameLen
@@ -48,7 +50,9 @@ module io_c_interface
           datasetName, pDsetNameLen, attDatasetName, pAttNameLen) &
           bind(c)
        use iso_c_binding, only : c_int, c_char
-       integer(c_int), intent(IN) :: pMyPE, pFileID, pLibType, pDiskType, pDims
+       use io_intfTypesModule, ONLY : io_fileID_t
+       integer(c_int), intent(IN) :: pMyPE, pLibType, pDiskType, pDims
+       integer(io_fileID_t), intent(IN) :: pFileID
        integer(c_int), dimension(*), intent(IN) :: datasetSize
        character(kind=c_char), dimension(*), intent(IN) :: datasetName
        integer(c_int), intent(IN) :: pDsetNameLen
@@ -63,7 +67,9 @@ module io_c_interface
           pDsetNameLen, attDatasetName, pAttNameLen, pData) &
           bind(c)
        use iso_c_binding, only : c_int, c_char, c_ptr
-       integer(c_int), intent(IN) :: pMyPE, pFileID, pLibType, pMemType
+       use io_intfTypesModule, ONLY : io_fileID_t
+       integer(c_int), intent(IN) :: pMyPE, pLibType, pMemType
+       integer(io_fileID_t), intent(IN) :: pFileID
        character(kind=c_char), dimension(*), intent(IN) :: datasetName
        integer(c_int), intent(IN) :: pDsetNameLen
        character(kind=c_char), dimension(*), intent(IN) :: attDatasetName
@@ -80,8 +86,10 @@ module io_c_interface
           pDims, pData, pErr) &
           bind(c)
        use iso_c_binding, only : c_int, c_char, c_ptr
-       integer(c_int), intent(IN) :: pMyPE, pFileID, pFileType, pXferType, &
+       use io_intfTypesModule, ONLY : io_fileID_t
+       integer(c_int), intent(IN) :: pMyPE, pFileType, pXferType, &
             pTypeMatchedXfer
+       integer(io_fileID_t), intent(IN) :: pFileID
        character(kind=c_char), dimension(*), intent(IN) :: datasetName
        integer(c_int), intent(IN) :: pNameLength, pMemType
        integer(c_int), dimension(*), intent(IN) :: memSize, memStart, &

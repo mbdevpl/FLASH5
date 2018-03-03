@@ -6,7 +6,7 @@
 !! SYNOPSIS
 !!
 !!  io_create_grid_header(integer(in) :: myPE,
-!!                        integer(in) :: fileID,
+!!                        integer(io_fileID_t)(in) :: fileID,
 !!                        integer(in) :: fileFmt,
 !!                        integer(in) :: fileType,
 !!                        integer(in) :: libType,
@@ -34,6 +34,11 @@
 !! metadataFloatingPointType: Single precision or double precision for the
 !!                            attributes of the mesh data.
 !!
+!! NOTES
+!!
+!!  The KIND type parameter io_fileID_t is defined in Fortran module io_intfTypesModule.
+!!  It should ensure that fileID is compatible with the hid_t of the HDF5 library version
+!!  used, or with a C int if HDF5 is not used.
 !!***
 
 #include "constants.h"
@@ -50,6 +55,7 @@ subroutine io_create_grid_header(myPE, fileID, fileFmt, fileType, &
   use io_c_type_interface, ONLY : io_ncmpi_create_dimids, &
        io_ncmpi_retrieve_dimids
 #endif
+  use io_intfTypesModule, ONLY : io_fileID_t
   use Grid_interface, ONLY : Grid_getGlobalIndexLimits
   use Driver_interface, ONLY : Driver_abortFlash  
   use io_typeInterface, ONLY : io_getZeroBasedVarInfo, &
@@ -58,7 +64,8 @@ subroutine io_create_grid_header(myPE, fileID, fileFmt, fileType, &
   use io_typeData, ONLY : io_useLegacyLabels, io_legacyLabelLength
 
   implicit none
-  integer, intent(IN) :: myPE, fileID, fileFmt, fileType, &
+  integer(io_fileID_t),intent(IN) :: fileID
+  integer, intent(IN) :: myPE, fileFmt, fileType, &
      libType, dataFloatingPointType, metadataFloatingPointType
 #ifndef USE_IO_C_INTERFACE
 #define c_loc(x) x
