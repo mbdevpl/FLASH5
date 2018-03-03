@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call IO_writeCheckpoint() 
+!!  call IO_writeCheckpoint()
 !!
 !!
 !!

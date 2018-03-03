@@ -1,4 +1,4 @@
-!!****if* source/IO/IOMain/hdf5/serial/io_initFile
+!!****if* source/IO/IOMain/hdf5/serial/AM/io_initFile
 !!
 !! NAME
 !!  io_initFile
@@ -59,12 +59,12 @@ subroutine io_initFile( filenum, fileID, filename, outputType, forced)
 
   fileID = -1
 
-#ifndef FLASH_GRID_AMREX
-  call io_h5init_file(fileID, filename)
-  if(fileID == -1) then
-     print *, "Error: unable to initialize file"
-     call Driver_abortFlash("unable to initialize hdf5 file")
+  if (outputType(1:4) .NE. '_plt') then
+     call io_h5init_file(fileID, filename)
+     if(fileID == -1) then
+        print *, "Error: unable to initialize file"
+        call Driver_abortFlash("unable to initialize hdf5 file")
+     end if
   end if
-#endif
 
 end subroutine io_initFile
