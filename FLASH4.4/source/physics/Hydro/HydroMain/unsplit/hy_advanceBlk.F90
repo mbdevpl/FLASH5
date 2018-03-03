@@ -362,8 +362,9 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
 !!$           endif
 !!$        else ! Cartesian geometry
 
-     call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
-     
+     if (hy_fluxCorrect) then
+        call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
+     end if
      
      deallocate(flx)
      deallocate(fly)

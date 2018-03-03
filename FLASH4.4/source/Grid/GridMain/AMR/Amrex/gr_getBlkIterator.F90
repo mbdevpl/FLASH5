@@ -19,7 +19,11 @@
 !!
 !! ARGUMENTS 
 !!  itor     - the requested block iterator
-!!  nodetype - for AMReX, if given, the nodetype must be ALL_BLKS
+!!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS).  If
+!!             no block class is given, then the iterator defaults to iterating
+!!             over all blocks.
+!!             For Amrex, most or all blocks that would be considered of
+!!             ANCESTOR type with PARAMESH ar considered to be of PARENT_BLK type.
 !!  level    - iterate only over all blocks/tiles located at this level of
 !!             refinement.
 !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
@@ -47,12 +51,17 @@ subroutine gr_getBlkIterator(itor, nodetype, level, tiling)
   integer,             intent(IN), optional :: level
   logical,             intent(IN), optional :: tiling
 
+  integer :: ntype
+
   if (present(nodetype)) then
-    if (nodetype /= ALL_BLKS) then
-      call Driver_abortFlash("[gr_getBlkIterator] This AMReX iterator walks only over all blocks")
-    end if
+     ntype = nodetype
+     if (ntype/=ALL_BLKS .AND. ntype/=LEAF .AND. ntype/=PARENT_BLK) then
+        call Driver_abortFlash("[gr_getBlkIterator] This AMReX iterator does not recognize the nodetype")
+     end if
+  else
+    ntype = ALL_BLKS
   end if
 
-  call build_iterator(itor, level, tiling)
+  call build_iterator(itor, ntype, level, tiling)
 end subroutine gr_getBlkIterator
 

@@ -73,7 +73,8 @@ contains
     !!  block_1lev_iterator_t
     !!
     !! SYNOPOSIS
-    !!  itor = block_1lev_iterator_t(integer(IN)           :: level, 
+    !!  itor = block_1lev_iterator_t(integer(IN)         :: nodetype,
+    !!                               integer(IN)           :: level, 
     !!                               logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
@@ -82,6 +83,7 @@ contains
     !!  set to the first matching block/tile.
     !!
     !! ARGUMENTS
+    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - iterate only over blocks/tiles located at this level of
     !!             refinement.  Note that the level value must be given with
     !!             respect to FLASH's 1-based level index scheme.
@@ -97,10 +99,11 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-    function init_iterator(level, tiling) result(this)
+    function init_iterator(nodetype, level, tiling) result(this)
       use gr_physicalMultifabs,  ONLY : unk
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
+        integer, intent(IN)           :: nodetype
       integer, intent(IN)           :: level
       logical, intent(IN), optional :: tiling
       type(block_1lev_iterator_t)   :: this
@@ -179,7 +182,7 @@ contains
     !!  call itor%next()
     !!
     !! DESCRIPTION
-    !!  Advance the iterator to the next bloc/tilek managed by process and
+    !!  Advance the iterator to the next block/tile managed by process and
     !!  that meets the iterator constraints given at instantiation.
     !!
     !!****
