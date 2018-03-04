@@ -343,10 +343,10 @@ Module Grid_interface
      subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(IN)    :: blockDesc
-       real, pointer,          intent(INOUT) :: fluxPtrX(:,:,:,:)
-       real, pointer,          intent(INOUT) :: fluxPtrY(:,:,:,:)
-       real, pointer,          intent(INOUT) :: fluxPtrZ(:,:,:,:)
+       type(block_metadata_t), intent(IN) :: blockDesc
+       real, pointer                      :: fluxPtrX(:,:,:,:)
+       real, pointer                      :: fluxPtrY(:,:,:,:)
+       real, pointer                      :: fluxPtrZ(:,:,:,:)
      end subroutine Grid_getFluxPtr
   end interface
 
@@ -354,10 +354,10 @@ Module Grid_interface
      subroutine Grid_releaseFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(IN)    :: blockDesc
-       real, pointer,          intent(INOUT) :: fluxPtrX(:,:,:,:)
-       real, pointer,          intent(INOUT) :: fluxPtrY(:,:,:,:)
-       real, pointer,          intent(INOUT) :: fluxPtrZ(:,:,:,:)
+       type(block_metadata_t), intent(IN) :: blockDesc
+       real, pointer                      :: fluxPtrX(:,:,:,:)
+       real, pointer                      :: fluxPtrY(:,:,:,:)
+       real, pointer                      :: fluxPtrZ(:,:,:,:)
      end subroutine Grid_releaseFluxPtr
   end interface
 

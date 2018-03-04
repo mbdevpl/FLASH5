@@ -45,10 +45,10 @@ subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
 
     implicit none
 
-    type(block_metadata_t), intent(IN)    :: blockDesc
-    real, pointer,          intent(INOUT) :: fluxPtrX(:,:,:,:)
-    real, pointer,          intent(INOUT) :: fluxPtrY(:,:,:,:)
-    real, pointer,          intent(INOUT) :: fluxPtrZ(:,:,:,:)
+    type(block_metadata_t), intent(IN) :: blockDesc
+    real, pointer                      :: fluxPtrX(:,:,:,:)
+    real, pointer                      :: fluxPtrY(:,:,:,:)
+    real, pointer                      :: fluxPtrZ(:,:,:,:)
 
     ! Note that limits(LOW, :) is the index of the lower-leftmost cell in the
     ! given block.  We are assigning this same index to the face just to the
