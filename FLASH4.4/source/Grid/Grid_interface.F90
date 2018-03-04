@@ -340,6 +340,28 @@ Module Grid_interface
   end interface
 
   interface
+     subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: blockDesc
+       real, pointer                      :: fluxPtrX(:,:,:,:)
+       real, pointer                      :: fluxPtrY(:,:,:,:)
+       real, pointer                      :: fluxPtrZ(:,:,:,:)
+     end subroutine Grid_getFluxPtr
+  end interface
+
+  interface
+     subroutine Grid_releaseFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: blockDesc
+       real, pointer                      :: fluxPtrX(:,:,:,:)
+       real, pointer                      :: fluxPtrY(:,:,:,:)
+       real, pointer                      :: fluxPtrZ(:,:,:,:)
+     end subroutine Grid_releaseFluxPtr
+  end interface
+
+  interface
      subroutine Grid_getGlobalIndexLimits(globalIndexLimits)
        integer, dimension(MDIM), intent(out) :: globalIndexLimits
      end subroutine Grid_getGlobalIndexLimits

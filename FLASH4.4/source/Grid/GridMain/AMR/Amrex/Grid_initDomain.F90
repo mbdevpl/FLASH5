@@ -54,6 +54,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   use Grid_data,            ONLY : gr_doFluxCorrection
   use gr_physicalMultifabs, ONLY : unk, &
                                    facevarx, facevary, facevarz, &
+                                   fluxes, &
                                    flux_registers
   use Driver_interface,     ONLY : Driver_abortFlash
 
@@ -72,9 +73,14 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   !   => all code dealing with multifabs arrays must consider the need for 
   !      index translation
   allocate(unk     (0:amrex_max_level))
+#if NFACE_VARS > 0
   allocate(facevarx(0:amrex_max_level))
   allocate(facevary(0:amrex_max_level))
   allocate(facevarz(0:amrex_max_level))
+#endif
+
+#if NFLUXES > 0
+  allocate(fluxes(0:amrex_max_level, 1:NDIM))
 
   ! Flux registers
   !
@@ -87,6 +93,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   if (gr_doFluxCorrection) then
     allocate(flux_registers(1:amrex_max_level))
   end if
+#endif
 
   ! DEV: TODO Implement parameters
   if (.NOT. restart) then

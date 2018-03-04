@@ -62,6 +62,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz, &
+                                          fluxes, &
                                           flux_registers
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
@@ -93,6 +94,9 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     integer :: n_blocks
 
+    integer :: dir
+    logical :: nodal(1:MDIM)
+
     ba = pba
     dm = pdm
 
@@ -100,18 +104,28 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     ! Create FABS for storing physical data at given level
     call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
-    ! DEVNOTE: TODO Create these w.r.t. proper face-centered boxes
 #if NFACE_VARS > 0
+    ! DEVNOTE: TODO Create these w.r.t. proper face-centered boxes
     call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
 #endif
 
+#if NFLUXES > 0
+    ! No need to store fluxes for guardcells
+    do dir = 1, SIZE(fluxes, 2)
+        nodal(:)   = .FALSE.
+        nodal(dir) = .TRUE.
+        call amrex_multifab_build(fluxes(lev, dir), ba, dm, NFLUXES, 0, &
+                                  nodal=nodal)
+    end do
+
     if ((lev > 0) .AND. (gr_doFluxCorrection)) then
         call amrex_fluxregister_build(flux_registers(lev), ba, dm, &
                                       amrex_ref_ratio(lev-1), &
-                                      lev, NUNK_VARS)
+                                      lev, NFLUXES)
     end if
+#endif
 
     ! Write initial data across domain at given level
     n_blocks = 0
