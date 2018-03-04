@@ -98,6 +98,7 @@
 !!   hy_sweep
 !!***
 
+!!REORDER(4): fluxx,fluxy,fluxz
 subroutine Grid_putFluxData(blockID, axis, fluxes, dataSize, pressureSlots, areaLeft)
 
   implicit none
