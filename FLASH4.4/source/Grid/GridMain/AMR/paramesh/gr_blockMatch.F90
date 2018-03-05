@@ -20,7 +20,7 @@
 !!
 !!   ntype : block type, or type of requested match.
 !!
-!!              For the parameesh implementation, valid values are :
+!!              For the paramesh implementation, valid values are :
 !!
 !!              ALL_BLKS    all local blocks on a processor
 !!
@@ -41,6 +41,10 @@
 !!   refinementlevel : level used as additional criterion.
 !!
 !!                     This is used as additional criterion if present.
+!!
+!! NOTES
+!!
+!!   Only implemented for the PARAMESH AMR Grid implementation
 !!
 !! RETURN TYPE
 !!

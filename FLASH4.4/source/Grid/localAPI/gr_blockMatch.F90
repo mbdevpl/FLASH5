@@ -35,13 +35,17 @@
 !!              values that have meaning only for paramesh are :
 !!              LEAF, PARENT_BLK or ANCESTOR  representing
 !!              the type of node in the Oct-tree managing the blocks.
-!!              REFINEMENT the refinement level
+!!              REFINEMENT refinement level, optional argument must be present.
 !!
 !!              All of these constants are defined in constants.h
 !!
 !!   refinementlevel : level used as additional criterion.
 !!
-!!                     Only used if ntype = REFINEMENT.
+!!                     This is used as additional criterion if present.
+!!
+!! NOTES
+!!
+!!   Only implemented for the PARAMESH AMR Grid implementation
 !!
 !! RETURN TYPE
 !!
