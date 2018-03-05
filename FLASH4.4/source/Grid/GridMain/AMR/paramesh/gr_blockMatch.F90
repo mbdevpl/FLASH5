@@ -20,7 +20,7 @@
 !!
 !!   ntype : block type, or type of requested match.
 !!
-!!              For all Grid implementations, valid values are :
+!!              For the parameesh implementation, valid values are :
 !!
 !!              ALL_BLKS    all local blocks on a processor
 !!
@@ -32,16 +32,15 @@
 !!              ACTIVE_BLKS all currently active blocks, in paramesh
 !!              context that means parent and leaf blocks
 !!
-!!              values that have meaning only for paramesh are :
 !!              LEAF, PARENT_BLK or ANCESTOR  representing
 !!              the type of node in the Oct-tree managing the blocks.
-!!              REFINEMENT the refinement level
+!!              REFINEMENT refinement level, optional argument must be present.
 !!
 !!              All of these constants are defined in constants.h
 !!
 !!   refinementlevel : level used as additional criterion.
 !!
-!!                     Only used if ntype = REFINEMENT.
+!!                     This is used as additional criterion if present.
 !!
 !! RETURN TYPE
 !!
@@ -78,11 +77,6 @@ function gr_blockMatch(blkID,ntype,refinementLevel) result(match)
   select case (ntype)
   case (LEAF,PARENT_BLK,ANCESTOR)
      match = (nodetype(i)==ntype)
-     if (match .AND. present(refinementLevel)) then
-        if (refinementLevel > 0) then
-           match = (lrefine(i) == refinementLevel)
-        end if
-     end if
   case(ALL_BLKS)
      match = .TRUE.
   case (IBDRY_BLKS)
@@ -119,7 +113,7 @@ function gr_blockMatch(blkID,ntype,refinementLevel) result(match)
      match = (gr_oneBlock(i)%blockType==TRAVERSED_AND_ACTIVE) !DEV: What does this mean?
   case(REFINEMENT)
      if (present(refinementLevel)) then
-        match = (lrefine(i) == refinementLevel)
+        match = .TRUE.          ! test for matching level is done below
      else
         call Driver_abortFlash("[Grid_getListofBlocks] with ntype REFINEMENT optional argument refinementlevel must be present")
      end if
@@ -127,5 +121,11 @@ function gr_blockMatch(blkID,ntype,refinementLevel) result(match)
      match = .FALSE.
      call Driver_abortFlash("[Grid_blockMatch] ntype argument not recognized")
   end select
+
+  if (match .AND. present(refinementLevel)) then
+     if (refinementLevel > 0) then
+        match = (lrefine(i) == refinementLevel)
+     end if
+  end if
 
 end function gr_blockMatch
