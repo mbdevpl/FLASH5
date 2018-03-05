@@ -80,7 +80,7 @@ subroutine io_xfer_tree_data(tree_data, fileID, &
 #endif
 
   !All strings must be null-terminated.
-  character(kind=c_char,len=MAX_STRING_LENGTH) :: bflags_str, &
+  character(kind=c_char,len=MAX_STRING_LENGTH) :: bflags_str, gr_gid_str, &
        coord_str, nodetype_str, lrefine_str, which_child_str, &
        procnumber_str, bnd_box_str, bsize_str, tree_str, gr_gsurr_blks_str
 
@@ -126,7 +126,7 @@ subroutine io_xfer_tree_data(tree_data, fileID, &
      end if
 
      bflags_str = "bflags"
-!!$     gr_gid_str = "gid"
+     gr_gid_str = "gid"
      gr_gsurr_blks_str = "gsurr_blks"
      coord_str = "coordinates"
 
@@ -257,20 +257,20 @@ subroutine io_xfer_tree_data(tree_data, fileID, &
 #endif
 
 
-!!$     IO_TIMERS_START(gr_gid_str)
-!!$     if (.not.associated(tree_data % gid)) then
-!!$        call Driver_abortFlash("[io_xfer_tree_data]: gid not associated")
-!!$     end if
-!!$     !Paramesh memory size: (/MAXBLOCKS,nfaces+nchild+1/)
-!!$     call io_xfer_cont_slab(io_globalMe, fileID, libType, &
-!!$          xferType, typeMatchedXfer, gr_gid_str, len_trim(gr_gid_str), &
-!!$          IO_FLASH_INT, (/size(tree_data % gid,2), &
-!!$          size(tree_data % gid,1)/), (/0,0/), &
-!!$          (/localNumBlocks,nfaces+nchild+1/), (/localOffset,0/), &
-!!$          (/localNumBlocks,nfaces+nchild+1/), 2, c_loc(tree_data % gid(1,1)), &
-!!$          err)
-!!$     IO_CHECK_XFER(err, gr_gid_str)
-!!$     IO_TIMERS_STOP(gr_gid_str)
+     IO_TIMERS_START(gr_gid_str)
+     if (.not.associated(tree_data % gid)) then
+        call Driver_abortFlash("[io_xfer_tree_data]: gid not associated")
+     end if
+     !Paramesh memory size: (/MAXBLOCKS,nfaces+nchild+1/)
+     call io_xfer_cont_slab(io_globalMe, fileID, libType, &
+          xferType, typeMatchedXfer, gr_gid_str, len_trim(gr_gid_str), &
+          IO_FLASH_INT, (/size(tree_data % gid,2), &
+          size(tree_data % gid,1)/), (/0,0/), &
+          (/localNumBlocks,nfaces+nchild+1/), (/localOffset,0/), &
+          (/localNumBlocks,nfaces+nchild+1/), 2, c_loc(tree_data % gid(1,1)), &
+          err)
+     IO_CHECK_XFER(err, gr_gid_str)
+     IO_TIMERS_STOP(gr_gid_str)
 
 
      if (xferType == IO_WRITE_XFER .or. xferType == IO_WRITE_XFER_MASTER_PE) then
