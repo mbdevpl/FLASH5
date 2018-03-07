@@ -20,7 +20,7 @@ subroutine gr_amrexInit()
                                           amrex_init_virtual_functions, &
                                           amrex_max_level, &
                                           amrex_ref_ratio
-  use amrex_octree_module,         ONLY : amrex_octree_init
+!!$  use amrex_octree_module,         ONLY : amrex_octree_init
   use amrex_parmparse_module,      ONLY : amrex_parmparse, &
                                           amrex_parmparse_build, &
                                           amrex_parmparse_destroy
@@ -161,7 +161,7 @@ subroutine gr_amrexInit()
   call amrex_parmparse_destroy(pp_amr)
 #endif
 
-  call amrex_octree_init()
+!!$  call amrex_octree_init()
   call amrex_amrcore_init()
  
   !!!!!----- REGISTER REFINE CALLBACKS WITH AMReX
