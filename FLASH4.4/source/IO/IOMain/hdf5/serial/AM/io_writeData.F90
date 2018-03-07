@@ -105,7 +105,7 @@ subroutine io_writeData (fileID)
   ! Define the temp variables (t) which hold the data transfered
   ! to the MASTER_PE
   integer, target :: lrefinet(MAXBLOCKS), nodetypet(MAXBLOCKS)
-!  integer, target :: gidt(nfaces+1+nchild,MAXBLOCKS)
+  integer, target :: gidt(2*NDIM+1+2**NDIM,MAXBLOCKS)
   integer :: status(MPI_STATUS_SIZE)
 
   integer,allocatable :: procnumber(:)
@@ -185,7 +185,7 @@ subroutine io_writeData (fileID)
   tree_data % bnd_box => bnd_boxt
   tree_data % coord => coordt
   tree_data % bsize => sizet
-!  tree_data % gid => gidt
+  tree_data % gid => gidt
   tree_data % nodetype => nodetypet
   tree_data % lrefine => lrefinet
 #ifdef FLASH_GRID_PARAMESH3OR4
@@ -324,6 +324,8 @@ subroutine io_writeData (fileID)
               call MPI_RECV(bnd_boxt(1,1,1), 2*MDIM*localNumBlockst, &
                    FLASH_REAL, jproc, 6, io_globalComm, status, ierr)
 
+              gidt(:,1:localNumBlockst)       = -1
+
 !              call MPI_RECV(gidt(1,1), localNumBlockst*(nfaces+1+nchild), & 
 !                   FLASH_INTEGER, jproc, 7, io_globalComm, status, ierr)
 !
@@ -365,7 +367,7 @@ subroutine io_writeData (fileID)
            if (localNumBlockst > 0) then
               lrefinet(1:localNumBlockst)     = gr_ioBlkLrefine(1:localNumBlockst)
               nodetypet(1:localNumBlockst)    = gr_ioBlkNodeType(1:localNumBlockst)
-!              gidt(:,1:localNumBlockst)       = gr_gid(:,1:localNumBlockst)
+              gidt(:,1:localNumBlockst)       = -1 ! gr_gid(:,1:localNumBlockst)
 
               bnd_boxt(:,:,1:localNumBlockst) = gr_ioBlkBoundBox(:,:,1:localNumBlockst)
               coordt(:,1:localNumBlockst)     = gr_ioBlkCoords(:,1:localNumBlockst)
