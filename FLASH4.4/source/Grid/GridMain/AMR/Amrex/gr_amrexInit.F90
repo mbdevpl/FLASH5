@@ -147,6 +147,7 @@ subroutine gr_amrexInit()
   call pp_amr%add   ("blocking_factor_y", 2*NYB)
   call pp_amr%add   ("blocking_factor_z", 2*NZB)
   call pp_amr%add   ("refine_grid_layout", 0)
+  call pp_amr%add   ("grid_eff",  1.0)
  
   ! According to Weiqun n_proper=1 is an appropriate setting that will result in
   ! correct nesting.
