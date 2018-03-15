@@ -433,6 +433,8 @@ subroutine Grid_init()
 
 !  call RuntimeParameters_get("gr_restrictAllMethod", gr_restrictAllMethod)
 
+    call RuntimeParameters_get("flux_correct", gr_doFluxCorrection)
+
 !#ifdef FLASH_PARTICLES
 !  call RuntimeParameters_get('useParticles',gr_useParticles)
 !  call RuntimeParameters_get('pt_maxPerProc',gr_maxParticlesPerProc)

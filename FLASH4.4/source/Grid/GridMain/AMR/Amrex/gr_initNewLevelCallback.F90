@@ -56,11 +56,14 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_boxarray_module,     ONLY : amrex_boxarray
     use amrex_distromap_module,    ONLY : amrex_distromap
     use amrex_multifab_module,     ONLY : amrex_multifab_build
+    use amrex_fluxregister_module, ONLY : amrex_fluxregister_build
     use amrex_fillpatch_module,    ONLY : amrex_fillpatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
-    
+
     use gr_physicalMultifabs,      ONLY : unk, &
-                                          facevarx, facevary, facevarz
+                                          facevarx, facevary, facevarz, &
+                                          fluxes, &
+                                          flux_registers
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_iterator,               ONLY : gr_iterator_t
@@ -70,6 +73,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use gr_interface,              ONLY : gr_getBlkIterator, &
                                           gr_releaseBlkIterator
     use Grid_data,                 ONLY : gr_eosModeInit, &
+                                          gr_doFluxCorrection, &
                                           lo_bc_amrex, hi_bc_amrex
     use Eos_interface,             ONLY : Eos_wrapped
     use Logfile_interface,         ONLY : Logfile_stamp
@@ -90,6 +94,9 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     integer :: n_blocks
 
+    integer :: dir
+    logical :: nodal(1:MDIM)
+
     ba = pba
     dm = pdm
 
@@ -97,11 +104,27 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     ! Create FABS for storing physical data at given level
     call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
-    ! DEVNOTE: TODO Create these w.r.t. proper face-centered boxes
 #if NFACE_VARS > 0
+    ! DEVNOTE: TODO Create these w.r.t. proper face-centered boxes
     call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
+#endif
+
+#if NFLUXES > 0
+    ! No need to store fluxes for guardcells
+    do dir = 1, SIZE(fluxes, 2)
+        nodal(:)   = .FALSE.
+        nodal(dir) = .TRUE.
+        call amrex_multifab_build(fluxes(lev, dir), ba, dm, NFLUXES, 0, &
+                                  nodal=nodal)
+    end do
+
+    if ((lev > 0) .AND. (gr_doFluxCorrection)) then
+        call amrex_fluxregister_build(flux_registers(lev), ba, dm, &
+                                      amrex_ref_ratio(lev-1), &
+                                      lev, NFLUXES)
+    end if
 #endif
 
     ! Write initial data across domain at given level
@@ -109,7 +132,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call gr_getBlkIterator(itor, level=lev+1, tiling=.FALSE.)
     do while (itor%is_valid())
         call itor%blkMetadata(block)
-
  
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular

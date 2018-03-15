@@ -12,14 +12,18 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           amrex_mfiter, &
                                           amrex_mfiter_build, &
                                           amrex_mfiter_destroy
+    use amrex_fluxregister_module, ONLY : amrex_fluxregister_build
     use amrex_fillpatch_module,    ONLY : amrex_fillcoarsepatch
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
-    use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex
+    use Grid_data,                 ONLY : gr_doFluxCorrection, &
+                                          lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
-                                          facevarx, facevary, facevarz
+                                          facevarx, facevary, facevarz, &
+                                          fluxes, &
+                                          flux_registers
 
     implicit none
 
@@ -34,16 +38,38 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     integer :: nFab
 
+    integer :: dir
+    logical :: nodal(1:MDIM)
+
     ba = pba
     dm = pdm
 
     !!!!!----- (Re)create FABS for storing physical data at this level
     call gr_clearLevelCallback(lev)
+
     call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
+#if NFACE_VARS > 0
     ! DEVNOTE: TODO Create these wrt proper face-centered boxes
     call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
+#endif
+
+#if NFLUXES > 0
+    ! No need to store fluxes for guardcells
+    do dir = 1, SIZE(fluxes, 2)
+        nodal(:)   = .FALSE.
+        nodal(dir) = .TRUE.
+        call amrex_multifab_build(fluxes(lev, dir), ba, dm, NFLUXES, 0, &
+                                  nodal=nodal)
+    end do
+
+    if ((lev > 0) .AND. (gr_doFluxCorrection)) then
+        call amrex_fluxregister_build(flux_registers(lev), ba, dm, &
+                                      amrex_ref_ratio(lev-1), &
+                                      lev, NFLUXES)
+    end if
+#endif
 
     !!!!!----- Fill new refinement level via interpolation from parent block
     ! This *hopefully* will do the guard cell fill as well
