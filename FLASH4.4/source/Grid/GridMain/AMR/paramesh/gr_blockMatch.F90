@@ -6,9 +6,9 @@
 !!
 !! SYNOPSIS
 !!
-!!  ans = Grid_blockMatch(integer  :: blkid,
-!!                        integer  :: ntype,
-!!                        integer,OPTIONAL  :: refinementlevel)
+!!  ans = gr_blockMatch(integer(IN)  :: blkid,
+!!                      integer(IN)  :: ntype,
+!!                      integer(IN),OPTIONAL  :: refinementlevel)
 !!
 !! DESCRIPTION
 !!
@@ -28,19 +28,25 @@
 !!              JBDRY_BLKS  blocks that are on physical boundary along JAXIS
 !!              KBDRY_BLKS  blocks that are on physical boundary along KAXIS
 !!              ANY_BDRY_BLKS  blocks that have any of their faces
-!!              on a physical boundary.
-!!              ACTIVE_BLKS all currently active blocks, in paramesh
-!!              context that means parent and leaf blocks
+!!                          on a physical boundary.
+!!              ACTIVE_BLKS all currently active blocks; in the paramesh
+!!                          context this means parent and leaf blocks.
 !!
 !!              LEAF, PARENT_BLK or ANCESTOR  representing
-!!              the type of node in the Oct-tree managing the blocks.
-!!              REFINEMENT refinement level, optional argument must be present.
+!!                          the type of node in the oct-tree managing the blocks.
+!!              REFINEMENT refinement level, the optional refinementlevel
+!!                                           argument must be present and valid.
 !!
 !!              All of these constants are defined in constants.h
 !!
-!!   refinementlevel : level used as additional criterion.
+!!   refinementlevel : If valid, refinement level to be used as match criterion.
+!!                     Values greater that 0 are considered valid.
 !!
-!!                     This is used as additional criterion if present.
+!!                     If ntype is REFINEMENT, the caller must provide a present
+!!                     and valid refinementlevel, and all blocks at that level
+!!                     are considered matching.
+!!                     For other choices of ntype, the refinementlevel is used
+!!                     as additional criterion if present and valid.
 !!
 !! NOTES
 !!
@@ -117,13 +123,17 @@ function gr_blockMatch(blkID,ntype,refinementLevel) result(match)
      match = (gr_oneBlock(i)%blockType==TRAVERSED_AND_ACTIVE) !DEV: What does this mean?
   case(REFINEMENT)
      if (present(refinementLevel)) then
-        match = .TRUE.          ! test for matching level is done below
+        if (refinementLevel > 0) then
+           match = .TRUE.          ! test for matching level is done below
+        else
+           call Driver_abortFlash("[gr_blockMatch] With ntype=REFINEMENT, argument refinementlevel must be present and > 0.")
+        end if
      else
-        call Driver_abortFlash("[Grid_getListofBlocks] with ntype REFINEMENT optional argument refinementlevel must be present")
+        call Driver_abortFlash("[gr_blockMatch] With ntype=REFINEMENT, optional argument refinementlevel must be present.")
      end if
   case default
      match = .FALSE.
-     call Driver_abortFlash("[Grid_blockMatch] ntype argument not recognized")
+     call Driver_abortFlash("[gr_blockMatch] ntype argument not recognized")
   end select
 
   if (match .AND. present(refinementLevel)) then

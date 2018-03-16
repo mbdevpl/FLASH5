@@ -6,9 +6,9 @@
 !!
 !! SYNOPSIS
 !!
-!!  ans = Grid_blockMatch(integer  :: blkid,
-!!                        integer  :: ntype,
-!!                        integer,OPTIONAL  :: refinementlevel)
+!!  ans = Grid_blockMatch(integer(in)  :: blkid,
+!!                        integer(in)  :: ntype,
+!!                        integer(in),OPTIONAL  :: refinementlevel)
 !!
 !! DESCRIPTION
 !!
@@ -20,7 +20,7 @@
 !!
 !!   ntype : block type, or type of requested match.
 !!
-!!              For all Grid implementations, valid values are :
+!!              For the UG Grid implementation, valid values are :
 !!
 !!              ALL_BLKS    all local blocks on a processor
 !!
@@ -28,13 +28,13 @@
 !!              JBDRY_BLKS  blocks that are on physical boundary along JAXIS
 !!              KBDRY_BLKS  blocks that are on physical boundary along KAXIS
 !!              ANY_BDRY_BLKS  blocks that have any of their faces
-!!              on a physical boundary.
-!!              ACTIVE_BLKS all currently active blocks, in paramesh
-!!              context that means parent and leaf blocks
+!!                          on a physical boundary.
+!!              ACTIVE_BLKS all currently active blocks (In the paramesh
+!!                          context this means parent and leaf blocks.)
 !!
 !!              values that have meaning for paramesh are :
 !!              LEAF, PARENT_BLK or ANCESTOR  representing
-!!              the type of node in the Oct-tree managing the blocks.
+!!              the type of node in the oct-tree managing the blocks.
 !!              REFINEMENT the refinement level
 !!
 !!              All of these constants are defined in constants.h
@@ -46,6 +46,11 @@
 !! RETURN TYPE
 !!
 !!  LOGICAL
+!!
+!! NOTES
+!!
+!!  The only non-stub implementation provided is in the UG Grid implementation.
+!!  For the paramesh Grid implementation, see gr_blockMatch instead.
 !!
 !! SEE ALSO
 !!
