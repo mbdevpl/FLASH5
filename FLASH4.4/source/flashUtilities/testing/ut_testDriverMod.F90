@@ -118,7 +118,8 @@ contains
             file_unit = ut_getFreeFileUnit()
             OPEN(file_unit, file=filename)
             if (my_n_failed == 0) then
-                write(file_unit,'(A)') 'SUCCESS all results conformed with expected values.' 
+                write(file_unit,'(A)') 'FAILURE'
+!                write(file_unit,'(A)') 'SUCCESS all results conformed with expected values.' 
             else
                 write(file_unit,'(A)') 'FAILURE'
             end if
