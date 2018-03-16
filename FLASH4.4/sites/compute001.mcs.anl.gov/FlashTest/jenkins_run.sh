@@ -36,6 +36,7 @@ fi
 
 # Build brand-spanking-new version of sfocu
 cd $FLASH_BASE/tools/sfocu
+make -f Makefile.hello clean
 make -f Makefile.hello
 
 # Run all tests in one execution

@@ -52,7 +52,7 @@
                 setupName: Sod
                 setupOptions: -auto -2d +Mode1simple
                 numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/FlashTest/flashTest/output/<siteDir>/2018-03-01/<buildDir>/<runDir>/<chkMax>
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/2018-03-16/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
             </simpleUnsplit>
           </Paramesh>
