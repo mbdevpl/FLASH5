@@ -26,7 +26,7 @@
 [ -z "$FLASHTEST_BASE" ] && { echo "Need to set FLASHTEST_BASE"; exit 1; }
 
 # Where to write file to (in Jenkins-accessible workspace)
-FLASHTEST_OUTPUT=$FLASH_BASE/output
+FLASHTEST_OUTPUT=$FLASH_BASE/../TestResults
 
 # Remove old results
 RESULTS_DIR=$FLASHTEST_OUTPUT/compute001
