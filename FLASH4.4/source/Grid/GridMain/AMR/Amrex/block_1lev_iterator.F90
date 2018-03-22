@@ -6,8 +6,8 @@
 !! DESCRIPTION
 !!  A class that defines an iterator facade around the AMReX MFIter
 !!  (amrex_mfiter) such that client code may use the iterator for sequentially
-!!  accessing blocks or tiles in the domain that exist only at a single, given
-!!  refinement level. 
+!!  accessing specific blocks or tiles in the domain that exist only at a 
+!!  single, given refinement level. 
 !!
 !!  Note that this iterator is meant only for internal FLASH use with 
 !!  block_iterator_t.  No other code should need to use this code directly.
@@ -47,10 +47,11 @@ module block_1lev_iterator
     !!
     !!****
     type, public :: block_1lev_iterator_t
-        type(amrex_mfiter),   private, pointer :: mfi     => NULL()
-        type(amrex_multifab), private, pointer :: mf      => NULL()
-        integer,              private          :: level   = INVALID_LEVEL
-        logical,              private          :: isValid = .FALSE.
+        type(amrex_mfiter),   private, pointer :: mfi      => NULL()
+        type(amrex_multifab), private, pointer :: mf       => NULL()
+        integer,              private          :: nodetype = LEAF
+        integer,              private          :: level    = INVALID_LEVEL
+        logical,              private          :: isValid  = .FALSE.
         integer,              allocatable      :: dummy
     contains
         procedure, public :: is_valid
@@ -73,7 +74,7 @@ contains
     !!  block_1lev_iterator_t
     !!
     !! SYNOPOSIS
-    !!  itor = block_1lev_iterator_t(integer(IN)         :: nodetype,
+    !!  itor = block_1lev_iterator_t(integer(IN)           :: nodetype,
     !!                               integer(IN)           :: level, 
     !!                               logical(IN), optional :: tiling)
     !!
@@ -83,7 +84,8 @@ contains
     !!  set to the first matching block/tile.
     !!
     !! ARGUMENTS
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
+    !!  nodetype - the class of blocks to iterate over.  Acceptable values are
+    !!             LEAF and ALL_BLKS.
     !!  level    - iterate only over blocks/tiles located at this level of
     !!             refinement.  Note that the level value must be given with
     !!             respect to FLASH's 1-based level index scheme.
@@ -103,7 +105,7 @@ contains
       use gr_physicalMultifabs,  ONLY : unk
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
-        integer, intent(IN)           :: nodetype
+      integer, intent(IN)           :: nodetype
       integer, intent(IN)           :: level
       logical, intent(IN), optional :: tiling
       type(block_1lev_iterator_t)   :: this
@@ -115,10 +117,11 @@ contains
           call Driver_abortFlash("[init_iterator] No unk multifab for level")
       end if
 
-      allocate(this%mfi)
-
+      this%nodetype = nodetype
       this%level = level
       this%mf => unk(level-1)
+
+      allocate(this%mfi)
       call amrex_mfiter_build(this%mfi, this%mf, tiling=tiling)
 
       ! Set to True so that next() works
@@ -129,26 +132,28 @@ contains
     end function init_iterator
 
     !!****im* block_1lev_iterator_t/destroy_iterator
-
-    !!  destroy_iterator
+    !!
+    !! destroy_iterator
     !!
     !! SYNPOSIS
-    !!  Called automatically
+    !!  itor%destroy_iterator
     !!
     !! DESCRIPTION
-    !!  Clean-up block interator object at destruction
+    !!  Clean-up block iterator and internal resources.  Note that this is not a
+    !!  destructor and therefore must be called manually.
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(this)
       class(block_1lev_iterator_t), intent(INOUT) :: this
 
-      if (this%isValid) then
-         call amrex_mfiter_destroy(this%mfi)
-         deallocate(this%mfi)
-         nullify(this%mfi)
-         nullify(this%mf)
-         this%isValid = .FALSE.
+      if (associated(this%mfi)) then
+        call amrex_mfiter_destroy(this%mfi)
+        deallocate(this%mfi)
+        nullify(this%mfi)
       end if
+
+      nullify(this%mf)
+      this%isValid = .FALSE.
     end subroutine destroy_iterator
 
     !!****m* block_1lev_iterator_t/is_valid
@@ -187,15 +192,64 @@ contains
     !!
     !!****
     subroutine next(this)
+        use amrex_box_module, ONLY : amrex_box
         use Driver_interface, ONLY : Driver_abortFlash
 
         class(block_1lev_iterator_t), intent(INOUT) :: this
 
+        type(amrex_box) :: bx
+        logical         :: hasChildren
+
         if (this%isValid) then
-           this%isValid = this%mfi%next()
+           do
+              this%isValid = this%mfi%next()
+              if (.NOT. this%isValid) then
+                 exit
+              else
+                 select case (this%nodetype)
+                 case(ALL_BLKS)
+                    exit
+                 case(LEAF)
+                    bx = this%mfi%tilebox()
+                    hasChildren = boxIsCovered(bx, this%level-1)
+                    if (.NOT.hasChildren) exit
+                 case default
+                    call Driver_abortFlash("[block_1lev_iterator]: Unsupported nodetype")
+                 end select
+              end if
+           end do
         else
            call Driver_abortFlash("[block_1lev_iterator]: attempting next() on invalid!")
         end if
+
+    contains
+
+        logical function boxIsCovered(bx,lev) result(covered)
+          use amrex_boxarray_module, ONLY : amrex_boxarray
+          use amrex_amrcore_module,  ONLY : amrex_max_level, &
+                                            amrex_ref_ratio, &
+                                            amrex_get_boxarray
+
+          !IMPORTANT: data in bx is changed on return!
+          type(amrex_box), intent(INOUT) :: bx
+          integer,         intent(IN)    :: lev
+
+          type(amrex_boxarray) :: fba
+          integer :: rr
+
+          ! Assume lev is 0-based
+          if (lev .GE. amrex_max_level) then
+             covered = .FALSE.
+          else
+             fba = amrex_get_boxarray(lev+1)
+             rr = amrex_ref_ratio(lev)
+
+             ! Note: this modifies bx, do not use naively after this!
+             call bx%refine(rr)
+             covered = fba%intersects(bx)
+          end if
+        end function boxIsCovered
+
     end subroutine next
 
     !!****m* block_1lev_iterator_t/grid_index

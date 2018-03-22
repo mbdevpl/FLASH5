@@ -4,10 +4,10 @@
 !!  gr_iterator
 !!
 !! DESCRIPTION
-!!  A class that defines a full-featured iterator for sequentially accessing all
-!!  blocks or tiles in the physical domain.  At initialization, the client code
-!!  informs the initialization routine what blocks/tiles need to be accessed by
-!!  the client code via the iterator.
+!!  A class that defines a full-featured iterator for sequentially accessing
+!!  specific blocks or tiles in the physical domain.  At initialization, the
+!!  client code informs the initialization routine what blocks/tiles need to
+!!  be accessed by the client code via the iterator.
 !!
 !!  Please refer to the documentation of gr_getBlkIterator for more
 !!  information regarding iterator initialization.
@@ -107,10 +107,14 @@ contains
     !!
     !! ARGUMENTS
     !!  itor     - the constructed iterator
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-    !!  level    - iterate only over all blocks/tiles located at this level of
-    !!             refinement.  Note that the level value must be given with
-    !!             respect to FLASH's 1-based level index scheme.
+    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS).
+    !!             Refer to the documentation for the AMReX version of
+    !!             gr_getBlkIterator for more information.
+    !!  level    - iterate only over all blocks/tiles of the correct nodetype
+    !!             that are located at this level of refinement.  Note that the
+    !!             level value must be given with respect to FLASH's 1-based
+    !!             level index scheme.  If no level value is given, then
+    !!             iteration is not restricted to any level.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
     !!             walk across all associated blocks on a tile-by-tile basis *if*
     !!             the implementation supports this feature.  If a value is not
@@ -124,7 +128,7 @@ contains
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
       type(gr_iterator_t), intent(OUT)          :: itor
-        integer,                intent(IN)           :: nodetype
+      integer,             intent(IN)           :: nodetype
       integer,             intent(IN), optional :: level
       logical,             intent(IN), optional :: tiling
 
@@ -148,7 +152,7 @@ contains
             last = level
         else
             first = 1
-            last = amrex_get_finest_level() + 1
+            last = finest_level
         end if
         itor%level = first
  
@@ -277,12 +281,10 @@ contains
         blockDesc%level      = this%level
         
         ! FLASH uses 1-based spatial indices / AMReX uses 0-based
-        blockDesc%limits(LOW,  :) = 1
-        blockDesc%limits(HIGH, :) = 1
+        blockDesc%limits(:, :) = 1
         blockDesc%limits(LOW,  1:NDIM) = box%lo(1:NDIM) + 1
         blockDesc%limits(HIGH, 1:NDIM) = box%hi(1:NDIM) + 1
-        blockDesc%limitsGC(LOW,  :) = 1
-        blockDesc%limitsGC(HIGH, :) = 1
+        blockDesc%limitsGC(:, :) = 1
         blockDesc%limitsGC(LOW,  1:NDIM) = fabbox%lo(1:NDIM) + 1
         blockDesc%limitsGC(HIGH, 1:NDIM) = fabbox%hi(1:NDIM) + 1
 
