@@ -4,11 +4,12 @@
 !!
 !!  Simulation_initBlock
 !!
-!! 
+!!
 !! SYNOPSIS
 !!
-!!  call Simulation_initBlock(integer(IN) :: blockId)
-!!                       
+!!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
+!!                            integer(IN)  :: blockDesc  )
+!!
 !!
 !!
 !! DESCRIPTION
@@ -25,8 +26,9 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockId -        The number of the block to initialize
-!!  
+!!  solnData  -        pointer to solution data
+!!  blockDesc -        describes the block to initialize
+!!
 !!
 !! PARAMETERS
 !!
@@ -46,7 +48,7 @@
 !!REORDER(4): solnData
 
 
-subroutine Simulation_initBlock(solnData,block)
+subroutine Simulation_initBlock(solnData,blockDesc)
 
   use Simulation_data, ONLY: sim_xMax, sim_xMin, sim_yMax, sim_yMin, sim_zMax, sim_zMin, &
      &  sim_nProfile, sim_rProf, sim_vProf, sim_pProf, sim_pExp, sim_rhoProf, &
@@ -56,7 +58,8 @@ subroutine Simulation_initBlock(solnData,block)
      &  sim_smallT, &
      &  sim_nSubZones, sim_xCenter, sim_yCenter, sim_zCenter, sim_inSubzones, sim_inszd, &
      sim_threadBlockList, sim_threadWithinBlock
-  use Grid_interface, ONLY : Grid_getCellCoords, Grid_subcellGeometry
+  use Grid_interface, ONLY : Grid_getCellCoords, Grid_getSingleCellVol, &
+                             Grid_subcellGeometry
   use block_metadata, ONLY : block_metadata_t
   use ut_interpolationInterface
  
@@ -65,8 +68,8 @@ subroutine Simulation_initBlock(solnData,block)
 #include "constants.h"
 #include "Flash.h"
   
-  real,dimension(:,:,:,:),pointer :: solnData
-  type(block_metadata_t), intent(in) :: block
+  real,                   pointer    :: solnData(:,:,:,:)
+  type(block_metadata_t), intent(in) :: blockDesc
 
   
   
@@ -140,19 +143,19 @@ subroutine Simulation_initBlock(solnData,block)
   end if                        !useProfileFromFile
 
   ! get the coordinate information for the current block
-  blkLimits = block%limits
-  blkLimitsGC = block%limitsGC
+  blkLimits = blockDesc%limits
+  blkLimitsGC = blockDesc%limitsGC
 
   if (sim_tinitial > 0.0) then
 
-     call Simulation_computeAnalytical(solnData,block,sim_tinitial)
+     call Simulation_computeAnalytical(solnData,blockDesc,sim_tinitial)
 
      !There is no parallel region in Grid_initDomain and so we use the
      !same thread within block code for both multithreading strategies.
 
      !$omp parallel if (sim_threadBlockList .or. sim_threadWithinBlock) &
      !$omp default(none) &
-     !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,blockID,&
+     !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,blockDesc,&
      !$omp sim_inSubzones,sim_nSubZones,sim_rProf,sim_minRhoInit,sim_smallRho,sim_smallP,&
      !$omp sim_smallX,sim_pProf,sim_rhoProf,sim_vProf,sim_gamma,sim_inszd,&
      !$omp sim_smallT,&
@@ -226,10 +229,10 @@ subroutine Simulation_initBlock(solnData,block)
   sizeZ = SIZE(zCoord)
 
   if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, block, CENTER, gcell, zCoord, sizeZ)
+                      (KAXIS, blockDesc, CENTER, gcell, zCoord, sizeZ)
   if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, block, CENTER,gcell, yCoord, sizeY)
-  call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCoord, sizeX)
+                      (JAXIS, blockDesc, CENTER,gcell, yCoord, sizeY)
+  call Grid_getCellCoords(IAXIS, blockDesc, CENTER, gcell, xCoord, sizeX)
   !
   !     For each cell
   !  
@@ -239,7 +242,7 @@ subroutine Simulation_initBlock(solnData,block)
 
   !$omp parallel if (sim_threadBlockList .or. sim_threadWithinBlock) &
   !$omp default(none) &
-  !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,blockID,&
+  !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,blockDesc,&
   !$omp sim_inSubzones,sim_nSubZones,sim_rProf,sim_minRhoInit,sim_smallRho,sim_smallP,&
   !$omp sim_smallX,sim_pProf,sim_rhoProf,sim_vProf,sim_gamma,sim_inszd,&
   !$omp rProf,pProf,rhoProf,vProf,&
@@ -298,10 +301,9 @@ subroutine Simulation_initBlock(solnData,block)
               dxx = xCoord(i) - xCoord(i-1) 
            endif
            
-           call Grid_getSingleCellVol(blockID, EXTERIOR, (/i,j,k/), dvc)
+           call Grid_getSingleCellVol(blockDesc, (/i,j,k/), dvc, DEFAULTIDX)
            call Grid_subcellGeometry(sim_nSubZones,1+(sim_nSubZones-1)*K2D,1+(sim_nSubZones-1)*K3D, &
-                dvc, dvSub, xCoord(i)-0.5*dxx, xCoord(i)+0.5*dxx, &
-                blockID = blockID)
+                dvc, dvSub, xCoord(i)-0.5*dxx, xCoord(i)+0.5*dxx)
 
 
            sumRho = 0.
