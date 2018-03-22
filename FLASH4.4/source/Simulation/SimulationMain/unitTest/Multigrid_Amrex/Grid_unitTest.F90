@@ -30,10 +30,10 @@ subroutine Grid_unitTest(fileUnit,perfect)
 !        Grid_solvePoisson,Grid_getBlkIndexLimits, &
        Grid_getBlkPtr,Grid_releaseBlkPtr, &
        Grid_getDeltas, Grid_fillGuardCells, &
-       Grid_getBlkIterator, Grid_releaseBlkIterator
+       Grid_getLeafIterator, Grid_releaseLeafIterator
   use gr_interface ,ONLY : gr_findMean
   use Grid_data, ONLY : gr_meshMe, gr_meshComm
-  use block_iterator, ONLY : block_iterator_t
+  use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
 use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
                                    amrex_max_level
@@ -50,7 +50,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   logical, intent(inout)        :: perfect  ! Flag to indicate errors
 
   real,dimension(:,:,:,:),pointer :: solnData
-  type(block_iterator_t) :: itor
+  type(leaf_iterator_t) :: itor
   type(block_metadata_t) :: block
 
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
@@ -102,7 +102,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   Tvol = 0.
   ! Get Block iterator
 !   itor = block_iterator_t(LEAF)
-  call Grid_getBlkIterator(itor, LEAF)
+  call Grid_getLeafIterator(itor)
   do while (itor%is_valid())
      call itor%blkMetaData(block)
      !get the index limits of the block
@@ -156,7 +156,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
      call Grid_releaseBlkPtr(block,solnData,CENTER)
      call itor%next()
   enddo
- call Grid_releaseBlkIterator(itor)
+ call Grid_releaseLeafIterator(itor)
 ! #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
 !   call destroy_iterator(itor)
 ! #endif
