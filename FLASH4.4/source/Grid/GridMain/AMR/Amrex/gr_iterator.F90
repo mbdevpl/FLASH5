@@ -150,7 +150,7 @@ contains
         allocate( itor%li(first : last) )
 
         do lev=first, last
-            itor%li(lev) = block_1lev_iterator_t(lev, tiling=tiling)
+            itor%li(lev) = block_1lev_iterator_t(ALL_BLKS, lev, tiling=tiling)
             is_lev_valid = itor%li(lev)%is_valid()
             if (is_lev_valid .AND. .NOT. itor%isValid) then
                itor%isValid = .TRUE.
