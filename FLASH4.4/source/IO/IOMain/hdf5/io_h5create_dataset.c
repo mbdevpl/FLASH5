@@ -1,13 +1,13 @@
 #include "io_h5create_dataset.h"
 
 void io_h5create_dataset(const int myPE,
-			 const int fileID,
+			 const hid_t fileID,
 			 const int diskType,
 			 const int dims,
 			 const int diskSize[],
 			 const char datasetName[])
 {
-  const hid_t hFileID = (hid_t) fileID;
+  const hid_t hFileID = fileID;
   hsize_t hDiskSize[IO_MAX_DIMS];
   hid_t hDiskType, dataspace, dataset;
   herr_t err;
@@ -54,6 +54,10 @@ void io_h5create_dataset(const int myPE,
   assert(dataspace >= 0);
   dataset = H5Dcreate(hFileID, datasetName, hDiskType,
                       dataspace, H5P_DEFAULT);
+  if (debugIO && myPE == MASTER_PE) {
+    printf(" [io_h5create_dataset]  -> Dataset %ld. Proc %d. hFileID %ld. hDiskType %ld.\n",
+	   dataset, myPE, hFileID, hDiskType);
+  }
   assert(dataset >= 0);
 
 

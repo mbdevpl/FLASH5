@@ -41,8 +41,8 @@ subroutine Driver_evolveFlash()
                                       Grid_getMaxRefinement, &
                                       Grid_getBlkPtr, Grid_releaseBlkPtr, &
                                       Grid_updateRefinement, &
-                                      Grid_getBlkIterator, &
-                                      Grid_releaseBlkIterator, &
+                                      Grid_getLeafIterator, &
+                                      Grid_releaseLeafIterator, &
                                       Grid_getSingleCellVol
     use Grid_data,             ONLY : gr_iguard, gr_jguard, gr_kguard, &
                                       gr_meshMe, &
@@ -53,7 +53,7 @@ subroutine Driver_evolveFlash()
                                       gr_enforceMaxRefinement, &
                                       gr_eosMode, &
                                       gr_eosModeInit
-    use block_iterator,        ONLY : block_iterator_t
+    use leaf_iterator,         ONLY : leaf_iterator_t
     use block_metadata,        ONLY : block_metadata_t
     use ut_testDriverMod
 
@@ -86,7 +86,7 @@ subroutine Driver_evolveFlash()
     real    :: y_expected = 0.0d0
     integer :: max_level = -1
 
-    type(block_iterator_t) :: itor
+    type(leaf_iterator_t)  :: itor
     type(block_metadata_t) :: block
     real, pointer          :: solnData(:, :, :, :) => null()
     integer                :: n_blocks = 0
@@ -157,7 +157,7 @@ subroutine Driver_evolveFlash()
     ! Walk across all blocks to test and collect info
     n_blocks = 0
     
-    call Grid_getBlkIterator(itor, LEAF)
+    call Grid_getLeafIterator(itor)
 
     call itor%blkMetaData(block)
     xBlkMin = block%limits(LOW,  IAXIS)
@@ -221,7 +221,7 @@ subroutine Driver_evolveFlash()
         call itor%next()
     end do
 
-    call Grid_releaseBlkIterator(itor)
+    call Grid_releaseLeafIterator(itor)
     
     ! Confirm proper number of blocks and cells
     call assertEqual(xBlkMin, 1, "Incorrect origin X-coordinate")
@@ -253,7 +253,7 @@ subroutine Driver_evolveFlash()
     call assertEqual(domainBC(HIGH, JAXIS), YH_BC_EX, "Incorrect Y-right BC")
 
     !!!!! CONFIRM PROPER INITIAL CONDITIONS
-    call Grid_getBlkIterator(itor, LEAF)
+    call Grid_getLeafIterator(itor)
     do while (itor%is_valid())
         call itor%blkMetaData(block)
         call Grid_getBlkPtr(block, solnData)
@@ -277,7 +277,7 @@ subroutine Driver_evolveFlash()
 
         call itor%next()
     end do
-    call Grid_releaseBlkIterator(itor)
+    call Grid_releaseLeafIterator(itor)
 
     !!!!! CONFIRM CELL COORDINATE ACCESSORS
     ! Find coordinates of lo/hi

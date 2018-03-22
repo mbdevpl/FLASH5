@@ -83,6 +83,7 @@ Grid += gr_blockMatch.o
 Grid += gr_amrexLsInit.o gr_amrexLsFinalize.o gr_amrexLsSolvePoisson.o gr_amrexLsInitGeom.o \
         gr_amrexLsInitGrid.o gr_amrexLsInitMf.o gr_amrexLsInitPoisson.o gr_amrexGetBa.o gr_amrexGetDm.o \
 	gr_amrexGetGeom.o gr_amrexLsSolvePoissonUnk.o
+Grid += gr_getBlkIterator.o gr_releaseBlkIterator.o
 
 gr_interface.o     : gr_interfaceTypeDecl.o
 gr_pfftInterface.o : gr_pfftInterfaceTypeDecl.o

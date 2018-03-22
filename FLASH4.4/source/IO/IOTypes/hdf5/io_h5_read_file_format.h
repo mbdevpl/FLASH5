@@ -19,7 +19,7 @@
 #endif
 
 void FTOC(io_h5_read_file_format)(const int * const pMyPE,
-				  const int * const pFileID,
+				  const hid_t * const pFileID,
 				  int *pFileFormat);
 
 #endif

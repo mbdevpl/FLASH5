@@ -337,16 +337,38 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLeft)
+     subroutine Grid_getFluxData(block, fluxx, fluxy, fluxz, dataSize,axis,  pressureSlots, areaLeft)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN) :: block
-       integer, intent(IN) :: axis
+       integer, intent(IN),optional :: axis
        integer, intent(IN), dimension(3) :: dataSize
-       real, intent(INOUT), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes
+       real, intent(INOUT), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxx,fluxy,fluxz
        integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
        real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
      end subroutine Grid_getFluxData
+  end interface
+
+  interface
+     subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: blockDesc
+       real, pointer                      :: fluxPtrX(:,:,:,:)
+       real, pointer                      :: fluxPtrY(:,:,:,:)
+       real, pointer                      :: fluxPtrZ(:,:,:,:)
+     end subroutine Grid_getFluxPtr
+  end interface
+
+  interface
+     subroutine Grid_releaseFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: blockDesc
+       real, pointer                      :: fluxPtrX(:,:,:,:)
+       real, pointer                      :: fluxPtrY(:,:,:,:)
+       real, pointer                      :: fluxPtrZ(:,:,:,:)
+     end subroutine Grid_releaseFluxPtr
   end interface
 
   interface
@@ -589,13 +611,13 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_putFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLeft)
+     subroutine Grid_putFluxData(block, fluxx,fluxy,fluxz, dataSize,axis, pressureSlots, areaLeft)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN) :: block
-       integer, intent(IN) :: axis
+       integer, intent(IN),optional :: axis
        integer, intent(IN), dimension(3) :: dataSize
-       real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes
+       real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxx,fluxy,fluxz
        integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
        real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
      end subroutine Grid_putFluxData
@@ -1338,22 +1360,21 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getBlkIterator(itor, nodetype, level, tiling)
-       use block_iterator, ONLY : block_iterator_t
+     subroutine Grid_getLeafIterator(itor, level, tiling)
+       use leaf_iterator, ONLY : leaf_iterator_t
        implicit none
-       type(block_iterator_t), intent(OUT)          :: itor
-       integer,                intent(IN)           :: nodetype
-       integer,                intent(IN), optional :: level
-       logical,                intent(IN), optional :: tiling
-     end subroutine Grid_getBlkIterator
+       type(leaf_iterator_t), intent(OUT)          :: itor
+       integer,               intent(IN), optional :: level
+       logical,               intent(IN), optional :: tiling
+     end subroutine Grid_getLeafIterator
   end interface
 
   interface
-     subroutine Grid_releaseBlkIterator(itor)
-       use block_iterator, ONLY : block_iterator_t
+     subroutine Grid_releaseLeafIterator(itor)
+       use leaf_iterator, ONLY : leaf_iterator_t
        implicit none
-       type(block_iterator_t), intent(INOUT) :: itor
-     end subroutine Grid_releaseBlkIterator
+       type(leaf_iterator_t), intent(INOUT) :: itor
+     end subroutine Grid_releaseLeafIterator
   end interface
 
 end Module Grid_interface

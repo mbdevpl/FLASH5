@@ -5,7 +5,7 @@
 #include "constants.h"
 #include "hdf5_flash.h"
 
-void FTOC(io_h5write_protondata)(int *pFileID,
+void FTOC(io_h5write_protondata)(hid_t *pFileID,
                                  int *rank,
 			         int *localPoints,
 			         int *globalPoints,

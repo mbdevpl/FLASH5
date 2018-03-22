@@ -1,5 +1,5 @@
 Grid += Grid_init.o Grid_getListOfBlocks.o \
-	Grid_getBlkIterator.o Grid_releaseBlkIterator.o \
+	Grid_getLeafIterator.o Grid_releaseLeafIterator.o \
 	Grid_ascModule.o Grid_ascGetBlkPtr.o Grid_ascReleaseBlkPtr.o \
 	Grid_genGetBlkPtr.o Grid_genReleaseBlkPtr.o \
 	Grid_copyF4DataToMultiFabs.o \
@@ -12,6 +12,7 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_getBlkPtr.o Grid_getBlkPtr_desc.o Grid_markRefineDerefine.o \
 	Grid_getBlkPhysicalSize.o \
 	Grid_getFluxData.o Grid_putFluxData.o \
+	Grid_getFluxPtr.o Grid_releaseFluxPtr.o \
 	Grid_releaseBlkPtr.o \
 	Grid_outsideBoundBox.o \
 	Grid_getBlkBoundBox.o Grid_getBlkBoundBox_desc.o Grid_getDomainBoundBox.o \
@@ -75,5 +76,5 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 
 Grid += Grid_init.o Grid_coordTransfm.o
 
-Grid += block_metadata.o block_iterator.o
+Grid += block_metadata.o leaf_iterator.o
 

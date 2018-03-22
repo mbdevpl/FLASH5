@@ -23,6 +23,7 @@ IO += IO_init.o \
         IO_startProtonWrite.o \
         IO_startRayWrite.o \
 	IO_writeProtons.o \
+	IO_writeSingleCells.o \
 	IO_writeRays.o \
         IO_endProtonWrite.o \
         IO_endRayWrite.o

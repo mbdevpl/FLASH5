@@ -220,14 +220,14 @@ void FTOC(io_h5write_unknowns)(int* myPE,
        writing attributes, so "record_label_new" should be closed before
        the call. */
 
-    io_h5_attribute_create(*myPE, (int)*file_identifier, attType, dims,
+    io_h5_attribute_create(*myPE, *file_identifier, attType, dims,
 			   diskSize, record_label_new, minLabel);
-    io_h5_attribute_write(*myPE, (int)*file_identifier, attType,
+    io_h5_attribute_write(*myPE, *file_identifier, attType,
 			  record_label_new, minLabel, varMin);
 
-    io_h5_attribute_create(*myPE, (int)*file_identifier, attType, dims,
+    io_h5_attribute_create(*myPE, *file_identifier, attType, dims,
 			   diskSize, record_label_new, maxLabel);
-    io_h5_attribute_write(*myPE, (int)*file_identifier, attType,
+    io_h5_attribute_write(*myPE, *file_identifier, attType,
 			  record_label_new, maxLabel, varMax);
   }
 }

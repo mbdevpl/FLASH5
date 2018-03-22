@@ -17,4 +17,4 @@ default: $(OBJS)
 	$(CCOMP) $(OBJS) $(LIBS) $(LFLAGS) $(EXENAME)
 
 clean:
-	rm $(OBJS) $(EXENAME)
+	rm -f $(OBJS) $(EXENAME)

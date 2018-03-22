@@ -4,7 +4,7 @@
 #include <hdf5.h>
 
 
-void FTOC(io_h5create_dataset_protons)(const int * const pFileID)
+void FTOC(io_h5create_dataset_protons)(const hid_t * const pFileID)
 {
   /* Create the data space with unlimited 1st dimension,
      since we don't know how many protons will be written

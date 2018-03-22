@@ -6,11 +6,11 @@
 !!
 !! SYNOPSIS
 !!
-!!  call IO_writeRays(integer(in) :: numrays,
-!!                    integer(in) :: raytags,
-!!                    real(in) :: posbuffer,
-!!                    real(in) :: powerbuffer,
-!!                    integer(in) :: numpos)
+!!  call IO_writeRays(integer(in) :: numRays,
+!!                    integer(in),dimension(:)  :: raytags(numRays),
+!!                    real(in),dimension(:,:,:) :: posbuffer(numRays,MAXVAL(numPos),3),
+!!                    real(in),dimension(:,:)   :: powerbuffer(numRays,MAXVAL(numPos)),
+!!                    integer(in),dimension(:)  :: numPos(numRays))
 !!
 !! DESCRIPTION
 !!
@@ -18,7 +18,7 @@
 !! 
 !! ARGUMENTS
 !!
-!!   numrays : number of rays  
+!!   numRays : number of rays  
 !!
 !!   raytags : tags of rays 
 !!
@@ -26,7 +26,7 @@
 !!
 !!   powerbuffer : power buffer 
 !!
-!!   numpos : 
+!!   numPos : number of points for each ray
 !!
 !!
 !!

@@ -85,7 +85,7 @@ subroutine Driver_evolveFlash()
 #ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
 #endif
-  use Hydro_interface,     ONLY : Hydro_advanceAll, &
+  use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
   use IO_interface,        ONLY : IO_output,IO_outputFinal
@@ -93,8 +93,6 @@ subroutine Driver_evolveFlash()
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
-  use block_iterator, ONLY : block_iterator_t
-  use block_metadata, ONLY : block_metadata_t
 
 #ifdef FLASH_GRID_AMREXTRANSITION
 !!$  use amrex_amr_module,    ONLY : amrex_real
@@ -142,9 +140,6 @@ subroutine Driver_evolveFlash()
   real,dimension(MDIM) :: del
 
   integer:: ib, blockID, level, maxLev
-
-  type(block_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
 
 !!$  real(amrex_real)  :: time     !testing...
   logical :: nodal(3)
@@ -219,9 +214,9 @@ subroutine Driver_evolveFlash()
      !! Guardcell filling routine - the call has been moved into Hydro.
 !!$     call Grid_fillGuardCells(CENTER,ALLDIR)
 
-     call Hydro_advanceAll(dr_simTime, dr_dt, dr_dtOld)
+     call Hydro(dr_simTime, dr_dt, dr_dtOld)
 
-!!!!!! Stuff from here has been MOVED TO Hydro_advanceAll !!!!!!
+!!!!!! Stuff from here has been MOVED TO Hydro !!!!!!
 
 
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)

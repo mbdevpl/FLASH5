@@ -13,7 +13,7 @@
 #include "io_h5_report_xfer_method.h"
 #include "hdf5_flash.h"
 
-int io_h5_xfer_wrapper(const int myPE, const int fileID, const int xferType,
+int io_h5_xfer_wrapper(const int myPE, const io_fileID_t fileID, const int xferType,
 		       const int typeMatchedXfer,
 		       const char datasetName[], const int memType,
 		       const int memSize[], const int memStart[],

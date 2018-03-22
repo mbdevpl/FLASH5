@@ -51,8 +51,11 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
                                    amrex_max_level
 
+  use Grid_data,            ONLY : gr_doFluxCorrection
   use gr_physicalMultifabs, ONLY : unk, &
-                                   facevarx, facevary, facevarz
+                                   facevarx, facevary, facevarz, &
+                                   fluxes, &
+                                   flux_registers
   use Driver_interface,     ONLY : Driver_abortFlash
 
   implicit none
@@ -70,9 +73,27 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   !   => all code dealing with multifabs arrays must consider the need for 
   !      index translation
   allocate(unk     (0:amrex_max_level))
+#if NFACE_VARS > 0
   allocate(facevarx(0:amrex_max_level))
   allocate(facevary(0:amrex_max_level))
   allocate(facevarz(0:amrex_max_level))
+#endif
+
+#if NFLUXES > 0
+  allocate(fluxes(0:amrex_max_level, 1:NDIM))
+
+  ! Flux registers
+  !
+  ! By definition, each flux register is associated with two levels 
+  ! (a coarse level and the next finest level).  Following the AMReX 
+  ! interface and the AMReX tutorials, the 0-based level index used here
+  ! is associated with the level index of the fine level 
+  !    (e.g. flux_register(1) is the flux register for the coarse level 0
+  !          and the fine level 1).
+  if (gr_doFluxCorrection) then
+    allocate(flux_registers(1:amrex_max_level))
+  end if
+#endif
 
   ! DEV: TODO Implement parameters
   if (.NOT. restart) then
