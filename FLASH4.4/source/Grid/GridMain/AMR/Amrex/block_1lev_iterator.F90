@@ -102,7 +102,7 @@ contains
     !!  constants.h
     !!****
     function init_iterator(nodetype, level, tiling) result(this)
-      use Driver_abortFlash,     ONLY : Driver_abortFlash
+      use Driver_interface,      ONLY : Driver_abortFlash
       use gr_physicalMultifabs,  ONLY : unk
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
