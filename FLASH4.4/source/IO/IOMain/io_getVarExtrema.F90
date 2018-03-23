@@ -35,10 +35,12 @@
 !!REORDER(4): solnData
 
 subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
-      use Grid_interface, ONLY :  Grid_getListOfBlocks, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getBlkIndexLimits
+      use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                                 Grid_getLeafIterator, Grid_releaseLeafIterator
       use Driver_interface, ONLY : Driver_abortFlash
       use IO_data, only: io_unkToGlobal, io_globalComm
+      use leaf_iterator, ONLY : leaf_iterator_t
+      use block_metadata, ONLY : block_metadata_t
       implicit none
       
 #include "Flash_mpi.h"
@@ -56,11 +58,12 @@ subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
       real, allocatable :: varMin(:), varMax(:)
       real, dimension(:,:,:,:), pointer :: solnData
 
-      integer :: i, j, k, n, numLeafBlocks, lb
-      integer :: listOfBlocks(MAXBLOCKS)
+      integer :: i, j, k, n
 
-      integer :: blockID, ierr
-      integer, dimension(2,MDIM) :: blkLmts, blkLmtsGC
+      integer :: ierr
+      integer, dimension(2,MDIM) :: blkLmts
+      type(leaf_iterator_t)  :: itor
+      type(block_metadata_t) :: blockDesc
 
       if(nvars > 0) then
             allocate(varMin(nvars))
@@ -70,11 +73,12 @@ subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
             varMin(:) = huge(varMin)
             varMax(:) = -huge(varMax)
 
-            call Grid_getListOfBlocks(LEAF, listOfBlocks, numLeafBlocks)
+            call Grid_getLeafIterator(itor)
+            do while (itor%is_valid())
+                  call itor%blkMetaData(blockDesc)
 
-            do lb = 1, numLeafBlocks
-                  call Grid_getBlkPtr(listOfBlocks(lb), solnData, gridDataStruct)
-                  call Grid_getBlkIndexLimits(listOfBlocks(lb), blkLmts, blkLmtsGC, gridDataStruct)
+                  call Grid_getBlkPtr(blockDesc, solnData, gridDataStruct)
+                  blkLmts   = blockDesc%limits !DEV: Add one for FACE-centered data?
 
                   select case(gridDataStruct)
                   case(CENTER)
@@ -108,8 +112,9 @@ subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
                   
                   ! doing Grid_releaseBlkPtr expansion by hand, see: drift
                   call Driver_driftSetSrcLoc(__FILE__,__LINE__)
-                  call Grid_releaseBlkPtr(listOfBlocks(lb), solnData, gridDataStruct)
+                  call Grid_releaseBlkPtr(blockDesc, solnData, gridDataStruct)
                   
+                  call itor%next()
             enddo
 
             ! now do a global minimization or maximization

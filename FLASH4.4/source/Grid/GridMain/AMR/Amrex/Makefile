@@ -14,11 +14,11 @@ Grid += gr_amrexInterface.o \
         gr_splitFabAtBoundary.o \
         gr_copyFabInteriorToRegion.o \
         gr_copyGuardcellRegionToFab.o \
-        gr_writeData.o \
-        gr_getBlkIterator.o \
-        gr_releaseBlkIterator.o \
         block_1lev_iterator.o \
-        gr_iterator.o
+        gr_writeData.o
+
+Grid += gr_specificData.o gr_initSpecific.o \
+        gr_updateData.o
 
 Grid += gr_amrextInterface.o
 
