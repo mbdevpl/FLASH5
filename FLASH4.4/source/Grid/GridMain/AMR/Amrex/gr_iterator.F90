@@ -69,7 +69,6 @@ module gr_iterator
     !!****
     type, public :: gr_iterator_t
         type(block_1lev_iterator_t), private, allocatable :: li(:)
-        integer :: nodetype    = LEAF 
         integer,                     private              :: first_level = INVALID_LEVEL
         integer,                     private              :: last_level  = INVALID_LEVEL
         integer,                     private              :: level       = INVALID_LEVEL
@@ -138,7 +137,6 @@ contains
             
       finest_level = amrex_get_finest_level() + 1
 
-        itor%nodetype = nodetype
       associate(first => itor%first_level, &
                 last  => itor%last_level)
         if (present(level)) then
