@@ -66,10 +66,13 @@ contains
     !!  set to the first matching block/tile.
     !!  
     !! ARGUMENTS
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-    !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
-    !!             iterate only over blocks/tiles located at this level of
-    !!             refinement.
+    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS).
+    !!             Refer to the documetation for the Paramesh version of 
+    !!             gr_getBlkIterator for more details.
+    !!  level    - iterate only over all blocks/tiles of the correct nodetype
+    !!             that are located at this level of refinement.  Refer to the
+    !!             documetation for the Paramesh version of gr_getBlkIterator 
+    !!             for more details.
     !!  tiling   - an optional optimization hint.  Tiling is not implemented for
     !!             Paramesh and therefore this hint is ignored.
     !!
