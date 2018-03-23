@@ -102,6 +102,7 @@ contains
     !!  constants.h
     !!****
     function init_iterator(nodetype, level, tiling) result(this)
+      use Driver_abortFlash,     ONLY : Driver_abortFlash
       use gr_physicalMultifabs,  ONLY : unk
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
@@ -114,12 +115,17 @@ contains
 
       finest_level = amrex_get_finest_level() + 1
       if (level > finest_level) then
-          call Driver_abortFlash("[init_iterator] No unk multifab for level")
+        call Driver_abortFlash("[init_iterator] No unk multifab for level")
       end if
 
       this%nodetype = nodetype
       this%level = level
       this%mf => unk(level-1)
+
+      ! Don't permit repeated calls to init without intermediate destroy call
+      if (associated(this%mfi)) then
+        call Driver_abortFlash("[init_iterator] Destroy iterator before initializing again")
+      end if
 
       allocate(this%mfi)
       call amrex_mfiter_build(this%mfi, this%mf, tiling=tiling)
