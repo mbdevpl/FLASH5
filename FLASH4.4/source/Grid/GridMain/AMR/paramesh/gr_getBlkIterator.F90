@@ -19,11 +19,35 @@
 !!
 !! ARGUMENTS 
 !!  itor     - the requested block iterator
-!!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS).  If
-!!             no block class is given, then the iterator defaults to iterating
-!!             over all blocks.
-!!  level    - iterate only over all blocks/tiles located at this level of
-!!             refinement.
+!!  nodetype - the class of blocks to iterate over.  The options are
+!!                - ALL_BLKS             - all blocks
+!!                - LEAF                 - only leaf blocks
+!!                - PARENT_BLK           - only those blocks with at least one
+!!                                         child block that is a leaf
+!!                - ACTIVE_BLKS          - only blocks that are leaves or 
+!!                                         parents
+!!                - ANCESTOR             - all blocks that are neither a leaf
+!!                                         nor a parent
+!!                - REFINEMENT           - all blocks on a given refinement
+!!                                         level
+!!                - IBDRY_BLKS           - only active blocks with at least one
+!!                                         face on the I-axis boundaries
+!!                - JBDRY_BLKS           - only active blocks with at least one 
+!!                                         face on the J-axis boundaries
+!!                - KBDRY_BLKS           - only active blocks with at least one
+!!                                         face on the K-axis boundaries
+!!                - ANY_BDRY_BLKS        - only those blocks with at least one
+!!                                         face on a boundary
+!!                - TRAVERSED            - (paramesh)
+!!                - TRAVERSED_AND_ACTIVE - (paramesh)
+!!                - INREGION             - (paramesh) 
+!!             The default value is ALL_BLKS.
+!!  level    - iterate only over all blocks/tiles of the correct nodetype
+!!             that are located at this level of refinement.  Note that the
+!!             level value must be given with respect to FLASH's 1-based
+!!             level index scheme.  If no level value is given, then
+!!             iteration is not restricted to any level.  However, if the nodetype
+!!             is REFINEMENT, a valid refinement level must be given.
 !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
 !!             walk across all associated blocks on a tile-by-tile basis *if*
 !!             the implementation supports this feature.  If a value is not
