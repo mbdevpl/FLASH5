@@ -97,7 +97,7 @@ contains
     !!                 logical(IN), optional :: tiling)
     !!
     !! DESCRIPTION
-    !!  Construct an iterator for walking across a specific subset of all blocks or
+    !!  Construct an iterator for walking across a specific subset of blocks or
     !!  tiles within the current AMReX octree structure.  The iterator is already
     !!  set to the first matching block/tile.
     !!

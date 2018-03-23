@@ -187,7 +187,7 @@ contains
     !!  call itor%next()
     !!
     !! DESCRIPTION
-    !!  Advance the iterator to the next bloc/tilek managed by process and
+    !!  Advance the iterator to the next block/tile managed by process and
     !!  that meets the iterator constraints given at instantiation.
     !!
     !!****
