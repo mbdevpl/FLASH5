@@ -2,7 +2,7 @@
 #----------------------------------------------------------------------------
 # Set the AMReX library path -- manual installation
 #----------------------------------------------------------------------------
-AMREX_PATH = ${HOME}/Projects/lib_install
+AMREX_PATH = ${HOME}/Projects/amrex_install/2D
 
 #----------------------------------------------------------------------------
 # Set the HDF5/MPI library paths -- managed by loading with Spack 
@@ -52,7 +52,6 @@ FFLAGS_TEST = -ggdb -c -fdefault-real-8 -fdefault-double-8 \
 
 FFLAGS_HYPRE =
 FFLAGS_AMREX = -I${AMREX_PATH}/include
-FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
 
 F90FLAGS =
 
@@ -106,8 +105,7 @@ LIB_MATH  =
 LIB_MPI   = 
 LIB_MPE   =
 LIB_HYPRE =
-LIB_AMREX = -L${AMREX_PATH}/lib -lamrex 
-LIB_AMREX2D = ${LIB_AMREX}
+LIB_AMREX = -L${AMREX_PATH}/lib -lamrex
 LIB_STDCXX = -lstdc++
 
 # Uncomment the following line to use electic fence memory debugger.
