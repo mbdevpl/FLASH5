@@ -12,6 +12,7 @@
 ## useopenmp    -> 0 or 1 depending on whether certain setup variables with names like 
 ##                 thread{BlockList,WithinBlock,RayTrace,ProtonTrace} are of Boolean
 ##                 type and True.
+## ndim         -> the dimension of the simulation to build
 ## includeTAU   -> ???
 ## pdbvar
 ## pdbrule
@@ -36,7 +37,7 @@ MAKEDISPLAY = %(makedisplay)d
 REORDERFLAG = %(indexReorder)d
 FLASHBINARY = true
 USEOPENMP = %(useopenmp)d
-
+NDIM = %(ndim)d
 
 # -s => Do not print the actual command being executed
 # -r => Do not use any implicit rules (speeds up performance)
