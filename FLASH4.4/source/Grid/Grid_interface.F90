@@ -152,9 +152,13 @@ Module Grid_interface
   end interface
 
   interface Grid_dump
-     subroutine Grid_dump(var,num,blockID,gcell)
-       integer, intent(IN) :: num, blockID
+     subroutine Grid_dump(var,num,solnData,blockDesc,gcell)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       integer, intent(IN) :: num
        integer, dimension(num), intent(IN) :: var
+       real,dimension(:,:,:,:),pointer     :: solnData
+       type(block_metadata_t),target, intent(in) :: blockDesc
        logical, intent(IN) :: gcell
      end subroutine Grid_dump
   end interface

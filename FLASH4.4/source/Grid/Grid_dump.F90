@@ -9,7 +9,7 @@
 !!                 integer(IN) :: num,
 !!                 integer(IN) :: blockID,
 !!                 logical(IN) :: gcell)
-!!  
+!!
 !! DESCRIPTION 
 !!  
 !! Dumps the variables specified in integer array "var" to a file.
@@ -101,11 +101,14 @@
 !!
 !!***
 
-subroutine Grid_dump(var,num,blockID,gcell)
+subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
+  use block_metadata, ONLY : block_metadata_t
 
 implicit none
-  integer, intent(IN) :: num, blockID
+  integer, intent(IN) :: num
   integer, dimension(num), intent(IN) :: var
+  real,dimension(:,:,:,:),pointer     :: solnData
+  type(block_metadata_t), intent(in)  :: blockDesc
   logical, intent(IN) :: gcell
 
   return
