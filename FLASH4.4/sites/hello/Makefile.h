@@ -1,8 +1,16 @@
 # FLASH makefile definitions for x86-64 macOS
 #----------------------------------------------------------------------------
-# Set the AMReX library path -- manual installation
+# Set the AMReX library path -- manual installation for multiple variants
 #----------------------------------------------------------------------------
-AMREX_PATH = ${HOME}/Projects/amrex_install/2D
+ifeq      ($(NDIM), 1)
+AMREX_PATH=${HOME}/Projects/amrex_install/1D
+else ifeq ($(NDIM), 2)
+AMREX_PATH=${HOME}/Projects/amrex_install/2D
+else ifeq ($(NDIM), 3)
+AMREX_PATH=${HOME}/Projects/amrex_install/3D
+else
+AMREX_PATH=
+endif
 
 #----------------------------------------------------------------------------
 # Set the HDF5/MPI library paths -- managed by loading with Spack 

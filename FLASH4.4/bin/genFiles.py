@@ -585,6 +585,7 @@ CPPCOMP=tau_cxx.sh -tau_makefile=$(TAU_MAKEFILE) -tau_options=$(TAU_OPTIONS)"""
     includeList = "".join(["include %s\n"%file for file in makefiles])
     includeMacros = "".join(["\n       $(%s) \\" % os.path.splitext(file)[1][1:] for file in makefiles])
 
+    ndim = GVars.dimension
     makedisplay = GVars.makedisplay
     indexReorder= 0
     if GVars.indexReorder: indexReorder = 1

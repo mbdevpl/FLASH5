@@ -36,7 +36,7 @@ MAKEDISPLAY = %(makedisplay)d
 REORDERFLAG = %(indexReorder)d
 FLASHBINARY = true
 USEOPENMP = %(useopenmp)d
-
+NDIM = %(ndim)d
 
 # -s => Do not print the actual command being executed
 # -r => Do not use any implicit rules (speeds up performance)
