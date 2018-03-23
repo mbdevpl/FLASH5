@@ -12,6 +12,7 @@
 ## useopenmp    -> 0 or 1 depending on whether certain setup variables with names like 
 ##                 thread{BlockList,WithinBlock,RayTrace,ProtonTrace} are of Boolean
 ##                 type and True.
+## ndim         -> the dimension of the simulation to build
 ## includeTAU   -> ???
 ## pdbvar
 ## pdbrule
