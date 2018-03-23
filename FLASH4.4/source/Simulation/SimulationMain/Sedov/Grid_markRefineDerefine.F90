@@ -55,9 +55,9 @@ subroutine Grid_markRefineDerefine()
   use Simulation_data,ONLY : sim_forceCenterDerefine, sim_centerRefineLevel, &
                         sim_derefineRadius
   use tree, ONLY : newchild, refine, derefine, stay, nodetype
-!!$  use physicaldata, ONLY : force_consistency
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Grid_interface, ONLY : Grid_fillGuardCells
+  use gr_interface,   ONLY : gr_markRefineDerefine
   use Particles_interface, only: Particles_sinkMarkRefineDerefine
   implicit none
 
@@ -72,6 +72,7 @@ subroutine Grid_markRefineDerefine()
   logical :: doEos=.true.
   integer,parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
   logical,dimension(maskSize) :: gcMask
+  real, dimension(MAXBLOCKS) :: err
 
   if(gr_lrefineMaxRedDoByTime) then
      call gr_markDerefineByTime()
@@ -106,7 +107,7 @@ subroutine Grid_markRefineDerefine()
   call Grid_fillGuardCells(CENTER_FACES,ALLDIR,doEos=.true.,&
        maskSize=maskSize, mask=gcMask, makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskArgsLogged,&
        selectBlockType=ACTIVE_BLKS)
-     gcMaskArgsLogged = .TRUE.
+  gcMaskArgsLogged = .TRUE.
 !!$  force_consistency = .TRUE.
 
   newchild(:) = .FALSE.
@@ -119,7 +120,9 @@ subroutine Grid_markRefineDerefine()
      ref_cut = gr_refine_cutoff(l)
      deref_cut = gr_derefine_cutoff(l)
      ref_filter = gr_refine_filter(l)
-     call gr_markRefineDerefine(iref,ref_cut,deref_cut,ref_filter)
+     err(:)      = 0.0
+     call gr_estimateError(err, iref, ref_filter)
+     call gr_markRefineDerefine(err, ref_cut, deref_cut)
   end do
 
 #ifdef FLASH_GRID_PARAMESH2

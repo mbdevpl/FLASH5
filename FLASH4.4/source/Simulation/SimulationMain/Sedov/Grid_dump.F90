@@ -52,12 +52,6 @@ subroutine Grid_dump(var,num, blockID, gcell)
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkPtr, Grid_releaseBlkPtr
   use Driver_interface, ONLY : Driver_getNStep, Driver_getSimTime, Driver_getDt
 
-#ifdef FIXEDBLOCKSIZE
-  use Grid_data, ONLY : gr_ilo, gr_ihi, gr_jlo, gr_jhi, &
-       gr_klo, gr_khi, gr_iloGC, gr_ihiGC, gr_jloGC, gr_jhiGC, &
-       gr_kloGC, gr_khiGC
-#endif
-
   use Simulation_data , ONLY : sim_fileUnitOutNum, sim_fileUnitOutAna
   use Simulation_data , ONLY : sim_ffNum, sim_ffAna
   use Simulation_data , ONLY : sim_globalNumProcs, sim_globalMe
@@ -82,13 +76,7 @@ subroutine Grid_dump(var,num, blockID, gcell)
   real :: rho
   real,allocatable,dimension(:) :: x,y,z
 
-#ifdef FIXEDBLOCKSIZE
-  integer,parameter :: bxn=GRID_IHI_GC-GRID_ILO_GC+1
-  integer,parameter :: byn=GRID_JHI_GC-GRID_JLO_GC+1 
-  integer,parameter :: bzn=GRID_KHI_GC-GRID_KLO_GC+1 
-#else
   integer :: bxn,byn,bzn
-#endif
   real :: stime, dt
   integer,save :: numCalls = 0, lastBlockID = -1
 
@@ -135,11 +123,11 @@ subroutine Grid_dump(var,num, blockID, gcell)
        
   call Grid_getBlkPtr(blockID,blkPtr)
   call Grid_getBlkIndexLimits(blockID, blkLimits,blkLimitsGC)
-#ifndef FIXEDBLOCKSIZE
+
   bxn = blkLimitsGC(HIGH,IAXIS) - blkLimitsGC(LOW,IAXIS) + 1
   byn = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
   bzn = blkLimitsGC(HIGH,KAXIS) - blkLimitsGC(LOW,KAXIS) + 1
-#endif
+
   count = bxn*byn*bzn
 
 
@@ -153,18 +141,8 @@ subroutine Grid_dump(var,num, blockID, gcell)
 
   if(.not. gcell) then
      dumpLimits => blkLimits
-#ifdef DEBUG_SIM
-#ifdef FIXEDBLOCKSIZE
-     print '(8F11.6)', blkPtr(var(1), gr_ilo:gr_ihi, gr_jlo:gr_jhi, gr_klo:gr_khi)
-#endif
-#endif
   else
      dumpLimits = blkLimitsGC
-#ifdef DEBUG_SIM
-#ifdef FIXEDBLOCKSIZE
-     print '(16F7.3)', blkPtr(var(1), gr_iloGc:gr_ihiGc, gr_jloGc:gr_jhiGc, gr_kloGc:gr_khiGc)
-#endif
-#endif
   end if
 
   iglobalCell = 0

@@ -16,8 +16,8 @@ IF withParticles
    REQUESTS IO/IOParticles
 ENDIF
 
-## LINKIF Grid_markRefineDerefine.F90 Grid/GridMain/paramesh
-## LINKIF gr_expandDomain.F90         Grid/GridMain/paramesh
+LINKIF Grid_markRefineDerefine.F90 Grid/GridMain/AMR/paramesh
+LINKIF gr_expandDomain.F90         Grid/GridMain/AMR/paramesh
 
 D sim_pAmbient       Initial ambient pressure
 PARAMETER sim_pAmbient     REAL    1.E-5

@@ -76,6 +76,7 @@ Grid += gr_xyzToBlockLevel.o gr_xyzToBlock.o
 
 Grid += gr_amrextInterface.o gr_amrextAmrexInit.o gr_amrextAmrexFinalize.o
 
+Grid += gr_forceDerefInRadius.o
 Grid += gr_markRefineDerefine.o gr_estimateBlkError.o
 
 Grid += gr_blockMatch.o
