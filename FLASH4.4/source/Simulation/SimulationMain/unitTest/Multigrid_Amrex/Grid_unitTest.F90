@@ -27,7 +27,8 @@
 subroutine Grid_unitTest(fileUnit,perfect)
 
   use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, &
-!        Grid_solvePoisson,Grid_getBlkIndexLimits, &
+!       Grid_getBlkIndexLimits, &
+       Grid_solvePoisson, &
        Grid_getBlkPtr,Grid_releaseBlkPtr, &
        Grid_getDeltas, Grid_fillGuardCells, &
        Grid_getLeafIterator, Grid_releaseLeafIterator
@@ -37,7 +38,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
   use block_metadata, ONLY : block_metadata_t
 use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
                                    amrex_max_level
-  use gr_amrexLsInterface, ONLY : gr_amrexLsSolvePoissonUnk
+!  use gr_amrexLsInterface, ONLY : Grid_amrexLsSolvePoissonUnk
 
 #include "Flash.h"
 #include "constants.h"
@@ -84,7 +85,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   if (gr_meshMe .eq. 0) CALL SYSTEM_CLOCK(TA(1),count_rate)  
   poisfact=1.
 !  call Grid_solvePoisson(PFFT_VAR,DENS_VAR,bcTypes,bcValues,poisfact)
-   call gr_amrexLsSolvePoissonUnk(PFFT_VAR, DENS_VAR, bcTypes, bcValues, poisfact)
+   call Grid_solvePoisson(PFFT_VAR, DENS_VAR, bcTypes, bcValues, poisfact)
   call mpi_barrier(gr_meshComm,ierr)
   if (gr_meshMe .eq. 0) then
      CALL SYSTEM_CLOCK(TA(2),count_rate)
