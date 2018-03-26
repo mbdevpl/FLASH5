@@ -46,33 +46,37 @@
 !!  This routine works with Paramesh only under very special circumstances
 !!***
 
-subroutine Grid_dump(var,num, blockID, gcell)
+subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
 
   use gr_specificData, ONLY : gr_ilo, gr_ihi, gr_jlo, gr_jhi, &
        gr_klo, gr_khi, gr_iloGC, gr_ihiGC, gr_jloGC, gr_jhiGC, &
        gr_kloGC, gr_khiGC
 
   use physicaldata, ONLY :unk
+  use block_metadata, ONLY : block_metadata_t
 
-!! uncomment next two lines when using with FLASH 2
-!!$  use dBase, ONLY : dBaseKeyNumber
 #include "Flash.h"
 
   implicit none
 
-  integer, intent(IN) :: num, blockID
+  integer, intent(IN) :: num
   integer, dimension(num), intent(IN) :: var
+  real,dimension(:,:,:,:),pointer     :: solnData
+  type(block_metadata_t), intent(in)  :: blockDesc
   logical, intent(IN) :: gcell
   
 
   character(len=80) :: ff1
   integer,dimension(4), save :: filecount = 0
+  integer :: blockID
   integer :: i,count
 
   integer,parameter :: bxn=GRID_IHI_GC-GRID_ILO_GC+1
   integer,parameter :: byn=GRID_JHI_GC-GRID_JLO_GC+1 
   integer,parameter :: bzn=GRID_KHI_GC-GRID_KLO_GC+1 
   real,dimension(1,bxn,byn,bzn,1)::scratch
+
+  blockID = blockDesc % id
 
   if(.not. gcell) then
      print '(8F11.6)', unk(var(1), gr_ilo:gr_ihi, gr_jlo:gr_jhi, gr_klo:gr_khi, blockID)
@@ -81,20 +85,6 @@ subroutine Grid_dump(var,num, blockID, gcell)
      print '(16F7.3)', unk(var(1), gr_iloGc:gr_ihiGc, gr_jloGc:gr_jhiGc, gr_kloGc:gr_khiGc, blockID)
   end if
 
-
-
-!!*** and  UNCOMMENT THIS 
-
-!!$  var(TEMP_VAR) =dBaseKeyNumber("temp")
-!!$  var(GAME_VAR) =dBaseKeyNumber("game")
-!!$  var(PRES_VAR) =dBaseKeyNumber("pres")
-!!$  var(EINT_VAR) =dBaseKeyNumber("eint")
-!!$  var(VELZ_VAR) =dBaseKeyNumber("velz")
-!!$  var(VELY_VAR) =dBaseKeyNumber("vely")
-!!$  var(VELX_VAR) =dBaseKeyNumber("velx")
-!!$  var(DENS_VAR) =dBaseKeyNumber("dens")
-!!$  var(GAMC_VAR) =dBaseKeyNumber("gamc")
-!!$  var(ENER_VAR) =dBaseKeyNumber("ener")
  
 
   !print '(8F11.6)', unk(var(1), gr_ilo:gr_ihi, gr_jlo:gr_jhi, gr_klo:gr_khi, blockID) 
