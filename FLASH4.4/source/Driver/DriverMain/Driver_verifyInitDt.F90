@@ -40,10 +40,10 @@ subroutine Driver_verifyInitDt()
   use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
        Grid_getSingleCellCoords, Grid_getMaxRefinement, &
        Grid_getBlkPtr, Grid_releaseBlkPtr, &
-       Grid_getBlkIterator, Grid_releaseBlkIterator
+       Grid_getLeafIterator, Grid_releaseLeafIterator
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
-  use block_iterator, ONLY : block_iterator_t
+  use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none       
@@ -77,7 +77,7 @@ subroutine Driver_verifyInitDt()
   integer :: isize,jsize,ksize
   logical :: runVerifyInitDt = .false.
   real :: extraHydroInfo
-  type(block_iterator_t) :: itor
+  type(leaf_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
   integer:: ib, level, maxLev
 
@@ -113,7 +113,7 @@ subroutine Driver_verifyInitDt()
         !Hydro_computeDt would be much more costly during the run
         
      do level=1,maxLev
-        call Grid_getBlkIterator(itor, LEAF, level=level)
+        call Grid_getLeafIterator(itor, level=level)
         do while(itor%is_valid())
            call itor%blkMetaData(blockDesc)
           
@@ -209,7 +209,7 @@ subroutine Driver_verifyInitDt()
            
            call itor%next()
         end do
-        call Grid_releaseBlkIterator(itor)
+        call Grid_releaseLeafIterator(itor)
      end do
      
      ! find the minimum across all processors, store it in dtCFL on MasterPE

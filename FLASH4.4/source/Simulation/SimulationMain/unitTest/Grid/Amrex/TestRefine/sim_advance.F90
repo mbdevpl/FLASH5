@@ -1,11 +1,11 @@
 subroutine sim_advance(step, points, values, set_msg, leaf_msg)
     use Grid_interface,       ONLY : Grid_updateRefinement, &
                                      Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                                     Grid_getBlkIterator, &
-                                     Grid_releaseBlkIterator
+                                     Grid_getLeafIterator, &
+                                     Grid_releaseLeafIterator
     use gr_amrexInterface,    ONLY : gr_getFinestLevel, &
                                      gr_averageDownLevels
-    use block_iterator,       ONLY : block_iterator_t 
+    use leaf_iterator,        ONLY : leaf_iterator_t 
     use block_metadata,       ONLY : block_metadata_t 
     use Driver_interface,     ONLY : Driver_abortFlash
     use sim_interface,        ONLY : sim_writeDataPoints, &
@@ -24,7 +24,7 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
 
     real, contiguous, pointer :: solnData(:,:,:,:)
  
-    type(block_iterator_t) :: itor
+    type(leaf_iterator_t)  :: itor
     type(block_metadata_t) :: blockDesc
 
     logical :: gridChanged
@@ -41,7 +41,7 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
     ! Write to leaf blocks first.  AMReX level indexing is 0-based
     call gr_getFinestLevel(finest_level)
     do lev = 1, finest_level
-        call Grid_getBlkIterator(itor, LEAF, level=lev)
+        call Grid_getLeafIterator(itor, level=lev)
         do while (itor%is_valid())
             call itor%blkMetaData(blockDesc)
             call Grid_getBlkPtr(blockDesc, solnData)
@@ -52,7 +52,7 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
             call Grid_releaseBlkPtr(blockDesc, solnData)
             call itor%next()
         end do
-        call Grid_releaseBlkIterator(itor)
+        call Grid_releaseLeafIterator(itor)
     end do
 
     ! Propogate leaf data to coarse, non-leaf blocks
@@ -71,9 +71,6 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
     end if
 
     call Grid_updateRefinement(step+1, DBLE(step+1), gridChanged) 
-    if (.NOT. gridChanged) then
-        call Driver_abortFlash("[sim_advance] Should refine on even steps")
-    end if
 
     call sim_collectLeaves
 end subroutine sim_advance

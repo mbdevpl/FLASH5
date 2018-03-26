@@ -147,9 +147,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use amrex_fillpatch_module,    ONLY : amrex_fillpatch
   use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
-  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                                        Grid_getBlkIterator, &
-                                        Grid_releaseBlkIterator
+  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data,                 ONLY : gr_justExchangedGC, &
                                         gr_eosMode, &
                                         gr_enableMaskedGCFill, &
@@ -165,9 +163,12 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_averageDownLevels
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
-                                        gr_setMasks_gen, gr_makeMaskConsistent_gen
+                                        gr_setMasks_gen, &
+                                        gr_makeMaskConsistent_gen, &
+                                        gr_getBlkIterator, &
+                                        gr_releaseBlkIterator
   use gr_physicalMultifabs,      ONLY : unk
-  use block_iterator,            ONLY : block_iterator_t
+  use gr_iterator,               ONLY : gr_iterator_t
   use block_metadata,            ONLY : block_metadata_t
 
 #include "Flash_mpi_implicitNone.fh"
@@ -188,7 +189,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   integer :: guard, gcEosMode
   integer,dimension(MDIM) :: layers, returnLayers
   real,dimension(:,:,:,:),pointer::solnData
-  type(block_iterator_t) :: itor
+  type(gr_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
 
   integer :: ierr
@@ -368,7 +369,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   if (present(doEos) .AND. needEos) then
      if (doEos) then
         call Timers_start("eos gc")
-        call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1)
+        call gr_getBlkIterator(itor, level=lev+1)
         do while (itor%is_valid())
            call itor%blkMetaData(blockDesc)
            
@@ -379,7 +380,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
            call itor%next()
         end do
-        call Grid_releaseBlkIterator(itor)
+        call gr_releaseBlkIterator(itor)
         call Timers_stop("eos gc")
      end if
   end if
@@ -400,7 +401,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      if (present(doEos) .AND. needEos) then
         if (doEos) then
            call Timers_start("eos gc")
-           call Grid_getBlkIterator(itor, ALL_BLKS, level=lev+1)
+           call gr_getBlkIterator(itor, level=lev+1)
            do while (itor%is_valid())
               call itor%blkMetaData(blockDesc)
               
@@ -411,7 +412,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
               call itor%next()
            end do
-           call Grid_releaseBlkIterator(itor)
+           call gr_releaseBlkIterator(itor)
            call Timers_stop("eos gc")
         end if
      end if

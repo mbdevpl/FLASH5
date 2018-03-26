@@ -470,13 +470,22 @@ module gr_interface
   end interface
 
   interface
-     function gr_blockMatch(blkID, ntype, refinementLevel) result(match)
-       implicit none
-       integer, intent(IN)           :: blkID
-       integer, intent(IN)           :: ntype
-       integer, intent(IN), OPTIONAL :: refinementLevel
-       logical                       :: match
-     end function gr_blockMatch
+    subroutine gr_getBlkIterator(itor, nodetype, level, tiling)
+      use gr_iterator, ONLY : gr_iterator_t
+      implicit none
+      type(gr_iterator_t), intent(OUT)          :: itor
+      integer,             intent(IN), optional :: nodetype
+      integer,             intent(IN), optional :: level
+      logical,             intent(IN), optional :: tiling
+    end subroutine gr_getBlkIterator
+  end interface
+
+  interface
+    subroutine gr_releaseBlkIterator(itor)
+      use gr_iterator, ONLY : gr_iterator_t
+      implicit none
+      type(gr_iterator_t), intent(INOUT) :: itor
+    end subroutine gr_releaseBlkIterator
   end interface
 
 end module gr_interface
