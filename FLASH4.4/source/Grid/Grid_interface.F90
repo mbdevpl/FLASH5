@@ -152,9 +152,13 @@ Module Grid_interface
   end interface
 
   interface Grid_dump
-     subroutine Grid_dump(var,num,blockID,gcell)
-       integer, intent(IN) :: num, blockID
+     subroutine Grid_dump(var,num,solnData,blockDesc,gcell)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       integer, intent(IN) :: num
        integer, dimension(num), intent(IN) :: var
+       real,dimension(:,:,:,:),pointer     :: solnData
+       type(block_metadata_t),target, intent(in) :: blockDesc
        logical, intent(IN) :: gcell
      end subroutine Grid_dump
   end interface
@@ -327,13 +331,13 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLeft)
+     subroutine Grid_getFluxData(block, fluxx, fluxy, fluxz, dataSize,axis,  pressureSlots, areaLeft)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN) :: block
-       integer, intent(IN) :: axis
+       integer, intent(IN),optional :: axis
        integer, intent(IN), dimension(3) :: dataSize
-       real, intent(INOUT), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes
+       real, intent(INOUT), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxx,fluxy,fluxz
        integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
        real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
      end subroutine Grid_getFluxData
@@ -579,13 +583,13 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_putFluxData(block, axis, fluxes, dataSize, pressureSlots, areaLeft)
+     subroutine Grid_putFluxData(block, fluxx,fluxy,fluxz, dataSize,axis, pressureSlots, areaLeft)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN) :: block
-       integer, intent(IN) :: axis
+       integer, intent(IN),optional :: axis
        integer, intent(IN), dimension(3) :: dataSize
-       real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes
+       real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxx,fluxy,fluxz
        integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
        real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
      end subroutine Grid_putFluxData

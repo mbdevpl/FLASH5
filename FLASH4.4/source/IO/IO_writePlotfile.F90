@@ -8,7 +8,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  IO_writePlotfile(logical(in), optional :: forced)
+!!  call IO_writePlotfile(logical(in), optional :: forced)
 !!
 !!
 !!
@@ -56,11 +56,6 @@
 !!
 !! NOTES
 !!  
-!!  We have added functionality to compress plotfile data further.
-!!  Byte packing is currently only available with hdf5 and the uniform
-!!  grid.  To use byte packing set the runtime parameter bytePack to
-!!  .true. in your flash.par
-!!
 !!  For those familiar with FLASH2, breaking up the plotfile routine into
 !!  these four different methods is a change.  Because FLASH3 now supports
 !!  different grid packages and we are committed to supporting both

@@ -11,7 +11,7 @@
 #include "io_h5_report_xfer_method.h"
 
 void io_h5_xfer_mesh_dataset(const int myPE,
-			     const int fileID,
+			     const hid_t fileID,
 			     const int xferType,
 			     const int fileFmt,
 			     const int fileType,

@@ -7,9 +7,9 @@
 !! SYNOPSIS
 !!
 !!  call IO_writeProtons (integer (in) :: numberOfProtons,
-!!                        integer (in) :: tags,
-!!                        real    (in) :: points,
-!!                        integer (in) :: pointCount)
+!!                        integer (in),dimension(:)     :: tags(numberOfProtons),
+!!                        real    (in),dimension(:,:,:) :: points,
+!!                        integer (in),dimension(:)     :: pointCount(numberOfProtons))
 !!
 !! DESCRIPTION
 !!
@@ -67,7 +67,7 @@ subroutine IO_writeProtons (numberOfProtons, tags, points, pointCount)
 !        number of proton points it has to write. This information must be
 !        shared with all other processors to compute the total number of proton
 !        points globally. Also compute the number of proton points owned by
-!        processors whose rank is less than mine. This information os used
+!        processors whose rank is less than mine. This information is used
 !        to determine where in the 'ProtonData' dataset of the HDF5 plot file
 !        each processor writes.
 !

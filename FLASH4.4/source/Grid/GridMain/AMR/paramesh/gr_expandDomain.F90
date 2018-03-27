@@ -39,7 +39,6 @@ subroutine gr_expandDomain (particlesInitialized)
   use Grid_interface, ONLY :  Grid_getLocalNumBlks, Grid_markRefineDerefine, &
                               Grid_getBlkPtr, Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
-  use gr_specificData, ONLY : gr_ihiGc,gr_jhiGc,gr_khiGc
   use tree, ONLY : lrefine, lrefine_min, lrefine_max, grid_changed
   use paramesh_interfaces, ONLY : amr_refine_derefine, amr_restrict
   use Eos_interface, ONLY : Eos_wrapped

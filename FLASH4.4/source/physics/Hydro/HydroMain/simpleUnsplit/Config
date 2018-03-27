@@ -21,7 +21,9 @@ IF ThreeT
    SETUPERROR The simpleUnsplit Hydro solvers do not support 3T. Configure without ThreeT.
 ENDIF
 
-
+#Signal that the unsplit implementation is an Unsplit Hydro
+# (used in UHD.h)
+PPDEFINE FLASH_UHD_HYDRO
 
 # Variables required by the unsplit solvers
 VARIABLE dens TYPE: PER_VOLUME 	EOSMAP:  DENS # density

@@ -14,14 +14,15 @@
 
 subroutine gr_amrexFinalize()
     use iso_c_binding
-    use amrex_init_module,      ONLY : amrex_finalize
-    use amrex_amrcore_module,   ONLY : amrex_max_level, &
-                                       amrex_amrcore_finalize
-    use amrex_multifab_module,  ONLY : amrex_multifab_destroy
-    use amrex_octree_module,    ONLY : amrex_octree_finalize
+    use amrex_init_module,         ONLY : amrex_finalize
+    use amrex_amrcore_module,      ONLY : amrex_max_level, &
+                                          amrex_amrcore_finalize
+    use amrex_octree_module,       ONLY : amrex_octree_finalize
 
-    use gr_physicalMultifabs,   ONLY : unk, &
-                                       facevarx, facevary, facevarz
+    use gr_amrexInterface,         ONLY : gr_clearLevelCallback
+    use gr_physicalMultifabs,      ONLY : unk, &
+                                          facevarx, facevary, facevarz, &
+                                          flux_registers
  
     integer :: lev
 
@@ -29,16 +30,14 @@ subroutine gr_amrexFinalize()
   
     ! NOTE: Arrays of multifabs use AMReX's 0-based level indexing scheme
     do lev = 0, amrex_max_level
-        call amrex_multifab_destroy(unk(lev))
-        call amrex_multifab_destroy(facevarx(lev))
-        call amrex_multifab_destroy(facevary(lev))
-        call amrex_multifab_destroy(facevarz(lev))
+        call gr_clearLevelCallback(lev)
     end do
 
-    if (allocated(unk))         deallocate(unk)
-    if (allocated(facevarx))    deallocate(facevarx)
-    if (allocated(facevary))    deallocate(facevary)
-    if (allocated(facevarz))    deallocate(facevarz)
+    if (allocated(unk))            deallocate(unk)
+    if (allocated(facevarx))       deallocate(facevarx)
+    if (allocated(facevary))       deallocate(facevary)
+    if (allocated(facevarz))       deallocate(facevarz)
+    if (allocated(flux_registers)) deallocate(flux_registers)
 
     call amrex_amrcore_finalize()
     call amrex_octree_finalize()
