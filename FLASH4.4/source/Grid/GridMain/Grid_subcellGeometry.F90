@@ -6,9 +6,9 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_subcellGeometry(:: nsubi,
-!!                             :: nsubj,
-!!                             :: nsubk,
+!!  call Grid_subcellGeometry(integer,VALUE(in) :: nsubi,
+!!                            integer,VALUE(in) :: nsubj,
+!!                            integer,VALUE(in) :: nsubk,
 !!                            real(in) :: dvcell,
 !!                            real, intent(OUT)  :: dvsub(nsubI,nsubJ),
 !!                            real,OPTIONAL(in) :: xl,
@@ -16,13 +16,12 @@
 !!                            real,OPTIONAL(in) :: yl,
 !!                            real,OPTIONAL(in) :: yr,
 !!                            integer,OPTIONAL(in) :: pos(*),
-!!                            integer,OPTIONAL(in) :: blockid)
+!!                            integer,OPTIONAL(in) :: blockID)
 !!
 !! DESCRIPTION
 !!
-!!  Geometrically correct computation of the volumnes of subcells.
+!!  Geometrically correct computation of the volumes of subcells.
 !!
-!!  Currently only implemented for CARTESIAN and CYLINDRICAL geometries.
 !!
 !! ARGUMENTS
 !!
@@ -36,7 +35,7 @@
 !!
 !!   dvsub :     Volumes of subcells. Note that this is a 2-dimensional array.
 !!               For the geometries that FLASH supports, subcells volumes
-!!               nrver depend on the third coordinate.
+!!               never depend on the third coordinate.
 !!
 !!   xl :        X-coordinate of left cell face.
 !!
@@ -48,7 +47,7 @@
 !!
 !!   pos :       currently unused.
 !!
-!!   blockid : ID of block in current processor
+!!   blockID : ID of block in current processor, currently unused
 !!
 !!
 !!***
@@ -72,19 +71,24 @@ subroutine Grid_subcellGeometry(nsubI,nsubJ,nsubK, &
   integer              :: geometry
   real                 :: dvs
   real                 :: xccN2inv, xcsN
-  integer              :: i, effGeometry
+  real                 :: x2ccNinv3, x32csN
+  real                 :: xLs, xRs
+  real                 :: yLs, yRs
+  integer              :: i, j, effGeometry
 
   call Grid_getGeometry(geometry)
   effGeometry = geometry
-  if (nsubI == 1) effGeometry = CARTESIAN
-
+  if (nsubI == 1) then
+     if (geometry .NE. SPHERICAL) effGeometry = CARTESIAN
+     if (nsubJ == 1) effGeometry = CARTESIAN
+  end if
   select case (effGeometry)
      case(CARTESIAN)
         dvs          = dvCell
         dvs          = dvs   / real(nsubI)
         dvs          = dvs   / real(nsubJ)
         dvSub(:,:)   = dvs   / real(nsubK)
-     case(CYLINDRICAL)
+     case(CYLINDRICAL,POLAR)
 !        xcc          =           (xL+xR) * 0.5
 !        xccN         =           (xL+xR) * 0.5 * real(nsubI)
 !        xccNinv      = 2.0 / (real(nsubI) * (xL+xR))
@@ -102,6 +106,35 @@ subroutine Grid_subcellGeometry(nsubI,nsubJ,nsubK, &
            dvSub(i,1) = dvSub(i,1) / real(nsubJ)
            dvSub(i,:) = dvSub(i,1) / real(nsubK)
         end do
+     case(SPHERICAL)
+!        dxiInv = real(nsubI) / (xR - xL)
+!        dxsInv = real(nsubI) / (xR - xL)
+!!$           x2cc          =           ((xL+xR)**2-xL*xR) * 0.5
+!!$           x2ccN         =           ((xL+xR)**2-xL*xR) * 0.5 * real(nsubI)
+        x2ccNinv3      = 1.0 / (real(nsubI) * ((xL+xR)**2-xL*xR))
+!!$           x2ccN2inv3     = 1.0 / (real(nsubI)*real(nsubI) * ((xL+xR)**2-xL*xR))
+        do i=1,nsubI
+           xLs =    ( xL * (nsubI+1-i)  +  xR * (i-1) ) / real(nsubI)
+           xRs =    ( xL * (nsubI  -i)  +  xR * (i  ) ) / real(nsubI)
+!!$              xLsn =    ( xL * (nsubI+1-i)  +  xR * (i-1) ) * dxsInv
+!!$              xRsn =    ( xL * (nsubI  -i)  +  xR * (i  ) ) * dxsInv
+!           xcs =    ( xL * (real(nsubI-i)+0.5)  +  xR * (real(i)-0.5) ) / real(nsubI)
+
+           x32csN =    ((xLs+xRs)**2-xLs*xRs)
+           dvSub(i,1) =dvCell *  x32csN * x2ccNinv3
+        end do
+        if(NDIM > 1 .OR. nsubJ > 1) then
+           do j=1,nsubJ
+              yLs =    ( yL * (nsubJ+1-j)  +  yR * (j-1) ) / real(nsubJ)
+              yRs =    ( yL * (nsubJ  -j)  +  yR * (j  ) ) / real(nsubJ)
+
+              dvSub(:,j) = dvSub(:,1) * (cos(yLs)-cos(yRs)) / ((cos(yL)-cos(yR)) * real(nsubK))
+           end do
+        else
+           dvSub(:,1) = dvSub(:,1) / real(nsubK)
+        end if
+
+
      case default
         call Driver_abortFlash('[Grid_subcellGeometry] Not implemented for current geometry')
   end select

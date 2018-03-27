@@ -4,11 +4,12 @@
 !!
 !!  Simulation_initBlock
 !!
-!! 
+!!
 !! SYNOPSIS
 !!
-!!  call Simulation_initBlock(integer(IN) :: blockId)
-!!                       
+!!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
+!!                            integer(IN)  :: blockDesc  )
+!!
 !!
 !!
 !! DESCRIPTION
@@ -25,14 +26,16 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockId -        The number of the block to initialize
-!!  
+!!  solnData  -        pointer to solution data
+!!  blockDesc -        describes the block to initialize
+!!
 !!
 !! PARAMETERS
 !!
 !!  sim_pAmbient       Initial ambient pressure
 !!  sim_rhoAmbient     Initial ambient density
 !!  sim_expEnergy      Explosion energy (distributed over 2^dimen central zones)
+!!  sim_minRhoInit     Density floor for initial condition
 !!  sim_rInit          Radial position of inner edge of grid (for 1D )
 !!  sim_xctr           Explosion center coordinates
 !!  sim_yctr           Explosion center coordinates
@@ -45,81 +48,180 @@
 !!REORDER(4): solnData
 
 
-subroutine Simulation_initBlock(solnData,block)
+subroutine Simulation_initBlock(solnData,blockDesc)
 
+  use Simulation_interface, ONLY: Simulation_computeAnalytical
   use Simulation_data, ONLY: sim_xMax, sim_xMin, sim_yMax, sim_yMin, sim_zMax, sim_zMin, &
-     &  sim_nProfile, sim_drProf, sim_rProf, sim_vProf, sim_pProf, sim_pExp, sim_rhoProf, &
+     &  sim_nProfile, sim_rProf, sim_vProf, sim_pProf, sim_pExp, sim_rhoProf, &
      &  sim_tInitial, sim_gamma, sim_expEnergy, sim_pAmbient, sim_rhoAmbient, &
-     &  sim_smallX, sim_smallRho, sim_smallP, sim_rInit, &
+     &  sim_useProfileFromFile, sim_profileInitial, &
+     &  sim_smallX, sim_smallRho, sim_minRhoInit, sim_smallP, sim_rInit, &
      &  sim_smallT, &
-     &  sim_nSubZones, sim_xCenter, sim_yCenter, sim_zCenter, sim_inSubzm1, sim_inszd, &
+     &  sim_nSubZones, sim_xCenter, sim_yCenter, sim_zCenter, sim_inSubzones, sim_inszd, &
      sim_threadBlockList, sim_threadWithinBlock
-  use Grid_interface, ONLY : Grid_getCellCoords
+  use Grid_interface, ONLY : Grid_getCellCoords, Grid_getSingleCellVol, &
+                             Grid_subcellGeometry
   use block_metadata, ONLY : block_metadata_t
+  use ut_interpolationInterface
  
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
   
-  real,dimension(:,:,:,:),pointer :: solnData
-  type(block_metadata_t), intent(in) :: block
+  real,                   pointer    :: solnData(:,:,:,:)
+  type(block_metadata_t), intent(in) :: blockDesc
 
   
   
+  integer,parameter :: op = 2
   integer  ::  i, j, k, n, jLo, jHi
-  integer  ::  ii, jj, kk
+  integer  ::  ii, jj, kk, kat
+  real     ::  drProf
+  real,allocatable,dimension(:) :: rProf, vProf, rhoProf, pProf
   real     ::  distInv, xDist, yDist, zDist
   real     ::  sumRho, sumP, sumVX, sumVY, sumVZ
   real     ::  vel, diagonal
   real     ::  xx, dxx, yy, dyy, zz, dzz, frac
-  real     ::  vx, vy, vz, p, rho, e, ek
+  real     ::  vx, vy, vz, p, rho, e, ek, eint
   real     ::  dist
-  logical  ::  validGeom
-  integer :: istat
+  real     ::  vSub, rhoSub, pSub, errIgnored
 
   real,allocatable,dimension(:) :: xCoord,yCoord,zCoord
   integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   integer :: sizeX,sizeY,sizeZ
   integer,dimension(MDIM) :: axis
-  
+
+!!$  real     :: dvSub(0:sim_nSubZones-1,0:(sim_nSubZones-1)*K2D)
+  real,allocatable :: dvSub(:,:)
+  real     :: dvc, quotinv
+
   logical :: gcell = .true.
+
+  if (sim_useProfileFromFile) then
+     ! lazy initialization - should already have been done from Simulation_init
+     if (sim_tinitial > 0.0) call sim_scaleProfile(sim_tinitial)
+  end if
+
+!!$  if (.NOT. sim_useProfileFromFile .OR. sim_tinitial .LE. 0.0) then
+  if (sim_tinitial .LE. 0.0) then
+     allocate(rProf(sim_nProfile))
+     allocate(vProf(sim_nProfile))
+     allocate(rhoProf(sim_nProfile))
+     allocate(pProf(sim_nProfile))
 
   !
   !  Construct the radial samples needed for the initialization.
   !
-  diagonal = (sim_xMax-sim_xMin)**2
-  diagonal = diagonal + K2D*(sim_yMax-sim_yMin)**2
-  diagonal = diagonal + K3D*(sim_zMax-sim_zMin)**2
-  diagonal = sqrt(diagonal)
+     diagonal = (sim_xMax-sim_xMin)**2
+     diagonal = diagonal + K2D*(sim_yMax-sim_yMin)**2
+     diagonal = diagonal + K3D*(sim_zMax-sim_zMin)**2
+     diagonal = sqrt(diagonal)
   
-  sim_drProf = diagonal / (sim_nProfile-1)
+     drProf = diagonal / (sim_nProfile-1)
   
-  do i = 1, sim_nProfile
-     sim_rProf(i)   = (i-1) * sim_drProf
-  enddo
-  !
-  !  If t>0, use the analytic Sedov solution to initialize the
-  !  code.  Otherwise, just use a top-hat.
-  !
-
-  if (sim_tInitial .gt. 0.) then
-     call set_analytic_sedov (sim_nProfile, sim_rProf, sim_rhoProf, sim_pProf, & 
-          sim_vProf, sim_tInitial, sim_gamma, sim_expEnergy, & 
-          sim_pAmbient, sim_rhoAmbient)
-  else
      do i = 1, sim_nProfile
-        sim_rhoProf(i) = sim_rhoAmbient
-        sim_pProf(i)   = sim_pAmbient
-        sim_vProf(i)   = 0.
-        if (sim_rProf(i) .le. sim_rInit) sim_pProf(i) = sim_pExp
+        rProf(i)   = (i-1) * drProf
      enddo
-     
-  endif
+!!$  !
+!!$  !  If t>0, use the analytic Sedov solution to initialize the
+!!$  !  code.  Otherwise, just use a top-hat.
+!!$  !
+!!$
+!!$     if (sim_tInitial .gt. 0.) then
+!!$        call set_analytic_sedov (sim_nProfile, rProf, rhoProf, pProf, & 
+!!$          vProf, sim_tInitial, sim_gamma, sim_expEnergy, & 
+!!$          sim_pAmbient, sim_rhoAmbient)
+!!$     else
+        do i = 1, sim_nProfile
+           rhoProf(i) = sim_rhoAmbient
+           pProf(i)   = sim_pAmbient
+           vProf(i)   = 0.
+           if (rProf(i) .le. sim_rInit) pProf(i) = sim_pExp
+        enddo
+!!$     
+!!$     endif
+  end if                        !useProfileFromFile
 
-  ! get the coordinate information for the current block from the database
-  blkLimits = block%limits
-  blkLimitsGC = block%limitsGC
+  ! get the coordinate information for the current block
+  blkLimits = blockDesc%limits
+  blkLimitsGC = blockDesc%limitsGC
+
+  if (sim_tinitial > 0.0) then
+
+     call Simulation_computeAnalytical(solnData,blockDesc,sim_tinitial)
+
+     !There is no parallel region in Grid_initDomain and so we use the
+     !same thread within block code for both multithreading strategies.
+
+     !$omp parallel if (sim_threadBlockList .or. sim_threadWithinBlock) &
+     !$omp default(none) &
+     !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,blockDesc,&
+     !$omp sim_inSubzones,sim_nSubZones,sim_rProf,sim_minRhoInit,sim_smallRho,sim_smallP,&
+     !$omp sim_smallX,sim_pProf,sim_rhoProf,sim_vProf,sim_gamma,sim_inszd,&
+     !$omp sim_smallT,&
+     !$omp solnData, &
+     !$omp sim_xCenter,sim_yCenter,sim_zCenter) &
+     !$omp private(i,j,k,ii,jj,kk,n,dxx,dyy,dzz,sumRho,sumP,sumVX,sumVY,sumVZ,&
+     !$omp xx,yy,zz,xDist,yDist,zDist,dist,distInv,jLo,jHi,frac,vel,axis,&
+     !$omp rho,p,vx,vy,vz,ek,e,eint,kat)
+
+#if NDIM == 3
+     !$omp do schedule(static)
+#endif
+     do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
+
+#if NDIM == 2
+        !$omp do schedule(static)
+#endif
+        do j = blkLimitsGC(LOW, JAXIS), blkLimitsGC(HIGH, JAXIS)
+
+#if NDIM == 1
+           !$omp do schedule(static)
+#endif
+           do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH, IAXIS)
+              if (NSPECIES > 0) then
+                 solnData(SPECIES_BEGIN,i,j,k)=1.0-(NSPECIES-1)*sim_smallX
+                 solnData(SPECIES_BEGIN+1:SPECIES_END,i,j,k)=sim_smallX
+              end if
+              solnData(DENS_VAR,i,j,k)=max(solnData(DENA_VAR,i,j,k), sim_smallRho)
+              solnData(PRES_VAR,i,j,k)=max(solnData(PRSA_VAR,i,j,k), sim_smallP)
+              solnData(ENER_VAR,i,j,k)=    solnData(ENRA_VAR,i,j,k)
+#ifdef EINT_VAR
+              solnData(EINT_VAR,i,j,k)=    solnData(EINA_VAR,i,j,k)
+#endif
+              solnData(GAME_VAR,i,j,k)=sim_gamma
+              solnData(GAMC_VAR,i,j,k)=sim_gamma
+              solnData(VELX_VAR,i,j,k)=    solnData(VLXA_VAR,i,j,k)
+#ifdef VLYA_VAR
+              solnData(VELY_VAR,i,j,k)=    solnData(VLYA_VAR,i,j,k)
+#endif
+#ifdef VLZA_VAR
+              solnData(VELZ_VAR,i,j,k)=    solnData(VLZA_VAR,i,j,k)
+#endif
+              solnData(TEMP_VAR,i,j,k)=sim_smallT
+#ifdef BDRY_VAR
+              solnData(BDRY_VAR,i,j,k)=    -1.0
+#endif
+           enddo
+#if NDIM == 1
+           !$omp end do nowait
+#endif
+        enddo
+#if NDIM == 2
+        !$omp end do nowait
+#endif
+     enddo
+#if NDIM == 3
+     !$omp end do nowait
+#endif
+     !$omp end parallel
+
+
+     RETURN                     ! DONE here!
+  end if
+
+
   allocate(xCoord(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS))); xCoord = 0.0
   allocate(yCoord(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS))); yCoord = 0.0
   allocate(zCoord(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS))); zCoord = 0.0
@@ -128,24 +230,32 @@ subroutine Simulation_initBlock(solnData,block)
   sizeZ = SIZE(zCoord)
 
   if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, block, CENTER, gcell, zCoord, sizeZ)
+                      (KAXIS, blockDesc, CENTER, gcell, zCoord, sizeZ)
   if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, block, CENTER,gcell, yCoord, sizeY)
-  call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCoord, sizeX)
+                      (JAXIS, blockDesc, CENTER,gcell, yCoord, sizeY)
+  call Grid_getCellCoords(IAXIS, blockDesc, CENTER, gcell, xCoord, sizeX)
+  !
+  !     For each cell
+  !  
 
   !There is no parallel region in Grid_initDomain and so we use the
   !same thread within block code for both multithreading strategies.
 
   !$omp parallel if (sim_threadBlockList .or. sim_threadWithinBlock) &
   !$omp default(none) &
-  !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,blockID,&
-  !$omp sim_inSubzm1,sim_nSubZones,sim_rProf,sim_smallRho,sim_smallP,&
+  !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,blockDesc,&
+  !$omp sim_inSubzones,sim_nSubZones,sim_rProf,sim_minRhoInit,sim_smallRho,sim_smallP,&
   !$omp sim_smallX,sim_pProf,sim_rhoProf,sim_vProf,sim_gamma,sim_inszd,&
+  !$omp rProf,pProf,rhoProf,vProf,&
   !$omp sim_smallT,&
+  !$omp sim_useProfileFromFile,sim_tinitial,errIgnored,solnData, &
+  !$omp sim_rhoAmbient,sim_pAmbient, &
   !$omp sim_xCenter,sim_yCenter,sim_zCenter) &
   !$omp private(i,j,k,ii,jj,kk,n,dxx,dyy,dzz,sumRho,sumP,sumVX,sumVY,sumVZ,&
   !$omp xx,yy,zz,xDist,yDist,zDist,dist,distInv,jLo,jHi,frac,vel,axis,&
-  !$omp rho,p,vx,vy,vz,ek,e)
+  !$omp rho,p,vx,vy,vz,ek,e,eint,kat,rhoSub,pSub,vSub,dvc,quotinv,dvSub)
+
+  allocate(dvSub(0:sim_nSubZones-1,0:(sim_nSubZones-1)*K2D))
 
 #if NDIM == 3
   !$omp do schedule(static)
@@ -192,6 +302,11 @@ subroutine Simulation_initBlock(solnData,block)
               dxx = xCoord(i) - xCoord(i-1) 
            endif
            
+           call Grid_getSingleCellVol(blockDesc, (/i,j,k/), dvc, DEFAULTIDX)
+           call Grid_subcellGeometry(sim_nSubZones,1+(sim_nSubZones-1)*K2D,1+(sim_nSubZones-1)*K3D, &
+                dvc, dvSub, xCoord(i)-0.5*dxx, xCoord(i)+0.5*dxx)
+
+
            sumRho = 0.
            sumP   = 0.
            sumVX  = 0.
@@ -207,49 +322,69 @@ subroutine Simulation_initBlock(solnData,block)
            ! 
 
            do kk = 0, (sim_nSubZones-1)*K3D
-              zz    = zCoord(k) + (kk*sim_inSubzm1-.5)*dzz 
+              zz    = zCoord(k) + ((real(kk)+0.5)*sim_inSubzones-.5)*dzz 
               zDist = (zz - sim_zCenter) * K3D
               
               do jj = 0, (sim_nSubZones-1)*K2D
-                 yy    = yCoord(j) + (jj*sim_inSubzm1-.5)*dyy
+                 yy    = yCoord(j) + ((real(jj)+0.5)*sim_inSubzones-.5)*dyy
                  yDist = (yy - sim_yCenter) * K2D
                  
                  do ii = 0, (sim_nSubZones-1)
-                    xx    = xCoord(i) + (ii*sim_inSubzm1-.5)*dxx
+                    xx    = xCoord(i) + ((real(ii)+0.5)*sim_inSubzones-.5)*dxx
                     xDist = xx - sim_xCenter
                     
                     dist    = sqrt( xDist**2 + yDist**2 + zDist**2 )
                     distInv = 1. / max( dist, 1.E-10 )
-                    call sim_find (sim_rProf, sim_nProfile, dist, jLo)
+                    if (sim_useProfileFromFile .AND. sim_tinitial > 0) then
+                       if (dist .LE. sim_rProf(sim_nProfile+1)) then
+                          call ut_hunt(sim_rProf,sim_nProfile+1,dist,kat)
+                          kat = max(1, min(kat - op/2 + 1, sim_nProfile - op + 2))
+                          call ut_polint(sim_rProf(kat),sim_vProf  (kat),op,dist,vSub  ,errIgnored)
+                          call ut_polint(sim_rProf(kat),sim_rhoProf(kat),op,dist,rhoSub,errIgnored)
+                          call ut_polint(sim_rProf(kat),sim_pProf  (kat),op,dist,pSub  ,errIgnored)
+                       else
+                          vSub    = 0.0
+                          rhoSub  = sim_rhoAmbient
+                          psub    = sim_pAmbient
+                       end if
+                    else
+                       call sim_find (rProf, sim_nProfile, dist, jLo)
                     !
                     !  a point at `dist' is frac-way between jLo and jHi.   We do a
                     !  linear interpolation of the quantities at jLo and jHi and sum those.
                     ! 
-                    if (jLo .eq. 0) then
-                       jLo = 1
-                       jHi = 1
-                       frac = 0.
-                    else if (jLo .eq. sim_nProfile) then
-                       jLo = sim_nProfile
-                       jHi = sim_nProfile
-                       frac = 0.
-                    else
-                       jHi = jLo + 1
-                       frac = (dist - sim_rProf(jLo)) / & 
-                            (sim_rProf(jHi)-sim_rProf(jLo))
-                    endif
+                       if (jLo .eq. 0) then
+                          jLo = 1
+                          jHi = 1
+                          frac = 0.
+                       else if (jLo .eq. sim_nProfile) then
+                          jLo = sim_nProfile
+                          jHi = sim_nProfile
+                          frac = 0.
+                       else
+                          jHi = jLo + 1
+                          frac = (dist - rProf(jLo)) / & 
+                            (rProf(jHi)-rProf(jLo))
+                       endif
+
+                       pSub   =  pProf(jLo) + frac*(pProf(jHi)  - pProf(jLo))
+
+                       rhoSub =  rhoProf(jLo) + frac*(rhoProf(jHi)- rhoProf(jLo))
+                       rhoSub = max(rhoSub, sim_minRhoInit)
+
+                       vSub   = vProf(jLo) + frac*(vProf(jHi)  - vProf(jLo))
+
+                    end if
                     ! 
                     !   Now total these quantities.   Note that  v is a radial velocity; 
                     !   we multiply by the tangents of the appropriate angles to get
                     !   the projections in the x, y and z directions.
                     !
-                    sumP = sumP +  & 
-                         sim_pProf(jLo) + frac*(sim_pProf(jHi)  - sim_pProf(jLo))
+                    sumP = sumP + pSub * dvSub(ii,jj)
                     
-                    sumRho = sumRho + & 
-                         sim_rhoProf(jLo) + frac*(sim_rhoProf(jHi)- sim_rhoProf(jLo))
+                    sumRho = sumRho + rhoSub * dvSub(ii,jj)
                     
-                    vel = sim_vProf(jLo) + frac*(sim_vProf(jHi)  - sim_vProf(jLo))
+                    vel = vSub * dvSub(ii,jj)
                     
                     sumVX  = sumVX  + vel*xDist*distInv
                     sumVY  = sumVY  + vel*yDist*distInv
@@ -259,16 +394,19 @@ subroutine Simulation_initBlock(solnData,block)
               enddo
            enddo
            
-           rho = max(sumRho * sim_inszd, sim_smallRho)
-           p   = max(sumP   * sim_inszd, sim_smallP)
-           vx  = sumVX  * sim_inszd
-           vy  = sumVY  * sim_inszd
-           vz  = sumVZ  * sim_inszd
+!!$           quotinv = sim_inszd
+           quotinv = 1.0 / dvc
+           rho = max(sumRho * quotinv, sim_smallRho)
+           p   = max(sumP   * quotinv, sim_smallP)
+           vx  = sumVX  * quotinv
+           vy  = sumVY  * quotinv
+           vz  = sumVZ  * quotinv
            ek  = 0.5*(vx*vx + vy*vy + vz*vz)
            !
            !  assume gamma-law equation of state
            !
            e   = p/(sim_gamma-1.)
+           eint= e/rho
            e   = e/rho + ek
            e   = max (e, sim_smallP)
            
@@ -284,12 +422,18 @@ subroutine Simulation_initBlock(solnData,block)
            solnData(DENS_VAR,i,j,k)=rho
            solnData(PRES_VAR,i,j,k)=p
            solnData(ENER_VAR,i,j,k)=e
+#ifdef EINT_VAR
+           solnData(EINT_VAR,i,j,k)=eint
+#endif
            solnData(GAME_VAR,i,j,k)=sim_gamma
            solnData(GAMC_VAR,i,j,k)=sim_gamma
            solnData(VELX_VAR,i,j,k)=vx
            solnData(VELY_VAR,i,j,k)=vy
            solnData(VELZ_VAR,i,j,k)=vz
            solnData(TEMP_VAR,i,j,k)=sim_smallT
+#ifdef BDRY_VAR
+           solnData(BDRY_VAR,i,j,k)=    -1.0
+#endif
         enddo
 #if NDIM == 1
   !$omp end do nowait
@@ -302,11 +446,19 @@ subroutine Simulation_initBlock(solnData,block)
 #if NDIM == 3
   !$omp end do nowait
 #endif
+
+  deallocate(dvSub)
   !$omp end parallel
 
   deallocate(xCoord)
   deallocate(yCoord)
   deallocate(zCoord)
+
+  deallocate(rProf)
+  deallocate(vProf)
+  deallocate(rhoProf)
+  deallocate(pProf)
+
   return
 end subroutine Simulation_initBlock
 
@@ -326,84 +478,93 @@ end subroutine Simulation_initBlock
 
 subroutine set_analytic_sedov (N, r, rho, p, v, t, gamma, E, & 
      p_ambient, rho_ambient)
-  
+
   !==============================================================================
-  
+
   implicit none
-  
+
   !  Arguments
   integer, intent(IN)     :: N
   real, intent(IN)        :: gamma, t, rho_ambient, E, p_ambient
   real, intent(IN), dimension(N)  :: r
   real, intent(OUT), dimension(N) :: rho, v, p
-  
+
   !  Local variables
-  
+
   real    beta, R0, dr, xi, nu1, nu2, nu3, nu4, nu5, VV, G, Z, & 
        kappa, zeta, epsilon, c2sqr, k, gamp1, gam7, gamm1
   integer i
-  
+
   !==============================================================================
-  
+
   if (gamma .ne. 1.4) then
      write (*,*) 'Warning!  Simulation_initBlock() found gamma<>1.4 and t>0.'
      write (*,*) '          Analytical initial conditions will be'
      write (*,*) '          wrong.  Assuming beta=1.033...'
   endif
-  
+
   !               Compute dimensionless scaling constant and explosion radius.
-  
+
   beta = 1.033
   R0   = beta * (E*t*t/rho_ambient)**0.2
-  
+  if (R0 == 0.0) then
+     R0 = max(r(1),r(min(2,N))) * 1.e+30
+  end if
+
   !               Compute exponents for self-similar solution.
-  
+
   nu1 = - (13.*gamma*gamma - 7.*gamma + 12.) / & 
        ((3.*gamma - 1.) * (2.*gamma+1.))
   nu2 = 5. * (gamma - 1.) / (2.*gamma + 1.)
   nu3 = 3. / (2.*gamma + 1.)
   nu4 = - nu1 / (2. - gamma)
   nu5 = - 2. / (2. - gamma)
-  
+
   !               Other useful combinations of gamma.
-  
+
   gamp1 = gamma + 1.E0
   gamm1 = gamma - 1.E0
   gam7  = 7.E0 - gamma
   k     = gamp1 / gamm1
-  
+
   !==============================================================================
-  
+
   !               Generate the solution.
-  
+
   do i = 1, N
-     
+
      xi = r(i) / R0                ! Fraction of explosion radius.
-     
+
      if (xi .le. 1.) then          ! Inside the explosion.
-        
+
         ! Compute V(xi) using bisection.
         ! See Landau & Lifshitz for notation.
         call compute_sedov_v (xi, gamma, nu1, nu2, VV)
-        
+
         G = k * (k*(gamma*VV-1.))**nu3 * & 
              (gamp1/gam7*(5.-(3.*gamma-1.)*VV))**nu4 * & 
              (k*(1.-VV))**nu5
-        
+
         rho(i) = rho_ambient * G
+        if (t.EQ.0.0) then
+           v(i) = sqrt(HUGE(v(i))) * 1.e-10
+           p(i) =      HUGE(p(i))  * 1.e-10
+           CYCLE
+        end if
+
         v(i)   = 2.*r(i)*VV / (5.*t)
-        
+
         if (xi .le. 1.E-6) then     ! Use asymptotic r->0 solution.
            kappa = ( (0.5*gamp1/gamma)**2. * & 
                 (gamp1/gam7* & 
                 (5.-(3.*gamma-1.)/gamma))**nu1 )**(1./nu2) * & 
                 gamm1/gamp1 / gamma
-           
+
            epsilon = k**(nu5+1.) * (k*gamma*kappa)**nu3 * & 
                 (gamp1/gam7*(3.*gamma-1.))**nu4 * & 
                 ((2.*gamma+1)/gamma/(3.*gamma-1.)) * & 
                 (gamm1/gamma)
-           
+
            zeta = gamm1*gamm1/(2.*gamma*gamma*kappa)
            p(i) = rho_ambient/gamma * 0.16*(R0/t)**2 * epsilon*zeta
         else
@@ -411,17 +572,17 @@ subroutine set_analytic_sedov (N, r, rho, p, v, t, gamma, E, &
            c2sqr = 0.16*(r(i)/t)**2 * Z
            p(i) = rho(i) * c2sqr / gamma
         endif
-        
+
      else                          ! Outside the explosion.
-        
+
         rho(i) = rho_ambient
         p(i)   = p_ambient
         v(i)   = 0.
-        
+
      endif
-     
+
   enddo
-  
+
   return
 end subroutine set_analytic_sedov
 
