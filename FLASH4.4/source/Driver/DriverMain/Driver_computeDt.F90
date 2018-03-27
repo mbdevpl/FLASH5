@@ -300,7 +300,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
            if (extraHydroInfo <= extraHydroInfoMin) then
               extraHydroInfoMin = extraHydroInfo
            endif
-           if (lminloc(4,HYDRO) == 1) then
+           if (lminloc(4,HYDRO) == level) then
               extraHydroInfoApp = extraHydroInfo
            endif
         else !if extraHydroInfo == 0.
