@@ -50,6 +50,7 @@
 
 subroutine Simulation_initBlock(solnData,blockDesc)
 
+  use Simulation_interface, ONLY: Simulation_computeAnalytical
   use Simulation_data, ONLY: sim_xMax, sim_xMin, sim_yMax, sim_yMin, sim_zMax, sim_zMin, &
      &  sim_nProfile, sim_rProf, sim_vProf, sim_pProf, sim_pExp, sim_rhoProf, &
      &  sim_tInitial, sim_gamma, sim_expEnergy, sim_pAmbient, sim_rhoAmbient, &

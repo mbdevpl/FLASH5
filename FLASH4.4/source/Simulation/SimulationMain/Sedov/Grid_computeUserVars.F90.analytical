@@ -6,22 +6,22 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_computeUserVars() 
+!!  call Grid_computeUserVars()
 !!
-!!  
-!! DESCRIPTION 
-!!  
+!!
+!! DESCRIPTION
+!!
 !!  Prepare user variables for output.
 !!
-!! ARGUMENTS 
+!! ARGUMENTS
 !!  none
-!!  
+!!
 !! EXAMPLE
 !!
 !!
 !!
 !! NOTES
-!!  
+!!
 !!***
 
 subroutine Grid_computeUserVars()
@@ -29,24 +29,25 @@ subroutine Grid_computeUserVars()
   use Simulation_interface, ONLY: Simulation_computeAnalytical
   use Driver_data,         ONLY : dr_simGeneration
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getLocalNumBlks, &
+  use Grid_interface, ONLY : Grid_getLeafIterator, &
+    Grid_releaseLeafIterator, &
     Grid_getBlkData, &
-    Grid_getListOfBlocks, &
-    Grid_getBlkIndexLimits, Grid_getBlkPtr, &
+    Grid_getBlkPtr, &
     Grid_releaseBlkPtr
   use Driver_interface, ONLY: Driver_getSimTime
 !  use Grid_data, ONLY : gr_meshMe
+  use leaf_iterator, ONLY : leaf_iterator_t
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
-  
+
   real    :: tnew
   integer :: simGen
-  integer :: lb, blockID
-  integer :: localNumBlocks, blockCount
+  type(leaf_iterator_t) :: itor
+  type(block_metadata_t) :: blockDesc
 
-  integer,allocatable,dimension(:) :: blockList
   integer,dimension(2,MDIM) :: bl,blkLimitsGC
   integer,dimension(  MDIM) :: bsize
   real, pointer, dimension(:,:,:,:) :: solnData
@@ -55,25 +56,24 @@ subroutine Grid_computeUserVars()
   call Timers_start("computeUserVars")
   call Driver_getSimTime(tnew, simGen)
 
-  call Grid_getLocalNumBlks(localNumBlocks)
-  allocate(blockList(localNumBlocks))
-  call Grid_getListOfBlocks(LEAF,blockList,blockCount)
+  call Grid_getLeafIterator(itor)
+  do while (itor%is_valid())
+     call itor%blkMetaData(blockDesc)
 
-  do lb=1,blockCount
-     blockID = blockList(lb)
-     call Simulation_computeAnalytical(blockID, tnew)
+     call Grid_getBlkPtr(blockDesc,solnData)
+     call Simulation_computeAnalytical(solnData, blockDesc, tnew)
 
 #if defined(DEND_VAR) || defined(PRSD_VAR) || defined(VLRD_VAR)
-     call Grid_getBlkIndexLimits(blockID,bl,blkLimitsGC)
+     bl          = blockDesc%limits
+     blkLimitsGC = blockDesc%limitsGC
 
-     call Grid_getBlkPtr(blockID,solnData)     
 
 #if defined(DENC_VAR) || defined(PRSC_VAR) || defined(VLRC_VAR)
      bsize(:) = bl(HIGH,:) - bl(LOW,:) + 1
      allocate( cellVol(bl(LOW,IAXIS):bl(HIGH,IAXIS), &
                        bl(LOW,JAXIS):bl(HIGH,JAXIS), &
                        bl(LOW,KAXIS):bl(HIGH,KAXIS)) )
-     call Grid_getBlkData(blockID, CELL_VOLUME, 0, EXTERIOR, &
+     call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, EXTERIOR, &
             (/bl(LOW,IAXIS),bl(LOW,JAXIS),bl(LOW,KAXIS)/), &
             cellVol   (bl(LOW,IAXIS):bl(HIGH,IAXIS), &
                        bl(LOW,JAXIS):bl(HIGH,JAXIS), &
@@ -119,11 +119,12 @@ subroutine Grid_computeUserVars()
      deallocate( cellVol )
 #endif
 
-     call Grid_releaseBlkPtr(blockID,solnData)
 #endif
+     call Grid_releaseBlkPtr(blockDesc,solnData)
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
 
-  deallocate(blockList)
   dr_simGeneration = simGen + 1
   sim_analyticGen  = dr_simGeneration
   call Timers_stop("computeUserVars")

@@ -40,11 +40,13 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   use IO_data, ONLY : io_restart, io_statsFileName, io_globalComm
   use Driver_interface, ONLY : Driver_getDt
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getListOfBlocks, &
-    Grid_getMaxRefinement, Grid_getBlkRefineLevel, &
-    Grid_getBlkIndexLimits, Grid_getBlkPtr, Grid_getSingleCellVol, &
+  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator, &
+    Grid_getMaxRefinement, &
+    Grid_getBlkPtr, Grid_getSingleCellVol, &
     Grid_getCellCoords, &
     Grid_releaseBlkPtr
+  use leaf_iterator, ONLY : leaf_iterator_t
+  use block_metadata, ONLY : block_metadata_t
 
    use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
    use Simulation_data, ONLY : sim_testInitialized, &
@@ -70,20 +72,16 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
   integer, intent(in) :: isFirst
 
-  integer :: currentLevel, blkLevel
+  integer :: currentLevel
 
-  integer :: lb, count
-  
   integer :: funit = 99
   integer :: recl
   integer :: error
   integer :: nGlobalSumUsed, iSum
   
-  character (len=MAX_STRING_LENGTH), save :: fname 
-  
-  integer :: blockList(MAXBLOCKS)
-
   integer :: blkLimits(HIGH, MDIM), blkLimitsGC(HIGH, MDIM)
+  type(leaf_iterator_t)  :: itor
+  type(block_metadata_t) :: blockDesc
   real, dimension(:), allocatable :: xCenter, yCenter, zCenter
 
 #ifdef MAGP_VAR
@@ -146,17 +144,17 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   gRelErrSum(1:nRelErrSumProp) = 0.
   lMax(1:nGlobalExtProp) = -HUGE(1.0)
   
-  call Grid_getListOfBlocks(LEAF, blockList, count)
-  
-  do lb = 1, count
-     
-     if (sim_oneLevelIntegralsOnly) then
-        call Grid_getBlkRefineLevel(blockList(lb), blkLevel)
-        if (blkLevel .NE. currentLevel) CYCLE ! Skip to the next block
-     end if
+  if (sim_oneLevelIntegralsOnly) then
+     call Grid_getLeafIterator(itor, level=currentLevel)
+  else
+     call Grid_getLeafIterator(itor)
+  end if
+  do while (itor%is_valid())
+     call itor%blkMetaData(blockDesc)
 
      !get the index limits of the block
-     call Grid_getBlkIndexLimits(blockList(lb), blkLimits, blkLimitsGC)
+     blkLimits   = blockDesc%limits
+     blkLimitsGC = blockDesc%limitsGC
 
      il = blkLimits(LOW,IAXIS); ih = blkLimits(HIGH,IAXIS)
      jl = blkLimits(LOW,JAXIS); jh = blkLimits(HIGH,JAXIS)
@@ -165,12 +163,12 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
      allocate(yCenter(jl:jh))
      allocate(zCenter(kl:kh))
      !! Get the cell coordinates
-     call Grid_getCellCoords(IAXIS,blockList(lb),CENTER, .false., xCenter, ih-il+1)
-     call Grid_getCellCoords(JAXIS,blockList(lb),CENTER, .false., yCenter, jh-jl+1)
-     call Grid_getCellCoords(KAXIS,blockList(lb),CENTER, .false., zCenter, kh-kl+1)
+     call Grid_getCellCoords(IAXIS,blockDesc,CENTER, .false., xCenter, ih-il+1)
+     call Grid_getCellCoords(JAXIS,blockDesc,CENTER, .false., yCenter, jh-jl+1)
+     call Grid_getCellCoords(KAXIS,blockDesc,CENTER, .false., zCenter, kh-kl+1)
 
      ! get a pointer to the current block of data
-     call Grid_getBlkPtr(blockList(lb), solnData)
+     call Grid_getBlkPtr(blockDesc, solnData)
 
      ! Sum contributions from the indicated blkLimits of cells.
      do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
@@ -199,7 +197,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
               point(KAXIS) = k
 
 !! Get the cell volume for a single cell
-              call Grid_getSingleCellVol(blockList(lb), EXTERIOR, point, dvol)
+              call Grid_getSingleCellVol(blockDesc, point, dvol)
      
               ! mass   
 #ifdef DENS_VAR
@@ -304,31 +302,31 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
 #if defined(DENA_VAR) && defined(DENA_VAR)
               ! density L1 error
-              lsum(15) = lsum(15) + abs(solndata(DENS_VAR,i,j,k)-solnData(DENA_VAR,i,j,k))*dvol 
+              lsum(15) = lsum(15) + abs(solnData(DENS_VAR,i,j,k)-solnData(DENA_VAR,i,j,k))*dvol 
            
 #endif
 
 #if defined(PRES_VAR) && defined(PRSA_VAR)
               ! pressure L1 error
-              lsum(16) = lsum(16) + abs(solndata(PRES_VAR,i,j,k)-solnData(PRSA_VAR,i,j,k))*dvol
+              lsum(16) = lsum(16) + abs(solnData(PRES_VAR,i,j,k)-solnData(PRSA_VAR,i,j,k))*dvol
            
 #endif
 
 #if defined(VELX_VAR) && defined(VLXA_VAR)
               ! velocity L1 error
-              lsum(17) = lsum(17) + abs(solndata(VELX_VAR,i,j,k)-solnData(VLXA_VAR,i,j,k))*dvol
+              lsum(17) = lsum(17) + abs(solnData(VELX_VAR,i,j,k)-solnData(VLXA_VAR,i,j,k))*dvol
            
 #endif
 
 #if defined(VELY_VAR) && defined(VLYA_VAR)
               ! velocity L1 error
-              lsum(18) = lsum(18) + abs(solndata(VELY_VAR,i,j,k)-solnData(VLYA_VAR,i,j,k))*dvol
+              lsum(18) = lsum(18) + abs(solnData(VELY_VAR,i,j,k)-solnData(VLYA_VAR,i,j,k))*dvol
            
 #endif
 
 #if defined(VELZ_VAR) && defined(VLZA_VAR)
               ! velocity L1 error
-              lsum(19) = lsum(19) + abs(solndata(VELZ_VAR,i,j,k)-solnData(VLZA_VAR,i,j,k))*dvol
+              lsum(19) = lsum(19) + abs(solnData(VELZ_VAR,i,j,k)-solnData(VLZA_VAR,i,j,k))*dvol
            
 #endif
 
@@ -388,29 +386,31 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
 #if defined(DENS_VAR) && defined(DENA_VAR)
               ! density Linf error
-              lMax(13) = max(lMax(13), abs(solndata(DENS_VAR,i,j,k)-solnData(DENA_VAR,i,j,k)))
+              lMax(13) = max(lMax(13), abs(solnData(DENS_VAR,i,j,k)-solnData(DENA_VAR,i,j,k)))
            
 #endif
 
 #if defined(PRES_VAR) && defined(PRSA_VAR)
               ! pressure Linf error
-              lMax(14) = max(lMax(14),  abs(solndata(PRES_VAR,i,j,k)-solnData(PRSA_VAR,i,j,k)))
+              lMax(14) = max(lMax(14),  abs(solnData(PRES_VAR,i,j,k)-solnData(PRSA_VAR,i,j,k)))
            
 #endif
 
 #if defined(VELX_VAR) && defined(VLXA_VAR)
               ! velocity Linf error
-              lMax(15) = max(lMax(15), abs(solndata(VELX_VAR,i,j,k)-solnData(VLXA_VAR,i,j,k)))
+              lMax(15) = max(lMax(15), abs(solnData(VELX_VAR,i,j,k)-solnData(VLXA_VAR,i,j,k)))
 #endif
            enddo
         enddo
      enddo
-     call Grid_releaseBlkPtr(blockList(lb), solnData)
+     call Grid_releaseBlkPtr(blockDesc, solnData)
 
      deallocate(xCenter)
      deallocate(yCenter)
      deallocate(zCenter)
+     call itor%next()
   enddo
+  call Grid_releaseLeafIterator(itor)
   
 
   

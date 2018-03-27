@@ -47,7 +47,9 @@
 
 #include "Flash.h"
 
-subroutine Grid_dump(var,num, blockID, gcell)
+subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
+
+  use block_metadata, ONLY : block_metadata_t
 
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkPtr, Grid_releaseBlkPtr
   use Driver_interface, ONLY : Driver_getNStep, Driver_getSimTime, Driver_getDt
@@ -60,8 +62,10 @@ subroutine Grid_dump(var,num, blockID, gcell)
 
   implicit none
 
-  integer, intent(IN) :: num, blockID
+  integer, intent(IN) :: num
   integer, dimension(num), intent(IN) :: var
+  real,dimension(:,:,:,:),pointer     :: solnData
+  type(block_metadata_t), intent(in)  :: blockDesc
   logical, intent(IN) :: gcell
   
   integer,target :: blkLimitsGC(LOW:HIGH,MDIM)
@@ -71,6 +75,7 @@ subroutine Grid_dump(var,num, blockID, gcell)
 !!$  character(len=80) :: ffTmp
   integer,dimension(4), save :: filecount = 0
   integer :: i,j,k,count,nstep
+  integer :: blockID
   integer,save :: iglobalCell = 0
   real,pointer :: blkPtr(:,:,:,:)
   real :: rho
@@ -79,6 +84,8 @@ subroutine Grid_dump(var,num, blockID, gcell)
   integer :: bxn,byn,bzn
   real :: stime, dt
   integer,save :: numCalls = 0, lastBlockID = -1
+
+  blockID = blockDesc % id
 
   if (lastBlockID < 0 .OR. blockID .LE. lastBlockID) then
      sim_ffNum = "sedSol-num"//char(48+filecount(4))//char(48+filecount(3))//&

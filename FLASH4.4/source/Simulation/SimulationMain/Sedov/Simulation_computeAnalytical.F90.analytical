@@ -33,6 +33,8 @@
 !!
 !!***
 
+!!REORDER(4): solnData
+
 subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
 
   use Simulation_data, ONLY: sim_xMax, sim_xMin, sim_yMax, sim_yMin, sim_zMax, sim_zMin, &
@@ -80,7 +82,6 @@ subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
   real,allocatable,dimension(:) :: xCoord,yCoord,zCoord
   integer :: sizeX,sizeY,sizeZ
   integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
-  real, dimension(:,:,:,:),POINTER_INTENT_IN :: solnData
 
 !!$  real     :: dvSub(0:sim_nSubZones-1,0:(sim_nSubZones-1)*K2D)
   real,allocatable :: dvSub(:,:)
@@ -134,8 +135,8 @@ subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
 
   ! get the coordinate information for the current block
 
-  blkLimits = block%limits
-  blkLimitsGC = block%limitsGC
+  blkLimits =   blockDesc % limits
+  blkLimitsGC = blockDesc % limitsGC
   allocate(xCoord(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS))); xCoord = 0.0
   allocate(yCoord(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS))); yCoord = 0.0
   allocate(zCoord(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS))); zCoord = 0.0
@@ -158,7 +159,7 @@ subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
 
   !$omp parallel if (sim_threadBlockList .or. sim_threadWithinBlock) &
   !$omp default(none) &
-  !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,&
+  !$omp shared(blkLimits,blkLimitsGC,xCoord,yCoord,zCoord,&
   !$omp sim_inSubzones,sim_nSubZones,sim_rProf,sim_minRhoInit,sim_smallRho,sim_smallP,&
   !$omp sim_smallX,sim_pProf,sim_rhoProf,sim_vProf,sim_gamma,sim_inszd,&
   !$omp sim_smallT,&
@@ -174,7 +175,7 @@ subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
 #if NDIM == 3
   !$omp do schedule(static)
 #endif
-  do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
+  do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
      ! Find a real difference between z's if problem is >= 3D
      if (NDIM > 2) then
         if (k .eq. blkLimitsGC(LOW,KAXIS)) then
@@ -191,7 +192,7 @@ subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
 #if NDIM == 2
      !$omp do schedule(static)
 #endif
-     do j = blkLimitsGC(LOW, JAXIS), blkLimitsGC(HIGH, JAXIS)
+     do j = blkLimits(LOW, JAXIS), blkLimits(HIGH, JAXIS)
         ! Find a real difference between y's if problem is >= 2D
         if (NDIM > 1) then
            if (j .eq. blkLimitsGC(LOW,JAXIS)) then
@@ -208,7 +209,7 @@ subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
 #if NDIM == 1
         !$omp do schedule(static)
 #endif
-        do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH, IAXIS)
+        do i = blkLimits(LOW,IAXIS), blkLimits(HIGH, IAXIS)
            xx = xCoord(i)
            if (i .eq. blkLimitsGC(LOW,IAXIS)) then
               dxx = xCoord(blkLimitsGC(LOW,IAXIS)+1) - xCoord(blkLimitsGC(LOW,IAXIS))
