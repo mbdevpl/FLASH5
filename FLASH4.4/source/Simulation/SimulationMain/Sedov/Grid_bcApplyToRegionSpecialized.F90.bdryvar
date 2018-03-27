@@ -14,11 +14,10 @@
 !!                                       integer(IN)  :: regionSize(:),
 !!                                       logical(IN)  :: mask(:),
 !!                                       logical(OUT) :: applied,
-!!                                       integer(IN)  :: blockHandle,
+!!                                       block_metadata_t(IN)  :: blockDesc,
 !!                                       integer(IN)  :: secondDir,
 !!                                       integer(IN)  :: thirdDir,
 !!                                       integer(IN)  :: endPoints(LOW:HIGH,MDIM),
-!!                                       integer(IN)  :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                              OPTIONAL,integer(IN)  :: idest )
 !!                    
 !!  
@@ -45,7 +44,7 @@
 !!       regionData(regionSize(BC_DIR)-guard+1:regionSize(BC_DIR),:,:,variables) =  boundary values
 !!
 !!
-!! ARGUMENTS 
+!! ARGUMENTS
 !!
 !! 1. BASIC ARGUMENTS
 !!
@@ -90,9 +89,8 @@
 !!
 !! 2. ADDITIONAL ARGUMENTS
 !!
-!!  blockHandle - Handle for the block for which guard cells are to be filled.
-!!              In grid implementations other than Paramesh 4, this is always
-!!              a local blockID.
+!!  blockDesc - Derived type that encapsulates metadata that uniquely
+!!              characterizes local block to be operated on
 !!
 !!              With Paramesh 4:
 !!              This may be a block actually residing on the local processor,
@@ -125,10 +123,6 @@
 !!  endPoints - starting and endpoints of the region of interest.
 !!              See also NOTE (1) below.
 !!
-!!  blkLimitsGC - the starting and endpoint of the whole block including
-!!                the guard cells, as returned by Grid_getBlkIndexLimits.
-!!              See also NOTE (1) below.
-!!
 !!  idest - Only meaningful with PARAMESH 3 or later.  The argument indicates which slot
 !!          in its one-block storage space buffers ("data_1blk.fh") PARAMESH is in the
 !!          process of filling.
@@ -155,7 +149,7 @@
 !!          Grid_bcApplyToRegionSpecialized interface for consistency with
 !!          Grid_bcApplyToRegion.
 !!
-!!  NOTES 
+!!  NOTES
 !!
 !!   (1)      NOTE that the second indices of the endPoints and
 !!            blkLimitsGC arrays count the (IAXIS, JAXIS, KAXIS)
@@ -181,7 +175,7 @@
 
 subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
      guard,axis,face,regionData,regionSize,mask,applied,&
-     blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, idest)
+     blockDesc,secondDir,thirdDir,endPoints, idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -191,6 +185,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
   use Grid_interface, ONLY : Grid_bcApplyToRegion
   use Grid_data, ONLY : gr_geometry, gr_dirGeom, &
        gr_smallrho, gr_smallE
+  use block_metadata, ONLY : block_metadata_t
   use Simulation_data, ONLY: sim_bcSetBdryVar
 
   implicit none
@@ -203,9 +198,9 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
-  integer,intent(IN) :: blockHandle
+  type(block_metadata_t),intent(IN) :: blockDesc
   integer,intent(IN) :: secondDir,thirdDir
-  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest
 
   integer :: i,j, k,ivar,je,ke,n
@@ -225,7 +220,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
 
   call Grid_bcApplyToRegion(bcType,gridDataStruct,&
      guard,axis,face,regionData,regionSize,mask,applied,&
-     blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, idest)
+     blockDesc,secondDir,thirdDir,endPoints, idest)
 
 #ifdef BDRY_VAR
 
