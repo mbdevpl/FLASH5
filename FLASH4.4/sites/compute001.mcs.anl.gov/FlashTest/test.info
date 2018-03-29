@@ -22,24 +22,8 @@
               numProcs: 1
               parfiles: <pathToSimulations>/unitTest/Grid/Amrex/TestCyl2d/flash.par
             </TestCyl>
-            <simpleUnsplit>
-                setupName: Sod
-                setupOptions: -auto -2d +Mode3simple
-                numProcs: 1
-                parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
-            </simpleUnsplit>
           </2d>
         </AMReX>
-        <Paramesh>
-          <2d>
-            <simpleUnsplit>
-                setupName: Sod
-                setupOptions: -auto -2d +Mode1simple
-                numProcs: 1
-                parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
-            </simpleUnsplit>
-          </2d>
-        </Paramesh>
       </AMR>
     </Grid>
   </UnitTest>
@@ -52,12 +36,73 @@
                 setupName: Sod
                 setupOptions: -auto -2d +Mode1simple
                 numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/2018-03-16/<buildDir>/<runDir>/<chkMax>
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
             </simpleUnsplit>
+            <unsplit>
+                setupName: Sod
+                setupOptions: -auto -2d +Mode1test
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
+            </unsplit>
           </Paramesh>
+          <AMReX>
+            <simpleUnsplit>
+                setupName: Sod
+                setupOptions: -auto -2d +Mode3simple
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sod
+                setupOptions: -auto -2d +Mode3test
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
+            </unsplit>
+          </AMReX>
         </2d>
       </AMR>
     </Sod>
+    <Sedov>
+      <AMR>
+        <2d>
+          <Paramesh>
+            <simpleUnsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d +Mode1simple
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/demo_simplehydro_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d +Mode1test
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/demo_simplehydro_2d.par
+            </unsplit>
+          </Paramesh>
+          <AMReX>
+            <simpleUnsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d +Mode3simple
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/demo_simplehydro_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d +Mode3test
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/demo_simplehydro_2d.par
+            </unsplit>
+          </AMReX>
+        </2d>
+      </AMR>
+    </Sedov>
   </Comparison>
 </compute001>
