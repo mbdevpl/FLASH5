@@ -41,7 +41,7 @@ make -f Makefile.hello
 
 # Run all tests in one execution
 mkdir -p $FLASHTEST_OUTPUT
-$FLASHTEST_BASE/flashTest.py -v \
+$FLASHTEST_BASE/flashTest.py \
                 -o $FLASHTEST_OUTPUT \
                 -c $FLASH_BASE/sites/compute001.mcs.anl.gov/FlashTest/config \
                 -i $FLASH_BASE/sites/compute001.mcs.anl.gov/FlashTest/test.info \
