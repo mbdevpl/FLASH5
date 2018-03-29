@@ -315,7 +315,15 @@ subroutine tmr_broadcastRootTimers(mype, numRootTimers, rootSegs)
   integer :: ierr
   integer :: charExtent, realExtent, logicalExtent, integerExtent
   integer :: acctSegExtent
-  integer :: count, blockcounts(4), offsets(5), oldtypes(4), acctSegMpiType
+  integer :: count, blockcounts(4), oldtypes(4), acctSegMpiType
+#ifdef FLASH_MPI1
+  ! Assume that MPI-2 functions are not available, use MPI-1 ones instead.
+#define MPI_GET_ADDRESS MPI_ADDRESS
+#define MPI_TYPE_CREATE_STRUCT MPI_TYPE_STRUCT
+  integer :: offsets(5)         ! default integer type, for MPI-1 calls
+#else
+  integer(kind=MPI_ADDRESS_KIND) :: offsets(5) ! for MPI-2 calls
+#endif
   integer :: numberOfIntegersInAcctSeg
   integer :: i
 
@@ -336,39 +344,39 @@ subroutine tmr_broadcastRootTimers(mype, numRootTimers, rootSegs)
 
   ! setup the names field in the mpi type
   offsets(1) = 0
-  call MPI_ADDRESS(tmr_acctSegs(1)%name, offsets(1), ierr)
+  call MPI_GET_ADDRESS(tmr_acctSegs(1)%name, offsets(1), ierr)
   oldtypes(1) = MPI_CHARACTER
   blockcounts(1) = tmr_nameSize
 
   ! setup the reals
   offsets(2) = tmr_nameSize * charExtent
-  call MPI_ADDRESS(tmr_acctSegs(1)%time, offsets(2), ierr)
+  call MPI_GET_ADDRESS(tmr_acctSegs(1)%time, offsets(2), ierr)
   oldtypes(2) = FLASH_REAL
   blockcounts(2) = tmr_maxTimerParents * 4
 
   ! setup the logicals
   offsets(3) = offsets(2) + tmr_maxTimerParents * 4 * realExtent
-  call MPI_ADDRESS(tmr_acctSegs(1)%isTimed, offsets(3), ierr)
+  call MPI_GET_ADDRESS(tmr_acctSegs(1)%isTimed, offsets(3), ierr)
   oldtypes(3) = MPI_LOGICAL
   blockcounts(3) = tmr_maxTimerParents
   
   ! setup the integers
   offsets(4) = offsets(3) + tmr_maxTimerParents * logicalExtent
-  call MPI_ADDRESS(tmr_acctSegs(1)%timesCalled, offsets(4), ierr)
+  call MPI_GET_ADDRESS(tmr_acctSegs(1)%timesCalled, offsets(4), ierr)
   oldtypes(4) = FLASH_INTEGER
   numberOfIntegersInAcctSeg = tmr_maxTimerParents + &  ! this includes timesCalled and stacks fields
        2 + tmr_maxTimerParents * (tmr_maxCallStackDepth + 1) 
   blockcounts(4) = numberOfIntegersInAcctSeg
 
 
-  call MPI_ADDRESS(tmr_acctSegs(2)%name, offsets(5), ierr)
+  call MPI_GET_ADDRESS(tmr_acctSegs(2)%name, offsets(5), ierr)
   offsets(2) = offsets(2) - offsets(1)
   offsets(3) = offsets(3) - offsets(1)
   offsets(4) = offsets(4) - offsets(1)
   offsets(5) = offsets(5) - offsets(1)
   offsets(1) = 0
 
-  call MPI_TYPE_STRUCT(4, blockcounts, offsets, oldtypes, &
+  call MPI_TYPE_CREATE_STRUCT(4, blockcounts, offsets, oldtypes, &
        acctSegMpiType, ierr)
   call MPI_TYPE_COMMIT(acctSegMpiType, ierr)
   call MPI_TYPE_EXTENT(acctSegMpiType, acctSegExtent, ierr)
