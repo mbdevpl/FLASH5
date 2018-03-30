@@ -29,6 +29,19 @@
   </UnitTest>
   <Comparison>
     <Sod>
+      <PseudoUG>
+        <2d>
+          <Paramesh>
+            <simpleUnsplit>
+                setupName: Sod
+                setupOptions: -auto -2d +Mode1simple
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_pseudoug_2d.par
+            </simpleUnsplit>
+          </Paramesh>
+        </2d>
+      </PseudoUG>
       <AMR>
         <2d>
           <Paramesh>
@@ -37,72 +50,11 @@
                 setupOptions: -auto -2d +Mode1simple
                 numProcs: 1
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
-                parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
+                parfiles: <pathToSimulations>/Sod/test_amr_2d.par
             </simpleUnsplit>
-            <unsplit>
-                setupName: Sod
-                setupOptions: -auto -2d +Mode1test
-                numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
-                parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
-            </unsplit>
           </Paramesh>
-          <AMReX>
-            <simpleUnsplit>
-                setupName: Sod
-                setupOptions: -auto -2d +Mode3simple
-                numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
-                parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
-            </simpleUnsplit>
-            <unsplit>
-                setupName: Sod
-                setupOptions: -auto -2d +Mode3test
-                numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
-                parfiles: <pathToSimulations>/Sod/demo_simplehydro_2d.par
-            </unsplit>
-          </AMReX>
         </2d>
       </AMR>
     </Sod>
-    <Sedov>
-      <AMR>
-        <2d>
-          <Paramesh>
-            <simpleUnsplit>
-                setupName: Sedov
-                setupOptions: -auto -2d +Mode1simple
-                numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
-                parfiles: <pathToSimulations>/Sedov/demo_simplehydro_2d.par
-            </simpleUnsplit>
-            <unsplit>
-                setupName: Sedov
-                setupOptions: -auto -2d +Mode1test
-                numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
-                parfiles: <pathToSimulations>/Sedov/demo_simplehydro_2d.par
-            </unsplit>
-          </Paramesh>
-          <AMReX>
-            <simpleUnsplit>
-                setupName: Sedov
-                setupOptions: -auto -2d +Mode3simple
-                numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
-                parfiles: <pathToSimulations>/Sedov/demo_simplehydro_2d.par
-            </simpleUnsplit>
-            <unsplit>
-                setupName: Sedov
-                setupOptions: -auto -2d +Mode3test
-                numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
-                parfiles: <pathToSimulations>/Sedov/demo_simplehydro_2d.par
-            </unsplit>
-          </AMReX>
-        </2d>
-      </AMR>
-    </Sedov>
   </Comparison>
 </compute001>

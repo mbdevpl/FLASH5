@@ -48,6 +48,7 @@ $FLASHTEST_BASE/flashTest.py \
                 UnitTest/Grid/AMR/AMReX/2d/Init \
                 UnitTest/Grid/AMR/AMReX/2d/Refine \
                 UnitTest/Grid/AMR/AMReX/2d/TestCyl \
+                Comparison/Sod/PseudoUG/2d/Paramesh/simpleUnsplit \
                 Comparison/Sod/AMR/2d/Paramesh/simpleUnsplit
 
 # Confirm output directory contains only one directory, which is the folder
