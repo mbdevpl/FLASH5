@@ -39,6 +39,13 @@
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sod/test_pseudoug_2d.par
             </simpleUnsplit>
+            <unsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug +uhd -gridinterpolation=native --index-reorder
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c15eaa98/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_pseudoug_2d.par
+            </unsplit>
           </Paramesh>
         </2d>
       </PseudoUG>
@@ -52,6 +59,13 @@
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sod/test_amr_2d.par
             </simpleUnsplit>
+            <unsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug +uhd -gridinterpolation=native --index-reorder
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c15eaa98/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_amr_unsplit_2d.par
+            </unsplit>
           </Paramesh>
         </2d>
       </AMR>
