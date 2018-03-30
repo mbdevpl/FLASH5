@@ -35,9 +35,9 @@ if [[ -d  $RESULTS_DIR ]]; then
 fi
 
 # Build brand-spanking-new version of sfocu
-#cd $FLASH_BASE/tools/sfocu
-#make -f Makefile.hello clean
-#make -f Makefile.hello
+cd $FLASH_BASE/tools/sfocu
+make -f Makefile.hello clean
+make -f Makefile.hello
 
 # Run all tests in one execution
 mkdir -p $FLASHTEST_OUTPUT
