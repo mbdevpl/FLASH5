@@ -219,7 +219,7 @@ subroutine Simulation_initBlock(solnData,block)
            solnData(TEMP_VAR,i,j,k)=temp_zone
            solnData(DENS_VAR,i,j,k)=rho_zone
            solnData(PRES_VAR,i,j,k)=ptot
-           solnData(EINT_VAR,i,j,k)=e
+           solnData(EINT_VAR,i,j,k)=eint
            solnData(ENER_VAR,i,j,k)=etot
            solnData(GAMC_VAR,i,j,k)=eosData(EOS_GAMC)
            solnData(GAME_VAR,i,j,k)=(ptot/(etot*sim_rhoAmbient) + 1.0)
