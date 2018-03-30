@@ -126,18 +126,21 @@ endif
 
 .SUFFIXES:
 
-.SUFFIXES: .f .F .f90 .F90 .c .C .cxx .o
+.SUFFIXES: .f .F .f90 .F90 .c .C .cxx .o .cu
   
 %%.o : %%.f
 \t$(ECHO-COMPILING) 
-\t$(FCOMP) $(FFLAGS) $(FDEFINES) $<
+\t$(FCOMP) $(FFLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
 %%.o : %%.F
 \t$(ECHO-COMPILING) 
-\t$(FCOMP) $(FFLAGS) $(FDEFINES) $<
+\t$(FCOMP) $(FFLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
 %%.o : %%.f90
 \t$(ECHO-COMPILING) 
-\t$(FCOMP) $(FFLAGS) $(f90FLAGS) $(FDEFINES) $<
-%%.o %%.mod : %%.F90
+\t$(FCOMP) $(FFLAGS) $(f90FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
+%%.o : %%.F90
+\t$(ECHO-COMPILING) 
+\t$(FCOMP) $(FFLAGS) $(F90FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
+%%.mod : %%.F90
 \t$(ECHO-COMPILING) 
 \t$(FCOMP) $(FFLAGS) $(F90FLAGS) $(FDEFINES) $<
 ifdef MODUPPERCASE
@@ -147,13 +150,16 @@ else
 endif
 %%.o : %%.c
 \t$(ECHO-COMPILING) 
-\t$(CCOMP) $(CFLAGS) $(CDEFINES) $<
+\t$(CCOMP) $(CFLAGS) $(CDEFINES) $< -o $(addsuffix .o,$(basename $@))
 %%.o : %%.C
 \t$(ECHO-COMPILING) 
-\t$(CPPCOMP) $(CFLAGS) $(CDEFINES) $<
+\t$(CPPCOMP) $(CFLAGS) $(CDEFINES) $< -o $(addsuffix .o,$(basename $@))
 %%.o : %%.cxx
 \t$(ECHO-COMPILING) 
-\t$(CPPCOMP) $(CFLAGS) $(CDEFINES) $<
+\t$(CPPCOMP) $(CFLAGS) $(CDEFINES) $< -o $(addsuffix .o,$(basename $@))
+%%.o : %%.cu
+\t$(ECHO-COMPILING)
+\t$(CUCOMP) $(CU_FLAGS) $(CDEFINES) $< -o $(addsuffix .o,$(basename $@))
 %%API.c %%API.h %%API-bridges.F90: %%.int
 \t$(ECHO-PROCESSING) 
 \t./int2API.py $<
@@ -202,7 +208,7 @@ setup_buildstats.c:
 Makefile.Depend: 
 \t@$(ECHO) Calculating dependencies
 \t./setup_depends.py %(dependFlags)s $(FFLAGS) $(F90FLAGS) $(CFLAGS) *.f *.f90 *.F90 *.F 
-\t./setup_addcdepends.py $(CFLAGS) *.c
+\t./setup_addcdepends.py $(CFLAGS) *.c *.cu
 
 .PHONY: reorder
 # run reorder script or kill the script if we dont need it
