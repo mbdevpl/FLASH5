@@ -34,7 +34,7 @@
           <Paramesh>
             <simpleUnsplit>
                 setupName: Sod
-                setupOptions: -auto -2d +Mode1simple
+                setupOptions: -auto -2d -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder
                 numProcs: 4
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sod/test_pseudoug_2d.par
@@ -47,7 +47,7 @@
           <Paramesh>
             <simpleUnsplit>
                 setupName: Sod
-                setupOptions: -auto -2d +Mode1simple
+                setupOptions: -auto -2d -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder
                 numProcs: 1
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sod/test_amr_2d.par
@@ -56,5 +56,33 @@
         </2d>
       </AMR>
     </Sod>
+    <Sedov>
+      <PseudoUG>
+        <2d>
+          <Paramesh>
+            <simpleUnsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_pseudoug_2d.par
+            </simpleUnsplit>
+          </Paramesh>
+        </2d>
+      </PseudoUG>
+      <AMR>
+        <2d>
+          <Paramesh>
+            <simpleUnsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_amr_2d.par
+            </simpleUnsplit>
+          </Paramesh>
+        </2d>
+      </AMR>
+    </Sedov>
   </Comparison>
 </compute001>

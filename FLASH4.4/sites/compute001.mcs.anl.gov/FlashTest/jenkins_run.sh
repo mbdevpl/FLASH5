@@ -35,9 +35,9 @@ if [[ -d  $RESULTS_DIR ]]; then
 fi
 
 # Build brand-spanking-new version of sfocu
-cd $FLASH_BASE/tools/sfocu
-make -f Makefile.hello clean
-make -f Makefile.hello
+#cd $FLASH_BASE/tools/sfocu
+#make -f Makefile.hello clean
+#make -f Makefile.hello
 
 # Run all tests in one execution
 mkdir -p $FLASHTEST_OUTPUT
@@ -49,7 +49,9 @@ $FLASHTEST_BASE/flashTest.py \
                 UnitTest/Grid/AMR/AMReX/2d/Refine \
                 UnitTest/Grid/AMR/AMReX/2d/TestCyl \
                 Comparison/Sod/PseudoUG/2d/Paramesh/simpleUnsplit \
-                Comparison/Sod/AMR/2d/Paramesh/simpleUnsplit
+                Comparison/Sod/AMR/2d/Paramesh/simpleUnsplit \
+                Comparison/Sedov/PseudoUG/2d/Paramesh/simpleUnsplit \
+                Comparison/Sedov/AMR/2d/Paramesh/simpleUnsplit
 
 # Confirm output directory contains only one directory, which is the folder
 # containing the FlashTest results
