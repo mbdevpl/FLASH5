@@ -202,6 +202,11 @@ subroutine io_writeData (fileID)
 
   call Grid_getLocalNumBlks(localNumBlocks)
 
+  if (localNumBlocks > MAXBLOCKS) then
+     print*,'io_writeData @',io_globalMe,': localNumBlocks =',localNumBlocks
+     call Driver_abortFlash('The number of local blocks is above MAXBLOCKS')
+  end if
+
   if (io_globalMe == MASTER_PE) then
 
      if(io_doublePrecision) then
