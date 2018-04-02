@@ -131,7 +131,6 @@ subroutine Grid_init()
 
 #include "Flash.h"
 #include "constants.h"
-  include "Flash_mpi.h"
 
   logical :: useProtonEmission
   logical :: useProtonImaging

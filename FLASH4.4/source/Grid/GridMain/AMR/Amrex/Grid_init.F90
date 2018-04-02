@@ -139,7 +139,7 @@ subroutine Grid_init()
   use Simulation_interface,        ONLY : Simulation_mapStrToInt, &
                                           Simulation_getVarnameType
 
-  include "Flash_mpi.h"
+  implicit none
 
   integer :: i, var
 
