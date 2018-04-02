@@ -122,6 +122,7 @@
 subroutine Grid_init()
   use iso_c_binding,               ONLY : c_loc, c_null_ptr
 
+  use amrex_base_module,           ONLY : amrex_spacedim
   use amrex_bc_types_module,       ONLY : amrex_bc_int_dir, &
                                           amrex_bc_ext_dir
 
@@ -214,6 +215,18 @@ subroutine Grid_init()
 ! Initialize AMReX
 !----------------------------------------------------------------------------------
   call gr_amrexInit()
+
+  ! Check whether the dimensionality of the AMReX library matches the FLASH configuration
+#ifdef __INTEL_COMPILER
+#define SUBASSERT(asser) call abo(#asser)
+#else
+#define SUBASSERT(asser) call abo('asser')
+#endif
+#define ASSERT(assertion) if (.NOT.(assertion)) SUBASSERT(assertion)
+
+  ASSERT(NDIM==amrex_spacedim)
+  ASSERT(N_DIM==amrex_spacedim)
+
 
   ! Save BC information for AMReX callbacks
   lo_bc_amrex(:, :) = amrex_bc_int_dir
@@ -590,4 +603,8 @@ contains
     end do
   end subroutine printRefinementInfo
 
+  subroutine abo(msg)
+    character(len=*) msg
+    call Driver_abortFlash("Failed assertion in Grid_init: "//msg)
+  end subroutine abo
 end subroutine Grid_init
