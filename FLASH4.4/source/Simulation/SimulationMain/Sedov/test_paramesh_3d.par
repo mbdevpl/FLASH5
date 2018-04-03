@@ -1,4 +1,10 @@
 #	Runtime parameters for the Sedov explosion problem.
+#
+# Basic setup line: 
+# ./setup Sedov -auto +pm4dev -3d -maxblocks=200 +noio
+#
+# Latest:
+# ./setup Sedov -auto -makefile=gnu -objdir=Sedov3D_m3 -3d +cartesian -nxb=8 -nyb=8 -nzb=8 -maxblocks=64 +hdf5 +Mode3 -parfile=test_paramesh_3d.par
 
 #	Parameters for initial model
 
@@ -12,6 +18,10 @@ sim_rInit		= 0.109375
 sim_xctr		= 0.5
 sim_yctr		= 0.5
 sim_zctr		= 0.5
+
+# File containing (modified) self-similar solution profile.
+# Will be used in evolving FLASH5 code once sedov4.5 changes are pulled in.
+sim_profFileName        = "/dev/null"
 
 #		Gas ratio of specific heats
 
