@@ -19,13 +19,15 @@
 !!
 !! ARGUMENTS 
 !!  itor     - the requested block iterator
-!!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS).  If
-!!             no block class is given, then the iterator defaults to iterating
-!!             over all blocks.
-!!             For Amrex, most or all blocks that would be considered of
-!!             ANCESTOR type with PARAMESH ar considered to be of PARENT_BLK type.
-!!  level    - iterate only over all blocks/tiles located at this level of
-!!             refinement.
+!!  nodetype - the class of blocks to iterate over.  The options for AMReX are
+!!                - ALL_BLKS - all blocks
+!!                - LEAF     - only leaf blocks
+!!             The default value is ALL_BLKS.
+!!  level    - iterate only over all blocks/tiles of the correct nodetype
+!!             that are located at this level of refinement.  Note that the
+!!             level value must be given with respect to FLASH's 1-based
+!!             level index scheme.  If no level value is given, then
+!!             iteration is not restricted to any level.
 !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
 !!             walk across all associated blocks on a tile-by-tile basis *if*
 !!             the implementation supports this feature.  If a value is not
@@ -41,7 +43,6 @@
 #include "constants.h"
 
 subroutine gr_getBlkIterator(itor, nodetype, level, tiling)
-  use Driver_interface, ONLY : Driver_abortFlash
   use gr_iterator,      ONLY : gr_iterator_t, build_iterator
 
   implicit none
@@ -53,13 +54,9 @@ subroutine gr_getBlkIterator(itor, nodetype, level, tiling)
 
   integer :: ntype
 
+  ntype = ALL_BLKS
   if (present(nodetype)) then
-     ntype = nodetype
-     if (ntype/=ALL_BLKS .AND. ntype/=LEAF .AND. ntype/=PARENT_BLK) then
-        call Driver_abortFlash("[gr_getBlkIterator] This AMReX iterator does not recognize the nodetype")
-     end if
-  else
-    ntype = ALL_BLKS
+    ntype = nodetype 
   end if
 
   call build_iterator(itor, ntype, level, tiling)

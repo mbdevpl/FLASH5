@@ -69,7 +69,6 @@ module gr_iterator
     !!****
     type, public :: gr_iterator_t
         type(block_1lev_iterator_t), private, allocatable :: li(:)
-        integer :: nodetype    = LEAF 
         integer,                     private              :: first_level = INVALID_LEVEL
         integer,                     private              :: last_level  = INVALID_LEVEL
         integer,                     private              :: level       = INVALID_LEVEL
@@ -107,10 +106,14 @@ contains
     !!
     !! ARGUMENTS
     !!  itor     - the constructed iterator
-    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
-    !!  level    - iterate only over all blocks/tiles located at this level of
-    !!             refinement.  Note that the level value must be given with
-    !!             respect to FLASH's 1-based level index scheme.
+    !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS).
+    !!             Refer to the documentation for the AMReX version of
+    !!             gr_getBlkIterator for more information.
+    !!  level    - iterate only over all blocks/tiles of the correct nodetype
+    !!             that are located at this level of refinement.  Note that the
+    !!             level value must be given with respect to FLASH's 1-based
+    !!             level index scheme.  If no level value is given, then
+    !!             iteration is not restricted to any level.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
     !!             walk across all associated blocks on a tile-by-tile basis *if*
     !!             the implementation supports this feature.  If a value is not
@@ -124,7 +127,7 @@ contains
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
       type(gr_iterator_t), intent(OUT)          :: itor
-        integer,                intent(IN)           :: nodetype
+      integer,             intent(IN)           :: nodetype
       integer,             intent(IN), optional :: level
       logical,             intent(IN), optional :: tiling
 
@@ -134,7 +137,6 @@ contains
             
       finest_level = amrex_get_finest_level() + 1
 
-        itor%nodetype = nodetype
       associate(first => itor%first_level, &
                 last  => itor%last_level)
         if (present(level)) then
