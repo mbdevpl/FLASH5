@@ -134,6 +134,7 @@ LIB_TEST  =
 
 LIB_HDF4  =
 LIB_HDF5 = -L $(HDF5_PATH)/lib -lhdf5_fortran -lhdf5 -lz
+LIB_LAPACK  = -llapack -lblas
 
 LIB_PAPI  =
 LIB_MATH  =
