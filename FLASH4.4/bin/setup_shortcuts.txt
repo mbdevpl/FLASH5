@@ -50,15 +50,15 @@ chombo_amr:-unit=Grid/GridMain/Chombo/AMR:-index-reorder:Grid=Chombo:-nofbs:-mak
 amrext:-unit=Grid/GridMain/AMR/paramesh/AmrexTransition:-index-reorder
 
 Mode3:+uhd:-unit=Grid/GridMain/AMR/Amrex:+serialio:-unit=IO/IOMain/hdf5/serial/AM:--index-reorder
-Mode2:+uhd:+amrext
+Mode2:+uhd:+amrext:FlashAmrexMode=2
 Mode1:+uhd:--index-reorder
 
 Mode3test:+uhd:-gridinterpolation=native:-unit=Grid/GridMain/AMR/Amrex:+serialio:-unit=IO/IOMain/hdf5/serial/AM:--index-reorder:-parfile=demo_simplehydro_2d.par
-Mode2test:+uhd:-gridinterpolation=native:+amrext:-parfile=demo_simplehydro_2d.par
+Mode2test:+Mode2:-gridinterpolation=native:-parfile=demo_simplehydro_2d.par
 Mode1test:+uhd:-gridinterpolation=native:--index-reorder:-parfile=demo_simplehydro_2d.par
 
 Mode3simple:-unit=physics/Hydro/HydroMain/simpleUnsplit/HLL:-gridinterpolation=native:-unit=Grid/GridMain/AMR/Amrex:+serialio:-unit=IO/IOMain/hdf5/serial/AM:--index-reorder:-parfile=demo_simplehydro_2d.par
-Mode2simple:-unit=physics/Hydro/HydroMain/simpleUnsplit/HLL:-gridinterpolation=native:+amrext:-parfile=demo_simplehydro_2d.par
+Mode2simple:-unit=physics/Hydro/HydroMain/simpleUnsplit/HLL:-gridinterpolation=native:+amrext:FlashAmrexMode=2:-parfile=demo_simplehydro_2d.par
 Mode1simple:-unit=physics/Hydro/HydroMain/simpleUnsplit/HLL:-gridinterpolation=native:--index-reorder:-parfile=demo_simplehydro_2d.par
 
 # pm4dev_clean indicates a version of Paramesh closer to the one
