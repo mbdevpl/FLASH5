@@ -54,3 +54,4 @@ babbage.nersc.gov bint\d+
 nagini.uchicago.edu hedwig
 macbro.uchicago.edu macbro
 asterix.asci.uchicago.edu asterix
+titan.ccs.ornl.gov titan-ext[0-9]

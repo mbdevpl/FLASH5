@@ -209,3 +209,8 @@ pic:+ug:-unit=Grid/GridParticles/GridParticlesMove:-without-unit=Grid/GridPartic
 mcheck:use_mcheck=True:--defines=MCHECK:--with-unit=source/monitors/Debugger/DebuggerMain/mcheck
 dmalloc:use_dmalloc=True:--defines=DMALLOC:--with-unit=source/monitors/Debugger/DebuggerMain/dmalloc
 ddt:use_ddt=True:--defines=DDT:--with-unit=source/monitors/Debugger/DebuggerMain/dmalloc
+
+# Shortcut to use XNet
+xnet:--with-unit=physics/sourceTerms/Burn/BurnMain/nuclearBurn/XNet:xnet=True
+xnet_alpha:+xnet:xnetData=Data_alpha
+xnet_160:+xnet:xnetData=Data_SN160
