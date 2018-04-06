@@ -59,7 +59,7 @@ plotfileIntervalStep = 0
 plotfileNumber       = 0
 
 nend            = 1000
-tmax            = .2
+tmax            = .175
 
 run_comment     = "Sod problem, vertical direction"
 log_file        = "sod.log"
