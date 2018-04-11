@@ -126,19 +126,30 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
          blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
          blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
 
+         tagData => tag%dataptr(mfi)
+
          associate (lo     => blockDesc%limits(LOW,  :), &
-                    hi     => blockDesc%limits(HIGH, :))
-            tagData => tag%dataptr(mfi)
+                    hi     => blockDesc%limits(HIGH, :), &
+                    lo_tag => lbound(tagData), &
+                    hi_tag => ubound(tagData))
+            
             do         k = lo(KAXIS)-K3D, hi(KAXIS)-K3D
                 do     j = lo(JAXIS)-K2D, hi(JAXIS)-K2D
                     do i = lo(IAXIS)-1,   hi(IAXIS)-1
                         ! Fourth index is 1:1
-                        tagData(i, j, k, 1) = tagval
+                        tagData(i, j, k, 1) = clearval
                     end do
                 end do
             end do
-            nullify(tagData)
+            
+            i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
+            j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
+            k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
+ 
+            tagData(i, j, k, 1) = tagval
          end associate
+
+         nullify(tagData)
       end do
 
       call amrex_mfiter_destroy(mfi)
@@ -213,22 +224,20 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             if (error > gr_refine_cutoff(l)) then
                 ! According to Weiqun:
                 ! When AMReX is setup in octree mode, tagging a single cell in
-                ! a block is sufficient for indicating a need to refine.
+                ! a block is sufficient for indicating a need to refine.  As reported in
+                ! Issue 41, tagging all cells can lead to a more conservative refinement
+                ! pattern.
                 !
                 ! The width of the halo of gaurdcells included in the tagbox
                 ! array may differ.  This space is needed for ensuring proper
                 ! nesting and is used by AMReX.  Client code need not set those
                 ! when tagging for refinement.
-                !
-                ! We err on the side of caution by tagging all cells in the
-                ! interior to ensure octree refinement
-                do         k = lo(KAXIS)-K3D, hi(KAXIS)-K3D
-                    do     j = lo(JAXIS)-K2D, hi(JAXIS)-K2D
-                        do i = lo(IAXIS)-1,   hi(IAXIS)-1
-                            tagData(i, j, k, 1) = tagval
-                        end do
-                    end do
-                end do
+                i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
+                j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
+                k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
+ 
+                ! NOTE: last dimension has range 1:1
+                tagData(i, j, k, 1) = tagval
 
 #ifdef DEBUG_GRID
                 write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
@@ -248,9 +257,9 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             end if
         end do rloop
 
-        nullify(tagData)
       end associate
 
+      nullify(tagData)
       call Grid_releaseBlkPtr(blockDesc, solnData)
    end do
    call amrex_mfiter_destroy(mfi)
