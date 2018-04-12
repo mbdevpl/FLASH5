@@ -95,7 +95,7 @@
                 setupName: Sod
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native
                 numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c15eaa98/<buildDir>/<runDir>/<chkMax>
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/3c60c5a6/<buildDir>/<runDir>/<chkMax>
                 errTol: 2.0
                 parfiles: <pathToSimulations>/Sod/test_amr_unsplit_2d.par
             </unsplit>
@@ -170,7 +170,7 @@
                 setupName: Sedov
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native
                 numProcs: 1
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c15eaa98/<buildDir>/<runDir>/<chkMax>
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/3c60c5a6/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_amr_unsplit_2d.par
             </unsplit>
           </Paramesh>
