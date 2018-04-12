@@ -41,14 +41,29 @@ make -f Makefile.hello
 
 # Run all tests in one execution
 mkdir -p $FLASHTEST_OUTPUT
-$FLASHTEST_BASE/flashTest.py -v \
+$FLASHTEST_BASE/flashTest.py \
                 -o $FLASHTEST_OUTPUT \
                 -c $FLASH_BASE/sites/compute001.mcs.anl.gov/FlashTest/config \
                 -i $FLASH_BASE/sites/compute001.mcs.anl.gov/FlashTest/test.info \
                 UnitTest/Grid/AMR/AMReX/2d/Init \
                 UnitTest/Grid/AMR/AMReX/2d/Refine \
                 UnitTest/Grid/AMR/AMReX/2d/TestCyl \
-                Comparison/Sod/AMR/2d/Paramesh/simpleUnsplit
+                Comparison/Sod/PseudoUG/2d/Paramesh/simpleUnsplit \
+                Comparison/Sod/AMR/2d/Paramesh/simpleUnsplit \
+                Comparison/Sod/PseudoUG/2d/Paramesh/unsplit \
+                Comparison/Sod/AMR/2d/Paramesh/unsplit \
+                Comparison/Sod/PseudoUG/2d/AMReX/simpleUnsplit \
+                Comparison/Sod/AMR/2d/AMReX/simpleUnsplit \
+                Comparison/Sod/PseudoUG/2d/AMReX/unsplit \
+                Comparison/Sod/AMR/2d/AMReX/unsplit \
+                Comparison/Sedov/PseudoUG/2d/Paramesh/simpleUnsplit \
+                Comparison/Sedov/AMR/2d/Paramesh/simpleUnsplit \
+                Comparison/Sedov/PseudoUG/2d/Paramesh/unsplit \
+                Comparison/Sedov/AMR/2d/Paramesh/unsplit \
+                Comparison/Sedov/PseudoUG/2d/AMReX/simpleUnsplit \
+                Comparison/Sedov/AMR/2d/AMReX/simpleUnsplit \
+                Comparison/Sedov/PseudoUG/2d/AMReX/unsplit \
+                Comparison/Sedov/AMR/2d/AMReX/unsplit
 
 # Confirm output directory contains only one directory, which is the folder
 # containing the FlashTest results
