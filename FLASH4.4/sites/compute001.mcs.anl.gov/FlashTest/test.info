@@ -110,6 +110,7 @@
                 setupName: Sedov
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
                 numProcs: 4
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c532933c/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_pseudoug_2d.par
             </simpleUnsplit>
@@ -117,6 +118,7 @@
                 setupName: Sedov
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
                 numProcs: 4
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c532933c/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_pseudoug_2d.par
             </unsplit>
@@ -126,6 +128,7 @@
                 setupName: Sedov
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native
                 numProcs: 4
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_pseudoug_2d.par
             </simpleUnsplit>
@@ -133,6 +136,7 @@
                 setupName: Sedov
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native
                 numProcs: 4
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c15eaa98/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_pseudoug_2d.par
             </unsplit>
@@ -146,6 +150,7 @@
                 setupName: Sedov
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
                 numProcs: 1
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c532933c/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_amr_2d.par
             </simpleUnsplit>
@@ -153,6 +158,7 @@
                 setupName: Sedov
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
                 numProcs: 1
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c532933c/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_amr_unsplit_2d.par
             </unsplit>
@@ -162,6 +168,7 @@
                 setupName: Sedov
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native
                 numProcs: 1
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_amr_2d.par
             </simpleUnsplit>
@@ -169,6 +176,7 @@
                 setupName: Sedov
                 setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native
                 numProcs: 1
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
                 shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/3c60c5a6/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_amr_unsplit_2d.par
             </unsplit>
