@@ -13,6 +13,8 @@ sim_xctr		= 0.5
 sim_yctr		= 0.5
 sim_zctr		= 0.5
 
+sim_profFileName        = "sedovSolutionModLong.dat"
+
 #		Gas ratio of specific heats
 
 gamma           = 1.4
@@ -76,7 +78,7 @@ plot_var_1 = "dens"
 plot_var_2 = "pres"
 plot_var_3 = "temp"
 
-#  Adaptvie Grid refinement parameters
+#  Adaptive Grid refinement parameters
 
 lrefine_max     = 6
 refine_var_1 = "dens"

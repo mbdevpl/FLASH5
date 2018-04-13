@@ -1,5 +1,3 @@
 
-Simulation += Simulation_data.o 
+Simulation += Simulation_data.o sim_readProfile.o sim_scaleProfile.o
 
-Simulation_init.o : Simulation_data.o
-Simulation_initBlock.o : Simulation_data.o

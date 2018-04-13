@@ -61,8 +61,8 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   integer :: error
   integer :: nGlobalSumUsed, iSum
   
-  character (len=MAX_STRING_LENGTH), save :: fname 
-  
+  character (len=MAX_STRING_LENGTH), save :: fname
+
   integer :: blkLimits(HIGH, MDIM), blkLimitsGC(HIGH, MDIM)
   type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
@@ -93,7 +93,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   ! Sum quantities over all locally held leaf-node blocks.
   gsum(1:nGlobalSumUsed) = 0.
   lsum(1:nGlobalSumUsed) = 0.
-  
+
   call Grid_getLeafIterator(itor)
   do while (itor%is_valid())
      call itor%blkMetaData(blockDesc)
@@ -109,60 +109,60 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
      do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
         do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
            do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
-              
+
               point(IAXIS) = i
               point(JAXIS) = j
               point(KAXIS) = k
 
 !! Get the cell volume for a single cell
               call Grid_getSingleCellVol(blockDesc, point, dvol)
-     
-              ! mass   
+
+              ! mass
 #ifdef DENS_VAR
-              lsum(1) = lsum(1) + solnData(DENS_VAR,i,j,k)*dvol 
-#endif           
+              lsum(1) = lsum(1) + solnData(DENS_VAR,i,j,k)*dvol
+#endif
 
 
 #ifdef DENS_VAR
-#ifdef VELX_VAR      
+#ifdef VELX_VAR
               ! momentum
-              lsum(2) = lsum(2) + solnData(DENS_VAR,i,j,k) * & 
-                   &                                solnData(VELX_VAR,i,j,k)*dvol 
-           
-#endif
-#ifdef VELY_VAR      
+              lsum(2) = lsum(2) + solnData(DENS_VAR,i,j,k) * &
+                   &                                solnData(VELX_VAR,i,j,k)*dvol
 
-              lsum(3) = lsum(3) + solnData(DENS_VAR,i,j,k) * & 
-                   &                                solnData(VELY_VAR,i,j,k)*dvol
-           
 #endif
-#ifdef VELZ_VAR      
-              lsum(4) = lsum(4) + solnData(DENS_VAR,i,j,k) * & 
+#ifdef VELY_VAR
+
+              lsum(3) = lsum(3) + solnData(DENS_VAR,i,j,k) * &
+                   &                                solnData(VELY_VAR,i,j,k)*dvol
+
+#endif
+#ifdef VELZ_VAR
+              lsum(4) = lsum(4) + solnData(DENS_VAR,i,j,k) * &
                    &                                solnData(VELZ_VAR,i,j,k)*dvol
 #endif
 
               ! total energy
 #ifdef ENER_VAR
-              lsum(5) = lsum(5) + solnData(ENER_VAR,i,j,k) * & 
+              lsum(5) = lsum(5) + solnData(ENER_VAR,i,j,k) * &
                    &                                solnData(DENS_VAR,i,j,k)*dvol
 #ifdef MAGP_VAR
               ! total plasma energy
-!!$              lsum(5) = lsum(5) + (solnData(ENER_VAR,i,j,k) * & 
+!!$              lsum(5) = lsum(5) + (solnData(ENER_VAR,i,j,k) * &
 !!$                   &    solnData(DENS_VAR,i,j,k) + solnData(MAGP_VAR,i,j,k))*dvol
 
               lsum(5) = lsum(5) + solnData(MAGP_VAR,i,j,k)*dvol
 #endif
 #endif
 
-           
-#ifdef VELX_VAR      
-#ifdef VELY_VAR      
-#ifdef VELZ_VAR      
+
+#ifdef VELX_VAR
+#ifdef VELY_VAR
+#ifdef VELZ_VAR
               ! kinetic energy
-              lsum(6) = lsum(6) + 0.5*solnData(DENS_VAR,i,j,k) * & 
-                   &                             (solnData(VELX_VAR,i,j,k)**2+ & 
-                   &                              solnData(VELY_VAR,i,j,k)**2+ & 
-                   &                              solnData(VELZ_VAR,i,j,k)**2)*dvol           
+              lsum(6) = lsum(6) + 0.5*solnData(DENS_VAR,i,j,k) * &
+                   &                             (solnData(VELX_VAR,i,j,k)**2+ &
+                   &                              solnData(VELY_VAR,i,j,k)**2+ &
+                   &                              solnData(VELZ_VAR,i,j,k)**2)*dvol
 
 #endif
 #endif
@@ -171,7 +171,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
 #ifdef EINT_VAR
               ! internal energy
-              lsum(7) = lsum(7) + solnData(DENS_VAR,i,j,k) * & 
+              lsum(7) = lsum(7) + solnData(DENS_VAR,i,j,k) * &
                    &                                solnData(EINT_VAR,i,j,k)*dvol
 #endif
 #endif ! ifdef DENS_VAR
@@ -187,7 +187,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 !!$                 do ivar=MASS_SCALARS_BEGIN,MASS_SCALARS_END
                     lsum(iSum+1:iSum+NMASS_SCALARS) = &
                          lsum(iSum+1:iSum+NMASS_SCALARS) + &
-                           solnData(DENS_VAR,i,j,k) * & 
+                           solnData(DENS_VAR,i,j,k) * &
                            solnData(MASS_SCALARS_BEGIN: &
                                     MASS_SCALARS_END,i,j,k)*dvol
 !!$                 end do
@@ -206,16 +206,16 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
   ! Now the MASTER_PE sums the local contributions from all of
   ! the processors and writes the total to a file.
-  
-  call MPI_Reduce (lsum, gsum, nGlobalSumUsed, FLASH_REAL, MPI_SUM, & 
+
+  call MPI_Reduce (lsum, gsum, nGlobalSumUsed, FLASH_REAL, MPI_SUM, &
        &                MASTER_PE, io_globalComm, error)
-  
+
 
   if (io_globalMe  == MASTER_PE) then
-     
-     ! create the file from scratch if it is a not a restart simulation, 
+
+     ! create the file from scratch if it is a not a restart simulation,
      ! otherwise append to the end of the file
-     
+
      !No matter what, we are opening the file. Check to see if already there
      ioStat = 0
      open(funit, file=trim(io_statsFileName), position='APPEND', status='OLD', iostat=ioStat)
@@ -223,15 +223,15 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
         !print *, 'FILE FOUND'
         open(funit, file=trim(io_statsFileName), position='APPEND')
      endif
-     
+
      if (isFirst .EQ. 1 .AND. (.NOT. io_restart .or. ioStat .NE. 0)) then
-        
+
 #ifndef MAGP_VAR
         write (funit, 10)               &
              '#time                     ', &
              'mass                      ', &
              'x-momentum                ', &
-             'y-momentum                ', & 
+             'y-momentum                ', &
              'z-momentum                ', &
              'E_total                   ', &
              'E_kinetic                 ', &
@@ -241,12 +241,12 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
                   MASS_SCALARS_BEGIN+nGlobalSumUsed-nGlobalSumProp-1))
 
 #else
-        
+
         write (funit, 10)               &
              '#time                     ', &
              'mass                      ', &
              'x-momentum                ', &
-             'y-momentum                ', & 
+             'y-momentum                ', &
              'z-momentum                ', &
              'E_total                   ', &
              'E_kinetic                 ', &
@@ -256,27 +256,27 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
               min(MASS_SCALARS_END,&
                   MASS_SCALARS_BEGIN+nGlobalSumUsed-nGlobalSumProp-1))
 #endif
-        
+
 10         format (2x,50(a25, :, 1X))
 
      else if(isFirst .EQ. 1) then
-        write (funit, 11) 
+        write (funit, 11)
 11      format('# simulation restarted')
      endif
-     
+
      ! Write the global sums to the file.
      write (funit, 12) simtime, gsum(1:nGlobalSumUsed)
 
 12   format (1x, 50(es25.18, :, 1x))
- 
+
      close (funit)          ! Close the file.
-     
+
   endif
-  
+
   call MPI_Barrier (io_globalComm, error)
-  
+
   !=============================================================================
-  
+
   return
 
   contains

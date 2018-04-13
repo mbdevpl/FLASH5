@@ -6,9 +6,9 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_subcellGeometry(:: nsubi,
-!!                             :: nsubj,
-!!                             :: nsubk,
+!!  call Grid_subcellGeometry(integer,VALUE(in) :: nsubi,
+!!                            integer,VALUE(in) :: nsubj,
+!!                            integer,VALUE(in) :: nsubk,
 !!                            real(in) :: dvcell,
 !!                            real, intent(OUT)  :: dvsub(nsubI,nsubJ),
 !!                            real,OPTIONAL(in) :: xl,
@@ -16,13 +16,12 @@
 !!                            real,OPTIONAL(in) :: yl,
 !!                            real,OPTIONAL(in) :: yr,
 !!                            integer,OPTIONAL(in) :: pos(*),
-!!                            integer,OPTIONAL(in) :: blockid)
+!!                            integer,OPTIONAL(in) :: blockID)
 !!
 !! DESCRIPTION
 !!
-!!  Geometrically correct computation of the volumnes of subcells.
+!!  Geometrically correct computation of the volumes of subcells.
 !!
-!!  Currently only implemented for CARTESIAN and CYLINDRICAL geometries.
 !!
 !! ARGUMENTS
 !!
@@ -36,7 +35,7 @@
 !!
 !!   dvsub :     Volumes of subcells. Note that this is a 2-dimensional array.
 !!               For the geometries that FLASH supports, subcells volumes
-!!               nrver depend on the third coordinate.
+!!               never depend on the third coordinate.
 !!
 !!   xl :        X-coordinate of left cell face.
 !!
@@ -48,7 +47,7 @@
 !!
 !!   pos :       currently unused.
 !!
-!!   blockid : ID of block in current processor
+!!   blockID : ID of block in current processor, currently unused
 !!
 !!
 !!***

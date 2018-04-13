@@ -7,7 +7,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  Simulation_initBlock(integer(IN) :: blockId)
+!!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
+!!                            integer(IN)  :: blockDesc  )
 !!
 !!
 !!
@@ -18,7 +19,8 @@
 !! 
 !! ARGUMENTS
 !!
-!!  blockId -         the number of the block to update
+!!  solnData  -        pointer to solution data
+!!  blockDesc -        describes the block to initialize
 !!
 !! PARAMETERS
 !!
@@ -38,12 +40,13 @@
 !!  Eos_wrapped
 !!***
 
-subroutine Simulation_initBlock(blockId)
+subroutine Simulation_initBlock(solnData,blockDesc)
 
   
   implicit none
   
-  integer, intent(in) :: blockId
+  real,dimension(:,:,:,:),pointer :: solnData
+  type(block_metadata_t), intent(in) :: blockDesc
   
   return
 end subroutine Simulation_initBlock
