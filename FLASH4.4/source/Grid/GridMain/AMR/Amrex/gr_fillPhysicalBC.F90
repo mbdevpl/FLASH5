@@ -102,8 +102,6 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
 
     logical :: found
 
-    if (amrex_is_all_periodic())    RETURN
-
     geom = pgeom
     mfab = pmf
 
@@ -176,6 +174,11 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
           end if
 
           do face = LOW, HIGH
+             ! We have configured AMReX to handle periodic BC automatically
+             ! DEV FIXME: This does not allow users to provide custom periodic
+             ! BC code.
+             if (gr_domainBC(face, axis) == PERIODIC)    CYCLE
+
              ! interior/guardcells are 0-based, cell-centered, and global indices
              call gr_splitFabAtBoundary(face, axis, limitsGC, &
                                         amrex_geom(level-1)%dx, &
