@@ -1,0 +1,180 @@
+<compute001>
+  <UnitTest>
+    <Grid>
+      <AMR>
+        <AMReX>
+          <2d>
+            <Init>
+              setupName: unitTest/Grid/Amrex/TestInit
+              setupOptions: -auto -2d -nxb=8 -nyb=4 +noio -index-reorder
+              numProcs: 1
+              parfiles: <pathToSimulations>/unitTest/Grid/Amrex/TestInit/flash.par
+            </Init>
+            <Refine>
+              setupName: unitTest/Grid/Amrex/TestRefine
+              setupOptions: -auto -2d -nxb=8 -nyb=8 +noio -index-reorder
+              numProcs: 1
+              parfiles: <pathToSimulations>/unitTest/Grid/Amrex/TestRefine/flash.par
+            </Refine>
+            <TestCyl>
+              setupName: unitTest/Grid/Amrex/TestCyl2d
+              setupOptions: -auto -2d -nxb=8 -nyb=4 +noio -index-reorder
+              numProcs: 1
+              parfiles: <pathToSimulations>/unitTest/Grid/Amrex/TestCyl2d/flash.par
+            </TestCyl>
+          </2d>
+        </AMReX>
+      </AMR>
+    </Grid>
+  </UnitTest>
+  <Comparison>
+    <Sod>
+      <PseudoUG>
+        <2d>
+          <AMReX>
+            <simpleUnsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/76cead0d/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_pseudoug_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/76cead0d/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_pseudoug_2d.par
+            </unsplit>
+          </AMReX>
+          <Paramesh>
+            <simpleUnsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_pseudoug_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c15eaa98/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_pseudoug_2d.par
+            </unsplit>
+          </Paramesh>
+        </2d>
+      </PseudoUG>
+      <AMR>
+        <2d>
+          <AMReX>
+            <simpleUnsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/76cead0d/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_amr_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/76cead0d/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_amr_unsplit_2d.par
+            </unsplit>
+          </AMReX>
+          <Paramesh>
+            <simpleUnsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/20176c17/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_amr_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sod
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/3c60c5a6/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sod/test_amr_unsplit_2d.par
+            </unsplit>
+          </Paramesh>
+        </2d>
+      </AMR>
+    </Sod>
+    <Sedov>
+      <PseudoUG>
+        <2d>
+          <AMReX>
+            <simpleUnsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c532933c/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_pseudoug_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c532933c/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_pseudoug_2d.par
+            </unsplit>
+          </AMReX>
+          <Paramesh>
+            <simpleUnsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_pseudoug_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native
+                numProcs: 4
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c15eaa98/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_pseudoug_2d.par
+            </unsplit>
+          </Paramesh>
+        </2d>
+      </PseudoUG>
+      <AMR>
+        <2d>
+          <AMReX>
+            <simpleUnsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c532933c/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_amr_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c532933c/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_amr_unsplit_2d.par
+            </unsplit>
+          </AMReX>
+          <Paramesh>
+            <simpleUnsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL -gridinterpolation=native
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/707065b8/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_amr_2d.par
+            </simpleUnsplit>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native
+                numProcs: 1
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/3c60c5a6/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_amr_unsplit_2d.par
+            </unsplit>
+          </Paramesh>
+        </2d>
+      </AMR>
+    </Sedov>
+  </Comparison>
+</compute001>
