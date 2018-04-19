@@ -2,8 +2,15 @@
 #----------------------------------------------------------------------------
 # Set the HDF5/MPI library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
-
+ifeq      ($(NDIM), 1)
+AMREX_PATH=${HOME}/Projects/amrex_install/1D
+else ifeq ($(NDIM), 2)
+AMREX_PATH=${HOME}/amrex/2d.gnu.DEBUG.MPI
+else ifeq ($(NDIM), 3)
+AMREX_PATH=${HOME}/amrex/3d.gnu.DEBUG.MPI
+else
 AMREX_PATH = /home/home/klaus/amrex/2d.gnu.DEBUG.MPI
+endif
 
 MPI_PATH   = /opt/openmpi-1.8.6_gcc
 HDF4_PATH  =
@@ -74,7 +81,7 @@ FFLAGS_HYPRE = -I${HYPRE_PATH}/include
 CFLAGS_HYPRE = -I${HYPRE_PATH}/include
 FFLAGS_AMREX = -I${AMREX_PATH}/include -DSKIP_PROBLEMATIC_CODE_FOR_NOW
 FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
-
+FFLAGS_AMREX3D = ${FFLAGS_AMREX} -DN_DIM=3
 
 
 F90FLAGS =
@@ -127,6 +134,7 @@ LIB_TEST  =
 
 LIB_HDF4  =
 LIB_HDF5 = -L $(HDF5_PATH)/lib -lhdf5_fortran -lhdf5 -lz
+LIB_LAPACK  = -llapack -lblas
 
 LIB_PAPI  =
 LIB_MATH  =
@@ -141,6 +149,7 @@ LIB_LIBNBC = -L/home/cdaley/software/libNBC/1.1.1/mpich-1.4.1p1_gnu/lib -lnbc
 
 LIB_AMREX = -L${AMREX_PATH}/lib -lamrex -lmpi_cxx -lstdc++
 LIB_AMREX2D = ${LIB_AMREX}
+LIB_AMREX3D = ${LIB_AMREX}
 LIB_STDCXX = -lstdc++
 
 # Uncomment (and change) the following line to use an external library file for double precision SPECFUN code.

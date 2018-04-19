@@ -1,13 +1,19 @@
-!!****ih* source/Grid/GridMain/AMR/Amrex/gr_iterator
+!!****ih* source/Grid/GridMain/AMR/paramesh/AmrexTransition/gr_iterator
 !!
-!! This module is a facade pattern that maps the AMReX Fortran iterator onto 
-!! the interface required presently by FLASH.
+!! NAME
+!!  gr_iterator
 !!
 !! Ideally, we will be able to use the AMReX iterator directly in the code 
 !! and client code will gain access to it through implementation-specific 
 !! code like Grid_getBlkIterator.
 !!
 !! This is a variant that uses type(block_1lev_iterator_t) as underlying iterator.
+!!
+!! SEE ALSO
+!!  gr_getBlkIterator
+!!  gr_releaseBlkIterator
+!!  block_descriptor_t
+!!
 !!****
 
 #include "FortranLangFeatures.fh"
@@ -28,9 +34,14 @@ module gr_iterator
     !! NAME
     !!  gr_iterator_t
     !!
+    !! DESCRIPTION
+    !!  This class maintains a set of single-level iterators, which are used
+    !!  internally to walk blocks/tiles.
+    !!
     !!****
     type, public :: gr_iterator_t
         type(block_1lev_iterator_t),allocatable :: li(:)
+        integer :: nodetype    = LEAF 
         integer                 :: first_level   = INVALID_LEVEL
         integer                 :: last_level    = INVALID_LEVEL
         integer                 :: level    = INVALID_LEVEL
@@ -72,7 +83,7 @@ contains
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  mfArray  - an array of multfabs on which the iterator shall walk.  The
     !!             index is a 1-based index of the refinement levels.
-    !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
+    !!  level    - if nodetype is LEAF, PARENT_BLK, ANCESTOR, or REFINEMENT, then 
     !!             iterate only over blocks/tiles located at this level of
     !!             refinement.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
@@ -93,7 +104,7 @@ contains
         integer, intent(IN), optional :: level
         logical, intent(IN), optional :: tiling
 
-        integer :: l, first, last
+        integer :: lev, first, last
         logical :: v
 
         if (present(level)) then
@@ -112,14 +123,14 @@ contains
 
 !!$        print*,'gr_iterator_build: about to build 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
 
-        do l=first,last
-!!$           call amrex_mfiter_build(this%li(l),mfArray(l),tiling=tiling)
-            itor%li(l) = block_1lev_iterator_t(nodetype, mfArray(l),l,tiling=tiling)
-!!$            call this%li( l )%first()
-            v = itor%li( l )%is_valid()
+        do lev=first,last
+!!$           call amrex_mfiter_build(this%li(lev),mfArray(lev),tiling=tiling)
+            itor%li(lev) = block_1lev_iterator_t(nodetype, mfArray(lev),lev,tiling=tiling)
+!!$            call this%li( lev )%first()
+            v = itor%li( lev )%is_valid()
             if (v .AND. .NOT. itor%isValid) then
                itor%isValid = .TRUE.
-               itor%level   = l
+               itor%level   = lev
             end if
         end do
 
@@ -189,17 +200,17 @@ contains
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
       type (gr_iterator_t), intent(INOUT) :: itor
 
-        integer :: l
+      integer :: lev
 
-        if (allocated(itor%li)) then
-           do l = itor%first_level, itor%last_level
+      if (allocated(itor%li)) then
+         do lev = itor%first_level, itor%last_level
 
-              call itor%li( l )%destroy_iterator()
+            call itor%li(lev)%destroy_iterator()
 
-           end do
-           deallocate(itor%li)
-        end if
-        itor%isValid = .FALSE.
+         end do
+         deallocate(itor%li)
+      end if
+      itor%isValid = .FALSE.
 
     end subroutine destroy_iterator
 
@@ -319,7 +330,7 @@ contains
     !!  call itor%blkMetaData(block_metadata_t(OUT) : block)
     !!
     !! DESCRIPTION
-    !!  Obtain meta data that characterizes the block currently set in the
+    !!  Obtain meta data that characterizes the block/tile currently set in the
     !!  iterator.
     !!
     !!****

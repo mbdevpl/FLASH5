@@ -252,7 +252,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   call Grid_getBlkPtr(blockDesc, solnVec)
 
 
-  call Grid_getBlkIndexLimits(blockId, blkLimits, blkLimitsGC)
+  call Grid_getBlkIndexLimits(blockDesc%Id, blkLimits, blkLimitsGC)
   nxbBlock = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
   nybBlock = blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1
   nzbBlock = blkLimits(HIGH,KAXIS) - blkLimits(LOW,KAXIS) + 1

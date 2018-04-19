@@ -22,6 +22,7 @@ subroutine gr_amrexFinalize()
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz, &
+                                          fluxes, &
                                           flux_registers
  
     integer :: lev
@@ -37,6 +38,7 @@ subroutine gr_amrexFinalize()
     if (allocated(facevarx))       deallocate(facevarx)
     if (allocated(facevary))       deallocate(facevary)
     if (allocated(facevarz))       deallocate(facevarz)
+    if (allocated(fluxes))         deallocate(fluxes)
     if (allocated(flux_registers)) deallocate(flux_registers)
 
     call amrex_amrcore_finalize()

@@ -20,7 +20,7 @@
 
 subroutine gr_solversFinalize()
 
-  use Grid_data, ONLY : gr_isolatedBoundaries
+!  use Grid_data, ONLY : gr_isolatedBoundaries
   use gr_pfftInterface, ONLY : gr_pfftFinalize
   use gr_hgInterface, ONLY : gr_hgFinalize, gr_hgPfftFinalize
   use gr_mgInterface, ONLY : gr_mgFinalize
@@ -43,9 +43,9 @@ subroutine gr_solversFinalize()
   call gr_bicgFinalize()
  
   ! Isolated multipole
-  if (gr_isolatedBoundaries) then
-     call gr_isoMpoleFinalize()
-  end if
+!  if (gr_isolatedBoundaries) then
+!     call gr_isoMpoleFinalize()
+!  end if
 
   ! Parallel FFT at coarse level in Multigrid solver.
   call gr_hgPfftFinalize()

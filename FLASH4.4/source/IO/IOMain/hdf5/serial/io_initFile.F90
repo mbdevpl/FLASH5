@@ -6,21 +6,21 @@
 !! SYNOPSIS
 !!
 !!  io_initFile(integer(in)      :: filenum,
-!!              integer(io_fileID_t)(INOUT)   :: fileID, 
+!!              integer(io_fileID_t)(INOUT)   :: fileID,
 !!              character(out)   :: filename(MAX_STRING_LENGTH),
-!!              character(in)    :: outputType
+!!              character(in)    :: outputType,
 !!              logical(in)      :: forced)
 !!
 !! DESCRIPTION
 !!
-!!  
+!!
 !!  Initialized the hdf5 file for serial io
 !!  only MASTER_PE opens the file
 !!
 !! ARGUMENTS
 !!
 !!
-!!  filenum - number order of output file, 1,2,768 
+!!  filenum - number of the output file
 !!
 !!  fileID - file handle returned from hdf5 init file calls
 !!
@@ -40,7 +40,7 @@ subroutine io_initFile( filenum, fileID, filename, outputType, forced)
   use io_intfTypesModule, ONLY : io_fileID_t
 
   implicit none
-  
+
 #include "constants.h"
 #include "Flash.h"
 
@@ -50,8 +50,8 @@ subroutine io_initFile( filenum, fileID, filename, outputType, forced)
   character (len=MAX_STRING_LENGTH), intent(inout) :: filename
   logical, intent(in) :: forced
 
-   
-  if (io_globalMe /= MASTER_PE) then 
+
+  if (io_globalMe /= MASTER_PE) then
      return
   end if
 

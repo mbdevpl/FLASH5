@@ -12,13 +12,14 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_getBlkPtr.o Grid_getBlkPtr_desc.o Grid_markRefineDerefine.o \
 	Grid_getBlkPhysicalSize.o \
 	Grid_getFluxData.o Grid_putFluxData.o \
+	Grid_getFluxPtr.o Grid_releaseFluxPtr.o \
 	Grid_releaseBlkPtr.o \
 	Grid_outsideBoundBox.o \
 	Grid_getBlkBoundBox.o Grid_getBlkBoundBox_desc.o Grid_getDomainBoundBox.o \
 	Grid_updateRefinement.o \
 	Grid_getCellCoords.o Grid_getCellCoords_blkid.o Grid_getDeltas.o \
 	Grid_getBlkIndexLimits.o Grid_getBlkCornerID.o \
-	Grid_getBlkCenterCoords.o \
+	Grid_getBlkCenterCoords.o Grid_getBlkCenterCoords_desc.o \
 	Grid_getBlkBC.o Grid_getBlkBC_desc.o Grid_getDomainBC.o \
 	Grid_getSingleCellCoords.o Grid_getSingleCellCoords_lev.o Grid_sendOutputData.o Grid_finalize.o \
 	Grid_guardCellMaskHook.o \

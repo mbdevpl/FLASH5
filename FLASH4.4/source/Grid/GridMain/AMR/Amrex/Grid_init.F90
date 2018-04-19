@@ -122,6 +122,7 @@
 subroutine Grid_init()
   use iso_c_binding,               ONLY : c_loc, c_null_ptr
 
+  use amrex_base_module,           ONLY : amrex_spacedim
   use amrex_bc_types_module,       ONLY : amrex_bc_int_dir, &
                                           amrex_bc_ext_dir
 
@@ -139,7 +140,7 @@ subroutine Grid_init()
   use Simulation_interface,        ONLY : Simulation_mapStrToInt, &
                                           Simulation_getVarnameType
 
-  include "Flash_mpi.h"
+  implicit none
 
   integer :: i, var
 
@@ -155,7 +156,6 @@ subroutine Grid_init()
   integer :: refVar
   integer :: nonrep
 
-  character(len=MAX_STRING_LENGTH) :: str_geometry = ""
  
   call Driver_getMype(GLOBAL_COMM, gr_globalMe)
   call Driver_getNumProcs(GLOBAL_COMM, gr_globalNumProcs)
@@ -184,8 +184,8 @@ subroutine Grid_init()
 !------------------------------------------------------------------------------
 ! Load into local Grid variables all runtime parameters needed by gr_initGeometry
 !------------------------------------------------------------------------------
-  call RuntimeParameters_get("geometry", str_geometry)
-  call RuntimeParameters_mapStrToInt(str_geometry, gr_geometry)
+  call RuntimeParameters_get("geometry",gr_str_geometry)
+  call RuntimeParameters_mapStrToInt(gr_str_geometry, gr_geometry)
 
   !get the boundary conditions stored as strings in the flash.par file
   call RuntimeParameters_get("xl_boundary_type", xl_bcString)
@@ -214,6 +214,18 @@ subroutine Grid_init()
 ! Initialize AMReX
 !----------------------------------------------------------------------------------
   call gr_amrexInit()
+
+  ! Check whether the dimensionality of the AMReX library matches the FLASH configuration
+#ifdef __INTEL_COMPILER
+#define SUBASSERT(asser) call abo(#asser)
+#else
+#define SUBASSERT(asser) call abo('asser')
+#endif
+#define ASSERT(assertion) if (.NOT.(assertion)) SUBASSERT(assertion)
+
+  ASSERT(NDIM==amrex_spacedim)
+  ASSERT(N_DIM==amrex_spacedim)
+
 
   ! Save BC information for AMReX callbacks
   lo_bc_amrex(:, :) = amrex_bc_int_dir
@@ -317,6 +329,8 @@ subroutine Grid_init()
 
 !  call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
   gr_justExchangedGC = .FALSE.
+
+  call gr_initSpecific()
 
   !! This section of the code identifies the variables to used in
   !! the refinement criterion. If a variable is a refinement variable
@@ -590,4 +604,8 @@ contains
     end do
   end subroutine printRefinementInfo
 
+  subroutine abo(msg)
+    character(len=*) msg
+    call Driver_abortFlash("Failed assertion in Grid_init: "//msg)
+  end subroutine abo
 end subroutine Grid_init

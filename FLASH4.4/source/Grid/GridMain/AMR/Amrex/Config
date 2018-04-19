@@ -1,5 +1,4 @@
 LIBRARY amrex
-LIBRARY stdcxx
 
 CONFLICTS IO/IOMain/hdf5/parallel/UG
 CONFLICTS IO/IOMain/hdf5/serial/UG

@@ -1,14 +1,27 @@
 !!****ih* source/Grid/GridMain/AMR/Amrex/block_1lev_iterator
 !!
+!! NAME
+!!  block_1lev_iterator
+!!
+!! DESCRIPTION
+!!  A class that defines an iterator facade around the AMReX MFIter
+!!  (amrex_mfiter) such that client code may use the iterator for sequentially
+!!  accessing blocks or tiles in the domain that exist only at a single, given
+!!  refinement level. 
+!!
 !! This module is a facade pattern that maps the AMReX Fortran iterator onto 
 !! the interface required presently by FLASH.
 !!
-!! Ideally, we will be able to use the AMReX iterator directly in the code 
-!! and client code will gain access to it through implementation-specific 
-!! code like Grid_getBlkIterator.
+!! We can use the AMReX iterator directly in the code,
+!! or client code will gain access to it through implementation-specific 
+!! code like gr_getBlkIterator.
 !!
 !! This is a variant that uses type(amrex_mfiter) as underlying iterator.
 !! It iterates only over block at the same, given refinement level.
+!!
+!! SEE ALSO
+!!  block_iterator_t
+!!
 !!****
 
 #include "FortranLangFeatures.fh"
@@ -33,6 +46,7 @@ module block_1lev_iterator
     !!****
     type, public :: block_1lev_iterator_t
         type(amrex_mfiter),POINTER :: mfi   => NULL()
+        integer :: nodetype    = LEAF 
         integer                 :: level    = INVALID_LEVEL
         logical                 :: isValid = .FALSE.
         real,POINTER            :: fp(:,:,:,:)
@@ -68,7 +82,7 @@ contains
     !!
     !! SYNOPOSIS
     !!  block_1lev_iterator_t itor = block_1lev_iterator_t(integer(IN)         :: nodetype,
-    !!                                           level(IN), optional :: level)
+    !!                                           integer(IN), optional :: level)
     !!
     !! DESCRIPTION
     !!  Construct an iterator for walking across a specific subset of blocks
@@ -79,7 +93,7 @@ contains
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS)
     !!  level    - if nodetype is LEAF, PARENT, ANCESTOR, or REFINEMENT, then 
     !!             iterate only over blocks located at this level of 
-    !!             octree structure. !DEVNOTE: nodetype not implemented!
+    !!             octree structure. !DEVNOTE: nodetype is WIP!
     !!
     !! SEE ALSO
     !!  constants.h
@@ -93,6 +107,7 @@ contains
         integer, intent(IN), optional :: level
         logical, intent(IN), optional :: tiling
 
+        this%nodetype = nodetype
         if (present(level)) then
             this%level = level
         end if
@@ -100,7 +115,7 @@ contains
         allocate(this%mfi)
 
         ! DEVNOTE: the AMReX iterator is not built based on nodetype.
-        ! It appears that we get leaves every time.
+        ! It appears that we get leaves every time.  !DEV: REALLY? Not ALL_BLKS??
 
         ! Initial iterator is not primed.  Advance to first compatible block.
         call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
@@ -119,6 +134,7 @@ contains
         integer, intent(IN), optional :: level
         logical, intent(IN), optional :: tiling
 
+        this%nodetype = nodetype
         if (present(level)) then
             this%level = level
         end if
@@ -148,6 +164,7 @@ contains
         type(amrex_multifab),POINTER :: mfArray(:)
         type(amrex_multifab),POINTER :: mf
 
+        this%nodetype = nodetype
         if (present(level)) then
             this%level = level
         end if
@@ -261,23 +278,67 @@ contains
     !!
     !!****
     subroutine next(this)
+      use amrex_box_module, ONLY : amrex_box
         class(block_1lev_iterator_t), intent(INOUT) :: this
 
-        logical :: v
+        type(amrex_box) :: bx
+        logical :: v, hasChildren
+        
         if (this%isValid) then
+           do
 !!$           print*,'block_1lev_iterator: about to do next on this=',this%isValid,this%level,associated(this%mfi)
-           v = this%mfi%next()
+              v = this%mfi%next()
 !!$           print*,'block_1lev_iterator:       done  next on this=',       v    ,this%level,associated(this%mfi)
 
-           if (.NOT. v) then
-              call this%destroy_iterator()
-           end if
+              if (.NOT. v) then
+                 call this%destroy_iterator()
+                 exit
+              else
+                 select case (this%nodetype)
+                 case(ALL_BLKS,ACTIVE_BLKS,REFINEMENT)
+                    exit
+                 case(LEAF)
+                    bx = this%mfi%tilebox()
+                    hasChildren = boxIsCovered(bx,this%level-1)
+                    if (.NOT.hasChildren) exit
+                 case(PARENT_BLK)
+                    bx = this%mfi%tilebox()
+                    hasChildren = boxIsCovered(bx,this%level-1)
+                    if (hasChildren) exit
+                 case(ANCESTOR)
+                    ! never found!
+                 case default
+                    ! never match.
+                 end select
+              end if
+           end do
 
         else
            print*,'block_1lev_iterator: no next, inValid! on this=',this%isValid,this%level,associated(this%mfi)
            call Driver_abortFlash("block_1lev_iterator: attempting next() on invalid!")
         end if
 
+      contains
+        logical function boxIsCovered(bx,lev) result(covered)
+          use amrex_boxarray_module, ONLY : amrex_boxarray
+          use amrex_amrcore_module,  ONLY : amrex_max_level, amrex_ref_ratio, amrex_get_boxarray
+
+          type(amrex_box),intent(INOUT) :: bx !Note: data in bx is changed on return!
+          integer,intent(in) :: lev
+
+          type(amrex_boxarray)   :: fba
+          integer :: rr
+
+          if (lev .GE. amrex_max_level) then
+             covered = .FALSE.
+          else
+             fba = amrex_get_boxarray(lev+1)
+             rr = amrex_ref_ratio(lev)
+             call bx%refine(rr)   !Note: this modifies bx, do not use naively after this!
+             covered = fba%intersects(bx)
+          end if
+          
+        end function boxIsCovered
     end subroutine next
 
     function grid_index(this) result(idx)

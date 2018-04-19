@@ -83,6 +83,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
+                                          fluxes, &
                                           flux_registers
     use gr_iterator,               ONLY : gr_iterator_t
     use block_metadata,            ONLY : block_metadata_t
@@ -104,6 +105,9 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     type(block_metadata_t)        :: blockDesc
     real(wp), contiguous, pointer :: solnData(:,:,:,:)
     integer                       :: nFab
+
+    integer :: dir
+    logical :: nodal(1:MDIM)
 
     ! Communicate to Grid_updateRefinement that we are regridding
     gr_amrexDidRefinement = .TRUE.
@@ -158,12 +162,23 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     end do
     call gr_releaseBlkIterator(itor)
 
+#if NFLUXES > 0
+    !!!!! REBUILD FLUX MFABS WITHOUT UPDATING DATA
+    ! No need to store fluxes for guardcells
+    do dir = 1, SIZE(fluxes, 2)
+        nodal(:)   = .FALSE.
+        nodal(dir) = .TRUE.
+        call amrex_multifab_build(fluxes(lev, dir), ba, dm, NFLUXES, 0, &
+                                  nodal=nodal)
+    end do
+
     !!!!! REBUILD FLUX REGISTER
     if ((lev > 0) .AND. (gr_doFluxCorrection)) then
         call amrex_fluxregister_build(flux_registers(lev), ba, dm, &
                                       amrex_ref_ratio(lev-1), &
-                                      lev, NUNK_VARS)
+                                      lev, NFLUXES)
     end if
+#endif
 
     write(*,'(A,I0,A,I0,A)') "Remade level ", (lev+1), " - ", nFab, " blocks"
 

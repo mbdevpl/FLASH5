@@ -1,4 +1,4 @@
-!!****f* source/Grid/Grid_getBlkPhysicalSize
+!!****f* source/Grid/GridMain/AMR/Amrex/Grid_getBlkPhysicalSize
 !!
 !! NAME
 !!  Grid_getBlkPhysicalSize
@@ -20,6 +20,7 @@
 !!              each dimension of the block
 !!
 !! EXAMPLE
+!!
 !!    If there is 2-d block with 8 cells along IAXIS and 4 cells along
 !!    JAXIS, and a single cell size (or delta) along each dimension is 0.1, 
 !!    then the part of the physical domain occupied by the block is 
@@ -38,25 +39,35 @@
 !!  
 !!
 !! NOTES
+!!
 !!  The physical block sizes returned by this routine are
 !!  Calculated using deltas.
 !!
-!!  This interface is general enough to work even
-!!  when the block sizes (in terms of number of cells) are not uniform.
+!!  This interface uses constant dx times number cells in the blocks
+!!  Will work when the all cells in the block are uniform size
+!!  An amrex internal routine returning physical size should replace the 
+!!  body of this subroutine, if such routine exists in amrex.
+!!  
 !!
 !!***
 
+subroutine Grid_getBlkPhysicalSize(block, blockSize)
+
+#include "Flash.h"
 #include "constants.h"
+  use amrex_amrcore_module,  ONLY : amrex_geom
+  use amrex_geometry_module, ONLY : amrex_problo
+  use block_metadata,        ONLY : block_metadata_t
 
-subroutine Grid_getBlkPhysicalSize(blockDesc, blockSize)
-  use block_metadata,   ONLY : block_metadata_t
-  use Driver_interface, ONLY : Driver_abortFlash
-  
   implicit none
+  type(block_metadata_t),intent(in) :: block
+  real,dimension(MDIM),intent(out) :: blockSize
 
-  type(block_metadata_t), intent(IN)  :: blockDesc
-  real,                   intent(OUT) :: blockSize(MDIM)
-
-  call Driver_abortFlash("[Grid_getBlkPhysicalSize] Not implemented with AMReX")
+  associate(dx   => amrex_geom(block%level - 1)%dx, &
+            lo   => block%limits(LOW,  :), &
+            hi   => block%limits(HIGH, :))
+    ! lo is 1-based cell-index of lower-left cell in block 
+    ! hi is 1-based cell-index of upper-right cell in block
+  blockSize(1:NDIM) = (hi(1:NDIM) - lo(1:NDIM) + 1) * dx(1:NDIM)
+  end associate
 end subroutine Grid_getBlkPhysicalSize
-

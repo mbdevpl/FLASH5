@@ -1,7 +1,7 @@
 #Config file for GridSolver sub unit
 DEFAULT Multipole
 REQUIRES Grid/GridMain
-EXCLUSIVE Multigrid Multigrid_experimental Multigrid_forDiffuseAdvanceByHgFFT Multigrid_forDiffuseAdvanceByHgADI BHTree
+EXCLUSIVE AmrexMultigridSolver Multigrid Multigrid_experimental Multigrid_forDiffuseAdvanceByHgFFT Multigrid_forDiffuseAdvanceByHgADI BHTree
 EXCLUSIVE Multipole Multipole_new BHTree
 
 # NOTE: The ordering here may need to be changed, when several GridSolver implementations

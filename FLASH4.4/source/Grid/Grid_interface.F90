@@ -234,6 +234,12 @@ Module Grid_interface
        integer,intent(in) :: blockId
        real,dimension(MDIM),intent(out) :: blockCenter
      end subroutine Grid_getBlkCenterCoords
+     subroutine Grid_getBlkCenterCoords_desc(blockDesc,blockCenter)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(in) :: blockDesc
+       real, dimension(MDIM), intent(out) :: blockCenter
+     end subroutine Grid_getBlkCenterCoords_desc
   end interface
 
   interface Grid_getBlkCornerID
@@ -281,6 +287,10 @@ Module Grid_interface
        type(block_metadata_t), intent(in) :: block
        real,dimension(MDIM),intent(out) :: blockSize
      end subroutine Grid_getBlkPhysicalSize
+     subroutine Grid_getBlkPhysicalSize_blkId(blockId, blockSize)
+       integer, intent(in) :: blockId
+       real,dimension(MDIM),intent(out) :: blockSize
+     end subroutine Grid_getBlkPhysicalSize_blkId
   end interface
 
   interface Grid_getBlkPtr
@@ -341,6 +351,28 @@ Module Grid_interface
        integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
        real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
      end subroutine Grid_getFluxData
+  end interface
+
+  interface
+     subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: blockDesc
+       real, pointer                      :: fluxPtrX(:,:,:,:)
+       real, pointer                      :: fluxPtrY(:,:,:,:)
+       real, pointer                      :: fluxPtrZ(:,:,:,:)
+     end subroutine Grid_getFluxPtr
+  end interface
+
+  interface
+     subroutine Grid_releaseFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: blockDesc
+       real, pointer                      :: fluxPtrX(:,:,:,:)
+       real, pointer                      :: fluxPtrY(:,:,:,:)
+       real, pointer                      :: fluxPtrZ(:,:,:,:)
+     end subroutine Grid_releaseFluxPtr
   end interface
 
   interface
