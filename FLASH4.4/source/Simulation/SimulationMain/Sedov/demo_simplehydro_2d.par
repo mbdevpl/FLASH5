@@ -13,6 +13,9 @@ sim_xctr		= 0.5
 sim_yctr		= 0.5
 sim_zctr		= 0.5
 
+# Specify file from which to read initial / analytical profile, or "/dev/null" for none:
+sim_profFileName        = "/dev/null"
+
 #		Gas ratio of specific heats
 
 gamma           = 1.4

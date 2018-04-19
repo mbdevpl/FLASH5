@@ -16,6 +16,9 @@ IF withParticles
    REQUESTS IO/IOParticles
 ENDIF
 
+LINKIF Grid_markRefineDerefine.F90 Grid/GridMain/AMR/paramesh
+LINKIF gr_expandDomain.F90         Grid/GridMain/AMR/paramesh
+LINKIF Grid_dump.F90               Grid/GridMain/AMR/paramesh
 
 D sim_pAmbient       Initial ambient pressure
 PARAMETER sim_pAmbient     REAL    1.E-5
@@ -23,10 +26,14 @@ PARAMETER sim_pAmbient     REAL    1.E-5
 D sim_rhoAmbient     Initial ambient density
 PARAMETER sim_rhoAmbient   REAL    1.
 
-D sim_expEnergy      Explosion energy (distributed over 2^dimen central zones)
+D sim_expEnergy      Explosion energy (distributed over initial explosion region)
 PARAMETER sim_expEnergy    REAL    1.
 
-D sim_rInit          Radial position of inner edge of grid (for 1D)
+D sim_minRhoInit     Density floor for initial condition
+PARAMETER sim_minRhoInit   REAL    1.E-20     [0.0 ...]
+
+D sim_rInit          Radius of region into which explosion energy is dumped
+D &                     initially, used only if tinitial <= 0.
 PARAMETER sim_rInit        REAL    0.05
 
 D sim_xctr            Explosion center coordinates
@@ -39,7 +46,80 @@ D sim_zctr            Explosion center coordinates
 PARAMETER sim_zctr          REAL    0.5
 
 D sim_nsubzones       Number of `sub-zones' in cells for applying 1d profile
-PARAMETER sim_nsubzones     INTEGER 7
+PARAMETER sim_nsubzones     INTEGER 7   [1 ...]
+
+D sim_forceCenterDerefine  Try to force low refinement level around explosion center?
+D sim_centerRefineLevel    Desired refinement level at center (if "forcing")
+D sim_derefineRadius       Radius of center region to force derefinement
+PARAMETER sim_forceCenterDerefine BOOLEAN FALSE
+PARAMETER sim_centerRefineLevel   INTEGER 1     [-1, 1 ...]
+PARAMETER sim_derefineRadius      REAL    0.0   [0.0 ...]
+
+D sim_profFileName Name of file from which to read a 1D Sedov solution for the
+D &                     initial condition.
+D & The data from the file will be rescaled, and a density floor given
+D & by sim_minRhoInit will be applied, to construct the initial condition.
+D & This file will only be used if tinitial > 0.
+PARAMETER sim_profFileName        STRING  "sedovSolution.dat"
+
+DATAFILES sedovSolution.dat
+DATAFILES sedovSolutionMod*.dat
+
+D sim_bcSetBdryVar Whether to set the "bdry" variable in unk (if it exists) to 1
+D & in guard cells at reflecting boundaries. Doing this will entice Hydro
+D & implementations to lower reconstruction order in adjacent cells, and possibly
+D & lower the CFL factor applied to timestep computation as well.
+PARAMETER sim_bcSetBdryVar        BOOLEAN  FALSE
+
+D sim_earliestLSTime earliest time included in Largest-{Norm,Error} summaries
+D sim_latestLSTime latest time included in Largest-{Norm,Error} summaries
+PARAMETER sim_earliestLSTime	  REAL	   0.0
+PARAMETER sim_latestLSTime	  REAL	   HUGE(1.0)
+
+D sim_smallestNormRadius inner radius bound of region for norm computation
+D sim_largestNormRadius outer radius bound of region for norm computation
+PARAMETER sim_smallestNormRadius	  REAL	   0.0
+PARAMETER sim_largestNormRadius	  REAL	   HUGE(1.0)
+
+D sim_oneLevelIntegralsOnly Whether to compute intgral quantities only on
+D & cells at one refinement level, ignoring all finer or coarser cells
+PARAMETER sim_oneLevelIntegralsOnly	   BOOLEAN	FALSE
+D sim_integralsLevel if sim_oneLevelIntegralsOnly is TRUE, this gives the
+D & requested refinement level, either explicitly as a positive integer
+D & or as -1 for the largest currently realized level.
+PARAMETER sim_integralsLevel	   INTEGER	-1	[-1, 1 ...]
 
 
-# No VARIABLE declarations here, using VARIABLES declared in Hydro etc.
+# VARIABLE declarations for analytical solution from file here,
+# other VARIABLES declared in Hydro etc.
+
+VARIABLE dena TYPE:PER_VOLUME
+VARIABLE prsa
+VARIABLE vlxa
+VARIABLE vlya
+VARIABLE vlza
+VARIABLE eina
+VARIABLE enra
+
+USESETUPVARS DoAnalytical
+IF DoAnalytical
+  LINKIF Grid_computeUserVars.F90.analytical          Simulation
+  LINKIF IO_writeIntegralQuantities.F90.analytical    Simulation
+  LINKIF Simulation_computeAnalytical.F90.analytical  Simulation
+
+  #VARIABLE dend
+  #VARIABLE prsd
+  #VARIABLE vlrd
+
+  #VARIABLE denc
+  #VARIABLE prsc
+  #VARIABLE vlrc
+
+ENDIF
+
+USESETUPVARS UseBdryVar
+IF UseBdryVar
+  LINKIF Grid_bcApplyToRegionSpecialized.F90.bdryvar  Grid
+  VARIABLE bdry
+
+ENDIF

@@ -12,13 +12,14 @@
 #	Parameters for initial model
 #		Ambient pressure and density, explosion energy, initial
 #		radius of perturbation, and location of explosion center
-sim_pAmbient	= 1.E-5
-sim_rhoAmbient	= 1.
-sim_expEnergy	= 1.
-sim_rInit		= 0.013671875
-sim_xctr		= 0.5
-sim_yctr		= 0.5
-sim_zctr		= 0.5
+sim_pAmbient	 = 1.E-5
+sim_rhoAmbient	 = 1.
+sim_expEnergy	 = 1.
+sim_rInit		 = 0.013671875
+sim_xctr		 = 0.5
+sim_yctr		 = 0.5
+sim_zctr		 = 0.5
+sim_profFileName = "sedovSolutionModLong.dat"
 
 #		Gas ratio of specific heats
 gamma           = 1.4

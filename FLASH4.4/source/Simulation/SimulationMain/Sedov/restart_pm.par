@@ -13,6 +13,8 @@ sim_xctr		= 0.5
 sim_yctr		= 0.5
 sim_zctr		= 0.5
 
+sim_profFileName        = "/dev/null"
+
 #		Gas ratio of specific heats
 
 gamma           = 1.4
@@ -71,12 +73,13 @@ tmax            = 0.05
 run_comment     = "Sedov explosion"
 log_file        = "sedov.log"
 eintSwitch     = 1.e-4
+use_auxEintEqn = .TRUE.
 
 plot_var_1 = "dens"
 plot_var_2 = "pres"
 plot_var_3 = "temp"
 
-#  Adaptvie Grid refinement parameters
+#  Adaptive Grid refinement parameters
 
 lrefine_max     = 6
 refine_var_1 = "dens"
@@ -117,12 +120,15 @@ LimitedSlopeBeta= 1.     # Slope parameter for the "limited" slope by Toro
 charLimiting    = .true. # Characteristic limiting vs. Primitive limiting
 use_steepening	= .true. # Contact Steepening for Third order PPM
 
-#       II. RIEMANN SOLVERS:
-RiemannSolver   = "hllc"       # Roe, HLL, HLLC, LF
-shockInstabilityFix = .false. # Carbuncle instability fix for the Roe solver
-EOSforRiemann	= .false.     # Call EoS for Riemann solves
-entropy		= .false.
+#hy_fPresInMomFlux = 1.0      # Percentage of pressure gradient for the momentum equation that is handled in momentum fluxes
 
-#       III. STRONG SHOCK HANDELING SCHEME:
-shockDetect     = .false.     # Shock Detect for numerical stability
+#       II. RIEMANN SOLVERS:
+RiemannSolver   = "hllc"       # Roe, HLL, HLLC, LLF, Marquina
+shockInstabilityFix = .false. # Carbuncle instability fix for the Roe solver
+#EOSforRiemann	= .false.     # Call EoS for Riemann solves
+entropy		= .false.     # Entropy fix for the Roe solver
+
+#       III. STRONG SHOCK HANDLING SCHEME:
+#shockDetect     = .false.     # Shock Detect for numerical stability
+shockLowerCFL   = .false.     # Lower CFL at shocks?
 ## -------------------------------------------------------------##
