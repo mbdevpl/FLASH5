@@ -43,7 +43,7 @@ make -f Makefile.hello
 mkdir -p $FLASHTEST_OUTPUT
 $FLASHTEST_BASE/flashTest.py \
                 -o $FLASHTEST_OUTPUT \
-                -c $FLASH_BASE/sites/compute001.mcs.anl.gov/FlashTest/config \
+                -c $FLASH_BASE/sites/compute001.mcs.anl.gov/FlashTest/config_master \
                 -i $FLASH_BASE/sites/compute001.mcs.anl.gov/FlashTest/test.info \
                 UnitTest/Grid/AMR/AMReX/2d/Init \
                 UnitTest/Grid/AMR/AMReX/2d/Refine \

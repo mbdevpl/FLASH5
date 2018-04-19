@@ -56,7 +56,7 @@
 ##  FLASH-specific keywords  ##
 ###############################
 
-pathToFlash:        /sandbox/jenkins-ci/workspace/FlashTest/FLASH4.4
+pathToFlash:        /sandbox/jenkins-ci/workspace/Flash-Staged/FLASH4.4
 pathToGmake:        make -j8
 defaultParfile:     <pathToFlash>/object/flash.par
 #updateScript:
