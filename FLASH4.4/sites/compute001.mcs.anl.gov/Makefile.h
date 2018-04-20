@@ -1,10 +1,22 @@
 # FLASH makefile definitions for compute001.mcs.anl.gov
 #----------------------------------------------------------------------------
+# Set the AMReX library path -- manual installation for multiple variants
+#----------------------------------------------------------------------------
+ifeq      ($(NDIM), 1)
+AMREX_PATH=/sandbox/flash/amrex_install/1D
+else ifeq ($(NDIM), 2)
+AMREX_PATH=/sandbox/flash/amrex_install/2D
+else ifeq ($(NDIM), 3)
+AMREX_PATH=/sandbox/flash/amrex_install/3D
+else
+AMREX_PATH=
+endif
+
+#----------------------------------------------------------------------------
 # Set the HDF5/MPI library paths -- managed by loading with softenv
 #----------------------------------------------------------------------------
 HDF5_PATH  = 
 HYPRE_PATH = 
-AMREX_PATH = /sandbox/flash
 ZLIB_PATH  =
 PAPI_PATH  =
 PAPI_FLAGS =
