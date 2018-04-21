@@ -91,21 +91,16 @@
 !!   hy_sweep
 !!***
 
-subroutine Grid_getFluxData(blockID, axis, fluxes, dataSize, pressureSlots, areaLeft)
+subroutine Grid_getFluxData(level, axis, pressureSlots, areaLeft)
 
   implicit none
 
 #include "Flash.h"
 
-  integer, intent(IN) :: blockID
-  integer, intent(IN) :: axis
-  integer, intent(IN), dimension(3) :: dataSize
-  real, intent(INOUT), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes
+  integer, intent(IN) :: level
+  integer, intent(IN), OPTIONAL :: axis
   integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
   real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
-
-  !dummy values for stub - not required for INOUT dummy argument
-  !!fluxes = 0
 
   return
 end subroutine Grid_getFluxData

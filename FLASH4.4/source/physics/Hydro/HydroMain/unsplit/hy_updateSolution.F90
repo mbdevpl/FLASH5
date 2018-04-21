@@ -208,25 +208,25 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 
      call Grid_getFluxPtr(blockDesc,flx,fly,flz)
 
-     if(hy_fluxCorrectPerLevel) then
-        updateMode=UPDATE_ALL
-        call Grid_getFluxData(blockDesc,flx,fly,flz,datasize)
-     else
-        
-        updateMode = UPDATE_INTERIOR
-     end if
+!!$     if(hy_fluxCorrectPerLevel) then
+!!$        updateMode=UPDATE_ALL
+!!$        call Grid_getFluxData(blockDesc,flx,fly,flz,datasize)
+!!$     else
+!!$        
+!!$        updateMode = UPDATE_INTERIOR
+!!$     end if
 
-        updateMode = UPDATE_ALL
+     updateMode = UPDATE_ALL
 
      call Timers_start("unsplitUpdate")
 #ifdef DEBUG_UHD
      print*,'and now update'
 #endif
-
+     
      call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
-
+     
      
 !#define DEBUG_UHD
 #ifdef DEBUG_UHD

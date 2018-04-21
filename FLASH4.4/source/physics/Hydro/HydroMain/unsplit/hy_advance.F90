@@ -7,7 +7,7 @@ subroutine hy_advance(simTime, dt, dtOld)
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getLeafIterator, Grid_releaseLeafIterator,&
-                                  Grid_getMaxRefinement
+                                  Grid_getMaxRefinement, Grid_conserveFluxes, Grid_putFluxData
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use hy_interface,        ONLY : hy_computeFluxes, hy_updateSolution
   use leaf_iterator, ONLY : leaf_iterator_t
@@ -59,7 +59,8 @@ subroutine hy_advance(simTime, dt, dtOld)
      end do
      call Timers_stop("compute fluxes")
      call Grid_releaseLeafIterator(itor)
-     
+     call Grid_putFluxData(level)
+     call Grid_conserveFluxes(ALLDIR,level)
      
      call Grid_getLeafIterator(itor, level=level)
      call Timers_start("update solution")

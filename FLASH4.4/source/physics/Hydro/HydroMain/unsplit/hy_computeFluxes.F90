@@ -74,8 +74,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
                          hy_fullRiemannStateArrays,    &
                          hy_fullSpecMsFluxHandling
 
-  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxData,&
-                             Grid_getFluxPtr, Grid_releaseFluxPtr
+  use Grid_interface, ONLY : Grid_getFluxPtr, Grid_releaseFluxPtr
   implicit none
 
 #include "constants.h"
@@ -235,7 +234,6 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
-     call Grid_getFluxPtr(blockDesc,flx,fly,flz)
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
      !! ************************************************************************
@@ -261,9 +259,6 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      !! Unsplit update for conservative variables from n to n+1 time step
 
      
-     if (hy_fluxCorrect) then
-        call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
-     end if
      call Grid_releaseFluxPtr(blockDesc,flx,fly,flz)
      
      deallocate(gravX)
