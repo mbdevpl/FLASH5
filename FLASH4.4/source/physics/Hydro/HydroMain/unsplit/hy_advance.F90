@@ -9,7 +9,7 @@ subroutine hy_advance(simTime, dt, dtOld)
                                   Grid_getLeafIterator, Grid_releaseLeafIterator,&
                                   Grid_getMaxRefinement
   use Timers_interface,    ONLY : Timers_start, Timers_stop
-  use hy_interface,        ONLY : hy_advanceBlk
+  use hy_interface,        ONLY : hy_computeFluxes
   use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Hydro_data, ONLY : hy_fluxCorrectPerLevel
@@ -49,13 +49,10 @@ subroutine hy_advance(simTime, dt, dtOld)
            blkLimitsGC(:,:) = blockDesc%limitsGC
            
            call Grid_getBlkPtr(blockDesc, Uout)
-!!$           abx = amrex_box(bx%lo, bx%hi, bx%nodal)
-!!$           call amrex_print(abx)
-!!$           tbx = abx
 
            call Grid_getDeltas(level,del)
            Uin => Uout
-           call hy_advanceBlk(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+           call hy_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
            call Grid_releaseBlkPtr(blockDesc, Uout)
            nullify(Uout)
 !!$           call IO_writecheckpoint;stop

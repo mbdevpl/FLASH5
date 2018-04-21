@@ -1021,7 +1021,7 @@ Module hy_interface
 !endif #ifdef FLASH_USM_MHD
 
   interface
-     subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+     subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t) :: blockDesc
@@ -1030,7 +1030,20 @@ Module hy_interface
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
-     end subroutine hy_advanceBlk
+     end subroutine hy_computeFluxes
+  end interface
+
+    interface
+     subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+          sweepOrder )
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t) :: blockDesc
+       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       real, pointer, dimension(:,:,:,:) :: Uout,Uin
+       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+       integer, INTENT(IN) :: sweepOrder
+       real,dimension(MDIM),intent(IN) :: del
+     end subroutine hy_updateSolution
   end interface
 
 End Module hy_interface
