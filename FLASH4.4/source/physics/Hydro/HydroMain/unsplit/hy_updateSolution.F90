@@ -107,14 +107,14 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 
 
 
-  call Timers_start("loop1 body")
+  call Timers_start("update solution body")
 
-     loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
-     loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
-     lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
-
-!!$#if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)||defined(CFL_VAR)
-!!$     if (hy_updateHydroFluxes) then
+  loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
+  loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
+  lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
+  
+#if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)||defined(CFL_VAR)
+     if (hy_updateHydroFluxes) then
 !!$#ifdef GPRO_VAR
 !!$        ! A tagging variable for Gaussian Process (GP) method.
 !!$        Uin(GPRO_VAR,:,:,:) = 0.
@@ -145,45 +145,44 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 !!$        end where
 !!$#endif
 !!$     end if
-!!$#endif
-!!$
-!!$     if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
-!!$        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
-!!$     endif
-!!$
+#endif
+
+     if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
+        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
+     endif
+
      datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
      allocate(scrch_Ptr    (2,               loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
-     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
-     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
-     allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
-!!$     endif
-
-#if (NSPECIES+NMASS_SCALARS) > 0
-     if (hy_fullSpecMsFluxHandling) then
-        allocate(  hy_SpcR(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
-        allocate(  hy_SpcL(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
-        allocate(hy_SpcSig(HY_NSPEC,blkLimits(LOW,IAXIS)-2:blkLimits(HIGH,IAXIS)+2, loyGC:hiyGC, lozGC:hizGC,NDIM))
-     end if
-#endif
-
+!!$     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+!!$     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+!!$     allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+!!$
+!!$#if (NSPECIES+NMASS_SCALARS) > 0
+!!$     if (hy_fullSpecMsFluxHandling) then
+!!$        allocate(  hy_SpcR(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
+!!$        allocate(  hy_SpcL(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
+!!$        allocate(hy_SpcSig(HY_NSPEC,blkLimits(LOW,IAXIS)-2:blkLimits(HIGH,IAXIS)+2, loyGC:hiyGC, lozGC:hizGC,NDIM))
+!!$     end if
+!!$#endif
+!!$
      allocate(gravX(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
      allocate(gravY(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
      allocate(gravZ(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
-#ifdef DEBUG
-     print*,'came upto this point'
-#endif
-     !! ************************************************************************
-     !! Get gravity
-     gravX = 0.
-     gravY = 0.
-     gravZ = 0.
-     if (hy_useGravity) then
-        call hy_putGravity(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
-        gravX = gravX/hy_gref
-        gravY = gravY/hy_gref
-        gravZ = gravZ/hy_gref
-     endif
+!!$#ifdef DEBUG
+!!$     print*,'came upto this point'
+!!$#endif
+!!$     !! ************************************************************************
+!!$     !! Get gravity
+!!$     gravX = 0.
+!!$     gravY = 0.
+!!$     gravZ = 0.
+!!$     if (hy_useGravity) then
+!!$        call hy_putGravity(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+!!$        gravX = gravX/hy_gref
+!!$        gravY = gravY/hy_gref
+!!$        gravZ = gravZ/hy_gref
+!!$     endif
 
 
 !!$     if (hy_updateHydroFluxes) then
@@ -204,74 +203,11 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
         print*,'_unsplit bef "call getRiemannState": associated(Uout) is',associated(Uout)
         print*,'_unsplit bef "call getRiemannState": lbound(Uin ):',lbound(Uin )
         print*,'_unsplit bef "call getRiemannState": ubound(Uin ):',ubound(Uin )
-        print*,'_unsplit bef "call getRiemannState": lbound(scrchFaceXPtr):',lbound(scrchFaceXPtr)
-        print*,'_unsplit bef "call getRiemannState": ubound(scrchFaceXPtr):',ubound(scrchFaceXPtr)
-        print*,'_unsplit bef "call getRiemannState": lbound(scrchFaceYPtr):',lbound(scrchFaceYPtr)
-        print*,'_unsplit bef "call getRiemannState": ubound(scrchFaceYPtr):',ubound(scrchFaceYPtr)
 #endif
-!!$        call Timers_start("RiemannState")
-!!$#ifdef DEBUG_UHD
-!!$        print*,'going into RiemannState'
-!!$#endif
-!!$        call hy_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,del, &
-!!$                                    gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
-!!$                                    scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
-!!$                                    hy_SpcR,hy_SpcL,hy_SpcSig)
-!!$#ifdef DEBUG_UHD
-!!$        print*,'returning from RiemannState'
-!!$        print*,'_unsplit Aft "call getRiemannState": associated(Uin ) is',associated(Uin )
-!!$        print*,'_unsplit Aft "call getRiemannState": associated(Uout) is',associated(Uout)
-!!$#endif
-!!$        call Timers_stop("RiemannState")
-!!$        !! DEV: DL-This note seems to be outdated and wrong for the optimized code.
-!!$        ! Note: Two different ways of handling gravity:
-!!$        ! 1. With gravity calculated potential at n+1/2, Riemann states do not include gravity
-!!$        !    source terms at this point, and will include them in hy_addGravity later
-!!$        !    to the primitive Riemann variables (not available for conservative formulation).
-!!$        ! 2. With gravity extrapolated from n-1 & n states, gravity source terms have been
-!!$        !    included to Riemann states in conservative formulation in hy_getRiemannState.
-!!$
-!!$     endif !! End of if (hy_updateHydroFluxes) then
-
-!!$     allocate(flx(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-!!$     allocate(fly(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-!!$     allocate(flz(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
      call Grid_getFluxPtr(blockDesc,flx,fly,flz)
-!!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
-     !! ************************************************************************
-     !! Calculate high order Godunov fluxes
-     !! Initialize arrays with zero
-!!$     flx = 0.
-!!$     fly = 0.
-!!$     flz = 0.
-!!$     call Timers_start("getFaceFlux")
-!!$#ifdef DEBUG_UHD
-!!$     print*,'getting face flux'
-!!$#endif
-!!$     call hy_getFaceFlux(blockDesc,blkLimits,blkLimitsGC,datasize,del,&
-!!$                             flx,fly,flz,&
-!!$                             scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
-!!$#ifdef DEBUG_UHD
-!!$     print*,'got face flux'
-!!$     print*,'_unsplit Aft "call getFaceFlux": associated(Uin ) is',associated(Uin )
-!!$     print*,'_unsplit Aft "call getFaceFlux": associated(Uout) is',associated(Uout)
-!!$#endif
-!!$     call Timers_stop("getFaceFlux")
-!!$     !! ************************************************************************
-!!$     !! Unsplit update for conservative variables from n to n+1 time step
-!!$#ifndef FLASH_GRID_UG
-!!$     if ((.not. hy_fullRiemannStateArrays) .OR. &
-!!$          (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0) .OR. &
-!!$          .not. blockNeedsFluxCorrect(blockID)) then
-!!$#endif
-!!$        if (blockNeedsFluxCorrect(blockID)) then
-!!$           updateMode = UPDATE_INTERIOR
-!!$        else
-!!$           updateMode = UPDATE_ALL
-!!$        end if
      if(hy_fluxCorrectPerLevel) then
         updateMode=UPDATE_ALL
         call Grid_getFluxData(blockDesc,flx,fly,flz,datasize)
@@ -368,32 +304,12 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 !!$     end if
      call Grid_releaseFluxPtr(blockDesc,flx,fly,flz)
      
-!!$     deallocate(flx)
-!!$     deallocate(fly)
-!!$     deallocate(flz)
      deallocate(gravX)
      deallocate(gravY)
      deallocate(gravZ)
      deallocate(faceAreas)
      
-!!$     if (hy_fullRiemannStateArrays) then
-!!$        call hy_memReleaseBlkPtr(blockID,scrchFaceXPtr,SCRATCH_FACEX)
-!!$        if (NDIM > 1) call hy_memReleaseBlkPtr(blockID,scrchFaceYPtr,SCRATCH_FACEY)
-!!$        if (NDIM > 2) call hy_memReleaseBlkPtr(blockID,scrchFaceZPtr,SCRATCH_FACEZ)
-!!$     else
-     deallocate(scrchFaceXPtr)
-     deallocate(scrchFaceYPtr)
-     deallocate(scrchFaceZPtr)
-     
-#if (NSPECIES+NMASS_SCALARS) > 0
-     if (hy_fullSpecMsFluxHandling) then
-        deallocate(hy_SpcR)
-        deallocate(hy_SpcL)
-        deallocate(hy_SpcSig)
-     end if
-#endif
-
-  call Timers_stop("loop1 body")
+  call Timers_stop("update solution body")
 
 
 End Subroutine hy_updateSolution
