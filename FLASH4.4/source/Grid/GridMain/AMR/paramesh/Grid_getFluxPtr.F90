@@ -39,15 +39,20 @@
 
 #include "constants.h"
 
-subroutine Grid_getFluxPtr(blockID, fluxPtrX, fluxPtrY, fluxPtrZ)
+subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+  use block_metadata,   ONLY : block_metadata_t
   use gr_specificData, ONLY : gr_flxx, gr_flxy, gr_flxz
   implicit none
   
-  integer, intent(IN) :: blockId
+
+  type(block_metadata_t), intent(IN) :: blockDesc
   real, pointer                      :: fluxPtrX(:,:,:,:)
   real, pointer                      :: fluxPtrY(:,:,:,:)
   real, pointer                      :: fluxPtrZ(:,:,:,:)
-  
+
+  integer blockID
+  blockID=blockDesc%id
+
   fluxPtrX => gr_flxx(:,:,:,:,blockID)
   fluxPtrY => gr_flxy(:,:,:,:,blockID)
   fluxPtrZ => gr_flxz(:,:,:,:,blockID) 

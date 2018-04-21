@@ -94,6 +94,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   
   integer, dimension(MDIM) :: datasize
 
+!!$  real, pointer, dimension(:,:,:,:)   :: flx,fly,flz
   real, allocatable, dimension(:,:,:,:)   :: flx,fly,flz
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
@@ -237,6 +238,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      allocate(flz(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
+!!$     call Grid_getFluxPtr(blockDesc,flx,fly,flz)
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
      !! ************************************************************************
@@ -270,7 +272,6 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 !!$        else
 !!$           updateMode = UPDATE_ALL
 !!$        end if
-
      if(hy_fluxCorrectPerLevel) then
         updateMode=UPDATE_ALL
         call Grid_getFluxData(blockDesc,flx,fly,flz,datasize)
@@ -290,7 +291,8 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
 
-
+!!$     call Grid_releaseFluxPtr(flx,fly,flz)
+     
 !#define DEBUG_UHD
 #ifdef DEBUG_UHD
      print*,'done update'

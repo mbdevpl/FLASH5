@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getFluxPtr(integer(IN) :: blockID,
+!!  Grid_getFluxPtr(block_metadata_t(IN) :: blockDesc,
 !!                  real(pointer)        :: fluxPtrX(:,:,:,:),
 !!                  real(pointer)        :: fluxPtrY(:,:,:,:),
 !!                  real(pointer)        :: fluxPtrZ(:,:,:,:))
@@ -37,16 +37,15 @@
 !!
 !!***
 
-subroutine Grid_getFluxPtr(blockID, fluxPtrX, fluxPtrY, fluxPtrZ)
-
+subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+    use block_metadata,   ONLY : block_metadata_t
 
     implicit none
 
-    integer, intent(IN) :: blockID
+    type(block_metadata_t), intent(IN) :: blockDesc
     real, pointer                      :: fluxPtrX(:,:,:,:)
     real, pointer                      :: fluxPtrY(:,:,:,:)
     real, pointer                      :: fluxPtrZ(:,:,:,:)
-
 
 end subroutine Grid_getFluxPtr
 
