@@ -115,8 +115,8 @@ Module gr_specificData
 #else
   real, target,dimension(1,1,1,1,1):: scratch_facevarz
 #endif
-#if(NFLUX>0)
-  real,target,dimension(&
+#if(NFLUXES>0)
+  real,target,dimension(NFLUXES,&
                         GRID_ILO_GC:GRID_IHI_GC,  &
                         GRID_JLO_GC:GRID_JHI_GC,  &
                         GRID_KLO_GC:GRID_KHI_GC+1,&

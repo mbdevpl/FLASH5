@@ -254,16 +254,16 @@ subroutine gr_initSpecific()
   allocate(scratch_facevarz(1,1,1,1,1))
 # endif
 
-#if(NFLUX>0)
-  allocate(gr_flxx(GRID_ILO_GC:GRID_IHI_GC,  &
+#if(NFLUXES>0)
+  allocate(gr_flxx(NFLUXES,GRID_ILO_GC:GRID_IHI_GC,  &
        GRID_JLO_GC:GRID_JHI_GC,  &
        GRID_KLO_GC:GRID_KHI_GC+1,&
        MAXBLOCKS))
-  allocate(gr_flxy(GRID_ILO_GC:GRID_IHI_GC,  &
+  allocate(gr_flxy(NFLUXES,GRID_ILO_GC:GRID_IHI_GC,  &
        GRID_JLO_GC:GRID_JHI_GC,  &
        GRID_KLO_GC:GRID_KHI_GC+1,&
        MAXBLOCKS))
-  allocate(gr_flxz(GRID_ILO_GC:GRID_IHI_GC,  &
+  allocate(gr_flxz(NFLUXES,GRID_ILO_GC:GRID_IHI_GC,  &
        GRID_JLO_GC:GRID_JHI_GC,  &
        GRID_KLO_GC:GRID_KHI_GC+1,&
        MAXBLOCKS))

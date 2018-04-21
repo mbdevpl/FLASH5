@@ -50,7 +50,7 @@ subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
   real, pointer                      :: fluxPtrY(:,:,:,:)
   real, pointer                      :: fluxPtrZ(:,:,:,:)
 
-  integer blockID
+  integer :: blockID
   blockID=blockDesc%id
 
   fluxPtrX => gr_flxx(:,:,:,:,blockID)

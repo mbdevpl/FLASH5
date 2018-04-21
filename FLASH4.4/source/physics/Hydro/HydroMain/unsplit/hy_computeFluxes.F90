@@ -74,7 +74,8 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
                          hy_fullRiemannStateArrays,    &
                          hy_fullSpecMsFluxHandling
 
-  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxData
+  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxData,&
+                             Grid_getFluxPtr, Grid_releaseFluxPtr
   implicit none
 
 #include "constants.h"
@@ -94,8 +95,8 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   
   integer, dimension(MDIM) :: datasize
 
-!!$  real, pointer, dimension(:,:,:,:)   :: flx,fly,flz
-  real, allocatable, dimension(:,:,:,:)   :: flx,fly,flz
+  real, pointer, dimension(:,:,:,:)   :: flx,fly,flz
+!!$  real, allocatable, dimension(:,:,:,:)   :: flx,fly,flz
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
 
@@ -233,12 +234,12 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
      endif !! End of if (hy_updateHydroFluxes) then
 
-     allocate(flx(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-     allocate(fly(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-     allocate(flz(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-     allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
-
-!!$     call Grid_getFluxPtr(blockDesc,flx,fly,flz)
+!!$     allocate(flx(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+!!$     allocate(fly(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+!!$     allocate(flz(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+!!$     allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
+!!$
+     call Grid_getFluxPtr(blockDesc,flx,fly,flz)
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
      !! ************************************************************************
@@ -291,7 +292,6 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
 
-!!$     call Grid_releaseFluxPtr(flx,fly,flz)
      
 !#define DEBUG_UHD
 #ifdef DEBUG_UHD
@@ -367,14 +367,15 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      if (hy_fluxCorrect) then
         call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
      end if
+     call Grid_releaseFluxPtr(blockDesc,flx,fly,flz)
      
-     deallocate(flx)
-     deallocate(fly)
-     deallocate(flz)
+!!$     deallocate(flx)
+!!$     deallocate(fly)
+!!$     deallocate(flz)
      deallocate(gravX)
      deallocate(gravY)
      deallocate(gravZ)
-     deallocate(faceAreas)
+!!$     deallocate(faceAreas)
      
 !!$     if (hy_fullRiemannStateArrays) then
 !!$        call hy_memReleaseBlkPtr(blockID,scrchFaceXPtr,SCRATCH_FACEX)
