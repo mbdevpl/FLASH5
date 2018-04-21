@@ -1,14 +1,14 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_advanceBlk
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_updateSolution
 !!
 !!
 !! NAME
 !!
-!!  hy_advanceBlk
+!!  hy_updateSolution
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_advanceBlk(integer(IN) :: blockCount, 
+!!  hy_updateSolution(integer(IN) :: blockCount, 
 !!        integer(IN) :: blockList(blockCount)
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
@@ -23,7 +23,7 @@
 !!  The blockList and blockCount arguments tell this routine on 
 !!  which blocks and on how many to operate.  blockList is an 
 !!  integer array of size blockCount that contains the local 
-!!  block numbers of blocks on which to advanceBlk.
+!!  block numbers of blocks on which to updateSolution.
 !!
 !!  dt gives the timestep through which this update should advance,
 !!  and timeEndAdv tells the time that this update will reach when
@@ -43,7 +43,7 @@
 
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
-Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
+Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -74,7 +74,8 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
                          hy_fullRiemannStateArrays,    &
                          hy_fullSpecMsFluxHandling
 
-  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxData
+  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxData,&
+                             Grid_getFluxPtr, Grid_releaseFluxPtr
   implicit none
 
 #include "constants.h"
@@ -94,7 +95,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
   
   integer, dimension(MDIM) :: datasize
 
-  real, allocatable, dimension(:,:,:,:)   :: flx,fly,flz
+  real, pointer, dimension(:,:,:,:)   :: flx,fly,flz
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
 
@@ -112,44 +113,44 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
      loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
      lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
 
-#if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)||defined(CFL_VAR)
-     if (hy_updateHydroFluxes) then
-#ifdef GPRO_VAR
-        ! A tagging variable for Gaussian Process (GP) method.
-        Uin(GPRO_VAR,:,:,:) = 0.
-#endif
-        !! -----------------------------------------------------------------------!
-        !! Save old velocities ---------------------------------------------------!
-        !! -----------------------------------------------------------------------!
-#ifdef VOLX_VAR
-        Uin(VOLX_VAR,:,:,:) = Uin(VELX_VAR,:,:,:)
-#endif
-#ifdef VOLY_VAR
-        Uin(VOLY_VAR,:,:,:) = Uin(VELY_VAR,:,:,:)
-#endif
-#ifdef VOLZ_VAR
-        Uin(VOLZ_VAR,:,:,:) = Uin(VELZ_VAR,:,:,:)
-#endif
-#ifdef CFL_VAR
-        where (1.2*Uin(CFL_VAR,:,:,:) < hy_cfl_original)
-           !! Slow recover (of factor of 1.2) to the original CFL once it gets to
-           !! reduced to a smaller one in the presence of strong shocks.
-           !! This variable CFL takes place in the following three cases using:
-           !! (1) use_hybridOrder = .true.,
-           !! (2) use_hybridOrder = .true., or
-           !! (3) BDRY_VAR is defined and used for stationary objects.
-           Uin(CFL_VAR,:,:,:) = 1.2*U(CFL_VAR,:,:,:)
-        elsewhere
-           Uin(CFL_VAR,:,:,:) = hy_cfl_original
-        end where
-#endif
-     end if
-#endif
-
-     if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
-        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
-     endif
-
+!!$#if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)||defined(CFL_VAR)
+!!$     if (hy_updateHydroFluxes) then
+!!$#ifdef GPRO_VAR
+!!$        ! A tagging variable for Gaussian Process (GP) method.
+!!$        Uin(GPRO_VAR,:,:,:) = 0.
+!!$#endif
+!!$        !! -----------------------------------------------------------------------!
+!!$        !! Save old velocities ---------------------------------------------------!
+!!$        !! -----------------------------------------------------------------------!
+!!$#ifdef VOLX_VAR
+!!$        Uin(VOLX_VAR,:,:,:) = Uin(VELX_VAR,:,:,:)
+!!$#endif
+!!$#ifdef VOLY_VAR
+!!$        Uin(VOLY_VAR,:,:,:) = Uin(VELY_VAR,:,:,:)
+!!$#endif
+!!$#ifdef VOLZ_VAR
+!!$        Uin(VOLZ_VAR,:,:,:) = Uin(VELZ_VAR,:,:,:)
+!!$#endif
+!!$#ifdef CFL_VAR
+!!$        where (1.2*Uin(CFL_VAR,:,:,:) < hy_cfl_original)
+!!$           !! Slow recover (of factor of 1.2) to the original CFL once it gets to
+!!$           !! reduced to a smaller one in the presence of strong shocks.
+!!$           !! This variable CFL takes place in the following three cases using:
+!!$           !! (1) use_hybridOrder = .true.,
+!!$           !! (2) use_hybridOrder = .true., or
+!!$           !! (3) BDRY_VAR is defined and used for stationary objects.
+!!$           Uin(CFL_VAR,:,:,:) = 1.2*U(CFL_VAR,:,:,:)
+!!$        elsewhere
+!!$           Uin(CFL_VAR,:,:,:) = hy_cfl_original
+!!$        end where
+!!$#endif
+!!$     end if
+!!$#endif
+!!$
+!!$     if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
+!!$        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
+!!$     endif
+!!$
      datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
      allocate(scrch_Ptr    (2,               loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
@@ -185,18 +186,18 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
      endif
 
 
-     if (hy_updateHydroFluxes) then
-        !! ************************************************************************
-        !! Calculate Riemann (interface) states
-        !! Note: gravX(:,:,:) - gravity at n
-
-#if (NSPECIES+NMASS_SCALARS) > 0
-        if (hy_fullSpecMsFluxHandling) then
-           hy_SpcL=0.
-           hy_SpcR=0.
-           hy_SpcSig=0.
-        end if
-#endif
+!!$     if (hy_updateHydroFluxes) then
+!!$        !! ************************************************************************
+!!$        !! Calculate Riemann (interface) states
+!!$        !! Note: gravX(:,:,:) - gravity at n
+!!$
+!!$#if (NSPECIES+NMASS_SCALARS) > 0
+!!$        if (hy_fullSpecMsFluxHandling) then
+!!$           hy_SpcL=0.
+!!$           hy_SpcR=0.
+!!$           hy_SpcSig=0.
+!!$        end if
+!!$#endif
 
 #ifdef DEBUG_UHD
         print*,'_unsplit bef "call getRiemannState": associated(Uin ) is',associated(Uin )
@@ -208,58 +209,59 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
         print*,'_unsplit bef "call getRiemannState": lbound(scrchFaceYPtr):',lbound(scrchFaceYPtr)
         print*,'_unsplit bef "call getRiemannState": ubound(scrchFaceYPtr):',ubound(scrchFaceYPtr)
 #endif
-        call Timers_start("RiemannState")
-#ifdef DEBUG_UHD
-        print*,'going into RiemannState'
-#endif
-        call hy_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,del, &
-                                    gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
-                                    scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
-                                    hy_SpcR,hy_SpcL,hy_SpcSig)
-#ifdef DEBUG_UHD
-        print*,'returning from RiemannState'
-        print*,'_unsplit Aft "call getRiemannState": associated(Uin ) is',associated(Uin )
-        print*,'_unsplit Aft "call getRiemannState": associated(Uout) is',associated(Uout)
-#endif
-        call Timers_stop("RiemannState")
-        !! DEV: DL-This note seems to be outdated and wrong for the optimized code.
-        ! Note: Two different ways of handling gravity:
-        ! 1. With gravity calculated potential at n+1/2, Riemann states do not include gravity
-        !    source terms at this point, and will include them in hy_addGravity later
-        !    to the primitive Riemann variables (not available for conservative formulation).
-        ! 2. With gravity extrapolated from n-1 & n states, gravity source terms have been
-        !    included to Riemann states in conservative formulation in hy_getRiemannState.
+!!$        call Timers_start("RiemannState")
+!!$#ifdef DEBUG_UHD
+!!$        print*,'going into RiemannState'
+!!$#endif
+!!$        call hy_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,del, &
+!!$                                    gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
+!!$                                    scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
+!!$                                    hy_SpcR,hy_SpcL,hy_SpcSig)
+!!$#ifdef DEBUG_UHD
+!!$        print*,'returning from RiemannState'
+!!$        print*,'_unsplit Aft "call getRiemannState": associated(Uin ) is',associated(Uin )
+!!$        print*,'_unsplit Aft "call getRiemannState": associated(Uout) is',associated(Uout)
+!!$#endif
+!!$        call Timers_stop("RiemannState")
+!!$        !! DEV: DL-This note seems to be outdated and wrong for the optimized code.
+!!$        ! Note: Two different ways of handling gravity:
+!!$        ! 1. With gravity calculated potential at n+1/2, Riemann states do not include gravity
+!!$        !    source terms at this point, and will include them in hy_addGravity later
+!!$        !    to the primitive Riemann variables (not available for conservative formulation).
+!!$        ! 2. With gravity extrapolated from n-1 & n states, gravity source terms have been
+!!$        !    included to Riemann states in conservative formulation in hy_getRiemannState.
+!!$
+!!$     endif !! End of if (hy_updateHydroFluxes) then
 
-     endif !! End of if (hy_updateHydroFluxes) then
-
-     allocate(flx(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-     allocate(fly(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-     allocate(flz(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+!!$     allocate(flx(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+!!$     allocate(fly(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+!!$     allocate(flz(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
+     call Grid_getFluxPtr(blockDesc,flx,fly,flz)
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
      !! ************************************************************************
      !! Calculate high order Godunov fluxes
      !! Initialize arrays with zero
-     flx = 0.
-     fly = 0.
-     flz = 0.
-     call Timers_start("getFaceFlux")
-#ifdef DEBUG_UHD
-     print*,'getting face flux'
-#endif
-     call hy_getFaceFlux(blockDesc,blkLimits,blkLimitsGC,datasize,del,&
-                             flx,fly,flz,&
-                             scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
-#ifdef DEBUG_UHD
-     print*,'got face flux'
-     print*,'_unsplit Aft "call getFaceFlux": associated(Uin ) is',associated(Uin )
-     print*,'_unsplit Aft "call getFaceFlux": associated(Uout) is',associated(Uout)
-#endif
-     call Timers_stop("getFaceFlux")
-     !! ************************************************************************
-     !! Unsplit update for conservative variables from n to n+1 time step
+!!$     flx = 0.
+!!$     fly = 0.
+!!$     flz = 0.
+!!$     call Timers_start("getFaceFlux")
+!!$#ifdef DEBUG_UHD
+!!$     print*,'getting face flux'
+!!$#endif
+!!$     call hy_getFaceFlux(blockDesc,blkLimits,blkLimitsGC,datasize,del,&
+!!$                             flx,fly,flz,&
+!!$                             scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
+!!$#ifdef DEBUG_UHD
+!!$     print*,'got face flux'
+!!$     print*,'_unsplit Aft "call getFaceFlux": associated(Uin ) is',associated(Uin )
+!!$     print*,'_unsplit Aft "call getFaceFlux": associated(Uout) is',associated(Uout)
+!!$#endif
+!!$     call Timers_stop("getFaceFlux")
+!!$     !! ************************************************************************
+!!$     !! Unsplit update for conservative variables from n to n+1 time step
 !!$#ifndef FLASH_GRID_UG
 !!$     if ((.not. hy_fullRiemannStateArrays) .OR. &
 !!$          (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0) .OR. &
@@ -270,7 +272,6 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
 !!$        else
 !!$           updateMode = UPDATE_ALL
 !!$        end if
-
      if(hy_fluxCorrectPerLevel) then
         updateMode=UPDATE_ALL
         call Grid_getFluxData(blockDesc,flx,fly,flz,datasize)
@@ -290,7 +291,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
           blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
 
-
+     
 !#define DEBUG_UHD
 #ifdef DEBUG_UHD
      print*,'done update'
@@ -362,13 +363,14 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
 !!$           endif
 !!$        else ! Cartesian geometry
 
-     if (hy_fluxCorrect) then
-        call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
-     end if
+!!$     if (hy_fluxCorrect) then
+!!$        call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
+!!$     end if
+     call Grid_releaseFluxPtr(blockDesc,flx,fly,flz)
      
-     deallocate(flx)
-     deallocate(fly)
-     deallocate(flz)
+!!$     deallocate(flx)
+!!$     deallocate(fly)
+!!$     deallocate(flz)
      deallocate(gravX)
      deallocate(gravY)
      deallocate(gravZ)
@@ -394,4 +396,4 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
   call Timers_stop("loop1 body")
 
 
-End Subroutine hy_advanceBlk
+End Subroutine hy_updateSolution

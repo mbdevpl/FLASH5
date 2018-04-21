@@ -96,7 +96,6 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   integer, dimension(MDIM) :: datasize
 
   real, pointer, dimension(:,:,:,:)   :: flx,fly,flz
-!!$  real, allocatable, dimension(:,:,:,:)   :: flx,fly,flz
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
 
@@ -237,8 +236,8 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 !!$     allocate(flx(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 !!$     allocate(fly(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 !!$     allocate(flz(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-!!$     allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
-!!$
+     allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
+
      call Grid_getFluxPtr(blockDesc,flx,fly,flz)
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
@@ -273,24 +272,24 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 !!$        else
 !!$           updateMode = UPDATE_ALL
 !!$        end if
-     if(hy_fluxCorrectPerLevel) then
-        updateMode=UPDATE_ALL
-        call Grid_getFluxData(blockDesc,flx,fly,flz,datasize)
-     else
-        
-        updateMode = UPDATE_INTERIOR
-     end if
-
-        updateMode = UPDATE_ALL
-
-     call Timers_start("unsplitUpdate")
-#ifdef DEBUG_UHD
-     print*,'and now update'
-#endif
-
-     call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
-          blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
-          scrch_Ptr)
+!!$     if(hy_fluxCorrectPerLevel) then
+!!$        updateMode=UPDATE_ALL
+!!$        call Grid_getFluxData(blockDesc,flx,fly,flz,datasize)
+!!$     else
+!!$        
+!!$        updateMode = UPDATE_INTERIOR
+!!$     end if
+!!$
+!!$        updateMode = UPDATE_ALL
+!!$
+!!$     call Timers_start("unsplitUpdate")
+!!$#ifdef DEBUG_UHD
+!!$     print*,'and now update'
+!!$#endif
+!!$
+!!$     call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
+!!$          blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
+!!$          scrch_Ptr)
 
      
 !#define DEBUG_UHD
@@ -299,7 +298,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      print*,'_unsplit Aft "call unsplitUpdate(UPD_ALL)": associated(Uin ) is',associated(Uin )
      print*,'_unsplit Aft "call unsplitUpdate(UPD_ALL)": associated(Uout) is',associated(Uout)
 #endif
-     call Timers_stop("unsplitUpdate")
+!!$     call Timers_stop("unsplitUpdate")
 !!$#ifdef FLASH_UHD_3T
 !!$        call Timers_start("unsplitUpdate 3T")
 !!$        call hy_uhd_unsplitUpdateMultiTemp&
@@ -314,16 +313,16 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
 #ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
         !! Correct energy if necessary
-     call hy_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
+!!$     call hy_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
      
 #ifdef DEBUG_UHD
      print*,'_unsplit Aft "call energyFix": associated(Uin ) is',associated(Uin )
      print*,'_unsplit Aft "call energyFix": associated(Uout) is',associated(Uout)
 #endif
-     if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
-        !! Convert unit
-        call hy_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
-     endif
+!!$     if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
+!!$        !! Convert unit
+!!$        call hy_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
+!!$     endif
      
      !#ifndef FLASH_EOS_GAMMA
      !! Call to Eos
@@ -335,7 +334,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      print*,'_unsplit bef Eos_wrapped: lbound(Uout):',lbound(Uout)
      print*,'_unsplit bef Eos_wrapped: ubound(Uout):',ubound(Uout)
 #endif
-     call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
+!!$     call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
      !#endif
 #endif /* ifndef GRAVITY */
      
@@ -375,7 +374,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      deallocate(gravX)
      deallocate(gravY)
      deallocate(gravZ)
-!!$     deallocate(faceAreas)
+     deallocate(faceAreas)
      
 !!$     if (hy_fullRiemannStateArrays) then
 !!$        call hy_memReleaseBlkPtr(blockID,scrchFaceXPtr,SCRATCH_FACEX)
