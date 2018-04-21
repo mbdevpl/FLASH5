@@ -1,11 +1,11 @@
-!!****f* source/Grid/Grid_getFluxPtr
+!!****f* source/Grid/GridMain/AMR/Amrex/Grid_getFluxPtr_desc
 !!
 !! NAME
-!!  Grid_getFluxPtr
+!!  Grid_getFluxPtr_desc
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getFluxPtr(integer(IN) :: blockID,
+!!  Grid_getFluxPtr_desc(block_metadata_t(IN) :: blockDesc,
 !!                  real(pointer)        :: fluxPtrX(:,:,:,:),
 !!                  real(pointer)        :: fluxPtrY(:,:,:,:),
 !!                  real(pointer)        :: fluxPtrZ(:,:,:,:))
@@ -37,16 +37,31 @@
 !!
 !!***
 
-subroutine Grid_getFluxPtr(blockID, fluxPtrX, fluxPtrY, fluxPtrZ)
+#include "constants.h"
 
+subroutine Grid_getFluxPtr_desc(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+    use block_metadata,       ONLY : block_metadata_t
+    use gr_physicalMultifabs, ONLY : fluxes
 
     implicit none
 
-    integer, intent(IN) :: blockID
+    type(block_metadata_t), intent(IN) :: blockDesc
     real, pointer                      :: fluxPtrX(:,:,:,:)
     real, pointer                      :: fluxPtrY(:,:,:,:)
     real, pointer                      :: fluxPtrZ(:,:,:,:)
 
-
-end subroutine Grid_getFluxPtr
+    ! Note that limits(LOW, :) is the index of the lower-leftmost cell in the
+    ! given block.  We are assigning this same index to the face just to the
+    ! left of it (for X) or below it (for Y).
+    !
+    ! For an 8x8 cell block with the lower-leftmost cell indexed as (1, 1), 
+    ! the lower X faces would be indexed from (1,1) to (9,1).
+    associate (lo   => blockDesc%limits(LOW, :), &
+               ilev => blockDesc%level - 1, &
+               igrd => blockDesc%grid_index)
+        fluxPtrX(lo(1):, lo(2):, lo(3):, 1:) => fluxes(ilev, IAXIS)%dataptr(igrd)
+        fluxPtrY(lo(1):, lo(2):, lo(3):, 1:) => fluxes(ilev, JAXIS)%dataptr(igrd)
+        fluxPtrZ(lo(1):, lo(2):, lo(3):, 1:) => fluxes(ilev, KAXIS)%dataptr(igrd)
+    end associate
+end subroutine Grid_getFluxPtr_desc
 

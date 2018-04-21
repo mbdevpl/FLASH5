@@ -115,6 +115,15 @@ Module gr_specificData
 #else
   real, target,dimension(1,1,1,1,1):: scratch_facevarz
 #endif
+#if(NFLUX>0)
+  real,target,dimension(&
+                        GRID_ILO_GC:GRID_IHI_GC,  &
+                        GRID_JLO_GC:GRID_JHI_GC,  &
+                        GRID_KLO_GC:GRID_KHI_GC+1,&
+                        MAXBLOCKS) :: gr_flxx, gr_flxy, gr_flxz
+#else
+  real, target,dimension(1,1,1,1,1):: gr_flxx, gr_flxy, gr_flxz
+#endif
 
 #else
   real, save, target, allocatable :: scratch(:,:,:,:,:)
@@ -122,6 +131,9 @@ Module gr_specificData
   real, save, target, allocatable :: scratch_facevarx(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevary(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevarz(:,:,:,:,:)
+  real, save, target, allocatable :: gr_flxx(:,:,:,:,:)
+  real, save, target, allocatable :: gr_flxy(:,:,:,:,:)
+  real, save, target, allocatable :: gr_flxz(:,:,:,:,:)
 #endif
 
   integer ,save :: gr_nblockX, gr_nblockY, gr_nblockZ

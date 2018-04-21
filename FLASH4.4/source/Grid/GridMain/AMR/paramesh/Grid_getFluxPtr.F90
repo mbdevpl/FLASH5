@@ -1,11 +1,11 @@
-!!****f* source/Grid/Grid_getFluxPtr
+!!****f* source/Grid/GridMain/AMR/Amrex/Grid_getFluxPtr
 !!
 !! NAME
 !!  Grid_getFluxPtr
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getFluxPtr(integer(IN) :: blockID,
+!!  Grid_getFluxPtr(block_metadata_t(IN) :: blockDesc,
 !!                  real(pointer)        :: fluxPtrX(:,:,:,:),
 !!                  real(pointer)        :: fluxPtrY(:,:,:,:),
 !!                  real(pointer)        :: fluxPtrZ(:,:,:,:))
@@ -37,16 +37,19 @@
 !!
 !!***
 
+#include "constants.h"
+
 subroutine Grid_getFluxPtr(blockID, fluxPtrX, fluxPtrY, fluxPtrZ)
-
-
-    implicit none
-
-    integer, intent(IN) :: blockID
-    real, pointer                      :: fluxPtrX(:,:,:,:)
-    real, pointer                      :: fluxPtrY(:,:,:,:)
-    real, pointer                      :: fluxPtrZ(:,:,:,:)
-
-
+  use gr_specificData, ONLY : gr_flxx, gr_flxy, gr_flxz
+  implicit none
+  
+  integer, intent(IN) :: blockId
+  real, pointer                      :: fluxPtrX(:,:,:,:)
+  real, pointer                      :: fluxPtrY(:,:,:,:)
+  real, pointer                      :: fluxPtrZ(:,:,:,:)
+  
+  fluxPtrX => gr_flxx(:,:,:,:,blockID)
+  fluxPtrY => gr_flxy(:,:,:,:,blockID)
+  fluxPtrZ => gr_flxz(:,:,:,:,blockID) 
 end subroutine Grid_getFluxPtr
 

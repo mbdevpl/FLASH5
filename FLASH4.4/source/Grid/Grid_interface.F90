@@ -354,14 +354,18 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+     subroutine Grid_getFluxPtr(blockId,fluxPtrX, fluxPtrY, fluxPtrZ)
+       integer, intent(in) :: blockId
+       real,dimension(:,:,:,:), pointer :: fluxPtrX, fluxPtrY,fluxPtrZ
+     end subroutine Grid_getFluxPtr
+     subroutine Grid_getFluxPtr_desc(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN) :: blockDesc
        real, pointer                      :: fluxPtrX(:,:,:,:)
        real, pointer                      :: fluxPtrY(:,:,:,:)
        real, pointer                      :: fluxPtrZ(:,:,:,:)
-     end subroutine Grid_getFluxPtr
+     end subroutine Grid_getFluxPtr_desc
   end interface
 
   interface
