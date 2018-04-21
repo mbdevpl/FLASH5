@@ -31,44 +31,64 @@ subroutine hy_advance(simTime, dt, dtOld)
 
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 
-  do level=1,maxLev
+  do level= maxLev,1,-1
 #ifdef DEBUG_DRIVER
-        print*,' ***************   HYDRO LEVEL', level,'  **********************'
+     print*,' ***************   HYDRO LEVEL', level,'  **********************'
 #endif
-        !! if(hy_fluxCorrectPerLevel) then
-        !! if(level !=maxLev) then
-        !!   do a synchronization step here
-        if(hy_fluxCorrectPerLevel)call Grid_conserveFluxes(ALLDIR,level)
-
-        call Grid_getLeafIterator(itor, level=level)
-        call Timers_stop("loop1")
-        do while(itor%is_valid())
-           call itor%blkMetaData(blockDesc)
-
-           blkLimits(:,:)   = blockDesc%limits
-           blkLimitsGC(:,:) = blockDesc%limitsGC
-           
-           call Grid_getBlkPtr(blockDesc, Uout)
-
-           call Grid_getDeltas(level,del)
-           Uin => Uout
-           call hy_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
-           call hy_updateSolution(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
-           call Grid_releaseBlkPtr(blockDesc, Uout)
-           nullify(Uout)
-!!$           call IO_writecheckpoint;stop
-           call itor%next()
-        end do
-        call Timers_stop("loop1")
-        call Grid_releaseLeafIterator(itor)
-
-#ifdef DEBUG_DRIVER
-        print*, 'return from Hydro/MHD timestep'  ! DEBUG
-        print*,'returning from hydro myPE=',dr_globalMe
-#endif
+     !! if(hy_fluxCorrectPerLevel) then
+     !! if(level !=maxLev) then
+     !!   do a synchronization step here
+     !!        if(hy_fluxCorrectPerLevel)call Grid_conserveFluxes(ALLDIR,level)
+     
+     call Timers_start("compute fluxes")
+     call Grid_getLeafIterator(itor, level=level)
+     do while(itor%is_valid())
+        call itor%blkMetaData(blockDesc)
         
+        blkLimits(:,:)   = blockDesc%limits
+        blkLimitsGC(:,:) = blockDesc%limitsGC
         
+        call Grid_getBlkPtr(blockDesc, Uout)
+        
+        call Grid_getDeltas(level,del)
+        Uin => Uout
+        call hy_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+        call Grid_releaseBlkPtr(blockDesc, Uout)
+        nullify(Uout)
+        call itor%next()
      end do
-
-
+     call Timers_stop("compute fluxes")
+     call Grid_releaseLeafIterator(itor)
+     
+     
+     call Grid_getLeafIterator(itor, level=level)
+     call Timers_start("update solution")
+     do while(itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+        
+        blkLimits(:,:)   = blockDesc%limits
+        blkLimitsGC(:,:) = blockDesc%limitsGC
+        
+        call Grid_getBlkPtr(blockDesc, Uout)
+        
+        call Grid_getDeltas(level,del)
+        Uin => Uout
+        call hy_updateSolution(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+        call Grid_releaseBlkPtr(blockDesc, Uout)
+        nullify(Uout)
+!!$           call IO_writecheckpoint;stop
+        call itor%next()
+     end do
+     call Timers_stop("update solution")
+     call Grid_releaseLeafIterator(itor)
+     
+#ifdef DEBUG_DRIVER
+     print*, 'return from Hydro/MHD timestep'  ! DEBUG
+     print*,'returning from hydro myPE=',dr_globalMe
+#endif
+     
+     
+  end do
+  
+  
 end subroutine hy_advance
