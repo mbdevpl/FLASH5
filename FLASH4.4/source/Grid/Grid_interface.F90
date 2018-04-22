@@ -341,16 +341,6 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getFluxData(level,axis,  pressureSlots, areaLeft)
-       implicit none
-       integer, intent(IN) :: level
-       integer, intent(IN),optional :: axis
-       integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
-       real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
-     end subroutine Grid_getFluxData
-  end interface
-
-  interface
      subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
        use block_metadata, ONLY : block_metadata_t
        implicit none

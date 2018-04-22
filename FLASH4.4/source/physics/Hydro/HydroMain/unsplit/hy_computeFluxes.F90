@@ -41,6 +41,10 @@
 !!
 !!***
 
+
+!!$#define DEBUG
+!!$#define DEBUG_UHD
+
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
 Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
@@ -231,7 +235,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
         !    included to Riemann states in conservative formulation in hy_getRiemannState.
 
      endif !! End of if (hy_updateHydroFluxes) then
-
+     call Grid_getFluxPtr(blockDesc,flx,fly,flz)
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 

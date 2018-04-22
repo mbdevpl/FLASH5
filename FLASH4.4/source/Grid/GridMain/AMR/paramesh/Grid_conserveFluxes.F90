@@ -80,18 +80,21 @@ subroutine Grid_conserveFluxes( axis, level)
      call amr_flux_conserve(gr_meshMe, 0, axis)     
   endif
 
+
 #ifndef FLASH_GRID_PARAMESH2
   gridDataStruct = CENTER
 #if NFACE_VARS > 0
   gridDataStruct = CENTER_FACES
 #endif
-  if (no_permanent_guardcells) then
-     call gr_commSetup(gridDataStruct)
-  else
-     call gr_freeCommRecvBuffer
-  end if
-#endif
+  !! Dev -- AD I have no idea why the following commented out code is there at all
+  !! but keeping it around causes crash in parallel mode
 
+!!$  if (no_permanent_guardcells) then
+!!$     call gr_commSetup(gridDataStruct)
+!!$  else
+!!$     call gr_freeCommRecvBuffer
+!!$  end if
+#endif
   dataSize(IAXIS)=NXB+2*NGUARD
   dataSize(JAXIS)=NYB+2*NGUARD*K2D
   dataSize(KAXIS)=NZB+2*NGUARD*K3D
@@ -213,7 +216,7 @@ subroutine Grid_conserveFluxes( axis, level)
 !!$        do np = 1,size(presP,1)
 !!$           presVar = presP(np)
 !!$           if (presVar > 0) then
-        where (areaLeft(sx:ex,sy:ey,sz).NE.0.0) &  ! should not happen in any supported geometry
+!!$        where (areaLeft(sx:ex,sy:ey,sz).NE.0.0) &  ! should not happen in any supported geometry
 !!$              if (.NOT.(surr_blks(1,2,2,1,blockID) > 0 .AND. &
 !!$                   surr_blks(3,2,2,1,blockID) == nodetype(blockID))) then
 !!$                 fluxz(sx:ex,sy:ey,sz,presVar) = fluxz(sx:ex,sy:ey,sz,presVar) / areaLeft(sx:ex,sy:ey,sz)
@@ -223,7 +226,7 @@ subroutine Grid_conserveFluxes( axis, level)
 !!$                 fluxz(sx:ex,sy:ey,ez+1,presVar) = fluxz(sx:ex,sy:ey,ez+1,presVar) / areaLeft(sx:ex,sy:ey,ez+1)
 !!$              end if
 !!$           end if
-        end do
+     end do
 #endif
      end if
      nullify(fluxx)

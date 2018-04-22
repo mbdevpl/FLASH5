@@ -74,8 +74,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
                          hy_fullRiemannStateArrays,    &
                          hy_fullSpecMsFluxHandling
 
-  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxData,&
-                             Grid_getFluxPtr, Grid_releaseFluxPtr
+  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxPtr, Grid_releaseFluxPtr
   implicit none
 
 #include "constants.h"

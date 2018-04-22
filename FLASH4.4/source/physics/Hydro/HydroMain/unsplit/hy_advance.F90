@@ -54,14 +54,13 @@ subroutine hy_advance(simTime, dt, dtOld)
         Uin => Uout
         call hy_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
         call Grid_releaseBlkPtr(blockDesc, Uout)
-        nullify(Uout)
+        nullify(Uin)
         call itor%next()
      end do
      call Timers_stop("compute fluxes")
      call Grid_releaseLeafIterator(itor)
      call Grid_putFluxData(level)
-     call Grid_conserveFluxes(ALLDIR,level)
-     
+     call Grid_conserveFluxes(ALLDIR,level) 
      call Grid_getLeafIterator(itor, level=level)
      call Timers_start("update solution")
      do while(itor%is_valid())
@@ -82,7 +81,7 @@ subroutine hy_advance(simTime, dt, dtOld)
      end do
      call Timers_stop("update solution")
      call Grid_releaseLeafIterator(itor)
-     
+
 #ifdef DEBUG_DRIVER
      print*, 'return from Hydro/MHD timestep'  ! DEBUG
      print*,'returning from hydro myPE=',dr_globalMe
