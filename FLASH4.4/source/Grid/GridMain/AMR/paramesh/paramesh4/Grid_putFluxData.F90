@@ -135,6 +135,7 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   logical :: xtrue,ytrue,ztrue
   integer, dimension(MDIM) :: datasize
 
+  !! Dev - AD for AMReX, it should be if((level==1).or.(NFLUXES<1))return
   if(NFLUXES<1)return
   
   dataSize(IAXIS)=NXB+2*NGUARD
