@@ -142,6 +142,28 @@
             </unsplit>
           </Paramesh>
         </2d>
+        <3d>
+          <AMReX>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 8
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/6d023f20/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_pseudoug_3d.par
+            </unsplit>
+          </AMReX>
+          <Paramesh>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd -gridinterpolation=native
+                numProcs: 8
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/74fc85f1/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_pseudoug_3d.par
+            </unsplit>
+          </Paramesh>
+        </3d>
       </PseudoUG>
       <AMR>
         <2d>
@@ -182,6 +204,28 @@
             </unsplit>
           </Paramesh>
         </2d>
+        <3d>
+          <AMReX>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM
+                numProcs: 8
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/6d023f20/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_amr_unsplit_3d.par
+            </unsplit>
+          </AMReX>
+          <Paramesh>
+            <unsplit>
+                setupName: Sedov
+                setupOptions: -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd -gridinterpolation=native
+                numProcs: 8
+                transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/74fc85f1/<buildDir>/<runDir>/<chkMax>
+                parfiles: <pathToSimulations>/Sedov/test_amr_unsplit_3d.par
+            </unsplit>
+          </Paramesh>
+        </3d>
       </AMR>
     </Sedov>
   </Comparison>
