@@ -159,7 +159,7 @@
                 setupOptions: -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd -gridinterpolation=native
                 numProcs: 8
                 transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/74fc85f1/<buildDir>/<runDir>/<chkMax>
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c15eaa98/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_pseudoug_3d.par
             </unsplit>
           </Paramesh>
@@ -221,7 +221,7 @@
                 setupOptions: -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd -gridinterpolation=native
                 numProcs: 8
                 transfers: source/Simulation/SimulationMain/Sedov/sedovSolutionModLong.dat
-                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/74fc85f1/<buildDir>/<runDir>/<chkMax>
+                shortPathToBenchmark: /sandbox/flash/flashTest/baseline/<siteDir>/c15eaa98/<buildDir>/<runDir>/<chkMax>
                 parfiles: <pathToSimulations>/Sedov/test_amr_unsplit_3d.par
             </unsplit>
           </Paramesh>
