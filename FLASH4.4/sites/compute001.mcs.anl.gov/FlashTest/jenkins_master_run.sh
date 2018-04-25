@@ -63,7 +63,11 @@ $FLASHTEST_BASE/flashTest.py \
                 Comparison/Sedov/PseudoUG/2d/AMReX/simpleUnsplit \
                 Comparison/Sedov/AMR/2d/AMReX/simpleUnsplit \
                 Comparison/Sedov/PseudoUG/2d/AMReX/unsplit \
-                Comparison/Sedov/AMR/2d/AMReX/unsplit
+                Comparison/Sedov/AMR/2d/AMReX/unsplit \
+                Comparison/Sedov/PseudoUG/3d/Paramesh/unsplit \
+                Comparison/Sedov/AMR/3d/Paramesh/unsplit \
+                Comparison/Sedov/PseudoUG/3d/AMReX/unsplit \
+                Comparison/Sedov/AMR/3d/AMReX/unsplit
 
 # Confirm output directory contains only one directory, which is the folder
 # containing the FlashTest results
