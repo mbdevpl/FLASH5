@@ -70,6 +70,7 @@ subroutine Burn_init()
      write(6,*)'   No burning will occur but Burn_init will continue.'
   end if
 
+#ifndef XNET
   call RuntimeParameters_get("algebra", bn_algebra )
   call RuntimeParameters_get("odeStepper", bn_odeStepper )
   call RuntimeParameters_get("useBurnTable", bn_useBurnTable )
@@ -90,6 +91,7 @@ subroutine Burn_init()
      write(6,*) 'error in routine Burn'
      call Driver_abortFlash('ERROR in Burn, wrong integration type')
   end if
+#endif
 
   call RuntimeParameters_get ('useShockBurn', bn_useShockBurn)
 

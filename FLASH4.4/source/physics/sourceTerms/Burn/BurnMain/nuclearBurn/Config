@@ -1,23 +1,18 @@
-#	Configuration file for the all the alpha-chain burn network.
+#	Configuration file for the all the burning networks
 #   [/source/physics/sourceTerms/Burn/BurnMain/nuclearBurn]
 
 REQUIRES Simulation/SimulationComposition
-#REQUIRES physics/utilities/solvers/LinearAlgebra
 
-LIBRARY MA28
+EXCLUSIVE Aprox13 Aprox19 Iso7 XNet
 
-# there are millions of burn modules defined in FLASH2, here in FLASH3 we have
-#   Aprox13  -- 13 isotopes
-#   Aprox19  -- not yet implemented
-#   Iso7     -- not yet implemented
-
-EXCLUSIVE Aprox13 Aprox19 Iso7
-
-DEFAULT Aprox13
-
-REQUIRES physics/sourceTerms/Burn/BurnIntegrate
-
-
+USESETUPVARS xnet
+IF xnet
+   DEFAULT XNet
+ELSE
+   DEFAULT Aprox13
+   LIBRARY MA28
+   REQUIRES physics/sourceTerms/Burn/BurnIntegrate
+ENDIF
 
 D algebra      choice of linear algebra package &
 D     &            1 = MA28 ;  2 = GIFT

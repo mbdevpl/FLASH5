@@ -60,7 +60,10 @@
 !!  
 !!***
 
-subroutine Simulation_initBlock(blockID)
+!!REORDER(4): solnData
+
+
+subroutine Simulation_initBlock(solnData,block)
 
   use Simulation_data, ONLY: sim_smallRho, sim_smallx, sim_radiusPerturb, sim_usePseudo1d, &
      sim_xhe4, sim_xc12, sim_xo16, &
@@ -72,36 +75,32 @@ subroutine Simulation_initBlock(blockID)
   use Driver_interface, ONLY : Driver_abortFlash
   use Multispecies_interface, ONLY : Multispecies_getSumInv, &
     Multispecies_getSumFrac
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
-    Grid_getCellCoords, Grid_putPointData
+  use Grid_interface, ONLY : Grid_getCellCoords
   use Eos_interface, ONLY : Eos
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 #include "Eos.h"
 #include "Multispecies.h"
-
-  integer,INTENT(in) ::  blockID
+  
+  real,dimension(:,:,:,:),pointer :: solnData
+  type(block_metadata_t), intent(in) :: block
 
 !  Local variables
 
-  real :: abar, zbar                 ! something to do with sum of mass fractions
   real :: xx, yy, zz, dist
   logical, parameter :: useGuardCell = .TRUE.
-
-  integer, dimension(2,MDIM), save               :: blockRange,blockExtent
 
   real, dimension(SPECIES_BEGIN:SPECIES_END) ::  massFraction
 
   real,allocatable,dimension(:) :: xCoordsCell,yCoordsCell,zCoordsCell
-  integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   integer :: sizeX,sizeY,sizeZ
 
-
-
   integer :: i, j, k, n
-  integer, dimension(MDIM) :: iPosition   !for putting data with Grid_putData
 
   integer :: icount
   integer, parameter :: ifail = -1
@@ -113,35 +112,25 @@ subroutine Simulation_initBlock(blockID)
 
   ! variables needed for the eos call
   real :: temp_zone, rho_zone, vel_zone
-  real :: ptot, eint, etot, gamma
+  real :: ptot, eint, etot
   real, dimension(EOS_NUM)  :: eosData
 
   iseedUse = iseed
 ! ----------------------------------------------------------------------------------------------
 
- ! determine size of blocks
-  call Grid_getBlkIndexLimits(blockID,blockRange,blockExtent)
-
   ! Get the indices of the blocks
-  call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
-  sizeX = blkLimitsGC(HIGH,IAXIS) - blkLimitsGC(LOW,IAXIS) + 1
-  allocate(xCoordsCell(sizeX))
-  sizeY = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
-  allocate(yCoordsCell(sizeY))
-  sizeZ = blkLimitsGC(HIGH,KAXIS) - blkLimitsGC(LOW,KAXIS) + 1
-  allocate(zCoordsCell(sizeZ))
+  blkLimits = block%limits
+  blkLimitsGC = block%limitsGC
+  allocate(xCoordsCell(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS))); xCoordsCell = 0.0
+  allocate(yCoordsCell(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS))); yCoordsCell = 0.0
+  allocate(zCoordsCell(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS))); zCoordsCell = 0.0
+  sizeX = SIZE(xCoordsCell)
+  sizeY = SIZE(yCoordsCell)
+  sizeZ = SIZE(zCoordsCell)
 
-!  if (NDIM == 3)  &
-   call Grid_getCellCoords(KAXIS, blockID, CENTER, useGuardCell, zCoordsCell, sizeZ)
-!  if (NDIM >= 2)  &
-   call Grid_getCellCoords(JAXIS, blockID, CENTER, useGuardCell, yCoordsCell, sizeY)
-   call Grid_getCellCoords(IAXIS, blockID, CENTER, useGuardCell, xCoordsCell, sizeX)
-
-  !! NOTE the incorrect syntax below --  this causes a crash for KAXIS when NDIM < 3, 
-  !!    works OK if you substitute 1 at the MAXCELLS location
-!  call Grid_getCellCoords(KAXIS, blockID,CENTER,useGuardCell,zCoordsCell,1)
-!  call Grid_getCellCoords(JAXIS, blockID,CENTER,useGuardCell,yCoordsCell,MAXCELLS)
-!  call Grid_getCellCoords(IAXIS, blockID,CENTER,useGuardCell,xCoordsCell,MAXCELLS)
+  call Grid_getCellCoords(KAXIS, block, CENTER, useGuardCell, zCoordsCell, sizeZ)
+  call Grid_getCellCoords(JAXIS, block, CENTER, useGuardCell, yCoordsCell, sizeY)
+  call Grid_getCellCoords(IAXIS, block, CENTER, useGuardCell, xCoordsCell, sizeX)
 
   ! the initial composition
   massFraction(:)    = sim_smallx 
@@ -149,51 +138,36 @@ subroutine Simulation_initBlock(blockID)
   if (C12_SPEC > 0) massFraction(C12_SPEC) = max(sim_xc12,sim_smallx)
   if (O16_SPEC > 0) massFraction(O16_SPEC) = max(sim_xo16,sim_smallx)
 
-  call Multispecies_getSumInv(A,abar,massFraction)
-  abar = 1.0 / abar
-  call Multispecies_getSumFrac(Z,zbar,massFraction)
-  zbar = abar * zbar
-
-
   !..get a blocks worth of random numbers between 0.0 and 1.0
-  rvecSize = blockExtent(HIGH,IAXIS)*blockExtent(HIGH,JAXIS)*blockExtent(HIGH,KAXIS)
+  rvecSize = sizeX*sizeY*sizeZ
   allocate(rvec(rvecSize))
   call sim_ranmar(iseedUse, rvec, rvecSize)
 
   icount = 0
 
-
   ! now fill the master arrays
 
-  do k = blockRange(LOW,KAXIS), blockRange(HIGH,KAXIS)
-     if (NDIM == 3) then
-        iPosition(3) = k
-        zz = zCoordsCell(k)
-     endif
+  do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
+     if (NDIM == 3) zz = zCoordsCell(k)
 
-     do j = blockRange(LOW,JAXIS),blockRange(HIGH,JAXIS)
-        if (NDIM >= 2) then
-           iPosition(2) = j
-           yy = yCoordsCell(j)
-        endif
+     do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
+        if (NDIM >= 2) yy = yCoordsCell(j)
 
-        do i = blockRange(LOW,IAXIS),blockRange(HIGH,IAXIS)
-           iPosition(1) = i
+        do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
            xx = xCoordsCell(i)
            icount = icount + 1
 
-
            ! compute the distance from the center
-           if (NDIM .EQ. 1) then
+           if (NDIM == 1) then
               dist = xx - sim_xCenterPerturb
-           else if (NDIM .EQ. 2) then
+           else if (NDIM == 2) then
               if (sim_usePseudo1d) then
                  dist = xx - sim_xCenterPerturb
               else
                  dist = sqrt((xx - sim_xCenterPerturb)**2 + & 
                       &                 (yy - sim_yCenterPerturb)**2)
               endif
-           elseif (NDIM .EQ. 3) then
+           else if (NDIM == 3) then
               if (sim_usePseudo1d) then
                  dist = xx - sim_xCenterPerturb
               else
@@ -203,9 +177,8 @@ subroutine Simulation_initBlock(blockID)
               endif
            endif
 
-
            ! set the temperature, density, and x-velocity
-           if (dist .LE. sim_radiusPerturb) then
+           if (dist <= sim_radiusPerturb) then
               temp_zone = sim_tempPerturb
               rho_zone  = sim_rhoPerturb
               vel_zone  = sim_velxPerturb
@@ -217,7 +190,7 @@ subroutine Simulation_initBlock(blockID)
 
 
            !..seed the initial conditions with some white noise
-           if ( abs(dist - sim_radiusPerturb) .le. sim_noiseDistance) then
+           if ( abs(dist - sim_radiusPerturb) <= sim_noiseDistance) then
             !!  print *, 'sim_noiseAmplitude = ',sim_noiseAmplitude
             !!  print *,'rvec, icount', icount, rvec(icount)
               rho_zone = rho_zone *  & 
@@ -235,7 +208,6 @@ subroutine Simulation_initBlock(blockID)
            rho_zone = eosData(EOS_DENS)
            ptot = eosData(EOS_PRES)
            eint = eosData(EOS_EINT)
-           gamma = eosData(EOS_GAMC)
 
            ! calculate kinetic energy and total energy
            !! this was NOT done in flash2
@@ -244,20 +216,18 @@ subroutine Simulation_initBlock(blockID)
            ! store the values
            ! fill the flash arrays
 
-           call Grid_putPointData(blockID,CENTER,TEMP_VAR,EXTERIOR,iPosition,temp_zone)
-           call Grid_putPointData(blockID,CENTER,DENS_VAR,EXTERIOR,iPosition,rho_zone)
-           call Grid_putPointData(blockID,CENTER,PRES_VAR,EXTERIOR,iPosition,ptot)
-           call Grid_putPointData(blockID,CENTER,EINT_VAR,EXTERIOR,iPosition,eint)
-           call Grid_putPointData(blockID,CENTER,ENER_VAR,EXTERIOR,iPosition,etot)
-           call Grid_putPointData(blockID,CENTER,GAMC_VAR,EXTERIOR,iPosition,gamma)
-           call Grid_putPointData(blockID,CENTER,GAME_VAR,EXTERIOR,iPosition,(ptot/(etot*sim_rhoAmbient) + 1.0))
-           call Grid_putPointData(blockID,CENTER,VELX_VAR,EXTERIOR,iPosition,vel_zone)
-           !! No need to do dimensional check here, as the VELZ and VELY are always defined in the config file
-           call Grid_putPointData(blockID,CENTER,VELY_VAR,EXTERIOR,iPosition,0.0e0)
-           call Grid_putPointData(blockID,CENTER,VELZ_VAR,EXTERIOR,iPosition,0.0e0)
-
+           solnData(TEMP_VAR,i,j,k)=temp_zone
+           solnData(DENS_VAR,i,j,k)=rho_zone
+           solnData(PRES_VAR,i,j,k)=ptot
+           solnData(EINT_VAR,i,j,k)=eint
+           solnData(ENER_VAR,i,j,k)=etot
+           solnData(GAMC_VAR,i,j,k)=eosData(EOS_GAMC)
+           solnData(GAME_VAR,i,j,k)=(ptot/(etot*sim_rhoAmbient) + 1.0)
+           solnData(VELX_VAR,i,j,k)=vel_zone
+           solnData(VELY_VAR,i,j,k)=0.0
+           solnData(VELZ_VAR,i,j,k)=0.0
            do n = SPECIES_BEGIN,SPECIES_END
-              call Grid_putPointData(blockID,CENTER,n,EXTERIOR,iPosition,massFraction(n))
+              solnData(n,i,j,k)=massFraction(n)
            enddo
 
            !..end of 3d loops
@@ -270,10 +240,5 @@ subroutine Simulation_initBlock(blockID)
   deallocate(xCoordsCell)
   deallocate(yCoordsCell)
   deallocate(zCoordsCell)
-
-
-
   return
 end subroutine Simulation_initBlock
-
-
