@@ -42,6 +42,7 @@ subroutine Grid_conserveFluxes( axis, level)
   use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx, gr_flxx, gr_flxy, gr_flxz
   use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
+  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
 
 #ifndef FLASH_GRID_PARAMESH2
   use physicaldata, ONLY: no_permanent_guardcells
@@ -134,19 +135,19 @@ subroutine Grid_conserveFluxes( axis, level)
      if(xtrue) then
 #ifdef FLASH_HYDRO_UNSPLIT
 #if NDIM >= 2
-        fluxx(sx+1:ex,sy,sz:ez,:) = gr_xflx_yface(:,1,:,:,blockID)
-        fluxx(sx+1:ex,ey,sz:ez,:) = gr_xflx_yface(:,2,:,:,blockID)
+        fluxx(:,sx+1:ex,sy,sz:ez) = gr_xflx_yface(:,1,:,:,blockID)
+        fluxx(:,sx+1:ex,ey,sz:ez) = gr_xflx_yface(:,2,:,:,blockID)
 #if NDIM == 3
-        fluxx(sx+1:ex,sy:ey,sz,:) = gr_xflx_zface(:,:,1,:,blockID)
-        fluxx(sx+1:ex,sy:ey,ez,:) = gr_xflx_zface(:,:,2,:,blockID)
+        fluxx(:,sx+1:ex,sy:ey,sz) = gr_xflx_zface(:,:,1,:,blockID)
+        fluxx(:,sx+1:ex,sy:ey,ez) = gr_xflx_zface(:,:,2,:,blockID)
 #endif
 #endif
 #endif
         
-        fluxx(sx,  sy:ey,sz:ez,:) = flux_x(1,:,:,:nfluxes,blockID) 
-        fluxx(ex+1,sy:ey,sz:ez,:) = flux_x(2,:,:,:nfluxes,blockID)
-        fluxx(sx+1,sy:ey,sz:ez,:) = gr_xflx(1,:,:,:,blockID) 
-        fluxx(ex,  sy:ey,sz:ez,:) = gr_xflx(2,:,:,:,blockID)
+        fluxx(:,sx,  sy:ey,sz:ez) = flux_x(1,:,:,:nfluxes,blockID) 
+        fluxx(:,ex+1,sy:ey,sz:ez) = flux_x(2,:,:,:nfluxes,blockID)
+        fluxx(:,sx+1,sy:ey,sz:ez) = gr_xflx(1,:,:,:,blockID) 
+        fluxx(:,ex,  sy:ey,sz:ez) = gr_xflx(2,:,:,:,blockID)
         
 !!$        do np = 1,size(presP,1)
 !!$           presVar = presP(np)
@@ -154,11 +155,11 @@ subroutine Grid_conserveFluxes( axis, level)
 !!$              if (.NOT.(surr_blks(1,1,1+K2D,1+K3D,blockID) > 0 .AND. &
 !!$                   surr_blks(3,1,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
 !!$                 where (areaLeft(sx,sy:ey,sz:ez).NE.0.0) &
-!!$                      fluxx(sx,sy:ey,sz:ez,presVar) = fluxx(sx,sy:ey,sz:ez,presVar) / areaLeft(sx,sy:ey,sz:ez)
+!!$                      fluxx(:,sx,sy:ey,sz:ez,presVar) = fluxx(:,sx,sy:ey,sz:ez,presVar) / areaLeft(sx,sy:ey,sz:ez)
 !!$              end if
 !!$              if (.NOT.(surr_blks(1,3,1+K2D,1+K3D,blockID) > 0 .AND. &
 !!$                   surr_blks(3,3,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
-!!$                 fluxx(ex+1,sy:ey,sz:ez,presVar) = fluxx(ex+1,sy:ey,sz:ez,presVar) / areaLeft(ex+1,sy:ey,sz:ez)
+!!$                 fluxx(:,ex+1,sy:ey,sz:ez,presVar) = fluxx(:,ex+1,sy:ey,sz:ez,presVar) / areaLeft(ex+1,sy:ey,sz:ez)
 !!$              end if
 !!$           end if
 !!$        end do
@@ -167,18 +168,18 @@ subroutine Grid_conserveFluxes( axis, level)
      if(ytrue) then
 #ifdef FLASH_HYDRO_UNSPLIT
 #if NDIM >= 2
-        fluxy(sx,sy+1:ey,sz:ez,:) = gr_yflx_xface(1,:,:,:,blockID)
-        fluxy(ex,sy+1:ey,sz:ez,:) = gr_yflx_xface(2,:,:,:,blockID)
+        fluxy(:,sx,sy+1:ey,sz:ez) = gr_yflx_xface(1,:,:,:,blockID)
+        fluxy(:,ex,sy+1:ey,sz:ez) = gr_yflx_xface(2,:,:,:,blockID)
 #if NDIM == 3
-        fluxy(sx:ex,sy+1:ey,sz,:) = gr_yflx_zface(:,:,1,:,blockID)
-        fluxy(sx:ex,sy+1:ey,ez,:) = gr_yflx_zface(:,:,2,:,blockID)
+        fluxy(:,sx:ex,sy+1:ey,sz) = gr_yflx_zface(:,:,1,:,blockID)
+        fluxy(:,sx:ex,sy+1:ey,ez) = gr_yflx_zface(:,:,2,:,blockID)
 #endif
 #endif
 #endif
-        fluxy(sx:ex,sy,  sz:ez,:) = flux_y(:,1,:,:nfluxes,blockID) 
-        fluxy(sx:ex,ey+1,sz:ez,:) = flux_y(:,2,:,:nfluxes,blockID) 
-        fluxy(sx:ex,sy+1,sz:ez,:) = gr_yflx(:,1,:,:,blockID) 
-        fluxy(sx:ex,ey,  sz:ez,:) = gr_yflx(:,2,:,:,blockID)
+        fluxy(:,sx:ex,sy,  sz:ez) = flux_y(:,1,:,:nfluxes,blockID) 
+        fluxy(:,sx:ex,ey+1,sz:ez) = flux_y(:,2,:,:nfluxes,blockID) 
+        fluxy(:,sx:ex,sy+1,sz:ez) = gr_yflx(:,1,:,:,blockID) 
+        fluxy(:,sx:ex,ey,  sz:ez) = gr_yflx(:,2,:,:,blockID)
         
         
 #if NDIM > 1
@@ -203,16 +204,16 @@ subroutine Grid_conserveFluxes( axis, level)
      if(ztrue) then
 #ifdef FLASH_HYDRO_UNSPLIT
 #if NDIM == 3
-        fluxz(sx,sy:ey,sz+1:ez,:) = gr_zflx_xface(1,:,:,:,blockID)
-        fluxz(ex,sy:ey,sz+1:ez,:) = gr_zflx_xface(2,:,:,:,blockID)
-        fluxz(sx:ex,sy,sz+1:ez,:) = gr_zflx_yface(:,1,:,:,blockID)
-        fluxz(sx:ex,ey,sz+1:ez,:) = gr_zflx_yface(:,2,:,:,blockID)
+        fluxz(:,sx,sy:ey,sz+1:ez) = gr_zflx_xface(1,:,:,:,blockID)
+        fluxz(:,ex,sy:ey,sz+1:ez) = gr_zflx_xface(2,:,:,:,blockID)
+        fluxz(:,sx:ex,sy,sz+1:ez) = gr_zflx_yface(:,1,:,:,blockID)
+        fluxz(:,sx:ex,ey,sz+1:ez) = gr_zflx_yface(:,2,:,:,blockID)
 #endif
 #endif
-        fluxz(sx:ex,sy:ey,sz  ,:) = flux_z(:,:,1,:nfluxes,blockID) 
-        fluxz(sx:ex,sy:ey,ez+1,:) = flux_z(:,:,2,:nfluxes,blockID) 
-        fluxz(sx:ex,sy:ey,sz+1,:) = gr_zflx(:,:,1,:,blockID) 
-        fluxz(sx:ex,sy:ey,ez  ,:) = gr_zflx(:,:,2,:,blockID)
+        fluxz(:,sx:ex,sy:ey,sz  ) = flux_z(:,:,1,:nfluxes,blockID) 
+        fluxz(:,sx:ex,sy:ey,ez+1) = flux_z(:,:,2,:nfluxes,blockID) 
+        fluxz(:,sx:ex,sy:ey,sz+1) = gr_zflx(:,:,1,:,blockID) 
+        fluxz(:,sx:ex,sy:ey,ez  ) = gr_zflx(:,:,2,:,blockID)
 #if NDIM > 2
 !!$        do np = 1,size(presP,1)
 !!$           presVar = presP(np)
@@ -220,11 +221,11 @@ subroutine Grid_conserveFluxes( axis, level)
 !!$        where (areaLeft(sx:ex,sy:ey,sz).NE.0.0) &  ! should not happen in any supported geometry
 !!$              if (.NOT.(surr_blks(1,2,2,1,blockID) > 0 .AND. &
 !!$                   surr_blks(3,2,2,1,blockID) == nodetype(blockID))) then
-!!$                 fluxz(sx:ex,sy:ey,sz,presVar) = fluxz(sx:ex,sy:ey,sz,presVar) / areaLeft(sx:ex,sy:ey,sz)
+!!$                 fluxz(:,sx:ex,sy:ey,sz,presVar) = fluxz(:,sx:ex,sy:ey,sz,presVar) / areaLeft(sx:ex,sy:ey,sz)
 !!$              end if
 !!$              if (.NOT.(surr_blks(1,2,2,3,blockID) > 0 .AND. &
 !!$                   surr_blks(3,2,2,3,blockID) == nodetype(blockID))) then
-!!$                 fluxz(sx:ex,sy:ey,ez+1,presVar) = fluxz(sx:ex,sy:ey,ez+1,presVar) / areaLeft(sx:ex,sy:ey,ez+1)
+!!$                 fluxz(:,sx:ex,sy:ey,ez+1,presVar) = fluxz(:,sx:ex,sy:ey,ez+1,presVar) / areaLeft(sx:ex,sy:ey,ez+1)
 !!$              end if
 !!$           end if
      end do
