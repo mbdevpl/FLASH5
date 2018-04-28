@@ -5,8 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_init()
-!!           
+!!  call Grid_init()
 !!
 !! DESCRIPTION
 !!  Initialize Grid_data
@@ -198,6 +197,8 @@ subroutine Grid_init()
   call RuntimeParameters_get("smallx",gr_smallx) !
 !  call RuntimeParameters_get("grid_monotone_hack", gr_monotone) ! for "quadratic_cartesian" interpolation
   call RuntimeParameters_get("interpol_order",gr_intpol) ! for "monotonic" interpolation
+
+  call RuntimeParameters_get("flux_correct", gr_doFluxCorrection)
 
 #ifdef FLASH_PARTICLES
   call RuntimeParameters_get('useParticles',gr_useParticles)
