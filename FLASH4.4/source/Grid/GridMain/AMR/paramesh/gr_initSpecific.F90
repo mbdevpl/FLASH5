@@ -116,6 +116,7 @@
 !!***
 
 !!REORDER(5):scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx
+!!REORDER(5):gr_flx[xyz]
 !!REORDER(5):gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 #include "Flash.h"
 #include "constants.h"
@@ -255,17 +256,17 @@ subroutine gr_initSpecific()
 # endif
 
 #if(NFLUXES>0)
-  allocate(gr_flxx(NFLUXES,GRID_ILO_GC:GRID_IHI_GC,  &
+  allocate(gr_flxx(NFLUXES,GRID_ILO_GC:GRID_IHI_GC+1,  &
        GRID_JLO_GC:GRID_JHI_GC,  &
-       GRID_KLO_GC:GRID_KHI_GC+1,&
+       GRID_KLO_GC:GRID_KHI_GC,&
        MAXBLOCKS))
   allocate(gr_flxy(NFLUXES,GRID_ILO_GC:GRID_IHI_GC,  &
-       GRID_JLO_GC:GRID_JHI_GC,  &
-       GRID_KLO_GC:GRID_KHI_GC+1,&
+       GRID_JLO_GC:GRID_JHI_GC+K2D,  &
+       GRID_KLO_GC:GRID_KHI_GC,&
        MAXBLOCKS))
   allocate(gr_flxz(NFLUXES,GRID_ILO_GC:GRID_IHI_GC,  &
        GRID_JLO_GC:GRID_JHI_GC,  &
-       GRID_KLO_GC:GRID_KHI_GC+1,&
+       GRID_KLO_GC:GRID_KHI_GC+K3D,&
        MAXBLOCKS))
 #else
   allocate(gr_flxx(1,1,1,1,1))

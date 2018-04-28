@@ -24,6 +24,7 @@
 !!***
 
 !!REORDER(5):scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx
+!!REORDER(5): gr_flx[xyz]
 !!REORDER(5):gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 
 Module gr_specificData
@@ -117,10 +118,20 @@ Module gr_specificData
 #endif
 #if(NFLUXES>0)
   real,target,dimension(NFLUXES,&
+                        GRID_ILO_GC:GRID_IHI_GC+1,  &
+                        GRID_JLO_GC:GRID_JHI_GC,  &
+                        GRID_KLO_GC:GRID_KHI_GC,&
+                        MAXBLOCKS) :: gr_flxx
+  real,target,dimension(NFLUXES,&
+                        GRID_ILO_GC:GRID_IHI_GC,  &
+                        GRID_JLO_GC:GRID_JHI_GC+K2D,  &
+                        GRID_KLO_GC:GRID_KHI_GC,&
+                        MAXBLOCKS) :: gr_flxy
+  real,target,dimension(NFLUXES,&
                         GRID_ILO_GC:GRID_IHI_GC,  &
                         GRID_JLO_GC:GRID_JHI_GC,  &
-                        GRID_KLO_GC:GRID_KHI_GC+1,&
-                        MAXBLOCKS) :: gr_flxx, gr_flxy, gr_flxz
+                        GRID_KLO_GC:GRID_KHI_GC+K3D,&
+                        MAXBLOCKS) :: gr_flxz
 #else
   real, target,dimension(1,1,1,1,1):: gr_flxx, gr_flxy, gr_flxz
 #endif
