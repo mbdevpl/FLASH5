@@ -5,10 +5,10 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getFluxPtr(block_metadata_t(IN) :: blockDesc,
-!!                  real(pointer)        :: fluxPtrX(:,:,:,:),
-!!                  real(pointer)        :: fluxPtrY(:,:,:,:),
-!!                  real(pointer)        :: fluxPtrZ(:,:,:,:))
+!!  call Grid_getFluxPtr(block_metadata_t(IN) :: blockDesc,
+!!                       real(pointer)        :: fluxPtrX(:,:,:,:),
+!!                       real(pointer)        :: fluxPtrY(:,:,:,:),
+!!                       real(pointer)        :: fluxPtrZ(:,:,:,:))
 !!  
 !! DESCRIPTION 
 !!  
@@ -32,6 +32,9 @@
 !!  Once finished with the pointer, call Grid_releaseFluxPtr to release the
 !!  pointer.
 !!
+!!  The indexing depends on the INDEXREORDER preprocessor symbol, which needs
+!!  to be passed by the compiler on the command line if ncessary.
+!!
 !! SEE ALSO
 !!  Grid_releaseFluxPtr
 !!
@@ -53,8 +56,17 @@ subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
   integer :: blockID
   blockID=blockDesc%id
 
-  fluxPtrX => gr_flxx(:,:,:,:,blockID)
-  fluxPtrY => gr_flxy(:,:,:,:,blockID)
-  fluxPtrZ => gr_flxz(:,:,:,:,blockID) 
+  associate (lo => blockDesc%limitsGC(LOW, :))
+#ifdef INDEXREORDER
+    fluxPtrX(lo(1):, lo(2):, lo(3):, 1:) => gr_flxx(:,:,:,:,blockID)
+    fluxPtrY(lo(1):, lo(2):, lo(3):, 1:) => gr_flxy(:,:,:,:,blockID)
+    fluxPtrZ(lo(1):, lo(2):, lo(3):, 1:) => gr_flxz(:,:,:,:,blockID)
+#else
+    fluxPtrX(1:, lo(1):, lo(2):, lo(3):) => gr_flxx(:,:,:,:,blockID)
+    fluxPtrY(1:, lo(1):, lo(2):, lo(3):) => gr_flxy(:,:,:,:,blockID)
+    fluxPtrZ(1:, lo(1):, lo(2):, lo(3):) => gr_flxz(:,:,:,:,blockID) 
+#endif
+  end associate
+
 end subroutine Grid_getFluxPtr
 
