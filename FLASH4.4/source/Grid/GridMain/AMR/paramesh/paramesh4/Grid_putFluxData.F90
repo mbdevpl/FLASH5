@@ -173,24 +173,24 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
      blockID=blockDesc%id
      fluxx => gr_flxx(:,:,:,:,blockID)
      fluxy => gr_flxy(:,:,:,:,blockID)
-     fluxz => gr_flxz(:,:,:,:,blockID)     
-     
+     fluxz => gr_flxz(:,:,:,:,blockID)
+
      if(xtrue) then
         flux_x(:nfluxes,1,:,:,blockID) = fluxx(:,sx,sy:ey,sz:ez) 
         flux_x(:nfluxes,2,:,:,blockID) = fluxx(:,ex+1,sy:ey,sz:ez) 
-        gr_xflx(:,1,:,:,blockID) = fluxx(:,sx+1,sy:ey,sz:ez)
-        gr_xflx(:,2,:,:,blockID) = fluxx(:,ex,sy:ey,sz:ez)
-#ifdef FLASH_HYDRO_UNSPLIT
-        !! Store transverse components for the faces in global scratch arrays.
-#if NDIM >=2
-        gr_xflx_yface(:,:,1,:,blockID) = fluxx(:,sx+1:ex,sy,sz:ez)
-        gr_xflx_yface(:,:,2,:,blockID) = fluxx(:,sx+1:ex,ey,sz:ez)
-#if NDIM>2
-        gr_xflx_zface(:,:,:,1,blockID) = fluxx(:,sx+1:ex,sy:ey,sz)
-        gr_xflx_zface(:,:,:,2,blockID) = fluxx(:,sx+1:ex,sy:ey,ez)
-#endif
-#endif
-#endif
+!!$        gr_xflx(:,1,:,:,blockID) = fluxx(:,sx+1,sy:ey,sz:ez)
+!!$        gr_xflx(:,2,:,:,blockID) = fluxx(:,ex,sy:ey,sz:ez)
+!!$#ifdef FLASH_HYDRO_UNSPLIT
+!!$        !! Store transverse components for the faces in global scratch arrays.
+!!$#if NDIM >=2
+!!$        gr_xflx_yface(:,:,1,:,blockID) = fluxx(:,sx+1:ex,sy,sz:ez)
+!!$        gr_xflx_yface(:,:,2,:,blockID) = fluxx(:,sx+1:ex,ey,sz:ez)
+!!$#if NDIM>2
+!!$        gr_xflx_zface(:,:,:,1,blockID) = fluxx(:,sx+1:ex,sy:ey,sz)
+!!$        gr_xflx_zface(:,:,:,2,blockID) = fluxx(:,sx+1:ex,sy:ey,ez)
+!!$#endif
+!!$#endif
+!!$#endif
         
         do np = 1,size(presP,1)
            presVar = presP(np)
@@ -214,17 +214,17 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
      if(ytrue) then
         flux_y(:nfluxes,:,1,:,blockID)  = fluxy(:,sx:ex,sy,sz:ez)
         flux_y(:nfluxes,:,2,:,blockID)  = fluxy(:,sx:ex,ey+1,sz:ez) 
-        gr_yflx(:,:,1,:,blockID) =  fluxy(:,sx:ex,sy+1,sz:ez)
-        gr_yflx(:,:,2,:,blockID) =  fluxy(:,sx:ex,ey,sz:ez)
-#ifdef FLASH_HYDRO_UNSPLIT
-        !! Store transverse components for the faces in global scratch arrays.
-        gr_yflx_xface(:,1,:,:,blockID) = fluxy(:,sx,sy+1:ey,sz:ez)
-        gr_yflx_xface(:,2,:,:,blockID) = fluxy(:,ex,sy+1:ey,sz:ez)
-#if NDIM>2
-        gr_yflx_zface(:,:,:,1,blockID) = fluxy(:,sx:ex,sy+1:ey,sz)
-        gr_yflx_zface(:,:,:,2,blockID) = fluxy(:,sx:ex,sy+1:ey,ez)
-#endif
-#endif
+!!$        gr_yflx(:,:,1,:,blockID) =  fluxy(:,sx:ex,sy+1,sz:ez)
+!!$        gr_yflx(:,:,2,:,blockID) =  fluxy(:,sx:ex,ey,sz:ez)
+!!$#ifdef FLASH_HYDRO_UNSPLIT
+!!$        !! Store transverse components for the faces in global scratch arrays.
+!!$        gr_yflx_xface(:,1,:,:,blockID) = fluxy(:,sx,sy+1:ey,sz:ez)
+!!$        gr_yflx_xface(:,2,:,:,blockID) = fluxy(:,ex,sy+1:ey,sz:ez)
+!!$#if NDIM>2
+!!$        gr_yflx_zface(:,:,:,1,blockID) = fluxy(:,sx:ex,sy+1:ey,sz)
+!!$        gr_yflx_zface(:,:,:,2,blockID) = fluxy(:,sx:ex,sy+1:ey,ez)
+!!$#endif
+!!$#endif
         do np = 1,size(presP,1)
            presVar = presP(np)
            if (presVar > 0) then
@@ -250,16 +250,16 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
      if(ztrue) then
         flux_z(:nfluxes,:,:,1,blockID) = fluxz(:,sx:ex,sy:ey,sz) 
         flux_z(:nfluxes,:,:,2,blockID) = fluxz(:,sx:ex,sy:ey,ez+1) 
-        gr_zflx(:,:,:,1,blockID) = fluxz(:,sx:ex,sy:ey,sz+1)
-        gr_zflx(:,:,:,2,blockID) = fluxz(:,sx:ex,sy:ey,ez)
-#ifdef FLASH_HYDRO_UNSPLIT
-        !! Store transverse components for the faces in global scratch arrays.
-        gr_zflx_xface(:,1,:,:,blockID) = fluxz(:,sx,sy:ey,sz+1:ez)
-        gr_zflx_xface(:,2,:,:,blockID) = fluxz(:,ex,sy:ey,sz+1:ez)
-        
-        gr_zflx_yface(:,:,1,:,blockID) = fluxz(:,sx:ex,sy,sz+1:ez)
-        gr_zflx_yface(:,:,2,:,blockID) = fluxz(:,sx:ex,ey,sz+1:ez)
-#endif
+!!$        gr_zflx(:,:,:,1,blockID) = fluxz(:,sx:ex,sy:ey,sz+1)
+!!$        gr_zflx(:,:,:,2,blockID) = fluxz(:,sx:ex,sy:ey,ez)
+!!$#ifdef FLASH_HYDRO_UNSPLIT
+!!$        !! Store transverse components for the faces in global scratch arrays.
+!!$        gr_zflx_xface(:,1,:,:,blockID) = fluxz(:,sx,sy:ey,sz+1:ez)
+!!$        gr_zflx_xface(:,2,:,:,blockID) = fluxz(:,ex,sy:ey,sz+1:ez)
+!!$        
+!!$        gr_zflx_yface(:,:,1,:,blockID) = fluxz(:,sx:ex,sy,sz+1:ez)
+!!$        gr_zflx_yface(:,:,2,:,blockID) = fluxz(:,sx:ex,ey,sz+1:ez)
+!!$#endif
         do np = 1,size(presP,1)
            presVar = presP(np)
            if (presVar > 0) then
