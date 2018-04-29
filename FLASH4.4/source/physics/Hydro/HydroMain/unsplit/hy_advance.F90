@@ -12,7 +12,7 @@ subroutine hy_advance(simTime, dt, dtOld)
   use hy_interface,        ONLY : hy_computeFluxes, hy_updateSolution
   use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
-  use Hydro_data, ONLY : hy_fluxCorrectPerLevel
+  use Hydro_data, ONLY : hy_fluxCorrect, hy_fluxCorrectPerLevel
 
   implicit none
 
@@ -59,8 +59,12 @@ subroutine hy_advance(simTime, dt, dtOld)
      end do
      call Timers_stop("compute fluxes")
      call Grid_releaseLeafIterator(itor)
-     call Grid_putFluxData(level)
-     call Grid_conserveFluxes(ALLDIR,level) 
+     if (hy_fluxCorrect) then
+        if (level > 1) &
+             call Grid_putFluxData(level)
+        if (level < maxLev) &
+             call Grid_conserveFluxes(ALLDIR,level)
+     end if
      call Grid_getLeafIterator(itor, level=level)
      call Timers_start("update solution")
      do while(itor%is_valid())

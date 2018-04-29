@@ -116,14 +116,14 @@ subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   integer, dimension(MDIM), intent(IN)         :: datasize
   real,    dimension(MDIM), intent(IN)         :: del
 
-  real, intent(OUT) :: xflux (NFLUXES,&
-      blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
-      blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
-      blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
-  real, intent(OUT) :: yflux (NFLUXES,&
-      blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
-      blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
-      blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
+  real, intent(OUT) :: xflux (:,&
+      blkLimitsGC(LOW,IAXIS):, &
+      blkLimitsGC(LOW,JAXIS):, &
+      blkLimitsGC(LOW,KAXIS):)
+  real, intent(OUT) :: yflux (:,&
+      blkLimitsGC(LOW,IAXIS):, &
+      blkLimitsGC(LOW,JAXIS):, &
+      blkLimitsGC(LOW,KAXIS):)
   real, intent(OUT) :: zflux (NFLUXES,&
       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &

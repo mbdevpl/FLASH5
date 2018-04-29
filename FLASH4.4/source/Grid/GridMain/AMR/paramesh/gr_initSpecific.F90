@@ -256,17 +256,17 @@ subroutine gr_initSpecific()
 # endif
 
 #if(NFLUXES>0)
-  allocate(gr_flxx(NFLUXES,GRID_ILO_GC:GRID_IHI_GC+1,  &
-       GRID_JLO_GC:GRID_JHI_GC,  &
-       GRID_KLO_GC:GRID_KHI_GC,&
+  allocate(gr_flxx(NFLUXES,GRID_ILO_GC:GRID_IHI+1,  &
+       GRID_JLO_GC:GRID_JHI,  &
+       GRID_KLO_GC:GRID_KHI,&
        MAXBLOCKS))
-  allocate(gr_flxy(NFLUXES,GRID_ILO_GC:GRID_IHI_GC,  &
-       GRID_JLO_GC:GRID_JHI_GC+K2D,  &
-       GRID_KLO_GC:GRID_KHI_GC,&
+  allocate(gr_flxy(NFLUXES,GRID_ILO_GC:GRID_IHI,  &
+       GRID_JLO_GC:GRID_JHI+K2D,  &
+       GRID_KLO_GC:GRID_KHI,&
        MAXBLOCKS))
   allocate(gr_flxz(NFLUXES,GRID_ILO_GC:GRID_IHI_GC,  &
        GRID_JLO_GC:GRID_JHI_GC,  &
-       GRID_KLO_GC:GRID_KHI_GC+K3D,&
+       GRID_KLO_GC:GRID_KHI_GC,&
        MAXBLOCKS))
 #else
   allocate(gr_flxx(1,1,1,1,1))

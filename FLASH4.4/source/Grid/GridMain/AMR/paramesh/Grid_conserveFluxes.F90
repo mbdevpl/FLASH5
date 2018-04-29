@@ -74,10 +74,11 @@ subroutine Grid_conserveFluxes( axis, level)
 
 
   !! Dev - AD for AMReX this should be if(level==maxlev) return
-  if(level > 1) return
+  !! Dev:  Disabled immediate return for now, let the caller control this. - KW
+  !if(level > 1) return
 
   if (axis == ALLDIR) then
-     call amr_flux_conserve(gr_meshMe, 0, 0)          
+     call amr_flux_conserve(gr_meshMe, 0, 0)
   else
      call amr_flux_conserve(gr_meshMe, 0, axis)     
   endif
@@ -118,7 +119,7 @@ subroutine Grid_conserveFluxes( axis, level)
      ztrue = (axis==KAXIS)
   end if
 
-  call Grid_getLeafIterator(itor)
+  call Grid_getLeafIterator(itor, level=level)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
      blockID=blockDesc%id
