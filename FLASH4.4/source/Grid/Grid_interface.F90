@@ -341,19 +341,6 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_getFluxData(block, fluxx, fluxy, fluxz, dataSize,axis,  pressureSlots, areaLeft)
-       use block_metadata, ONLY : block_metadata_t
-       implicit none
-       type(block_metadata_t), intent(IN) :: block
-       integer, intent(IN),optional :: axis
-       integer, intent(IN), dimension(3) :: dataSize
-       real, intent(INOUT), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxx,fluxy,fluxz
-       integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
-       real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
-     end subroutine Grid_getFluxData
-  end interface
-
-  interface
      subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
        use block_metadata, ONLY : block_metadata_t
        implicit none
@@ -615,13 +602,10 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_putFluxData(block, fluxx,fluxy,fluxz, dataSize,axis, pressureSlots, areaLeft)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine Grid_putFluxData(level,axis, pressureSlots, areaLeft)
        implicit none
-       type(block_metadata_t), intent(IN) :: block
+       integer, intent(IN) :: level
        integer, intent(IN),optional :: axis
-       integer, intent(IN), dimension(3) :: dataSize
-       real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxx,fluxy,fluxz
        integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
        real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
      end subroutine Grid_putFluxData

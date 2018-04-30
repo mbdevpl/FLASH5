@@ -90,14 +90,14 @@ Module hy_interface
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        integer, dimension(MDIM), intent(IN)         :: datasize
        real,    dimension(MDIM), intent(IN)         :: del
-       real, intent(OUT) :: xflux(NFLUXES, &
-                       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
-                       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
-                       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
-       real, intent(OUT) :: yflux(NFLUXES, &
-                       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
-                       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
-                       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
+       real, intent(OUT) :: xflux(:, &
+                       blkLimitsGC(LOW,IAXIS):, &
+                       blkLimitsGC(LOW,JAXIS):, &
+                       blkLimitsGC(LOW,KAXIS):)
+       real, intent(OUT) :: yflux(:, &
+                       blkLimitsGC(LOW,IAXIS):, &
+                       blkLimitsGC(LOW,JAXIS):, &
+                       blkLimitsGC(LOW,KAXIS):)
        real, intent(OUT) :: zflux(NFLUXES, &
                        blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
                        blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
@@ -467,8 +467,8 @@ Module hy_interface
        integer,dimension(MDIM),intent(IN) :: dataSize
        integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
        integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
-    real, intent(in) :: xflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
-    real, intent(in) :: yflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))  
+    real, intent(in) :: xflux(:      ,blGC(LOW,IAXIS):                , blGC(LOW,JAXIS):                , blGC(LOW,KAXIS):                )
+    real, intent(in) :: yflux(:      ,blGC(LOW,IAXIS):                , blGC(LOW,JAXIS):                , blGC(LOW,KAXIS):                )
     real, intent(in) :: zflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
     real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),& 
          intent(IN) :: gravX,gravY,gravZ
@@ -1021,7 +1021,7 @@ Module hy_interface
 !endif #ifdef FLASH_USM_MHD
 
   interface
-     subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+     subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t) :: blockDesc
@@ -1030,7 +1030,20 @@ Module hy_interface
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
-     end subroutine hy_advanceBlk
+     end subroutine hy_computeFluxes
+  end interface
+
+    interface
+     subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+          sweepOrder )
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t) :: blockDesc
+       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       real, pointer, dimension(:,:,:,:) :: Uout,Uin
+       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+       integer, INTENT(IN) :: sweepOrder
+       real,dimension(MDIM),intent(IN) :: del
+     end subroutine hy_updateSolution
   end interface
 
 End Module hy_interface

@@ -24,6 +24,7 @@
 !!***
 
 !!REORDER(5):scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx
+!!REORDER(5): gr_flx[xyz]
 !!REORDER(5):gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 
 Module gr_specificData
@@ -115,6 +116,25 @@ Module gr_specificData
 #else
   real, target,dimension(1,1,1,1,1):: scratch_facevarz
 #endif
+#if(NFLUXES>0)
+  real,target,dimension(NFLUXES,&
+                        GRID_ILO_GC:GRID_IHI+1,  &
+                        GRID_JLO_GC:GRID_JHI,  &
+                        GRID_KLO_GC:GRID_KHI,&
+                        MAXBLOCKS) :: gr_flxx
+  real,target,dimension(NFLUXES,&
+                        GRID_ILO_GC:GRID_IHI,  &
+                        GRID_JLO_GC:GRID_JHI+K2D,  &
+                        GRID_KLO_GC:GRID_KHI,&
+                        MAXBLOCKS) :: gr_flxy
+  real,target,dimension(NFLUXES,&
+                        GRID_ILO_GC:GRID_IHI_GC,  &
+                        GRID_JLO_GC:GRID_JHI_GC,  &
+                        GRID_KLO_GC:GRID_KHI_GC,&
+                        MAXBLOCKS) :: gr_flxz
+#else
+  real, target,dimension(1,1,1,1,1):: gr_flxx, gr_flxy, gr_flxz
+#endif
 
 #else
   real, save, target, allocatable :: scratch(:,:,:,:,:)
@@ -122,6 +142,9 @@ Module gr_specificData
   real, save, target, allocatable :: scratch_facevarx(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevary(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevarz(:,:,:,:,:)
+  real, save, target, allocatable :: gr_flxx(:,:,:,:,:)
+  real, save, target, allocatable :: gr_flxy(:,:,:,:,:)
+  real, save, target, allocatable :: gr_flxz(:,:,:,:,:)
 #endif
 
   integer ,save :: gr_nblockX, gr_nblockY, gr_nblockZ

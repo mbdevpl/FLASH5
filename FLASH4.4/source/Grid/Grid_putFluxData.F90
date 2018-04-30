@@ -98,17 +98,14 @@
 !!   hy_sweep
 !!***
 
-!!REORDER(4): fluxx,fluxy,fluxz
-subroutine Grid_putFluxData(blockID, axis, fluxes, dataSize, pressureSlots, areaLeft)
+subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
 
   implicit none
 
 #include "Flash.h"
 
-  integer, intent(IN) :: blockID
-  integer, intent(IN) :: axis
-  integer, intent(IN), dimension(3) :: dataSize
-  real, intent(IN), dimension(NFLUXES,dataSize(1),dataSize(2),dataSize(3)) :: fluxes
+  integer, intent(IN) :: level
+  integer, intent(IN),optional :: axis
   integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
   real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
 
