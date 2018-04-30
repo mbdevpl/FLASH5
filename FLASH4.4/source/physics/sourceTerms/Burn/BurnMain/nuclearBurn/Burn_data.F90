@@ -170,4 +170,6 @@ Module Burn_data
 ! was in common block /netc13d/, didn't add to separate file
       integer, save ::          irfuel   
 
+!$omp threadprivate(xmass,ymass,xoktot,xbadtot,sneut,sphot,spair,splas,sbrem,srecomb)
+
 end Module Burn_data
