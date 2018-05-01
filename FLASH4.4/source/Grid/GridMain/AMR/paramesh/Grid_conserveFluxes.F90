@@ -40,6 +40,7 @@ subroutine Grid_conserveFluxes( axis, level)
   use physicaldata, ONLY : flux_x, flux_y, flux_z, nfluxes
   use tree, ONLY : surr_blks, nodetype
   use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx, gr_flxx, gr_flxy, gr_flxz
+  use gr_specificData, ONLY : gr_iloFl, gr_jloFl, gr_kloFl
   use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
@@ -124,9 +125,9 @@ subroutine Grid_conserveFluxes( axis, level)
      call itor%blkMetaData(blockDesc)
      blockID=blockDesc%id
      
-     fluxx => gr_flxx(:,:,:,:,blockID)
-     fluxy => gr_flxy(:,:,:,:,blockID)
-     fluxz => gr_flxz(:,:,:,:,blockID)     
+     fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
+     fluxy(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxy(:,:,:,:,blockID)
+     fluxz(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxz(:,:,:,:,blockID)
 !!$     if (present(pressureSlots)) then
 !!$        presP => pressureSlots
 !!$     else

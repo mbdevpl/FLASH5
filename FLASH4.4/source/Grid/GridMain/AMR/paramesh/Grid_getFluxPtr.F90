@@ -55,9 +55,12 @@ subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
   real, pointer                      :: fluxPtrZ(:,:,:,:)
 
   integer :: blockID
-  blockID=blockDesc%id
+  integer :: lowerBounds(MDIM)
 
-  associate (lo => gr_loFl)
+  blockID=blockDesc%id
+  lowerBounds(:) = blockDesc%limitsGC(LOW, :) + gr_loFl(:) - 1
+
+  associate (lo => lowerBounds)
 #ifdef INDEXREORDER
     fluxPtrX(lo(1):, lo(2):, lo(3):, 1:) => gr_flxx(:,:,:,:,blockID)
     fluxPtrY(lo(1):, lo(2):, lo(3):, 1:) => gr_flxy(:,:,:,:,blockID)

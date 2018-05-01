@@ -73,7 +73,7 @@
 #include "UHD.h"
 
   Subroutine hy_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
-                                  blGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
+                                  blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                   scrch_Ptr)
 
     use block_metadata,   ONLY : block_metadata_t
@@ -119,9 +119,10 @@
     integer,dimension(MDIM),intent(IN) :: dataSize
     integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
     integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
-    real, intent(in) :: xflux(:      ,blGC(LOW,IAXIS):                , blGC(LOW,JAXIS):                , blGC(LOW,KAXIS):                )
-    real, intent(in) :: yflux(:      ,blGC(LOW,IAXIS):                , blGC(LOW,JAXIS):                , blGC(LOW,KAXIS):                )
-    real, intent(in) :: zflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+    integer, dimension(MDIM+1),intent(IN)        :: loFl
+    real, intent(OUT) :: XFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZED TO PREVENT INDEX REORDERING!
+    real, intent(OUT) :: YFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
+    real, intent(OUT) :: ZFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
     real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),& 
          intent(IN) :: gravX,gravY,gravZ
     real, pointer, dimension(:,:,:,:) :: Uin, Uout, scrch_Ptr

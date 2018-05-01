@@ -119,9 +119,9 @@ subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   real,    dimension(MDIM), intent(IN)         :: del
 
   integer, dimension(MDIM+1),intent(IN)        :: loFl
-  real, intent(OUT) :: xflux (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )
-  real, intent(OUT) :: yflux (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )
-  real, intent(OUT) :: zflux (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )
+  real, intent(OUT) :: XFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZED TO PREVENT INDEX REORDERING!
+  real, intent(OUT) :: YFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
+  real, intent(OUT) :: ZFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
 
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
   real, pointer, dimension(:,:,:,:) :: scrch_Ptr

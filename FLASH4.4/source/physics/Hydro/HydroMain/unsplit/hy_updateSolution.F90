@@ -90,6 +90,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
   real,dimension(MDIM),intent(IN) :: del
   integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
+  integer :: loFl(MDIM+1)
   type(block_metadata_t), intent(IN) :: blockDesc
   
   integer, dimension(MDIM) :: datasize
@@ -206,6 +207,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
      call Grid_getFluxPtr(blockDesc,flx,fly,flz)
+     loFl = lbound(flx)
 
 !!$     if(hy_fluxCorrectPerLevel) then
 !!$        updateMode=UPDATE_ALL
@@ -223,7 +225,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 #endif
      
      call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
-          blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
+          blkLimitsGC,loFl,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
      
      
