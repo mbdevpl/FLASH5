@@ -218,6 +218,7 @@ subroutine Driver_evolveFlash()
 
 !!!!!! Stuff from here has been MOVED TO Hydro !!!!!!
 
+     call Burn(dr_dt)
 
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION

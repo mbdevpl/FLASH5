@@ -1,14 +1,14 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/hy_advanceBlk
+!!****if* source/physics/Hydro/HydroMain/unsplit/hy_computeFluxes
 !!
 !!
 !! NAME
 !!
-!!  hy_advanceBlk
+!!  hy_computeFluxes
 !!
 !!
 !! SYNOPSIS
 !!
-!!  hy_advanceBlk(integer(IN) :: blockCount, 
+!!  hy_computeFluxes(integer(IN) :: blockCount, 
 !!        integer(IN) :: blockList(blockCount)
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
@@ -23,7 +23,7 @@
 !!  The blockList and blockCount arguments tell this routine on 
 !!  which blocks and on how many to operate.  blockList is an 
 !!  integer array of size blockCount that contains the local 
-!!  block numbers of blocks on which to advanceBlk.
+!!  block numbers of blocks on which to computeFluxes.
 !!
 !!  dt gives the timestep through which this update should advance,
 !!  and timeEndAdv tells the time that this update will reach when
@@ -41,9 +41,13 @@
 !!
 !!***
 
+
+!!$#define DEBUG
+!!$#define DEBUG_UHD
+
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
-Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
+Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -74,7 +78,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
                          hy_fullRiemannStateArrays,    &
                          hy_fullSpecMsFluxHandling
 
-  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxData
+  use Grid_interface, ONLY : Grid_getFluxPtr, Grid_releaseFluxPtr
   implicit none
 
 #include "constants.h"
@@ -94,7 +98,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
   
   integer, dimension(MDIM) :: datasize
 
-  real, allocatable, dimension(:,:,:,:)   :: flx,fly,flz
+  real, pointer, dimension(:,:,:,:)   :: flx,fly,flz
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
 
@@ -231,10 +235,7 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
         !    included to Riemann states in conservative formulation in hy_getRiemannState.
 
      endif !! End of if (hy_updateHydroFluxes) then
-
-     allocate(flx(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-     allocate(fly(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-     allocate(flz(NFLUXES,loxGC:hixGC, loyGC:hiyGC,blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+     call Grid_getFluxPtr(blockDesc,flx,fly,flz)
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
@@ -260,125 +261,15 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
      call Timers_stop("getFaceFlux")
      !! ************************************************************************
      !! Unsplit update for conservative variables from n to n+1 time step
-!!$#ifndef FLASH_GRID_UG
-!!$     if ((.not. hy_fullRiemannStateArrays) .OR. &
-!!$          (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0) .OR. &
-!!$          .not. blockNeedsFluxCorrect(blockID)) then
-!!$#endif
-!!$        if (blockNeedsFluxCorrect(blockID)) then
-!!$           updateMode = UPDATE_INTERIOR
-!!$        else
-!!$           updateMode = UPDATE_ALL
-!!$        end if
 
-     if(hy_fluxCorrectPerLevel) then
-        updateMode=UPDATE_ALL
-        call Grid_getFluxData(blockDesc,flx,fly,flz,datasize)
-     else
-        
-        updateMode = UPDATE_INTERIOR
-     end if
-
-        updateMode = UPDATE_ALL
-
-     call Timers_start("unsplitUpdate")
-#ifdef DEBUG_UHD
-     print*,'and now update'
-#endif
-
-     call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
-          blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
-          scrch_Ptr)
-
-
-!#define DEBUG_UHD
-#ifdef DEBUG_UHD
-     print*,'done update'
-     print*,'_unsplit Aft "call unsplitUpdate(UPD_ALL)": associated(Uin ) is',associated(Uin )
-     print*,'_unsplit Aft "call unsplitUpdate(UPD_ALL)": associated(Uout) is',associated(Uout)
-#endif
-     call Timers_stop("unsplitUpdate")
-!!$#ifdef FLASH_UHD_3T
-!!$        call Timers_start("unsplitUpdate 3T")
-!!$        call hy_uhd_unsplitUpdateMultiTemp&
-!!$             (blockID,updateMode,blkLimits,dataSize,dt,del,flx,fly,flz, scrch_Ptr)
-!!$        call Timers_stop("unsplitUpdate 3T")
-!!$#endif
-!!$#ifndef FLASH_GRID_UG
-!!$     endif
-!!$#endif
-     deallocate(scrch_Ptr)
-
-!!$     if (.not. blockNeedsFluxCorrect(blockID)) then
-#ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
-        !! Correct energy if necessary
-     call hy_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
      
-#ifdef DEBUG_UHD
-     print*,'_unsplit Aft "call energyFix": associated(Uin ) is',associated(Uin )
-     print*,'_unsplit Aft "call energyFix": associated(Uout) is',associated(Uout)
-#endif
-     if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
-        !! Convert unit
-        call hy_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
-     endif
+     call Grid_releaseFluxPtr(blockDesc,flx,fly,flz)
      
-     !#ifndef FLASH_EOS_GAMMA
-     !! Call to Eos
-#ifdef DEBUG_UHD
-     print*,'_unsplit bef Eos_wrapped: associated(Uin ) is',associated(Uin )
-     print*,'_unsplit bef Eos_wrapped: associated(Uout) is',associated(Uout)
-     print*,'_unsplit bef Eos_wrapped: lbound(Uin ):',lbound(Uin )
-     print*,'_unsplit bef Eos_wrapped: ubound(Uin ):',ubound(Uin )
-     print*,'_unsplit bef Eos_wrapped: lbound(Uout):',lbound(Uout)
-     print*,'_unsplit bef Eos_wrapped: ubound(Uout):',ubound(Uout)
-#endif
-     call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
-     !#endif
-#endif /* ifndef GRAVITY */
-     
-!!$     if (blockMustStoreFluxes(blockID)) then
-        !! if Flux correction is used.
-        !! Flux conservation calls on AMR:
-        !! Correct fluxes at each block boundary where coarse and fine
-        !! blocks are neighboring each other.
-        
-!!$        if (hy_geometry /= CARTESIAN) then
-!!$           ! we are using consv_fluxes and need to divide by face areas
-!!$           call Grid_getBlkData(blockID,CELL_FACEAREA,ILO_FACE, EXTERIOR, &
-!!$                                (/1,1,1/), faceAreas, datasize)
-!!$
-!!$           call Grid_putFluxData(blockID,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
-!!$
-!!$           if (NDIM > 1) then
-!!$              call Grid_getBlkData(blockID,CELL_FACEAREA,JLO_FACE, EXTERIOR, &
-!!$                                   (/1,1,1/), faceAreas, datasize)
-!!$              call Grid_putFluxData(blockID,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
-!!$              if (NDIM > 2) then
-!!$                 call Grid_getBlkData(blockID,CELL_FACEAREA,KLO_FACE, EXTERIOR, &
-!!$                                      (/1,1,1/), faceAreas, datasize)
-!!$                 call Grid_putFluxData(blockID,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
-!!$              endif
-!!$           endif
-!!$        else ! Cartesian geometry
-
-     if (hy_fluxCorrect) then
-        call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
-     end if
-     
-     deallocate(flx)
-     deallocate(fly)
-     deallocate(flz)
      deallocate(gravX)
      deallocate(gravY)
      deallocate(gravZ)
      deallocate(faceAreas)
      
-!!$     if (hy_fullRiemannStateArrays) then
-!!$        call hy_memReleaseBlkPtr(blockID,scrchFaceXPtr,SCRATCH_FACEX)
-!!$        if (NDIM > 1) call hy_memReleaseBlkPtr(blockID,scrchFaceYPtr,SCRATCH_FACEY)
-!!$        if (NDIM > 2) call hy_memReleaseBlkPtr(blockID,scrchFaceZPtr,SCRATCH_FACEZ)
-!!$     else
      deallocate(scrchFaceXPtr)
      deallocate(scrchFaceYPtr)
      deallocate(scrchFaceZPtr)
@@ -394,4 +285,4 @@ Subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeE
   call Timers_stop("loop1 body")
 
 
-End Subroutine hy_advanceBlk
+End Subroutine hy_computeFluxes

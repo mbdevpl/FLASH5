@@ -37,7 +37,8 @@ Hydro += Hydro_data.o\
 	hy_DataReconstructNormalDir_PPM.o\
 	hy_DataReconstructNormalDir_WENO.o\
 	hy_DataReconstructNormalDir_GP.o\
-	hy_advanceBlk.o\
+	hy_computeFluxes.o\
+	hy_updateSolution.o\
 	hy_advance.o\
 	hy_updateBoundaries.o\
 	hy_unsplitUpdate.o\
