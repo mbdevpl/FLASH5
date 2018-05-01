@@ -444,10 +444,18 @@
                 !! Fluxes at each local cell 
                 FL(HY_DENS_FLUX:HY_VOLU_FLUX) = xflux(HY_DENS_FLUX:HY_VOLU_FLUX,i,  j,   k   )
                 FR(HY_DENS_FLUX:HY_VOLU_FLUX) = xflux(HY_DENS_FLUX:HY_VOLU_FLUX,i+1,j,   k   )
-                GL(HY_DENS_FLUX:HY_VOLU_FLUX) = yflux(HY_DENS_FLUX:HY_VOLU_FLUX,i,  j,   k   )*ky
-                GR(HY_DENS_FLUX:HY_VOLU_FLUX) = yflux(HY_DENS_FLUX:HY_VOLU_FLUX,i,  j+ky,k   )*ky
-                HL(HY_DENS_FLUX:HY_VOLU_FLUX) = zflux(HY_DENS_FLUX:HY_VOLU_FLUX,i,  j,   k   )*kz
-                HR(HY_DENS_FLUX:HY_VOLU_FLUX) = zflux(HY_DENS_FLUX:HY_VOLU_FLUX,i,  j,   k+kz)*kz
+                if (NDIM .GE. 2) then
+                   GL(HY_DENS_FLUX:HY_VOLU_FLUX) = yflux(HY_DENS_FLUX:HY_VOLU_FLUX,i,  j,   k   )*ky
+                   GR(HY_DENS_FLUX:HY_VOLU_FLUX) = yflux(HY_DENS_FLUX:HY_VOLU_FLUX,i,  j+ky,k   )*ky
+                else
+                   GL(:) = 0.0; GR(:) = 0.0
+                end if
+                if (NDIM == 3) then
+                   HL(HY_DENS_FLUX:HY_VOLU_FLUX) = zflux(HY_DENS_FLUX:HY_VOLU_FLUX,i,  j,   k   )*kz
+                   HR(HY_DENS_FLUX:HY_VOLU_FLUX) = zflux(HY_DENS_FLUX:HY_VOLU_FLUX,i,  j,   k+kz)*kz
+                else
+                   HL(:) = 0.0; HR(:) = 0.0
+                end if
 #if (NSPECIES+NMASS_SCALARS) > 0
                 do ispu = SPECIES_BEGIN, MASS_SCALARS_END !SPECIES_END
                    isph= ispu-NPROP_VARS

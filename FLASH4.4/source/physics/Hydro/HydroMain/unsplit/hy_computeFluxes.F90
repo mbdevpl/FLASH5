@@ -102,6 +102,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   real, pointer, dimension(:,:,:,:)   :: flx,fly,flz
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
+  real, target, dimension(0,0,0,0)   :: empty4
 
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
   real, pointer, dimension(:,:,:,:) :: scrch_Ptr
@@ -238,6 +239,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      endif !! End of if (hy_updateHydroFluxes) then
      call Grid_getFluxPtr(blockDesc,flx,fly,flz)
      loFl = lbound(flx)
+     if (.NOT. associated(flz)) flz => empty4
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
