@@ -89,14 +89,14 @@ subroutine Grid_conserveFluxes( axis, level)
 #if NFACE_VARS > 0
   gridDataStruct = CENTER_FACES
 #endif
-  !! Dev -- AD I have no idea why the following commented out code is there at all
-  !! but keeping it around causes crash in parallel mode
+  !! Dev -- AD I have no idea why the following code is there at all
+  !! but keeping it around caused crash in parallel mode
 
-!!$  if (no_permanent_guardcells) then
-!!$     call gr_commSetup(gridDataStruct)
-!!$  else
-!!$     call gr_freeCommRecvBuffer
-!!$  end if
+  if (no_permanent_guardcells) then
+     call gr_commSetup(gridDataStruct)
+  else
+     call gr_freeCommRecvBuffer
+  end if
 #endif
   dataSize(IAXIS)=NXB+2*NGUARD
   dataSize(JAXIS)=NYB+2*NGUARD*K2D

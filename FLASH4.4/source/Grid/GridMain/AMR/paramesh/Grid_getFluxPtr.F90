@@ -45,6 +45,7 @@
 subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
   use block_metadata,   ONLY : block_metadata_t
   use gr_specificData, ONLY : gr_flxx, gr_flxy, gr_flxz
+  use gr_specificData, ONLY : gr_loFl
   implicit none
   
 
@@ -56,7 +57,7 @@ subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
   integer :: blockID
   blockID=blockDesc%id
 
-  associate (lo => blockDesc%limitsGC(LOW, :))
+  associate (lo => gr_loFl)
 #ifdef INDEXREORDER
     fluxPtrX(lo(1):, lo(2):, lo(3):, 1:) => gr_flxx(:,:,:,:,blockID)
     fluxPtrY(lo(1):, lo(2):, lo(3):, 1:) => gr_flxy(:,:,:,:,blockID)

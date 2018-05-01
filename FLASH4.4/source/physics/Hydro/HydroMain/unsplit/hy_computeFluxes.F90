@@ -94,6 +94,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   real,dimension(MDIM),intent(IN) :: del
   integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
+  integer :: loFl(MDIM+1)
   type(block_metadata_t), intent(IN) :: blockDesc
   
   integer, dimension(MDIM) :: datasize
@@ -236,6 +237,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
      endif !! End of if (hy_updateHydroFluxes) then
      call Grid_getFluxPtr(blockDesc,flx,fly,flz)
+     loFl = lbound(flx)
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
@@ -251,7 +253,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      print*,'getting face flux'
 #endif
      call hy_getFaceFlux(blockDesc,blkLimits,blkLimitsGC,datasize,del,&
-                             flx,fly,flz,&
+                             loFl, flx,fly,flz,&
                              scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
 #ifdef DEBUG_UHD
      print*,'got face flux'

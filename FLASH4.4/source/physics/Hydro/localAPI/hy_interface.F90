@@ -81,7 +81,7 @@ Module hy_interface
 
   interface
      subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
-                                     xflux, yflux,zflux,&
+                                     loFl, xflux,yflux,zflux,&
                                      scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                      hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
        use block_metadata, ONLY : block_metadata_t
@@ -90,18 +90,10 @@ Module hy_interface
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        integer, dimension(MDIM), intent(IN)         :: datasize
        real,    dimension(MDIM), intent(IN)         :: del
-       real, intent(OUT) :: xflux(:, &
-                       blkLimitsGC(LOW,IAXIS):, &
-                       blkLimitsGC(LOW,JAXIS):, &
-                       blkLimitsGC(LOW,KAXIS):)
-       real, intent(OUT) :: yflux(:, &
-                       blkLimitsGC(LOW,IAXIS):, &
-                       blkLimitsGC(LOW,JAXIS):, &
-                       blkLimitsGC(LOW,KAXIS):)
-       real, intent(OUT) :: zflux(NFLUXES, &
-                       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
-                       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
-                       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
+       integer, dimension(MDIM+1),intent(IN)        :: loFl
+       real, intent(OUT) :: xflux (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )
+       real, intent(OUT) :: yflux (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )
+       real, intent(OUT) :: zflux (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )
        real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
        real, pointer, dimension(:,:,:,:) :: scrch_Ptr
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
