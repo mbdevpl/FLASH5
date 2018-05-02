@@ -13,13 +13,13 @@
 !!  Flux conservation is necessary when 2 blocks of differing
 !!  levels (meaning having different grid spacings) border 
 !!  one another. 
-!!  
+!!
 !!  This routine can perform flux conservation on the finest
 !!  blocks, the most typical usage for the Paramesh Grid or on
 !!  blocks of a certain level.
-!!  
+!!
 !!  The routine overwrites the flux arrays maintained by the Grid
-!!  
+!!
 !! ARGUMENTS 
 !!  axis - the only acceptable value for AMReX is ALLDIR.
 !!  level - refinement level whose flux data should be overwritten
@@ -29,6 +29,8 @@
 #include "constants.h"
 
 subroutine Grid_conserveFluxes(axis, level)
+    use amrex_fort_module,    ONLY : wp => amrex_real
+
     use Driver_interface,     ONLY : Driver_abortFlash
     use gr_physicalMultifabs, ONLY : fluxes, &
                                      flux_registers
@@ -42,10 +44,8 @@ subroutine Grid_conserveFluxes(axis, level)
         call Driver_abortFlash("[Grid_conserveFluxes] AMReX requires axis==ALLDIR")
     end if
 
-    ! DEV: TODO Write this once the necessary routine is available
-    ! in the AMReX Fortran interface
-    ! call flux_registers(level)%overwriteFluxes(fluxes(level, :))
-
-    call Driver_abortFlash("[Grid_conserveFluxes] Not implemented yet for AMReX")
+    ! The fluxes data structure should contain fluxes and *not* flux density
+    ! Therefore, we do not need AMReX to scale for us.
+    call flux_registers(level+1)%overwrite(fluxes(level, :), 1.0_wp)
 end subroutine Grid_conserveFluxes
 
