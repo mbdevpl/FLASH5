@@ -60,8 +60,12 @@ subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
                ilev => blockDesc%level - 1, &
                igrd => blockDesc%grid_index)
         fluxPtrX(lo(1):, lo(2):, lo(3):, 1:) => fluxes(ilev, IAXIS)%dataptr(igrd)
-        fluxPtrY(lo(1):, lo(2):, lo(3):, 1:) => fluxes(ilev, JAXIS)%dataptr(igrd)
-        fluxPtrZ(lo(1):, lo(2):, lo(3):, 1:) => fluxes(ilev, KAXIS)%dataptr(igrd)
+        if (N_DIM .GE. 1) then
+           fluxPtrY(lo(1):, lo(2):, lo(3):, 1:) => fluxes(ilev, JAXIS)%dataptr(igrd)
+        end if
+        if (N_DIM == 3) then
+           fluxPtrZ(lo(1):, lo(2):, lo(3):, 1:) => fluxes(ilev, KAXIS)%dataptr(igrd)
+        end if
     end associate
 end subroutine Grid_getFluxPtr
 

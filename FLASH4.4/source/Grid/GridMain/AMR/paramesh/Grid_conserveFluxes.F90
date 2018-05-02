@@ -40,6 +40,7 @@ subroutine Grid_conserveFluxes( axis, level)
   use physicaldata, ONLY : flux_x, flux_y, flux_z, nfluxes
   use tree, ONLY : surr_blks, nodetype
   use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx, gr_flxx, gr_flxy, gr_flxz
+  use gr_specificData, ONLY : gr_iloFl, gr_jloFl, gr_kloFl
   use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
@@ -89,14 +90,14 @@ subroutine Grid_conserveFluxes( axis, level)
 #if NFACE_VARS > 0
   gridDataStruct = CENTER_FACES
 #endif
-  !! Dev -- AD I have no idea why the following commented out code is there at all
-  !! but keeping it around causes crash in parallel mode
+  !! Dev -- AD I have no idea why the following code is there at all
+  !! but keeping it around caused crash in parallel mode
 
-!!$  if (no_permanent_guardcells) then
-!!$     call gr_commSetup(gridDataStruct)
-!!$  else
-!!$     call gr_freeCommRecvBuffer
-!!$  end if
+  if (no_permanent_guardcells) then
+     call gr_commSetup(gridDataStruct)
+  else
+     call gr_freeCommRecvBuffer
+  end if
 #endif
   dataSize(IAXIS)=NXB+2*NGUARD
   dataSize(JAXIS)=NYB+2*NGUARD*K2D
@@ -124,9 +125,9 @@ subroutine Grid_conserveFluxes( axis, level)
      call itor%blkMetaData(blockDesc)
      blockID=blockDesc%id
      
-     fluxx => gr_flxx(:,:,:,:,blockID)
-     fluxy => gr_flxy(:,:,:,:,blockID)
-     fluxz => gr_flxz(:,:,:,:,blockID)     
+     fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
+     fluxy(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxy(:,:,:,:,blockID)
+     fluxz(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxz(:,:,:,:,blockID)
 !!$     if (present(pressureSlots)) then
 !!$        presP => pressureSlots
 !!$     else
