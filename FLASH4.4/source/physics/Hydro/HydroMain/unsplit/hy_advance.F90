@@ -29,6 +29,89 @@ subroutine hy_advance(simTime, dt, dtOld)
   type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
+  ! ***** FIRST VARIANT: OPTIMIZED (somewhat) FOR hy_fluxCorrect==.FALSE. *****
+  if (.NOT. hy_fluxCorrect) then
+     call Grid_getLeafIterator(itor)
+     call Timers_start("hy_advance")
+     do while(itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+
+        blkLimits(:,:)   = blockDesc%limits
+        blkLimitsGC(:,:) = blockDesc%limitsGC
+        level            = blockDesc%level
+
+        call Grid_getBlkPtr(blockDesc, Uin)
+
+        call Grid_getDeltas(level,del)
+        nullify(Uout)           ! Uout is not really needed here.
+        call hy_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+        Uout => Uin
+        call hy_updateSolution(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+        call Grid_releaseBlkPtr(blockDesc, Uin)
+        call itor%next()
+     end do
+     call Timers_stop("hy_advance")
+     call Grid_releaseLeafIterator(itor)
+
+     RETURN                     ! DONE, return from here!
+  end if
+
+  ! ***** SECOND VARIANT: FOR hy_fluxCorrectPerLevel==.FALSE. *****
+  if (.NOT. hy_fluxCorrectPerLevel) then
+
+     call Timers_start("compute fluxes")
+     call Grid_getLeafIterator(itor)
+     do while(itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+
+        blkLimits(:,:)   = blockDesc%limits
+        blkLimitsGC(:,:) = blockDesc%limitsGC
+        level            = blockDesc%level
+
+        call Grid_getBlkPtr(blockDesc, Uin)
+
+        call Grid_getDeltas(level,del)
+        nullify(Uout)           ! Uout is not really needed here.
+        call hy_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+        call Grid_releaseBlkPtr(blockDesc, Uin)
+        call itor%next()
+     end do
+     call Timers_stop("compute fluxes")
+     call Grid_releaseLeafIterator(itor)
+
+     if (hy_fluxCorrect) then
+        call Grid_putFluxData(level=UNSPEC_LEVEL)
+        call Timers_start("conserveFluxes")
+        call Grid_conserveFluxes(ALLDIR,UNSPEC_LEVEL)
+        call Timers_stop("conserveFluxes")
+     end if
+
+     call Grid_getLeafIterator(itor)
+     call Timers_start("update solution")
+     do while(itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+
+        blkLimits(:,:)   = blockDesc%limits
+        blkLimitsGC(:,:) = blockDesc%limitsGC
+        level            = blockDesc%level
+
+        call Grid_getBlkPtr(blockDesc, Uout)
+
+        call Grid_getDeltas(level,del)
+        Uin => Uout
+        call hy_updateSolution(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+        call Grid_releaseBlkPtr(blockDesc, Uout)
+        call itor%next()
+     end do
+     call Timers_stop("update solution")
+     call Grid_releaseLeafIterator(itor)
+
+     RETURN                     ! DONE, return from here!
+  end if
+
+
+  ! ***** THIRD VARIANT: FOR hy_fluxCorrectPerLevel==.TRUE. *****
+
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 
   do level= maxLev,1,-1
@@ -41,6 +124,7 @@ subroutine hy_advance(simTime, dt, dtOld)
      !!        if(hy_fluxCorrectPerLevel)call Grid_conserveFluxes(ALLDIR,level)
      
      call Timers_start("compute fluxes")
+     call Grid_getDeltas(level,del)
      call Grid_getLeafIterator(itor, level=level)
      do while(itor%is_valid())
         call itor%blkMetaData(blockDesc)
@@ -50,7 +134,6 @@ subroutine hy_advance(simTime, dt, dtOld)
         
         call Grid_getBlkPtr(blockDesc, Uin)
         
-        call Grid_getDeltas(level,del)
         nullify(Uout)           ! Uout is not really needed here.
         call hy_computeFluxes(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
         call Grid_releaseBlkPtr(blockDesc, Uin)
@@ -79,7 +162,6 @@ subroutine hy_advance(simTime, dt, dtOld)
         
         call Grid_getBlkPtr(blockDesc, Uout)
         
-        call Grid_getDeltas(level,del)
         Uin => Uout
         call hy_updateSolution(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
         call Grid_releaseBlkPtr(blockDesc, Uout)

@@ -5,8 +5,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_conserveFluxes(integer(IN) :: axis,
-!!                      integer(IN) :: level)
+!!  call Grid_conserveFluxes(integer(IN) :: axis,
+!!                           integer(IN) :: level)
 !!  
 !! DESCRIPTION 
 !!  
