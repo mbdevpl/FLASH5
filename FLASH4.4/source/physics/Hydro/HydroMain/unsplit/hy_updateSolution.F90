@@ -8,7 +8,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  hy_updateSolution(integer(IN) :: blockCount, 
+!!  call hy_updateSolution(integer(IN) :: blockCount, 
 !!        integer(IN) :: blockList(blockCount)
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
@@ -54,6 +54,8 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
                                hy_unitConvert,      &
                                hy_energyFix,        &
                                hy_putGravity
+  use hy_memInterface, ONLY :  hy_memGetBlkPtr,         &
+                               hy_memReleaseBlkPtr
 
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_fluxCorrectPerLevel,             &
@@ -147,13 +149,14 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 !!$     end if
 #endif
 
-     if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
-        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
-     endif
+!!$     if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
+!!$        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
+!!$     endif
 
      datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
-     allocate(scrch_Ptr    (2,               loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     call hy_memGetBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
+
 !!$     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
 !!$     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
 !!$     allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
@@ -245,7 +248,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 !!$#ifndef FLASH_GRID_UG
 !!$     endif
 !!$#endif
-     deallocate(scrch_Ptr)
+     call hy_memReleaseBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
 
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
 #ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
