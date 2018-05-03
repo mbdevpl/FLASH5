@@ -8,22 +8,27 @@
 !!
 !! SYNOPSIS
 !!
-!!  call hy_computeFluxes(integer(IN) :: blockCount,
-!!        integer(IN) :: blockList(blockCount)
-!!        real(IN)    :: timeEndAdv,
-!!        real(IN)    :: dt,
-!!        real(IN)    :: dtOld,
-!!        integer(IN) :: sweepOrder)
+!!  call hy_computeFluxes(block_metadata_t(IN) :: blockDesc,
+!!                        integer(IN)          :: blkLimitsGC(LOW:HIGH,MDIM),
+!!       real,POINTER(in),dimension(:,:,:,:)   :: Uin,
+!!                        integer(IN)          :: blkLimits(LOW:HIGH,MDIM),
+!!       real,POINTER(in),dimension(:,:,:,:)   :: Uout,
+!!                        real(IN)             :: del(MDM),
+!!                        real(IN)             :: timeEndAdv,
+!!                        real(IN)             :: dt,
+!!                        real(IN)             :: dtOld,
+!!                        integer(IN)          :: sweepOrder)
 !!
 !!
 !! DESCRIPTION
-!! 
+!!
+!!  Computes hydrodynamical fluxes for all spatial directions for
+!!  a block, and optionally applies those fluxes to update the
+!!  cell-centered solution in UNK.
 !!  Performs physics update in a directionally unsplit fashion.
 !!
-!!  The blockList and blockCount arguments tell this routine on 
-!!  which blocks and on how many to operate.  blockList is an 
-!!  integer array of size blockCount that contains the local 
-!!  block numbers of blocks on which to computeFluxes.
+!!  The blockDesc argument tells this routine on
+!!  which block to operate.
 !!
 !!  dt gives the timestep through which this update should advance,
 !!  and timeEndAdv tells the time that this update will reach when
@@ -31,13 +36,29 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockCount - the number of blocks in blockList
-!!  blockList  - array holding local IDs of blocks on which to advance
+!!  blockDesc  - describes the current block
+!!  Uin        - pointer to one block's worth of cell-centered solution
+!!               data; this represents the input data to the current
+!!               hydro time step.
+!!  Uout       - pointer to one block's worth of cell-centered solution
+!!               data; this represents the output data of the current
+!!               hydro time step.
+!!               Uout may be a disassociated pointer. In that case,
+!!               fluxes are computed but not applied to update the
+!!               cell-centered solution.
 !!  timeEndAdv - end time
 !!  dt         - timestep
 !!  dtOld      - old timestep
 !!  sweepOrder - dummy argument for the unsplit scheme, just a dummy
-!!               variable to be consistent with a toplayer stub function
+!!               variable to be consistent with a top-layer stub function
+!!
+!! NOTES
+!!
+!!  Contrary to what the name might suggests, this code includes the action
+!!  of the also separately available routine hy_updateSolution when
+!!  the pointer Uout is non-null.
+!!
+!!  The preprocessor symbols MDIM, LOW, HIGH are defined in constants.h .
 !!
 !!***
 
@@ -94,7 +115,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   real, pointer, dimension(:,:,:,:) :: Uin
 
   real,dimension(MDIM),intent(IN) :: del
-  integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
+  integer,dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits,blkLimitsGC
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
   integer :: loFl(MDIM+1)
   type(block_metadata_t), intent(IN) :: blockDesc

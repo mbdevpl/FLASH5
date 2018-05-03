@@ -1017,6 +1017,7 @@ Module hy_interface
      subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
+       implicit none
        type(block_metadata_t) :: blockDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
@@ -1030,6 +1031,7 @@ Module hy_interface
      subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
+       implicit none
        type(block_metadata_t) :: blockDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
