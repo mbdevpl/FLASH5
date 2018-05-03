@@ -126,7 +126,10 @@ subroutine Grid_conserveFluxes( axis, level)
   call Grid_getLeafIterator(itor, level=level)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
-     if ((level == UNSPEC_LEVEL) .AND. (blockDesc%level == lrefine_max)) CYCLE; !Skip blocks at highest level.
+     if ((level == UNSPEC_LEVEL) .AND. (blockDesc%level == lrefine_max)) then
+        call itor%next()
+        CYCLE !Skip blocks at highest level.
+     end if
      blockID=blockDesc%id
      
      fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
@@ -249,9 +252,6 @@ subroutine Grid_conserveFluxes( axis, level)
      end do
 #endif
      end if
-     nullify(fluxx)
-     nullify(fluxy)
-     nullify(fluxz)
      call itor%next()
   end do
   call Grid_releaseLeafIterator(itor)

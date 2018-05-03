@@ -171,7 +171,10 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
 
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
-     if ((level == UNSPEC_LEVEL) .AND. (blockDesc%level == 1)) CYCLE; !Skip blocks at level 1.
+     if ((level == UNSPEC_LEVEL) .AND. (blockDesc%level == 1)) then
+        call itor%next()
+        CYCLE !Skip blocks at level 1.
+     end if
      blockID=blockDesc%id
      fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
      fluxy(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxy(:,:,:,:,blockID)
