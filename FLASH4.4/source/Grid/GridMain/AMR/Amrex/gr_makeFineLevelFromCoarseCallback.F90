@@ -1,7 +1,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-#if defined(FLASH_UHD_HYDRO) && defined(FLASH_UHD_HYDRO)
+#if defined(FLASH_HYDRO_UNSPLIT) && defined(FLASH_UHD_HYDRO)
 #include "UHD.h"
 #endif
 
