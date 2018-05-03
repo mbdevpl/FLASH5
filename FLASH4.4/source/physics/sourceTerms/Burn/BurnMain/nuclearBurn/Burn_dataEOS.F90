@@ -34,4 +34,6 @@ module Burn_dataEOS
 
       real           ::  btemp,den,abar,zbar,z2bar,ytot1,ye
 
+!$omp threadprivate(btemp,den,abar,zbar,z2bar,ytot1,ye)
+
 end module Burn_dataEOS

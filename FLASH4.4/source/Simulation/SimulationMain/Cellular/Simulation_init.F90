@@ -83,21 +83,6 @@ subroutine Simulation_init()
 
 ! -----------------------------------------------------------------------------------
 
-#ifndef FIXEDBLOCKSIZE
-      call Driver_abortFlash("SORRY, Cellular not defined for non fixed block size")
-
-! for non-fbs, you'll need to call Grid_getBlkIndexLimits to get the extent,
-!  then allocate the arrays massFraction, x,y,z
-  ! compute the maximum length of a vector in each coordinate direction
-  ! (including guardcells)
-!  q = max( blockExtent(HIGH,IAXIS), &
-!           blockExtent(HIGH,JAXIS), &
-!           blockExtent(HIGH,KAXIS) )
-!  real, dimension(q,NSPECIES) ::  massFraction
-!  real, dimension(q) :: xCoordsCell, yCoordsCell, zCoordsCell
-  real             rvec(blockExtent(HIGH,IAXIS)*blockExtent(HIGH,JAXIS)*blockExtent(HIGH,KAXIS))
-#endif  
-
      !-----------------------------------------------------------------------------
      ! grab the parameters relevant for this problem
      !-----------------------------------------------------------------------------
