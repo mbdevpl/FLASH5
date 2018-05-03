@@ -19,6 +19,10 @@ PPDEFINE FLASH_GRID_AMREX
 #                                       defined(FLASH_GRID_AMREXTRANSITION))
 PPDEFINE FLASH_GRID_ANYAMREX
 
+IF withHydro
+   REQUIRES physics/Hydro/HydroMain/amrexAux
+ENDIF
+
 # We need to use the Fortran 2003 module named iso_c_binding in
 # the FLASH I/O unit.  This is not an extra dependency
 # because the interoperability of pointers already
