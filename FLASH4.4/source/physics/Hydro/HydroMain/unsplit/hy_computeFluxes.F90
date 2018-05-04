@@ -25,10 +25,13 @@
 !!  Computes hydrodynamical fluxes for all spatial directions for
 !!  a block, and optionally applies those fluxes to update the
 !!  cell-centered solution in UNK.
-!!  Performs physics update in a directionally unsplit fashion.
 !!
-!!  The blockDesc argument tells this routine on
-!!  which block to operate.
+!!  This implementation expects fluxes to be stored under the
+!!  responsibility of the Grid unit, and accessed with pairs of
+!!  Grid_getFluxPtr/Grid_releaseFluxPtr calls.
+!!
+!!  The blockDesc argument tells this routine on which block to
+!!  operate.
 !!
 !!  dt gives the timestep through which this update should advance,
 !!  and timeEndAdv tells the time that this update will reach when
@@ -59,6 +62,10 @@
 !!  the pointer Uout is non-null.
 !!
 !!  The preprocessor symbols MDIM, LOW, HIGH are defined in constants.h .
+!!
+!! SEE ALSO
+!!
+!!  hy_updateSolution
 !!
 !!***
 
