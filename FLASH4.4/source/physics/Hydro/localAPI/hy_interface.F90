@@ -1025,6 +1025,18 @@ Module hy_interface
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
      end subroutine hy_computeFluxes
+
+     subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+          sweepOrder )
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t) :: blockDesc
+       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       real, pointer, dimension(:,:,:,:) :: Uout,Uin
+       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+       integer, INTENT(IN) :: sweepOrder
+       real,dimension(MDIM),intent(IN) :: del
+     end subroutine hy_advanceBlk
   end interface
 
     interface
