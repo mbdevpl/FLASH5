@@ -8,22 +8,30 @@
 !!
 !! SYNOPSIS
 !!
-!!  hy_computeFluxes(integer(IN) :: blockCount, 
-!!        integer(IN) :: blockList(blockCount)
-!!        real(IN)    :: timeEndAdv,
-!!        real(IN)    :: dt,
-!!        real(IN)    :: dtOld,
-!!        integer(IN) :: sweepOrder)
+!!  call hy_computeFluxes(block_metadata_t(IN) :: blockDesc,
+!!                        integer(IN)          :: blkLimitsGC(LOW:HIGH,MDIM),
+!!       real,POINTER(in),dimension(:,:,:,:)   :: Uin,
+!!                        integer(IN)          :: blkLimits(LOW:HIGH,MDIM),
+!!       real,POINTER(in),dimension(:,:,:,:)   :: Uout,
+!!                        real(IN)             :: del(MDM),
+!!                        real(IN)             :: timeEndAdv,
+!!                        real(IN)             :: dt,
+!!                        real(IN)             :: dtOld,
+!!                        integer(IN)          :: sweepOrder)
 !!
 !!
 !! DESCRIPTION
-!! 
-!!  Performs physics update in a directionally unsplit fashion.
 !!
-!!  The blockList and blockCount arguments tell this routine on 
-!!  which blocks and on how many to operate.  blockList is an 
-!!  integer array of size blockCount that contains the local 
-!!  block numbers of blocks on which to computeFluxes.
+!!  Computes hydrodynamical fluxes for all spatial directions for
+!!  a block, and optionally applies those fluxes to update the
+!!  cell-centered solution in UNK.
+!!
+!!  This implementation expects fluxes to be stored under the
+!!  responsibility of the Grid unit, and accessed with pairs of
+!!  Grid_getFluxPtr/Grid_releaseFluxPtr calls.
+!!
+!!  The blockDesc argument tells this routine on which block to
+!!  operate.
 !!
 !!  dt gives the timestep through which this update should advance,
 !!  and timeEndAdv tells the time that this update will reach when
@@ -31,13 +39,33 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockCount - the number of blocks in blockList
-!!  blockList  - array holding local IDs of blocks on which to advance
+!!  blockDesc  - describes the current block
+!!  Uin        - pointer to one block's worth of cell-centered solution
+!!               data; this represents the input data to the current
+!!               hydro time step.
+!!  Uout       - pointer to one block's worth of cell-centered solution
+!!               data; this represents the output data of the current
+!!               hydro time step.
+!!               Uout may be a disassociated pointer. In that case,
+!!               fluxes are computed but not applied to update the
+!!               cell-centered solution.
 !!  timeEndAdv - end time
 !!  dt         - timestep
 !!  dtOld      - old timestep
 !!  sweepOrder - dummy argument for the unsplit scheme, just a dummy
-!!               variable to be consistent with a toplayer stub function
+!!               variable to be consistent with a top-layer stub function
+!!
+!! NOTES
+!!
+!!  Contrary to what the name might suggests, this code includes the action
+!!  of the also separately available routine hy_updateSolution when
+!!  the pointer Uout is non-null.
+!!
+!!  The preprocessor symbols MDIM, LOW, HIGH are defined in constants.h .
+!!
+!! SEE ALSO
+!!
+!!  hy_updateSolution
 !!
 !!***
 
@@ -58,6 +86,8 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
                                hy_unitConvert,      &
                                hy_energyFix,        &
                                hy_putGravity
+  use hy_memInterface, ONLY :  hy_memGetBlkPtr,         &
+                               hy_memReleaseBlkPtr
 
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_fluxCorrectPerLevel,             &
@@ -92,7 +122,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   real, pointer, dimension(:,:,:,:) :: Uin
 
   real,dimension(MDIM),intent(IN) :: del
-  integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
+  integer,dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits,blkLimitsGC
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
   integer :: loFl(MDIM+1)
   type(block_metadata_t), intent(IN) :: blockDesc
@@ -113,6 +143,12 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
 
   call Timers_start("loop1 body")
+
+  if (associated(Uout)) then
+     updateMode = UPDATE_ALL    ! Flag that we should do the update immediately here, too!
+  else
+     updateMode = UPDATE_NONE
+  end if
 
      loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
      loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
@@ -158,7 +194,11 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
      datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
-     allocate(scrch_Ptr    (2,               loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     if (updateMode == UPDATE_ALL) then
+        allocate(scrch_Ptr    (2,            loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     else
+        call hy_memGetBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
+     end if
      allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
@@ -263,6 +303,46 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      print*,'_unsplit Aft "call getFaceFlux": associated(Uout) is',associated(Uout)
 #endif
      call Timers_stop("getFaceFlux")
+     if (updateMode == UPDATE_ALL) then
+        call Timers_start("unsplitUpdate")
+#ifdef DEBUG_UHD
+        print*,'and now update'
+#endif
+        call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
+             blkLimitsGC,loFl,flx,fly,flz,gravX,gravY,gravZ,&
+             scrch_Ptr)
+        call Timers_stop("unsplitUpdate")
+#ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
+        !! Correct energy if necessary
+        call hy_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
+
+#ifdef DEBUG_UHD
+        print*,'_unsplit Aft "call energyFix": associated(Uin ) is',associated(Uin )
+        print*,'_unsplit Aft "call energyFix": associated(Uout) is',associated(Uout)
+#endif
+        if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
+        !! Convert unit
+           call hy_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
+        endif
+
+     !#ifndef FLASH_EOS_GAMMA
+     !! Call to Eos
+#ifdef DEBUG_UHD
+        print*,'_unsplit bef Eos_wrapped: associated(Uin ) is',associated(Uin )
+        print*,'_unsplit bef Eos_wrapped: associated(Uout) is',associated(Uout)
+        print*,'_unsplit bef Eos_wrapped: lbound(Uin ):',lbound(Uin )
+        print*,'_unsplit bef Eos_wrapped: ubound(Uin ):',ubound(Uin )
+        print*,'_unsplit bef Eos_wrapped: lbound(Uout):',lbound(Uout)
+        print*,'_unsplit bef Eos_wrapped: ubound(Uout):',ubound(Uout)
+#endif
+        call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
+     !#endif
+#endif /* ifndef GRAVITY */
+
+        deallocate(scrch_Ptr)
+     else
+        call hy_memReleaseBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
+     end if
      !! ************************************************************************
      !! Unsplit update for conservative variables from n to n+1 time step
 

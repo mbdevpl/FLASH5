@@ -67,6 +67,8 @@ contains
     !!  itor     - the iterator
     !!  level    - iterate only over leaf blocks/tiles located at this level of
     !!             refinement.
+    !!             A level value of UNSPEC_LEVEL is equivalent to omitting
+    !!             this optional argument.
     !!  tiling   - an optional optimization hint.  Tiling is not implemented for
     !!             Paramesh and therefore this hint is ignored.
     !!
@@ -78,7 +80,7 @@ contains
         integer,               intent(IN), optional :: level
         logical,               intent(IN), optional :: tiling
 
-        itor%lev = INVALID_LEVEL 
+        itor%lev = UNSPEC_LEVEL
         if (present(level)) then
             itor%lev = level
         end if
@@ -167,7 +169,7 @@ contains
 
         integer :: j = 0
   
-        if (this%lev == INVALID_LEVEL) then
+        if (this%lev == UNSPEC_LEVEL) then
             ! No level given at creation
             do j = this%cur + 1, lnblocks
                 if (gr_blockMatch(j, LEAF)) EXIT

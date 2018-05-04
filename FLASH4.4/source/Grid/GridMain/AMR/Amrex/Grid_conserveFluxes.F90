@@ -5,8 +5,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_conserveFluxes(integer(IN) :: axis,
-!!                      integer(IN) :: level)
+!!  call Grid_conserveFluxes(integer(IN) :: axis,
+!!                           integer(IN) :: level)
 !!  
 !! DESCRIPTION 
 !!  
@@ -46,6 +46,6 @@ subroutine Grid_conserveFluxes(axis, level)
 
     ! The fluxes data structure should contain fluxes and *not* flux density
     ! Therefore, we do not need AMReX to scale for us.
-    call flux_registers(level+1)%overwrite(fluxes(level, :), 1.0_wp)
+    call flux_registers(level)%overwrite(fluxes(level-1, :), 1.0_wp)
 end subroutine Grid_conserveFluxes
 

@@ -5,8 +5,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_conserveFluxes(integer(IN) :: axis,
-!!                      integer(IN) :: level)
+!!  call Grid_conserveFluxes(integer(IN) :: axis,
+!!                           integer(IN) :: level)
 !!  
 !! DESCRIPTION 
 !!  
@@ -27,7 +27,10 @@
 !!         IAXIS, JAXIS, KAXIS, or in all directions if ALLDIR.
 !!         These constants are defined in constants.h.
 !!
-!!  level - refinement level. Ignored.
+!!  level - refinement level. Selects the level (coarse level) for
+!!          which fluxes are updated.
+!!          Can be UNSPEC_LEVEL for all levels (except, as an
+!!          optimizing shortcut, the highest possible one).
 !!
 !!***
 !!REORDER(5): flux_[xyz], gr_[xyz]flx
@@ -38,7 +41,7 @@
 subroutine Grid_conserveFluxes( axis, level)
   use paramesh_interfaces, ONLY : amr_flux_conserve
   use physicaldata, ONLY : flux_x, flux_y, flux_z, nfluxes
-  use tree, ONLY : surr_blks, nodetype
+  use tree, ONLY : surr_blks, nodetype, lrefine_max
   use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx, gr_flxx, gr_flxy, gr_flxz
   use gr_specificData, ONLY : gr_iloFl, gr_jloFl, gr_kloFl
   use leaf_iterator, ONLY : leaf_iterator_t
@@ -123,6 +126,10 @@ subroutine Grid_conserveFluxes( axis, level)
   call Grid_getLeafIterator(itor, level=level)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
+     if ((level == UNSPEC_LEVEL) .AND. (blockDesc%level == lrefine_max)) then
+        call itor%next()
+        CYCLE !Skip blocks at highest level.
+     end if
      blockID=blockDesc%id
      
      fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
@@ -245,9 +252,6 @@ subroutine Grid_conserveFluxes( axis, level)
      end do
 #endif
      end if
-     nullify(fluxx)
-     nullify(fluxy)
-     nullify(fluxz)
      call itor%next()
   end do
   call Grid_releaseLeafIterator(itor)

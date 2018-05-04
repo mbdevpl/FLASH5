@@ -5,8 +5,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_conserveFluxes(integer(IN) :: axis,
-!!                      integer(IN) :: level)
+!!  call Grid_conserveFluxes(integer(IN) :: axis,
+!!                           integer(IN) :: level)
 !!  
 !! DESCRIPTION 
 !!  
@@ -27,7 +27,15 @@
 !!         IAXIS, JAXIS, KAXIS, or in all directions if ALLDIR.
 !!         These constants are defined in constants.h.
 !!
-!!  level - refinement level. Ignored.
+!!  level - refinement level. Selects the level (coarse level) for
+!!          which fluxes are updated.
+!!          Can be UNSPEC_LEVEL for all levels (except, as an
+!!          optimizing shortcut, the highest possible one).
+!!
+!! NOTES
+!!
+!!  Some implementations might ignore the level arguments, and always
+!!  act as if it were UNSPEC_LEVEL.
 !!
 !!***
 subroutine Grid_conserveFluxes( axis, level)

@@ -86,6 +86,8 @@ contains
     !!  level    - if nodetype is LEAF, PARENT_BLK, ANCESTOR, or REFINEMENT, then 
     !!             iterate only over blocks/tiles located at this level of
     !!             refinement.
+    !!             A level value of UNSPEC_LEVEL is equivalent to omitting
+    !!             this optional argument.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
     !!             walk across all associated blocks on a tile-by-tile basis *if*
     !!             the implementation supports this feature.  If a value is not
@@ -108,8 +110,13 @@ contains
         logical :: v
 
         if (present(level)) then
-            first = level
-            last = level
+           if (level .NE. UNSPEC_LEVEL) then
+              first = level
+              last = level
+           else
+              first = 1
+              last = size(mfArray)
+           end if
          else
             first = 1
             last = size(mfArray)

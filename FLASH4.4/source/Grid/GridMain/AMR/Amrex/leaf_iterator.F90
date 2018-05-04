@@ -68,6 +68,8 @@ contains
     !!  itor     - the constructed iterator
     !!  level    - iterate only over blocks/tiles located at this level of
     !!             refinement.
+    !!             A level value of UNSPEC_LEVEL is equivalent to omitting
+    !!             this optional argument.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
     !!             walk across all associated blocks on a tile-by-tile basis *if*
     !!             the implementation supports this feature.  If a value is not
@@ -86,6 +88,7 @@ contains
         integer,               intent(IN), optional :: level
         logical,               intent(IN), optional :: tiling
 
+        itor%level = UNSPEC_LEVEL
         if (present(level)) then
             itor%level = level
         end if
@@ -183,7 +186,7 @@ contains
 
         this%is_itor_valid = this%oti%next()
 
-        if (this%level /= INVALID_LEVEL) then
+        if (this%level /= UNSPEC_LEVEL) then
             ! Search for leaves on given level
             do while (this%is_itor_valid)
                 ! oti has 0-based level indexing, while this has 1-based
