@@ -5,25 +5,23 @@
 !!
 !! SYNOPSIS
 !!
-!!  call hy_memGetBlkPtr(integer(IN)            :: blockID,
+!!  call hy_memGetBlkPtr(block_metadata(IN)  :: blockDesc,
 !!                 real(pointer)(:,:,:,:) :: dataPtr,
 !!                 integer(IN),optional   :: gridDataStruct)
 !!
 !! DESCRIPTION
 !!
-!!  Gets a pointer to a single block of simulation data from the
-!!  specified Grid data structure. The block includes guard cells.
-!!  If the optional argument "gridDataStructure" is not specified,
-!!  it returns a block from cell centered data structure.
+!!  Gets a pointer to a single block of allocated scratch data that conforms with
+!!  the specified Grid data structure.
 !!
-!!  When using Paramesh 4 in NO_PERMANENT_GUARDCELLS mode, it is important to
-!!  release the block pointer for a block before getting it for another block.
-!!  For example if pointer to block 1 is not yet released and the user
-!!  tries to get a pointer to block 2, the routine will abort.
+!!  The block data may include zero, one, or several layers of guard cells,
+!!  dependent on how hy_memAllocScratch was called for the gridDataStruct.
+!!  If the optional argument "gridDataStruct" is not specified,
+!!  it returns a block from cell centered data structure.
 !!
 !! ARGUMENTS
 !!
-!!  blockID : the local blockid
+!!  blockDesc : describes the local block
 !!
 !!  dataPtr : Pointer to the data block
 !!
@@ -31,18 +29,19 @@
 !!                   The options are defined in constants.h and they are :
 !!                   SCRATCH scratch space that can fit cell and face centered variables
 !!                   SCRATCH_CTR scratch space for cell centered variables
-!!                   SCRATCH_FACEX scratch space facex variables
-!!                   SCRATCH_FACEY scratch space facey variables
-!!                   SCRATCH_FACEZ scratch space facez variables
+!!                   SCRATCH_FACEX scratch space for facex variables
+!!                   SCRATCH_FACEY scratch space for facey variables
+!!                   SCRATCH_FACEZ scratch space for facez variables
 !!
 !!
 !!
 !! NOTES
 !!
 !!  hy_memGetBlkPtr is an accessor function that passes a pointer
-!!  as an argument and requires an explicit interface for most compilers.
+!!  as an argument and requires an explicit interface.
 !!
-!!  Don't forget to call hy_memReleaseBlkPtr when you are finished with it!
+!!  If you call hy_memGetBlkPtr, you should also  call hy_memReleaseBlkPtr when you
+!!  are done using the pointer.
 !!
 !!***
 
@@ -87,30 +86,10 @@ subroutine hy_memGetBlkPtr_desc(blockDesc,dataPtr, gridDataStruct)
   dataPtr(lo(1):,lo(2):,lo(3):,lo(4):) => medPtr
 
   return
-
-
-contains
-  subroutine AssoMed(pp, mm, leafNo)
-    real,POINTER_INTENT_OUT :: pp(:,:,:,:)
-    real,POINTER_INTENT_IN  :: mm(:,:,:,:,:)
-    integer,intent(in) :: leafNo
-    call AssoFin(pp,mm(:,:,:,:,leafNo),lbound(mm,1),lbound(mm,2),lbound(mm,3),lbound(mm,4))
-  end subroutine AssoMed
-
-  subroutine AssoFin(pp, dd, lb1,lb2,lb3,lb4)
-    real,POINTER_INTENT_OUT :: pp(:,:,:,:)
-    integer, intent(in) :: lb1,lb2,lb3,lb4
-    real,   intent(in),target :: dd(lb1:,lb2:,lb3:,lb4:)
-    pp => dd
-  end subroutine AssoFin
-
 end subroutine hy_memGetBlkPtr_desc
 
 
 subroutine hy_memGetBlk5Ptr_desc(blockDesc,data5Ptr, gridDataStruct)
-
-#include "constants.h"
-#include "Flash.h"
 
   use hy_memInterface, ONLY : hy_memGetBlkPtr
   use block_metadata,   ONLY : block_metadata_t
@@ -127,19 +106,6 @@ subroutine hy_memGetBlk5Ptr_desc(blockDesc,data5Ptr, gridDataStruct)
 
   call hy_memGetBlkPtr(blockID,data5Ptr,gridDataStruct)
 
-contains
-  subroutine AssoMed(pp, mm, leafNo)
-    real,POINTER_INTENT_OUT :: pp(:,:,:,:,:)
-    real,POINTER_INTENT_IN  :: mm(:,:,:,:,:,:)
-    integer,intent(in) :: leafNo
-    call AssoFin(pp,mm(:,:,:,:,:,leafNo),lbound(mm,1),lbound(mm,2),lbound(mm,3),lbound(mm,4))
-  end subroutine AssoMed
-
-  subroutine AssoFin(pp, dd, lb1,lb2,lb3,lb4)
-    real,POINTER_INTENT_OUT :: pp(:,:,:,:,:)
-    integer, intent(in) :: lb1,lb2,lb3,lb4
-    real,   intent(in),target :: dd(lb1:,lb2:,lb3:,lb4:,:)
-    pp => dd
-  end subroutine AssoFin
+  !! DEV: Should probably do some index-shifting as in hy_memGetBlkPtr_desc above.
 
 end subroutine hy_memGetBlk5Ptr_desc
