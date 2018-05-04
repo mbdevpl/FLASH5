@@ -39,7 +39,6 @@
 
 subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
     use block_metadata,   ONLY : block_metadata_t
-    use Driver_interface, ONLY : Driver_abortFlash
 
     implicit none
 
@@ -48,6 +47,5 @@ subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
     real, pointer                      :: fluxPtrY(:,:,:,:)
     real, pointer                      :: fluxPtrZ(:,:,:,:)
 
-    call Driver_abortFlash("[Grid_getFluxPtr] Not implemented")
 end subroutine Grid_getFluxPtr
 

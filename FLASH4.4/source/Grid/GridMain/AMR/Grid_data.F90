@@ -82,6 +82,7 @@ Module Grid_data
 
   integer, save :: gr_globalNumBlocks !
 
+  logical, save :: gr_doFluxCorrection
 
 #ifdef GRID_WITH_MONOTONIC
   integer, save :: gr_intpolStencilWidth

@@ -19,6 +19,10 @@ PPDEFINE FLASH_GRID_AMREX
 #                                       defined(FLASH_GRID_AMREXTRANSITION))
 PPDEFINE FLASH_GRID_ANYAMREX
 
+IF withHydro
+   REQUIRES physics/Hydro/HydroMain/amrexAux
+ENDIF
+
 # We need to use the Fortran 2003 module named iso_c_binding in
 # the FLASH I/O unit.  This is not an extra dependency
 # because the interoperability of pointers already
@@ -26,6 +30,10 @@ PPDEFINE FLASH_GRID_ANYAMREX
 # in any other Config file because non-Chombo FLASH applications
 # with I/O only optionally depend on the iso_c_binding module.
 #PPDEFINE USE_IO_C_INTERFACE
+
+# The following just overrides the default value of flux_correct_perLevel for AMReX.
+D flux_correct per level is off by default, gets turned on in AMReX
+PARAMETER flux_correct_perLevel BOOLEAN TRUE
 
 # !!! If you add a parameter, please add a description line
 # Format is D <parameter name> <description>

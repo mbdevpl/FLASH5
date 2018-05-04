@@ -1,6 +1,10 @@
 #include "constants.h"
 #include "Flash.h"
 
+#if defined(FLASH_HYDRO_UNSPLIT) && defined(FLASH_UHD_HYDRO)
+#include "UHD.h"
+#endif
+
 subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use iso_c_binding
     use amrex_fort_module,         ONLY : wp => amrex_real
@@ -21,6 +25,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
+                                          gr_scratchCtr, &
                                           facevarx, facevary, facevarz, &
                                           fluxes, &
                                           flux_registers
@@ -53,6 +58,15 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
     call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
+#endif
+    ! Create FABs for needed by Hydro.
+    !! DEV : Control of gr_scratchCtr allocation is very hacky...
+#ifdef HY_VAR2_SCRATCHCTR_VAR
+# ifdef HY_XN06_SCRATCHCTR_VAR
+    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, HY_XN06_SCRATCHCTR_VAR, 0)
+# else
+    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, HY_VAR2_SCRATCHCTR_VAR, 0)
+# endif
 #endif
 
 #if NFLUXES > 0

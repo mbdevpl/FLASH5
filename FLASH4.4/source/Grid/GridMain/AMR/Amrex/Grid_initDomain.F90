@@ -53,6 +53,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
 
   use Grid_data,            ONLY : gr_doFluxCorrection
   use gr_physicalMultifabs, ONLY : unk, &
+                                   gr_scratchCtr, &
                                    facevarx, facevary, facevarz, &
                                    fluxes, &
                                    flux_registers
@@ -78,6 +79,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   allocate(facevary(0:amrex_max_level))
   allocate(facevarz(0:amrex_max_level))
 #endif
+  allocate(gr_scratchCtr(0:amrex_max_level))
 
 #if NFLUXES > 0
   allocate(fluxes(0:amrex_max_level, 1:NDIM))

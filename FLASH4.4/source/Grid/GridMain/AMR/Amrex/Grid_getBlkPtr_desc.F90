@@ -63,6 +63,7 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   use amrex_fort_module,      ONLY : wp => amrex_real
   
   use gr_physicalMultifabs,   ONLY : unk, &
+                                     gr_scratchCtr, &
                                      facevarx, facevary, facevarz
   use block_metadata,         ONLY : block_metadata_t
   
@@ -121,6 +122,14 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
      if (localFlag) loUse => block%localLimitsGC(LOW, :)
   end if
 
+  if (gds==SCRATCH_CTR) then    !For now, the assumption that
+     !SCRATCH_CTR ist stored without guard cells is hardwired here.
+     loUse => block%limits(LOW, :)
+     if (present(localFlag)) then
+        if (localFlag) loUse => block%localLimits(LOW, :)
+     end if
+  end if
+
   ! Multifab arrays use 0-based level index set (AMReX) instead of 
   ! 1-based set (FLASH/block)
   associate (lo   => loUse, &
@@ -135,6 +144,8 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
        dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevary(ilev)%dataptr(igrd)
     case(FACEZ)
        dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarz(ilev)%dataptr(igrd)
+    case(SCRATCH_CTR)
+       dataPtr(lo(1):, lo(2):, lo(3):, 1:) => gr_scratchCtr(ilev)%dataptr(igrd)
     case DEFAULT
         call Driver_abortFlash("[Grid_getBlkPtr_desc] Unknown grid data structure")
     end select

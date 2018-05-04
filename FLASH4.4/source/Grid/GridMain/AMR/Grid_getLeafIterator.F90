@@ -20,6 +20,8 @@
 !!  itor     - the requested block iterator
 !!  level    - iterate only over leaf blocks/tiles located at this level of
 !!             refinement.
+!!             A level value of UNSPEC_LEVEL is equivalent to omitting
+!!             this optional argument.
 !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
 !!             walk across all associated blocks on a tile-by-tile basis *if*
 !!             the implementation supports this feature.  If a value is not
