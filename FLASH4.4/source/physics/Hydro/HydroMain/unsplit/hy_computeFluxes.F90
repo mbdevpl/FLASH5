@@ -140,7 +140,9 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
   integer :: updateMode ! will be set to one of UPDATE_ALL, UPDATE_INTERIOR, UPDATE_BOUND
 
-
+  nullify(flx)
+  nullify(fly)
+  nullify(flz)
 
   call Timers_start("loop1 body")
 
@@ -279,6 +281,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      endif !! End of if (hy_updateHydroFluxes) then
      call Grid_getFluxPtr(blockDesc,flx,fly,flz)
      loFl = lbound(flx)
+     if (.NOT. associated(fly)) fly => empty4
      if (.NOT. associated(flz)) flz => empty4
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 

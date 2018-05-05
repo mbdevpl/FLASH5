@@ -249,7 +249,7 @@ subroutine Grid_conserveFluxes( axis, level)
 !!$                 fluxz(:,sx:ex,sy:ey,ez+1,presVar) = fluxz(:,sx:ex,sy:ey,ez+1,presVar) / areaLeft(sx:ex,sy:ey,ez+1)
 !!$              end if
 !!$           end if
-     end do
+!!$     end do
 #endif
      end if
      call itor%next()
