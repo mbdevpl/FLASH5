@@ -24,6 +24,7 @@
 !!***
 
 !!REORDER(5):scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx
+!!REORDER(5): gr_flx[xyz]
 !!REORDER(5):gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 
 Module gr_specificData
@@ -47,6 +48,14 @@ Module gr_specificData
   integer, save :: gr_klo = GRID_KLO
   integer, save :: gr_khi = GRID_KHI
 
+  integer, parameter :: gr_iloFl = GRID_ILO   ! -2  for staggered mesh MHD
+  integer, parameter :: gr_ihiFl = GRID_IHI   ! +2  for staggered mesh MHD
+  integer, parameter :: gr_jloFl = GRID_JLO   ! -2*K2D  for staggered mesh MHD
+  integer, parameter :: gr_jhiFl = GRID_JHI   ! +2*K2D  for staggered mesh MHD
+  integer, parameter :: gr_kloFl = GRID_KLO   ! -2*K3D  for staggered mesh MHD
+  integer, parameter :: gr_khiFl = GRID_KHI   ! +2*K3D  for staggered mesh MHD
+
+  integer, parameter, dimension(3) :: gr_loFl = (/gr_iloFl,gr_jloFl,gr_kloFl/)
 !! Define the block information
 
 !  Type define
@@ -115,6 +124,25 @@ Module gr_specificData
 #else
   real, target,dimension(1,1,1,1,1):: scratch_facevarz
 #endif
+#if(NFLUXES>0)
+  real,target,dimension(NFLUXES,&
+                        gr_iloFl:gr_ihiFl+1,  &
+                        gr_jloFl:gr_jhiFl,  &
+                        gr_kloFl:gr_khiFl,&
+                        MAXBLOCKS) :: gr_flxx
+  real,target,dimension(NFLUXES,&
+                        gr_iloFl:gr_ihiFl,  &
+                        gr_jloFl:gr_jhiFl+K2D,  &
+                        gr_kloFl:gr_khiFl,&
+                        MAXBLOCKS) :: gr_flxy
+  real,target,dimension(NFLUXES,&
+                        gr_iloFl:gr_ihiFl,  &
+                        gr_jloFl:gr_jhiFl,  &
+                        gr_kloFl:gr_khiFl+K3D,&
+                        MAXBLOCKS) :: gr_flxz
+#else
+  real, target,dimension(1,1,1,1,1):: gr_flxx, gr_flxy, gr_flxz
+#endif
 
 #else
   real, save, target, allocatable :: scratch(:,:,:,:,:)
@@ -122,6 +150,9 @@ Module gr_specificData
   real, save, target, allocatable :: scratch_facevarx(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevary(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevarz(:,:,:,:,:)
+  real, save, target, allocatable :: gr_flxx(:,:,:,:,:)
+  real, save, target, allocatable :: gr_flxy(:,:,:,:,:)
+  real, save, target, allocatable :: gr_flxz(:,:,:,:,:)
 #endif
 
   integer ,save :: gr_nblockX, gr_nblockY, gr_nblockZ

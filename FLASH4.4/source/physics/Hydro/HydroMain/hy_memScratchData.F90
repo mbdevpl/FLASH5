@@ -7,6 +7,10 @@
 !!
 !!  use hy_memScratchData
 !!
+!!  call hy_memAllocScratch(gds,var1,nvars, nGuardCtr,nGuardFaceN,nGuardFaceT,
+!!                                leafBlocks, arrayRank, highSize)
+!!
+!!
 !! DESCRIPTION 
 !!  
 !!  Data and some basic routines for allocatable scratch arrays private to the Hydro unit
