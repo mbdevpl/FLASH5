@@ -35,6 +35,7 @@ subroutine hy_advance(simTime, dt, dtOld)
 
   call Grid_zeroFluxData
 
+#ifdef USE_NOFLUXCORR_SHORTCUT
   ! ***** FIRST VARIANT: OPTIMIZED (somewhat) FOR hy_fluxCorrect==.FALSE. *****
   if (.NOT. hy_fluxCorrect) then
      call Grid_getLeafIterator(itor)
@@ -60,6 +61,7 @@ subroutine hy_advance(simTime, dt, dtOld)
 
      RETURN                     ! DONE, return from here!
   end if
+#endif
 
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 
