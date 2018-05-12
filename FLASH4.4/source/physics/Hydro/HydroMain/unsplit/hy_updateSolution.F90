@@ -157,13 +157,19 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 
   integer, dimension(MDIM) :: datasize
 
-  real, pointer, dimension(:,:,:,:)   :: flx,fly,flz
+  real, pointer, dimension(:,:,:,:)   :: flx => null() 
+  real, pointer, dimension(:,:,:,:)   :: fly => null() 
+  real, pointer, dimension(:,:,:,:)   :: flz => null()
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
 
-  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
-  real, pointer, dimension(:,:,:,:) :: scrch_Ptr
-  real, pointer, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
+  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr => null()
+  real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr => null()
+  real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr => null()
+  real, pointer, dimension(:,:,:,:) :: scrch_Ptr     => null()
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcR     => null()
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcL     => null()
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcSig   => null()
 
   integer :: updateMode ! could be set to one of UPDATE_ALL, UPDATE_INTERIOR, UPDATE_BOUND
 
