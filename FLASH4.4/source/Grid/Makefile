@@ -72,7 +72,8 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
         Grid_getBoundboxCentroids.o \
 	Grid_receiveInputData.o \
 	Grid_getNeighProcList.o \
-	Grid_makeVector.o
+	Grid_makeVector.o \
+	Grid_zeroFluxData.o
 
 Grid += Grid_init.o Grid_coordTransfm.o
 

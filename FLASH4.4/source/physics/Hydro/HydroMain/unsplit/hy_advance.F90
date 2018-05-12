@@ -5,6 +5,7 @@
 subroutine hy_advance(simTime, dt, dtOld)
 
   use Grid_interface,      ONLY : Grid_getDeltas,&
+                                  Grid_zeroFluxData, &
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getLeafIterator, Grid_releaseLeafIterator,&
@@ -31,6 +32,8 @@ subroutine hy_advance(simTime, dt, dtOld)
   
   type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
+
+  call Grid_zeroFluxData
 
   ! ***** FIRST VARIANT: OPTIMIZED (somewhat) FOR hy_fluxCorrect==.FALSE. *****
   if (.NOT. hy_fluxCorrect) then
