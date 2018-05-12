@@ -57,6 +57,7 @@ subroutine sim_initBlockAnalytical (blockID)
   use Grid_interface,  ONLY : Grid_getBlkIndexLimits, &
                               Grid_getCellCoords,     &
                               Grid_putPointData,      &
+                              Grid_getBlkRefineLevel, &
                               Grid_getDeltas
 
   implicit none
@@ -85,6 +86,7 @@ subroutine sim_initBlockAnalytical (blockID)
   integer, dimension (2,MDIM) :: blkLimits, blkLimitsGC
   real,    dimension (MDIM)   :: deltas
 
+  integer :: lev
   real, dimension(:), allocatable :: xLeft, yLeft, zLeft
 !
 !
@@ -153,7 +155,8 @@ subroutine sim_initBlockAnalytical (blockID)
     call Grid_getCellCoords (KAXIS, blockID, LEFT_EDGE, gcell, zLeft, sizeZ)
     call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
     call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    call Grid_getDeltas     (blockID, deltas)
+    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
     dy = deltas(JAXIS)
@@ -253,7 +256,9 @@ subroutine sim_initBlockAnalytical (blockID)
 
     call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
     call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    call Grid_getDeltas     (blockID, deltas)
+    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getDeltas     (lev, deltas)
+
 
     dx = deltas(IAXIS)
     dy = deltas(JAXIS)
@@ -342,7 +347,8 @@ subroutine sim_initBlockAnalytical (blockID)
 
     call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
     call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    call Grid_getDeltas     (blockID, deltas)
+    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
     dy = deltas(JAXIS)
@@ -424,7 +430,8 @@ subroutine sim_initBlockAnalytical (blockID)
 
     call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
     call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    call Grid_getDeltas     (blockID, deltas)
+    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
     dy = deltas(JAXIS)

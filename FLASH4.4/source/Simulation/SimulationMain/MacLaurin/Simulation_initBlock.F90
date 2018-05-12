@@ -1,4 +1,4 @@
-!!****if* source/Simulation/SimulationMain/MacLaurin/Simulation_initBlock
+q!!****if* source/Simulation/SimulationMain/MacLaurin/Simulation_initBlock
 !!
 !! NAME
 !!
@@ -22,26 +22,27 @@
 !!  blockID     --   The number of the block to initialize
 !!
 !!***
-
-subroutine Simulation_initBlock(blockID)
+!!REORDER(4):solnData
+subroutine Simulation_initBlock(solnData,blockDesc)
 
   use Simulation_data, ONLY: sim_density, sim_gamma, sim_Omega2, sim_Pconst, &
        sim_nsubinv, sim_nsubzones, sim_xctr, sim_yctr, sim_zctr, &
        sim_initGeometry, sim_geom2DAxisymmetric, sim_geom3DCartesian, &
        sim_a3inv, sim_a1inv, &
        sim_smallRho, sim_smallP, sim_smallE
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
-       Grid_getCellCoords, Grid_putRowData
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, intent(in)  :: blockID
+  real,                   pointer    :: solnData(:,:,:,:)
+  type(block_metadata_t), intent(in) :: blockDesc
 
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
-  integer, dimension(3) :: startingPos
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(MDIM) :: startingPos
   integer  :: sizeX, sizeY, sizeZ
   logical  :: gcell=.true.
   integer  :: i, j, k, ii, jj, kk
@@ -49,33 +50,36 @@ subroutine Simulation_initBlock(blockID)
   real     :: xx, yy, zz, dxx, dyy, dzz, vxfac, vyfac, vzfac
   real     :: sum_rho, sum_p, sum_vx, sum_vy, sum_vz, pres, vel
 
-  real, dimension(:), allocatable :: x, y, z, xl, yl, zl, xr, yr, zr, dx, dy, dz
-  real, dimension(:), allocatable :: vx, vy, vz, p, rho, e, ek, ei, gam
+  real, dimension(:), allocatable :: xc, yc, zc, xl, yl, zl, xr, yr, zr, dx, dy, dz
+  real  :: vx, vy, vz, p, rho, e, ek, ei, gam
 
 
   ! Get the coordinate information for the current block
 
-  call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC)
+  ! get the coordinate information for the current block
+  blkLimits = blockDesc%limits
+  blkLimitsGC = blockDesc%limitsGC
+  
   sizeX = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS) + 1
-  allocate(x(sizeX), xl(sizex), xr(sizeX), dx(sizeX))
+  allocate(xc(sizeX), xl(sizex), xr(sizeX), dx(sizeX))
   sizeY = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS) + 1
-  allocate(y(sizeY), yl(sizeY), yr(sizeY), dy(sizeY))
+  allocate(yc(sizeY), yl(sizeY), yr(sizeY), dy(sizeY))
   sizeZ = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS) + 1
-  allocate(z(sizeZ), zl(sizeZ), zr(sizeZ), dz(sizeZ))
+  allocate(zc(sizeZ), zl(sizeZ), zr(sizeZ), dz(sizeZ))
   if (NDIM == 3) then 
-     call Grid_getCellCoords(KAXIS, blockId, CENTER, gcell, z, sizeZ)
-     call Grid_getCellCoords(KAXIS, blockId, LEFT_EDGE, gcell, zl, sizeZ)
-     call Grid_getCellCoords(KAXIS, blockId, RIGHT_EDGE, gcell, zr, sizeZ)
+     call Grid_getCellCoords(KAXIS, blockDesc, CENTER, gcell, zc, sizeZ)
+     call Grid_getCellCoords(KAXIS, BlockDesc, LEFT_EDGE, gcell, zl, sizeZ)
+     call Grid_getCellCoords(KAXIS, BlockDesc, RIGHT_EDGE, gcell, zr, sizeZ)
   endif
   if (NDIM >= 2) then 
-     call Grid_getCellCoords(JAXIS, blockId, CENTER, gcell, y, sizeY)
-     call Grid_getCellCoords(JAXIS, blockId, LEFT_EDGE, gcell, yl, sizeY)
-     call Grid_getCellCoords(JAXIS, blockId, RIGHT_EDGE, gcell, yr, sizeY)
+     call Grid_getCellCoords(JAXIS, BlockDesc, CENTER, gcell, yc, sizeY)
+     call Grid_getCellCoords(JAXIS, BlockDesc, LEFT_EDGE, gcell, yl, sizeY)
+     call Grid_getCellCoords(JAXIS, BlockDesc, RIGHT_EDGE, gcell, yr, sizeY)
   endif
-  call Grid_getCellCoords(IAXIS, blockId, CENTER, gcell, x, sizeX)
-  call Grid_getCellCoords(IAXIS, blockId, LEFT_EDGE, gcell, xl, sizeX)
-  call Grid_getCellCoords(IAXIS, blockId, RIGHT_EDGE, gcell, xr, sizeX)
-
+  call Grid_getCellCoords(IAXIS, BlockDesc, CENTER, gcell, xc, sizeX)
+  call Grid_getCellCoords(IAXIS, BlockDesc, LEFT_EDGE, gcell, xl, sizeX)
+  call Grid_getCellCoords(IAXIS, BlockDesc, RIGHT_EDGE, gcell, xr, sizeX)
+  
   dx(:) = xr(:) - xl(:)
   dy(:) = yr(:) - yl(:)
   dz(:) = zr(:) - zl(:)
@@ -153,35 +157,29 @@ subroutine Simulation_initBlock(blockID)
               enddo
            enddo
 
-           rho(i) = max(sum_rho * sim_nsubinv**3, sim_smallRho)
-           p(i)   = max(sum_p * sim_nsubinv**3, sim_smallP)
-           vx(i)  = sum_vx*sim_nsubinv**3
-           vy(i)  = sum_vy*sim_nsubinv**3
-           vz(i)  = sum_vz*sim_nsubinv**3
-           ek(i)  = 0.5*(vx(i)**2+vy(i)**2+vz(i)**2)
-           gam(i) = sim_gamma
-           ei(i)  = max(p(i)/(rho(i)*(gam(i)-1.0)), sim_smallE)
-           e(i)   = ei(i) + ek(i)
-
+           rho = max(sum_rho * sim_nsubinv**3, sim_smallRho)
+           p   = max(sum_p * sim_nsubinv**3, sim_smallP)
+           vx  = sum_vx*sim_nsubinv**3
+           vy  = sum_vy*sim_nsubinv**3
+           vz  = sum_vz*sim_nsubinv**3
+           ek  = 0.5*(vx**2+vy**2+vz**2)
+           gam = sim_gamma
+           ei  = max(p/(rho*(gam-1.0)), sim_smallE)
+           e   = ei + ek
+           solnData(DENS_VAR,i,j,k) =  rho
+           solnData(PRES_VAR,i,j,k) =  p
+           solnData(ENER_VAR,i,j,k) =  e
+           solnData(GAME_VAR,i,j,k) =  gam
+           solnData(GAMC_VAR,i,j,k) =  gam
+           solnData(VELX_VAR,i,j,k) =  vx
+           solnData(VELY_VAR,i,j,k) =  vy
+           solnData(VELZ_VAR,i,j,k) =  vz
+           solnData(EINT_VAR,i,j,k) =  ei
+           
         enddo
-
-        startingPos(1) = 1
-        startingPos(2) = j
-        startingPos(3) = k
-        call Grid_putRowData(blockID, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
-        call Grid_putRowData(blockID, CENTER, PRES_VAR, EXTERIOR, IAXIS, startingPos, p, sizeX)
-        call Grid_putRowData(blockID, CENTER, ENER_VAR, EXTERIOR, IAXIS, startingPos, e, sizeX)
-        call Grid_putRowData(blockID, CENTER, GAME_VAR, EXTERIOR, IAXIS, startingPos, gam, sizeX)
-        call Grid_putRowData(blockID, CENTER, GAMC_VAR, EXTERIOR, IAXIS, startingPos, gam, sizeX)
-        call Grid_putRowData(blockID, CENTER, VELX_VAR, EXTERIOR, IAXIS, startingPos, vx, sizeX)
-        call Grid_putRowData(blockID, CENTER, VELY_VAR, EXTERIOR, IAXIS, startingPos, vy, sizeX)
-        call Grid_putRowData(blockID, CENTER, VELZ_VAR, EXTERIOR, IAXIS, startingPos, vz, sizeX)
-        call Grid_putRowData(blockID, CENTER, EINT_VAR, EXTERIOR, IAXIS, startingPos, ei, sizeX)
-
      enddo
   enddo
-  deallocate(rho, p, vx, vy, vz, e, ei, ek, gam)
-  deallocate(x, xl, xr, dx)
+  deallocate(xc, xl, xr, dx)
   deallocate(y, yl, yr, dy)
   deallocate(z, zl, zr, dz)
 

@@ -26,6 +26,7 @@ subroutine gr_mpoleRad3Dcartesian ()
                                 Grid_releaseBlkPtr,     &
                                 Grid_getBlkBoundBox,    &
                                 Grid_getDeltas,         &
+                                Grid_getBlkRefineLevel, &
                                 Grid_getBlkIndexLimits, &
                                 Grid_getMinCellSizes
 
@@ -102,6 +103,7 @@ subroutine gr_mpoleRad3Dcartesian ()
 
   integer, allocatable :: blockListInnerZone (:)
   real,    allocatable :: RinnerZone         (:)
+  integer :: lev
 !
 !
 !       ...Get the minimum cell sizes for the entire domain.
@@ -196,7 +198,6 @@ subroutine gr_mpoleRad3Dcartesian ()
 !
 !
       allocate (blockListInnerZone (1:MAXBLOCKS))
-
       gr_mpoleInnerZoneMaxR = real (gr_mpoleInnerZoneSize) * gr_mpoleDrInnerZone
       maxRsqr               = gr_mpoleInnerZoneMaxR * gr_mpoleInnerZoneMaxR
 
@@ -204,12 +205,14 @@ subroutine gr_mpoleRad3Dcartesian ()
       nRlocal = 0
       nRlocalPrev = 0
 
+
       do blockNr = 1,gr_mpoleBlockCount
 
          blockID = gr_mpoleBlockList (blockNr)
 
          call Grid_getBlkBoundBox     (blockID, bndBox)
-         call Grid_getDeltas          (blockID, delta)
+         call Grid_getBlkRefineLevel  (blockID, lev)
+         call Grid_getDeltas          (lev, delta)
          call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
 
          imin       = blkLimits (LOW, IAXIS)

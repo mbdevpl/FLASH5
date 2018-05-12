@@ -55,6 +55,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
                                 Grid_releaseBlkPtr,     &
                                 Grid_getBlkBoundBox,    &
                                 Grid_getDeltas,         &
+                                Grid_getBlkRefineLevel, &
                                 Grid_getBlkIndexLimits, &
                                 Grid_getCellCoords
 
@@ -78,7 +79,6 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
                                 gr_mpoleXcenterOfMass,  &
                                 gr_mpoleYcenterOfMass,  &
                                 gr_mpoleZcenterOfMass
-
 
   implicit none
   
@@ -129,7 +129,9 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
 
   real, allocatable :: shifts   (:,:)
   real, pointer     :: solnData (:,:,:,:)
-!
+
+  integer :: lev
+  !
 !
 !     ...Sum quantities over all locally held leaf blocks.
 !
@@ -148,7 +150,8 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
      blockID = gr_mpoleBlockList (blockNr)
 
      call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
+     call Grid_getBlkRefineLevel  (blockID,lev)
+     call Grid_getDeltas          (lev, delta)
      call Grid_getBlkPtr          (blockID, solnData)
      call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
 
@@ -173,6 +176,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
 
      cellVolume = DeltaI * DeltaJ * DeltaK
 
+     
      z = bndBoxKLow + DeltaKHalf
      do k = kmin,kmax
         y = bndBoxJLow + DeltaJHalf
@@ -220,7 +224,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
 !
 !     ...Calculate the total sums and give a copy to each processor.
 !
-!
+  !
   call  MPI_AllReduce (localData,   &
                        totalData,   &
                        8,           &
@@ -291,8 +295,9 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
      insideBlock = insideBlock .or. domainXmax .or. domainYmax .or. domainZmax
 
      if (insideBlock) then
-
-         call Grid_getDeltas          (blockID, delta)
+        
+        call Grid_getBlkRefineLevel(blockID, lev)
+         call Grid_getDeltas          (lev, delta)
          call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
 
          DeltaI = delta (IAXIS)
@@ -300,7 +305,6 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
          DeltaK = delta (KAXIS)
 
          gr_mpoleDrInnerZone = HALF * (DeltaI * DeltaJ * DeltaK) ** (ONE / THREE)
-
          imin = blkLimits (LOW, IAXIS)
          jmin = blkLimits (LOW, JAXIS)
          kmin = blkLimits (LOW, KAXIS)  

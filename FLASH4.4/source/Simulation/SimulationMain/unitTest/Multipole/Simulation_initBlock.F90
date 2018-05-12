@@ -22,7 +22,7 @@
 !!
 !!***
 
-subroutine Simulation_initBlock (blockID)
+subroutine Simulation_initBlock (SolnData, block)
 
   use Simulation_data, ONLY : sim_xctr,               &
                               sim_yctr,               &
@@ -43,14 +43,18 @@ subroutine Simulation_initBlock (blockID)
   use Grid_interface,  ONLY : Grid_getBlkIndexLimits, &
                               Grid_getCellCoords,     &
                               Grid_putRowData,        &
+                              Grid_getBlkRefineLevel, &
                               Grid_getDeltas
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, intent(in)  :: blockID
+  type(block_metadata_t), intent(in) :: block
+  real, pointer, dimension(:,:,:,:) :: solnData
+  integer :: blockID, lev
 
   logical  :: gcell=.true.
 
@@ -82,6 +86,7 @@ subroutine Simulation_initBlock (blockID)
                                blkLimits,  &
                                blkLimitsGC )
 
+  blockID=block%id
   select case (sim_initGeometry)
 !
 !
@@ -91,7 +96,7 @@ subroutine Simulation_initBlock (blockID)
 !         as square of radius (r2) and square of z coordinate (z2) for
 !         evaluating the MacLaurin density vary with all 3 dimensions.
 !
-!
+     
   case (GRID_3DCARTESIAN)
 
     sizeX = blkLimitsGC (HIGH,IAXIS) - blkLimitsGC (LOW,IAXIS) + 1
@@ -106,7 +111,8 @@ subroutine Simulation_initBlock (blockID)
     call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
     call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
 
-    call Grid_getDeltas     (blockID, deltas)
+    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
     dy = deltas(JAXIS)
@@ -161,7 +167,7 @@ subroutine Simulation_initBlock (blockID)
           startingPos (2) = j
           startingPos (3) = k
 
-          call Grid_putRowData (blockID, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
+          call Grid_putRowData (block, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
  
        enddo
     enddo
@@ -191,7 +197,8 @@ subroutine Simulation_initBlock (blockID)
 
     call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
     call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    call Grid_getDeltas     (blockID, deltas)
+    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
     dy = deltas(JAXIS)
@@ -241,7 +248,7 @@ subroutine Simulation_initBlock (blockID)
           startingPos (2) = j
           startingPos (3) = k
 
-          call Grid_putRowData (blockID, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
+          call Grid_putRowData (block, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
  
        enddo
 
@@ -266,7 +273,8 @@ subroutine Simulation_initBlock (blockID)
     call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
     call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
 
-    call Grid_getDeltas     (blockID, deltas)
+    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
     dy = deltas(JAXIS)
@@ -311,7 +319,7 @@ subroutine Simulation_initBlock (blockID)
        startingPos(1) = 1
        startingPos(2) = j
 
-       call Grid_putRowData (blockID, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
+       call Grid_putRowData (block, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
  
     enddo
 
@@ -334,7 +342,8 @@ subroutine Simulation_initBlock (blockID)
     call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
     call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
 
-    call Grid_getDeltas     (blockID, deltas)
+    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
     dy = deltas(JAXIS)
@@ -381,7 +390,7 @@ subroutine Simulation_initBlock (blockID)
        startingPos(1) = 1
        startingPos(2) = j
 
-       call Grid_putRowData (blockID, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
+       call Grid_putRowData (block, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
  
     enddo
 

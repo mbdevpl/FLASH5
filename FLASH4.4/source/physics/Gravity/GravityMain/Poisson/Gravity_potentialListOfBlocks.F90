@@ -90,8 +90,6 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
   use Gravity_data, ONLY : grav_poisfact, grav_temporal_extrp, grav_boundary, &
        grav_unjunkPden, &
        useGravity, updateGravity, grv_meshComm
-  use Cosmology_interface, ONLY : Cosmology_getRedshift, &
-       Cosmology_getOldRedshift
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Particles_interface, ONLY: Particles_updateGridVar, &
@@ -133,11 +131,11 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
      newPotVar = GPOT_VAR
   end if
 
-  call Cosmology_getRedshift(redshift)
-  call Cosmology_getOldRedshift(oldRedshift)
-  
-  scaleFactor = 1./(1.+redshift)
-  oldScaleFactor = 1./(1.+oldRedshift)
+!!$  call Cosmology_getRedshift(redshift)
+!!$  call Cosmology_getOldRedshift(oldRedshift)
+!!$  
+!!$  scaleFactor = 1./(1.+redshift)
+!!$  oldScaleFactor = 1./(1.+oldRedshift)
   
   invscale = 1./scaleFactor**3
 

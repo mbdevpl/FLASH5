@@ -29,6 +29,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   use Grid_interface,    ONLY : Grid_getBlkPtr,         &
        Grid_releaseBlkPtr,     &
        Grid_getBlkBoundBox,    &
+       Grid_getBlkRefineLevel, &
        Grid_getDeltas,         &
        Grid_getBlkIndexLimits
 
@@ -91,7 +92,8 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   integer :: Q, Qlocal, Qlower, Qupper
   integer :: type
   integer :: zone
-
+  integer :: lev
+  
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
   integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
 
@@ -153,7 +155,8 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
      blockID = gr_mpoleBlockList (blockNr)
 
      call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
+     call Grid_getBlkRefineLevel  (blockID, lev)
+     call Grid_getDeltas          (lev, delta)
      call Grid_getBlkPtr          (blockID, solnData)
      call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
 

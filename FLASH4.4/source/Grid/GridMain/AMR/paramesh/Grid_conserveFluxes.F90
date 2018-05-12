@@ -44,9 +44,6 @@ subroutine Grid_conserveFluxes( axis, level)
   use block_metadata, ONLY : block_metadata_t
   use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
 
-#ifndef FLASH_GRID_PARAMESH2
-  use physicaldata, ONLY: no_permanent_guardcells
-#endif
   use Grid_data, ONLY : gr_meshMe,gr_maxRefine
 #ifdef FLASH_HYDRO_UNSPLIT
 #if NDIM >=2
@@ -84,8 +81,6 @@ subroutine Grid_conserveFluxes( axis, level)
   endif
 
 
-#ifndef FLASH_GRID_PARAMESH2
-  gridDataStruct = CENTER
 #if NFACE_VARS > 0
   gridDataStruct = CENTER_FACES
 #endif
@@ -97,7 +92,7 @@ subroutine Grid_conserveFluxes( axis, level)
 !!$  else
 !!$     call gr_freeCommRecvBuffer
 !!$  end if
-#endif
+
   dataSize(IAXIS)=NXB+2*NGUARD
   dataSize(JAXIS)=NYB+2*NGUARD*K2D
   dataSize(KAXIS)=NZB+2*NGUARD*K3D
@@ -241,7 +236,7 @@ subroutine Grid_conserveFluxes( axis, level)
 !!$                 fluxz(:,sx:ex,sy:ey,ez+1,presVar) = fluxz(:,sx:ex,sy:ey,ez+1,presVar) / areaLeft(sx:ex,sy:ey,ez+1)
 !!$              end if
 !!$           end if
-     end do
+!!$     end do
 #endif
      end if
      nullify(fluxx)

@@ -29,6 +29,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   use Grid_interface,    ONLY : Grid_getBlkPtr,         &
                                 Grid_releaseBlkPtr,     &
                                 Grid_getBlkBoundBox,    &
+                                Grid_getBlkRefineLevel, &
                                 Grid_getDeltas,         &
                                 Grid_getBlkIndexLimits
 
@@ -84,7 +85,8 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   integer :: type
   integer :: used
   integer :: zone
-
+  integer :: lev
+  
   integer, save :: maxQtype                ! for multithreading needs to be on stack (save)
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
@@ -118,7 +120,8 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
      blockID = gr_mpoleBlockList (blockNr)
 
      call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
+     call Grid_getBlkRefineLevel  (blockID, lev)
+     call Grid_getDeltas          (lev, delta)
      call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
 
      imin       = blkLimits (LOW, IAXIS)
@@ -223,7 +226,8 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
      blockID = gr_mpoleBlockList (blockNr)
 
      call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
+     call Grid_getBlkRefineLevel  (blockID, lev)
+     call Grid_getDeltas          (lev, delta)
      call Grid_getBlkPtr          (blockID, solnData)
      call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
 

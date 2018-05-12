@@ -18,7 +18,6 @@
 !!           (R) means data that is supplied as input through (R)untime parameters
 !!           (C) means data that is (C)alculated internally by the multipole solver code
 !!
-!!   gr_mpoleBlockCount                   (G) : Number of blocks on each processor
 !!   gr_mpoleBlockList                    (G) : List of block ID's on each processor
 !!   gr_mpoleDomainX/Y/Z/R/Phi/ThetaMax (R,C) : Largest domain boundaries of the problem
 !!   gr_mpoleDomainX/Y/Z/R/Phi/ThetaMin (R,C) : Lowest domain boundaries of the problem
