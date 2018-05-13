@@ -400,6 +400,6 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
 !
 !     ...Ready!
 !
-!
+  !
   return
 end subroutine gr_mpoleCen3Dcartesian

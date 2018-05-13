@@ -106,17 +106,14 @@ subroutine Grid_solvePoisson (iSoln,                   &
   end if
 
   call Timers_start             ("gr_mpoleMoments")
-  print*,"before moments"
   call gr_mpoleMoments          (iSrc)
   call Timers_stop              ("gr_mpoleMoments")
   
   call Timers_start             ("gr_mpoleCollectMoments")   ! see "Note" above
-  print*,"before collect moments"
   call gr_mpoleCollectMoments ()
   call Timers_stop              ("gr_mpoleCollectMoments")   ! see 'Note' above
   
   call Timers_start             ("gr_mpolePotentials")
-  print*,"before potential"
   call gr_mpolePotentials       (iSoln, poisFact)
   call Timers_stop              ("gr_mpolePotentials")
   

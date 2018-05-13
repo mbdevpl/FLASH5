@@ -307,7 +307,8 @@ subroutine gr_mpoleRad3Dcartesian ()
              blockID = blockListInnerZone (blockNr)
 
              call Grid_getBlkBoundBox     (blockID, bndBox)
-             call Grid_getDeltas          (blockID, delta)
+             call Grid_getBlkRefineLevel  (blockID, lev)
+             call Grid_getDeltas          (lev, delta)
              call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
 
              imin       = blkLimits (LOW, IAXIS)
