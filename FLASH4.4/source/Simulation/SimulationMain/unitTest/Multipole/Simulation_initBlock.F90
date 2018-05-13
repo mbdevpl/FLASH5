@@ -43,10 +43,11 @@ subroutine Simulation_initBlock (SolnData, block)
   use Grid_interface,  ONLY : Grid_getBlkIndexLimits, &
                               Grid_getCellCoords,     &
                               Grid_putRowData,        &
-                              Grid_getBlkRefineLevel, &
                               Grid_getDeltas
+  use sim_interface, ONLY : sim_initBlockAnalytical
   use block_metadata, ONLY : block_metadata_t
 
+  
   implicit none
 
 #include "constants.h"
@@ -68,8 +69,8 @@ subroutine Simulation_initBlock (SolnData, block)
   real     :: theta
   real     :: sum_rho
 
-  integer, dimension(3)      :: startingPos
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(MDIM)      :: startingPos
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
   real,    dimension(MDIM)   :: deltas
 
   real, dimension(:), allocatable :: xLeft, yLeft, zLeft
@@ -82,11 +83,16 @@ subroutine Simulation_initBlock (SolnData, block)
 !       for the cell. This prevents a blocky spheroid shell.
 !
 !
-  call Grid_getBlkIndexLimits (blockID,    &
-                               blkLimits,  &
-                               blkLimitsGC )
+!!$  call Grid_getBlkIndexLimits (blockID,    &
+!!$                               blkLimits,  &
+!!$                               blkLimitsGC )
 
   blockID=block%id
+!!$  blkLimits=block%limits
+!!$  blkLimitsGC=block%limitsGC
+  blkLimits=block%locallimits
+  blkLimitsGC=block%locallimitsGC
+  lev=block%level
   select case (sim_initGeometry)
 !
 !
@@ -107,11 +113,10 @@ subroutine Simulation_initBlock (SolnData, block)
     allocate (yLeft (sizeY))
     allocate (zLeft (sizeZ))
 
-    call Grid_getCellCoords (KAXIS, blockID, LEFT_EDGE, gcell, zLeft, sizeZ)
-    call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
-    call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
+    call Grid_getCellCoords (KAXIS, block, LEFT_EDGE, gcell, zLeft, sizeZ)
+    call Grid_getCellCoords (JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
+    call Grid_getCellCoords (IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
 
-    Call Grid_getBlkRefineLevel(blockID,lev)
     call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
@@ -195,9 +200,8 @@ subroutine Simulation_initBlock (SolnData, block)
     allocate (xLeft (sizeX))
     allocate (yLeft (sizeY))
 
-    call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
-    call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getCellCoords (JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
+    call Grid_getCellCoords (IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
     call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
@@ -270,10 +274,9 @@ subroutine Simulation_initBlock (SolnData, block)
     allocate (xLeft (sizeX))
     allocate (yLeft (sizeY))
 
-    call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
-    call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
+    call Grid_getCellCoords (JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
+    call Grid_getCellCoords (IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
 
-    Call Grid_getBlkRefineLevel(blockID,lev)
     call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
@@ -339,10 +342,9 @@ subroutine Simulation_initBlock (SolnData, block)
     allocate (xLeft (sizeX))
     allocate (yLeft (sizeY))
 
-    call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
-    call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
+    call Grid_getCellCoords (JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
+    call Grid_getCellCoords (IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
 
-    Call Grid_getBlkRefineLevel(blockID,lev)
     call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
@@ -408,7 +410,7 @@ subroutine Simulation_initBlock (SolnData, block)
 !    ...Now calculate the analytical gravitational solution on this block.
 !
 !
-  call sim_initBlockAnalytical (blockID)
+  call sim_initBlockAnalytical (block)
 !
 !
 !   ...Ready!

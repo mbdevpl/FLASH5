@@ -32,7 +32,7 @@
 !!
 !!***
 
-subroutine sim_initBlockAnalytical (blockID)
+subroutine sim_initBlockAnalytical (block)
 
   use Simulation_data, ONLY:  sim_Newton,             &
                               sim_pi,                 &
@@ -57,15 +57,16 @@ subroutine sim_initBlockAnalytical (blockID)
   use Grid_interface,  ONLY : Grid_getBlkIndexLimits, &
                               Grid_getCellCoords,     &
                               Grid_putPointData,      &
-                              Grid_getBlkRefineLevel, &
                               Grid_getDeltas
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, intent (in) :: blockID
+  type(block_metadata_t), intent(in) :: block
+  integer :: blockID
 
   logical  :: gcell = .true.
 
@@ -127,11 +128,15 @@ subroutine sim_initBlockAnalytical (blockID)
 !       sub-zones and average the results to get the values for the cell.
 !       This prevents a blocky spheroid shell.
 !
-!
-  call Grid_getBlkIndexLimits (blockID,    &
-                               blkLimits,  &
-                               blkLimitsGC )
+  !
+!!$  call Grid_getBlkIndexLimits (blockID,    &
+!!$                               blkLimits,  &
+!!$                               blkLimitsGC )
 
+  blkLimits=block%localLimits
+  blkLimitsGC=block%localLimitsGC
+  lev=block%level
+  
   select case (sim_initGeometry)
 !
 !
@@ -152,10 +157,9 @@ subroutine sim_initBlockAnalytical (blockID)
     allocate (yLeft (sizeY))
     allocate (zLeft (sizeZ))
 
-    call Grid_getCellCoords (KAXIS, blockID, LEFT_EDGE, gcell, zLeft, sizeZ)
-    call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
-    call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getCellCoords (KAXIS, block, LEFT_EDGE, gcell, zLeft, sizeZ)
+    call Grid_getCellCoords (JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
+    call Grid_getCellCoords (IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
     call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
@@ -226,7 +230,7 @@ subroutine sim_initBlockAnalytical (blockID)
              Position (JAXIS) = j
              Position (IAXIS) = i
 
-             call Grid_putPointData (blockID, CENTER, APOT_VAR, EXTERIOR, Position, potentialAnalytical)
+             call Grid_putPointData (block, CENTER, APOT_VAR, EXTERIOR, Position, potentialAnalytical)
 
           end do
        enddo
@@ -254,9 +258,8 @@ subroutine sim_initBlockAnalytical (blockID)
     allocate (xLeft (sizeX))
     allocate (yLeft (sizeY))
 
-    call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
-    call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getCellCoords (JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
+    call Grid_getCellCoords (IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
     call Grid_getDeltas     (lev, deltas)
 
 
@@ -323,7 +326,7 @@ subroutine sim_initBlockAnalytical (blockID)
              Position (JAXIS) = j
              Position (IAXIS) = i
 
-             call Grid_putPointData (blockID, CENTER, APOT_VAR, EXTERIOR, Position, potentialAnalytical)
+             call Grid_putPointData (block, CENTER, APOT_VAR, EXTERIOR, Position, potentialAnalytical)
 
           end do
 
@@ -345,9 +348,8 @@ subroutine sim_initBlockAnalytical (blockID)
     allocate (xLeft (sizeX))
     allocate (yLeft (sizeY))
 
-    call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
-    call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getCellCoords (JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
+    call Grid_getCellCoords (IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
     call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
@@ -408,7 +410,7 @@ subroutine sim_initBlockAnalytical (blockID)
           Position (JAXIS) = j
           Position (IAXIS) = i
 
-          call Grid_putPointData(blockID, CENTER, APOT_VAR, EXTERIOR, Position, potentialAnalytical)
+          call Grid_putPointData(block, CENTER, APOT_VAR, EXTERIOR, Position, potentialAnalytical)
 
        enddo
     enddo
@@ -428,9 +430,8 @@ subroutine sim_initBlockAnalytical (blockID)
     allocate (xLeft (sizeX))
     allocate (yLeft (sizeY))
 
-    call Grid_getCellCoords (JAXIS, blockID, LEFT_EDGE, gcell, yLeft, sizeY)
-    call Grid_getCellCoords (IAXIS, blockID, LEFT_EDGE, gcell, xLeft, sizeX)
-    Call Grid_getBlkRefineLevel(blockID,lev)
+    call Grid_getCellCoords (JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
+    call Grid_getCellCoords (IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
     call Grid_getDeltas     (lev, deltas)
 
     dx = deltas(IAXIS)
@@ -494,7 +495,7 @@ subroutine sim_initBlockAnalytical (blockID)
           Position (JAXIS) = j
           Position (IAXIS) = i
 
-          call Grid_putPointData(blockID, CENTER, APOT_VAR, EXTERIOR, Position, potentialAnalytical)
+          call Grid_putPointData(block, CENTER, APOT_VAR, EXTERIOR, Position, potentialAnalytical)
 
        enddo
     enddo
