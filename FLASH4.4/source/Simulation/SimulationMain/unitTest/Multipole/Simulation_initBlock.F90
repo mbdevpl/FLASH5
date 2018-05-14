@@ -168,7 +168,7 @@ subroutine Simulation_initBlock (SolnData, block)
 
           enddo
 
-          startingPos (1) = 1
+          startingPos (1) = ibeg
           startingPos (2) = j
           startingPos (3) = k
 
@@ -248,7 +248,7 @@ subroutine Simulation_initBlock (SolnData, block)
 
        do k = kbeg,kend           ! angular component -> no subzones -> identical potentials
 
-          startingPos (1) = 1
+          startingPos (1) = ibeg
           startingPos (2) = j
           startingPos (3) = k
 
@@ -319,7 +319,7 @@ subroutine Simulation_initBlock (SolnData, block)
 
        enddo
 
-       startingPos(1) = 1
+       startingPos(1) = ibeg
        startingPos(2) = j
 
        call Grid_putRowData (block, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
@@ -389,7 +389,7 @@ subroutine Simulation_initBlock (SolnData, block)
 
        enddo
 
-       startingPos(1) = 1
+       startingPos(1) = ibeg
        startingPos(2) = j
 
        call Grid_putRowData (block, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
