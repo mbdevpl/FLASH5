@@ -31,7 +31,8 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
                                 Grid_getBlkBoundBox,    &
                                 Grid_getBlkRefineLevel, &
                                 Grid_getDeltas,         &
-                                Grid_getBlkIndexLimits
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator
 
   use gr_mpoleInterface, ONLY : gr_mpoleMomBins3Dcartesian
 
@@ -64,6 +65,9 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
                                 gr_mpoleBlockCount,             &
                                 gr_mpoleBlockList
 
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
+ 
   implicit none
   
 #include "Flash.h"
@@ -74,7 +78,6 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 
   logical :: innerZonePotential
 
-  integer :: blockNr, blockID
   integer :: DrUnit
   integer :: i,imin,imax
   integer :: j,jmin,jmax
@@ -85,12 +88,10 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   integer :: type
   integer :: used
   integer :: zone
-  integer :: lev
   
   integer, save :: maxQtype                ! for multithreading needs to be on stack (save)
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
 
   real    :: bndBoxILow, bndBoxJLow, bndBoxKLow
   real    :: cellDensity, cellMass, cellVolume
@@ -105,6 +106,10 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   real    :: bndBox (LOW:HIGH,1:MDIM)
 
   real, pointer :: solnData (:,:,:,:)
+  integer :: lev
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+
 !
 !
 !     ...The first pass over all blocks on the current processor will get us information
@@ -115,14 +120,15 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 !$omp single
   gr_mpoleQused (:) = 0 
 
-  do blockNr = 1,gr_mpoleBlockCount
-
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getBlkRefineLevel  (blockID, lev)
+  call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
+     blkLimits=block%limits
+     
+     call Grid_getBlkBoundBox     (block, bndBox)
      call Grid_getDeltas          (lev, delta)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+     call Grid_getBlkPtr          (block, solnData)
 
      imin       = blkLimits (LOW, IAXIS)
      jmin       = blkLimits (LOW, JAXIS)
@@ -199,7 +205,10 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
       z = z + DeltaK
      end do
 
+     call Grid_releaseBlkPtr (block, solnData)
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
 !
 !
 !     ...Create the arrays that will contain the radial info.
@@ -221,15 +230,15 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 
   nQ = 0
 
-  do blockNr = 1,gr_mpoleBlockCount
-
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getBlkRefineLevel  (blockID, lev)
+   call Grid_getLeafIterator(itor)
+   do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
+     blkLimits=block%limits
+     
+     call Grid_getBlkBoundBox     (block, bndBox)
      call Grid_getDeltas          (lev, delta)
-     call Grid_getBlkPtr          (blockID, solnData)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+     call Grid_getBlkPtr          (block, solnData)
 
      imin       = blkLimits (LOW, IAXIS)
      jmin       = blkLimits (LOW, JAXIS)
@@ -337,10 +346,11 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
       z = z + DeltaK
      end do
 
-     call Grid_releaseBlkPtr (blockID, solnData)
-
+     call Grid_releaseBlkPtr (block, solnData)
+     call itor%next()
   end do
-!$omp end single
+  call Grid_releaseLeafIterator(itor)
+!!$omp end single
 !
 !
 !    ...Call the radial bin clustered moment evaluation routine (all threads).

@@ -27,11 +27,12 @@
 subroutine gr_mpolePot3Dcartesian (ipotvar)
 
   use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-       Grid_releaseBlkPtr,     &
-       Grid_getBlkBoundBox,    &
-       Grid_getBlkRefineLevel, &
-       Grid_getDeltas,         &
-       Grid_getBlkIndexLimits
+                                Grid_releaseBlkPtr,     &
+                                Grid_getBlkBoundBox,    &
+                                Grid_getBlkRefineLevel, &
+                                Grid_getDeltas,         &
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator
 
   use gr_mpoleData,      ONLY : gr_mpoleGravityConstant,        &
        gr_mpoleSymmetryAxis3D,         &
@@ -71,6 +72,9 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
        gr_mpoleBlockCount,             &
        gr_mpoleBlockList
 
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
+
   implicit none
 
 #include "Flash.h"
@@ -92,7 +96,6 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   integer :: Q, Qlocal, Qlower, Qupper
   integer :: type
   integer :: zone
-  integer :: lev
   
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
   integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
@@ -123,7 +126,11 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   real, parameter :: sixth = 1./6.
 
   real, pointer   :: solnData (:,:,:,:)
-  !  
+
+  integer :: lev
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+ !  
   !
   !     ...Sum quantities over all locally held leaf blocks.
   !
@@ -149,16 +156,15 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   !$omp         gr_mpoleQDampingR,gr_mpoleQDampingI, gr_mpoleMomentR,gr_mpoleMomentI,&
   !$omp         gr_mpoleBlockCount,gr_mpoleBlockList )
 
-  do blockNr = 1,gr_mpoleBlockCount
-
-     !$omp single
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getBlkRefineLevel  (blockID, lev)
+ call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
+     blkLimits=block%limits
+     
+     call Grid_getBlkBoundBox     (block, bndBox)
      call Grid_getDeltas          (lev, delta)
-     call Grid_getBlkPtr          (blockID, solnData)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+     call Grid_getBlkPtr          (block, solnData)
 
      imin       = blkLimits (LOW, IAXIS)
      jmin       = blkLimits (LOW, JAXIS)
@@ -652,10 +658,10 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
      !
      !
      !$omp single
-     call Grid_releaseBlkPtr (blockID, solnData)
-     !$omp end single
-
+     call Grid_releaseBlkPtr (block, solnData)
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
   !$omp end parallel
   !
   !
