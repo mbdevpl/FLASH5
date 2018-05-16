@@ -88,7 +88,7 @@ subroutine gr_mpolePot2Dspherical (ipotvar)
   integer :: zone
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: alpha, beta
   real    :: bndBoxILow, bndBoxJLow

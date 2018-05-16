@@ -88,7 +88,7 @@ subroutine gr_mpoleMom1Dspherical (idensvar)
   integer, save :: maxQtype                ! for multithreading needs to be on stack (save)
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: bndBoxILow
   real    :: cellDensity, cellMass, cellVolume

@@ -91,7 +91,7 @@ subroutine gr_mpoleMom2Dspherical (idensvar)
   integer, save :: maxQtype                ! for multithreading needs to be on stack (save)
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: alpha, beta
   real    :: angularVolumePart

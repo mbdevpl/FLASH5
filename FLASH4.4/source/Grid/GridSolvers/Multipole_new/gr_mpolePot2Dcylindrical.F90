@@ -90,7 +90,7 @@ subroutine gr_mpolePot2Dcylindrical (ipotvar)
   integer :: zone
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: bndBoxILow, bndBoxJLow
   real    :: dampI, Idamp

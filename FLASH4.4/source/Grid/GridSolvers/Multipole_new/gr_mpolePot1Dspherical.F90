@@ -79,7 +79,7 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
   integer :: zone
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: bndBoxILow
   real    :: DeltaI, DeltaIHalf, DeltaIFourth

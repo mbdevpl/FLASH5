@@ -91,7 +91,7 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
   integer, save :: maxQtype                ! for multithreading needs to be on stack (save)
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: alpha, beta
   real    :: bndBoxILow, bndBoxJLow, bndBoxKLow
@@ -109,6 +109,7 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
   real    :: bndBox (LOW:HIGH,1:MDIM)
 
   real, pointer :: solnData (:,:,:,:)
+
   integer :: lev
   type(block_metadata_t) :: block
   type(leaf_iterator_t) :: itor

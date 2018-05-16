@@ -116,7 +116,7 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
   integer :: locate      (1:3)
   integer :: status      (MPI_STATUS_SIZE)
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: alpha, beta
   real    :: bndBoxILow

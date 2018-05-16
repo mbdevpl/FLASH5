@@ -98,7 +98,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   integer :: zone
   
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: bndBoxILow, bndBoxJLow, bndBoxKLow
   real    :: dampI, Idamp
@@ -139,7 +139,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   !$omp parallel if (gr_mpoleMultiThreading) &
   !$omp default(private) &
   !$omp shared( blockID,ipotvar,&
-  !$omp         bndBox,delta,solnData,blkLimits,blkLimitsGC,&
+  !$omp         bndBox,delta,solnData,blkLimits,&
   !$omp         imin,jmin,kmin,imax,jmax,kmax,&
   !$omp         iCmax,jCmax,kCmax,iFmax,jFmax,kFmax,&
   !$omp         DeltaI,DeltaJ,DeltaK,DeltaIHalf,DeltaJHalf,DeltaKHalf,&

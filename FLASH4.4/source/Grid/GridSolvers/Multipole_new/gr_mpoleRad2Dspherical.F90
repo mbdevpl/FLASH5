@@ -26,8 +26,10 @@ subroutine gr_mpoleRad2Dspherical ()
                                 Grid_releaseBlkPtr,     &
                                 Grid_getBlkBoundBox,    &
                                 Grid_getDeltas,         &
-                                Grid_getBlkIndexLimits, &
-                                Grid_getMinCellSizes
+                                Grid_getMinCellSizes,   &
+                                Grid_getLocalNumBlks,   &
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator
 
   use gr_mpoleInterface, ONLY : gr_mpoleSetInnerZoneGrid, &
                                 gr_mpoleSetOuterZoneGrid
@@ -48,6 +50,9 @@ subroutine gr_mpoleRad2Dspherical ()
                                 gr_mpoleBlockCount,      &
                                 gr_mpoleBlockList
 
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
+
   implicit none
 
 #include "Flash.h"
@@ -63,7 +68,7 @@ subroutine gr_mpoleRad2Dspherical ()
   integer :: j,jmin,jmax
   integer :: nPinnerZone
   integer :: nRinnerZone
-  integer :: nBlocal
+  integer :: nBlocal, nblks
   integer :: nPlocal
   integer :: nRlocal
   integer :: nRlocalPrev
@@ -71,7 +76,7 @@ subroutine gr_mpoleRad2Dspherical ()
   integer :: localData   (1:2)
   integer :: globalData  (1:2)
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: alpha,beta
   real    :: bndBoxILow
@@ -96,6 +101,9 @@ subroutine gr_mpoleRad2Dspherical ()
   integer, allocatable :: blockListInnerZone (:)
   real,    allocatable :: RinnerZone         (:)
 !
+  integer :: lev
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
 !
 !       ...Get the minimum cell sizes for the entire domain.
 !
@@ -159,7 +167,8 @@ subroutine gr_mpoleRad2Dspherical ()
 !        have radii in the inner zone.
 !
 !
-      allocate (blockListInnerZone (1:MAXBLOCKS))
+      call Grid_getLocalNumBlks(nblks)
+      allocate (blockListInnerZone (1:nblks))
 
       gr_mpoleInnerZoneMaxR = real (gr_mpoleInnerZoneSize) * gr_mpoleDrInnerZone
       maxRsqr               = gr_mpoleInnerZoneMaxR * gr_mpoleInnerZoneMaxR
@@ -168,13 +177,14 @@ subroutine gr_mpoleRad2Dspherical ()
       nRlocal = 0
       nRlocalPrev = 0
 
-      do blockNr = 1,gr_mpoleBlockCount
-
-         blockID = gr_mpoleBlockList (blockNr)
-
-         call Grid_getBlkBoundBox     (blockID, bndBox)
-         call Grid_getDeltas          (blockID, delta)
-         call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+      call Grid_getLeafIterator(itor)
+      do while(itor%is_valid())
+         call itor%blkMetaData(block)
+         lev=block%level
+         blkLimits=block%limits
+         
+         call Grid_getBlkBoundBox     (block, bndBox)
+         call Grid_getDeltas          (lev, delta)
 
          imin           = blkLimits (LOW, IAXIS)
          jmin           = blkLimits (LOW, JAXIS)
@@ -218,15 +228,14 @@ subroutine gr_mpoleRad2Dspherical ()
             thetaCosine   = thetaCosine - (alpha * thetaCosine + beta * thetaSineSave)
          end do
 
-         if (nRlocal > nRlocalPrev) then
-             nBlocal = nBlocal + 1
-             blockListInnerZone (nBlocal) = blockID
-         end if
-
+         nBlocal = nBlocal + 1
+         blockListInnerZone (nBlocal) = (nRlocal > nRlocalPrev)
          nRlocalPrev = nRlocal
-
+         
+         call itor%next()
       end do
-!
+      call Grid_releaseLeafIterator(itor)
+!!
 !
 !     ...Calculate the total number of processors contributing to the inner
 !        zone radii and the overall total number of inner zone radii to be
@@ -264,62 +273,67 @@ subroutine gr_mpoleRad2Dspherical ()
 !
 !
       nRlocal = 0
+      nBlocal = 0
 
-      if (nBlocal > 0) then
+      call Grid_getLeafIterator(itor)
+      do while(itor%is_valid())
+         nBlocal=nBlocal+1
+         if(blockListInnerZone(nBlocal)) then
+            
+            call itor%blkMetaData(block)
+            lev=block%level
+            blkLimits=block%limits
+            
+            call Grid_getBlkBoundBox     (block, bndBox)
+            call Grid_getDeltas          (lev, delta)
 
-          do blockNr = 1,nBlocal
-
-             blockID = blockListInnerZone (blockNr)
-
-             call Grid_getBlkBoundBox     (blockID, bndBox)
-             call Grid_getDeltas          (blockID, delta)
-             call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
-
-             imin           = blkLimits (LOW, IAXIS)
-             jmin           = blkLimits (LOW, JAXIS)
-             imax           = blkLimits (HIGH,IAXIS)
-             jmax           = blkLimits (HIGH,JAXIS)
-
-             DeltaI         = delta (IAXIS)
-             DeltaIHalf     = DeltaI * HALF
-             DeltaJ         = delta (JAXIS)
-             DeltaJHalf     = DeltaJ * HALF
-             DeltaJSine     = sin (DeltaJ)
-             DeltaJHalfSine = sin (DeltaJHalf)
-
-             bndBoxILow     = bndBox (LOW,IAXIS)
-             bndBoxJLow     = bndBox (LOW,JAXIS)
-
-             alpha          = TWO * DeltaJHalfSine * DeltaJHalfSine
-             beta           = DeltaJSine
-             theta          = bndBoxJLow + DeltaJHalf
-             thetaSine      = sin (theta)
-             thetaCosine    = cos (theta)
-
-             do j = jmin,jmax
-                Rsph = bndBoxILow + DeltaIHalf
-                do i = imin,imax
-
-                   x = Rsph * thetaSine
-                   z = Rsph * thetaCosine - gr_mpoleZcenter
-
-                   r = sqrt (x * x + z * z)
-
-                   if (r <= gr_mpoleInnerZoneMaxR) then
-                       nRlocal = nRlocal + 1
-                       RinnerZone (nRlocal) = r
-                   end if
-
-                   Rsph = Rsph + DeltaI
-                end do
-
-                thetaSineSave = thetaSine
-                thetaSine     = thetaSine   - (alpha * thetaSine   - beta * thetaCosine  )
-                thetaCosine   = thetaCosine - (alpha * thetaCosine + beta * thetaSineSave)
-             end do
-
-          end do
-      end if
+            imin           = blkLimits (LOW, IAXIS)
+            jmin           = blkLimits (LOW, JAXIS)
+            imax           = blkLimits (HIGH,IAXIS)
+            jmax           = blkLimits (HIGH,JAXIS)
+            
+            DeltaI         = delta (IAXIS)
+            DeltaIHalf     = DeltaI * HALF
+            DeltaJ         = delta (JAXIS)
+            DeltaJHalf     = DeltaJ * HALF
+            DeltaJSine     = sin (DeltaJ)
+            DeltaJHalfSine = sin (DeltaJHalf)
+            
+            bndBoxILow     = bndBox (LOW,IAXIS)
+            bndBoxJLow     = bndBox (LOW,JAXIS)
+            
+            alpha          = TWO * DeltaJHalfSine * DeltaJHalfSine
+            beta           = DeltaJSine
+            theta          = bndBoxJLow + DeltaJHalf
+            thetaSine      = sin (theta)
+            thetaCosine    = cos (theta)
+            
+            do j = jmin,jmax
+               Rsph = bndBoxILow + DeltaIHalf
+               do i = imin,imax
+                  
+                  x = Rsph * thetaSine
+                  z = Rsph * thetaCosine - gr_mpoleZcenter
+                  
+                  r = sqrt (x * x + z * z)
+                  
+                  if (r <= gr_mpoleInnerZoneMaxR) then
+                     nRlocal = nRlocal + 1
+                     RinnerZone (nRlocal) = r
+                  end if
+                  
+                  Rsph = Rsph + DeltaI
+               end do
+               
+               thetaSineSave = thetaSine
+               thetaSine     = thetaSine   - (alpha * thetaSine   - beta * thetaCosine  )
+               thetaCosine   = thetaCosine - (alpha * thetaCosine + beta * thetaSineSave)
+            end do
+            
+         end if
+         call itor%next()
+      end do
+      call Grid_releaseLeafIterator(itor)
 
       deallocate (blockListInnerZone)
 !

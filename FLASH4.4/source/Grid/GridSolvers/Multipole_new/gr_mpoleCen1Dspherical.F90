@@ -73,7 +73,7 @@ subroutine gr_mpoleCen1Dspherical (idensvar)
 
   integer :: status      (MPI_STATUS_SIZE)
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: bndBoxILow
   real    :: cellDensity

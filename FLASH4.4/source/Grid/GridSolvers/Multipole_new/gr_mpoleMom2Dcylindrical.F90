@@ -90,7 +90,7 @@ subroutine gr_mpoleMom2Dcylindrical (idensvar)
   integer, save :: maxQtype                ! for multithreading needs to be on stack (save)
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: bndBoxILow, bndBoxJLow
   real    :: cellDensity, cellMass, cellPlane, cellVolume
