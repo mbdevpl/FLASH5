@@ -87,10 +87,7 @@ Module Gravity_interface
   end interface
 
   interface Gravity_potentialListOfBlocks
-     subroutine Gravity_potentialListOfBlocks(blockCount,blockList, &
-          potentialIndex)
-       integer,intent(IN) :: blockCount
-       integer,dimension(blockCount),intent(IN) :: blockList
+     subroutine Gravity_potentialListOfBlocks(potentialIndex)
        integer, intent(IN), optional :: potentialIndex
      end subroutine Gravity_potentialListOfBlocks
   end interface
