@@ -60,9 +60,7 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
 
   use gr_mpoleData,      ONLY : gr_mpoleXcenter,                &
                                 gr_mpoleYcenter,                &
-                                gr_mpoleZcenter,                &
-                                gr_mpoleBlockCount,             &
-                                gr_mpoleBlockList
+                                gr_mpoleZcenter
 
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t

@@ -45,10 +45,8 @@ subroutine gr_mpoleCen1Dspherical (idensvar)
                                 gr_mpoleDomainRmin,     &
                                 gr_mpoleFourPi,         &
                                 gr_mpoleThirdPi,        &
-                                gr_mpoleTotalMass,      &
-                                gr_mpoleBlockCount,     &
-                                gr_mpoleBlockList
-
+                                gr_mpoleTotalMass
+  
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t
 
@@ -65,8 +63,8 @@ subroutine gr_mpoleCen1Dspherical (idensvar)
   logical :: insideBlock
   logical :: invokeRecv
 
-  integer :: blockNr
-  integer :: blockID
+  
+  
   integer :: error
   integer :: i,imin,imax
   integer :: messageTag
@@ -104,7 +102,7 @@ subroutine gr_mpoleCen1Dspherical (idensvar)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
      lev=block%level
-     blockID=block%id
+     
      blkLimits=block%limits
  
      call Grid_getBlkBoundBox     (block, bndBox)
@@ -186,7 +184,7 @@ subroutine gr_mpoleCen1Dspherical (idensvar)
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
-     blockID=block%id
+     
      call Grid_getBlkBoundBox (block, bndBox)
 
 

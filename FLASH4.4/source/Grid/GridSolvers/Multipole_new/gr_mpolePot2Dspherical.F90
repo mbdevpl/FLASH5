@@ -61,9 +61,8 @@ subroutine gr_mpolePot2Dspherical (ipotvar)
                                 gr_mpoleQDampingR,              &
                                 gr_mpoleQDampingI,              &
                                 gr_mpoleMomentR,                &
-                                gr_mpoleMomentI,                &
-                                gr_mpoleBlockCount,             &
-                                gr_mpoleBlockList
+                                gr_mpoleMomentI
+  
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t
 
@@ -78,7 +77,7 @@ subroutine gr_mpolePot2Dspherical (ipotvar)
   logical :: j2
   logical :: innerZonePotential
 
-  integer :: blockNr, blockID
+  
   integer :: DrUnit
   integer :: imax, imin, iC
   integer :: jmax, jmin, jC, jCmax, jF, jFmax

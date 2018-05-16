@@ -53,9 +53,7 @@ subroutine gr_mpoleRad3Dcartesian ()
                                 gr_mpoleDomainZmax,      &
                                 gr_mpoleXcenter,         &
                                 gr_mpoleYcenter,         &
-                                gr_mpoleZcenter,         &
-                                gr_mpoleBlockCount,      &
-                                gr_mpoleBlockList
+                                gr_mpoleZcenter
 
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t
@@ -68,8 +66,8 @@ subroutine gr_mpoleRad3Dcartesian ()
 
   include "Flash_mpi.h"
 
-  integer :: blockID
-  integer :: blockNr
+  
+  
   integer :: error
   integer :: i,imin,imax
   integer :: j,jmin,jmax

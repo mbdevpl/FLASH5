@@ -73,8 +73,6 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
                                 gr_mpoleRcenter,         &
                                 gr_mpoleZcenter,         &
                                 gr_mpoleTotalMass,       &
-                                gr_mpoleBlockCount,      &
-                                gr_mpoleBlockList,       &
                                 gr_mpoleXdens2CoM,       &
                                 gr_mpoleYdens2CoM,       &
                                 gr_mpoleXcenterOfMass,   &
@@ -98,8 +96,8 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
   logical :: insideBlock
   logical :: invokeRecv
 
-  integer :: blockNr
-  integer :: blockID
+  
+  
   integer :: error
   integer :: i,imin,imax
   integer :: j,jmin,jmax
@@ -150,10 +148,10 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
      lev=block%level
-     blockID=block%id
+     
      blkLimits=block%limits
  
-     call Grid_getBlkBoundBox     (blockID, bndBox)
+     call Grid_getBlkBoundBox     (block, bndBox)
      call Grid_getDeltas          (lev, delta)
      call Grid_getBlkPtr          (block, solnData)
  
@@ -309,9 +307,9 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
-     blockID=block%id
+     
 
-     call Grid_getBlkBoundBox (blockID, bndBox)
+     call Grid_getBlkBoundBox (block, bndBox)
 
      minRcyl = bndBox (LOW ,IAXIS)
      maxRcyl = bndBox (HIGH,IAXIS)

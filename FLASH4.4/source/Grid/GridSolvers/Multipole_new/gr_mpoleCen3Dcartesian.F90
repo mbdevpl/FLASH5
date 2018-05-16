@@ -71,8 +71,6 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
                                 gr_mpoleYcenter,        &
                                 gr_mpoleZcenter,        &
                                 gr_mpoleTotalMass,      &
-                                gr_mpoleBlockCount,     &
-                                gr_mpoleBlockList,      &
                                 gr_mpoleXdens2CoM,      &
                                 gr_mpoleYdens2CoM,      &
                                 gr_mpoleZdens2CoM,      &
@@ -98,8 +96,8 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   logical :: insideBlock
   logical :: invokeRecv
 
-  integer :: blockNr
-  integer :: blockID
+  
+  
   integer :: error
   integer :: i,imin,imax
   integer :: j,jmin,jmax
@@ -154,7 +152,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
      lev=block%level
-     blockID=block%id
+     
      blkLimits=block%limits
      
      call Grid_getBlkBoundBox     (block, bndBox)
@@ -282,7 +280,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
-     blockID=block%id
+     
      call Grid_getBlkBoundBox (block, bndBox)
      
      insideBlock =       (gr_mpoleXcenter >= bndBox (LOW ,IAXIS)) &

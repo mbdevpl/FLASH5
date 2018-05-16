@@ -46,10 +46,8 @@ subroutine gr_mpoleRad2Dspherical ()
                                 gr_mpoleInnerZoneSize,   &
                                 gr_mpoleOuterZoneExists, &
                                 gr_mpoleDomainRmax,      &
-                                gr_mpoleZcenter,         &
-                                gr_mpoleBlockCount,      &
-                                gr_mpoleBlockList
-
+                                gr_mpoleZcenter
+  
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t
 
@@ -61,8 +59,8 @@ subroutine gr_mpoleRad2Dspherical ()
 
   include "Flash_mpi.h"
 
-  integer :: blockID
-  integer :: blockNr
+  
+  
   integer :: error
   integer :: i,imin,imax
   integer :: j,jmin,jmax
@@ -98,7 +96,7 @@ subroutine gr_mpoleRad2Dspherical ()
   real    :: minCellSizes (1:MDIM)
   real    :: bndBox       (LOW:HIGH,1:MDIM)
 
-  integer, allocatable :: blockListInnerZone (:)
+  logical, allocatable :: blockListInnerZone (:)
   real,    allocatable :: RinnerZone         (:)
 !
   integer :: lev

@@ -78,9 +78,8 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
                                 gr_mpoleZcenter,        &
                                 gr_mpoleRcenter,        &
                                 gr_mpolePhiCenter,      &
-                                gr_mpoleTotalMass,      &
-                                gr_mpoleBlockCount,     &
-                                gr_mpoleBlockList
+                                gr_mpoleTotalMass
+
 
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t
@@ -102,8 +101,8 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
   logical :: positiveYaxis, negativeYaxis
   logical :: quadrantI, quadrantII, quadrantIII, quadrantIV
 
-  integer :: blockNr
-  integer :: blockID
+  
+  
   integer :: error
   integer :: i,imin,imax
   integer :: j,jmin,jmax
@@ -161,7 +160,7 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
      lev=block%level
-     blockID=block%id
+     
      blkLimits=block%limits
 
      call Grid_getBlkBoundBox     (block, bndBox)
@@ -392,9 +391,9 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
    call Grid_getLeafIterator(itor)
    do while(itor%is_valid())
      call itor%blkMetaData(block)
-     blockID=block%id
+     
 
-     call Grid_getBlkBoundBox (blockID, bndBox)
+     call Grid_getBlkBoundBox (block, bndBox)
 
      minRcyl = bndBox (LOW ,IAXIS)
      maxRcyl = bndBox (HIGH,IAXIS)

@@ -60,9 +60,8 @@ subroutine gr_mpoleMom2Dcylindrical (idensvar)
                                 gr_mpoleQdataCells2D
 
   use gr_mpoleData,      ONLY : gr_mpoleRcenter,                &
-                                gr_mpoleZcenter,                &
-                                gr_mpoleBlockCount,             &
-                                gr_mpoleBlockList
+       gr_mpoleZcenter
+  
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t
 
@@ -76,7 +75,7 @@ subroutine gr_mpoleMom2Dcylindrical (idensvar)
 
   logical :: innerZonePotential
 
-  integer :: blockNr, blockID
+  
   integer :: DrUnit
   integer :: i,imin,imax
   integer :: j,jmin,jmax

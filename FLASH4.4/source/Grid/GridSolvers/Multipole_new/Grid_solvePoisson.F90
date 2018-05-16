@@ -36,8 +36,7 @@ subroutine Grid_solvePoisson (iSoln,                   &
                               bcValues,                &
                               poisFact)
 
-  use Grid_interface,    ONLY : GRID_PDE_BND_ISOLATED,         &
-                                Grid_getListOfBlocks
+  use Grid_interface,    ONLY : GRID_PDE_BND_ISOLATED
 
   use Driver_interface,  ONLY : Driver_abortFlash
 
@@ -55,9 +54,7 @@ subroutine Grid_solvePoisson (iSoln,                   &
                                 gr_mpoleDumpMoments,           &
                                 gr_mpoleDeallocateRadialArrays
 
-  use gr_mpoleData,      ONLY : gr_mpoleBlockCount,            &
-                                gr_mpoleBlockList,             &
-                                gr_mpoleMomentsDump,           &
+  use gr_mpoleData,      ONLY : gr_mpoleMomentsDump,           &
                                 gr_mpoleMultiThreading,        &
                                 gr_mpoleRadialInfoPrint
 
@@ -89,7 +86,6 @@ subroutine Grid_solvePoisson (iSoln,                   &
 !    ...Preliminary chores for setting up the run.
 !
 !
-  call Grid_getListOfBlocks         (LEAF, gr_mpoleBlockList, gr_mpoleBlockCount)
   call gr_mpoleCenterOfExpansion    (iSrc)
   call gr_mpoleRadialSampling       ()
   call gr_mpoleAllocateRadialArrays ()

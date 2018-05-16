@@ -68,9 +68,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
        gr_mpoleQDampingR,              &
        gr_mpoleQDampingI,              &
        gr_mpoleMomentR,                &
-       gr_mpoleMomentI,                &
-       gr_mpoleBlockCount,             &
-       gr_mpoleBlockList
+       gr_mpoleMomentI
 
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t
@@ -86,7 +84,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   logical :: i2, j2, k2
   logical :: innerZonePotential
 
-  integer :: blockNr, blockID
+  
   integer :: c,s
   integer :: DrUnit
   integer :: imax, imin, iC, iCmax, iF, iFmax, iB
@@ -153,9 +151,8 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   !$omp         gr_mpoleInnerZoneDrRadii,gr_mpoleInnerZoneQlower,gr_mpoleInnerZoneQupper,&
   !$omp         gr_mpoleInnerZoneResolution,gr_mpoleInnerZoneResolutionInv,&
   !$omp         gr_mpoleOuterZoneQshift,gr_mpoleXcenter,gr_mpoleYcenter,gr_mpoleZcenter,&
-  !$omp         gr_mpoleQDampingR,gr_mpoleQDampingI, gr_mpoleMomentR,gr_mpoleMomentI,&
-  !$omp         gr_mpoleBlockCount,gr_mpoleBlockList )
-
+  !$omp         gr_mpoleQDampingR,gr_mpoleQDampingI, gr_mpoleMomentR,gr_mpoleMomentI)
+  
  call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(block)

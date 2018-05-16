@@ -58,9 +58,7 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
                                           gr_mpoleTwoPi,           &
                                           gr_mpoleFourPi,          &
                                           gr_mpoleFourPiInv,       &
-                                          gr_mpoleGeometry,        &
-                                          gr_mpoleBlockCount,      &
-                                          gr_mpoleBlockList
+                                          gr_mpoleGeometry
 
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t
@@ -108,8 +106,6 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
   type(block_metadata_t) :: block,block1
   type(leaf_iterator_t) :: itor, itor1
 
-  integer :: blockNr_A,blockNr_B
-  integer :: blockID_A,blockID_B
   integer :: fileUnit
   integer :: iA,jA,kA
   integer :: iB,jB,kB
@@ -286,12 +282,12 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
                  potdiff = abs (potential_exact - potential_mpole)
                  if (potdiff > potdiff_max) then
                     !                    write (fileUnit,'(4(2X,I3,2X),E20.12,E20.12)') &
-                    !                                      blockNr_A,iA,jA,kA,   potential_exact,potential_mpole
+                    !                                      iA,jA,kA,   potential_exact,potential_mpole
                     potdiff_max = potdiff
                  end if
                  
                  write (fileUnit,'(4(2X,I3,2X),E20.12,E20.12)') &
-                      blockNr_A,iA,jA,kA,   potential_exact,potential_mpole
+                      iA,jA,kA,   potential_exact,potential_mpole
                  
                  xA = xA + DeltaI_A
               end do

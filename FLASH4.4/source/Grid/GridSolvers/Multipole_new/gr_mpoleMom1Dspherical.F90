@@ -58,9 +58,7 @@ subroutine gr_mpoleMom1Dspherical (idensvar)
                                 gr_mpoleQ,                      &
                                 gr_mpoleQused,                  &
                                 gr_mpoleQnumberOfCells,         &
-                                gr_mpoleQdataCells1D,           &
-                                gr_mpoleBlockCount,             &
-                                gr_mpoleBlockList
+                                gr_mpoleQdataCells1D
 
   use block_metadata,    ONLY : block_metadata_t
   use leaf_iterator,     ONLY : leaf_iterator_t
@@ -75,7 +73,7 @@ subroutine gr_mpoleMom1Dspherical (idensvar)
 
   logical :: innerZonePotential
 
-  integer :: blockNr, blockID
+  
   integer :: DrUnit
   integer :: i,imin,imax
   integer :: maxCells
