@@ -90,15 +90,13 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
   use Gravity_data, ONLY : grav_poisfact, grav_temporal_extrp, grav_boundary, &
        grav_unjunkPden, &
        useGravity, updateGravity, grv_meshComm
-  use Cosmology_interface, ONLY : Cosmology_getRedshift, &
-       Cosmology_getOldRedshift
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Particles_interface, ONLY: Particles_updateGridVar, &
        Particles_sinkAccelGasOnSinksAndSinksOnGas
   use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, GRID_PDE_BND_NEUMANN, &
        GRID_PDE_BND_ISOLATED, GRID_PDE_BND_DIRICHLET, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr, &
+       Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getListOfBlocks, &
        Grid_notifySolnDataUpdate, &
        Grid_solvePoisson
   implicit none
@@ -107,12 +105,13 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
 #include "constants.h"
 #include "Flash_mpi.h"
 
-  integer,intent(IN) :: blockCount
-  integer,dimension(blockCount),intent(IN) :: blockList
   integer, intent(IN), optional :: potentialIndex
 
+  integer :: blockCount
+  integer,dimension(MAXBLOCKS) :: blockList
 
-  real, POINTER, DIMENSION(:,:,:,:) :: solnVec
+
+  real, POINTER, dimension(:,:,:,:) :: solnVec
 
   integer       :: ierr
 
@@ -133,11 +132,11 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
      newPotVar = GPOT_VAR
   end if
 
-  call Cosmology_getRedshift(redshift)
-  call Cosmology_getOldRedshift(oldRedshift)
-  
-  scaleFactor = 1./(1.+redshift)
-  oldScaleFactor = 1./(1.+oldRedshift)
+!!$  call Cosmology_getRedshift(redshift)
+!!$  call Cosmology_getOldRedshift(oldRedshift)
+!!$  
+!!$  scaleFactor = 1./(1.+redshift)
+!!$  oldScaleFactor = 1./(1.+oldRedshift)
   
   invscale = 1./scaleFactor**3
 
@@ -179,30 +178,31 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
      call Driver_abortFlash("shouldn't be here right now")
      !call extrp_initial_guess( igpot, igpol, igpot )
      
-  else 
+  else
+     call Grid_getListOfBlocks(LEAF,  blocklist, blockCount)
      
      do lb = 1, blockCount
         call Grid_getBlkPtr(blocklist(lb), solnVec)
 #ifdef GPOL_VAR
-        if (saveLastPot) solnVec(GPOL_VAR,:,:,:) = solnVec(GPOT_VAR,:,:,:)
+        if (saveLastPot) solnVec(:,:,:,GPOL_VAR) = solnVec(:,:,:,GPOT_VAR)
 #endif
-        solnVec(newPotVar,:,:,:) = solnVec(newPotVar,:,:,:) * rescale
+        solnVec(:,:,:,newPotVar) = solnVec(:,:,:,newPotVar) * rescale
 
         ! CTSS - We should also be storing the old sink particle accelerations:
 #if defined(SGXO_VAR) && defined(SGYO_VAR) && defined(SGZO_VAR)
         if (saveLastPot) then   !... but only if we are saving the old potential - kW
-           solnVec(SGXO_VAR,:,:,:) = solnVec(SGAX_VAR,:,:,:)
-           solnVec(SGYO_VAR,:,:,:) = solnVec(SGAY_VAR,:,:,:)
-           solnVec(SGZO_VAR,:,:,:) = solnVec(SGAZ_VAR,:,:,:)
+           solnVec(:,:,:,SGXO_VAR) = solnVec(:,:,:,SGAX_VAR)
+           solnVec(:,:,:,SGYO_VAR) = solnVec(:,:,:,SGAY_VAR)
+           solnVec(:,:,:,SGZO_VAR) = solnVec(:,:,:,SGAZ_VAR)
         end if
 #endif
 
         ! for direct acceleration calculation by tree solver, added by R. Wunsch
 #if defined(GAOX_VAR) && defined(GAOY_VAR) && defined(GAOZ_VAR)
         if (saveLastPot) then 
-           solnVec(GAOX_VAR,:,:,:) = solnVec(GACX_VAR,:,:,:)
-           solnVec(GAOY_VAR,:,:,:) = solnVec(GACY_VAR,:,:,:)
-           solnVec(GAOZ_VAR,:,:,:) = solnVec(GACZ_VAR,:,:,:)
+           solnVec(:,:,:,GAOX_VAR) = solnVec(:,:,:,GACX_VAR)
+           solnVec(:,:,:,GAOY_VAR) = solnVec(:,:,:,GACY_VAR)
+           solnVec(:,:,:,GAOZ_VAR) = solnVec(:,:,:,GACZ_VAR)
         end if
 #endif
         call Grid_releaseBlkPtr(blocklist(lb), solnVec)
@@ -225,8 +225,8 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
 #ifdef DENS_VAR           
   do lb = 1, blockCount
      call Grid_getBlkPtr(blocklist(lb), solnVec)
-     solnVec(density,:,:,:) = solnVec(density,:,:,:) + &
-          solnVec(DENS_VAR,:,:,:)
+     solnVec(:,:,:,density) = solnVec(:,:,:,density) + &
+          solnVec(:,:,:,DENS_VAR)
      call Grid_releaseBlkPtr(blocklist(lb), solnVec)
   enddo
 #endif
@@ -246,7 +246,7 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
 #ifdef DENS_VAR           
      do lb = 1, blockCount
         call Grid_getBlkPtr(blocklist(lb), solnVec)
-        solnVec(density,:,:,:) = solnVec(density,:,:,:) - solnVec(DENS_VAR,:,:,:)
+        solnVec(:,:,:,density) = solnVec(:,:,:,density) - solnVec(:,:,:,DENS_VAR)
         call Grid_releaseBlkPtr(blocklist(lb), solnVec)
      enddo
      if (density .NE. PDEN_VAR) call Grid_notifySolnDataUpdate( (/density/) )

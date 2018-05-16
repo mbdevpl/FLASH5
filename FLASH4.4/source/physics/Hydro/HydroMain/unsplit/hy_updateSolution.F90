@@ -8,8 +8,12 @@
 !!
 !! SYNOPSIS
 !!
-!!  hy_updateSolution(integer(IN) :: blockCount, 
-!!        integer(IN) :: blockList(blockCount)
+!!  call hy_updateSolution(block_metadata_t(IN) :: blockDesc,
+!!                        integer(IN)          :: blkLimitsGC(LOW:HIGH,MDIM),
+!!       real,POINTER(in),dimension(:,:,:,:)   :: Uin,
+!!                        integer(IN)          :: blkLimits(LOW:HIGH,MDIM),
+!!       real,POINTER(in),dimension(:,:,:,:)   :: Uout,
+!!                        real(IN)             :: del(MDM),
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
 !!        real(IN)    :: dtOld,
@@ -17,13 +21,17 @@
 !!
 !!
 !! DESCRIPTION
-!! 
-!!  Performs physics update in a directionally unsplit fashion.
 !!
-!!  The blockList and blockCount arguments tell this routine on 
-!!  which blocks and on how many to operate.  blockList is an 
-!!  integer array of size blockCount that contains the local 
-!!  block numbers of blocks on which to updateSolution.
+!!  Performs physics update to the solution on a block in a
+!!  directionally unsplit fashion.
+!!
+!!  Fluxes must have been computed before this routine is called.
+!!  This implementation expects fluxes to be stored under the
+!!  responsibility of the Grid unit, and accessed with pairs of
+!!  Grid_getFluxPtr/Grid_releaseFluxPtr calls.
+!!
+!!  The blockDesc argument tells this routine on which block to
+!!  operate.
 !!
 !!  dt gives the timestep through which this update should advance,
 !!  and timeEndAdv tells the time that this update will reach when
@@ -31,17 +39,69 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockCount - the number of blocks in blockList
-!!  blockList  - array holding local IDs of blocks on which to advance
+!!  blockDesc  - indentifies and describes the current block
+!!  Uin        - pointer to one block's worth of cell-centered solution
+!!               data; this represents the input data to the current
+!!               hydro time step.
+!!               Uout must be an associated pointer.
+!!               See NOTES below for more info on the relation between
+!!               Uin and Uout.
+!!  Uout       - pointer to one block's worth of cell-centered solution
+!!               data; this represents the output data of the current
+!!               hydro time step.
+!!               Uout must be an associated pointer.
+!!               See NOTES below for more info on the relation between
+!!               Uin and Uout.
 !!  timeEndAdv - end time
 !!  dt         - timestep
 !!  dtOld      - old timestep
 !!  sweepOrder - dummy argument for the unsplit scheme, just a dummy
-!!               variable to be consistent with a toplayer stub function
+!!               variable to be consistent with a top-layer stub function
+!!
+!! NOTES
+!!
+!!  Uin and Uout
+!!  ------------
+!!
+!!  1. Uin and Uout can point to the same storage. Actually this is
+!!  the way mostly tested.
+!!
+!!  2. Schematically (omitting any bothersome details about
+!!  directionanlity, about whether solution variables are in
+!!  primitive or conservative form and fluxes are really fluxes or
+!!  flux densities, etc.), the function of this routine is to do the
+!!  following, in order:
+!!
+!!  (a) Conservative Update:
+!!      **For variables that have corresponding fluxes**
+!!
+!!        Uout := Uin + fluxes * dt/dx
+!!
+!!      (not, for example, Uout += fluxes * dt/dx).
+!!      **Variables in Uout that do not have corresponding fluxes**,
+!!      on the other hand, are not modified in this part (a).
+!!      The list of variables that are considered to have
+!!      corresponding fluxes is: !!DEV: TBD
+!!
+!!  (b) Additional Solution Modifications:
+!!      These are applied to the variables now in Uout, and can include
+!!      * calling hy_unsplitUpdateMultiTemp (for 3T Hydro, not currently
+!!        implemented here));
+!!      * calling hy_energyFix (to update internal energies, and
+!!        possibly other fixups);
+!!      * calling hy_unitConvert (for obscure MHD purposes);
+!!      * call Eos_wrapped (with mode=hy_eosModeAfter, to bring
+!!        solution variables in Uout into a thermodynamically
+!!        consistent state).
+!!
+!!
+!!  Other Notes
+!!  -----------
+!!  The preprocessor symbols MDIM, LOW, HIGH are defined in constants.h .
 !!
 !!***
 
-!!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
+!!REORDER(4): scrchFace[XYZ]Ptr
 
 Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
@@ -54,6 +114,8 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
                                hy_unitConvert,      &
                                hy_energyFix,        &
                                hy_putGravity
+  use hy_memInterface, ONLY :  hy_memGetBlkPtr,         &
+                               hy_memReleaseBlkPtr
 
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_fluxCorrectPerLevel,             &
@@ -88,21 +150,28 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
   real, pointer, dimension(:,:,:,:) :: Uin
 
   real,dimension(MDIM),intent(IN) :: del
-  integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
+  integer,dimension(LOW:HIGH,MDIM),intent(IN) ::blkLimits,blkLimitsGC
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
+  integer :: loFl(MDIM+1)
   type(block_metadata_t), intent(IN) :: blockDesc
-  
+
   integer, dimension(MDIM) :: datasize
 
-  real, pointer, dimension(:,:,:,:)   :: flx,fly,flz
+  real, pointer, dimension(:,:,:,:)   :: flx => null() 
+  real, pointer, dimension(:,:,:,:)   :: fly => null() 
+  real, pointer, dimension(:,:,:,:)   :: flz => null()
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
 
-  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
-  real, pointer, dimension(:,:,:,:) :: scrch_Ptr
-  real, pointer, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
+  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr => null()
+  real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr => null()
+  real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr => null()
+  real, pointer, dimension(:,:,:,:) :: scrch_Ptr     => null()
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcR     => null()
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcL     => null()
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcSig   => null()
 
-  integer :: updateMode ! will be set to one of UPDATE_ALL, UPDATE_INTERIOR, UPDATE_BOUND
+  integer :: updateMode ! could be set to one of UPDATE_ALL, UPDATE_INTERIOR, UPDATE_BOUND
 
 
 
@@ -146,13 +215,14 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 !!$     end if
 #endif
 
-     if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
-        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
-     endif
+!!$     if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
+!!$        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
+!!$     endif
 
      datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
-     allocate(scrch_Ptr    (2,               loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
+     call hy_memGetBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
+
 !!$     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
 !!$     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
 !!$     allocate(scrchFaceZPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
@@ -206,6 +276,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
      call Grid_getFluxPtr(blockDesc,flx,fly,flz)
+     loFl = lbound(flx)
 
 !!$     if(hy_fluxCorrectPerLevel) then
 !!$        updateMode=UPDATE_ALL
@@ -223,7 +294,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 #endif
      
      call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
-          blkLimitsGC,flx,fly,flz,gravX,gravY,gravZ,&
+          blkLimitsGC,loFl,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
      
      
@@ -243,7 +314,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 !!$#ifndef FLASH_GRID_UG
 !!$     endif
 !!$#endif
-     deallocate(scrch_Ptr)
+     call hy_memReleaseBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
 
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
 #ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */

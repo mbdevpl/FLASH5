@@ -114,6 +114,8 @@ contains
     !!             level value must be given with respect to FLASH's 1-based
     !!             level index scheme.  If no level value is given, then
     !!             iteration is not restricted to any level.
+    !!             A level value of UNSPEC_LEVEL is equivalent to omitting
+    !!             this optional argument.
     !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
     !!             walk across all associated blocks on a tile-by-tile basis *if*
     !!             the implementation supports this feature.  If a value is not
@@ -140,14 +142,19 @@ contains
       associate(first => itor%first_level, &
                 last  => itor%last_level)
         if (present(level)) then
+           if (level .NE. UNSPEC_LEVEL) then
             ! Construct do nothing iterator if no blocks on level
-            if (level > finest_level) then
-                itor%isValid = .FALSE. 
-                RETURN
-            end if 
+              if (level > finest_level) then
+                 itor%isValid = .FALSE.
+                 RETURN
+              end if
 
-            first = level
-            last = level
+              first = level
+              last = level
+           else
+              first = 1
+              last = finest_level
+           end if
         else
             first = 1
             last = finest_level

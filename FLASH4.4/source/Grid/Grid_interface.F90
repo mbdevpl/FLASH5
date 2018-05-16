@@ -294,10 +294,11 @@ Module Grid_interface
   end interface
 
   interface Grid_getBlkPtr
-     subroutine Grid_getBlkPtr(blockId, dataPtr,gridDataStruct)
+     subroutine Grid_getBlkPtr(blockId, dataPtr,gridDataStruct,localFlag)
        integer, intent(in) :: blockId
        real,dimension(:,:,:,:), pointer :: dataPtr
        integer,optional, intent(in) :: gridDataStruct
+       logical,optional, intent(in) :: localFlag
      end subroutine Grid_getBlkPtr
      subroutine Grid_getBlkPtr_desc(block, dataPtr,gridDataStruct,localFlag)
        use block_metadata, ONLY : block_metadata_t
@@ -652,9 +653,19 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_putRowData(blockid, gridDataStruct, variable, beginCount, &
+     subroutine Grid_putRowData_blockID(blockID, gridDataStruct, variable, beginCount, &
           row, startingPos, datablock, dataSize)
-       integer, intent(IN) :: blockid, variable, beginCount, row, gridDataStruct
+       integer, intent(in) :: blockID
+       integer, intent(IN) :: variable, beginCount, row, gridDataStruct
+       integer, dimension(MDIM), intent(IN) :: startingPos
+       integer, intent(IN) :: dataSize
+       real, dimension(datasize),intent(IN) :: datablock
+     end subroutine Grid_putRowData_blockID
+     subroutine Grid_putRowData(block, gridDataStruct, variable, beginCount, &
+          row, startingPos, datablock, dataSize)
+       use block_metadata, ONLY : block_metadata_t
+       type(block_metadata_t), intent(in) :: block
+       integer, intent(IN) :: variable, beginCount, row, gridDataStruct
        integer, dimension(MDIM), intent(IN) :: startingPos
        integer, intent(IN) :: dataSize
        real, dimension(datasize),intent(IN) :: datablock

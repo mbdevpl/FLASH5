@@ -58,7 +58,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct)
+subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct,localFlag)
 
 #include "constants.h"
 #include "Flash.h"
@@ -85,6 +85,7 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct)
   integer, intent(in) :: blockID
   real, dimension(:,:,:,:), pointer :: dataPtr
   integer, optional,intent(in) :: gridDataStruct
+  logical,optional, intent(in) :: localFlag
   
   integer :: gds, blkPtrRefCount, lastBlkPtrGotten
   logical :: validGridDataStruct

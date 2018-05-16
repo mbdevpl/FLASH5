@@ -2,12 +2,15 @@
 #define DEBUG_GRID
 #endif
 
+#include "Flash.h"
+
 subroutine gr_clearLevelCallback(lev) bind(c)
     use amrex_amr_module,          ONLY : amrex_multifab_destroy
     use amrex_fluxregister_module, ONLY : amrex_fluxregister_destroy 
 
     use Grid_data,                 ONLY : gr_doFluxCorrection
     use gr_physicalMultifabs,      ONLY : unk, &
+                                          gr_scratchCtr, &
                                           facevarx, facevary, facevarz, &
                                           fluxes, &
                                           flux_registers
@@ -25,6 +28,7 @@ subroutine gr_clearLevelCallback(lev) bind(c)
     call amrex_multifab_destroy(facevary(lev))
     call amrex_multifab_destroy(facevarz(lev))
 #endif
+    if (allocated(gr_scratchCtr))  call amrex_multifab_destroy(gr_scratchCtr(lev))
 
 #if NFLUXES > 0
     do dir = 1, SIZE(fluxes, 2)

@@ -50,7 +50,7 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine hy_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
+subroutine hy_prepareNewGravityAccel(gcMaskLogged)
 
   use Grid_interface, ONLY : Grid_fillGuardCells,    &
                              Grid_addToVar
@@ -68,8 +68,6 @@ subroutine hy_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
   implicit none
 
   !! ---- Argument List ----------------------------------
-  integer, INTENT(IN) ::  blockCount
-  integer, INTENT(IN), dimension(blockCount) :: blockList
   logical,intent(in) :: gcMaskLogged
   !! -----------------------------------------------------
 
@@ -82,12 +80,12 @@ subroutine hy_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
 
      !! Gravity calculation at n+1 by calling Poisson solver
      if (hy_gpotVar .LE. 0) then
-        call Gravity_potentialListOfBlocks(blockCount, blockList)
+        call Gravity_potentialListOfBlocks()
         hy_gpotAlreadyUpToDate = .TRUE.
         !! Fill guardcells for only the gpot variable
         gcMask(GPOT_VAR) = .true.
      else
-        call Gravity_potentialListOfBlocks(blockCount, blockList, potentialIndex=hy_gpotVar)
+        call Gravity_potentialListOfBlocks(potentialIndex=hy_gpotVar)
         !! Fill guardcells for only the gpoh or gpol variable
         hy_gpotAlreadyUpToDate = (hy_gpotVar==GPOT_VAR)
         gcMask(hy_gpotVar) = .true.

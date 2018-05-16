@@ -458,9 +458,10 @@ They are also used in other directionally split solvers as well.
 #define BADVALUE -2
 
 #if 0
-  These constants are used to qualify if a level value is acceptable.
+  These constants are used sometimes in place of a refinement level.
 #endif
 
+#define UNSPEC_LEVEL -1
 #define INVALID_LEVEL -5
 
 #if 0

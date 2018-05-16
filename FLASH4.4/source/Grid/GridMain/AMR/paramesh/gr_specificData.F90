@@ -48,6 +48,14 @@ Module gr_specificData
   integer, save :: gr_klo = GRID_KLO
   integer, save :: gr_khi = GRID_KHI
 
+  integer, parameter :: gr_iloFl = GRID_ILO   ! -2  for staggered mesh MHD
+  integer, parameter :: gr_ihiFl = GRID_IHI   ! +2  for staggered mesh MHD
+  integer, parameter :: gr_jloFl = GRID_JLO   ! -2*K2D  for staggered mesh MHD
+  integer, parameter :: gr_jhiFl = GRID_JHI   ! +2*K2D  for staggered mesh MHD
+  integer, parameter :: gr_kloFl = GRID_KLO   ! -2*K3D  for staggered mesh MHD
+  integer, parameter :: gr_khiFl = GRID_KHI   ! +2*K3D  for staggered mesh MHD
+
+  integer, parameter, dimension(3) :: gr_loFl = (/gr_iloFl,gr_jloFl,gr_kloFl/)
 !! Define the block information
 
 !  Type define
@@ -118,19 +126,19 @@ Module gr_specificData
 #endif
 #if(NFLUXES>0)
   real,target,dimension(NFLUXES,&
-                        GRID_ILO_GC:GRID_IHI+1,  &
-                        GRID_JLO_GC:GRID_JHI,  &
-                        GRID_KLO_GC:GRID_KHI,&
+                        gr_iloFl:gr_ihiFl+1,  &
+                        gr_jloFl:gr_jhiFl,  &
+                        gr_kloFl:gr_khiFl,&
                         MAXBLOCKS) :: gr_flxx
   real,target,dimension(NFLUXES,&
-                        GRID_ILO_GC:GRID_IHI,  &
-                        GRID_JLO_GC:GRID_JHI+K2D,  &
-                        GRID_KLO_GC:GRID_KHI,&
+                        gr_iloFl:gr_ihiFl,  &
+                        gr_jloFl:gr_jhiFl+K2D,  &
+                        gr_kloFl:gr_khiFl,&
                         MAXBLOCKS) :: gr_flxy
   real,target,dimension(NFLUXES,&
-                        GRID_ILO_GC:GRID_IHI_GC,  &
-                        GRID_JLO_GC:GRID_JHI_GC,  &
-                        GRID_KLO_GC:GRID_KHI_GC,&
+                        gr_iloFl:gr_ihiFl,  &
+                        gr_jloFl:gr_jhiFl,  &
+                        gr_kloFl:gr_khiFl+K3D,&
                         MAXBLOCKS) :: gr_flxz
 #else
   real, target,dimension(1,1,1,1,1):: gr_flxx, gr_flxy, gr_flxz

@@ -67,12 +67,13 @@ contains
     !!  
     !! ARGUMENTS
     !!  nodetype - the class of blocks to iterate over (e.g. LEAF, ACTIVE_BLKS).
-    !!             Refer to the documetation for the Paramesh version of 
+    !!             Refer to the documentation for the Paramesh version of
     !!             gr_getBlkIterator for more details.
     !!  level    - iterate only over all blocks/tiles of the correct nodetype
     !!             that are located at this level of refinement.  Refer to the
-    !!             documetation for the Paramesh version of gr_getBlkIterator 
-    !!             for more details.
+    !!             documentation for the Paramesh version of gr_getBlkIterator
+    !!             for more details.  A level value of UNSPEC_LEVEL is equivalent
+    !!             to omitting this optional argument.
     !!  tiling   - an optional optimization hint.  Tiling is not implemented for
     !!             Paramesh and therefore this hint is ignored.
     !!
@@ -86,7 +87,7 @@ contains
         logical,                intent(IN), optional :: tiling
 
         itor%nodetype = nodetype
-        itor%lev = INVALID_LEVEL 
+        itor%lev = UNSPEC_LEVEL
         if (present(level)) then
             itor%lev = level
         end if
@@ -175,7 +176,7 @@ contains
 
         integer :: j = 0
   
-        if (this%lev == INVALID_LEVEL) then
+        if (this%lev == UNSPEC_LEVEL) then
             ! No level given at creation
             do j = this%cur + 1, lnblocks
                 if (gr_blockMatch(j, this%nodetype)) EXIT

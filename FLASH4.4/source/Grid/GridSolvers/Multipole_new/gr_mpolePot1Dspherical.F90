@@ -30,7 +30,8 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
                                 Grid_releaseBlkPtr,    &
                                 Grid_getBlkBoundBox,   &
                                 Grid_getDeltas,        &
-                                Grid_getBlkIndexLimits
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator
 
   use gr_mpoleData,      ONLY : gr_mpoleGravityConstant,        &
                                 gr_mpoleDrInv,                  &
@@ -52,9 +53,10 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
                                 gr_mpoleOuterZoneQshift,        &
                                 gr_mpoleQDampingI,              &
                                 gr_mpoleMomentR,                &
-                                gr_mpoleMomentI,                &
-                                gr_mpoleBlockCount,             &
-                                gr_mpoleBlockList
+                                gr_mpoleMomentI
+
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
   
@@ -66,7 +68,7 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
 
   logical :: innerZonePotential
 
-  integer :: blockNr, blockID
+  
   integer :: DrUnit
   integer :: i, n
   integer :: imax, imin
@@ -75,7 +77,7 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
   integer :: zone
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: bndBoxILow
   real    :: DeltaI, DeltaIHalf, DeltaIFourth
@@ -91,19 +93,23 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
 
   real, pointer :: solnData (:,:,:,:)
 !  
+  integer :: lev
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
 !
 !     ...Sum quantities over all locally held leaf blocks.
 !
 !
 !$omp do schedule (static)
-  do blockNr = 1,gr_mpoleBlockCount
-
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
-     call Grid_getBlkPtr          (blockID, solnData)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+  call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
+     blkLimits=block%limits
+     
+     call Grid_getBlkBoundBox     (block, bndBox)
+     call Grid_getDeltas          (lev, delta)
+     call Grid_getBlkPtr          (block, solnData)
 
      imin = blkLimits (LOW, IAXIS)
      imax = blkLimits (HIGH,IAXIS)
@@ -215,9 +221,10 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
 !    ...Get ready for retrieving next LEAF block for the current processor.
 !
 !
-     call Grid_releaseBlkPtr (blockID, solnData)
-
+     call Grid_releaseBlkPtr (block, solnData)
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
 !$omp end do
 !
 !

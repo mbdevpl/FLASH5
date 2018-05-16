@@ -81,7 +81,7 @@ Module hy_interface
 
   interface
      subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
-                                     xflux, yflux,zflux,&
+                                     loFl, xflux,yflux,zflux,&
                                      scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                      hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
        use block_metadata, ONLY : block_metadata_t
@@ -90,18 +90,10 @@ Module hy_interface
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        integer, dimension(MDIM), intent(IN)         :: datasize
        real,    dimension(MDIM), intent(IN)         :: del
-       real, intent(OUT) :: xflux(:, &
-                       blkLimitsGC(LOW,IAXIS):, &
-                       blkLimitsGC(LOW,JAXIS):, &
-                       blkLimitsGC(LOW,KAXIS):)
-       real, intent(OUT) :: yflux(:, &
-                       blkLimitsGC(LOW,IAXIS):, &
-                       blkLimitsGC(LOW,JAXIS):, &
-                       blkLimitsGC(LOW,KAXIS):)
-       real, intent(OUT) :: zflux(NFLUXES, &
-                       blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), &
-                       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), &
-                       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
+       integer, dimension(MDIM+1),intent(IN)        :: loFl
+       real, intent(OUT) :: XFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZED TO PREVENT INDEX REORDERING!
+       real, intent(OUT) :: YFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
+       real, intent(OUT) :: ZFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
        real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr
        real, pointer, dimension(:,:,:,:) :: scrch_Ptr
        real, pointer, optional, dimension(:,:,:,:,:) :: hy_SpcR,hy_SpcL,hy_SpcSig
@@ -455,7 +447,7 @@ Module hy_interface
 
   interface
      subroutine hy_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&    
-                                     blGC,xflux,yflux,zflux,gravX,gravY,gravZ,&
+                                     blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                      scrch_Ptr)
        use block_metadata, ONLY : block_metadata_t
        implicit none
@@ -467,9 +459,10 @@ Module hy_interface
        integer,dimension(MDIM),intent(IN) :: dataSize
        integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
        integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
-    real, intent(in) :: xflux(:      ,blGC(LOW,IAXIS):                , blGC(LOW,JAXIS):                , blGC(LOW,KAXIS):                )
-    real, intent(in) :: yflux(:      ,blGC(LOW,IAXIS):                , blGC(LOW,JAXIS):                , blGC(LOW,KAXIS):                )
-    real, intent(in) :: zflux(NFLUXES,blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+       integer, dimension(MDIM+1),intent(IN)        :: loFl
+       real, intent(OUT) :: XFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZED TO PREVENT INDEX REORDERING!
+       real, intent(OUT) :: YFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
+       real, intent(OUT) :: ZFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
     real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),& 
          intent(IN) :: gravX,gravY,gravZ
        real, pointer, dimension(:,:,:,:) :: scrch_Ptr
@@ -679,9 +672,7 @@ Module hy_interface
 
 
     interface
-       subroutine hy_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
-         integer, INTENT(IN) ::  blockCount
-         integer, INTENT(IN), dimension(blockCount) :: blockList
+       subroutine hy_prepareNewGravityAccel(gcMaskLogged)
          logical,intent(in) :: gcMaskLogged
        end subroutine hy_prepareNewGravityAccel
     end interface
@@ -1024,6 +1015,7 @@ Module hy_interface
      subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
+       implicit none
        type(block_metadata_t) :: blockDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
@@ -1031,12 +1023,25 @@ Module hy_interface
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
      end subroutine hy_computeFluxes
+
+     subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+          sweepOrder )
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t) :: blockDesc
+       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       real, pointer, dimension(:,:,:,:) :: Uout,Uin
+       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
+       integer, INTENT(IN) :: sweepOrder
+       real,dimension(MDIM),intent(IN) :: del
+     end subroutine hy_advanceBlk
   end interface
 
     interface
      subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use block_metadata, ONLY : block_metadata_t
+       implicit none
        type(block_metadata_t) :: blockDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
