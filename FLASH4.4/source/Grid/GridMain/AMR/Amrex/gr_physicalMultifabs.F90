@@ -33,6 +33,7 @@ module gr_physicalMultifabs
     type(amrex_multifab), allocatable         :: facevarx(:)
     type(amrex_multifab), allocatable         :: facevary(:)
     type(amrex_multifab), allocatable         :: facevarz(:)
+    type(amrex_multifab), allocatable         :: gr_scratchCtr(:)
 
     type(amrex_multifab),     allocatable :: fluxes(:, :)
     type(amrex_fluxregister), allocatable :: flux_registers(:)

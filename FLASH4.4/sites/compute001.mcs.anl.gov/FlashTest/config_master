@@ -57,7 +57,7 @@
 ###############################
 
 pathToFlash:        /sandbox/jenkins-ci/workspace/Flash-Master/FLASH4.4 
-pathToGmake:        make -j8
+pathToGmake:        make
 defaultParfile:     <pathToFlash>/object/flash.par
 #updateScript:
 pathToSimulations:  <pathToFlash>/source/Simulation/SimulationMain

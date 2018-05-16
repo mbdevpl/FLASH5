@@ -55,6 +55,10 @@
 #include "Flash.h"
 #include "constants.h"
 
+#if defined(FLASH_HYDRO_UNSPLIT) && defined(FLASH_UHD_HYDRO)
+#include "UHD.h"
+#endif
+
 subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use iso_c_binding
     use amrex_fort_module,         ONLY : wp => amrex_real
@@ -83,6 +87,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
+                                          gr_scratchCtr, &
                                           fluxes, &
                                           flux_registers
     use gr_iterator,               ONLY : gr_iterator_t
@@ -161,6 +166,16 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
        call itor%next()
     end do
     call gr_releaseBlkIterator(itor)
+
+    !! DEV : Control of gr_scratchCtr allocation is very hacky...
+#ifdef HY_VAR2_SCRATCHCTR_VAR
+# ifdef HY_XN06_SCRATCHCTR_VAR
+    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, HY_XN06_SCRATCHCTR_VAR, 0)
+# else
+    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, HY_VAR2_SCRATCHCTR_VAR, 0)
+# endif
+#endif
+
 
 #if NFLUXES > 0
     !!!!! REBUILD FLUX MFABS WITHOUT UPDATING DATA

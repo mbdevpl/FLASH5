@@ -28,6 +28,8 @@
 !!             level value must be given with respect to FLASH's 1-based
 !!             level index scheme.  If no level value is given, then
 !!             iteration is not restricted to any level.
+!!             A level value of UNSPEC_LEVEL is equivalent to omitting
+!!             this optional argument.
 !!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
 !!             walk across all associated blocks on a tile-by-tile basis *if*
 !!             the implementation supports this feature.  If a value is not
