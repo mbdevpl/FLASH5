@@ -44,8 +44,9 @@ subroutine Grid_conserveFluxes(axis, level)
         call Driver_abortFlash("[Grid_conserveFluxes] AMReX requires axis==ALLDIR")
     end if
 
-    ! The fluxes data structure should contain fluxes and *not* flux density
-    ! Therefore, we do not need AMReX to scale for us.
+    ! The AMReX flux registers are dealing with fluxes and *not* flux densities
+    ! DEV: TODO This routine should take a densityMask array as an argument
+    ! so that the routine can determine which need to be scaled and which do not
     call flux_registers(level)%overwrite(fluxes(level-1, :), 1.0_wp)
 end subroutine Grid_conserveFluxes
 

@@ -83,6 +83,11 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
 
   ! FLASH uses 1-based level index / AMReX uses 0-based index
   call flux_registers(level-1)%setval(0.0_wp)
-  call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 1.0_wp)
+
+#if   NDIM == 2
+  call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 0.5_wp)
+#elif NDIM == 3
+  call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 0.25_wp)
+#endif
 end subroutine Grid_putFluxData
 
