@@ -52,7 +52,7 @@ subroutine Driver_initFlash()
   use Flame_interface, ONLY : Flame_init
   use PhysicalConstants_interface, ONLY : PhysicalConstants_init
   use Gravity_interface, ONLY : Gravity_init, &
-    Gravity_potentialListOfBlocks
+    Gravity_potential
   use Timers_interface, ONLY : Timers_init, Timers_start, Timers_stop
 
   use Grid_interface, ONLY : Grid_init, Grid_initDomain, &
@@ -66,7 +66,7 @@ subroutine Driver_initFlash()
   use Simulation_interface, ONLY : Simulation_init
   use Cosmology_interface, ONLY : Cosmology_init
   use IO_interface, ONLY :IO_init, IO_outputInitial
-  use Gravity_interface, ONLY :  Gravity_potentialListOfBlocks
+  use Gravity_interface, ONLY :  Gravity_potential
   implicit none       
   
 #include "constants.h"
@@ -186,7 +186,7 @@ subroutine Driver_initFlash()
   if(dr_globalMe==MASTER_PE)print*,'Initial dt verified'
  
   !For active particle simulations we must initialize particle 
-  !positions before the call to Gravity_potentialListOfBlocks.
+  !positions before the call to Gravity_potential.
   call Particles_initData(dr_restart,dr_particlesInitialized)
   
   call IO_outputInitial( dr_nbegin, dr_initialSimTime)

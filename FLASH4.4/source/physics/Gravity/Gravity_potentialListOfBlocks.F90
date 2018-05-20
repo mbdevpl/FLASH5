@@ -1,12 +1,12 @@
-!!****f* source/physics/Gravity/Gravity_potentialListOfBlocks
+!!****f* source/physics/Gravity/Gravity_potential
 !!
 !! NAME
 !! 
-!!  Gravity_potentialListOfBlocks 
+!!  Gravity_potential 
 !!
 !! SYNOPSIS
 !!
-!!  call Gravity_potentialListOfBlocks(optional,integer(IN) :: potentialIndex)
+!!  call Gravity_potential(optional,integer(IN) :: potentialIndex)
 !!
 !! DESCRIPTION
 !!
@@ -35,7 +35,7 @@
 !!
 !! NOTES
 !!
-!!  Gravity_potentialListOfBlocks can operate in one of two modes:
+!!  Gravity_potential can operate in one of two modes:
 !!  * automatic mode  - when called without the optional potentialIndex.
 !!    Such a call will usually be made once per time step, usually
 !!    from the main time advancement loop in Driver_evolveFlash.
@@ -86,7 +86,7 @@
 !!
 !!***
 
-subroutine Gravity_potentialListOfBlocks( potentialIndex)
+subroutine Gravity_potential( potentialIndex)
 
 !=============================================================================
   implicit none
@@ -95,4 +95,4 @@ subroutine Gravity_potentialListOfBlocks( potentialIndex)
   integer, intent(IN), optional :: potentialIndex
 
   return
-end subroutine Gravity_potentialListOfBlocks
+end subroutine Gravity_potential

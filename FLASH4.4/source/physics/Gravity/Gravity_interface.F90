@@ -19,7 +19,7 @@ Module Gravity_interface
   end interface
 
   interface Gravity_accelOneRow
-     subroutine Gravity_accelOneRow_blkid (pos,sweepDir,block, numCells, grav, &
+     subroutine Gravity_accelOneRow_blkid (pos,sweepDir,blockID, numCells, grav, &
            varIndex, extraAccelVars)
        implicit none
        integer, intent(IN) :: sweepDir,blockID,numCells
@@ -73,10 +73,10 @@ Module Gravity_interface
      end subroutine Gravity_init
   end interface
 
-  interface Gravity_potentialListOfBlocks
-     subroutine Gravity_potentialListOfBlocks(potentialIndex)
+  interface Gravity_potential
+     subroutine Gravity_potential(potentialIndex)
        integer, intent(IN), optional :: potentialIndex
-     end subroutine Gravity_potentialListOfBlocks
+     end subroutine Gravity_potential
   end interface
 
   interface Gravity_unitTest

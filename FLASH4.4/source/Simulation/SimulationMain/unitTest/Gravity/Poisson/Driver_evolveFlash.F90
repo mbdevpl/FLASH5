@@ -28,15 +28,13 @@
 
 subroutine Driver_evolveFlash()
 
-  use Driver_data, ONLY: dr_globalMe, dr_numProcs, dr_nbegin, &
-       dr_nend, dr_dt, dr_wallClockTimeLimit, &
-       dr_tmax, dr_simTime, dr_redshift, &
-       dr_nstep, dr_dtOld, dr_dtNew, dr_nbegin, dr_restart
+  use Driver_data, ONLY: dr_globalMe, dr_nstep
+       
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_close
   use Timers_interface, ONLY : Timers_start, Timers_stop, &
     Timers_getSummary
   use Grid_interface, ONLY : Grid_getListOfBlocks
-  use Gravity_interface, ONLY :Gravity_potentialListOfBlocks
+  use Gravity_interface, ONLY :Gravity_potential
   use IO_interface, ONLY :IO_writeCheckpoint, IO_writePlotfile
   implicit none
 
@@ -88,19 +86,20 @@ subroutine Driver_evolveFlash()
   call Grid_getListOfBlocks(ALL_BLKS, blockList, blockCount)
   print*,'get Potential'
 
-  call Gravity_potentialListOfBlocks(blockCount,blockList)
+  call Gravity_potential()
   print*,'got Potential'
 
   call Timers_stop("calculation")
 
   call Logfile_stamp( 'Ending Calculation' , '[Driver_evolveFlash]')
 
-  call IO_writeCheckpoint( dr_globalComm)
+  call IO_writeCheckpoint()
 
-  call IO_writePlotfile( dr_globalComm)
+  call IO_writePlotfile( )
 
-  call Timers_getSummary(dr_globalMe, dr_nstep)
+  call Timers_getSummary( dr_nstep)
 
+  
   call Logfile_stamp( "FLASH run complete.", "LOGFILE_END")
 
   call Logfile_close()

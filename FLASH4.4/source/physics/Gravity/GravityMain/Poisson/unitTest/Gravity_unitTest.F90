@@ -36,7 +36,7 @@
 
 subroutine Gravity_unitTest( fileUnit, perfect)
 
-  use Gravity_interface, ONLY : Gravity_potentialListOfBlocks
+  use Gravity_interface, ONLY : Gravity_potential
   use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_getBlkPtr,&
                              Grid_releaseBlkPtr, Grid_getBlkIndexLimits
   use Simulation_data, ONLY:  sim_passTolerance
@@ -60,7 +60,7 @@ subroutine Gravity_unitTest( fileUnit, perfect)
 
   call Grid_getListOfBlocks(LEAF,blkList,blkCount)
 
-  call Gravity_potentialListOfBlocks(blkcount,blkList)
+  call Gravity_potential(blkcount,blkList)
 
   potErrorMax = tiny(0.0)
   apotAbsMax = tiny(0.0)

@@ -41,7 +41,7 @@ subroutine Simulation_initBlock(solnData,block)
 #include "Flash.h"
 
   type(block_metadata_t), intent(in)   :: block
-  
+  real, pointer, dimension(:,:,:,:) :: solnData
   real,allocatable, dimension(:) :: xlCoord, ylCoord, zlCoord, &
        xrCoord, yrCoord, zrCoord
   

@@ -1,12 +1,12 @@
-!!****if* source/physics/Gravity/GravityMain/Poisson/Gravity_potentialListOfBlocks
+!!****if* source/physics/Gravity/GravityMain/Poisson/Gravity_potential
 !!
 !! NAME 
 !!
-!!     Gravity_potentialListOfBlocks
+!!     Gravity_potential
 !!
 !! SYNOPSIS
 !!
-!!  call Gravity_potentialListOfBlocks(integer(IN) :: blockCount,
+!!  call Gravity_potential(integer(IN) :: blockCount,
 !!                                     integer(IN) :: blockList(blockCount),
 !!                            optional,integer(IN) :: potentialIndex)
 !!
@@ -37,7 +37,7 @@
 !!
 !! NOTES
 !!
-!!  Gravity_potentialListOfBlocks can operate in one of two modes:
+!!  Gravity_potential can operate in one of two modes:
 !!  * automatic mode  - when called without the optional potentialIndex.
 !!    Such a call will usually be made once per time step, usually
 !!    from the main time advancement loop in Driver_evolveFlash.
@@ -84,7 +84,7 @@
 
 !!REORDER(4): solnVec
 
-subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
+subroutine Gravity_potential( potentialIndex)
 
 
   use Gravity_data, ONLY : grav_poisfact, grav_temporal_extrp, grav_boundary, &
@@ -266,4 +266,4 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
   call Timers_stop ("gravity")
   
   return
-end subroutine Gravity_potentialListOfBlocks
+end subroutine Gravity_potential

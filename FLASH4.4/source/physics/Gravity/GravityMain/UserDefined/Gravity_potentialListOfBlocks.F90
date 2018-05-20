@@ -1,12 +1,12 @@
-!!****if* source/physics/Gravity/GravityMain/UserDefined/Gravity_potentialListOfBlocks
+!!****if* source/physics/Gravity/GravityMain/UserDefined/Gravity_potential
 !!
 !! NAME
 !! 
-!!  Gravity_potentialListOfBlocks 
+!!  Gravity_potential 
 !!
 !! SYNOPSIS
 !!
-!!  call Gravity_potentialListOfBlocks(integer(IN) :: blockCount,
+!!  call Gravity_potential(integer(IN) :: blockCount,
 !!                                     integer(IN) :: blockList(blockCount),
 !!                            optional,integer(IN) :: potentialIndex)
 !!
@@ -55,7 +55,7 @@
 !!  within their Simulation directory.
 !!***
 
-subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
+subroutine Gravity_potential( potentialIndex)
 
 !=============================================================================
   implicit none
@@ -66,4 +66,4 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
   integer, intent(IN), optional :: potentialIndex
 
   return
-end subroutine Gravity_potentialListOfBlocks
+end subroutine Gravity_potential

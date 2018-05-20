@@ -806,7 +806,7 @@ Subroutine hy_uhd_unsplit ( blockCount, blockList, dt, dtOld )
 
 #ifdef GPOT_VAR
   if (hy_useGravity) then
-     ! The following call invokes Gravity_potentialListOfBlocks and related stuff,
+     ! The following call invokes Gravity_potential and related stuff,
      ! to prepare for retrieving updated accelerations below.
      call hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
   endif
