@@ -132,11 +132,8 @@ subroutine Grid_applyBCEdgeAllUnkVars(bcType,bcDir,guard,dataRow,face,&
 
   if(bcType==PERIODIC) return
 
-  if(bcType==HYDROSTATIC_F2_NVDIODE .OR. bcType==HYDROSTATIC_F2_NVOUT .OR. bcType==HYDROSTATIC_F2_NVREFL) then
-     call gr_applyFlash2HSEBC(bcType,bcDir,guard,dataRow,face,&
-          cellCenterSweepCoord, secondCoord,thirdCoord)
 
-  else if(bcType==HYDROSTATIC_NVDIODE .OR. bcType==HYDROSTATIC_NVOUT .OR. bcType==HYDROSTATIC_NVREFL) then
+  if(bcType==HYDROSTATIC_NVDIODE .OR. bcType==HYDROSTATIC_NVOUT .OR. bcType==HYDROSTATIC_NVREFL) then
      call gr_applyFlash3HSEBC(bcType,bcDir,guard,dataRow,face,&
           cellCenterSweepCoord, secondCoord,thirdCoord)
 

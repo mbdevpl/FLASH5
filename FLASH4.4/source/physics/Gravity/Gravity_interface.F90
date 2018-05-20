@@ -10,23 +10,8 @@ Module Gravity_interface
 #include "Flash.h"
 #include "FortranLangFeatures.fh"
 
-  interface
-     subroutine Gravity_accelAtCoords (numPoints, iCoords,jCoords,kCoords, accelDir,&
-          accel, Uin, &
-          potentialIndex)
-       integer, intent(IN) :: accelDir, numPoints
-       real,dimension(:,:,:,:) :: Uin
-       real, dimension(:),INTENT(in) :: iCoords,jCoords,kCoords
-       real, dimension(numPoints),INTENT(OUT) :: accel
-       integer, intent(IN),optional :: potentialIndex
-     end subroutine Gravity_accelAtCoords
-  end interface
-
   interface Gravity_accelListOfBlocks
-     subroutine Gravity_accelListOfBlocks (blockCount,blockList,component, &
-          accelIndex, potentialIndex)
-       integer,intent(IN)                      :: blockCount
-       integer,dimension(blockCount), intent(IN)     :: blockList
+     subroutine Gravity_accelListOfBlocks (component,accelIndex, potentialIndex)
        integer, INTENT(in) ::  component
        integer, intent(in) :: accelIndex
        integer, intent(IN), optional :: potentialIndex
@@ -34,7 +19,7 @@ Module Gravity_interface
   end interface
 
   interface Gravity_accelOneRow
-     subroutine Gravity_accelOneRow_blkid (pos,sweepDir,blockID, numCells, grav, &
+     subroutine Gravity_accelOneRow_blkid (pos,sweepDir,block, numCells, grav, &
            varIndex, extraAccelVars)
        implicit none
        integer, intent(IN) :: sweepDir,blockID,numCells
@@ -43,11 +28,11 @@ Module Gravity_interface
        integer, intent(IN), optional :: varIndex 
        integer, intent(IN),OPTIONAL      :: extraAccelVars(MDIM)
      end subroutine Gravity_accelOneRow_blkid
-     subroutine Gravity_accelOneRow (pos,sweepDir,blockDesc, numCells, grav, Uin,&
+     subroutine Gravity_accelOneRow (pos,sweepDir,block, numCells, grav, Uin,&
            varIndex, extraAccelVars)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t) :: blockDesc
+       type(block_metadata_t) :: block
        integer, intent(IN) :: sweepDir,numCells
        integer, dimension(2),INTENT(in) ::pos
        real, dimension(numCells),INTENT(inout) :: grav
@@ -58,9 +43,11 @@ Module Gravity_interface
   end interface
 
   interface Gravity_accelOneBlock
-     subroutine Gravity_accelOneBlock ( Uin, ngcellcomp, gvec, potentialIndex)
-       integer, intent(in)             :: ngcellcomp
-       real,dimension(:,:,:,:) :: Uin
+     subroutine Gravity_accelOneBlock ( block, ngcellcomp, gvec, potentialIndex)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t) :: block
+      integer, intent(in)             :: ngcellcomp
        real, dimension(:,:,:,:),intent(out)  :: gvec
        integer, intent(in),optional    :: potentialIndex
      end subroutine Gravity_accelOneBlock

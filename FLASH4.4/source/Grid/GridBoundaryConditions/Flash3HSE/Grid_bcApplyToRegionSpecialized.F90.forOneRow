@@ -225,7 +225,6 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
 
   applied = .FALSE.          !default, unless set otherwise below - KW
 
-!!$  if(bcType==HYDROSTATIC_F2_NVDIODE .OR. bcType==HYDROSTATIC_F2_NVOUT .OR. bcType==HYDROSTATIC_F2_NVREFL) then
   if(bcType==HYDROSTATIC_NVDIODE .OR. bcType==HYDROSTATIC_NVOUT .OR. bcType==HYDROSTATIC_NVREFL) then
 
      if (gr_bcHseDirection .NE. axis) then
