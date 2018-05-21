@@ -96,9 +96,12 @@ subroutine Gravity_potential( potentialIndex)
        Particles_sinkAccelGasOnSinksAndSinksOnGas
   use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, GRID_PDE_BND_NEUMANN, &
        GRID_PDE_BND_ISOLATED, GRID_PDE_BND_DIRICHLET, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getListOfBlocks, &
+       Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getLeafIterator, Grid_releaseLeafIterator, &
        Grid_notifySolnDataUpdate, &
        Grid_solvePoisson
+  use block_metadata, ONLY : block_metadata_t
+  use leaf_iterator, ONLY : leaf_iterator_t
+  
   implicit none
 
 #include "Flash.h"
@@ -106,9 +109,6 @@ subroutine Gravity_potential( potentialIndex)
 #include "Flash_mpi.h"
 
   integer, intent(IN), optional :: potentialIndex
-
-  integer :: blockCount
-  integer,dimension(MAXBLOCKS) :: blockList
 
 
   real, POINTER, dimension(:,:,:,:) :: solnVec
@@ -124,13 +124,18 @@ subroutine Gravity_potential( potentialIndex)
   integer       :: density
   integer       :: newPotVar
   logical       :: saveLastPot
-
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+  
   saveLastPot = (.NOT. present(potentialIndex))
   if (present(potentialIndex)) then
      newPotVar = potentialIndex
   else
      newPotVar = GPOT_VAR
   end if
+
+  lb=1
+  print*,' here at 1'
 
 !!$  call Cosmology_getRedshift(redshift)
 !!$  call Cosmology_getOldRedshift(oldRedshift)
@@ -179,10 +184,11 @@ subroutine Gravity_potential( potentialIndex)
      !call extrp_initial_guess( igpot, igpol, igpot )
      
   else
-     call Grid_getListOfBlocks(LEAF,  blocklist, blockCount)
-     
-     do lb = 1, blockCount
-        call Grid_getBlkPtr(blocklist(lb), solnVec)
+     call Grid_getLeafIterator(itor)
+  
+     do while(itor%is_valid())
+        call itor%blkMetaData(block)
+        call Grid_getBlkPtr(block, solnVec)
 #ifdef GPOL_VAR
         if (saveLastPot) solnVec(:,:,:,GPOL_VAR) = solnVec(:,:,:,GPOT_VAR)
 #endif
@@ -205,10 +211,11 @@ subroutine Gravity_potential( potentialIndex)
            solnVec(:,:,:,GAOZ_VAR) = solnVec(:,:,:,GACZ_VAR)
         end if
 #endif
-        call Grid_releaseBlkPtr(blocklist(lb), solnVec)
+        call Grid_releaseBlkPtr(block, solnVec)
+        call itor%next()
      enddo
-     
-#ifdef GPOL_VAR
+     call Grid_releaseLeafIterator(itor)
+ #ifdef GPOL_VAR
      if (saveLastPot) call Grid_notifySolnDataUpdate( (/GPOL_VAR/) )
 #endif
 
@@ -222,21 +229,29 @@ subroutine Gravity_potential( potentialIndex)
   call Particles_updateGridVar(MASS_PART_PROP, PDEN_VAR)
   if (.NOT. grav_unjunkPden) call Grid_notifySolnDataUpdate( (/PDEN_VAR/) )
   density = PDEN_VAR
-#ifdef DENS_VAR           
-  do lb = 1, blockCount
-     call Grid_getBlkPtr(blocklist(lb), solnVec)
+#ifdef DENS_VAR
+  
+  call Grid_getLeafIterator(itor)
+     
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     call Grid_getBlkPtr(block, solnVec)
      solnVec(:,:,:,density) = solnVec(:,:,:,density) + &
           solnVec(:,:,:,DENS_VAR)
-     call Grid_releaseBlkPtr(blocklist(lb), solnVec)
+     call Grid_releaseBlkPtr(block, solnVec)
+     call itor%next()
   enddo
+  call Grid_releaseLeafIterator(itor)
 #endif
 #endif
 #endif
+  print*,' here at 6 '
 
   invscale=grav_poisfact*invscale
   call Grid_solvePoisson (newPotVar, density, bcTypes, bcValues, &
        invscale)
   call Grid_notifySolnDataUpdate( (/newPotVar/) )
+  print*,' here at 7'
 
 ! Un-junk PDEN if it exists and if requested.
 
@@ -244,22 +259,27 @@ subroutine Gravity_potential( potentialIndex)
   if (grav_unjunkPden) then
      density = PDEN_VAR
 #ifdef DENS_VAR           
-     do lb = 1, blockCount
-        call Grid_getBlkPtr(blocklist(lb), solnVec)
-        solnVec(:,:,:,density) = solnVec(:,:,:,density) - solnVec(:,:,:,DENS_VAR)
-        call Grid_releaseBlkPtr(blocklist(lb), solnVec)
+     do while(itor%is_valid())
+        call itor%blkMetaData(block)
+        call Grid_getBlkPtr(block, solnVec)
+        solnVec(:,:,:,density) = solnVec(:,:,:,density) + &
+             solnVec(:,:,:,DENS_VAR)
+        call Grid_releaseBlkPtr(block, solnVec)
+        call itor%next()
      enddo
+     call Grid_releaseLeafIterator(itor)
      if (density .NE. PDEN_VAR) call Grid_notifySolnDataUpdate( (/density/) )
 #endif
   end if
 #endif
-
+  print*,' here at 8 '
+  
   if (.NOT. present(potentialIndex)) then
-    ! Compute acceleration of the sink particles caused by gas and vice versa
-    call Particles_sinkAccelGasOnSinksAndSinksOnGas()
+     ! Compute acceleration of the sink particles caused by gas and vice versa
+     call Particles_sinkAccelGasOnSinksAndSinksOnGas()
   end if
-
-
+  
+  
 #ifdef USEBARS
   call MPI_Barrier (grv_meshComm, ierr)
 #endif  

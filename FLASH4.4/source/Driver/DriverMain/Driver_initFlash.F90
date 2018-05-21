@@ -213,15 +213,16 @@ subroutine Driver_initFlash()
   call Particles_initData(dr_restart,dr_particlesInitialized)
 
   if(.not. dr_restart) then
-     call Grid_getListOfBlocks(LEAF,blockList,blockCount)
+     print*,'calling gravity potential'
      call Gravity_potential()
+     print*,'done with that'
      call Particles_initForces()
   end if
 
   ! If we want to free any arrays created during simulation
   ! initialization that are no longer needed, do it here.
   call Simulation_freeUserArrays()
-
+  print*,'arrays freed'
   call IO_outputInitial(  dr_nbegin, dr_initialSimTime)
   if(dr_globalMe==MASTER_PE)print*,'Initial plotfile written'
 

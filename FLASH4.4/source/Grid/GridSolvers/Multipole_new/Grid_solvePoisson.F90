@@ -85,12 +85,11 @@ subroutine Grid_solvePoisson (iSoln,                   &
 !
 !    ...Preliminary chores for setting up the run.
 !
-!
-  call gr_mpoleCenterOfExpansion    (iSrc)
-  call gr_mpoleRadialSampling       ()
-  call gr_mpoleAllocateRadialArrays ()
-
-  call gr_mpoleSetRadialBinData     ()
+  !
+   call gr_mpoleCenterOfExpansion    (iSrc)
+   call gr_mpoleRadialSampling       ()
+   call gr_mpoleAllocateRadialArrays ()
+   call gr_mpoleSetRadialBinData     ()
 !
 !
 !     ...Print radial info if requested by user.
@@ -100,7 +99,6 @@ subroutine Grid_solvePoisson (iSoln,                   &
   if (gr_mpoleRadialInfoPrint) then
       call gr_mpolePrintRadialInfo ()
   end if
-
   call Timers_start             ("gr_mpoleMoments")
   call gr_mpoleMoments          (iSrc)
   call Timers_stop              ("gr_mpoleMoments")

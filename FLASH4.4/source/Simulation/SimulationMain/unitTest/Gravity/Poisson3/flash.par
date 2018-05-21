@@ -79,7 +79,7 @@ dtinit                    = 1.0E-3    # Initial time step
 dtmin                     = 1.0E-3    # Minimum time step
 dtmax                     = 1.0E-1    # Maximum time step
 
-nend                      = 0         # Maximum number of steps to take
+nend                      = 1         # Maximum number of steps to take
 tmax                      = 0.0       # Maximum time to run (not used)
 
 alwaysRestrictCheckpoint = .FALSE.

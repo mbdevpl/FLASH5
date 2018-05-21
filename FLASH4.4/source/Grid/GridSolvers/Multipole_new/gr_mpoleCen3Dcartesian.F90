@@ -139,15 +139,16 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
 !     ...Sum quantities over all locally held leaf blocks.
 !
 !
-  localMsum   = ZERO
-  localMDsum  = ZERO
-  localMDXsum = ZERO
-  localMDYsum = ZERO
-  localMDZsum = ZERO
-  localMXsum  = ZERO
-  localMYsum  = ZERO
-  localMZsum  = ZERO
+  localData(1)   = ZERO
+  localData(2)  = ZERO
+  localData(3) = ZERO
+  localData(4) = ZERO
+  localData(5) = ZERO
+  localData(6)  = ZERO
+  localData(7)  = ZERO
+  localData(8)  = ZERO
 
+  
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
@@ -158,7 +159,6 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
      call Grid_getBlkBoundBox     (block, bndBox)
      call Grid_getDeltas          (lev, delta)
      call Grid_getBlkPtr          (block, solnData)
-
      imin = blkLimits (LOW, IAXIS)
      jmin = blkLimits (LOW, JAXIS)
      kmin = blkLimits (LOW, KAXIS)  
@@ -179,7 +179,6 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
      bndBoxKLow = bndBox (LOW,KAXIS)
 
      cellVolume = DeltaI * DeltaJ * DeltaK
-
      
      z = bndBoxKLow + DeltaKHalf
      do k = kmin,kmax
@@ -192,15 +191,14 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
               cellMass        = cellDensity * cellVolume
               cellMassDensity = cellMass * cellDensity
 
-              localMsum   = localMsum   + cellMass
-              localMDsum  = localMDsum  + cellMassDensity
-              localMDXsum = localMDXsum + cellMassDensity * x
-              localMDYsum = localMDYsum + cellMassDensity * y
-              localMDZsum = localMDZsum + cellMassDensity * z
-              localMXsum  = localMXsum  + cellMass * x
-              localMYsum  = localMYsum  + cellMass * y
-              localMZsum  = localMZsum  + cellMass * z
-
+              localData(1)   = localData(1)   + cellMass
+              localData(2)  = localData(2)  + cellMassDensity
+              localData(3) = localData(3) + cellMassDensity * x
+              localData(4) = localData(4) + cellMassDensity * y
+              localData(5) = localData(5) + cellMassDensity * z
+              localData(6)  = localData(6)  + cellMass * x
+              localData(7)  = localData(7)  + cellMass * y
+              localData(8)  = localData(8)  + cellMass * z
               x = x + DeltaI
            end do
            y = y + DeltaJ
@@ -217,19 +215,13 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
 !     ...Prepare for a one-time all reduce call.
 !
 !
-  localData (1) = localMsum
-  localData (2) = localMDsum
-  localData (3) = localMDXsum
-  localData (4) = localMDYsum
-  localData (5) = localMDZsum
-  localData (6) = localMXsum
-  localData (7) = localMYsum
-  localData (8) = localMZsum
-!
+
+  !
 !
 !     ...Calculate the total sums and give a copy to each processor.
 !
   !
+  
   call  MPI_AllReduce (localData,   &
                        totalData,   &
                        8,           &
@@ -300,7 +292,6 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
      insideBlock = insideBlock .or. domainXmax .or. domainYmax .or. domainZmax
      
      if (insideBlock) then
-        
         lev=block%level
         call Grid_getDeltas          (lev, delta)
         blkLimits=block%limits
@@ -346,7 +337,6 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
         gr_mpoleXcenter = gr_mpoleXcenter + shifts (locate (1),1)  ! move to nearest x edge
         gr_mpoleYcenter = gr_mpoleYcenter + shifts (locate (2),2)  ! move to nearest y edge
         gr_mpoleZcenter = gr_mpoleZcenter + shifts (locate (3),3)  ! move to nearest z edge
-        
         deallocate (shifts)
         
         localData (1) = gr_mpoleDrInnerZone
