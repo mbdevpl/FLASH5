@@ -284,27 +284,26 @@ subroutine Grid_init()
 !  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
 
 !!!  gr_meshComm = FLASH_COMM
-!! The following renaming was done: "conserved_var" -> "convertToConsvdForMeshCalls". - KW
-!  call RuntimeParameters_get("convertToConsvdForMeshCalls", gr_convertToConsvdForMeshCalls)
-!  call RuntimeParameters_get("convertToConsvdInMeshInterp", gr_convertToConsvdInMeshInterp)
-!  if (gr_convertToConsvdInMeshInterp) then
-!     if (gr_convertToConsvdForMeshCalls) then
-!        ! For PARAMESH 4, if both ways of conversion to conserved form are requested,
-!        ! Let the new mechanism win and try to make sure the old one is not used. - KW
-!        if(gr_meshMe == MASTER_PE) &
-!             print*,'WARNING: convertToConsvdForMeshCalls ignored since convertToConsvdInMeshInterp is requested'
-!        call Logfile_stampMessage( &
-!             "WARNING: convertToConsvdForMeshCalls ignored since convertToConsvdInMeshInterp is requested")
-!        gr_convertToConsvdForMeshCalls = .FALSE.
-!     end if
-!  end if
+  call RuntimeParameters_get("convertToConsvdForMeshCalls", &
+                             gr_convertToConsvdForMeshCalls)
+  call RuntimeParameters_get("convertToConsvdInMeshInterp", &
+                             gr_convertToConsvdInMeshInterp)
+  if (gr_convertToConsvdInMeshInterp) then
+     if (gr_meshMe == MASTER_PE) then
+        print*,'WARNING : MeshInterp primitive/conserved conversion not available in AMReX.'
+        print*,'          Using MeshCalls conversion instead.'
+     end if
+     call Logfile_stampMessage("WARNING : Using MeshCalls instead of MeshInterp with AMReX")
+     gr_convertToConsvdForMeshCalls = .TRUE.
+     gr_convertToConsvdInMeshInterp = .FALSE.
+  end if
 
   call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
 !  call RuntimeParameters_get("gr_sanitizeDataMode",  gr_sanitizeDataMode)
 !  call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
 
-!  call RuntimeParameters_get("smalle",gr_smalle)
-!  call RuntimeParameters_get("smlrho",gr_smallrho)
+  call RuntimeParameters_get("smalle", gr_smalle)
+  call RuntimeParameters_get("smlrho", gr_smallrho)
 !  call RuntimeParameters_get("smallx",gr_smallx) !
 !!  call RuntimeParameters_get("grid_monotone_hack", gr_monotone) ! for "quadratic_cartesian" interpolation
 !  call RuntimeParameters_get("interpol_order",gr_intpol) ! for "monotonic" interpolation
@@ -478,11 +477,9 @@ subroutine Grid_init()
 !  call RuntimeParameters_get("grav_boundary_type", grav_boundary_type)
 !  gr_isolatedBoundaries = (grav_boundary_type=="isolated")
 !
-!  gr_anyVarToConvert = .FALSE.
   do i = UNK_VARS_BEGIN,UNK_VARS_END
 !     gr_vars(i)=i
      call Simulation_getVarnameType(i, gr_vartypes(i))
-!     if (gr_vartypes(i) .eq. VARTYPE_PER_MASS) gr_anyVarToConvert = .TRUE.
   end do
 
 !#ifdef FL_NON_PERMANENT_GUARDCELLS
