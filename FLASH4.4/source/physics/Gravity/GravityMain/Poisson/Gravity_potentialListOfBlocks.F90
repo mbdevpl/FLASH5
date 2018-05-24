@@ -115,7 +115,7 @@ subroutine Gravity_potential( potentialIndex)
 
   integer       :: ierr
 
-  real          :: redshift, oldRedshift
+  real          :: redshift=0, oldRedshift=0
   real          :: scaleFactor, oldScaleFactor
   real          :: invscale, rescale
   integer       :: lb
@@ -140,8 +140,8 @@ subroutine Gravity_potential( potentialIndex)
 !!$  call Cosmology_getRedshift(redshift)
 !!$  call Cosmology_getOldRedshift(oldRedshift)
 !!$  
-!!$  scaleFactor = 1./(1.+redshift)
-!!$  oldScaleFactor = 1./(1.+oldRedshift)
+  scaleFactor = 1./(1.+redshift)
+  oldScaleFactor = 1./(1.+oldRedshift)
   
   invscale = 1./scaleFactor**3
 
