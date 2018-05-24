@@ -135,7 +135,6 @@ subroutine Gravity_potential( potentialIndex)
   end if
 
   lb=1
-  print*,' here at 1'
 
 !!$  call Cosmology_getRedshift(redshift)
 !!$  call Cosmology_getOldRedshift(oldRedshift)
@@ -245,13 +244,11 @@ subroutine Gravity_potential( potentialIndex)
 #endif
 #endif
 #endif
-  print*,' here at 6 '
 
   invscale=grav_poisfact*invscale
   call Grid_solvePoisson (newPotVar, density, bcTypes, bcValues, &
        invscale)
   call Grid_notifySolnDataUpdate( (/newPotVar/) )
-  print*,' here at 7'
 
 ! Un-junk PDEN if it exists and if requested.
 
@@ -272,7 +269,6 @@ subroutine Gravity_potential( potentialIndex)
 #endif
   end if
 #endif
-  print*,' here at 8 '
   
   if (.NOT. present(potentialIndex)) then
      ! Compute acceleration of the sink particles caused by gas and vice versa
