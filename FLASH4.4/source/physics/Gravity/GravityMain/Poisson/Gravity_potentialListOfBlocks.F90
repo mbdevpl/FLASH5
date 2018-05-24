@@ -215,7 +215,7 @@ subroutine Gravity_potential( potentialIndex)
         call itor%next()
      enddo
      call Grid_releaseLeafIterator(itor)
- #ifdef GPOL_VAR
+#ifdef GPOL_VAR
      if (saveLastPot) call Grid_notifySolnDataUpdate( (/GPOL_VAR/) )
 #endif
 
