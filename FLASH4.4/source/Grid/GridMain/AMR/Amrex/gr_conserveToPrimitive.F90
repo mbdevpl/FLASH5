@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/Chombo/AMR/gr_conserveToPrimitive
+!!****if* source/Grid/GridMain/paramesh/gr_conserveToPrimitive
 !!
 !! NAME
 !!
@@ -7,19 +7,17 @@
 !!
 !! SYNOPSIS
 !!
-!!  gr_conserveToPrimitive(integer(in) :: blkList(count),
-!!                         integer(in) :: count,
-!!                         logical(in) :: allCells)
+!!  gr_conserveToPrimitive(block_metadata_t(in) :: block,
+!!                         logical(in)          :: allCells)
 !!
 !!
 !!
 !! DESCRIPTION
 !!
-!!  Given a list of blocks of data, loop over all of the blocks and
-!!  convert variables which are normally represented in PER_MASS
-!!  form (e.g., velocity) from the corresponding conservative form
-!!  (i.e., momentum) back to the normal PER_MASS form  if 
-!!  gr_convertToConsvdForMeshCalls is TRUE.
+!!  Given a block of data, convert variables which are normally
+!!  represented in PER_MASS form (e.g., velocity) from the 
+!!  corresponding conservative form (i.e., momentum) back to the normal
+!!  PER_MASS form  if gr_convertToConsvdForMeshCalls is TRUE.
 !!  Do nothing if gr_convertToConsvdForMeshCalls is FALSE.
 !!
 !!  Additionally,
@@ -30,9 +28,8 @@
 !!
 !! ARGUMENTS
 !! 
-!!   blkList - integer list of blocks to be operated on
-!!
-!!   count - number of blocks in the blkList
+!!   block - the metadata representation of block whose data shall be
+!!           transformed
 !!
 !!   allCells - act on all cells, including guardcells, if .TRUE.,
 !!              otherwise only modify interior cells.
@@ -68,17 +65,109 @@
 !!
 !!***
 
-#include "constants.h"
-#include "Flash.h"
+!!REORDER(4):solnData
 
-subroutine gr_conserveToPrimitive(blkList,count,allCells)
+#include "Flash.h"
+#include "constants.h"
+
+subroutine gr_conserveToPrimitive(block, allCells)
   use Driver_interface, ONLY : Driver_abortFlash
+  use Grid_interface,   ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_data,        ONLY : gr_smallrho, &
+                               gr_smalle, & 
+                               gr_vartypes, &
+                               gr_convertToConsvdForMeshCalls
+  use block_metadata,   ONLY : block_metadata_t
 
   implicit none
+
+  type(block_metadata_t), intent(IN) :: block
+  logical,                intent(IN) :: allCells
   
-  integer,intent(IN) :: count
-  integer, dimension(count), intent(IN) :: blkList
-  logical, intent(IN):: allCells
-  
-  call Driver_abortFlash("[gr_conservativeToPrimitive]: Not implemented yet!")
+  real, pointer :: solnData(:,:,:,:) => null()
+
+  real    :: dens_old_inv
+  logical :: needToConvert
+  integer :: i, j, k, var
+  integer :: ilo, ihi
+  integer :: jlo, jhi
+  integer :: klo, khi
+
+  if (.NOT. gr_convertToConsvdForMeshCalls)          RETURN
+
+  call Grid_getBlkPtr(block, solnData, CENTER)
+
+#ifdef DENS_VAR
+  if (allCells) then
+    ilo = block%limitsGC(LOW,  IAXIS)
+    ihi = block%limitsGC(HIGH, IAXIS)
+    jlo = block%limitsGC(LOW,  JAXIS)
+    jhi = block%limitsGC(HIGH, JAXIS)
+    klo = block%limitsGC(LOW,  KAXIS)
+    khi = block%limitsGC(HIGH, KAXIS)
+  else
+    ilo = block%limits(LOW,  IAXIS)
+    ihi = block%limits(HIGH, IAXIS)
+    jlo = block%limits(LOW,  JAXIS)
+    jhi = block%limits(HIGH, JAXIS)
+    klo = block%limits(LOW,  KAXIS)
+    khi = block%limits(HIGH, KAXIS)
+  end if
+
+  needToConvert = ANY(gr_vartypes == VARTYPE_PER_MASS)
+
+  associate(ilo_interior => block%limits(LOW,  IAXIS), &
+            ihi_interior => block%limits(HIGH, IAXIS), &
+            jlo_interior => block%limits(LOW,  JAXIS), &
+            jhi_interior => block%limits(HIGH, JAXIS), &
+            klo_interior => block%limits(LOW,  KAXIS), &
+            khi_interior => block%limits(HIGH, KAXIS))
+  do     k = klo, khi
+    do   j = jlo, jhi
+      do i = ilo, ihi
+        if (needToConvert) then
+          if (      (solnData(DENS_VAR,i,j,k) == 0.0) &
+              .AND. (ilo_interior <= i) .AND. (i <= ihi_interior) &
+              .AND. (jlo_interior <= j) .AND. (j <= jhi_interior) &
+              .AND. (klo_interior <= k) .AND. (k <= khi_interior)) then
+            dens_old_inv = 0.0
+            call Driver_abortFlash("[gr_conserveToPrimitive] 0/0 interior Error")
+          else if (solnData(DENS_VAR,i,j,k) == 0.0) then
+            dens_old_inv = 1.0 / gr_smallrho
+            do var = UNK_VARS_BEGIN, UNK_VARS_END
+              if (      (gr_vartypes(var) == VARTYPE_PER_MASS) &
+                  .AND. (solnData(var,i,j,k) /= 0.0)) then
+                write(*,*) "0/0 GC error", i, j, k, solnData(DENS_VAR,i,j,k)
+                call Driver_abortFlash("[gr_conserveToPrimitive] 0/0 GC Error")
+              end if
+            end do
+          else
+            dens_old_inv = 1.0 / solnData(DENS_VAR,i,j,k)
+          end if
+
+          do var = UNK_VARS_BEGIN, UNK_VARS_END
+            if (gr_vartypes(var) == VARTYPE_PER_MASS) then
+              solnData(var,i,j,k) = dens_old_inv * solnData(var,i,j,k)
+            end if
+          end do
+        end if
+
+        ! small limits -- in case the interpolants are not monotonic
+        solnData(DENS_VAR,i,j,k) = max(solnData(DENS_VAR,i,j,k), gr_smallrho)
+      end do
+    end do
+  end do
+  end associate
+#endif
+
+#ifdef ENER_VAR               
+  solnData(ENER_VAR,:,:,:) = max(solnData(ENER_VAR,:,:,:), gr_smalle)
+#endif
+#ifdef EINT_VAR
+  solnData(EINT_VAR,:,:,:) = max(solnData(EINT_VAR,:,:,:), gr_smalle)
+#endif
+
+  call Grid_releaseBlkPtr(block, solnData, CENTER)
+
 end subroutine gr_conserveToPrimitive
+        

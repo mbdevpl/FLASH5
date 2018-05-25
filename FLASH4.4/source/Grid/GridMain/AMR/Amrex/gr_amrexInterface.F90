@@ -116,6 +116,38 @@ module gr_amrexInterface
   end interface
  
   interface
+    subroutine gr_primitiveToConserve(blockDesc)
+      use block_metadata, ONLY : block_metadata_t
+      implicit none
+      type(block_metadata_t), intent(IN) :: blockDesc
+    end subroutine gr_primitiveToConserve
+  end interface
+
+  interface
+    subroutine gr_conserveToPrimitive(blockDesc, allCells)
+      use block_metadata, ONLY : block_metadata_t
+      implicit none
+      type(block_metadata_t), intent(IN) :: blockDesc
+      logical,                intent(IN) :: allCells
+    end subroutine gr_conserveToPrimitive
+  end interface
+ 
+  interface
+    subroutine gr_primitiveToConserveLevel(level)
+      implicit none
+      integer, intent(IN) :: level
+    end subroutine gr_primitiveToConserveLevel
+  end interface
+
+  interface
+    subroutine gr_conserveToPrimitiveLevel(level, allCells)
+      implicit none
+      integer, intent(IN) :: level
+      logical, intent(IN) :: allCells
+    end subroutine gr_conserveToPrimitiveLevel
+  end interface
+
+  interface
     subroutine gr_averageDownLevels()
       implicit none
     end subroutine gr_averageDownLevels
