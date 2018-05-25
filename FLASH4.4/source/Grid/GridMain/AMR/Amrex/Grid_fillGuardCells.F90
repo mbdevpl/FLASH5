@@ -359,17 +359,29 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! which is copying *all* data, including the GC.
   call Timers_start("amr_guardcell")
 
-  ! GC Fill with GC EoS on coarsest level
   lev = 0
   call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
                                  0.0d0, unk(lev), &
                                  amrex_geom(lev), gr_fillPhysicalBC, &
                                  0.0d0, scompCC, scompCC, ncompCC)
 
+  finest_level = amrex_get_finest_level()
+  do lev=1, finest_level
+     call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
+                                    0.0d0, unk(lev-1), &
+                                    amrex_geom(lev-1), gr_fillPhysicalBC, &
+                                    1.0e0, unk(lev  ), &
+                                    0.0d0, unk(lev  ), &
+                                    amrex_geom(lev  ), gr_fillPhysicalBC, &
+                                    0.0d0, scompCC, scompCC, ncompCC, &
+                                    amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                    lo_bc_amrex, hi_bc_amrex) 
+  end do
+
   if (present(doEos) .AND. needEos) then
      if (doEos) then
         call Timers_start("eos gc")
-        call gr_getBlkIterator(itor, level=lev+1)
+        call gr_getBlkIterator(itor)
         do while (itor%is_valid())
            call itor%blkMetaData(blockDesc)
            
@@ -384,39 +396,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
         call Timers_stop("eos gc")
      end if
   end if
-
-  ! GC Fill with GC EoS up to finest level
-  finest_level = amrex_get_finest_level()
-  do lev=1, finest_level
-     call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
-                                    0.0d0, unk(lev-1), &
-                                    amrex_geom(lev-1), gr_fillPhysicalBC, &
-                                    1.0e0, unk(lev  ), &
-                                    0.0d0, unk(lev  ), &
-                                    amrex_geom(lev  ), gr_fillPhysicalBC, &
-                                    0.0d0, scompCC, scompCC, ncompCC, &
-                                    amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                    lo_bc_amrex, hi_bc_amrex) 
-  
-     if (present(doEos) .AND. needEos) then
-        if (doEos) then
-           call Timers_start("eos gc")
-           call gr_getBlkIterator(itor, level=lev+1)
-           do while (itor%is_valid())
-              call itor%blkMetaData(blockDesc)
-              
-              call Grid_getBlkPtr(blockDesc, solnData)
-              call Eos_guardCells(gcEosMode, solnData, corners=.true., &
-                                  layers=returnLayers)
-              call Grid_releaseBlkPtr(blockDesc, solnData)
-
-              call itor%next()
-           end do
-           call gr_releaseBlkIterator(itor)
-           call Timers_stop("eos gc")
-        end if
-     end if
-  end do
   call Timers_stop("amr_guardcell")
 
   gr_justExchangedGC = .TRUE.
