@@ -77,6 +77,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
     use gr_interface,              ONLY : gr_getBlkIterator, &
                                           gr_releaseBlkIterator
+    use gr_amrexInterface,         ONLY : gr_primitiveToConserveLevel, &
+                                          gr_conserveToPrimitiveLevel
     use Grid_data,                 ONLY : gr_eosModeInit, &
                                           gr_doFluxCorrection, &
                                           lo_bc_amrex, hi_bc_amrex
@@ -176,6 +178,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                       time, &
                                       UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)
     else
+       call gr_primitiveToConserveLevel(lev-1)
+       call gr_primitiveToConserveLevel(lev  )
        call amrex_fillpatch(unk(lev), time+1.0d0, unk(lev-1), &
                                       time,       unk(lev-1), &
                                       amrex_geom(lev-1), gr_fillPhysicalBC, &
@@ -187,6 +191,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                       amrex_ref_ratio(lev-1), &
                                       amrex_interp_cell_cons, &
                                       lo_bc_amrex, hi_bc_amrex)
+        call gr_conserveToPrimitiveLevel(lev-1, .TRUE.)
+        call gr_conserveToPrimitiveLevel(lev  , .TRUE.)
     end if
 
     ! Run EoS on interiors and GCs in preparation for refinement check
