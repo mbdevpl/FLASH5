@@ -1,9 +1,10 @@
 #include "constants.h"
 
 subroutine gr_primitiveToConserveLevel(level)
-  use gr_interface,   ONLY : gr_getBlkIterator, gr_releaseBlkIterator
-  use gr_iterator,    ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use gr_interface,      ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+  use gr_amrexInterface, ONLY : gr_primitiveToConserve
+  use gr_iterator,       ONLY : gr_iterator_t
+  use block_metadata,    ONLY : block_metadata_t
 
   implicit none
 

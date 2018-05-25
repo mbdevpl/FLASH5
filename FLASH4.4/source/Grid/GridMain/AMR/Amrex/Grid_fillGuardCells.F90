@@ -161,7 +161,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         Logfile_stampVarMask, &
                                         Logfile_stamp
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
-                                        gr_averageDownLevels
+                                        gr_averageDownLevels, &
+                                        gr_primitiveToConserveLevel, &
+                                        gr_conserveToPrimitiveLevel
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
                                         gr_setMasks_gen, &
                                         gr_makeMaskConsistent_gen, &
@@ -350,6 +352,14 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   if (present(selectBlockType)) then
      call Driver_abortFlash("[Grid_fillGuardCells] selectBlockType *not* implemented for yet AMReX") 
   end if
+ 
+  ! Next calls might execute interpolation => all data in conserved form
+  ! DEV: We could do this just on leaves and let averageDown bring conserved
+  ! form down
+  finest_level = amrex_get_finest_level()
+  do lev = 0, finest_level
+    call gr_primitiveToConserveLevel(lev)
+  end do
 
   ! Restrict data from leaves to coarser blocks
   call gr_averageDownLevels
@@ -365,7 +375,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                  amrex_geom(lev), gr_fillPhysicalBC, &
                                  0.0d0, scompCC, scompCC, ncompCC)
 
-  finest_level = amrex_get_finest_level()
   do lev=1, finest_level
      call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
                                     0.0d0, unk(lev-1), &
@@ -376,6 +385,12 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                     0.0d0, scompCC, scompCC, ncompCC, &
                                     amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                     lo_bc_amrex, hi_bc_amrex) 
+  end do
+
+  ! DEV: Could we do this just on leaves as well or does Hydro need to have
+  ! primitive form on the parents/ancestors?
+  do lev = 0, finest_level
+    call gr_conserveToPrimitiveLevel(lev, .TRUE.)
   end do
 
   if (present(doEos) .AND. needEos) then

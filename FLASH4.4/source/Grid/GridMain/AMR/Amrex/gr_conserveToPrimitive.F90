@@ -116,28 +116,16 @@ subroutine gr_conserveToPrimitive(block, allCells)
 
   needToConvert = ANY(gr_vartypes == VARTYPE_PER_MASS)
 
-  associate(ilo_interior => block%limits(LOW,  IAXIS), &
-            ihi_interior => block%limits(HIGH, IAXIS), &
-            jlo_interior => block%limits(LOW,  JAXIS), &
-            jhi_interior => block%limits(HIGH, JAXIS), &
-            klo_interior => block%limits(LOW,  KAXIS), &
-            khi_interior => block%limits(HIGH, KAXIS))
   do     k = klo, khi
     do   j = jlo, jhi
       do i = ilo, ihi
         if (needToConvert) then
-          if (      (solnData(DENS_VAR,i,j,k) == 0.0) &
-              .AND. (ilo_interior <= i) .AND. (i <= ihi_interior) &
-              .AND. (jlo_interior <= j) .AND. (j <= jhi_interior) &
-              .AND. (klo_interior <= k) .AND. (k <= khi_interior)) then
+          if (solnData(DENS_VAR,i,j,k) == 0.0) then
             dens_old_inv = 0.0
-            call Driver_abortFlash("[gr_conserveToPrimitive] 0/0 interior Error")
-          else if (solnData(DENS_VAR,i,j,k) == 0.0) then
-            dens_old_inv = 1.0 / gr_smallrho
             do var = UNK_VARS_BEGIN, UNK_VARS_END
               if (      (gr_vartypes(var) == VARTYPE_PER_MASS) &
                   .AND. (solnData(var,i,j,k) /= 0.0)) then
-                write(*,*) "0/0 GC error", i, j, k, solnData(DENS_VAR,i,j,k)
+                write(*,*) "0/0 GC error", i, j, k, solnData(var,i,j,k)
                 call Driver_abortFlash("[gr_conserveToPrimitive] 0/0 GC Error")
               end if
             end do
@@ -157,7 +145,6 @@ subroutine gr_conserveToPrimitive(block, allCells)
       end do
     end do
   end do
-  end associate
 #endif
 
 #ifdef ENER_VAR               
