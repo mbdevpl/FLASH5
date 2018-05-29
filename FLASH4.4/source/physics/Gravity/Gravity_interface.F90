@@ -43,6 +43,13 @@ Module Gravity_interface
   end interface
 
   interface Gravity_accelOneBlock
+     subroutine Gravity_accelOneBlock_blkid ( blockID, ngcellcomp, gvec, potentialIndex)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+      integer, intent(in)             :: ngcellcomp, blockID
+       real, dimension(:,:,:,:),intent(out)  :: gvec
+       integer, intent(in),optional    :: potentialIndex
+     end subroutine Gravity_accelOneBlock_blkid
      subroutine Gravity_accelOneBlock ( block, ngcellcomp, gvec, potentialIndex)
        use block_metadata, ONLY : block_metadata_t
        implicit none
