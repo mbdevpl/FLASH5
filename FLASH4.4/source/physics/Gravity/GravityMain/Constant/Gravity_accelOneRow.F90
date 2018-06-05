@@ -34,7 +34,7 @@
 !! 
 !!***
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
+subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
                                 potentialIndex, extraAccelVars)
 
 !==============================================================================
@@ -50,6 +50,44 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
   integer, dimension(2), intent(IN) :: pos
   integer,INTENT(in) :: sweepDir
   integer,INTENT(in) :: blockID
+  integer,INTENT(in) :: numCells
+  real,dimension(numCells),INTENT(inout) :: grav
+  integer,intent(IN),optional :: potentialIndex
+  integer,intent(IN),OPTIONAL :: extraAccelVars(MDIM)
+
+  real :: grv_val
+
+
+  if (useGravity) then
+     grv_val = grv_vector(sweepDir)
+  
+     grav(1:numCells) = grv_val
+  end if
+
+
+!
+!==============================================================================
+!
+  return
+end subroutine Gravity_accelOneRow_blkid
+
+subroutine Gravity_accelOneRow (pos, sweepDir, block, numCells, grav, &
+                                potentialIndex, extraAccelVars)
+
+!==============================================================================
+!
+  use block_metadata, ONLY : block_metadata_t
+
+  use Gravity_data, ONLY : useGravity, grv_vector
+
+  implicit none
+
+#include "Flash.h"
+#include "constants.h"
+
+  integer, dimension(2), intent(IN) :: pos
+  integer,INTENT(in) :: sweepDir
+  type(block_metadata_t),intent(IN) :: block
   integer,INTENT(in) :: numCells
   real,dimension(numCells),INTENT(inout) :: grav
   integer,intent(IN),optional :: potentialIndex
