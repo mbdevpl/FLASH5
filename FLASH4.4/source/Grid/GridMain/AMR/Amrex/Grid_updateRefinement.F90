@@ -59,7 +59,8 @@
 #include "Flash.h"
 
 subroutine Grid_updateRefinement(nstep, time, gridChanged)
-  use amrex_amrcore_module, ONLY : amrex_regrid
+  use amrex_amrcore_module, ONLY : amrex_regrid, &
+                                   amrex_get_finest_level
 
   use Grid_interface,       ONLY : Grid_fillGuardCells, &
                                    Grid_getBlkPtr, Grid_releaseBlkPtr
@@ -71,6 +72,8 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                    gr_amrexDidRefinement
   use gr_interface,         ONLY : gr_getBlkIterator, &
                                    gr_releaseBlkIterator
+  use gr_amrexInterface,    ONLY : gr_primitiveToConserveLevel, &
+                                   gr_conserveToPrimitiveLevel
   use gr_iterator,          ONLY : gr_iterator_t
   use block_metadata,       ONLY : block_metadata_t
   use Eos_interface,        ONLY : Eos_wrapped
@@ -86,8 +89,10 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
   logical, save :: gcMaskArgsLogged = .FALSE.
 
+  integer :: finest_level
   logical :: gcMask(maskSize)
   integer :: iref
+  integer :: lev
   integer :: i
 
   type(gr_iterator_t)            :: itor
@@ -147,8 +152,40 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      end do
      call gr_releaseBlkIterator(itor)
 
+     ! Regridding requires interpolation when leaf blocks are created
+     ! => data must be in conserved form
+     finest_level = amrex_get_finest_level()
+     do lev = 0, finest_level
+       call gr_primitiveToConserveLevel(lev)
+     end do
+
      gr_amrexDidRefinement = .FALSE.
      call amrex_regrid(0, time)
+
+     do lev = 0, finest_level
+       call gr_conserveToPrimitiveLevel(lev, .TRUE.)
+     end do
+
+     if (gr_amrexDidRefinement) then
+       ! We don't know which leaf blocks were created, so run EoS 
+       ! on all blocks
+       ! DEV: TODO: make gr_amrexDidRefinement into an array so that
+       ! we only run EoS on those levels that were really changed.
+       ! Could we get away with just running EoS on leaf blocks on 
+       ! these levels?
+       call gr_getBlkIterator(itor)
+       do while (itor%is_valid())
+          call itor%blkMetaData(blockDesc)
+
+          call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+          call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
+          call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+
+          call itor%next()
+       end do
+       call gr_releaseBlkIterator(itor)
+     end if
+
      call Timers_stop("Grid_updateRefinement")
 
      ! Only log on the first call
