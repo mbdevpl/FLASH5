@@ -1,6 +1,0 @@
-Before running FlashTest scripts, the software stack for building and executing
-FLASH simulations should be configured with softenv by running
-
-                        . soft_flash_gfortran.sh
-
-See jenkins_run.sh for information on environment variables that need to be set.
