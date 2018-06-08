@@ -58,14 +58,14 @@ subroutine Simulation_initBlock(solnData,block)
   ! Get the coordinate information for the current block
 
   ! get the coordinate information for the current block
-  blkLimitsGC = block%LimitsGC
+  blkLimitsGC = block%limitsGC
   
   sizeX = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS) + 1
-  allocate(xl(sizex))
+  allocate(xl(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
   sizeY = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS) + 1
-  allocate(yl(sizeY))
+  allocate(yl(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
   sizeZ = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS) + 1
-  allocate(zl(sizeZ))
+  allocate(zl(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
   if (NDIM == 3) then 
      call Grid_getCellCoords(KAXIS, block, LEFT_EDGE, gcell, zl, sizeZ)
   endif
