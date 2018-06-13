@@ -59,6 +59,7 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   use amrex_fort_module,    ONLY : wp => amrex_real
 
   use Driver_interface,     ONLY : Driver_abortFlash
+  use Grid_interface,       ONLY : Grid_getGeometry
   use gr_physicalMultifabs, ONLY : flux_registers, &
                                    fluxes
 
@@ -68,6 +69,8 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   integer,                intent(IN), optional         :: axis
   integer,                intent(IN), optional, target :: pressureSlots(:)
   real,                   intent(IN), optional         :: areaLeft(:,:,:)
+
+  integer :: geometry
 
   if (present(axis)) then
     call Driver_abortFlash("[Grid_putFluxData] axis not accepted with AMReX")
@@ -83,11 +86,20 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
 
   ! FLASH uses 1-based level index / AMReX uses 0-based index
   call flux_registers(level-1)%setval(0.0_wp)
-
+  
+  call Grid_getGeometry(geometry)
+  
+  select case (geometry)
+  case (CARTESIAN)
+    ! DEV: TODO This routine should take a densityMask array as an argument
+    ! so that the routine can determine which need to be scaled and which do not
 #if   NDIM == 2
-  call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 0.5_wp)
+    call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 0.5_wp)
 #elif NDIM == 3
-  call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 0.25_wp)
+    call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 0.25_wp)
 #endif
+  case default
+    call Driver_abortFlash("[Grid_putFluxData] Only works with Cartesian")
+  end select
 end subroutine Grid_putFluxData
 
