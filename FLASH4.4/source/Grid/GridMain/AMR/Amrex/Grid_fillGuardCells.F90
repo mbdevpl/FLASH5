@@ -147,7 +147,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use amrex_fillpatch_module,    ONLY : amrex_fillpatch
   use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
-  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                                        Grid_getLeafIterator, &
+                                        Grid_releaseLeafIterator
   use Grid_data,                 ONLY : gr_justExchangedGC, &
                                         gr_eosMode, &
                                         gr_enableMaskedGCFill, &
@@ -162,7 +164,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         Logfile_stamp
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_averageDownLevels, &
-                                        gr_primitiveToConserveLevel, &
+                                        gr_primitiveToConserve, &
                                         gr_conserveToPrimitiveLevel
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
                                         gr_setMasks_gen, &
@@ -171,6 +173,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         gr_releaseBlkIterator
   use gr_physicalMultifabs,      ONLY : unk
   use gr_iterator,               ONLY : gr_iterator_t
+  use leaf_iterator,             ONLY : leaf_iterator_t
   use block_metadata,            ONLY : block_metadata_t
 
 #include "Flash_mpi_implicitNone.fh"
@@ -191,7 +194,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   integer :: guard, gcEosMode
   integer,dimension(MDIM) :: layers, returnLayers
   real,dimension(:,:,:,:),pointer::solnData
-  type(gr_iterator_t) :: itor
+  type(gr_iterator_t)    :: itor
+  type(leaf_iterator_t)  :: leafItor
   type(block_metadata_t) :: blockDesc
 
   integer :: ierr
@@ -352,21 +356,24 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   if (present(selectBlockType)) then
      call Driver_abortFlash("[Grid_fillGuardCells] selectBlockType *not* implemented for yet AMReX") 
   end if
- 
-  ! Next calls might execute interpolation => all data in conserved form
-  ! DEV: We could do this just on leaves and let averageDown bring conserved
-  ! form down
-  finest_level = amrex_get_finest_level()
-  do lev = 0, finest_level
-    call gr_primitiveToConserveLevel(lev)
+
+  !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH CONSERVED-FORM DATA
+  ! We are only concerned with data on interior at this point
+  call Grid_getLeafIterator(leafItor, tiling=.FALSE.)
+  do while (leafItor%is_valid())
+    call leafItor%blkMetaData(blockDesc)
+    call gr_primitiveToConserve(blockDesc)
+
+    call leafItor%next()
   end do
+  call Grid_releaseLeafIterator(leafItor)
 
   ! Restrict data from leaves to coarser blocks
   call gr_averageDownLevels
 
-  ! Using fill_boundary didn't work on finest levels since the GC outside
-  ! the domain were zero (no periodic BC).  AMReX recommended using fillpatch,
-  ! which is copying *all* data, including the GC.
+  !!!!! FILL GUARDCELLS ON ALL BLOCKS, ALL LEVELS
+  ! AMReX recommended using fillpatch, which is copying *all* data, 
+  ! including the GC.
   call Timers_start("amr_guardcell")
 
   lev = 0
@@ -375,6 +382,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                  amrex_geom(lev), gr_fillPhysicalBC, &
                                  0.0d0, scompCC, scompCC, ncompCC)
 
+  finest_level = amrex_get_finest_level()
   do lev=1, finest_level
      call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
                                     0.0d0, unk(lev-1), &
@@ -399,7 +407,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
         call gr_getBlkIterator(itor)
         do while (itor%is_valid())
            call itor%blkMetaData(blockDesc)
-           
+
            call Grid_getBlkPtr(blockDesc, solnData)
            call Eos_guardCells(gcEosMode, solnData, corners=.true., &
                                layers=returnLayers)
