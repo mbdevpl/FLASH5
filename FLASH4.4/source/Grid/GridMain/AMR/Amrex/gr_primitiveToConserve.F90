@@ -1,30 +1,22 @@
-!!****if* source/Grid/GridMain/paramesh/gr_primitiveToConserve
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_primitiveToConserve
 !!
 !! NAME
-!!
 !!  gr_primitiveToConserve
 !!
-!!
 !! SYNOPSIS
-!!
-!!  gr_primitiveToConserve(block_metadata_t(IN) :: block
-!!
+!!  gr_primitiveToConserve(block_metadata_t(IN) :: block)
 !!
 !! DESCRIPTION
-!!
 !!  Given a block of data, convert variables which are normally represented in
 !!  PER_MASS form (e.g., velocity) to the corresponding conservative form
 !!  (i.e., momentum) if gr_convertToConsvdForMeshCalls is TRUE.
 !!  Do nothing if gr_convertToConsvdForMeshCalls is FALSE.
 !!
-!!
 !! ARGUMENTS
-!! 
 !!   block - the metadata representation of block whose data shall be
 !!           transformed
 !!
 !! NOTES
-!!
 !!  The variables that are converted are the named cell-centered
 !!  solution variables marked to be of type PER_MASS explicitly in a
 !!  Config file.  Additionally, abundances and mass scalars are
@@ -33,12 +25,10 @@
 !!  For proper functioning, DENS_VAR must not be marked as PER_MASS!
 !!
 !! SEE ALSO
-!!
 !!  Simulation_getVarnameType
 !!  gr_conserveToPrimitive
 !!
 !! BUGS
-!!
 !!  This routine does not set the variable attributes to 
 !!  indicate that the variables are now conserved.  No
 !!  such mechanism exists in the code yet.
@@ -50,8 +40,6 @@
 !!  not needed there). 
 !!
 !!***
-
-!!REORDER(4):solnData
 
 #include "Flash.h"
 #include "constants.h"
@@ -90,10 +78,10 @@ subroutine gr_primitiveToConserve(block)
   do     k = klo, khi 
     do   j = jlo, jhi 
       do i = ilo, ihi 
-        if (solnData(DENS_VAR,i,j,k) == 0.0) then
+        if (solnData(i,j,k,DENS_VAR) == 0.0) then
           do var = UNK_VARS_BEGIN, UNK_VARS_END
             if (      (gr_vartypes(var) == VARTYPE_PER_MASS) &
-                .AND. (solnData(var,i,j,k) /= 0.0)) then
+                .AND. (solnData(i,j,k,var) /= 0.0)) then
               ! DEV: TODO Add comment about checking this
               call Driver_abortFlash("[gr_primitiveToConserve] 0/0 error")
             end if
@@ -106,7 +94,7 @@ subroutine gr_primitiveToConserve(block)
 
   do var = UNK_VARS_BEGIN, UNK_VARS_END
     if (gr_vartypes(var) == VARTYPE_PER_MASS) then
-      solnData(var,:,:,:) = solnData(DENS_VAR,:,:,:)*solnData(var,:,:,:)
+      solnData(:,:,:,var) = solnData(:,:,:,DENS_VAR)*solnData(:,:,:,var)
     end if
   end do
  

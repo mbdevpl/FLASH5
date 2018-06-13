@@ -1,19 +1,13 @@
-!!****if* source/Grid/GridMain/paramesh/gr_conserveToPrimitive
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_conserveToPrimitive
 !!
 !! NAME
-!!
 !!  gr_conserveToPrimitive
 !!
-!!
 !! SYNOPSIS
-!!
 !!  gr_conserveToPrimitive(block_metadata_t(in) :: block,
 !!                         logical(in)          :: allCells)
 !!
-!!
-!!
 !! DESCRIPTION
-!!
 !!  Given a block of data, convert variables which are normally
 !!  represented in PER_MASS form (e.g., velocity) from the 
 !!  corresponding conservative form (i.e., momentum) back to the normal
@@ -27,16 +21,13 @@
 !!  runtime parameters smalle and smlrho, respectively.
 !!
 !! ARGUMENTS
-!! 
 !!   block - the metadata representation of block whose data shall be
 !!           transformed
 !!
 !!   allCells - act on all cells, including guardcells, if .TRUE.,
 !!              otherwise only modify interior cells.
 !!
-!!
 !! NOTES
-!!
 !!  The variables that are converted are the named cell-centered
 !!  solution variables marked to be of type PER_MASS explicitly in a
 !!  Config file.  Additionally, abundances and mass scalars are
@@ -46,13 +37,10 @@
 !!
 !!
 !! SEE ALSO
-!!
 !!  Simulation_getVarnameType
 !!  gr_primitiveToConserve 
 !!
-!!
 !! BUGS
-!!
 !!  This routine does not set the variable attributes to 
 !!  indicate that the variables are no longer conserved.  No
 !!  such mechanism exists in the code yet.
@@ -64,8 +52,6 @@
 !!  not needed there). 
 !!
 !!***
-
-!!REORDER(4):solnData
 
 #include "Flash.h"
 #include "constants.h"
@@ -120,38 +106,38 @@ subroutine gr_conserveToPrimitive(block, allCells)
     do   j = jlo, jhi
       do i = ilo, ihi
         if (needToConvert) then
-          if (solnData(DENS_VAR,i,j,k) == 0.0) then
+          if (solnData(i,j,k,DENS_VAR) == 0.0) then
             dens_old_inv = 0.0
             do var = UNK_VARS_BEGIN, UNK_VARS_END
               if (      (gr_vartypes(var) == VARTYPE_PER_MASS) &
-                  .AND. (solnData(var,i,j,k) /= 0.0)) then
-                write(*,*) "0/0 GC error", i, j, k, solnData(var,i,j,k)
+                  .AND. (solnData(i,j,k,var) /= 0.0)) then
+                write(*,*) "0/0 GC error", i, j, k, solnData(i,j,k,var)
                 call Driver_abortFlash("[gr_conserveToPrimitive] 0/0 GC Error")
               end if
             end do
           else
-            dens_old_inv = 1.0 / solnData(DENS_VAR,i,j,k)
+            dens_old_inv = 1.0 / solnData(i,j,k,DENS_VAR)
           end if
 
           do var = UNK_VARS_BEGIN, UNK_VARS_END
             if (gr_vartypes(var) == VARTYPE_PER_MASS) then
-              solnData(var,i,j,k) = dens_old_inv * solnData(var,i,j,k)
+              solnData(i,j,k,var) = dens_old_inv * solnData(i,j,k,var)
             end if
           end do
         end if
 
         ! small limits -- in case the interpolants are not monotonic
-        solnData(DENS_VAR,i,j,k) = max(solnData(DENS_VAR,i,j,k), gr_smallrho)
+        solnData(i,j,k,DENS_VAR) = max(solnData(i,j,k,DENS_VAR), gr_smallrho)
       end do
     end do
   end do
 #endif
 
 #ifdef ENER_VAR               
-  solnData(ENER_VAR,:,:,:) = max(solnData(ENER_VAR,:,:,:), gr_smalle)
+  solnData(:,:,:,ENER_VAR) = max(solnData(:,:,:,ENER_VAR), gr_smalle)
 #endif
 #ifdef EINT_VAR
-  solnData(EINT_VAR,:,:,:) = max(solnData(EINT_VAR,:,:,:), gr_smalle)
+  solnData(:,:,:,EINT_VAR) = max(solnData(:,:,:,EINT_VAR), gr_smalle)
 #endif
 
   call Grid_releaseBlkPtr(block, solnData, CENTER)
