@@ -66,6 +66,8 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
     integer, intent(in)    :: bcTypes(6)
     real, intent(in)       :: bcValues(2,6)
     real, intent(inout)    :: poisfact
+    integer                :: amrexPoissonBcTypes(6)
+    integer                :: i
     
     type(amrex_poisson) :: poisson
     type(amrex_multigrid) :: multigrid
@@ -96,20 +98,22 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        
        call poisson % set_maxorder(gr_amrexLs_linop_maxorder)
 
-       select case (bcTypes(1))
-!        ! This is a 3d problem with Periodic BC
+!  Select BCs to send to AMReX poisson solver
+     do i=1,6
+       select case (bcTypes(i))
        case (GRID_PDE_BND_PERIODIC)
-          call poisson % set_domain_bc([amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic], &
-               &                       [amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic])
+          amrexPoissonBcTypes(i)=amrex_lo_periodic
        case (GRID_PDE_BND_NEUMANN)
-          call poisson % set_domain_bc([amrex_lo_neumann, amrex_lo_neumann, amrex_lo_neumann], &
-               &                       [amrex_lo_neumann, amrex_lo_neumann, amrex_lo_neumann])
-        case (GRID_PDE_BND_DIRICHLET)
-          call poisson % set_domain_bc([amrex_lo_dirichlet, amrex_lo_dirichlet, amrex_lo_dirichlet], &
-               &                       [amrex_lo_dirichlet, amrex_lo_dirichlet, amrex_lo_dirichlet])
+          amrexPoissonBcTypes(i)=amrex_lo_neumann
+       case (GRID_PDE_BND_DIRICHLET)
+          amrexPoissonBcTypes(i)=amrex_lo_dirichlet
        case default
           call Driver_abortFlash('Only periodic BC implemented for AMReX poisson solver!')
        end select
+     end do
+     call poisson % set_domain_bc([amrexPoissonBcTypes(1),amrexPoissonBcTypes(2),amrexPoissonBcTypes(3)], &
+          &                       [amrexPoissonBcTypes(4),amrexPoissonBcTypes(5),amrexPoissonBcTypes(6)])
+
        do ilev = 0, maxLevel
 ! solution multifab's ghost cells at physical boundaries have been set to bc values.
           call poisson % set_level_bc(ilev, solution(ilev))
