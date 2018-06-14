@@ -59,25 +59,35 @@
 #include "Flash.h"
 
 subroutine Grid_updateRefinement(nstep, time, gridChanged)
-  use amrex_amrcore_module, ONLY : amrex_regrid, &
-                                   amrex_get_finest_level
-
-  use Grid_interface,       ONLY : Grid_fillGuardCells, &
-                                   Grid_getBlkPtr, Grid_releaseBlkPtr
-  use Grid_data,            ONLY : gr_nrefs, &
-!                                   gr_maxRefine, &
-                                   gr_refine_var, &
-                                   gr_numRefineVars, &
-                                   gr_eosMode, &
-                                   gr_amrexDidRefinement
-  use gr_interface,         ONLY : gr_getBlkIterator, &
-                                   gr_releaseBlkIterator
-  use gr_amrexInterface,    ONLY : gr_primitiveToConserveLevel, &
-                                   gr_conserveToPrimitiveLevel
-  use gr_iterator,          ONLY : gr_iterator_t
-  use block_metadata,       ONLY : block_metadata_t
-  use Eos_interface,        ONLY : Eos_wrapped
-  use Timers_interface,     ONLY : Timers_start, Timers_stop
+  use amrex_amrcore_module,      ONLY : amrex_regrid, &
+                                        amrex_get_finest_level, &
+                                        amrex_geom, &
+                                        amrex_ref_ratio
+  use amrex_fillpatch_module,    ONLY : amrex_fillpatch
+  use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
+  
+  use Grid_interface,            ONLY : Grid_fillGuardCells, &
+                                        Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                                        Grid_getLeafIterator, &
+                                        Grid_releaseLeafIterator
+  use Grid_data,                 ONLY : gr_nrefs, &
+!                                        gr_maxRefine, &
+                                        gr_refine_var, &
+                                        gr_numRefineVars, &
+                                        gr_eosMode, &
+                                        gr_amrexDidRefinement, &
+                                        lo_bc_amrex, hi_bc_amrex
+  use gr_interface,              ONLY : gr_getBlkIterator, &
+                                        gr_releaseBlkIterator
+  use gr_amrexInterface,         ONLY : gr_primitiveToConserve, &
+                                        gr_conserveToPrimitiveLevel, &
+                                        gr_fillPhysicalBC, &
+                                        gr_averageDownLevels
+  use gr_physicalMultifabs,      ONLY : unk
+  use leaf_iterator,             ONLY : leaf_iterator_t
+  use block_metadata,            ONLY : block_metadata_t
+  use Eos_interface,             ONLY : Eos_wrapped
+  use Timers_interface,          ONLY : Timers_start, Timers_stop
  
   implicit none
 
@@ -90,12 +100,12 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   logical, save :: gcMaskArgsLogged = .FALSE.
 
   integer :: finest_level
-  logical :: gcMask(maskSize)
-  integer :: iref
+!  logical :: gcMask(maskSize)
+!  integer :: iref
   integer :: lev
   integer :: i
 
-  type(gr_iterator_t)            :: itor
+  type(leaf_iterator_t)          :: itor
   type(block_metadata_t)         :: blockDesc
   real,                  pointer :: solnData(:, :, :, :) => null()
 
@@ -122,46 +132,60 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 !                                       gr_lrefineCenterK)
 !    end if
 
-     gcMask = .FALSE.
-     do i = 1, gr_numRefineVars
-        iref = gr_refine_var(i)
-        gcMask(iref) = (iref > 0)
-     end do
-     gcMask(NUNK_VARS+1:min(maskSize,NUNK_VARS+NDIM*NFACE_VARS)) = .TRUE.
+!     gcMask = .FALSE.
+!     do i = 1, gr_numRefineVars
+!        iref = gr_refine_var(i)
+!        DEV: Does this mean that iref could be below the array's lbound?
+!        gcMask(iref) = (iref > 0)
+!     end do
+!     gcMask(NUNK_VARS+1:min(maskSize,NUNK_VARS+NDIM*NFACE_VARS)) = .TRUE.
 
      call Timers_start("Grid_updateRefinement")
-     call Grid_fillGuardCells(CENTER, ALLDIR, doEos=.FALSE.)
-
-     ! Run EoS on non-leaf interiors/GC to get best possible 
-     ! refinement decisions
-     ! DEV: TODO This should be over all ANCESTOR blocks as the leaves were
-     ! given to us with EoS run.
-     ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
-     ! influence refinement decisions.  If no, then we need only apply EoS to
-     ! parent blocks.
-     call gr_getBlkIterator(itor)
+     
+     !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH CONSERVED-FORM DATA
+     ! We are only concerned with data on interior at this point
+     call Grid_getLeafIterator(itor, tiling=.FALSE.)
      do while (itor%is_valid())
-        call itor%blkMetaData(blockDesc)
+       call itor%blkMetaData(blockDesc)
+       call gr_primitiveToConserve(blockDesc)
 
-        call Grid_getBlkPtr(blockDesc, solnData, CENTER)
-        ! DEV: TODO Add masking as in Grid_fillGuardCell?
-        call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
-        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
-
-        call itor%next()
+       call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseLeafIterator(itor)
 
-     ! Regridding requires interpolation when leaf blocks are created
-     ! => data must be in conserved form
+     ! Restrict data from leaves to coarser blocks
+     call gr_averageDownLevels
+
+     !!!!! POPULATE GUARDCELLS IN ALL BLOCKS
+     ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
+     ! influence refinement decisions.  If not, we just need to GC fill
+     ! on all levels with leaf blocks.
+     lev = 0
+     call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
+                                    0.0d0, unk(lev), &
+                                    amrex_geom(lev), gr_fillPhysicalBC, &
+                                    0.0d0, UNK_VARS_BEGIN, &
+                                    UNK_VARS_BEGIN, NUNK_VARS)
+
      finest_level = amrex_get_finest_level()
-     do lev = 0, finest_level
-       call gr_primitiveToConserveLevel(lev)
+     do lev=1, finest_level
+        call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
+                                       0.0d0, unk(lev-1), &
+                                       amrex_geom(lev-1), gr_fillPhysicalBC, &
+                                       1.0e0, unk(lev  ), &
+                                       0.0d0, unk(lev  ), &
+                                       amrex_geom(lev  ), gr_fillPhysicalBC, &
+                                       0.0d0, UNK_VARS_BEGIN, &
+                                       UNK_VARS_BEGIN, NUNK_VARS, &
+                                       amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                       lo_bc_amrex, hi_bc_amrex) 
      end do
 
+     ! Let AMReX regrid with callbacks
      gr_amrexDidRefinement = .FALSE.
      call amrex_regrid(0, time)
 
+     ! Revert variables to primitive form if necessary
      do lev = 0, finest_level
        call gr_conserveToPrimitiveLevel(lev, .TRUE.)
      end do
@@ -171,9 +195,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
        ! on all blocks
        ! DEV: TODO: make gr_amrexDidRefinement into an array so that
        ! we only run EoS on those levels that were really changed.
-       ! Could we get away with just running EoS on leaf blocks on 
-       ! these levels?
-       call gr_getBlkIterator(itor)
+       call Grid_getLeafIterator(itor)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
 
@@ -183,7 +205,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
           call itor%next()
        end do
-       call gr_releaseBlkIterator(itor)
+       call Grid_releaseLeafIterator(itor)
      end if
 
      call Timers_stop("Grid_updateRefinement")
