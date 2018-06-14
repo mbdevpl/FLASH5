@@ -57,7 +57,7 @@ subroutine Simulation_initBlock(solnData,block)
 
   real, dimension(MDIM)  :: coord,bsize
   real ::  boundBox(2,MDIM)
-  real,allocatable, dimension(:) ::xCenter,xLeft,xRight,yCoord,zCoord
+  real,allocatable, dimension(:) ::xCenter,yCenter,zCenter,xLeft,xRight,yCoord,zCoord
   integer :: sizeX,sizeY,sizeZ
 
   real :: Lx, Ly, Lz, xi, yi, zi, Phi_ijk, F_ijk
@@ -66,7 +66,7 @@ subroutine Simulation_initBlock(solnData,block)
 
   real, parameter :: pfb_waven_x = 2.
   real, parameter :: pfb_waven_y = 1.
-  real, parameter :: pfb_waven_z = 0.
+  real, parameter :: pfb_waven_z = 2.
   real, parameter :: pfb_alpha_x = 0.
 
   logical :: gcell = .true.
@@ -77,9 +77,13 @@ subroutine Simulation_initBlock(solnData,block)
   allocate(xLeft(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
   allocate(xRight(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
   allocate(xCenter(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
+  allocate(yCenter(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
+  allocate(zCenter(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS)))
   allocate(yCoord(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
   allocate(zCoord(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS)))
   xCenter = 0.0
+  yCenter = 0.0
+  zCenter = 0.0
   xLeft = 0.0
   xRight = 0.0
   yCoord = 0.0
@@ -96,6 +100,8 @@ subroutine Simulation_initBlock(solnData,block)
 
   call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
   call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCenter, sizeX)
+  call Grid_getCellCoords(JAXIS, block, CENTER, gcell, yCenter, sizeY)
+  call Grid_getCellCoords(KAXIS, block, CENTER, gcell, zCenter, sizeZ)
   call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xRight, sizeX)
 
 #ifdef DEBUG_SIMULATION
@@ -126,26 +132,17 @@ subroutine Simulation_initBlock(solnData,block)
 !  call Grid_getBlkPtr(blockID,solnData,CENTER)
 
 !  call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC,CENTER)
-
-
-  do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
-     do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
-        do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
-
-           xi = coord(IAXIS) - 0.5*bsize(IAXIS) + &
-                real(i - NGUARD - 1)*del(IAXIS) + 0.5*del(IAXIS)
-
-           yi = coord(JAXIS) - 0.5*bsize(JAXIS) + &
-                real(j - NGUARD - 1)*del(JAXIS) + 0.5*del(JAXIS)
-
-           zi = coord(KAXIS) - 0.5*bsize(KAXIS) + &
-                real(k - NGUARD - 1)*del(KAXIS) + 0.5*del(KAXIS)
-
+  do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
+     do j = blkLimitsGC(LOW,JAXIS), blkLimitsGC(HIGH,JAXIS)
+        do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH,IAXIS)
+          xi=xCenter(i)
+          yi=yCenter(j)
+          zi=zCenter(k)
 
            Phi_ijk = cos(2.*PI*xi*pfb_waven_x/Lx + pfb_alpha_x) * &
                      sin(2.*PI*yi*pfb_waven_y/Ly)*cos(2.*PI*zi*pfb_waven_z/Lz)
 
-           
+  
            F_ijk  = -4.*PI**2 * ( (pfb_waven_x/Lx)**2. + (pfb_waven_y/Ly)**2. + (pfb_waven_z/Lz)**2. ) * Phi_ijk
            
            solnData(i,j,k,ASOL_VAR) = Phi_ijk
