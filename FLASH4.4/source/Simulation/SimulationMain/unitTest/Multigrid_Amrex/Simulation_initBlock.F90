@@ -115,21 +115,6 @@ subroutine Simulation_initBlock(solnData,block)
   Ly = sim_yMax - sim_yMin  
   Lz = sim_zMax - sim_zMin
 
-
-  ! Get blocks dx, dy ,dz:
-  call Grid_getDeltas(block%level,del)
-
-  ! Get Coord and Bsize for the block:
-  ! Bounding box:
-  call Grid_getBlkBoundBox(block,boundBox)
-  bsize(:) = boundBox(2,:) - boundBox(1,:)
-
-  call Grid_getBlkCenterCoords(block,coord)
-
-  ! Point to Blocks centered variables:
-!  call Grid_getBlkPtr(blockID,solnData,CENTER)
-
-!  call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC,CENTER)
   do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
      do j = blkLimitsGC(LOW,JAXIS), blkLimitsGC(HIGH,JAXIS)
         do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH,IAXIS)
