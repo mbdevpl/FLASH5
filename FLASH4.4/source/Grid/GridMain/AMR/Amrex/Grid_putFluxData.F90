@@ -4,7 +4,6 @@
 !!  Grid_putFluxData
 !!
 !! SYNOPSIS
-!!
 !!  call Grid_putFluxData(integer(IN)         :: level,
 !!                        integer(IN)         :: axis,
 !!              optional, integer(IN), target :: pressureSlots(:),
@@ -13,15 +12,14 @@
 !! DESCRIPTION 
 !!  Request that the Grid unit load into its flux registers the flux data
 !!  corresponding to the given axial directions and defined on the given
-!!  refinement level.  This routine needs to be used with adaptive mesh
+!!  refinement level.  This routine needs to be used with AMR
 !!  since fluxes calculated by two blocks at a fine/coarse boundary have 
 !!  different accuracy.
 !!
 !!  It is assumed that before calling this routine, the client code has already
 !!  written flux data to Grid's data structures using the Grid_getFluxPtr
-!!  interface.  Once data is loaded in the registers, a call to
-!!  Grid_conserveFluxes applies the flux conservation algorithm to make it
-!!  consistent across the fine/coarse boundaries.
+!!  interface.  For more information on how to use this flux data to perform
+!!  flux correction, refer to the Grid_conserveFluxes documentation.
 !!
 !! ARGUMENTS
 !!  level - the 1-based level index (1 is the coarsest level) indicating which
@@ -52,11 +50,18 @@
 !!   Grid_conserveFluxes
 !!***
 
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
 #include "Flash.h"
 #include "constants.h"
 
 subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   use amrex_fort_module,    ONLY : wp => amrex_real
+#if DEBUG_GRID
+  use amrex_amrcore_module, ONLY : amrex_ref_ratio
+#endif
 
   use Driver_interface,     ONLY : Driver_abortFlash
   use Grid_interface,       ONLY : Grid_getGeometry
@@ -76,6 +81,8 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
     call Driver_abortFlash("[Grid_putFluxData] axis not accepted with AMReX")
   end if
   if (present(pressureSlots)) then
+    ! DEV: TODO This routine should take an isFluxDensity array as an argument
+    ! so that the routine can determine which need to be scaled and which do not
     call Driver_abortFlash("[Grid_putFluxData] pressureSlots not accepted with AMReX")
   end if
   if (present(areaLeft)) then
@@ -86,13 +93,19 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
 
   ! FLASH uses 1-based level index / AMReX uses 0-based index
   call flux_registers(level-1)%setval(0.0_wp)
-  
+
   call Grid_getGeometry(geometry)
-  
+
   select case (geometry)
   case (CARTESIAN)
-    ! DEV: TODO This routine should take a densityMask array as an argument
-    ! so that the routine can determine which need to be scaled and which do not
+    ! The scaling factor=1/r^(NDIM-1) used here assumes that the refinement
+    ! ratio, r, between levels is always 2
+#if DEBUG_GRID
+    if (amrex_ref_ratio(level-1) /= 2) then
+      call Driver_abortFlash("[Grid_putFluxData] refinement ratio not 2")
+    end if
+#endif
+
 #if   NDIM == 2
     call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 0.5_wp)
 #elif NDIM == 3
