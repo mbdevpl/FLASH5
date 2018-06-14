@@ -26,7 +26,7 @@
 
 subroutine Grid_unitTest(fileUnit,perfect)
 
-  use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, &
+  use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, GRID_PDE_BND_DIRICHLET, GRID_PDE_BND_NEUMANN,&
 !       Grid_getBlkIndexLimits, &
        Grid_solvePoisson, &
        Grid_getBlkPtr,Grid_releaseBlkPtr, &
@@ -78,7 +78,8 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   real :: ET
 
   ! -------------------------------------------------------------------
-  bcTypes(:)=GRID_PDE_BND_PERIODIC  !This is always periodic for this problem.
+  bcTypes(:)=GRID_PDE_BND_NEUMANN  
+  bcTypes(3:4)=GRID_PDE_BND_DIRICHLET
   bcValues(:,:)=0.
 
   call mpi_barrier(gr_meshComm,ierr)

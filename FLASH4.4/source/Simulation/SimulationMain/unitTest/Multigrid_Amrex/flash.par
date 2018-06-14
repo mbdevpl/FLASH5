@@ -7,6 +7,32 @@ plot_var_1 = "dens"
 plot_var_2 = "pfft"
 plot_var_3 = "diff"
 plot_var_4 = "asol"
+
+nblockx                        = 2
+nblocky                        = 2
+nblockz                        = 2
+
+#    AMR refinement parameters  
+lrefine_min       = 3
+lrefine_max       = 3
+refine_var_1      = "dens"
+refine_cutoff_1   = 0.5
+#derefine_cutoff_1 = 0.5
+#nrefs                          = 0
+
+xmax                           = 1.
+xmin                           = 0.
+ymax                           = 1.
+ymin                           = 0.
+zmax                           = 1.
+zmin                           = 0.
+xr_boundary_type               = "dirichlet"
+xl_boundary_type               = "dirichlet"
+yr_boundary_type               = "dirichlet"
+yl_boundary_type               = "dirichlet"
+zr_boundary_type               = "dirichlet"
+zl_boundary_type               = "dirichlet"
+
 # allowDtSTSDominate             = .FALSE.
 # alwaysComputeUserVars          = .true.
 # alwaysRestrictCheckpoint       = .true.
@@ -124,18 +150,12 @@ plot_var_4 = "asol"
 # kProcs                         = 1
 # log_file                       = "flash.log"
 # lrefine_del                    = 0
-lrefine_max                    = 1
-lrefine_min                    = 3
 # max_particles_per_blk          = 100
 # memory_stat_freq               = 100000
 # meshCopyCount                  = 1
 # min_particles_per_blk          = 1
 # nbegin                         = 1
-nblockx                        = 2
-nblocky                        = 2
-nblockz                        = 2
 # nend                           = 100
-# nrefs                          = 2
 # nstepTotalSTS                  = 5
 # nuSTS                          = 0.1
 # outputSplitNum                 = 1

@@ -50,7 +50,7 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        GRID_PDE_BND_DIRICHLET
   use amrex_multigrid_module, ONLY : amrex_multigrid, amrex_multigrid_build, amrex_multigrid_destroy
   use amrex_poisson_module, ONLY : amrex_poisson, amrex_poisson_build, amrex_poisson_destroy
-  use amrex_lo_bctypes_module, ONLY : amrex_lo_periodic
+  use amrex_lo_bctypes_module, ONLY : amrex_lo_periodic, amrex_lo_dirichlet, amrex_lo_neumann
   use amrex_amr_module, ONLY : amrex_geom, amrex_get_finest_level, amrex_max_level
   use amrex_fort_module,     ONLY : amrex_real
   use gr_amrexLsData, ONLY : gr_amrexLs_agglomeration, gr_amrexLs_consolidation, &
@@ -66,6 +66,8 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
     integer, intent(in)    :: bcTypes(6)
     real, intent(in)       :: bcValues(2,6)
     real, intent(inout)    :: poisfact
+    integer                :: amrexPoissonBcTypes(6)
+    integer                :: i
     
     type(amrex_poisson) :: poisson
     type(amrex_multigrid) :: multigrid
@@ -96,14 +98,22 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        
        call poisson % set_maxorder(gr_amrexLs_linop_maxorder)
 
-       select case (bcTypes(1))
-!        ! This is a 3d problem with Periodic BC
+!  Select BCs to send to AMReX poisson solver
+     do i=1,6
+       select case (bcTypes(i))
        case (GRID_PDE_BND_PERIODIC)
-          call poisson % set_domain_bc([amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic], &
-               &                       [amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic])
+          amrexPoissonBcTypes(i)=amrex_lo_periodic
+       case (GRID_PDE_BND_NEUMANN)
+          amrexPoissonBcTypes(i)=amrex_lo_neumann
+       case (GRID_PDE_BND_DIRICHLET)
+          amrexPoissonBcTypes(i)=amrex_lo_dirichlet
        case default
           call Driver_abortFlash('Only periodic BC implemented for AMReX poisson solver!')
        end select
+     end do
+     call poisson % set_domain_bc([amrexPoissonBcTypes(1),amrexPoissonBcTypes(3),amrexPoissonBcTypes(5)], &
+          &                       [amrexPoissonBcTypes(2),amrexPoissonBcTypes(4),amrexPoissonBcTypes(6)])
+
        do ilev = 0, maxLevel
 ! solution multifab's ghost cells at physical boundaries have been set to bc values.
           call poisson % set_level_bc(ilev, solution(ilev))
