@@ -50,7 +50,7 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        GRID_PDE_BND_DIRICHLET
   use amrex_multigrid_module, ONLY : amrex_multigrid, amrex_multigrid_build, amrex_multigrid_destroy
   use amrex_poisson_module, ONLY : amrex_poisson, amrex_poisson_build, amrex_poisson_destroy
-  use amrex_lo_bctypes_module, ONLY : amrex_lo_periodic, amrex_lo_dirichlet
+  use amrex_lo_bctypes_module, ONLY : amrex_lo_periodic, amrex_lo_dirichlet, amrex_lo_neumann
   use amrex_amr_module, ONLY : amrex_geom, amrex_get_finest_level, amrex_max_level
   use amrex_fort_module,     ONLY : amrex_real
   use gr_amrexLsData, ONLY : gr_amrexLs_agglomeration, gr_amrexLs_consolidation, &
@@ -101,9 +101,12 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        case (GRID_PDE_BND_PERIODIC)
           call poisson % set_domain_bc([amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic], &
                &                       [amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic])
-       case (GRID_PDE_BND_DIRICHLET)
-          call poisson % set_domain_bc([amrex_lo_dirichlet, amrex_lo_dirichlet,amrex_lo_dirichlet], &
-               &                       [amrex_lo_dirichlet, amrex_lo_dirichlet,amrex_lo_dirichlet])
+       case (GRID_PDE_BND_NEUMANN)
+          call poisson % set_domain_bc([amrex_lo_neumann, amrex_lo_neumann, amrex_lo_neumann], &
+               &                       [amrex_lo_neumann, amrex_lo_neumann, amrex_lo_neumann])
+        case (GRID_PDE_BND_DIRICHLET)
+          call poisson % set_domain_bc([amrex_lo_dirichlet, amrex_lo_dirichlet, amrex_lo_dirichlet], &
+               &                       [amrex_lo_dirichlet, amrex_lo_dirichlet, amrex_lo_dirichlet])
        case default
           call Driver_abortFlash('Only periodic BC implemented for AMReX poisson solver!')
        end select
