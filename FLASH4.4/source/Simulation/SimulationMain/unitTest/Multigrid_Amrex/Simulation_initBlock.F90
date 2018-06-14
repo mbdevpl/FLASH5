@@ -98,11 +98,9 @@ subroutine Simulation_initBlock(solnData,block)
   if (NDIM >= 2) call Grid_getCellCoords&
                       (JAXIS, block, CENTER, gcell, yCoord, sizeY)
 
-  call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
   call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCenter, sizeX)
-  call Grid_getCellCoords(JAXIS, block, CENTER, gcell, yCenter, sizeY)
-  call Grid_getCellCoords(KAXIS, block, CENTER, gcell, zCenter, sizeZ)
-  call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xRight, sizeX)
+  if (NDIM >= 2) call Grid_getCellCoords(JAXIS, block, CENTER, gcell, yCenter, sizeY)
+  if (NDIM == 3) call Grid_getCellCoords(KAXIS, block, CENTER, gcell, zCenter, sizeZ)
 
 #ifdef DEBUG_SIMULATION
 98 format('initBlock:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
