@@ -111,8 +111,8 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
           call Driver_abortFlash('Only periodic BC implemented for AMReX poisson solver!')
        end select
      end do
-     call poisson % set_domain_bc([amrexPoissonBcTypes(1),amrexPoissonBcTypes(2),amrexPoissonBcTypes(3)], &
-          &                       [amrexPoissonBcTypes(4),amrexPoissonBcTypes(5),amrexPoissonBcTypes(6)])
+     call poisson % set_domain_bc([amrexPoissonBcTypes(1),amrexPoissonBcTypes(3),amrexPoissonBcTypes(5)], &
+          &                       [amrexPoissonBcTypes(2),amrexPoissonBcTypes(4),amrexPoissonBcTypes(6)])
 
        do ilev = 0, maxLevel
 ! solution multifab's ghost cells at physical boundaries have been set to bc values.
