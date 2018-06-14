@@ -53,16 +53,12 @@ subroutine Simulation_initBlock(solnData,block)
  
   integer :: i, j, k
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
-  integer, dimension(MDIM) ::  blIndSize,blIndSizeGC
 
-  real, dimension(MDIM)  :: coord,bsize
-  real ::  boundBox(2,MDIM)
-  real,allocatable, dimension(:) ::xCenter,yCenter,zCenter,xLeft,xRight,yCoord,zCoord
+  real,allocatable, dimension(:) ::xCenter,yCenter,zCenter
   integer :: sizeX,sizeY,sizeZ
 
   real :: Lx, Ly, Lz, xi, yi, zi, Phi_ijk, F_ijk
 
-  real :: del(3)
 
   real, parameter :: pfb_waven_x = 2.
   real, parameter :: pfb_waven_y = 1.
@@ -74,20 +70,12 @@ subroutine Simulation_initBlock(solnData,block)
   !----------------------------------------------------------------------
   blkLimits = block%limits
   blkLimitsGC = block%limitsGC
-  allocate(xLeft(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
-  allocate(xRight(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
   allocate(xCenter(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
   allocate(yCenter(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
   allocate(zCenter(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS)))
-  allocate(yCoord(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
-  allocate(zCoord(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS)))
   xCenter = 0.0
   yCenter = 0.0
   zCenter = 0.0
-  xLeft = 0.0
-  xRight = 0.0
-  yCoord = 0.0
-  zCoord = 0.0
 
   sizeX = SIZE(xLeft)
   sizeY = SIZE(yCoord)
