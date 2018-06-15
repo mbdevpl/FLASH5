@@ -1,3 +1,16 @@
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_zeroFluxData
+!!
+!! NAME
+!!  Grid_zeroFluxData
+!!
+!! SYNOPSIS
+!!  call Grid_zeroFluxData
+!!
+!! DESCRIPTION 
+!!  Request that the Grid unit zero all flux data managed by the unit.
+!!
+!!***
+
 #include "Flash.h"
 
 subroutine Grid_zeroFluxData()
@@ -22,9 +35,10 @@ subroutine Grid_zeroFluxData()
   integer :: finest_level
 
   if(NFLUXES < 1)   RETURN
-
-  finest_level = amrex_get_finest_level()
-  do level=1, finest_level 
+ 
+  ! FLASH uses 1-based level index / AMReX uses 0-based
+  finest_level = amrex_get_finest_level() + 1
+  do level=1, finest_level
     call gr_getBlkIterator(itor, level=level, tiling=.FALSE.)
     do while (itor%is_valid())
       call itor%blkMetaData(block)
