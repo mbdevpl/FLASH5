@@ -16,7 +16,8 @@
 !!  This routine is a callback routine that is registered with the AMReX AMR
 !!  core at initialization.  AMReX calls this routine to populate a
 !!  newly-created level with data prolongated from parent blocks and possibly
-!!  with boundary data.
+!!  with boundary data.  Prolongation is accomplished with AMReX's conservative
+!!  linear interpolation routine.
 !!
 !!  It is assumed that, where applicable, the data is in conserved form.
 !!  Upon returning, the remade multifab will have data in all interiors as
@@ -68,6 +69,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
     use Grid_data,                 ONLY : gr_doFluxCorrection, &
+                                          gr_amrexDidRefinement, &
                                           lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
@@ -92,6 +94,9 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     integer :: dir
     logical :: nodal(1:MDIM)
+
+    ! Communicate to Grid_updateRefinement that we have created a level
+    gr_amrexDidRefinement = .TRUE.
 
     ba = pba
     dm = pdm

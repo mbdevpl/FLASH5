@@ -1,53 +1,51 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/Grid_updateRefinement
 !!
 !! NAME
-!!
 !!  Grid_updateRefinement
 !!
 !! SYNOPSIS
-!!  
-!!  call Grid_updateRefinement(integer(IN)            :: nstep,
-!!                             real(IN)               :: time,
-!!                             logical(OUT), optional :: gridChanged)
+!!  call Grid_updateRefinement(integer(IN)  :: nstep,
+!!                             real(IN)     :: time,
+!!                   optional, logical(OUT) :: gridChanged)
 !!
 !! DESCRIPTION
-!!
 !!  If the indicated step qualifies as a refinement step, then this routine
-!!    (1) restricts data from leaf blocks down to all ancestors,
-!!    (2) fills all guardcells at all levels,
-!!    (3) runs EoS on all interiors and all guardcells, and
-!!    (4) triggers AMReX to execute grid refinement.
+!!    (1) converts all primitive form leaf data to conserved form,
+!!    (2) restricts data from leaf blocks down to all ancestors,
+!!    (3) fills all guardcells at all levels,
+!!    (4) triggers AMReX to execute grid refinement,
+!!    (5) reverts conserved form leaf data to primitive form where 
+!!        necessary, and
+!!    (6) runs EoS on interiors/GC of all leaf blocks if the mesh was updated.
 !!
 !!  It is assumed that the data in all leaf block interiors is correct and that
-!!  EoS has been run for these.  No assumptions are made about the quality of
-!!  guardcell data nor ancestor blocks.
+!!  EoS variables are not used to identify blocks for refinement/derefinement.
+!!  Upon termination, this routine only guarantees correct data on the interiors
+!!  and guardcells of leaf blocks.
 !!
 !!  Note that all EoS runs are done in the mode specified by the eosMode
-!!  runtime parameter.
-!!
-!!  Note also that a step qualifies as a refinement step if the given step
-!!  number is a multiple of the nrefs runtime parameter.
+!!  runtime parameter.  Note also that a step qualifies as a refinement step 
+!!  if the given step number is a multiple of the nrefs runtime parameter.
 !!
 !!  AMReX has FLASH identify blocks requiring refinement via the 
 !!  gr_markRefineDerefineCallback routine.
 !!
 !!  After the refinement, AMReX fills cell-centered data in newly-created child
-!!  blocks via conservative linear interpolation from the coarse parents.
-!!  This step also includes filling guardcells.  Finally, the
-!!  EoS is called on the block interiors to make them thermodynamically
-!!  consistent. 
+!!  blocks via callbacks listed below.  Please refer to the documentation of
+!!  these for more information on how the data in these blocks is set.
 !!
 !!  Presently, this routine does not alter any particle information.
 !!
 !! ARGUMENTS
-!!
 !!  nstep - current step number
 !!  time  - current evolution time
-!!  gridChanged - returns TRUE if grid may actually have changed.
+!!  gridChanged - returns TRUE if grid actually have changed.
 !!
 !! SEE ALSO
 !!  Grid_fillGuardCells
 !!  gr_markRefineDerefineCallback
+!!  gr_makeFineLevelFromCoarseCallback
+!!  gr_remakeLevelCallback
 !!
 !!***
 
@@ -95,11 +93,10 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   real,    intent(in)            :: time
   logical, intent(out), OPTIONAL :: gridChanged
 
-  integer, parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
+!  integer, parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
 
-  logical, save :: gcMaskArgsLogged = .FALSE.
+!  logical, save :: gcMaskArgsLogged = .FALSE.
 
-  integer :: finest_level
 !  logical :: gcMask(maskSize)
 !  integer :: iref
   integer :: lev
@@ -109,7 +106,6 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   type(block_metadata_t)         :: blockDesc
   real,                  pointer :: solnData(:, :, :, :) => null()
 
-  ! We only consider refinements every nrefs timesteps.
   if (mod(nstep, gr_nrefs) == 0) then
 #ifdef DEBUG_GRID
      write(*,'(A,I4,A,E9.3)') "[Grid_updateRefinement] AMReX Regridding @ step=", & 
@@ -141,7 +137,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 !     gcMask(NUNK_VARS+1:min(maskSize,NUNK_VARS+NDIM*NFACE_VARS)) = .TRUE.
 
      call Timers_start("Grid_updateRefinement")
-     
+
      !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH CONSERVED-FORM DATA
      ! We are only concerned with data on interior at this point
      call Grid_getLeafIterator(itor, tiling=.FALSE.)
@@ -160,6 +156,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
      ! influence refinement decisions.  If not, we just need to GC fill
      ! on all levels with leaf blocks.
+     ! DEV: TODO Should we restrict GC fill to only refinement variables?
      lev = 0
      call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
                                     0.0d0, unk(lev), &
@@ -167,8 +164,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                     0.0d0, UNK_VARS_BEGIN, &
                                     UNK_VARS_BEGIN, NUNK_VARS)
 
-     finest_level = amrex_get_finest_level()
-     do lev=1, finest_level
+     do lev=1, amrex_get_finest_level()
         call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
                                        0.0d0, unk(lev-1), &
                                        amrex_geom(lev-1), gr_fillPhysicalBC, &
@@ -185,16 +181,19 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      gr_amrexDidRefinement = .FALSE.
      call amrex_regrid(0, time)
 
-     ! Revert variables to primitive form if necessary
-     do lev = 0, finest_level
+     ! Revert variables to primitive form over all (possibly new) levels
+     do lev = 0, amrex_get_finest_level()
+       !  DEV: TODO Limit this to correcting transforming only on leaf blocks
        call gr_conserveToPrimitiveLevel(lev, .TRUE.)
      end do
 
+     ! Rerun EoS on interiors of all leaf blocks if callbacks report that
+     !   1) a new level was created,
+     !   2) an existing level was remade, or
+     !   3) a level was removed completely
+     ! as there will be new leaf blocks.  We iterate over all leaf blocks
+     ! as we do not know which leaf blocks are new.
      if (gr_amrexDidRefinement) then
-       ! We don't know which leaf blocks were created, so run EoS 
-       ! on all blocks
-       ! DEV: TODO: make gr_amrexDidRefinement into an array so that
-       ! we only run EoS on those levels that were really changed.
        call Grid_getLeafIterator(itor)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
@@ -211,7 +210,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      call Timers_stop("Grid_updateRefinement")
 
      ! Only log on the first call
-     gcMaskArgsLogged = .TRUE.
+!     gcMaskArgsLogged = .TRUE.
 
      ! DEV: TODO What happens with particles here?
 
