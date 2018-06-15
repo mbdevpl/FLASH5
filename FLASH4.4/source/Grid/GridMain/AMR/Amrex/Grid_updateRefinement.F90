@@ -78,7 +78,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use gr_interface,              ONLY : gr_getBlkIterator, &
                                         gr_releaseBlkIterator
   use gr_amrexInterface,         ONLY : gr_primitiveToConserve, &
-                                        gr_conserveToPrimitiveLevel, &
+                                        gr_conserveToPrimitive, &
                                         gr_fillPhysicalBC, &
                                         gr_averageDownLevels
   use gr_physicalMultifabs,      ONLY : unk
@@ -181,22 +181,20 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      gr_amrexDidRefinement = .FALSE.
      call amrex_regrid(0, time)
 
-     ! Revert variables to primitive form over all (possibly new) levels
-     do lev = 0, amrex_get_finest_level()
-       !  DEV: TODO Limit this to correcting transforming only on leaf blocks
-       call gr_conserveToPrimitiveLevel(lev, .TRUE.)
-     end do
-
-     ! Rerun EoS on interiors of all leaf blocks if callbacks report that
+     ! Revert variables to primitive form over all (possibly new) leaf blocks
+     ! and rerun EoS on interiors of all leaf blocks if callbacks report that
      !   1) a new level was created,
      !   2) an existing level was remade, or
      !   3) a level was removed completely
      ! as there will be new leaf blocks.  We iterate over all leaf blocks
      ! as we do not know which leaf blocks are new.
+     call Grid_getLeafIterator(itor)
+
      if (gr_amrexDidRefinement) then
-       call Grid_getLeafIterator(itor)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
+
+          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
 
           call Grid_getBlkPtr(blockDesc, solnData, CENTER)
           call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
@@ -204,8 +202,17 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
           call itor%next()
        end do
-       call Grid_releaseLeafIterator(itor)
+     else
+       do while (itor%is_valid())
+          call itor%blkMetaData(blockDesc)
+
+          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+
+          call itor%next()
+       end do
      end if
+
+     call Grid_releaseLeafIterator(itor)
 
      call Timers_stop("Grid_updateRefinement")
 
