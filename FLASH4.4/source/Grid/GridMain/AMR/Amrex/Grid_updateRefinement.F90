@@ -75,8 +75,6 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                         gr_eosMode, &
                                         gr_amrexDidRefinement, &
                                         lo_bc_amrex, hi_bc_amrex
-  use gr_interface,              ONLY : gr_getBlkIterator, &
-                                        gr_releaseBlkIterator
   use gr_amrexInterface,         ONLY : gr_primitiveToConserve, &
                                         gr_conserveToPrimitive, &
                                         gr_fillPhysicalBC, &

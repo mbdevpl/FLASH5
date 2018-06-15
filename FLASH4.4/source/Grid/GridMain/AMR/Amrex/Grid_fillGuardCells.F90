@@ -1,129 +1,66 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/Grid_fillGuardCells
 !!
 !! NAME
-!!
 !!  Grid_fillGuardCells
 !!
 !! SYNOPSIS
-!!
-!!  call Grid_fillGuardCells(integer(IN)           :: gridDataStruct,
-!!                           integer(IN)           :: idir,
-!!                           integer(IN), optional :: minLayers,
-!!                           integer(IN), optional :: eosMode,
-!!                           logical(IN), optional :: doEos,
-!!                           integer(IN), optional :: maskSize,
-!!                           logical(IN), optional :: mask(maskSize),
-!!                           logical(IN), optional :: makeMaskConsistent,
-!!                           integer(IN), optional :: selectBlockType,
-!!                           logical(IN), optional :: unitReadsMeshDataOnly)
+!!  call Grid_fillGuardCells(integer(IN) :: gridDataStruct,
+!!                           integer(IN) :: idir,
+!!                 optional, integer(IN) :: minLayers,
+!!                 optional, integer(IN) :: eosMode,
+!!                 optional, logical(IN) :: doEos,
+!!                 optional, integer(IN) :: maskSize,
+!!                 optional, logical(IN) :: mask(maskSize),
+!!                 optional, logical(IN) :: makeMaskConsistent,
+!!                 optional, logical(IN) :: doLogMask
+!!                 optional, integer(IN) :: selectBlockType,
+!!                 optional, logical(IN) :: unitReadsMeshDataOnly)
 !!
 !! DESCRIPTION 
-!!  
-!!  Restrict data from leaf blocks down to all ancestors and fill the guardcells
-!!  of the physical quantities indicated with the given mask parameters and that
-!!  are of the indicated grid data structure type.  The fill can be restricted 
-!!  to a given direction.
+!!  For all leaf blocks, fill the guardcells of the physical quantities 
+!!  in accord with the given mask parameters and that are of the indicated grid
+!!  data structure type.
 !!
-!!  Note that the fill step might require that AMReX execute prolongation operations
-!!  using the AMReX conservative linear interpolation algorithm for guardcells
+!!  Specifically, this routine
+!!    (1) converts all primitive form leaf data to conserved form,
+!!    (2) restricts data from leaf blocks down to all ancestors,
+!!    (3) fills all guardcells at all levels,
+!!    (4) reverts conserved form leaf data to primitive form where 
+!!        necessary, and
+!!    (5) runs EoS on leaf block guardcells if so desired.
+!!
+!!  Note that the fill step might require prolongation operations, which
+!!  use the AMReX conservative linear interpolation algorithm for guardcells
 !!  at fine/coarse boundaries.
 !!
-!!  It is assumed that the data in all leaf block interiors is correct and that EoS
-!!  has been run for these.  No assumptions are made about the quality of
-!!  guardcell data nor ancestor blocks.
-!!
-!!  Note that while the interior data of ancestor blocks are improved through
-!!  restriction, EoS has not been run on them.
-!!
-!!  If EoS is run on the guardcells, it is done on all levels for all affected
-!!  variables and all affected blocks.  If doEos is set to true but eosMode is
-!!  not given, then EoS is run using the mode given by the eosMode runtime
-!!  parameter.
-!!
 !! ARGUMENTS 
-!!
-!!  gridDataStruct - integer constant, defined in "constants.h", 
-!!                   indicating which grid data structure 
-!!                   variable's guardcells to fill.
-!!                   UG has 4 data structures for grid variables that
-!!                   can have their guardcells filled. 
-!!
-!!                   unk                all cell centered variables in the grid
-!!                   facex,facey,facez  all face centered variables along i,j,k 
-!!                                      direction respectively
-!!                   
-!!                   valid values of gridDataStruct are  
-!!                   CENTER             unk only
-!!                   WORK               has no meaning in UG
-!!                   The face variables are not yet implemented in UG
-!!                   FACES              facex,facey, and facez
-!!                   FACEX              facex
-!!                   FACEY              facey
-!!                   FACEZ              facez
-!!                   CENTER_FACES     unk,facex,facey,facez
-!!
-!!  idir - direction of guardcell fill.  User can specify ALLDIR for all (x,y,z)
-!!         directions, or if for example the algorithm only does one directional
-!!         sweep at a time then time can be saved by filling only the guardcell
-!!         direction that is needed.  A user would pass in the constants defined
-!!         in constants.h IAXIS, JAXIS or KAXIS to fill guardcells in only one 
-!!         direction.        
-!!         All layers of guardcells in the given direction(s) are filled.
-!!         In the current UG implementation, idir is ignored and a full
-!!         guardcell fill in all directions is always performed.
-!!
-!!         THE REMAINING ARGUMENTS HAVE NO MEANING IN UG
-!!
+!!  gridDataStruct - integer constant that indicates which grid data structure 
+!!                   variable's guardcells to fill.  Valid values are  
+!!                     CENTER             unk only
+!!                     CENTER_FACES       Presently only unk
+!!  idir - For AMReX, the only valid value is ALLDIR, which does the fill along
+!!         all directions.
 !!  minLayers - number of guardcell layers requested for all directions.
+!!  eosMode  - The mode in which eos is to be applied.  If not given, then
+!!             EoS will be run in the mode given by the eosMode runtime parameter.
+!!  doEos    - run EoS on leaf block guardcells
+!!  maskSize - the size of the mask array. 
+!!  mask - an array whose indices correspond to variables in the grid data
+!!          structures.  The guardcell data for each variable will be filled if
+!!          the corresponding element in mask is set to .TRUE.  If the runtime
+!!          parameter enableMaskedGCFill is .FALSE., then the routine performs
+!!          the fill as if all elements in mask are set to .TRUE.  Note
+!!          that the presence of this variable requires that maskSize also be
+!!          given.
+!!  makeMaskConsistent - If .TRUE., then the mask is altered so that the fill
+!!          is also done for all quantities on which unmasked quanitities
+!!          depend.  If doEos is .TRUE., it is also determined if the contents
+!!          of mask require that EoS be run.  Note that the presence of
+!!          this variable requires that mask also be given.
+!!  doLogMask - log masking information if given.
+!!  selectBlockType - it is an error to give this parameter.
+!!  unitReadsMeshDataOnly - it is an error to give this parameter.
 !!
-!!   eosMode  - The mode in which eos is to be applied
-!!   doEos    - the UG implementation does not act upon this argument
-!!   maskSize - the size of the mask array. 
-!! 
-!!  mask -  It is a one-dimensional logical array 
-!!          with indices corresponding to variables in the grid data
-!!          structures. If a variable should have its guardcells filled,
-!!          the corresponding element in "mask" is true, otherwise it is
-!!          false.
-!!          The mask is always ignored if the runtime parameter
-!!          enableMaskedGCFill is set .FALSE.
-!!  
-!! makeMaskConsistent - If true when mask is applied, it is made sure that for
-!!          all the selected variables in the mask, the ones they are dependent
-!!          on are true too. It is also determined whether there is a need to 
-!!          apply Eos if doEos argument is true.
-!!
-!! selectBlockType - IGNORED
-!!
-!! unitReadsMeshDataOnly - specifies that the unit calling Grid_fillGuardCells
-!!                         does not update any internal grid data.  This
-!!                         allows us to skip the next guard cell fill because
-!!                         the guard cells already contain up to date data.
-!!
-!! EXAMPLE
-!!
-!!   #include "Flash.h"
-!!   #include "constants.h"
-!!
-!!      call Grid_fillGuardCells(CENTER, IAXIS)
-!!
-!!     This call will fill all guardcells for all cell-centered 
-!!     variables in the x direction.
-!!     
-!! EXAMPLE 2
-!!
-!!   #include "Flash.h"
-!!   #include "constants.h"
-!!
-!!      call Grid_fillGuardCells(CENTER_FACES, ALLDIR)
-!!     
-!!     This call fills guardcells along all directions in both
-!!     cell centered and face centered data structures.
-!!
-!! NOTES
-!!
-!!   The masking functionality is not yet included in UG
-!!  
 !!***
 
 #ifdef DEBUG_ALL
@@ -165,14 +102,11 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_averageDownLevels, &
                                         gr_primitiveToConserve, &
-                                        gr_conserveToPrimitiveLevel
+                                        gr_conserveToPrimitive
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
                                         gr_setMasks_gen, &
-                                        gr_makeMaskConsistent_gen, &
-                                        gr_getBlkIterator, &
-                                        gr_releaseBlkIterator
+                                        gr_makeMaskConsistent_gen
   use gr_physicalMultifabs,      ONLY : unk
-  use gr_iterator,               ONLY : gr_iterator_t
   use leaf_iterator,             ONLY : leaf_iterator_t
   use block_metadata,            ONLY : block_metadata_t
 
@@ -193,9 +127,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   logical,dimension(NUNK_VARS) :: gcell_on_cc
   integer :: guard, gcEosMode
   integer,dimension(MDIM) :: layers, returnLayers
-  real,dimension(:,:,:,:),pointer::solnData
-  type(gr_iterator_t)    :: itor
-  type(leaf_iterator_t)  :: leafItor
+  real,pointer :: solnData(:,:,:,:) => null()
+  type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
   integer :: ierr
@@ -212,7 +145,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   integer :: lev, j
   integer :: finest_level
-    
+
 #ifdef DEBUG_GRID
   logical:: validDataStructure
   
@@ -228,29 +161,19 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end if
 #endif
 
-  finest_level = -1
-
-  ! DEV: TODO Implement this functionality
-#ifdef DEBUG_GRID
-  if (present(unitReadsMeshDataOnly)) then
-    call Driver_abortFlash("[Grid_fillGuardCells] unitReadsMeshDataOnly *not* implemented for yet AMReX") 
-  end if
-#endif
-
-
+  ! DEV: TODO Implement this functionality?
   if (gridDataStruct /= CENTER .and. gridDataStruct /= CENTER_FACES) then
      !DEV CD.  I am accepting CENTER_FACES for the time being because it
      !is passed by Grid_markRefineDerefine.  I do not support FACE variables
      !yet so CENTER_FACES is just CENTER for now.
      call Driver_abortFlash("[Grid_fillGuardCells]: Non-center not yet coded")
+  else if (idir /= ALLDIR) then
+     call Driver_abortFlash("[Grid_fillGuardCells] idir must be ALLDIR with AMReX")
+  else if (present(selectBlockType)) then
+     call Driver_abortFlash("[Grid_fillGuardCells] selectBlockType *not* implemented for AMReX yet") 
+  else if (present(unitReadsMeshDataOnly)) then
+     call Driver_abortFlash("[Grid_fillGuardCells] unitReadsMeshDataOnly *not* implemented for AMReX yet") 
   end if
-
-#ifdef DEBUG_GRID
-  ! Filling by direction is not needed any longer
-  if (idir /= ALLDIR) then
-    call Driver_abortFlash("[Grid_fillGuardCells] idir must be ALLDIR with AMReX")
-  end if
-#endif
 
   skipThisGcellFill = .FALSE.   ! for now
 
@@ -311,7 +234,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   call Timers_start("guardcell internal")
   !! appropriately mask the data structures to ensure that only the correct data
   !! structure is filled.
-  if((gridDataStruct/=CENTER_FACES).and.(gridDataStruct/=CENTER))gcell_on_cc = .false.
+!  if((gridDataStruct/=CENTER_FACES).and.(gridDataStruct/=CENTER))gcell_on_cc = .false.
 
   scompCC = UNK_VARS_BEGIN
   ncompCC = NUNK_VARS
@@ -353,20 +276,16 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! Figure out nlayers arguments to amr_guardcell based on our arguments
   call gr_setGcFillNLayers(layers, idir, guard, minLayers, returnLayers)
 
-  if (present(selectBlockType)) then
-     call Driver_abortFlash("[Grid_fillGuardCells] selectBlockType *not* implemented for yet AMReX") 
-  end if
-
   !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH CONSERVED-FORM DATA
   ! We are only concerned with data on interior at this point
-  call Grid_getLeafIterator(leafItor, tiling=.FALSE.)
-  do while (leafItor%is_valid())
-    call leafItor%blkMetaData(blockDesc)
+  call Grid_getLeafIterator(itor, tiling=.FALSE.)
+  do while (itor%is_valid())
+    call itor%blkMetaData(blockDesc)
     call gr_primitiveToConserve(blockDesc)
 
-    call leafItor%next()
+    call itor%next()
   end do
-  call Grid_releaseLeafIterator(leafItor)
+  call Grid_releaseLeafIterator(itor)
 
   ! Restrict data from leaves to coarser blocks
   call gr_averageDownLevels
@@ -395,30 +314,41 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                     lo_bc_amrex, hi_bc_amrex) 
   end do
 
-  ! DEV: Could we do this just on leaves as well or does Hydro need to have
-  ! primitive form on the parents/ancestors?
-  do lev = 0, finest_level
-    call gr_conserveToPrimitiveLevel(lev, .TRUE.)
-  end do
+  !!!!! REVERT CONSERVED TO PRIMITIVE FORM AND RUN EOS ON LEAF BLOCKS
+  call Timers_start("eos gc")
 
-  if (present(doEos) .AND. needEos) then
-     if (doEos) then
-        call Timers_start("eos gc")
-        call gr_getBlkIterator(itor)
-        do while (itor%is_valid())
-           call itor%blkMetaData(blockDesc)
-
-           call Grid_getBlkPtr(blockDesc, solnData)
-           call Eos_guardCells(gcEosMode, solnData, corners=.true., &
-                               layers=returnLayers)
-           call Grid_releaseBlkPtr(blockDesc, solnData)
-
-           call itor%next()
-        end do
-        call gr_releaseBlkIterator(itor)
-        call Timers_stop("eos gc")
-     end if
+  if (present(doEos)) then
+     needEos = (needEos .AND. doEos)
+  else
+     needEos = .FALSE.
   end if
+
+  call Grid_getLeafIterator(itor, tiling=.FALSE.)
+  if (needEos) then
+     do while (itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+
+        call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+
+        call Grid_getBlkPtr(blockDesc, solnData)
+        call Eos_guardCells(gcEosMode, solnData, corners=.true., &
+                            layers=returnLayers)
+        call Grid_releaseBlkPtr(blockDesc, solnData)
+
+        call itor%next()
+     end do
+  else
+     do while (itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+
+        call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+
+        call itor%next()
+     end do
+  end if
+  call Grid_releaseLeafIterator(itor)
+
+  call Timers_stop("eos gc")
   call Timers_stop("amr_guardcell")
 
   gr_justExchangedGC = .TRUE.
@@ -428,39 +358,39 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   !We now test whether we can skip the next guard cell fill.
   skipNextGcellFill = .false.
-  if(present(unitReadsMeshDataOnly)) then
-     if (unitReadsMeshDataOnly) then
-        if (gr_gcellsUpToDate) then
-           !If *all* guard cells were up to date on entry to
-           !Grid_fillGuardCells then they will continue to be up to date.
-           skipNextGcellFill = .true.
-        else
-           !Check whether we filled guardcells for all layers, all
-           !variables and all active blocks.  This ensures all
-           !guard cells are up to date for the next unit.
-           if ((gridDataStruct == CENTER_FACES .OR. &
-                (gridDataStruct == CENTER .AND. (NFACE_VARS < 1))) &
-                .and. idir == ALLDIR) then
-              skipNextGcellFill = .true.
-              if (present(minLayers)) then
-                 if (minval(layers(1:NDIM)) < guard) then
-                    skipNextGcellFill = .false.
-                 end if
-              end if
-              if (present(mask)) then
-                 if (.not.all(mask .eqv. .true.)) then
-                    skipNextGcellFill = .false.
-                 end if
-              end if
-              if (present(selectBlockType)) then
-                 if (selectBlockType /= ACTIVE_BLKS) then
-                    skipNextGcellFill = .false.
-                 end if
-              end if
-           end if
-        end if
-     end if
-  end if
+!  if(present(unitReadsMeshDataOnly)) then
+!     if (unitReadsMeshDataOnly) then
+!        if (gr_gcellsUpToDate) then
+!           !If *all* guard cells were up to date on entry to
+!           !Grid_fillGuardCells then they will continue to be up to date.
+!           skipNextGcellFill = .true.
+!        else
+!           !Check whether we filled guardcells for all layers, all
+!           !variables and all active blocks.  This ensures all
+!           !guard cells are up to date for the next unit.
+!           if ((gridDataStruct == CENTER_FACES .OR. &
+!                (gridDataStruct == CENTER .AND. (NFACE_VARS < 1))) &
+!                .and. idir == ALLDIR) then
+!              skipNextGcellFill = .true.
+!              if (present(minLayers)) then
+!                 if (minval(layers(1:NDIM)) < guard) then
+!                    skipNextGcellFill = .false.
+!                 end if
+!              end if
+!              if (present(mask)) then
+!                 if (.not.all(mask .eqv. .true.)) then
+!                    skipNextGcellFill = .false.
+!                 end if
+!              end if
+!              if (present(selectBlockType)) then
+!                 if (selectBlockType /= ACTIVE_BLKS) then
+!                    skipNextGcellFill = .false.
+!                 end if
+!              end if
+!           end if
+!        end if
+!     end if
+!  end if
   gr_gcellsUpToDate = skipNextGcellFill
 
   call Timers_stop("guardcell internal")
