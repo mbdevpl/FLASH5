@@ -59,6 +59,7 @@
 
 subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   use amrex_fort_module,    ONLY : wp => amrex_real
+  use amrex_amrcore_module, ONLY : amrex_get_finest_level
 #if DEBUG_GRID
   use amrex_amrcore_module, ONLY : amrex_ref_ratio
 #endif
@@ -89,7 +90,13 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
     call Driver_abortFlash("[Grid_putFluxData] areaLeft not accepted with AMReX")
   end if
 
-  if(NFLUXES < 1)   RETURN
+  ! No need to save flux on coarsest level or levels that don't exist
+  !
+  ! AMReX level index is 0-based
+  if (     ((level-1 <= 0) .OR. (level-1 > amrex_get_finest_level())) &
+      .OR. (NFLUXES < 1)) then
+      RETURN
+  end if
 
   ! FLASH uses 1-based level index / AMReX uses 0-based index
   call flux_registers(level-1)%setval(0.0_wp)

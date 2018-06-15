@@ -39,6 +39,7 @@
 
 subroutine Grid_conserveFluxes(axis, level)
     use amrex_fort_module,    ONLY : wp => amrex_real
+    use amrex_amrcore_module, ONLY : amrex_get_finest_level
 
     use Driver_interface,     ONLY : Driver_abortFlash
     use Grid_interface,       ONLY : Grid_getGeometry
@@ -55,6 +56,12 @@ subroutine Grid_conserveFluxes(axis, level)
     if (axis /= ALLDIR) then
         call Driver_abortFlash("[Grid_conserveFluxes] AMReX requires axis==ALLDIR")
     end if
+
+    ! No need to conserve on the finest level in existence or any
+    ! level index corresponding to a finer mesh
+    !
+    ! AMReX level index is 0-based
+    if (level-1 >= amrex_get_finest_level())     RETURN
 
     call Grid_getGeometry(geometry)
 
