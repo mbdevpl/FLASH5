@@ -77,15 +77,10 @@ subroutine Simulation_initBlock(solnData,block)
   yCenter = 0.0
   zCenter = 0.0
 
-  sizeX = SIZE(xLeft)
-  sizeY = SIZE(yCoord)
-  sizeZ = SIZE(zCoord)
+  sizeX = SIZE(xCenter)
+  sizeY = SIZE(yCenter)
+  sizeZ = SIZE(zCenter)
   
-  if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, block, CENTER, gcell, zCoord, sizeZ)
-  if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, block, CENTER, gcell, yCoord, sizeY)
-
   call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCenter, sizeX)
   if (NDIM >= 2) call Grid_getCellCoords(JAXIS, block, CENTER, gcell, yCenter, sizeY)
   if (NDIM == 3) call Grid_getCellCoords(KAXIS, block, CENTER, gcell, zCenter, sizeZ)
