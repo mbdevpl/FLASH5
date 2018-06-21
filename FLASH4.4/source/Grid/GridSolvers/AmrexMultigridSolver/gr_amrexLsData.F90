@@ -34,7 +34,7 @@ module gr_amrexLsData
   integer, save :: gr_amrexLs_n_cell
   integer, save :: gr_amrexLs_max_grid_size
 
-  logical, save :: gr_amrexLs_composite_solve
+  logical, save :: gr_amrexLs_composite_solve = .FALSE.
 
   ! prob_type 1 here is Poisson with homogeneous Dirichlet boundary.
   ! prob_type 2 here is ABecLaplacian with homogeneous Neumann boundary.
