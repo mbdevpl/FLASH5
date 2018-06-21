@@ -29,12 +29,12 @@ module gr_amrexLsData
 
   ! parameters
 
-  integer, save :: gr_amrexLs_max_level = 1
+  integer, save :: gr_amrexLs_max_level
   integer, save :: gr_amrexLs_ref_ratio = 2
-  integer, save :: gr_amrexLs_n_cell = 128
-  integer, save :: gr_amrexLs_max_grid_size = 64
+  integer, save :: gr_amrexLs_n_cell
+  integer, save :: gr_amrexLs_max_grid_size
 
-  logical, save :: gr_amrexLs_composite_solve = .true.
+  logical, save :: gr_amrexLs_composite_solve
 
   ! prob_type 1 here is Poisson with homogeneous Dirichlet boundary.
   ! prob_type 2 here is ABecLaplacian with homogeneous Neumann boundary.
