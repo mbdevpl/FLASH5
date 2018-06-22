@@ -14,7 +14,7 @@ PARAMETER gr_amrexLs_n_cell		INTEGER 32 #128
 PARAMETER gr_amrexLs_max_grid_size	INTEGER 16 #64
 
 D composite solve or level by level?
-PARAMETER gr_amrexLs_composite_solve	BOOLEAN	TRUE
+PARAMETER gr_amrexLs_composite_solve	BOOLEAN	FALSE
 
 D 1=Poisson 2=ABEC
 PARAMETER gr_amrexLs_prob_type	INTEGER 1
