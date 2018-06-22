@@ -62,7 +62,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
 
   real :: poisfact
   integer,dimension(MAXBLOCKS) :: blkList
-  integer :: blockID,blkCount,lb,i,j,k
+  integer :: blkCount=0,lb,i,j,k
   real:: del(MDIM)
   real meanASOL,meanPFFT
   integer nx,ny,nz
@@ -126,6 +126,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
         vcell = del(IAXIS)*del(JAXIS)*del(KAXIS)
      end select
 
+     blkCount = blkCount + 1
      blkpoints = blkpoints + &
           (blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1) * &
           (blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1) * &
