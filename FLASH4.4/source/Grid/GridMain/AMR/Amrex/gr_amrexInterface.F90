@@ -133,21 +133,6 @@ module gr_amrexInterface
   end interface
  
   interface
-    subroutine gr_primitiveToConserveLevel(level)
-      implicit none
-      integer, intent(IN) :: level
-    end subroutine gr_primitiveToConserveLevel
-  end interface
-
-  interface
-    subroutine gr_conserveToPrimitiveLevel(level, allCells)
-      implicit none
-      integer, intent(IN) :: level
-      logical, intent(IN) :: allCells
-    end subroutine gr_conserveToPrimitiveLevel
-  end interface
-
-  interface
     subroutine gr_averageDownLevels()
       implicit none
     end subroutine gr_averageDownLevels
