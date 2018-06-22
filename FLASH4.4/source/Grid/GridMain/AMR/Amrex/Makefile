@@ -8,8 +8,6 @@ Grid += gr_amrexInterface.o \
         gr_markRefineDerefineCallback.o \
         gr_conserveToPrimitive.o \
         gr_primitiveToConserve.o \
-        gr_conserveToPrimitiveLevel.o \
-        gr_primitiveToConserveLevel.o \
         gr_fillPhysicalBC.o \
         gr_getFinestLevel.o \
         gr_averageDownLevels.o \
