@@ -62,6 +62,11 @@ plotfileNumber       = 0
 nend            = 1000
 tmax            = .175
 
+# No need for primitive-to-conservative conversions in 
+# Pseudo-UG mode
+convertToConsvdForMeshCalls = .FALSE.
+convertToConsvdInMeshInterp = .FALSE.
+
 run_comment     = "Sod problem, vertical direction"
 log_file        = "sod.log"
 eintSwitch      = 0.0
