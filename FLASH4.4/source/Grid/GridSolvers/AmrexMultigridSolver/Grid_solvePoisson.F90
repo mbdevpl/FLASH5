@@ -50,15 +50,18 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        GRID_PDE_BND_DIRICHLET
   use amrex_multigrid_module, ONLY : amrex_multigrid, amrex_multigrid_build, amrex_multigrid_destroy
   use amrex_poisson_module, ONLY : amrex_poisson, amrex_poisson_build, amrex_poisson_destroy
-  use amrex_lo_bctypes_module, ONLY : amrex_lo_periodic
+  use amrex_lo_bctypes_module, ONLY : amrex_lo_periodic, amrex_lo_dirichlet, amrex_lo_neumann
   use amrex_amr_module, ONLY : amrex_geom, amrex_get_finest_level, amrex_max_level
   use amrex_fort_module,     ONLY : amrex_real
   use gr_amrexLsData, ONLY : gr_amrexLs_agglomeration, gr_amrexLs_consolidation, &
                                     gr_amrexLs_linop_maxorder, gr_amrexLs_verbose, gr_amrexLs_cg_verbose, &
-                                    gr_amrexLs_max_iter, gr_amrexLs_max_fmg_iter
+                                    gr_amrexLs_max_iter,gr_amrexLs_max_fmg_iter,&
+                             gr_amrexLs_composite_solve, gr_amrexLs_ref_ratio
   use gr_physicalMultifabs,  ONLY : unk
   !!
   use amrex_multifab_module, ONLY : amrex_multifab, amrex_multifab_destroy, amrex_multifab_build_alias
+  use amrex_boxarray_module, ONLY : amrex_boxarray, amrex_boxarray_destroy
+  use amrex_distromap_module, ONLY : amrex_distromap, amrex_distromap_destroy
 
   implicit none
   
@@ -66,6 +69,8 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
     integer, intent(in)    :: bcTypes(6)
     real, intent(in)       :: bcValues(2,6)
     real, intent(inout)    :: poisfact
+    integer                :: amrexPoissonBcTypes(6)
+    integer                :: i
     
     type(amrex_poisson) :: poisson
     type(amrex_multigrid) :: multigrid
@@ -73,6 +78,9 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
     real(amrex_real) :: err
     type(amrex_multifab), allocatable, save :: solution(:)
     type(amrex_multifab), allocatable, save :: rhs(:)
+    type(amrex_boxarray), allocatable, save :: ba(:)
+    type(amrex_distromap), allocatable, save :: dm(:)
+
 
 #include "Flash.h"
 #include "constants.h"   
@@ -83,27 +91,39 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
 !   Allocate space for multifab array storing phi (solution) and rhs
     allocate(solution(0:maxLevel))
     allocate(rhs(0:maxLevel))
+    allocate(ba(0:maxLevel))
+    allocate(dm(0:maxLevel))
 
-!     Create alias from multifab unk to rhs and solution with respective components in unk
     do ilev = 0, maxLevel
         call amrex_multifab_build_alias(solution(ilev), unk(ilev), iSoln, 1)
         call amrex_multifab_build_alias(rhs(ilev), unk(ilev), iSrc, 1)
         call solution(ilev)%setVal(0.0_amrex_real)
     end do
+    ba=rhs%ba
+    dm=rhs%dm
+  if(gr_amrexLs_composite_solve) then
 !   Build poisson object with the geometry amrex_geom, boxarray unk%ba  and distromap unk%dm
        call amrex_poisson_build(poisson, amrex_geom(0:maxLevel), rhs%ba, rhs%dm, &
             metric_term=.false., agglomeration=gr_amrexLs_agglomeration, consolidation=gr_amrexLs_consolidation)
        
        call poisson % set_maxorder(gr_amrexLs_linop_maxorder)
 
-       select case (bcTypes(1))
-!        ! This is a 3d problem with Periodic BC
+!  Select BCs to send to AMReX poisson solver
+     do i=1,6
+       select case (bcTypes(i))
        case (GRID_PDE_BND_PERIODIC)
-          call poisson % set_domain_bc([amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic], &
-               &                       [amrex_lo_periodic, amrex_lo_periodic, amrex_lo_periodic])
+          amrexPoissonBcTypes(i)=amrex_lo_periodic
+       case (GRID_PDE_BND_NEUMANN)
+          amrexPoissonBcTypes(i)=amrex_lo_neumann
+       case (GRID_PDE_BND_DIRICHLET)
+          amrexPoissonBcTypes(i)=amrex_lo_dirichlet
        case default
           call Driver_abortFlash('Only periodic BC implemented for AMReX poisson solver!')
        end select
+     end do
+     call poisson % set_domain_bc([amrexPoissonBcTypes(1),amrexPoissonBcTypes(3),amrexPoissonBcTypes(5)], &
+          &                       [amrexPoissonBcTypes(2),amrexPoissonBcTypes(4),amrexPoissonBcTypes(6)])
+
        do ilev = 0, maxLevel
 ! solution multifab's ghost cells at physical boundaries have been set to bc values.
           call poisson % set_level_bc(ilev, solution(ilev))
@@ -118,13 +138,61 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        print*, "Calling multigrid solve, maxlev", maxLevel
        err = multigrid % solve(solution, rhs, 1.e-10_amrex_real, 0.0_amrex_real)
         print*, err
-!      !!Finalize objects
-        do ilev = 0, maxLevel
-            call amrex_multifab_destroy(solution(ilev))
-            call amrex_multifab_destroy(rhs(ilev))
-        end do
        call amrex_multigrid_destroy(multigrid)
        call amrex_poisson_destroy(poisson)
+  else
+!else level by level solve instead of composite # Seems to be always ~2x faster than composite
+    do ilev = 0, maxLevel
+       call amrex_poisson_build(poisson, [amrex_geom(ilev)], [ba(ilev)], [dm(ilev)], &
+            metric_term=.false., agglomeration=gr_amrexLs_agglomeration, consolidation=gr_amrexLs_consolidation)
+       
+     do i=1,6
+       select case (bcTypes(i))
+       case (GRID_PDE_BND_PERIODIC)
+          amrexPoissonBcTypes(i)=amrex_lo_periodic
+       case (GRID_PDE_BND_NEUMANN)
+          amrexPoissonBcTypes(i)=amrex_lo_neumann
+       case (GRID_PDE_BND_DIRICHLET)
+          amrexPoissonBcTypes(i)=amrex_lo_dirichlet
+       case default
+          call Driver_abortFlash('Only periodic BC implemented for AMReX poissonsolver!')
+       end select
+       end do
+       call poisson %set_domain_bc([amrexPoissonBcTypes(1),amrexPoissonBcTypes(3),amrexPoissonBcTypes(5)],&
+          &[amrexPoissonBcTypes(2),amrexPoissonBcTypes(4),amrexPoissonBcTypes(6)])
+
+       if (ilev > 0) then
+         ! use coarse level data to set up bc at corase/fine boundary
+         call poisson % set_coarse_fine_bc(solution(ilev-1), gr_amrexLs_ref_ratio)
+       end if
+          ! Note that to the linear solver, the level is ZERO.  In
+          ! this test problem, when lev > 0, solution(lev) is going to
+          ! be ignored because fine level grids are completed
+          ! surrounded by coarse level.  If fine level grids do touch
+          ! phyical domain, the multifab must have bc values at
+          ! physical boundaries stored in ghost cells.
+       call poisson % set_level_bc(0, solution(ilev))
+
+       call amrex_multigrid_build(multigrid, poisson)
+       call multigrid % set_verbose(gr_amrexLs_verbose)
+       call multigrid % set_cg_verbose(gr_amrexLs_cg_verbose)
+       call multigrid % set_max_iter(gr_amrexLs_max_iter)
+       call multigrid % set_max_fmg_iter(gr_amrexLs_max_fmg_iter)
+
+       err = multigrid % solve([solution(ilev)], [rhs(ilev)],1.e-10_amrex_real, 0.0_amrex_real)
+       !err = multigrid % solve(solution, rhs, 1.e-10_amrex_real, 0.0_amrex_real)
+       print*, err
+       call amrex_poisson_destroy(poisson)
+       call amrex_multigrid_destroy(multigrid)
+    end do
+  endif
+!      !!Finalize temporary alias objects
+  do ilev = 0, maxLevel
+    call amrex_multifab_destroy(solution(ilev))
+    call amrex_multifab_destroy(rhs(ilev))
+    call amrex_boxarray_destroy(ba(ilev))
+    call amrex_distromap_destroy(dm(ilev))
+  end do
        
   call Timers_stop("Grid_solvePoisson")
 end subroutine Grid_solvePoisson
