@@ -26,7 +26,7 @@
 
 subroutine Grid_unitTest(fileUnit,perfect)
 
-  use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, &
+  use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, GRID_PDE_BND_DIRICHLET, GRID_PDE_BND_NEUMANN,&
 !       Grid_getBlkIndexLimits, &
        Grid_solvePoisson, &
        Grid_getBlkPtr,Grid_releaseBlkPtr, &
@@ -62,7 +62,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
 
   real :: poisfact
   integer,dimension(MAXBLOCKS) :: blkList
-  integer :: blockID,blkCount,lb,i,j,k
+  integer :: blkCount=0,lb,i,j,k
   real:: del(MDIM)
   real meanASOL,meanPFFT
   integer nx,ny,nz
@@ -78,7 +78,8 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   real :: ET
 
   ! -------------------------------------------------------------------
-  bcTypes(:)=GRID_PDE_BND_PERIODIC  !This is always periodic for this problem.
+  bcTypes(:)=GRID_PDE_BND_NEUMANN  
+  bcTypes(3:4)=GRID_PDE_BND_DIRICHLET
   bcValues(:,:)=0.
 
   call mpi_barrier(gr_meshComm,ierr)
@@ -125,6 +126,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
         vcell = del(IAXIS)*del(JAXIS)*del(KAXIS)
      end select
 
+     blkCount = blkCount + 1
      blkpoints = blkpoints + &
           (blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1) * &
           (blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1) * &
