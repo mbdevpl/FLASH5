@@ -61,6 +61,11 @@ plotfileNumber       = 0
 nend            = 1000
 tmax            = .175
 
+# use MeshCalls for now so that we can compare AMReX, which does not have
+# MeshInterp implemented, against Paramesh
+convertToConsvdForMeshCalls = .FALSE.
+convertToConsvdInMeshInterp = .FALSE.
+
 run_comment     = "Sod problem, vertical direction"
 log_file        = "sod.log"
 eintSwitch      = 0.0

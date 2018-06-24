@@ -64,6 +64,11 @@ plotfileNumber       = 0
 nend            = 1000
 tmax            = 0.02
 
+# use MeshCalls for now so that we can compare AMReX, which does not have
+# MeshInterp implemented, against Paramesh
+convertToConsvdForMeshCalls = .FALSE.
+convertToConsvdInMeshInterp = .FALSE.
+
 run_comment     = "3D Sedov explosion, from t=0 with sim_rInit = 3.5dx_min"
 log_file        = "sedov.log"
 eintSwitch      = 1.e-4
