@@ -1364,6 +1364,12 @@ Module Grid_interface
        type(leaf_iterator_t), intent(INOUT) :: itor
      end subroutine Grid_releaseLeafIterator
   end interface
+  
+  interface
+     subroutine Grid_zeroFluxData
+       implicit none
+     end subroutine Grid_zeroFluxData
+  end interface
 
 end Module Grid_interface
 

@@ -30,3 +30,9 @@ zr_boundary_type = "periodic"
 lrefine_max = 4
 nrefs       = 2
 
+##### TURN OFF ACTIONS THAT ARE UNNECESSARY FOR THIS TEST
+convertToConsvdInMeshInterp = .FALSE.
+convertToConsvdForMeshCalls = .FALSE.
+flux_correct                = .FALSE.
+
+

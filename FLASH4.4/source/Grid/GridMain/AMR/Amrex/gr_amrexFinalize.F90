@@ -21,6 +21,7 @@ subroutine gr_amrexFinalize()
 
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback
     use gr_physicalMultifabs,      ONLY : unk, &
+                                          gr_scratchCtr, &
                                           facevarx, facevary, facevarz, &
                                           fluxes, &
                                           flux_registers
@@ -35,6 +36,7 @@ subroutine gr_amrexFinalize()
     end do
 
     if (allocated(unk))            deallocate(unk)
+    if (allocated(gr_scratchCtr))  deallocate(gr_scratchCtr)
     if (allocated(facevarx))       deallocate(facevarx)
     if (allocated(facevary))       deallocate(facevary)
     if (allocated(facevarz))       deallocate(facevarz)

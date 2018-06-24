@@ -18,23 +18,26 @@
 !!  a multifab at the given level onto a new multifab specified through the given
 !!  box array and distribution map.
 !!
-!!  It is assumed that the multifab data at the given level is correct and has
-!!  had EoS run on it.  Upon returning, the remade multifab will have correct
-!!  data on all interiors and these will have had EoS run on them.  No guarantee 
-!!  is made with respect to the quality of guardcell data.
+!!  It is assumed that, where applicable, the data is in conserved form.
+!!  Upon returning, the remade multifab will have data in all interiors as
+!!  well as guardcells.  Note that since the data is still in conserved form
+!!  and EoS might expect primitive form, EoS is not run.  It is therefore the
+!!  responsibility of the caller to manage this step.
+!!
+!!  NOTE: This implementation, while presently functional, is incorrect.  A user
+!!        could supply their own BC routine that sensibly assumes that data is
+!!        in primitive form.  However, here we pass the BC routines data in
+!!        conserved form.
 !!
 !!  In detail, for the given refinement level this routine
 !!   (1) uses AMReX patchfill to copy data from the original multifab to a
 !!       buffer multifab built with the new box layout and distribution mapping,
-!!   (2) rebuild the original multifab,
-!!   (3) copy the new interior/GC data from the buffer to the rebuilt multifab, and
-!!   (4) run EoS on the interiors of all blocks to make the data 
-!!       thermodynamically consistent.
+!!   (2) rebuild the original multifab, and
+!!   (3) copy the new interior/GC data from the buffer to the rebuilt multifab.
 !!
 !!  Note that step (1) might require that AMReX execute prolongation operations
 !!  using the AMReX conservative linear interpolation algorithm if new boxes are
-!!  added to the level.  All EoS runs are done in the mode specified by the
-!!  eosMode runtime parameter.
+!!  added to the level.
 !!
 !!  This routine should only be invoked by AMReX.
 !!
@@ -82,17 +85,12 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
                                           gr_amrexDidRefinement, &
                                           gr_doFluxCorrection
     use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-    use gr_interface,              ONLY : gr_getBlkIterator, &
-                                          gr_releaseBlkIterator
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           gr_scratchCtr, &
                                           fluxes, &
                                           flux_registers
-    use gr_iterator,               ONLY : gr_iterator_t
-    use block_metadata,            ONLY : block_metadata_t
-    use Eos_interface,             ONLY : Eos_wrapped
 
     implicit none
 
@@ -106,10 +104,8 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     type(amrex_box)       :: bx
     type(amrex_multifab)  :: mfab
 
-    type(gr_iterator_t)           :: itor
-    type(block_metadata_t)        :: blockDesc
-    real(wp), contiguous, pointer :: solnData(:,:,:,:)
-    integer                       :: nFab
+    type(amrex_mfiter) :: mfi
+    integer            :: nFab
 
     integer :: dir
     logical :: nodal(1:MDIM)
@@ -154,18 +150,11 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     call amrex_multifab_destroy(mfab)
 
     nFab = 0
-    call gr_getBlkIterator(itor, level=lev+1, tiling=.FALSE.)
-    do while (itor%is_valid())
-       call itor%blkMetaData(blockDesc)
-
-       call Grid_getBlkPtr(blockDesc, solnData, CENTER)
-       call Eos_wrapped(gr_eosMode, blockDesc%limits, solnData)
-       call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
-
-       nFab = nFab + 1 
-       call itor%next()
+    call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)
+    do while(mfi%next())
+        nFab = nFab + 1 
     end do
-    call gr_releaseBlkIterator(itor)
+    call amrex_mfiter_destroy(mfi)
 
     !! DEV : Control of gr_scratchCtr allocation is very hacky...
 #ifdef HY_VAR2_SCRATCHCTR_VAR
@@ -175,7 +164,6 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, HY_VAR2_SCRATCHCTR_VAR, 0)
 # endif
 #endif
-
 
 #if NFLUXES > 0
     !!!!! REBUILD FLUX MFABS WITHOUT UPDATING DATA
