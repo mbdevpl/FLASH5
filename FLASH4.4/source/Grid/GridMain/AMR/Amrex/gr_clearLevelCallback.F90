@@ -8,7 +8,8 @@ subroutine gr_clearLevelCallback(lev) bind(c)
     use amrex_amr_module,          ONLY : amrex_multifab_destroy
     use amrex_fluxregister_module, ONLY : amrex_fluxregister_destroy 
 
-    use Grid_data,                 ONLY : gr_doFluxCorrection
+    use Grid_data,                 ONLY : gr_doFluxCorrection, &
+                                          gr_amrexDidRefinement
     use gr_physicalMultifabs,      ONLY : unk, &
                                           gr_scratchCtr, &
                                           facevarx, facevary, facevarz, &
@@ -20,6 +21,10 @@ subroutine gr_clearLevelCallback(lev) bind(c)
     integer, intent(in), value :: lev
 
     integer :: dir
+
+    ! Communicate to Grid_updateRefinement that this level might have been
+    ! completely derefined
+    gr_amrexDidRefinement = .TRUE.
 
     ! Multifab arrays use 0-based index set like AMReX
     call amrex_multifab_destroy(unk     (lev))

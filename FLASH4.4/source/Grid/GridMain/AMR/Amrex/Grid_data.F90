@@ -24,8 +24,8 @@ Module Grid_data
   integer, save :: gr_dirGeom(MDIM)
   real,    save :: gr_smalle, gr_smallrho
 
-  !!!!! NEEDED BY Grid_conserveToPrimitive.F90
   logical, save :: gr_convertToConsvdForMeshCalls
+  logical ,save :: gr_convertToConsvdInMeshInterp
 
   !!!!! NEEDED BY Grid_limitAbundance.F90
   real,    save :: gr_smallx
@@ -69,7 +69,6 @@ Module Grid_data
 !  integer,save,dimension(MDIM)::gr_bndOrder
 !  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars
   integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vartypes
-!  logical, save :: gr_anyVarToConvert
   logical, save :: gr_justExchangedGC
 !  logical, save :: gr_isolatedBoundaries
 !  logical, save :: gr_useParticles,gr_refineOnParticleCount,gr_refineOnPdens
@@ -84,7 +83,6 @@ Module Grid_data
   integer, save :: gr_eosMode
   integer, save :: gr_eosModeInit
 !  integer, save :: gr_oneRefLev=1 !! To be used with the multigrid
-!  logical ,save :: gr_convertToConsvdInMeshInterp
 !  logical ,save :: gr_earlyBlockDistAdjustment
 !  logical, save :: gr_monotone
 !  integer, save :: gr_intpol

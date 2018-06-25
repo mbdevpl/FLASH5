@@ -1,0 +1,5 @@
+REQUIRES  Grid/GridMain/AMR/Amrex
+REQUIRES  flashUtilities/testing
+
+FLUX flux1
+
