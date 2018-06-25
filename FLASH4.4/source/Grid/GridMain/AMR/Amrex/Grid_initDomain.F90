@@ -1,16 +1,13 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/Grid_initDomain
 !!
 !! NAME
-!!
 !!  Grid_initDomain
 !!
 !! SYNOPSIS
-!!
 !!  Grid_initDomain(logical(IN)    :: restart,
 !!                  logical(INOUT) :: particlesInitialized)
 !!
 !! DESCRIPTION
-!!
 !!  Create the coarsest mesh, initialize all the mesh data structures,
 !!  apply initial conditions, and run EoS on interior and guardcells to make
 !!  them thermodynamically consistent.
@@ -19,16 +16,12 @@
 !!  blocks that require refinement.  All new child blocks are filled
 !!  with the initial conditions and EoS is run on interior and guardcells.
 !!
-!!  Please see the documentation for gr_initNewLevelCallback for more
-!!  information regarding how the EoS runs are done.
-!!
 !!  In simulations with particles, under certain conditions particle
 !!  positions will also be initialized.  Currently this is the case
 !!  if and only if the runtime parameter refine_on_particle_count is
 !!  true.
 !!
 !! ARGUMENTS
-!!
 !!  restart : is true if the execution is starting from a checkpoint
 !!            file, otherwise false.
 !!  particlesInitialized : is true if particle positions were initialized before returning
@@ -51,13 +44,22 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
                                    amrex_max_level
 
-  use Grid_data,            ONLY : gr_doFluxCorrection
+  use Grid_interface,       ONLY : Grid_getLeafIterator, &
+                                   Grid_releaseLeafIterator, &
+                                   Grid_getBlkPtr, &
+                                   Grid_releaseBlkPtr
+  use Grid_data,            ONLY : gr_doFluxCorrection, &
+                                   gr_eosModeInit
+  use gr_amrexInterface,    ONLY : gr_conserveToPrimitive
   use gr_physicalMultifabs, ONLY : unk, &
                                    gr_scratchCtr, &
                                    facevarx, facevary, facevarz, &
                                    fluxes, &
                                    flux_registers
   use Driver_interface,     ONLY : Driver_abortFlash
+  use Eos_interface,        ONLY : Eos_wrapped
+  use leaf_iterator,        ONLY : leaf_iterator_t
+  use block_metadata,       ONLY : block_metadata_t
 
   implicit none
 
@@ -65,6 +67,10 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   logical, intent(INOUT) :: particlesInitialized
 
   real(wp), parameter :: T_INIT = 0.0_wp
+
+  type(leaf_iterator_t)         :: itor
+  type(block_metadata_t)        :: block
+  real(wp), contiguous, pointer :: initData(:,:,:,:)
 
   !!!!!----- ALLOCATE DATA STRUCTURES
   ! multifabs 
@@ -99,10 +105,29 @@ subroutine Grid_initDomain(restart,particlesInitialized)
 
   ! DEV: TODO Implement parameters
   if (.NOT. restart) then
-    !  This creates all refinement levels needed based on ICs,
-    !  runs EoS on interiors, fills GCs, and runs EoS on GCs.
+    !  This creates all refinement levels needed based on ICs and fills GC.
     !  All this is done through the callback functions.
     call amrex_init_from_scratch(T_INIT)
+
+    ! Simulation_initBlock may write data in primitive form.  In this case,
+    ! the initNewLevel callback converts the data immediately to conserved form
+    ! as GC filling is called when checking for refinement during init.
+    !
+    ! Set all leaf data back to primitive form as needed & run EoS on leaves
+    call Grid_getLeafIterator(itor, tiling=.FALSE.)
+    do while (itor%is_valid())
+       call itor%blkMetaData(block)
+
+       call gr_conserveToPrimitive(block, allCells=.TRUE.)
+
+       call Grid_getBlkPtr(block, initData, CENTER)
+       call Eos_wrapped(gr_eosModeInit, block%limitsGC, initData)
+       call Grid_releaseBlkPtr(block, initData, CENTER)
+
+       call itor%next()
+    end do
+    call Grid_releaseLeafIterator(itor)
+
   else 
     call Driver_abortFlash("[Grid_initDomain] restarts not yet implemented")
   end if

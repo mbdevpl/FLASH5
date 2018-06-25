@@ -1,3 +1,51 @@
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_makeFineLevelFromCoarseCallback
+!!
+!! NAME
+!!
+!!  gr_makeFineLevelFromCoarseCallback
+!!
+!! SYNOPSIS
+!!
+!!  gr_makeFineLevelFromCoarseCallback(integer(IN)    :: lev,
+!!                                     amrex_real(IN) :: time,
+!!                                     c_ptr(IN)      :: pba,
+!!                                     c_ptr(IN)      :: pdm)
+!!
+!! DESCRIPTION
+!!
+!!  This routine is a callback routine that is registered with the AMReX AMR
+!!  core at initialization.  AMReX calls this routine to populate a
+!!  newly-created level with data prolongated from parent blocks and possibly
+!!  with boundary data.  Prolongation is accomplished with AMReX's conservative
+!!  linear interpolation routine.
+!!
+!!  It is assumed that, where applicable, the data is in conserved form.
+!!  Upon returning, the remade multifab will have data in all interiors as
+!!  well as guardcells.  Note that since the data is still in conserved form
+!!  and EoS might expect primitive form, EoS is not run.  It is therefore the
+!!  responsibility of the caller to manage this step.
+!!
+!!  NOTE: This implementation, while presently functional, is incorrect.  A user
+!!        could supply their own BC routine that sensibly assumes that data is
+!!        in primitive form.  However, here we pass the BC routines data in
+!!        conserved form.
+!!
+!!  This routine should only be invoked by AMReX.
+!!
+!! ARGUMENTS
+!!
+!!  lev - a 0-based number identifying the refinement level to create.  The
+!!        zeroth level is the coarsest level to be used in the simulation and a
+!!        larger integer indicates a finer refinement.
+!!  time - IGNORED
+!!  pba - a C pointer to the AMReX box array object to use for constructing the
+!!        multifab for the given level
+!!  pdm - a C pointer to the AMReX distribution mapping of boxes across
+!!        processors to be used for constructing the multifab for the given
+!!        level.
+!!
+!!***
+
 #include "constants.h"
 #include "Flash.h"
 
@@ -21,6 +69,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
     use Grid_data,                 ONLY : gr_doFluxCorrection, &
+                                          gr_amrexDidRefinement, &
                                           lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
@@ -45,6 +94,9 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 
     integer :: dir
     logical :: nodal(1:MDIM)
+
+    ! Communicate to Grid_updateRefinement that we have created a level
+    gr_amrexDidRefinement = .TRUE.
 
     ba = pba
     dm = pdm
@@ -98,8 +150,6 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                          UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                          lo_bc_amrex, hi_bc_amrex) 
-
-    ! DEV: FIXME Should we do an EoS run on interiors and GC here?
 
     nFab = 0
     call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)

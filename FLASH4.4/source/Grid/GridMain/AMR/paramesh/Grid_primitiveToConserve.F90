@@ -1,21 +1,20 @@
-!!****if* source/Grid/GridMain/Grid_conserveToPrimitive
+!!****if* source/Grid/GridMain/Grid_primitiveToConserve
 !!
 !! NAME
 !!
-!!  Grid_conserveToPrimitive
+!!  Grid_primitiveToConserve
 !!
 !!
 !! SYNOPSIS
 !!
-!!  Grid_conserveToPrimitive(integer(in) :: blkList(count),
+!!  Grid_primitiveToConserve(integer(in) :: blkList(count),
 !!                           integer(in) :: count,
-!!                           logical(in) :: allCells,
 !!                           logical(in) :: force)
 !!
 !!
 !! DESCRIPTION
 !!
-!!  Calls gr_conserveToPrimitive
+!!  Calls gr_primitiveToConserve
 !!
 !!
 !! ARGUMENTS
@@ -24,39 +23,30 @@
 !!
 !!   count - number of blocks in the blkList
 !!
-!!   allCells - act on all cells, including guardcells, if .TRUE.,
-!!              otherwise only modify interior cells.
-!!
 !!   force - whether to force conversion
 !!
 !!***
 
-#include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_conserveToPrimitive(blkList,count,allCells,force)
-
-#ifndef FLASH_GRID_UG
+subroutine Grid_primitiveToConserve(blkList,count,force)
   use Grid_data, ONLY: gr_convertToConsvdForMeshCalls
-#endif
 
   implicit none
   integer,intent(IN) :: count
   integer,dimension(count),intent(IN) :: blkList 
-  logical,intent(IN) :: allCells, force
+  logical,intent(IN) :: force
   logical :: tempSwap
 
-#ifndef FLASH_GRID_UG
+  ! DEV: TODO This needs to be rethought or modernized to work with iterators
   tempSwap = (force .and. (.not.gr_convertToConsvdForMeshCalls))
   if (tempSwap) then
      gr_convertToConsvdForMeshCalls = .true.
   end if
 
-  call gr_conserveToPrimitive(blkList,count,allCells)
+  call gr_primitiveToConserve(blkList,count)
 
   if (tempSwap) then
      gr_convertToConsvdForMeshCalls = .false.
   end if
-#endif
-
-end subroutine Grid_conserveToPrimitive
+end subroutine Grid_primitiveToConserve
