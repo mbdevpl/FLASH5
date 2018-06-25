@@ -1,0 +1,83 @@
+#include "SolidMechanics.h"
+
+subroutine sm_ga_compute_qddn0(ibd)
+  use SolidMechanics_data, only :  sm_BodyInfo, sm_structure
+  use sm_Misc_interface, only: sm_c2fortran_dgssv,  DGEMV_sparse
+  implicit none
+
+  ! IO
+  integer, intent(in) :: ibd ! body number
+ 
+  ! Internal variables
+  type(sm_structure), pointer :: body
+  integer :: iopt, ldb, info, nrhs, neq
+
+  ! Get the body info
+  body => sm_BodyInfo(ibd)
+  neq = body%neq
+
+  !
+  ! Clear the dyn_rhs container
+  !
+  body%dyn_rhs(1:neq) = 0.
+
+  ! if there are applied kinematics, then 
+  ! $rhs = rhs - M_{qv}*\ddot{v}$
+  if( allocated( body%restraints_surf ) ) then
+     call DGEMV_sparse(body%ng,body%qv_nnz,body%Mqv,  &
+          body%qv_IA,body%qv_JA,         &
+          -1.0, body%qddn(neq+1), 1.0,   &  !note that qddn must contain the vdd values for time n
+          body%dyn_rhs )
+
+     if( body%damping_flag == SM_TRUE ) then
+        call DGEMV_sparse(body%ng,body%qv_nnz,body%Dampqv,  &
+             body%qv_IA,body%qv_JA,            &
+             -1.0, body%qdn(neq+1), 1.0,       & 
+             body%dyn_rhs )
+
+     end if
+
+  end if
+
+  !
+  ! If there is Prop. Damping
+  !
+  if( body%damping_flag == SM_TRUE ) then
+     call DGEMV_sparse(body%neq,body%qq_nnz,body%damp, &
+          body%qq_IA, body%qq_JA,                      &
+          -1.0, body%qdn, 1.0,                         & 
+          body%dyn_rhs )    
+  end if
+
+  ! Reduce 
+  ! rhs = rhs + Fext - Fint
+  ! Fext: body%Hs: external forces
+  !                body forces (like gravity), and surface forces from the fluid
+  ! Fint: body%Qs: internal forces
+  !                elastic forces, etc
+  body%dyn_rhs(1:neq) = body%dyn_rhs(1:neq) + body%Hs(1:neq) - body%Qs(1:neq)
+
+  ! Build LU = M, and store in LU_factors
+  iopt = 1
+  nrhs = 1
+  ldb = neq
+  call sm_c2fortran_dgssv( iopt, body%neq, body%qq_nnz, nrhs, body%M, &
+                           body%qq_ia, body%qq_ja, body%dyn_rhs, ldb, &
+                           body%lu_factors, info )
+  ! Backsolve into dyn_rhs
+  iopt = 2
+  call sm_c2fortran_dgssv( iopt, body%neq, body%qq_nnz, nrhs, body%M, &
+                           body%qq_ia, body%qq_ja, body%dyn_rhs, ldb, &
+                           body%lu_factors, info )
+
+  ! update qddn with dyn_rhs
+  body%qddn(1:neq) = body%dyn_rhs(1:neq)
+
+  ! Cleanup
+  iopt = 3
+  call sm_c2fortran_dgssv( iopt, body%neq, body%qq_nnz, nrhs, body%M, &
+                           body%qq_ia, body%qq_ja, body%dyn_rhs, ldb, &
+                           body%lu_factors, info )
+
+end subroutine sm_ga_compute_qddn0
+

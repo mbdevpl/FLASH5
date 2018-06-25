@@ -1,0 +1,6 @@
+#       Config file for the Immersed Boundaries Unit
+DEFAULT LagForce
+
+# Use FACEVAR for cell face force fields
+FACEVAR forc
+
