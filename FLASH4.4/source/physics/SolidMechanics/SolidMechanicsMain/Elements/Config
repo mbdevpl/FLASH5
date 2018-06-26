@@ -1,0 +1,7 @@
+# Config file
+IF nDim == 3
+REQUIRES physics/SolidMechanics/SolidMechanicsMain/Elements/3D
+ELSE
+REQUIRES physics/SolidMechanics/SolidMechanicsMain/Elements/2D
+ENDIF
+ 

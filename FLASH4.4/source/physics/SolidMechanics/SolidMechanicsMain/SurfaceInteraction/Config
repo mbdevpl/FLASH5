@@ -1,0 +1,4 @@
+# Config file 
+
+# Relax the forces applied to the body from the fluid
+PARAMETER relax_fluidforce_param REAL 1.0

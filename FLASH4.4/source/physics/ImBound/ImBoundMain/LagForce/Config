@@ -1,0 +1,20 @@
+# Default Parallel IB treatment
+DEFAULT parallel
+
+# Modules necessary for virtual Particle implementation:
+PARTICLETYPE passive INITMETHOD custom MAPMETHOD custom ADVMETHOD custom
+REQUIRES Particles
+#REQUESTS Particles/ParticlesMapping/meshWeighting/CIC/  #we need smearLen which we dont use
+
+IF Grid=='UG'
+REQUIRES Grid/GridParticles/GridParticlesMove/UG/Directional/VirtualParticles 
+REQUESTS Grid/GridParticles/GridParticlesMapToMesh/UG
+ELSE 
+REQUIRES Grid/GridParticles/GridParticlesMove/paramesh/VirtualParticles
+REQUIRES Grid/GridParticles/GridParticlesMove/paramesh/PointToPoint
+REQUESTS Grid/GridParticles/GridParticlesMapToMesh/Paramesh
+ENDIF
+REQUESTS IO/IOParticles
+
+# Modified routines
+REQUIRES physics/ImBound/ImBoundMain/LagForce/Extras

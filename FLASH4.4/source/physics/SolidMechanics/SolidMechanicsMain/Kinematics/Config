@@ -1,0 +1,6 @@
+# Config file 
+
+
+# PARAMETERS
+# parameter to offset the kinematics
+PARAMETER   sm_pk_timedelay  REAL 0.0
