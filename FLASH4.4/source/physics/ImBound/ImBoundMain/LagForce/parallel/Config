@@ -1,0 +1,66 @@
+# Particles Properties:
+PARTICLEPROP posx     REAL
+PARTICLEPROP posy     REAL
+PARTICLEPROP posz     REAL
+PARTICLEPROP velx     REAL
+PARTICLEPROP vely     REAL
+PARTICLEPROP velz     REAL
+PARTICLEPROP accx     REAL
+PARTICLEPROP accy     REAL
+PARTICLEPROP accz     REAL
+PARTICLEPROP nmlx     REAL
+PARTICLEPROP nmly     REAL
+PARTICLEPROP nmlz     REAL
+
+PARTICLEPROP ful      REAL 
+PARTICLEPROP fvl      REAL
+PARTICLEPROP fwl      REAL
+PARTICLEPROP tag      REAL
+PARTICLEPROP blk      REAL
+PARTICLEPROP proc     REAL
+
+PARTICLEPROP pres     REAL
+PARTICLEPROP fxvi     REAL
+PARTICLEPROP fyvi     REAL
+PARTICLEPROP fzvi     REAL
+PARTICLEPROP elem     REAL
+PARTICLEPROP ploc     REAL
+PARTICLEPROP glob     REAL
+PARTICLEPROP area     REAL
+PARTICLEPROP hl       REAL
+
+PARTICLEPROP pext     REAL
+PARTICLEPROP pex0     REAL
+PARTICLEPROP vorx     REAL
+PARTICLEPROP vory     REAL
+PARTICLEPROP vorz     REAL
+
+# varaibles for iterative forcing
+ PARTICLEPROP FULO     REAL
+ PARTICLEPROP FVLO     REAL
+ PARTICLEPROP FWLO     REAL
+
+# FACECAR for iterative forcing 
+#FACEVAR foro
+
+# varaibles for velocity Interpolated from the Eulerian grid
+ PARTICLEPROP UITP     REAL
+ PARTICLEPROP VITP     REAL
+ PARTICLEPROP WITP     REAL
+
+ PARTICLEPROP UUPD     REAL
+ PARTICLEPROP VUPD     REAL
+ PARTICLEPROP WUPD     REAL
+
+# Use FACEVAR for cell interface velocity fields
+FACEVAR aux
+
+# We require GridStructures:
+REQUIRES Grid/GridStructures/withTriangles/pointTopoint/bitmap
+REQUIRES flashUtilities/sorting
+#REQUIRES flashUtilities/system/memoryUsage
+
+D maxIterForcing The maximum iterative forcing steps
+PARAMETER ib_maxIterForcing INTEGER 1
+
+

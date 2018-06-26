@@ -1,0 +1,64 @@
+#       Config file for the Incompressible Navier Stoke solver.
+
+REQUIRES physics/Multiphase/MultiphaseMain 
+
+# Runtime parameters
+
+D cfl                   Courant Number
+D sigma			Viscous Condition Parameter
+# ----------------------------------------------
+# THIS PART IS FOR PROBLEM DEPENDENT CONFIG FILE
+D   invRe  inverse Reynolds number
+PARAMETER invRe         REAL     1.
+
+D   grav  Gravity in the -y direction
+PARAMETER gravX          REAL     0.
+PARAMETER gravY          REAL     0.
+PARAMETER gravZ          REAL     0.
+
+D  damping wave BC constant 
+PARAMETER dampC          REAL     0.
+PARAMETER xDampR         REAL     0.
+PARAMETER xDampL         REAL     0.
+PARAMETER yDampL         REAL     0.
+PARAMETER zDampL         REAL     0.
+
+PARAMETER iConvU         INTEGER  0
+
+D   isgs   Subgrid scale model flag
+PARAMETER isgs          INTEGER  0
+
+PARAMETER cflflg           INTEGER     1      # if 1 run at constant CFL, if 0 constant timestep
+PARAMETER cfl              REAL     0.35      # CFL number (for AB2 ~ 0.3, for RK3 ~ 1.2)
+PARAMETER sigma            REAL     0.25      # viscous condition parameter
+PARAMETER dtspec           REAL     0.001     # Specified constant timestep
+
+PARAMETER intschm          INTEGER     2      # if 2: 2nd order Adams-Bashforth, if 3: 3rd order Runge-Kutta method
+
+PARAMETER pressure_correct BOOLEAN  true      # if true does pressure correction time splitting scheme (solve Poisson for DP)
+                                              # else fractional step method (solve Poisson for P).
+PARAMETER vel_prolong_method INTEGER   1 [0,1]  # if 0 injection for prolongation in update refinement, if 1 divergence 
+                                                #preserving prolongation.
+
+# THIS PART IS FOR PHYSICS CONFIG
+# Variables required by the INS module
+VARIABLE pres                  	# pressure
+VARIABLE delp            	# pressure correction
+VARIABLE dust                  	# divergence of ustar, poissons equation source term
+VARIABLE tvis               	# turbulent viscosity
+VARIABLE omgm                   # Vorticity module
+
+# Fluxes
+FLUX velc
+
+
+# Use GRIDVAR for temporary storages
+SCRATCHVAR divv
+
+
+# Use FACEVAR for cell interface velocity fields
+FACEVAR velc
+FACEVAR rhds
+
+# Number of guardcells at each boundary
+GUARDCELLS 3

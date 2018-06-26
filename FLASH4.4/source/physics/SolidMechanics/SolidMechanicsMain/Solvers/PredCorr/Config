@@ -1,0 +1,7 @@
+# Config file for Structures Predictor-Corrector integrator.
+
+#PC method to use
+PARAMETER pcmethod   INTEGER   1   # Euler PC = 1,  AB2 PC = 2, AB3 PC = 3, Hammings PC = 4
+
+#Convergence Tolerance for the solid equations
+PARAMETER pcepsilon REAL     1.e-10 # Convergence Parameter for predictor-corrector integration   
