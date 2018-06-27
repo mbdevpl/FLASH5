@@ -1,0 +1,6 @@
+# Cylinder file: We need radius, and segment arc length.
+2D           # Dimensions: 2D or 3D problem.
+0.5          # Cylinder Radius.
+0.05         # Arc length between two consecutive points.
+1.0          # Cylinder length if dim = 3D.
+0.01         # Segment length along Z direction if dim = 3D.

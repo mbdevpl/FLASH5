@@ -1,0 +1,3 @@
+# Constant such that fluid input forces for bodies are computed from
+# volume integrals.
+PPDEFINE FORCES_FROM_VOL_INTEGRALS

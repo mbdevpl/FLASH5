@@ -1,0 +1,20 @@
+# Config file for Structures Generalized-alpha integrator.
+
+#Spectral Radius
+PARAMETER garhoinf REAL     0.8  # Spectral Radius for the integrator
+
+#Convergence Tolerance for the FSI
+PARAMETER pcepsilon REAL     1.e-10  # Convergence Parameter for Newton-Raphson integration
+
+# Convergence Tolerance for the predictor
+PARAMETER gapredepsilon REAL 1.e-7
+PARAMETER gacorrepsilon REAL 1.e-7
+PARAMETER gapredrelax   REAL 1.0
+
+# Override corrector flag for 
+# (set to true if fully prescribing the entire outter surface of the body)
+PARAMETER gapredictoronly INTEGER 0
+
+# Override to zero all the deformation
+# useful only in transient startups when the fluid is wonky)
+PARAMETER gazeroqnonly INTEGER 0

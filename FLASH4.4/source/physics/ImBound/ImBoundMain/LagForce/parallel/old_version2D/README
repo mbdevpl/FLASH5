@@ -1,0 +1,1 @@
+On the Object Directory take out ib_getInterpFunc.o from Makefile.ImBound, is not used here.

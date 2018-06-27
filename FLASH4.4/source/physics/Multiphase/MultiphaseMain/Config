@@ -1,0 +1,33 @@
+#
+
+PARAMETER rho1              REAL     1.0      # Density of fluid 1.
+PARAMETER rho2              REAL     1.0      # Density of fluid 2.
+
+PARAMETER vis1              REAL     1.0      # Density of fluid 1.
+PARAMETER vis2              REAL     1.0      # Density of fluid 2.
+
+PARAMETER sten              REAL     1.0      # Surface tension among two fluids.
+
+PARAMETER lsit              INTEGER    2      # Level Set redistance iterations...
+                                              #   Over-written in Simulation flash.par 
+PARAMETER inls              INTEGER    5000   # Level Set redistance iterations...
+
+# THIS PART IS FOR PHYSICS CONFIG
+# Variables required by the MPH module
+VARIABLE dfun                   # Level set distance function
+##VARIABLE dens                   # Fluid Density
+VARIABLE visc                   # Fluid Viscosity 
+VARIABLE curv                   # Curvature
+VARIABLE sigp                   # Sigma * Kappa source at interface.
+VARIABLE pfun                   # Phase function.
+
+
+# Use FACEVAR for cell interface velocity fields
+FACEVAR sigm                   # Sigma * Kappa source at interface.
+FACEVAR rh1f
+FACEVAR rh2f
+
+# Fluxes
+FLUX rh1f
+FLUX rh2f
+
