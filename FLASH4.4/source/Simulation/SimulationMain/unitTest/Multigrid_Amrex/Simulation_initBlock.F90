@@ -105,15 +105,16 @@ subroutine Simulation_initBlock(solnData,block)
           yi=yCenter(j)
           zi=zCenter(k)
 
-           Phi_ijk = cos(2.*PI*xi*pfb_waven_x/Lx + pfb_alpha_x) * &
-                     sin(2.*PI*yi*pfb_waven_y/Ly)*cos(2.*PI*zi*pfb_waven_z/Lz)
+           Phi_ijk = sin(2.*PI*xi) * &
+                     sin(2.*PI*yi) * &
+                     sin(2.*PI*zi)
 
   
-           F_ijk  = -4.*PI**2 * ( (pfb_waven_x/Lx)**2. + (pfb_waven_y/Ly)**2. + (pfb_waven_z/Lz)**2. ) * Phi_ijk
+           F_ijk  = -12*(PI**2)*Phi_ijk
            
            solnData(i,j,k,ASOL_VAR) = Phi_ijk
 
-           solnData(i,j,k,DENS_VAR) = F_ijk
+           solnData(i,j,k,PRHS_VAR) = F_ijk
 
         enddo
      enddo
