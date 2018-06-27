@@ -29,6 +29,7 @@ subroutine gr_amrexInit()
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
   use Driver_interface,            ONLY : Driver_abortFlash
+  use Driver_data,                 ONLY : dr_globalMe
   use Grid_data,                   ONLY : gr_geometry, &
                                           gr_domainBC
   use gr_amrexInterface,           ONLY : gr_initNewLevelCallback, &
@@ -69,7 +70,7 @@ subroutine gr_amrexInit()
   integer :: is_periodic(MDIM) = 0
   integer :: is_periodic_am(MDIM) = 0
 
-  write(*,*) "[gr_amrexInit] Starting"
+  if(dr_globalMe==MASTER_PE) write(*,*) "[gr_amrexInit] Starting"
  
   !!!!!----- INITIALIZE AMReX & CONFIGURE MANUALLY
   ! Do not parse command line or any file for configuration
@@ -196,6 +197,6 @@ subroutine gr_amrexInit()
 #endif
 #endif
   
-  write(*,*) "[gr_amrexInit] Finished"
+  if(dr_globalMe==MASTER_PE) write(*,*) "[gr_amrexInit] Finished"
 end subroutine gr_amrexInit
 
