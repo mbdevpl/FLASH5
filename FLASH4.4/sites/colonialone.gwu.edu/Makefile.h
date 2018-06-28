@@ -38,6 +38,14 @@ SUPERLU_PATH  =
 
 AMREX_PATH = /home/akashdhruv/amrex/amrex
 
+ifeq      ($(NDIM), 2)
+AMREX_PATH = /home/akashdhruv/amrex/amrex_2D
+else ifeq ($(NDIM), 3)
+AMREX_PATH = /home/akashdhruv/amrex/amrex_3D
+else
+AMREX_PATH = /home/akashdhruv/amrex/amrex_2D
+endif
+
 # Current directory:
 export cur-dir := $(shell pwd)
 

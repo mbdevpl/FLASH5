@@ -2,6 +2,8 @@
 REQUIRES Driver
 REQUIRES Grid/GridMain
 
+REQUIRES physics/IncompNS
+REQUIRES physics/IncompNS/IncompNSMain/constdens
 
 USESETUPVARS Grid
 

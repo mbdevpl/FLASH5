@@ -26,7 +26,13 @@ LAPACK_PATH  =
 HYPRE_PATH = /home3/adhruv/hypre-2.11.2_NEW/src/hypre
 SUPERLU_PATH = 
 
-AMREX_PATH = /home3/adhruv/amrex/amrex
+ifeq      ($(NDIM), 2)
+AMREX_PATH = /home3/adhruv/amrex/amrex_2D
+else ifeq ($(NDIM), 3)
+AMREX_PATH = /home3/adhruv/amrex/amrex_3D
+else
+AMREX_PATH = /home3/adhruv/amrex/amrex_2D
+endif
 
 # Current directory:
 export cur-dir := $(shell pwd)
