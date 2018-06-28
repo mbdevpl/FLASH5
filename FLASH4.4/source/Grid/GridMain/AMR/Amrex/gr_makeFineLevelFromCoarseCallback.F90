@@ -101,16 +101,29 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     ba = pba
     dm = pdm
 
-    !!!!!----- (Re)create FABS for storing physical data at this level
+    !!!!! CREATE MULTIFABS FOR STORING PHYSICAL DATA AT GIVEN LEVEL
     call gr_clearLevelCallback(lev)
 
-    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
+    ! Cell-centered unknowns
+    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
+
 #if NFACE_VARS > 0
-    ! DEVNOTE: TODO Create these wrt proper face-centered boxes
-    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
+    ! Face variables
+    nodal(:)     = .FALSE.
+    nodal(IAXIS) = .TRUE.
+    call amrex_multifab_build(facevarx(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+#if NDIM >= 2
+    nodal(:)     = .FALSE.
+    nodal(JAXIS) = .TRUE.
+    call amrex_multifab_build(facevary(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
 #endif
+#if NDIM == 3
+    nodal(:)     = .FALSE.
+    nodal(KAXIS) = .TRUE.
+    call amrex_multifab_build(facevarz(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+#endif
+#endif
+
     ! Create FABs for needed by Hydro.
     !! DEV : Control of gr_scratchCtr allocation is very hacky...
 #ifdef HY_VAR2_SCRATCHCTR_VAR
@@ -150,6 +163,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                          UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                          lo_bc_amrex, hi_bc_amrex) 
+
+    ! DEV: TODO Add in interpolation step here for facevar[xyz]
 
     nFab = 0
     call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)
