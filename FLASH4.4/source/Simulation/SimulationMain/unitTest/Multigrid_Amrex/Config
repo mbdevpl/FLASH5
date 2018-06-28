@@ -1,24 +1,18 @@
+D This unit test is meant only for AMReX grid. Do not use any other grid type!
 
 REQUIRES Driver
-REQUIRES Grid/GridMain
+REQUIRES Grid/GridMain/AMR/Amrex
+REQUESTS Grid/GridSolvers/AmrexMultigridSolver
 
-
-USESETUPVARS Grid
-
-IF Grid in ["UG","Chombo"]
-   REQUESTS Grid/GridSolvers/Pfft/DirectSolver
-   #REQUESTS Grid/GridSolvers/Pfft/SecondOrder_FD3p
-   #DirectSolver is more general and includes functionality of SecondOrder_FD3p.
-ELSE
-   REQUESTS Grid/GridSolvers/AmrexMultigridSolver
-ENDIF
-
-
-VARIABLE dens TYPE: PER_VOLUME
-VARIABLE pfft TYPE: PER_VOLUME
+D rhs  : RHS of the Poisson Problem to be solved
+D nsol : Numerical Solution of Poisson Problem
+D asol : Analytical solution of Poisson problem
+D diff : Pointwise difference between nsol and asol
+ 
+VARIABLE rhs  TYPE: PER_VOLUME
+VARIABLE nsol TYPE: PER_VOLUME
 VARIABLE diff TYPE: PER_VOLUME
 VARIABLE asol TYPE: PER_VOLUME
 
-
 # Number of layers of Guardcells:
-GUARDCELLS 4
+GUARDCELLS 2
