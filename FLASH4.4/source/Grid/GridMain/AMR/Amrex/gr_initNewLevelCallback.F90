@@ -73,6 +73,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           flux_registers
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC, &
+                                          gr_fillPhysicalFaceBC, &
                                           gr_primitiveToConserve
     use gr_iterator,               ONLY : gr_iterator_t
     use block_metadata,            ONLY : block_metadata_t
@@ -205,27 +206,91 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     ! Subsequent AMReX calls to gr_markRefineDerefineCallback require that the
     ! GC be filled.  We do *not* ask client code to do this, so fill GC here
-    ! DEV: TODO Add GC fill for facevars here?
     if (lev == 0) then
        ! Move all unk data to given ba/dm layout.  Do *not* use sub-cycling.
        ! -1 because of Fortran variable index starts with 1
-       call amrex_fillpatch(unk(lev), time+1.0d0, unk(lev), &
-                                      time,       unk(lev), &
+       call amrex_fillpatch(unk(lev), time+1.0, unk(lev), &
+                                      time,     unk(lev), &
                                       amrex_geom(lev), gr_fillPhysicalBC, &
                                       time, &
                                       UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)
+       
+#if NFACE_VARS > 0
+       ! DEV: TODO Is this only needed for refinement?  If so, confirm that only UNK
+       ! data can be used for gauging refinement and remove these
+       call amrex_fillpatch(facevarx(lev), time+1.0, facevarx(lev), &
+                                           time,     facevarx(lev), &
+                                           amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                           time, &
+                                           1, 1, NFACE_VARS)
+#if NDIM >= 2
+       call amrex_fillpatch(facevary(lev), time+1.0, facevary(lev), &
+                                           time,     facevary(lev), &
+                                           amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                           time, &
+                                           1, 1, NFACE_VARS)
+#endif
+#if NDIM == 3
+       call amrex_fillpatch(facevarz(lev), time+1.0, facevarz(lev), &
+                                           time,     facevarz(lev), &
+                                           amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                           time, &
+                                           1, 1, NFACE_VARS)
+#endif
+#endif
     else
-       call amrex_fillpatch(unk(lev), time+1.0d0, unk(lev-1), &
-                                      time,       unk(lev-1), &
+       call amrex_fillpatch(unk(lev), time+1.0, unk(lev-1), &
+                                      time,     unk(lev-1), &
                                       amrex_geom(lev-1), gr_fillPhysicalBC, &
-                                      time+1.0e0, unk(lev  ), &
-                                      time,       unk(lev  ), &
+                                      time+1.0, unk(lev  ), &
+                                      time,     unk(lev  ), &
                                       amrex_geom(lev  ), gr_fillPhysicalBC, &
                                       time, &
                                       UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                       amrex_ref_ratio(lev-1), &
                                       amrex_interp_cell_cons, &
                                       lo_bc_amrex, hi_bc_amrex)
+#if NFACE_VARS > 0
+       ! DEV: TODO Is this only needed for refinement?  If so, confirm that only UNK
+       ! data can be used for gauging refinement and remove these
+       call amrex_fillpatch(facevarx(lev), time+1.0, facevarx(lev-1), &
+                                           time,     facevarx(lev-1), &
+                                           amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                           time+1.0, facevarx(lev  ), &
+                                           time,     facevarx(lev  ), &
+                                           amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                           time, &
+                                           1, 1, NFACE_VARS, &
+                                           amrex_ref_ratio(lev-1), &
+                                           amrex_interp_cell_cons, &
+                                           lo_bc_amrex, hi_bc_amrex)
+#if NDIM >= 2
+       call amrex_fillpatch(facevary(lev), time+1.0, facevary(lev-1), &
+                                           time,     facevary(lev-1), &
+                                           amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                           time+1.0, facevary(lev  ), &
+                                           time,     facevary(lev  ), &
+                                           amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                           time, &
+                                           1, 1, NFACE_VARS, &
+                                           amrex_ref_ratio(lev-1), &
+                                           amrex_interp_cell_cons, &
+                                           lo_bc_amrex, hi_bc_amrex)
+#endif
+#if NDIM == 3
+       call amrex_fillpatch(facevarz(lev), time+1.0, facevarz(lev-1), &
+                                           time,     facevarz(lev-1), &
+                                           amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                           time+1.0, facevarz(lev  ), &
+                                           time,     facevarz(lev  ), &
+                                           amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                           time, &
+                                           1, 1, NFACE_VARS, &
+                                           amrex_ref_ratio(lev-1), &
+                                           amrex_interp_cell_cons, &
+                                           lo_bc_amrex, hi_bc_amrex)
+#endif
+#endif
     end if
 
     call Logfile_stamp(lev+1, &
