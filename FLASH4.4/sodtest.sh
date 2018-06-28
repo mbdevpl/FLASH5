@@ -1,1 +1,0 @@
-./setup Sod -site=pfe.nas.nasa.gov -auto -2d -debug -nxb=8 -nyb=8 +uhd -gridinterpolation=native --index-reorder -unit=Grid/GridMain/AMR/Amrex +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_amr_unsplit_2d.par
