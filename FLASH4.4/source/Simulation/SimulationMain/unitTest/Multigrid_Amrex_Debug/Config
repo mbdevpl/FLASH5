@@ -1,0 +1,25 @@
+
+REQUIRES Driver
+REQUIRES Grid/GridMain
+
+
+USESETUPVARS Grid
+
+IF Grid in ["UG","Chombo"]
+   REQUESTS Grid/GridSolvers/Pfft/DirectSolver
+   #REQUESTS Grid/GridSolvers/Pfft/SecondOrder_FD3p
+   #DirectSolver is more general and includes functionality of SecondOrder_FD3p.
+ELSE
+   REQUESTS Grid/GridSolvers/AmrexMultigridSolver
+ENDIF
+
+
+VARIABLE prhs TYPE: PER_VOLUME
+VARIABLE pfft TYPE: PER_VOLUME
+VARIABLE diff TYPE: PER_VOLUME
+VARIABLE asol TYPE: PER_VOLUME
+
+FACEVAR RH1F
+
+# Number of layers of Guardcells:
+GUARDCELLS 4
