@@ -78,22 +78,21 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   real :: ET
 
   ! -------------------------------------------------------------------
-  !bcTypes(:)=GRID_PDE_BND_NEUMANN  
-  !bcTypes(3:4)=GRID_PDE_BND_DIRICHLET
-  bcTypes(:) = GRID_PDE_BND_DIRICHLET
+  bcTypes(:)=GRID_PDE_BND_NEUMANN  
+  bcTypes(3:4)=GRID_PDE_BND_DIRICHLET
   bcValues(:,:)=0.
 
   call mpi_barrier(gr_meshComm,ierr)
   if (gr_meshMe .eq. 0) CALL SYSTEM_CLOCK(TA(1),count_rate)  
   poisfact=1.
 !  call Grid_solvePoisson(PFFT_VAR,DENS_VAR,bcTypes,bcValues,poisfact)
-   call Grid_solvePoisson(PFFT_VAR, PRHS_VAR, bcTypes, bcValues, poisfact)
+   call Grid_solvePoisson(PFFT_VAR, DENS_VAR, bcTypes, bcValues, poisfact)
   call mpi_barrier(gr_meshComm,ierr)
   if (gr_meshMe .eq. 0) then
      CALL SYSTEM_CLOCK(TA(2),count_rate)
      ET=REAL(TA(2)-TA(1))/count_rate
      write(*,*) ' ' 
-     write(*,*) ' Poisson Solver time = ',ET,' sec.'
+     write(*,*) '3 PERIODIC Poisson Solver time = ',ET,' sec.'
   endif
 
 
