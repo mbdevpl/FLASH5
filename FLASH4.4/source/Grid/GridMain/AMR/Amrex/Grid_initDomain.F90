@@ -82,9 +82,14 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   allocate(unk     (0:amrex_max_level))
 #if NFACE_VARS > 0
   allocate(facevarx(0:amrex_max_level))
+#if NDIM >= 2
   allocate(facevary(0:amrex_max_level))
+#endif
+#if NDIM == 3
   allocate(facevarz(0:amrex_max_level))
 #endif
+#endif
+
   allocate(gr_scratchCtr(0:amrex_max_level))
 
 #if NFLUXES > 0
