@@ -39,6 +39,7 @@ subroutine Simulation_initBlock(solnData,block)
     Grid_getCellCoords, Grid_getBlkPtr, Grid_releaseBlkPtr, &
     Grid_getBlkBoundBox, Grid_getBlkCenterCoords, Grid_getDeltas
   use block_metadata, ONLY : block_metadata_t
+  use amrex_fort_module,         ONLY : wp => amrex_real
 
   implicit none
 
@@ -66,6 +67,8 @@ subroutine Simulation_initBlock(solnData,block)
   real, parameter :: pfb_alpha_x = 0.
 
   logical :: gcell = .true.
+
+  real(wp), contiguous, pointer :: facexData(:,:,:,:), faceyData(:,:,:,:), facezData(:,:,:,:)
 
   !----------------------------------------------------------------------
   blkLimits = block%limits
@@ -98,6 +101,10 @@ subroutine Simulation_initBlock(solnData,block)
   Ly = sim_yMax - sim_yMin  
   Lz = sim_zMax - sim_zMin
 
+  call Grid_getBlkPtr(block,facexData,FACEX)
+  call Grid_getBlkPtr(block,faceyData,FACEY)
+  call Grid_getBlkPtr(block,facezData,FACEZ)
+
   do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
      do j = blkLimitsGC(LOW,JAXIS), blkLimitsGC(HIGH,JAXIS)
         do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH,IAXIS)
@@ -124,6 +131,14 @@ subroutine Simulation_initBlock(solnData,block)
   ! set values for u,v velocities and pressure
   solnData(:,:,:,DIFF_VAR) = 0.0
   solnData(:,:,:,PFFT_VAR) = 0.0
+
+  facexData(:,:,:,RH1F_FACE_VAR) = 1.0
+  faceyData(:,:,:,RH1F_FACE_VAR) = 2.0
+  facezData(:,:,:,RH1F_FACE_VAR) = 3.0
+
+  call Grid_releaseBlkPtr(block,facexData,FACEX)
+  call Grid_releaseBlkPtr(block,faceyData,FACEY)
+  call Grid_releaseBlkPtr(block,facezData,FACEZ)
 
 !!$  write(*,*) 'BlockID=',blockID
 !!$  write(*,*) 'Center coordinates=',coord
