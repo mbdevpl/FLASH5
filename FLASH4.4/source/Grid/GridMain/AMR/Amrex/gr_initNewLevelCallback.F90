@@ -108,14 +108,27 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     call gr_clearLevelCallback(lev)
 
-    ! Create FABS for storing physical data at given level
-    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
+    !!!!! CREATE MULTIFABS FOR STORING PHYSICAL DATA AT GIVEN LEVEL
+    ! Cell-centered unknowns
+    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
+
 #if NFACE_VARS > 0
-    ! DEVNOTE: TODO Create these w.r.t. proper face-centered boxes
-    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
+    ! Face variables
+    nodal(:)     = .FALSE.
+    nodal(IAXIS) = .TRUE.
+    call amrex_multifab_build(facevarx(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+#if NDIM >= 2
+    nodal(:)     = .FALSE.
+    nodal(JAXIS) = .TRUE.
+    call amrex_multifab_build(facevary(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
 #endif
+#if NDIM == 3
+    nodal(:)     = .FALSE.
+    nodal(KAXIS) = .TRUE.
+    call amrex_multifab_build(facevarz(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+#endif
+#endif
+
     ! Create FABs for needed by Hydro.
     !! DEV : Control of gr_scratchCtr allocation is very hacky...
 #ifdef HY_VAR2_SCRATCHCTR_VAR
@@ -154,7 +167,28 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.
         call Grid_getBlkPtr(block, initData, CENTER)
-        initData(:,:,:,:) = 0.0d0
+        initData(:,:,:,:) = 0.0
+        call Grid_releaseBlkPtr(block, initData, CENTER)
+
+#if NFACE_VARS > 0
+        call Grid_getBlkPtr(block, initData, FACEX)
+        initData(:,:,:,:) = 0.0
+        call Grid_releaseBlkPtr(block, initData, FACEX)
+#if NDIM >= 2
+        call Grid_getBlkPtr(block, initData, FACEY)
+        initData(:,:,:,:) = 0.0
+        call Grid_releaseBlkPtr(block, initData, FACEY)
+#endif
+#if NDIM == 3
+        call Grid_getBlkPtr(block, initData, FACEZ)
+        initData(:,:,:,:) = 0.0
+        call Grid_releaseBlkPtr(block, initData, FACEZ)
+#endif
+#endif
+
+        ! Give simulation the cell-centered data.  If they need to initialize
+        ! face-centered data, they access it explicitly with block/Grid_getBlkPtr
+        call Grid_getBlkPtr(block, initData, CENTER)
         call Simulation_initBlock(initData, block)
         call Grid_releaseBlkPtr(block, initData, CENTER)
 
@@ -171,6 +205,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     ! Subsequent AMReX calls to gr_markRefineDerefineCallback require that the
     ! GC be filled.  We do *not* ask client code to do this, so fill GC here
+    ! DEV: TODO Add GC fill for facevars here?
     if (lev == 0) then
        ! Move all unk data to given ba/dm layout.  Do *not* use sub-cycling.
        ! -1 because of Fortran variable index starts with 1
