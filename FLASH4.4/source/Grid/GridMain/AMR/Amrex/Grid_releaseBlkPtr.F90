@@ -46,10 +46,15 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
      gds = CENTER
   end if
 
-  if (gds /= CENTER) then
-     ! DEV: TODO Implement this
+#ifdef FL_NON_PERMANENT_GUARDCELLS
+  ! DEV: TODO Will we use NONPERMANENT GUARDCELLS with AMReX?
+  call Driver_abortFlash("[Grid_releaseBlkPtr_desc] NON-PERMANENT GCs not implemented yet")
+#else
+  if (      (gds /= CENTER) &
+      .AND. (gds /= FACEX) .AND. (gds /= FACEY) .AND. (gds /= FACEZ)) then
      call Driver_abortFlash("[Grid_releaseBlkPtr_desc] gridDataStruct not implemented yet")
   end if
+#endif
 
 #if DRIFT_ENABLE
   ! DEV: TODO If this is to stay here, we need to convert Driver_driftBlock

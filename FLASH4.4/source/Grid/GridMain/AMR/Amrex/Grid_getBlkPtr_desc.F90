@@ -55,11 +55,10 @@
 #define DEBUG_GRID
 #endif
 
-! DEVNOTE: Need REORDER directive for dataPtr?
+#include "Flash.h"
+#include "constants.h"
+
 subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
-
-!#include "Flash.h"
-
   use amrex_fort_module,      ONLY : wp => amrex_real
   
   use gr_physicalMultifabs,   ONLY : unk, &
@@ -70,8 +69,6 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
   use Driver_interface,       ONLY : Driver_abortFlash
 
   implicit none
-
-#include "constants.h"
 
   ! DEV: How to match data types for dataPtr with FLASH?
   type(block_metadata_t), intent(in), target    :: block
@@ -138,12 +135,18 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
     select case (gds)
     case(CENTER)
        dataPtr(lo(1):, lo(2):, lo(3):, 1:) => unk     (ilev)%dataptr(igrd)
+#if NFACE_VARS > 0
     case(FACEX)
        dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarx(ilev)%dataptr(igrd)
+#if NDIM >= 2
     case(FACEY)
        dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevary(ilev)%dataptr(igrd)
+#endif
+#if NDIM == 3
     case(FACEZ)
        dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarz(ilev)%dataptr(igrd)
+#endif
+#endif
     case(SCRATCH_CTR)
        dataPtr(lo(1):, lo(2):, lo(3):, 1:) => gr_scratchCtr(ilev)%dataptr(igrd)
     case DEFAULT
