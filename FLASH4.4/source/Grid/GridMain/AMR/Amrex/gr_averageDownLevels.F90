@@ -26,7 +26,8 @@ subroutine gr_averageDownLevels()
                                           amrex_ref_ratio
     use amrex_multifabutil_module, ONLY : amrex_average_down
 
-    use gr_physicalMultifabs,      ONLY : unk
+    use gr_physicalMultifabs,      ONLY : unk, &
+                                          facevarx, facevary, facevarz
 
     implicit none
 
@@ -42,7 +43,6 @@ subroutine gr_averageDownLevels()
     end if
 #endif
 
-    ! DEV: TODO Implement for face variables as well
     do lev = finest_level, 1, -1
 #ifdef DEBUG_GRID
         write(*,'(A,A,I2,A,I2)') "[gr_averageDownLevels]", &
@@ -56,6 +56,30 @@ subroutine gr_averageDownLevels()
                                 amrex_geom(lev-1), &
                                 UNK_VARS_BEGIN, NUNK_VARS, &
                                 amrex_ref_ratio(lev-1))
+#if NFACE_VARS > 0
+        call amrex_average_down(facevarx(lev  ), &
+                                facevarx(lev-1), &
+                                amrex_geom(lev  ), &
+                                amrex_geom(lev-1), &
+                                1, NFACE_VARS, &
+                                amrex_ref_ratio(lev-1))
+#if NDIM >= 2
+        call amrex_average_down(facevary(lev  ), &
+                                facevary(lev-1), &
+                                amrex_geom(lev  ), &
+                                amrex_geom(lev-1), &
+                                1, NFACE_VARS, &
+                                amrex_ref_ratio(lev-1))
+#endif
+#if NDIM == 3
+        call amrex_average_down(facevarz(lev  ), &
+                                facevarz(lev-1), &
+                                amrex_geom(lev  ), &
+                                amrex_geom(lev-1), &
+                                1, NFACE_VARS, &
+                                amrex_ref_ratio(lev-1))
+#endif
+#endif
     end do 
 
 end subroutine gr_averageDownLevels
