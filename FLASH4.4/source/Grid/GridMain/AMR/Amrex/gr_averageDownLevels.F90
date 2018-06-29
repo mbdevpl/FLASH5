@@ -25,6 +25,7 @@
 #endif
 
 #include "Flash.h"
+#include "constants.h"
 
 subroutine gr_averageDownLevels(gridDataStruct)
     use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &

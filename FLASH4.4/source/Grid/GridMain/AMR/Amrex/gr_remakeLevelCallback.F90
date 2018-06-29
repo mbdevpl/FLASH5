@@ -102,9 +102,15 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     type(amrex_distromap) :: dm
     type(amrex_box)       :: bx
     type(amrex_multifab)  :: tmp_unk
+#if NFACE_VARS > 0
     type(amrex_multifab)  :: tmp_facevarx
+#if NDIM >= 2
     type(amrex_multifab)  :: tmp_facevary
+#endif
+#if NDIM == 3
     type(amrex_multifab)  :: tmp_facevarz
+#endif
+#endif
 
     type(amrex_mfiter) :: mfi
     integer            :: nFab
