@@ -36,8 +36,12 @@
 !! ARGUMENTS 
 !!  gridDataStruct - integer constant that indicates which grid data structure 
 !!                   variable's guardcells to fill.  Valid values are  
-!!                     CENTER             unk only
-!!                     CENTER_FACES       Presently only unk
+!!                     CENTER             cell-centered data only
+!!                     FACEX              X face-centered data only
+!!                     FACEY              Y face-centered data only
+!!                     FACEZ              Z face-centered data only
+!!                     FACES              All face-centered data only
+!!                     CENTER_FACES       cell-centered and all face-centered
 !!  idir - For AMReX, the only valid value is ALLDIR, which does the fill along
 !!         all directions.
 !!  minLayers - number of guardcell layers requested for all directions.
@@ -100,13 +104,15 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         Logfile_stampVarMask, &
                                         Logfile_stamp
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
+                                        gr_fillPhysicalFaceBC, &
                                         gr_averageDownLevels, &
                                         gr_primitiveToConserve, &
                                         gr_conserveToPrimitive
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
                                         gr_setMasks_gen, &
                                         gr_makeMaskConsistent_gen
-  use gr_physicalMultifabs,      ONLY : unk
+  use gr_physicalMultifabs,      ONLY : unk, &
+                                        facevarx, facevary, facevarz
   use leaf_iterator,             ONLY : leaf_iterator_t
   use block_metadata,            ONLY : block_metadata_t
 
@@ -154,7 +160,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                        (gridDataStruct==FACEX).or.&
                        (gridDataStruct==FACEY).or.&
                        (gridDataStruct==FACEZ).or.&
-                       (gridDataStruct==WORK).or.&
                        (gridDataStruct==CENTER_FACES)
   if (.not.validDataStructure) then
      call Driver_abortFlash("[Grid_fillGuardcell] invalid data structure")
@@ -162,11 +167,11 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 #endif
 
   ! DEV: TODO Implement this functionality?
-  if (gridDataStruct /= CENTER .and. gridDataStruct /= CENTER_FACES) then
-     !DEV CD.  I am accepting CENTER_FACES for the time being because it
-     !is passed by Grid_markRefineDerefine.  I do not support FACE variables
-     !yet so CENTER_FACES is just CENTER for now.
-     call Driver_abortFlash("[Grid_fillGuardCells]: Non-center not yet coded")
+  if (       (gridDataStruct /= CENTER) .AND. (gridDataStruct /= CENTER_FACES) &
+       .AND. (gridDataStruct /= FACES)  .AND. (gridDataStruct /= FACEX) &
+       .AND. (gridDataStruct /= FACEY)  .AND. (gridDataStruct /= FACEZ)) then
+     write(*,*) "Unsupported gridDataStruct ", gridDataStruct 
+     call Driver_abortFlash("[Grid_fillGuardCells]: Unsupported gridDataStruct")
   else if (idir /= ALLDIR) then
      call Driver_abortFlash("[Grid_fillGuardCells] idir must be ALLDIR with AMReX")
   else if (present(selectBlockType)) then
@@ -278,75 +283,158 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH CONSERVED-FORM DATA
   ! We are only concerned with data on interior at this point
-  call Grid_getLeafIterator(itor, tiling=.FALSE.)
-  do while (itor%is_valid())
-    call itor%blkMetaData(blockDesc)
-    call gr_primitiveToConserve(blockDesc)
+  ! DEV: TODO Do we need P-to-C conversion for face variables as well?
+  if ((gridDataStruct == CENTER) .OR. (gridDataStruct == CENTER_FACES)) then
+    call Grid_getLeafIterator(itor, tiling=.FALSE.)
+    do while (itor%is_valid())
+      call itor%blkMetaData(blockDesc)
+      call gr_primitiveToConserve(blockDesc)
 
-    call itor%next()
-  end do
-  call Grid_releaseLeafIterator(itor)
+      call itor%next()
+    end do
+    call Grid_releaseLeafIterator(itor)
+  end if
 
   ! Restrict data from leaves to coarser blocks
-  call gr_averageDownLevels
+  call gr_averageDownLevels(gridDataStruct)
 
-  !!!!! FILL GUARDCELLS ON ALL BLOCKS, ALL LEVELS
-  ! AMReX recommended using fillpatch, which is copying *all* data, 
-  ! including the GC.
+  !!!!!----- FILL GUARDCELLS ON ALL BLOCKS, ALL LEVELS
   call Timers_start("amr_guardcell")
 
-  lev = 0
-  call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
-                                 0.0d0, unk(lev), &
-                                 amrex_geom(lev), gr_fillPhysicalBC, &
-                                 0.0d0, scompCC, scompCC, ncompCC)
+  !!!!! Cell-centered data first
+  if ((gridDataStruct == CENTER) .OR. (gridDataStruct == CENTER_FACES)) then
+    lev = 0
+    ! AMReX recommended using fillpatch, which is copying *all* data, 
+    ! including the GC.
+    call amrex_fillpatch(unk(lev), 1.0, unk(lev), &
+                                   0.0, unk(lev), &
+                                   amrex_geom(lev), gr_fillPhysicalBC, &
+                                   0.0, scompCC, scompCC, ncompCC)
 
-  finest_level = amrex_get_finest_level()
-  do lev=1, finest_level
-     call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
-                                    0.0d0, unk(lev-1), &
-                                    amrex_geom(lev-1), gr_fillPhysicalBC, &
-                                    1.0e0, unk(lev  ), &
-                                    0.0d0, unk(lev  ), &
-                                    amrex_geom(lev  ), gr_fillPhysicalBC, &
-                                    0.0d0, scompCC, scompCC, ncompCC, &
-                                    amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                    lo_bc_amrex, hi_bc_amrex) 
-  end do
+    finest_level = amrex_get_finest_level()
+    do lev=1, finest_level
+       call amrex_fillpatch(unk(lev), 1.0, unk(lev-1), &
+                                      0.0, unk(lev-1), &
+                                      amrex_geom(lev-1), gr_fillPhysicalBC, &
+                                      1.0, unk(lev  ), &
+                                      0.0, unk(lev  ), &
+                                      amrex_geom(lev  ), gr_fillPhysicalBC, &
+                                      0.0, scompCC, scompCC, ncompCC, &
+                                      amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                      lo_bc_amrex, hi_bc_amrex) 
+    end do
 
-  !!!!! REVERT CONSERVED TO PRIMITIVE FORM AND RUN EOS ON LEAF BLOCKS
-  call Timers_start("eos gc")
+    !!!!! Revert conserved to primitive form and run EoS
+    call Timers_start("eos gc")
 
-  if (present(doEos)) then
-     needEos = (needEos .AND. doEos)
-  else
-     needEos = .FALSE.
-  end if
+    if (present(doEos)) then
+       needEos = (needEos .AND. doEos)
+    else
+       needEos = .FALSE.
+    end if
 
-  call Grid_getLeafIterator(itor, tiling=.FALSE.)
-  if (needEos) then
-     do while (itor%is_valid())
-        call itor%blkMetaData(blockDesc)
+    call Grid_getLeafIterator(itor, tiling=.FALSE.)
+    if (needEos) then
+       do while (itor%is_valid())
+          call itor%blkMetaData(blockDesc)
 
-        call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
 
-        call Grid_getBlkPtr(blockDesc, solnData)
-        call Eos_guardCells(gcEosMode, solnData, corners=.true., &
-                            layers=returnLayers)
-        call Grid_releaseBlkPtr(blockDesc, solnData)
+          call Grid_getBlkPtr(blockDesc, solnData)
+          call Eos_guardCells(gcEosMode, solnData, corners=.true., &
+                              layers=returnLayers)
+          call Grid_releaseBlkPtr(blockDesc, solnData)
 
-        call itor%next()
+          call itor%next()
+       end do
+    else
+       do while (itor%is_valid())
+          call itor%blkMetaData(blockDesc)
+
+          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+
+          call itor%next()
+       end do
+    end if
+    call Grid_releaseLeafIterator(itor)
+  end if   ! End CENTER or CENTER_FACES
+
+#if NFACE_VARS > 0
+  !!!!!----- FILL FACEVAR[XYZ] GUARDCELLS
+  ! Fill FACEVARX GC if it exists and is so desired
+  ! DEV: TODO Do we need C-to-P conversion here for face vars?
+  if (     (gridDataStruct == CENTER_FACES) &
+      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEX) then
+     lev = 0
+     call amrex_fillpatch(facevarx(lev), 1.0, facevarx(lev), &
+                                         0.0, facevarx(lev), &
+                                         amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                         0.0, 1, 1, NFACE_VARS)
+
+     do lev=1, amrex_get_finest_level()
+        call amrex_fillpatch(facevarx(lev), 1.0, facevarx(lev-1), &
+                                            0.0, facevarx(lev-1), &
+                                            amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                            1.0, facevarx(lev  ), &
+                                            0.0, facevarx(lev  ), &
+                                            amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                            0.0, 1, 1, NFACE_VARS, &
+                                            amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                            lo_bc_amrex, hi_bc_amrex) 
      end do
-  else
-     do while (itor%is_valid())
-        call itor%blkMetaData(blockDesc)
+  end if
+#if NDIM >= 2
+  ! Fill FACEVARY GC if it exists and is so desired
+  if (     (gridDataStruct == CENTER_FACES) &
+      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEY) then
+     lev = 0
+     call amrex_fillpatch(facevary(lev), 1.0, facevary(lev), &
+                                         0.0, facevary(lev), &
+                                         amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                         0.0, 1, 1, NFACE_VARS)
 
-        call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
-
-        call itor%next()
+     do lev=1, amrex_get_finest_level()
+        call amrex_fillpatch(facevary(lev), 1.0, facevary(lev-1), &
+                                            0.0, facevary(lev-1), &
+                                            amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                            1.0, facevary(lev  ), &
+                                            0.0, facevary(lev  ), &
+                                            amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                            0.0, 1, 1, NFACE_VARS, &
+                                            amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                            lo_bc_amrex, hi_bc_amrex) 
      end do
   end if
-  call Grid_releaseLeafIterator(itor)
+#endif
+#if NDIM == 3
+  ! Fill FACEVARZ GC if it exists and is so desired
+  if (     (gridDataStruct == CENTER_FACES) &
+      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEZ) then
+     lev = 0
+     call amrex_fillpatch(facevarz(lev), 1.0, facevarz(lev), &
+                                         0.0, facevarz(lev), &
+                                         amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                         0.0, 1, 1, NFACE_VARS)
+
+     do lev=1, amrex_get_finest_level()
+        call amrex_fillpatch(facevarz(lev), 1.0, facevarz(lev-1), &
+                                            0.0, facevarz(lev-1), &
+                                            amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                            1.0, facevarz(lev  ), &
+                                            0.0, facevarz(lev  ), &
+                                            amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                            0.0, 1, 1, NFACE_VARS, &
+                                            amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                            lo_bc_amrex, hi_bc_amrex) 
+     end do
+  end if
+#endif
+#else
+  if (     (gridDataStruct == FACES) .OR. (gridDataStruct == FACEX) &
+      .OR. (gridDataStruct == FACEY) .OR. (gridDataStruct == FACEZ)) then
+    call Driver_abortFlash("[Grid_fillGuardCells] No face data to work with")
+  end if
+#endif
 
   call Timers_stop("eos gc")
   call Timers_stop("amr_guardcell")

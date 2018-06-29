@@ -146,8 +146,9 @@ module gr_amrexInterface
   end interface
  
   interface
-    subroutine gr_averageDownLevels()
+    subroutine gr_averageDownLevels(gridDataStruct)
       implicit none
+      integer, intent(IN) :: gridDataStruct
     end subroutine gr_averageDownLevels
   end interface
  
