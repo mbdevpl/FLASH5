@@ -141,7 +141,6 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 #endif
 #endif
 
-    ! DEV: TODO Add in data mapping for facevars
     if (lev == 0) then
        ! Move all unk data (interior and GC) to given ba/dm layout.
        ! Do *not* use sub-cycling.
@@ -149,16 +148,67 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
                                      time,       unk(lev), &
                                      amrex_geom(lev), gr_fillPhysicalBC, &
                                      time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)       
+#if NFACE_VARS > 0
+       call amrex_fillpatch(tmp_facevarx, time+1.0, facevarx(lev), &
+                                          time,     facevarx(lev), &
+                                          amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS)       
+#if NDIM >= 2
+       call amrex_fillpatch(tmp_facevary, time+1.0, facevary(lev), &
+                                          time,     facevary(lev), &
+                                          amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS)       
+#endif
+#if NDIM == 3
+       call amrex_fillpatch(tmp_facevarz, time+1.0, facevarz(lev), &
+                                          time,     facevarz(lev), &
+                                          amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS)       
+#endif
+#endif
     else
-       call amrex_fillpatch(tmp_unk, time+1.0d0, unk(lev-1), &
-                                     time,       unk(lev-1), &
+       call amrex_fillpatch(tmp_unk, time+1.0, unk(lev-1), &
+                                     time,     unk(lev-1), &
                                      amrex_geom(lev-1), gr_fillPhysicalBC, &
-                                     time+1.0e0, unk(lev  ), &
-                                     time,       unk(lev  ), &
+                                     time+1.0, unk(lev  ), &
+                                     time,     unk(lev  ), &
                                      amrex_geom(lev  ), gr_fillPhysicalBC, &
                                      time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                      amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                      lo_bc_amrex, hi_bc_amrex)       
+#if NFACE_VARS > 0
+       call amrex_fillpatch(tmp_facevarx, time+1.0, facevarx(lev-1), &
+                                          time,     facevarx(lev-1), &
+                                          amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                          time+1.0, facevarx(lev  ), &
+                                          time,     facevarx(lev  ), &
+                                          amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS, &
+                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                          lo_bc_amrex, hi_bc_amrex)       
+#if NDIM >= 2
+       call amrex_fillpatch(tmp_facevary, time+1.0, facevary(lev-1), &
+                                          time,     facevary(lev-1), &
+                                          amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                          time+1.0, facevary(lev  ), &
+                                          time,     facevary(lev  ), &
+                                          amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS, &
+                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                          lo_bc_amrex, hi_bc_amrex)       
+#endif
+#if NDIM == 3
+       call amrex_fillpatch(tmp_facevarz, time+1.0, facevarz(lev-1), &
+                                          time,     facevarz(lev-1), &
+                                          amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                          time+1.0, facevarz(lev  ), &
+                                          time,     facevarz(lev  ), &
+                                          amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS, &
+                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                          lo_bc_amrex, hi_bc_amrex)       
+#endif
+#endif
     end if
 
     !!!!! REBUILD MFABS AT LEVEL AND FILL FROM BUFFERS
