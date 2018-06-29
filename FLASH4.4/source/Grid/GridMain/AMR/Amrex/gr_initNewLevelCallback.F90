@@ -18,8 +18,8 @@
 !!   (1) creates a multifab for each data type,
 !!   (2) initializes these structures with the initial conditions via
 !!       Simulation_initBlock,
-!!   (3) converts all primitive form data to conserved form, and
-!!   (4) fills all guardcells.
+!!   (3) converts all cell-centered primitive form data to conserved form, and
+!!   (4) fills all cell-centered guardcells.
 !!
 !!  Note that this routine is not running EoS on the interiors or guardcells.
 !!  Therefore, the refinement criteria used to create the initial refinement 

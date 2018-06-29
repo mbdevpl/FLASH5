@@ -14,7 +14,8 @@
 !!
 !!  User-defined refinement critera is applied to determine the 
 !!  blocks that require refinement.  All new child blocks are filled
-!!  with the initial conditions and EoS is run on interior and guardcells.
+!!  with the initial conditions, EoS is run on interior, and guardcells are
+!!  filled for cell-centered variables.
 !!
 !!  In simulations with particles, under certain conditions particle
 !!  positions will also be initialized.  Currently this is the case

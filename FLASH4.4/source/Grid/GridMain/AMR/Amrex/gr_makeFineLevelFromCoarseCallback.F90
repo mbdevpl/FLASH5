@@ -1,29 +1,26 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/gr_makeFineLevelFromCoarseCallback
 !!
 !! NAME
-!!
 !!  gr_makeFineLevelFromCoarseCallback
 !!
 !! SYNOPSIS
-!!
 !!  gr_makeFineLevelFromCoarseCallback(integer(IN)    :: lev,
 !!                                     amrex_real(IN) :: time,
 !!                                     c_ptr(IN)      :: pba,
 !!                                     c_ptr(IN)      :: pdm)
 !!
 !! DESCRIPTION
-!!
 !!  This routine is a callback routine that is registered with the AMReX AMR
 !!  core at initialization.  AMReX calls this routine to populate a
 !!  newly-created level with data prolongated from parent blocks and possibly
 !!  with boundary data.  Prolongation is accomplished with AMReX's conservative
 !!  linear interpolation routine.
 !!
-!!  It is assumed that, where applicable, the data is in conserved form.
-!!  Upon returning, the remade multifab will have data in all interiors as
-!!  well as guardcells.  Note that since the data is still in conserved form
-!!  and EoS might expect primitive form, EoS is not run.  It is therefore the
-!!  responsibility of the caller to manage this step.
+!!  It is assumed that, where applicable, the cell-centered data is in conserved 
+!!  form.  Upon returning, the remade multifab will have data in all interiors 
+!!  as well as guardcells.  Note that since the cell-centered data is still in 
+!!  conserved form and EoS might expect primitive form, EoS is not run.  It is 
+!!  therefore the responsibility of the caller to manage this step.
 !!
 !!  NOTE: This implementation, while presently functional, is incorrect.  A user
 !!        could supply their own BC routine that sensibly assumes that data is
@@ -33,7 +30,6 @@
 !!  This routine should only be invoked by AMReX.
 !!
 !! ARGUMENTS
-!!
 !!  lev - a 0-based number identifying the refinement level to create.  The
 !!        zeroth level is the coarsest level to be used in the simulation and a
 !!        larger integer indicates a finer refinement.

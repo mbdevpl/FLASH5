@@ -1,3 +1,6 @@
+#include "constants.h"
+#include "FortranLangFeatures.fh"
+
 subroutine Grid_releaseBlkPtr(blockID, blkPtr, gridDataStruct)
   use Driver_interface, ONLY : Driver_abortFlash
 
@@ -18,8 +21,6 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
 !#undef Grid_releaseBlkPtr
 !#endif
 
-!#include "constants.h"
-
   use amrex_fort_module, ONLY : wp => amrex_real
 
   use block_metadata, ONLY : block_metadata_t
@@ -31,9 +32,8 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
 
   implicit none
 
-#include "constants.h"
-
   ! DEV: How to match data types for blkPtr with FLASH?
+  ! DEV: FIXME Need to use POINTER_INTENT_INOUT
   type(block_metadata_t), intent(in)              :: block
   real(wp),               intent(inout), pointer  :: blkPtr(:, :, :, :)
   integer,                intent(in),    optional :: gridDataStruct

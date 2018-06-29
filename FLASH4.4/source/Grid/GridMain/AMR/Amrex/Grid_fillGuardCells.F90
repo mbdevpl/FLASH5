@@ -22,12 +22,12 @@
 !!  data structure type.
 !!
 !!  Specifically, this routine
-!!    (1) converts all primitive form leaf data to conserved form,
+!!    (1) converts all cell-centered primitive form leaf data to conserved form,
 !!    (2) restricts data from leaf blocks down to all ancestors,
 !!    (3) fills all guardcells at all levels,
-!!    (4) reverts conserved form leaf data to primitive form where 
+!!    (4) reverts cell-centered conserved form leaf data to primitive form where 
 !!        necessary, and
-!!    (5) runs EoS on leaf block guardcells if so desired.
+!!    (5) runs EoS on cell-centered leaf block guardcells if so desired.
 !!
 !!  Note that the fill step might require prolongation operations, which
 !!  use the AMReX conservative linear interpolation algorithm for guardcells
