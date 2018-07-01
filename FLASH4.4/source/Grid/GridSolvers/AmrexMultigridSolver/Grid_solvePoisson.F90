@@ -63,6 +63,8 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
   use amrex_boxarray_module, ONLY : amrex_boxarray, amrex_boxarray_destroy
   use amrex_distromap_module, ONLY : amrex_distromap, amrex_distromap_destroy
 
+  use Grid_data, only: gr_globalMe
+
   implicit none
   
     integer, intent(in)    :: iSoln, iSrc
@@ -181,7 +183,7 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
 
        err = multigrid % solve([solution(ilev)], [rhs(ilev)],1.e-10_amrex_real, 0.0_amrex_real)
        !err = multigrid % solve(solution, rhs, 1.e-10_amrex_real, 0.0_amrex_real)
-       print*, err
+       if(gr_globalMe .eq. MASTER_PE) print*, err
        call amrex_poisson_destroy(poisson)
        call amrex_multigrid_destroy(multigrid)
     end do
