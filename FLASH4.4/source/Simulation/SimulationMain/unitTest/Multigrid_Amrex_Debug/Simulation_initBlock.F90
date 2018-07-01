@@ -101,9 +101,9 @@ subroutine Simulation_initBlock(solnData,block)
   Ly = sim_yMax - sim_yMin  
   Lz = sim_zMax - sim_zMin
 
-  call Grid_getBlkPtr(block,facexData,FACEX)
-  call Grid_getBlkPtr(block,faceyData,FACEY)
-  call Grid_getBlkPtr(block,facezData,FACEZ)
+  !call Grid_getBlkPtr(block,facexData,FACEX)
+  !call Grid_getBlkPtr(block,faceyData,FACEY)
+  !call Grid_getBlkPtr(block,facezData,FACEZ)
 
   do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
      do j = blkLimitsGC(LOW,JAXIS), blkLimitsGC(HIGH,JAXIS)
@@ -132,13 +132,13 @@ subroutine Simulation_initBlock(solnData,block)
   solnData(:,:,:,DIFF_VAR) = 0.0
   solnData(:,:,:,PFFT_VAR) = 0.0
 
-  facexData(:,:,:,RH1F_FACE_VAR) = 1.0
-  faceyData(:,:,:,RH1F_FACE_VAR) = 2.0
-  facezData(:,:,:,RH1F_FACE_VAR) = 3.0
+  !facexData(:,:,:,RH1F_FACE_VAR) = 1.0
+  !faceyData(:,:,:,RH1F_FACE_VAR) = 2.0
+  !facezData(:,:,:,RH1F_FACE_VAR) = 3.0
 
-  call Grid_releaseBlkPtr(block,facexData,FACEX)
-  call Grid_releaseBlkPtr(block,faceyData,FACEY)
-  call Grid_releaseBlkPtr(block,facezData,FACEZ)
+  !call Grid_releaseBlkPtr(block,facexData,FACEX)
+  !call Grid_releaseBlkPtr(block,faceyData,FACEY)
+  !call Grid_releaseBlkPtr(block,facezData,FACEZ)
 
 !!$  write(*,*) 'BlockID=',blockID
 !!$  write(*,*) 'Center coordinates=',coord
