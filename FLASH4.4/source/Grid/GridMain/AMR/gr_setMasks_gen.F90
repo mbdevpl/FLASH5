@@ -73,7 +73,7 @@ subroutine gr_setMasks_gen(gridDataStruct,maskSize,mask, gcell_on_cc,gcell_on_fc
   integer, intent(in) :: maskSize
   logical,dimension(maskSize),intent(in) :: mask
   logical, intent(INOUT)       :: gcell_on_cc(NUNK_VARS)
-  logical, intent(in),OPTIONAL :: gcell_on_fc(MDIM,NFACE_VARS)
+  logical, intent(inout),OPTIONAL :: gcell_on_fc(MDIM,NFACE_VARS)
   logical, intent(in),OPTIONAL :: enableMaskedGCFill
   
   integer :: nv,i

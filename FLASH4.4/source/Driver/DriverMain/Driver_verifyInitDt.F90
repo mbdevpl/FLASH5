@@ -256,7 +256,6 @@ subroutine Driver_verifyInitDt()
      dr_dtDiffuse = dr_dt
      
   endif
-  print*,'driver verify initdt'
   return
 end subroutine Driver_verifyInitDt
 
