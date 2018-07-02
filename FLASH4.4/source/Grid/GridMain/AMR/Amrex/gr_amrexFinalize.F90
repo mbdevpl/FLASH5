@@ -25,11 +25,10 @@ subroutine gr_amrexFinalize()
                                           facevarx, facevary, facevarz, &
                                           fluxes, &
                                           flux_registers
-    use Driver_data,               ONLY : dr_globalMe
  
     integer :: lev
 
-    if(dr_globalMe==MASTER_PE) write(*,*) "[gr_amrexFinalize] Finalizing"
+    write(*,*) "[gr_amrexFinalize] Finalizing"
   
     ! NOTE: Arrays of multifabs use AMReX's 0-based level indexing scheme
     do lev = 0, amrex_max_level
