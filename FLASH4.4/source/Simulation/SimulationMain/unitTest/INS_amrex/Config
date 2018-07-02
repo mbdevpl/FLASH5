@@ -2,8 +2,6 @@
 REQUIRES Driver
 REQUIRES Grid/GridMain
 
-REQUIRES physics/IncompNS
-REQUIRES physics/IncompNS/IncompNSMain/constdens
 
 USESETUPVARS Grid
 
@@ -21,6 +19,7 @@ VARIABLE pfft TYPE: PER_VOLUME
 VARIABLE diff TYPE: PER_VOLUME
 VARIABLE asol TYPE: PER_VOLUME
 
+#FACEVAR RH1F
 
 # Number of layers of Guardcells:
 GUARDCELLS 4

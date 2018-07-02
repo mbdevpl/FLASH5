@@ -16,7 +16,7 @@ subroutine gr_writeData(stepno, t_new)
     integer,  intent(IN) :: stepno
     real(wp), intent(IN) :: t_new
 
-    character(17), parameter :: PLOT_FILE = "poistest_amrex_plot_"
+    character(17), parameter :: PLOT_FILE = "ins_amrex_plot_"
 
     integer              :: nlevs
     character(len=127)   :: filename
