@@ -83,7 +83,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use Grid_data,                 ONLY : gr_doFluxCorrection, &
                                           lo_bc_amrex, hi_bc_amrex
     use Logfile_interface,         ONLY : Logfile_stamp
-    use Grid_data,                 ONLY : gr_meshMe 
+    use Driver_data,               ONLY : dr_globalMe 
 
     implicit none
 
@@ -197,7 +197,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call Logfile_stamp(lev+1, &
           '[gr_initNewLevelCallback] GC fill')
 
-    if(gr_meshMe==MASTER_PE) write(*,'(A,I10,A,I0)') "Created and initialized ", &
+    if(dr_globalMe==MASTER_PE) write(*,'(A,I10,A,I0)') "Created and initialized ", &
                                              n_blocks, " blocks on level ", lev + 1
 
 end subroutine gr_initNewLevelCallback
