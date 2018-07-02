@@ -133,7 +133,9 @@ subroutine Driver_initFlash()
   call Multispecies_init()
 
   call Logfile_init()
+  print*,'grid initialization'
   call Grid_init()
+  print*,'done'
 
   call Driver_initMaterialProperties()
   if(dr_globalMe==MASTER_PE)print*,'MaterialProperties initialized'
