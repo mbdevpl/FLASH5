@@ -1,29 +1,26 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/gr_makeFineLevelFromCoarseCallback
 !!
 !! NAME
-!!
 !!  gr_makeFineLevelFromCoarseCallback
 !!
 !! SYNOPSIS
-!!
 !!  gr_makeFineLevelFromCoarseCallback(integer(IN)    :: lev,
 !!                                     amrex_real(IN) :: time,
 !!                                     c_ptr(IN)      :: pba,
 !!                                     c_ptr(IN)      :: pdm)
 !!
 !! DESCRIPTION
-!!
 !!  This routine is a callback routine that is registered with the AMReX AMR
 !!  core at initialization.  AMReX calls this routine to populate a
 !!  newly-created level with data prolongated from parent blocks and possibly
 !!  with boundary data.  Prolongation is accomplished with AMReX's conservative
 !!  linear interpolation routine.
 !!
-!!  It is assumed that, where applicable, the data is in conserved form.
-!!  Upon returning, the remade multifab will have data in all interiors as
-!!  well as guardcells.  Note that since the data is still in conserved form
-!!  and EoS might expect primitive form, EoS is not run.  It is therefore the
-!!  responsibility of the caller to manage this step.
+!!  It is assumed that, where applicable, the cell-centered data is in conserved 
+!!  form.  Upon returning, the remade multifab will have data in all interiors 
+!!  as well as guardcells.  Note that since the cell-centered data is still in 
+!!  conserved form and EoS might expect primitive form, EoS is not run.  It is 
+!!  therefore the responsibility of the caller to manage this step.
 !!
 !!  NOTE: This implementation, while presently functional, is incorrect.  A user
 !!        could supply their own BC routine that sensibly assumes that data is
@@ -33,7 +30,6 @@
 !!  This routine should only be invoked by AMReX.
 !!
 !! ARGUMENTS
-!!
 !!  lev - a 0-based number identifying the refinement level to create.  The
 !!        zeroth level is the coarsest level to be used in the simulation and a
 !!        larger integer indicates a finer refinement.
@@ -72,7 +68,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           gr_amrexDidRefinement, &
                                           lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
-                                          gr_fillPhysicalBC
+                                          gr_fillPhysicalBC, &
+                                          gr_fillPhysicalFaceBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           gr_scratchCtr, &
                                           facevarx, facevary, facevarz, &
@@ -101,16 +98,29 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     ba = pba
     dm = pdm
 
-    !!!!!----- (Re)create FABS for storing physical data at this level
+    !!!!! CREATE MULTIFABS FOR STORING PHYSICAL DATA AT GIVEN LEVEL
     call gr_clearLevelCallback(lev)
 
-    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
+    ! Cell-centered unknowns
+    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
+
 #if NFACE_VARS > 0
-    ! DEVNOTE: TODO Create these wrt proper face-centered boxes
-    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
+    ! Face variables
+    nodal(:)     = .FALSE.
+    nodal(IAXIS) = .TRUE.
+    call amrex_multifab_build(facevarx(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+#if NDIM >= 2
+    nodal(:)     = .FALSE.
+    nodal(JAXIS) = .TRUE.
+    call amrex_multifab_build(facevary(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
 #endif
+#if NDIM == 3
+    nodal(:)     = .FALSE.
+    nodal(KAXIS) = .TRUE.
+    call amrex_multifab_build(facevarz(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+#endif
+#endif
+
     ! Create FABs for needed by Hydro.
     !! DEV : Control of gr_scratchCtr allocation is very hacky...
 #ifdef HY_VAR2_SCRATCHCTR_VAR
@@ -150,6 +160,37 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                          UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
                                          lo_bc_amrex, hi_bc_amrex) 
+
+#if NFACE_VARS > 0
+    call amrex_fillcoarsepatch(facevarx(lev), time,     facevarx(lev-1),  &
+                                              time+0.1, facevarx(lev-1),  &
+                                              amrex_geom(lev-1), gr_fillPhysicalFaceBC,  &
+                                              amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
+                                              time, &
+                                              1, 1, NFACE_VARS, &
+                                              amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                              lo_bc_amrex, hi_bc_amrex) 
+#if NDIM >= 2
+    call amrex_fillcoarsepatch(facevary(lev), time,     facevary(lev-1),  &
+                                              time+0.1, facevary(lev-1),  &
+                                              amrex_geom(lev-1), gr_fillPhysicalFaceBC,  &
+                                              amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
+                                              time, &
+                                              1, 1, NFACE_VARS, &
+                                              amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                              lo_bc_amrex, hi_bc_amrex) 
+#endif
+#if NDIM == 3
+    call amrex_fillcoarsepatch(facevarz(lev), time,     facevarz(lev-1),  &
+                                              time+0.1, facevarz(lev-1),  &
+                                              amrex_geom(lev-1), gr_fillPhysicalFaceBC,  &
+                                              amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
+                                              time, &
+                                              1, 1, NFACE_VARS, &
+                                              amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                              lo_bc_amrex, hi_bc_amrex) 
+#endif
+#endif
 
     nFab = 0
     call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)

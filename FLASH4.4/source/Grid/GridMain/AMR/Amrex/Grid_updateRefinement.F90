@@ -20,8 +20,9 @@
 !!
 !!  It is assumed that the data in all leaf block interiors is correct and that
 !!  EoS variables are not used to identify blocks for refinement/derefinement.
-!!  Upon termination, this routine only guarantees correct data on the interiors
-!!  and guardcells of leaf blocks.
+!!  In addition, this routine assumes that face variable data are not used to
+!!  identify blocks for refinement/derefinement.  Upon termination, this routine
+!!  only guarantees correct data on the interiors and guardcells of leaf blocks.
 !!
 !!  Note that all EoS runs are done in the mode specified by the eosMode
 !!  runtime parameter.  Note also that a step qualifies as a refinement step 
@@ -148,7 +149,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      call Grid_releaseLeafIterator(itor)
 
      ! Restrict data from leaves to coarser blocks
-     call gr_averageDownLevels
+     call gr_averageDownLevels(CENTER)
 
      !!!!! POPULATE GUARDCELLS IN ALL BLOCKS
      ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can

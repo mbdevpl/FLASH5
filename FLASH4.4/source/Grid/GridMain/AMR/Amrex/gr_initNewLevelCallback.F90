@@ -18,8 +18,8 @@
 !!   (1) creates a multifab for each data type,
 !!   (2) initializes these structures with the initial conditions via
 !!       Simulation_initBlock,
-!!   (3) converts all primitive form data to conserved form, and
-!!   (4) fills all guardcells.
+!!   (3) converts all cell-centered primitive form data to conserved form, and
+!!   (4) fills all cell-centered guardcells.
 !!
 !!  Note that this routine is not running EoS on the interiors or guardcells.
 !!  Therefore, the refinement criteria used to create the initial refinement 
@@ -73,6 +73,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           flux_registers
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC, &
+                                          gr_fillPhysicalFaceBC, &
                                           gr_primitiveToConserve
     use gr_iterator,               ONLY : gr_iterator_t
     use block_metadata,            ONLY : block_metadata_t
@@ -108,14 +109,27 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     call gr_clearLevelCallback(lev)
 
-    ! Create FABS for storing physical data at given level
-    call amrex_multifab_build(unk     (lev), ba, dm, NUNK_VARS, NGUARD)
+    !!!!! CREATE MULTIFABS FOR STORING PHYSICAL DATA AT GIVEN LEVEL
+    ! Cell-centered unknowns
+    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
+
 #if NFACE_VARS > 0
-    ! DEVNOTE: TODO Create these w.r.t. proper face-centered boxes
-    call amrex_multifab_build(facevarx(lev), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevary(lev), ba, dm, NUNK_VARS, NGUARD)
-    call amrex_multifab_build(facevarz(lev), ba, dm, NUNK_VARS, NGUARD)
+    ! Face variables
+    nodal(:)     = .FALSE.
+    nodal(IAXIS) = .TRUE.
+    call amrex_multifab_build(facevarx(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+#if NDIM >= 2
+    nodal(:)     = .FALSE.
+    nodal(JAXIS) = .TRUE.
+    call amrex_multifab_build(facevary(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
 #endif
+#if NDIM == 3
+    nodal(:)     = .FALSE.
+    nodal(KAXIS) = .TRUE.
+    call amrex_multifab_build(facevarz(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+#endif
+#endif
+
     ! Create FABs for needed by Hydro.
     !! DEV : Control of gr_scratchCtr allocation is very hacky...
 #ifdef HY_VAR2_SCRATCHCTR_VAR
@@ -154,7 +168,28 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.
         call Grid_getBlkPtr(block, initData, CENTER)
-        initData(:,:,:,:) = 0.0d0
+        initData(:,:,:,:) = 0.0
+        call Grid_releaseBlkPtr(block, initData, CENTER)
+
+#if NFACE_VARS > 0
+        call Grid_getBlkPtr(block, initData, FACEX)
+        initData(:,:,:,:) = 0.0
+        call Grid_releaseBlkPtr(block, initData, FACEX)
+#if NDIM >= 2
+        call Grid_getBlkPtr(block, initData, FACEY)
+        initData(:,:,:,:) = 0.0
+        call Grid_releaseBlkPtr(block, initData, FACEY)
+#endif
+#if NDIM == 3
+        call Grid_getBlkPtr(block, initData, FACEZ)
+        initData(:,:,:,:) = 0.0
+        call Grid_releaseBlkPtr(block, initData, FACEZ)
+#endif
+#endif
+
+        ! Give simulation the cell-centered data.  If they need to initialize
+        ! face-centered data, they access it explicitly with block/Grid_getBlkPtr
+        call Grid_getBlkPtr(block, initData, CENTER)
         call Simulation_initBlock(initData, block)
         call Grid_releaseBlkPtr(block, initData, CENTER)
 
@@ -171,20 +206,24 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     ! Subsequent AMReX calls to gr_markRefineDerefineCallback require that the
     ! GC be filled.  We do *not* ask client code to do this, so fill GC here
+    !
+    ! The routine gr_estimateBlkError is only using cell-centered data for
+    ! gauging refinement of blocks.   Therefore, we need not do a GC fill
+    ! for the facevar[xyz] data.
     if (lev == 0) then
        ! Move all unk data to given ba/dm layout.  Do *not* use sub-cycling.
        ! -1 because of Fortran variable index starts with 1
-       call amrex_fillpatch(unk(lev), time+1.0d0, unk(lev), &
-                                      time,       unk(lev), &
+       call amrex_fillpatch(unk(lev), time+1.0, unk(lev), &
+                                      time,     unk(lev), &
                                       amrex_geom(lev), gr_fillPhysicalBC, &
                                       time, &
                                       UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)
     else
-       call amrex_fillpatch(unk(lev), time+1.0d0, unk(lev-1), &
-                                      time,       unk(lev-1), &
+       call amrex_fillpatch(unk(lev), time+1.0, unk(lev-1), &
+                                      time,     unk(lev-1), &
                                       amrex_geom(lev-1), gr_fillPhysicalBC, &
-                                      time+1.0e0, unk(lev  ), &
-                                      time,       unk(lev  ), &
+                                      time+1.0, unk(lev  ), &
+                                      time,     unk(lev  ), &
                                       amrex_geom(lev  ), gr_fillPhysicalBC, &
                                       time, &
                                       UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &

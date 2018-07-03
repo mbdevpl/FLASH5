@@ -30,9 +30,14 @@ subroutine gr_clearLevelCallback(lev) bind(c)
     call amrex_multifab_destroy(unk     (lev))
 #if NFACE_VARS > 0
     call amrex_multifab_destroy(facevarx(lev))
+#if NDIM >= 2
     call amrex_multifab_destroy(facevary(lev))
+#endif
+#if NDIM == 3
     call amrex_multifab_destroy(facevarz(lev))
 #endif
+#endif
+
     if (allocated(gr_scratchCtr))  call amrex_multifab_destroy(gr_scratchCtr(lev))
 
 #if NFLUXES > 0
