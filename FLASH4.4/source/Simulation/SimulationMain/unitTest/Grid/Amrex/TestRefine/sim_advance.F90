@@ -56,7 +56,7 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
     end do
 
     ! Propogate leaf data to coarse, non-leaf blocks
-    call gr_averageDownLevels
+    call gr_averageDownLevels(CENTER)
 
     !!!!! REFINE/DEREFINE BASED ON NEW DATA
     write(*,*)
