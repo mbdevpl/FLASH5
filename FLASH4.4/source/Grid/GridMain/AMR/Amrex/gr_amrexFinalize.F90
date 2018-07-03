@@ -27,6 +27,8 @@ subroutine gr_amrexFinalize()
                                           flux_registers
     use Grid_data,                 ONLY : gr_meshMe
  
+#include "constants.h"
+
     integer :: lev
 
     if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexFinalize] Finalizing"
