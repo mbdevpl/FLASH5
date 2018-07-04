@@ -1,26 +1,23 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/gr_remakeLevelCallback
 !!
 !! NAME
-!!
 !!  gr_remakeLevelCallback
 !!
 !! SYNOPSIS
-!!
 !!  gr_remakeLevelCallback(integer(IN)    :: lev,
 !!                         amrex_real(IN) :: time,
 !!                         c_ptr(IN)      :: pba,
 !!                         c_ptr(IN)      :: pdm)
 !!
 !! DESCRIPTION
-!!
 !!  This routine is a callback routine that is registered with the AMReX AMR
 !!  core at initialization.  AMReX calls this routine to reestablish the data in
 !!  a multifab at the given level onto a new multifab specified through the given
 !!  box array and distribution map.
 !!
-!!  It is assumed that, where applicable, the data is in conserved form.
-!!  Upon returning, the remade multifab will have data in all interiors as
-!!  well as guardcells.  Note that since the data is still in conserved form
+!!  It is assumed that, where applicable, the cell-centered data is in conserved
+!!  form.  Upon returning, the remade multifab will have data in all interiors 
+!!  as well as guardcells.  Note that since the data is still in conserved form
 !!  and EoS might expect primitive form, EoS is not run.  It is therefore the
 !!  responsibility of the caller to manage this step.
 !!
@@ -30,10 +27,12 @@
 !!        conserved form.
 !!
 !!  In detail, for the given refinement level this routine
-!!   (1) uses AMReX patchfill to copy data from the original multifab to a
-!!       buffer multifab built with the new box layout and distribution mapping,
-!!   (2) rebuild the original multifab, and
-!!   (3) copy the new interior/GC data from the buffer to the rebuilt multifab.
+!!   (1) uses AMReX patchfill to copy data from each original multifab to an
+!!       associated buffer multifab built with the new box layout and 
+!!       distribution mapping,
+!!   (2) rebuild each original multifab, and
+!!   (3) copy the new interior/GC data from the buffer to the associated 
+!!       rebuilt multifab.
 !!
 !!  Note that step (1) might require that AMReX execute prolongation operations
 !!  using the AMReX conservative linear interpolation algorithm if new boxes are
@@ -42,7 +41,6 @@
 !!  This routine should only be invoked by AMReX.
 !!
 !! ARGUMENTS
-!!
 !!  lev - a 0-based number identifying the refinement level to create.  The
 !!        zeroth level is the coarsest level to be used in the simulation and a
 !!        larger integer indicates a finer refinement.
@@ -88,6 +86,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
+                                          facevarx, facevary, facevarz, &
                                           gr_scratchCtr, &
                                           fluxes, &
                                           flux_registers
@@ -102,7 +101,16 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
     type(amrex_box)       :: bx
-    type(amrex_multifab)  :: mfab
+    type(amrex_multifab)  :: tmp_unk
+#if NFACE_VARS > 0
+    type(amrex_multifab)  :: tmp_facevarx
+#if NDIM >= 2
+    type(amrex_multifab)  :: tmp_facevary
+#endif
+#if NDIM == 3
+    type(amrex_multifab)  :: tmp_facevarz
+#endif
+#endif
 
     type(amrex_mfiter) :: mfi
     integer            :: nFab
@@ -118,36 +126,126 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 
     !!!!! SAVE DATA IN BUFFER WITH GIVEN BOXARRAY/DISTRIBUTION
     ! Get all unk interior data
-    call amrex_multifab_build(mfab, ba, dm, NUNK_VARS, NGUARD)
-    ! DEVNOTE: TODO Include facevars in this process
+    call amrex_multifab_build(tmp_unk, ba, dm, NUNK_VARS, NGUARD)
+
+#if NFACE_VARS > 0
+    ! Face variables
+    nodal(:)     = .FALSE.
+    nodal(IAXIS) = .TRUE.
+    call amrex_multifab_build(tmp_facevarx, ba, dm, NFACE_VARS, NGUARD, nodal)
+#if NDIM >= 2
+    nodal(:)     = .FALSE.
+    nodal(JAXIS) = .TRUE.
+    call amrex_multifab_build(tmp_facevary, ba, dm, NFACE_VARS, NGUARD, nodal)
+#endif
+#if NDIM == 3
+    nodal(:)     = .FALSE.
+    nodal(KAXIS) = .TRUE.
+    call amrex_multifab_build(tmp_facevarz, ba, dm, NFACE_VARS, NGUARD, nodal)
+#endif
+#endif
 
     if (lev == 0) then
        ! Move all unk data (interior and GC) to given ba/dm layout.
        ! Do *not* use sub-cycling.
-       call amrex_fillpatch(mfab, time+1.0d0, unk(lev), &
-                                  time,       unk(lev), &
-                                  amrex_geom(lev), gr_fillPhysicalBC, &
-                                  time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)       
+       call amrex_fillpatch(tmp_unk, time+1.0d0, unk(lev), &
+                                     time,       unk(lev), &
+                                     amrex_geom(lev), gr_fillPhysicalBC, &
+                                     time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)       
+#if NFACE_VARS > 0
+       call amrex_fillpatch(tmp_facevarx, time+1.0, facevarx(lev), &
+                                          time,     facevarx(lev), &
+                                          amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS)       
+#if NDIM >= 2
+       call amrex_fillpatch(tmp_facevary, time+1.0, facevary(lev), &
+                                          time,     facevary(lev), &
+                                          amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS)       
+#endif
+#if NDIM == 3
+       call amrex_fillpatch(tmp_facevarz, time+1.0, facevarz(lev), &
+                                          time,     facevarz(lev), &
+                                          amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS)       
+#endif
+#endif
     else
-       call amrex_fillpatch(mfab, time+1.0d0, unk(lev-1), &
-                                  time,       unk(lev-1), &
-                                  amrex_geom(lev-1), gr_fillPhysicalBC, &
-                                  time+1.0e0, unk(lev  ), &
-                                  time,       unk(lev  ), &
-                                  amrex_geom(lev  ), gr_fillPhysicalBC, &
-                                  time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                                  amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                  lo_bc_amrex, hi_bc_amrex)       
+       call amrex_fillpatch(tmp_unk, time+1.0, unk(lev-1), &
+                                     time,     unk(lev-1), &
+                                     amrex_geom(lev-1), gr_fillPhysicalBC, &
+                                     time+1.0, unk(lev  ), &
+                                     time,     unk(lev  ), &
+                                     amrex_geom(lev  ), gr_fillPhysicalBC, &
+                                     time, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
+                                     amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                     lo_bc_amrex, hi_bc_amrex)       
+#if NFACE_VARS > 0
+       call amrex_fillpatch(tmp_facevarx, time+1.0, facevarx(lev-1), &
+                                          time,     facevarx(lev-1), &
+                                          amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                          time+1.0, facevarx(lev  ), &
+                                          time,     facevarx(lev  ), &
+                                          amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS, &
+                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                          lo_bc_amrex, hi_bc_amrex)       
+#if NDIM >= 2
+       call amrex_fillpatch(tmp_facevary, time+1.0, facevary(lev-1), &
+                                          time,     facevary(lev-1), &
+                                          amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                          time+1.0, facevary(lev  ), &
+                                          time,     facevary(lev  ), &
+                                          amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS, &
+                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                          lo_bc_amrex, hi_bc_amrex)       
+#endif
+#if NDIM == 3
+       call amrex_fillpatch(tmp_facevarz, time+1.0, facevarz(lev-1), &
+                                          time,     facevarz(lev-1), &
+                                          amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                          time+1.0, facevarz(lev  ), &
+                                          time,     facevarz(lev  ), &
+                                          amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                          time, 1, 1, NFACE_VARS, &
+                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                          lo_bc_amrex, hi_bc_amrex)       
+#endif
+#endif
     end if
 
-    !!!!! REBUILD MFAB AT LEVEL AND FILL FROM BUFFER
-    call gr_clearLevelCallback(lev)
-    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
-
+    !!!!! REBUILD MFABS AT LEVEL AND FILL FROM BUFFERS
     ! If GC are not copied, then Hydro_computeDt fails
-    call unk(lev)%copy(mfab, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, NGUARD)
+    call gr_clearLevelCallback(lev)
 
-    call amrex_multifab_destroy(mfab)
+    ! cell-centered data
+    call amrex_multifab_build(unk(lev), ba, dm, NUNK_VARS, NGUARD)
+    call unk(lev)%copy(tmp_unk, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, NGUARD)
+    call amrex_multifab_destroy(tmp_unk)
+
+#if NFACE_VARS > 0
+    ! Face-centered data
+    nodal(:)     = .FALSE.
+    nodal(IAXIS) = .TRUE.
+    call amrex_multifab_build(facevarx(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+    call facevarx(lev)%copy(tmp_facevarx, 1, 1, NFACE_VARS, NGUARD)
+    call amrex_multifab_destroy(tmp_facevarx)
+#if NDIM >= 2
+    nodal(:)     = .FALSE.
+    nodal(JAXIS) = .TRUE.
+    call amrex_multifab_build(facevary(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+    call facevary(lev)%copy(tmp_facevary, 1, 1, NFACE_VARS, NGUARD)
+    call amrex_multifab_destroy(tmp_facevary)
+#endif
+#if NDIM == 3
+    nodal(:)     = .FALSE.
+    nodal(KAXIS) = .TRUE.
+    call amrex_multifab_build(facevarz(lev), ba, dm, NFACE_VARS, NGUARD, nodal)
+    call facevarz(lev)%copy(tmp_facevarz, 1, 1, NFACE_VARS, NGUARD)
+    call amrex_multifab_destroy(tmp_facevarz)
+#endif
+#endif
 
     nFab = 0
     call amrex_mfiter_build(mfi, unk(lev), tiling=.false.)

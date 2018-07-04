@@ -14,7 +14,8 @@
 !!
 !!  User-defined refinement critera is applied to determine the 
 !!  blocks that require refinement.  All new child blocks are filled
-!!  with the initial conditions and EoS is run on interior and guardcells.
+!!  with the initial conditions, EoS is run on interior, and guardcells are
+!!  filled for cell-centered variables.
 !!
 !!  In simulations with particles, under certain conditions particle
 !!  positions will also be initialized.  Currently this is the case
@@ -82,9 +83,14 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   allocate(unk     (0:amrex_max_level))
 #if NFACE_VARS > 0
   allocate(facevarx(0:amrex_max_level))
+#if NDIM >= 2
   allocate(facevary(0:amrex_max_level))
+#endif
+#if NDIM == 3
   allocate(facevarz(0:amrex_max_level))
 #endif
+#endif
+
   allocate(gr_scratchCtr(0:amrex_max_level))
 
 #if NFLUXES > 0

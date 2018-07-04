@@ -1,3 +1,6 @@
+#include "constants.h"
+#include "FortranLangFeatures.fh"
+
 subroutine Grid_releaseBlkPtr(blockID, blkPtr, gridDataStruct)
   use Driver_interface, ONLY : Driver_abortFlash
 
@@ -18,8 +21,6 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
 !#undef Grid_releaseBlkPtr
 !#endif
 
-!#include "constants.h"
-
   use amrex_fort_module, ONLY : wp => amrex_real
 
   use block_metadata, ONLY : block_metadata_t
@@ -31,9 +32,8 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
 
   implicit none
 
-#include "constants.h"
-
   ! DEV: How to match data types for blkPtr with FLASH?
+  ! DEV: FIXME Need to use POINTER_INTENT_INOUT
   type(block_metadata_t), intent(in)              :: block
   real(wp),               intent(inout), pointer  :: blkPtr(:, :, :, :)
   integer,                intent(in),    optional :: gridDataStruct
@@ -46,10 +46,15 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
      gds = CENTER
   end if
 
-  if (gds /= CENTER) then
-     ! DEV: TODO Implement this
+#ifdef FL_NON_PERMANENT_GUARDCELLS
+  ! DEV: TODO Will we use NONPERMANENT GUARDCELLS with AMReX?
+  call Driver_abortFlash("[Grid_releaseBlkPtr_desc] NON-PERMANENT GCs not implemented yet")
+#else
+  if (      (gds /= CENTER) &
+      .AND. (gds /= FACEX) .AND. (gds /= FACEY) .AND. (gds /= FACEZ)) then
      call Driver_abortFlash("[Grid_releaseBlkPtr_desc] gridDataStruct not implemented yet")
   end if
+#endif
 
 #if DRIFT_ENABLE
   ! DEV: TODO If this is to stay here, we need to convert Driver_driftBlock
