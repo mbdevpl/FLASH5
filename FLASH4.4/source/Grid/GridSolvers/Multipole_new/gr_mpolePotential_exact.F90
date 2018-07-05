@@ -170,7 +170,7 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
   potdiff_max = ZERO
 
   call Grid_getLeafIterator(itor1)
-  do while(itor%is_valid())
+  do while(itor1%is_valid())
      call itor1%blkMetaData(block1)
      lev=block1%level
      blkLimits_A=block1%limits
@@ -454,7 +454,9 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
      !        Next leaf block.
      !
      !
+     call itor1%next()
   end do
+  call Grid_releaseLeafIterator(itor1)
   
   write (fileUnit,'(A38)') '  --- finished present iteration ---  '
   close (fileUnit)
