@@ -113,7 +113,7 @@ subroutine Simulation_initBlock(solnData,block)
            
            solnData(i,j,k,ASOL_VAR) = Phi_ijk
 
-           solnData(i,j,k,DENS_VAR) = F_ijk
+           solnData(i,j,k,RHS_VAR) = F_ijk
 
         enddo
      enddo
@@ -122,7 +122,7 @@ subroutine Simulation_initBlock(solnData,block)
 
   ! set values for u,v velocities and pressure
   solnData(:,:,:,DIFF_VAR) = 0.0
-  solnData(:,:,:,PFFT_VAR) = 0.0
+  solnData(:,:,:,NSOL_VAR) = 0.0
 
 !!$  write(*,*) 'BlockID=',blockID
 !!$  write(*,*) 'Center coordinates=',coord

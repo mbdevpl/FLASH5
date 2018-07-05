@@ -1,4 +1,4 @@
-!!****if* source/Simulation/SimulationMain/unitTest/PFFT_PoissonFD/Grid_unitTest
+!!****if* source/Simulation/SimulationMain/unitTest/Multigrid_Amrex
 !!
 !! NAME
 !!
@@ -11,7 +11,8 @@
 !!
 !! DESCRIPTION
 !!
-!!  This unit test exercises PFFT unit.
+!!  This unit test is to test the multigrid solver of AMReX library.
+!!  It uses known analytical function as well as harmonic
 !!
 !! ARGUMENTS
 !!
@@ -85,8 +86,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   call mpi_barrier(gr_meshComm,ierr)
   if (gr_meshMe .eq. 0) CALL SYSTEM_CLOCK(TA(1),count_rate)  
   poisfact=1.
-!  call Grid_solvePoisson(PFFT_VAR,DENS_VAR,bcTypes,bcValues,poisfact)
-   call Grid_solvePoisson(PFFT_VAR, DENS_VAR, bcTypes, bcValues, poisfact)
+   call Grid_solvePoisson(NSOL_VAR, RHS_VAR, bcTypes, bcValues, poisfact)
   call mpi_barrier(gr_meshComm,ierr)
   if (gr_meshMe .eq. 0) then
      CALL SYSTEM_CLOCK(TA(2),count_rate)
@@ -141,7 +141,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
           blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),DIFF_VAR)   =       &
           abs(  solnData(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),     &
           blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),     & 
-          blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),PFFT_VAR)   - &
+          blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),NSOL_VAR)   - &
           solnData(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),     &
           blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),     & 
           blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),ASOL_VAR)   )
@@ -200,7 +200,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
 
 
    call gr_findMean(ASOL_VAR,2,.false.,meanASOL)
-   call gr_findMean(PFFT_VAR,2,.false.,meanPFFT)
+   call gr_findMean(NSOL_VAR,2,.false.,meanPFFT)
 
   !Unit test gives a mean analytical solution of zero.  Ensure the absolute
   !value of the mean numerical solution is between 0 and the tolerance value.
@@ -222,8 +222,6 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
      write(*,*) " Total Volume =",Tvol
      write(*,*) " Total Number of Leaf Blocks=", blkCountaux
      write(*,*) ' ' 
-!!$  print*,"Processor", gr_meshMe, "the Scalar result is Linf err=", err2
-!!$  print*,"Processor", gr_meshMe, "Pfft against Scalar result is Linf err=", err3
   endif
   return
 

@@ -3,8 +3,8 @@
 ## 
 ## Contains default values for all runtime parameters specific to this simulation
 ## 
-plot_var_1 = "dens"
-plot_var_2 = "pfft"
+plot_var_1 = "rhs"
+plot_var_2 = "nsol"
 plot_var_3 = "diff"
 plot_var_4 = "asol"
 
@@ -15,7 +15,7 @@ nblockz                        = 2
 #    AMR refinement parameters  
 lrefine_min       = 3
 lrefine_max       = 3
-refine_var_1      = "dens"
+refine_var_1      = "asol"
 refine_cutoff_1   = 0.5
 #derefine_cutoff_1 = 0.5
 #nrefs                          = 0
