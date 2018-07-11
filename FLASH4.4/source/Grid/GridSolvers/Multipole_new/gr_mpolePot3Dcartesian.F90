@@ -27,10 +27,12 @@
 subroutine gr_mpolePot3Dcartesian (ipotvar)
 
   use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-       Grid_releaseBlkPtr,     &
-       Grid_getBlkBoundBox,    &
-       Grid_getDeltas,         &
-       Grid_getBlkIndexLimits
+                                Grid_releaseBlkPtr,     &
+                                Grid_getBlkBoundBox,    &
+                                Grid_getBlkRefineLevel, &
+                                Grid_getDeltas,         &
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator
 
   use gr_mpoleData,      ONLY : gr_mpoleGravityConstant,        &
        gr_mpoleSymmetryAxis3D,         &
@@ -66,9 +68,10 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
        gr_mpoleQDampingR,              &
        gr_mpoleQDampingI,              &
        gr_mpoleMomentR,                &
-       gr_mpoleMomentI,                &
-       gr_mpoleBlockCount,             &
-       gr_mpoleBlockList
+       gr_mpoleMomentI
+
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
 
@@ -81,7 +84,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   logical :: i2, j2, k2
   logical :: innerZonePotential
 
-  integer :: blockNr, blockID
+  
   integer :: c,s
   integer :: DrUnit
   integer :: imax, imin, iC, iCmax, iF, iFmax, iB
@@ -91,9 +94,9 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   integer :: Q, Qlocal, Qlower, Qupper
   integer :: type
   integer :: zone
-
+  
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: bndBoxILow, bndBoxJLow, bndBoxKLow
   real    :: dampI, Idamp
@@ -121,7 +124,11 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   real, parameter :: sixth = 1./6.
 
   real, pointer   :: solnData (:,:,:,:)
-  !  
+
+  integer :: lev
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+ !  
   !
   !     ...Sum quantities over all locally held leaf blocks.
   !
@@ -130,7 +137,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   !$omp parallel if (gr_mpoleMultiThreading) &
   !$omp default(private) &
   !$omp shared( blockID,ipotvar,&
-  !$omp         bndBox,delta,solnData,blkLimits,blkLimitsGC,&
+  !$omp         bndBox,delta,solnData,blkLimits,&
   !$omp         imin,jmin,kmin,imax,jmax,kmax,&
   !$omp         iCmax,jCmax,kCmax,iFmax,jFmax,kFmax,&
   !$omp         DeltaI,DeltaJ,DeltaK,DeltaIHalf,DeltaJHalf,DeltaKHalf,&
@@ -144,18 +151,17 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   !$omp         gr_mpoleInnerZoneDrRadii,gr_mpoleInnerZoneQlower,gr_mpoleInnerZoneQupper,&
   !$omp         gr_mpoleInnerZoneResolution,gr_mpoleInnerZoneResolutionInv,&
   !$omp         gr_mpoleOuterZoneQshift,gr_mpoleXcenter,gr_mpoleYcenter,gr_mpoleZcenter,&
-  !$omp         gr_mpoleQDampingR,gr_mpoleQDampingI, gr_mpoleMomentR,gr_mpoleMomentI,&
-  !$omp         gr_mpoleBlockCount,gr_mpoleBlockList )
-
-  do blockNr = 1,gr_mpoleBlockCount
-
-     !$omp single
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
-     call Grid_getBlkPtr          (blockID, solnData)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+  !$omp         gr_mpoleQDampingR,gr_mpoleQDampingI, gr_mpoleMomentR,gr_mpoleMomentI)
+  
+ call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
+     blkLimits=block%limits
+     
+     call Grid_getBlkBoundBox     (block, bndBox)
+     call Grid_getDeltas          (lev, delta)
+     call Grid_getBlkPtr          (block, solnData)
 
      imin       = blkLimits (LOW, IAXIS)
      jmin       = blkLimits (LOW, JAXIS)
@@ -649,10 +655,10 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
      !
      !
      !$omp single
-     call Grid_releaseBlkPtr (blockID, solnData)
-     !$omp end single
-
+     call Grid_releaseBlkPtr (block, solnData)
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
   !$omp end parallel
   !
   !

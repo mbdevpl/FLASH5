@@ -36,11 +36,13 @@
 
 subroutine Gravity_unitTest( fileUnit, perfect)
 
-  use Gravity_interface, ONLY : Gravity_potentialListOfBlocks
-  use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_getBlkPtr,&
-                             Grid_releaseBlkPtr, Grid_getBlkIndexLimits
+  use Gravity_interface, ONLY : Gravity_potential
+  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator,&
+                             Grid_releaseBlkPtr, Grid_getBlkPtr
   use Simulation_data, ONLY:  sim_passTolerance
   use Gravity_data, ONLY : grv_meshMe
+  use block_metadata, ONLY : block_metadata_t
+  use leaf_iterator, ONLY : leaf_iterator_t
   implicit none
 
 # include "constants.h"
@@ -48,9 +50,10 @@ subroutine Gravity_unitTest( fileUnit, perfect)
 
   integer, intent(in) :: fileUnit
   logical, intent(out) :: perfect
-  integer :: localBlkCount, blockID
-  integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
-  integer, dimension(MAXBLOCKS) :: blkList
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+  
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimits
   integer :: blkCount
   real :: potError,potErrorMax,factorMin,factorMax,apotAbsMax,gpotAbsMax
   real, parameter :: orig_tolerance = 1e-9 !unused
@@ -58,9 +61,8 @@ subroutine Gravity_unitTest( fileUnit, perfect)
 
   real, pointer, dimension(:,:,:,:):: solnData
 
-  call Grid_getListOfBlocks(LEAF,blkList,blkCount)
 
-  call Gravity_potentialListOfBlocks(blkcount,blkList)
+  call Gravity_potential()
 
   potErrorMax = tiny(0.0)
   apotAbsMax = tiny(0.0)
@@ -68,10 +70,13 @@ subroutine Gravity_unitTest( fileUnit, perfect)
   factorMin =  1.0E10
   factorMax = -1.0E10
 
-  do i=1,blkCount
-     blockID=blkList(i)
-     call Grid_getBlkPtr(blockId,solnData)
-     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
+  call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+
+     call Grid_getBlkPtr(block,solnData)
+
+     blkLimits=block%limits
 
      ib=blkLimits(LOW,IAXIS)
      ie=blkLimits(HIGH,IAXIS)
@@ -100,9 +105,10 @@ subroutine Gravity_unitTest( fileUnit, perfect)
      factorMax = max(factorMax,maxval(solnData(ERRD_VAR,ib:ie,jb:je,kb:ke)))
      factorMin = min(factorMin,minval(solnData(ERRD_VAR,ib:ie,jb:je,kb:ke)))
 
-     call Grid_releaseBlkPtr(blockId,solnData)
+     call Grid_releaseBlkPtr(block,solnData)
+     call itor%next()
   end do
-
+  call Grid_releaseLeafIterator(itor)
 
   if(potErrorMax < sim_passTolerance*min(apotAbsMax,gpotAbsMax) .and. &
        factorMin .GE. 1-sim_passTolerance .and. &

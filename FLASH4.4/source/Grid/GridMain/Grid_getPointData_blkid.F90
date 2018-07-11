@@ -350,9 +350,10 @@ subroutine Grid_getPointData_blkid(blockID, gridDataStruct, structIndex, beginCo
      end if
      datablock=cellvalues(1,1,1)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
-     datablock = solnData(structIndex,i,j,k)
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+!!$     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
+!!$     datablock = solnData(structIndex,i,j,k)
+!!$     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call Driver_abortFlash("in getting point too")
   else
      call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then

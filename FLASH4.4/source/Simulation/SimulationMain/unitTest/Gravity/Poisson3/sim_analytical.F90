@@ -6,7 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  sim_analytical(integer(IN) :: blockID)
+!!  sim_analytical(integer(IN) :: block)
 !!
 !! DESCRIPTION
 !!
@@ -18,7 +18,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockID -- current grid block
+!!  block -- current grid block
 !!
 !! NOTES
 !!
@@ -27,7 +27,7 @@
 !!
 !!***
 
-subroutine sim_analytical(blockID)
+subroutine sim_analytical(block)
 
   use Simulation_data, ONLY:  sim_Newton, sim_pi, &
        &  sim_e, sim_a1, sim_a3, sim_a1inv, sim_a3inv, &
@@ -36,18 +36,20 @@ subroutine sim_analytical(blockID)
 
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getCellCoords, &
        Grid_putPointData, Grid_getDeltas
-
+  use block_metadata, ONLY : block_metadata_t
+  
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
   ! Passed variables
-  integer, intent(IN) :: blockID
+  
+  type(block_metadata_t), intent(IN) :: block
 
   ! local variables
   integer, dimension(MDIM) :: startingPos
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
 
   integer       :: sizeX, sizeY, sizeZ
   integer       :: k, kk, i, ii, j, jj
@@ -87,7 +89,7 @@ subroutine sim_analytical(blockID)
   DD = sim_pi*sim_Newton*sim_density
   Mass = 4.0/3.0*sim_pi*a1squared*sim_a3*sim_density
 
-  call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC)
+  blkLimitsGC=block%localLimitsGC
   sizeX = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS) + 1
   allocate(xLeft(sizex))
   sizeY = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS) + 1
@@ -96,15 +98,15 @@ subroutine sim_analytical(blockID)
   allocate(zLeft(sizeZ))
 
   if (NDIM == 3) then  
-     call Grid_getCellCoords(KAXIS, blockId, LEFT_EDGE, gcell, zLeft, sizeZ)
+     call Grid_getCellCoords(KAXIS, block, LEFT_EDGE, gcell, zLeft, sizeZ)
   endif
   if (NDIM >= 2) then    
-     call Grid_getCellCoords(JAXIS, blockId, LEFT_EDGE, gcell, yLeft, sizeY)
+     call Grid_getCellCoords(JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
   endif
-  call Grid_getCellCoords(IAXIS, blockId, LEFT_EDGE, gcell, xLeft, sizeX)
+  call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
 
   ! delta x is constant throughout each block
-  call Grid_getDeltas(blockID, deltas)
+  call Grid_getDeltas(block%level, deltas)
   dx = deltas(IAXIS)
   dy = deltas(JAXIS)
   dz = deltas(KAXIS)
@@ -180,7 +182,7 @@ subroutine sim_analytical(blockID)
 
            potentialAnalytical = -phiSum/(sim_nsubzones**3)   
 
-           call Grid_putPointData(blockID, CENTER, APOT_VAR, EXTERIOR, startingPos, potentialAnalytical)
+           call Grid_putPointData(block, CENTER, APOT_VAR, EXTERIOR, startingPos, potentialAnalytical)
         end do
 
      enddo

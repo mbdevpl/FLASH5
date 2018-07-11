@@ -200,18 +200,17 @@ subroutine Grid_conserveField ()
   enddo
   endif
 
-#ifndef FLASH_GRID_PARAMESH2
   gridDataStruct = CENTER
 #if NFACE_VARS > 0
   gridDataStruct = CENTER_FACES
 #endif
-  if (no_permanent_guardcells) then
-     call gr_commSetup(gridDataStruct)
-  end if
-#endif
+!!$  if (no_permanent_guardcells) then
+!!$     call gr_commSetup(gridDataStruct)
+!!$  end if
+!!$#endif
 
 #endif !endif FLASH_NEDGE_VAR > 0
-
+  
 end subroutine Grid_conserveField
 
 

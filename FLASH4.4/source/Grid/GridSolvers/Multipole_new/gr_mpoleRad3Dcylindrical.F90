@@ -26,8 +26,10 @@ subroutine gr_mpoleRad3Dcylindrical ()
                                 Grid_releaseBlkPtr,     &
                                 Grid_getBlkBoundBox,    &
                                 Grid_getDeltas,         &
-                                Grid_getBlkIndexLimits, &
-                                Grid_getMinCellSizes
+                                Grid_getMinCellSizes,   &
+                                Grid_getLocalNumBlks,   &
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator
 
   use gr_mpoleInterface, ONLY : gr_mpoleSetInnerZoneGrid, &
                                 gr_mpoleSetOuterZoneGrid
@@ -49,9 +51,10 @@ subroutine gr_mpoleRad3Dcylindrical ()
                                 gr_mpoleDomainZmax,      &
                                 gr_mpoleXcenter,         &
                                 gr_mpoleYcenter,         &
-                                gr_mpoleZcenter,         &
-                                gr_mpoleBlockCount,      &
-                                gr_mpoleBlockList
+                                gr_mpoleZcenter
+
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
 
@@ -61,15 +64,15 @@ subroutine gr_mpoleRad3Dcylindrical ()
 
   include "Flash_mpi.h"
 
-  integer :: blockID
-  integer :: blockNr
+  
+  
   integer :: error
   integer :: i,imin,imax
   integer :: j,jmin,jmax
   integer :: k,kmin,kmax
   integer :: nPinnerZone
   integer :: nRinnerZone
-  integer :: nBlocal
+  integer :: nBlocal, nblks
   integer :: nPlocal
   integer :: nRlocal
   integer :: nRlocalPrev
@@ -77,7 +80,7 @@ subroutine gr_mpoleRad3Dcylindrical ()
   integer :: localData   (1:2)
   integer :: globalData  (1:2)
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: alpha, beta
   real    :: bndBoxILow
@@ -98,9 +101,13 @@ subroutine gr_mpoleRad3Dcylindrical ()
   real    :: minCellSizes (1:MDIM)
   real    :: bndBox       (LOW:HIGH,1:MDIM)
 
-  integer, allocatable :: blockListInnerZone (:)
+  logical, allocatable :: blockListInnerZone (:)
   real,    allocatable :: RinnerZone         (:)
-!
+  !
+  integer :: lev
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+
 !
 !       ...Get the minimum cell sizes for the linear parts of the domain, which
 !          determine the radial distance in 3D space. For 3D cylindrical coordinates,
@@ -187,7 +194,8 @@ subroutine gr_mpoleRad3Dcylindrical ()
 !        have radii in the inner zone.
 !
 !
-      allocate (blockListInnerZone (1:MAXBLOCKS))
+      call Grid_getLocalNumBlks(nblks)
+      allocate (blockListInnerZone (1:nblks))
 
       gr_mpoleInnerZoneMaxR = real (gr_mpoleInnerZoneSize) * gr_mpoleDrInnerZone
       maxRsqr               = gr_mpoleInnerZoneMaxR * gr_mpoleInnerZoneMaxR
@@ -196,14 +204,15 @@ subroutine gr_mpoleRad3Dcylindrical ()
       nRlocal = 0
       nRlocalPrev = 0
 
-      do blockNr = 1,gr_mpoleBlockCount
-
-         blockID = gr_mpoleBlockList (blockNr)
-
-         call Grid_getBlkBoundBox     (blockID, bndBox)
-         call Grid_getDeltas          (blockID, delta)
-         call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
-
+      call Grid_getLeafIterator(itor)
+      do while(itor%is_valid())
+         call itor%blkMetaData(block)
+         lev=block%level
+         blkLimits=block%limits
+         
+         call Grid_getBlkBoundBox     (block, bndBox)
+         call Grid_getDeltas          (lev, delta)
+ 
          imin = blkLimits (LOW, IAXIS)
          jmin = blkLimits (LOW, JAXIS)
          kmin = blkLimits (LOW, KAXIS)  
@@ -255,14 +264,13 @@ subroutine gr_mpoleRad3Dcylindrical ()
             phiCosine   = phiCosine - (alpha * phiCosine + beta * phiSineSave)
          end do
 
-         if (nRlocal > nRlocalPrev) then
-             nBlocal = nBlocal + 1
-             blockListInnerZone (nBlocal) = blockID
-         end if
-
+         nBlocal = nBlocal + 1
+         blockListInnerZone (nBlocal) = (nRlocal > nRlocalPrev)
          nRlocalPrev = nRlocal
-
+         
+         call itor%next()
       end do
+      call Grid_releaseLeafIterator(itor)
 !
 !
 !     ...Calculate the total number of processors contributing to the inner
@@ -301,71 +309,75 @@ subroutine gr_mpoleRad3Dcylindrical ()
 !
 !
       nRlocal = 0
+      nBlocal = 0
 
-      if (nBlocal > 0) then
+      call Grid_getLeafIterator(itor)
+      do while(itor%is_valid())
+         nBlocal=nBlocal+1
+         if(blockListInnerZone(nBlocal)) then
+            
+            call itor%blkMetaData(block)
+            lev=block%level
+            blkLimits=block%limits
+            
+            call Grid_getBlkBoundBox     (block, bndBox)
+            call Grid_getDeltas          (lev, delta)
 
-          do blockNr = 1,nBlocal
-
-             blockID = blockListInnerZone (blockNr)
-
-             call Grid_getBlkBoundBox     (blockID, bndBox)
-             call Grid_getDeltas          (blockID, delta)
-             call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
-
-             imin = blkLimits (LOW, IAXIS)
-             jmin = blkLimits (LOW, JAXIS)
-             kmin = blkLimits (LOW, KAXIS)  
-             imax = blkLimits (HIGH,IAXIS)
-             jmax = blkLimits (HIGH,JAXIS)
-             kmax = blkLimits (HIGH,KAXIS)
-
-             DeltaI         = delta (IAXIS)
-             DeltaJ         = delta (JAXIS)
-             DeltaK         = delta (KAXIS)
-             DeltaIHalf     = DeltaI * HALF
-             DeltaJHalf     = DeltaJ * HALF
-             DeltaKHalf     = DeltaK * HALF
-             DeltaKSine     = sin (DeltaK)
-             DeltaKHalfSine = sin (DeltaKHalf)
-
-             bndBoxILow = bndBox (LOW,IAXIS)
-             bndBoxJLow = bndBox (LOW,JAXIS)
-             bndBoxKLow = bndBox (LOW,KAXIS)
-
-             alpha     = TWO * DeltaKHalfSine * DeltaKHalfSine
-             beta      = DeltaKSine
-
-             phi       = bndBoxKLow + DeltaKHalf
-             phiSine   = sin (phi)
-             phiCosine = cos (phi)
-
-             do k = kmin, kmax
-                z = bndBoxJLow + DeltaJHalf - gr_mpoleZcenter
-                do j = jmin, jmax
-                   Rcyl = bndBoxILow + DeltaIHalf
-                   do i = imin, imax
-
-                      x = Rcyl * phiCosine - gr_mpoleXcenter
-                      y = Rcyl * phiSine   - gr_mpoleYcenter
-
-                      r = sqrt (x * x + y * y + z * z)
-
-                      if (r <= gr_mpoleInnerZoneMaxR) then
-                          nRlocal = nRlocal + 1
-                          RinnerZone (nRlocal) = r
-                      end if
-
-                      Rcyl = Rcyl + DeltaI
-                   end do
-                   z = z + DeltaJ
-                end do
-                phiSineSave = phiSine
-                phiSine     = phiSine   - (alpha * phiSine   - beta * phiCosine  )
-                phiCosine   = phiCosine - (alpha * phiCosine + beta * phiSineSave)
-             end do
-
-          end do
-      end if
+            imin = blkLimits (LOW, IAXIS)
+            jmin = blkLimits (LOW, JAXIS)
+            kmin = blkLimits (LOW, KAXIS)  
+            imax = blkLimits (HIGH,IAXIS)
+            jmax = blkLimits (HIGH,JAXIS)
+            kmax = blkLimits (HIGH,KAXIS)
+            
+            DeltaI         = delta (IAXIS)
+            DeltaJ         = delta (JAXIS)
+            DeltaK         = delta (KAXIS)
+            DeltaIHalf     = DeltaI * HALF
+            DeltaJHalf     = DeltaJ * HALF
+            DeltaKHalf     = DeltaK * HALF
+            DeltaKSine     = sin (DeltaK)
+            DeltaKHalfSine = sin (DeltaKHalf)
+            
+            bndBoxILow = bndBox (LOW,IAXIS)
+            bndBoxJLow = bndBox (LOW,JAXIS)
+            bndBoxKLow = bndBox (LOW,KAXIS)
+            
+            alpha     = TWO * DeltaKHalfSine * DeltaKHalfSine
+            beta      = DeltaKSine
+            
+            phi       = bndBoxKLow + DeltaKHalf
+            phiSine   = sin (phi)
+            phiCosine = cos (phi)
+            
+            do k = kmin, kmax
+               z = bndBoxJLow + DeltaJHalf - gr_mpoleZcenter
+               do j = jmin, jmax
+                  Rcyl = bndBoxILow + DeltaIHalf
+                  do i = imin, imax
+                     
+                     x = Rcyl * phiCosine - gr_mpoleXcenter
+                     y = Rcyl * phiSine   - gr_mpoleYcenter
+                     
+                     r = sqrt (x * x + y * y + z * z)
+                     
+                     if (r <= gr_mpoleInnerZoneMaxR) then
+                        nRlocal = nRlocal + 1
+                        RinnerZone (nRlocal) = r
+                     end if
+                     
+                     Rcyl = Rcyl + DeltaI
+                  end do
+                  z = z + DeltaJ
+               end do
+               phiSineSave = phiSine
+               phiSine     = phiSine   - (alpha * phiSine   - beta * phiCosine  )
+               phiCosine   = phiCosine - (alpha * phiCosine + beta * phiSineSave)
+            end do
+         end if
+         call itor%next()
+      end do
+      call Grid_releaseLeafIterator(itor)
 
       deallocate (blockListInnerZone)
 !

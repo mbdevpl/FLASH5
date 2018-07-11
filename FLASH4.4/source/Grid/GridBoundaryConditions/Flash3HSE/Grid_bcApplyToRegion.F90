@@ -251,14 +251,6 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
         applied = .FALSE.       !This file does not implement Dirichlet for
         return                  !face variables etc.; RETURN immediately!
      end if
-  case(HYDROSTATIC_F2_NVOUT,HYDROSTATIC_F2_NVDIODE,HYDROSTATIC_F2_NVREFL)
-     if (gridDataStruct==CENTER) then
-        applied = .FALSE.       ! should have been picked up by Flash2HSE
-                                ! implementation if included.
-        return                  ! RETURN immediately!
-     else
-        applied = .TRUE.           !will handle these types below (like OUTFLOW)
-     end if
   case(HYDROSTATIC_NVOUT,HYDROSTATIC_NVDIODE,HYDROSTATIC_NVREFL)
      if (gridDataStruct==CENTER) then
         if (axis == gr_bcHseDirection) then
