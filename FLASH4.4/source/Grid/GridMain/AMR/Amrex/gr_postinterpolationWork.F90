@@ -98,8 +98,10 @@ subroutine gr_postinterpolationWork(lo, hi, &
                                            nd)
 
   integer :: i, j, k, var
-
-  if (.NOT. gr_convertToConsvdInMeshInterp)    RETURN
+   
+   ! DEV FIXME: This is termporarily commented out so that we can test
+   ! conservation as these hooks are phased in
+!  if (.NOT. gr_convertToConsvdInMeshInterp)    RETURN
 
 #ifdef DENS_VAR
   if (gr_vartypes(DENS_VAR) == VARTYPE_PER_MASS) then
@@ -114,9 +116,9 @@ subroutine gr_postinterpolationWork(lo, hi, &
   ! pre-interpolation phase.  Therefore, zero density here, which
   ! is considered to be non-physical, is the result of interpolation.
   ! Hence, we correct before converting to primitive form.
-  do     k = lo(IAXIS), hi(IAXIS) 
+  do     k = lo(KAXIS), hi(KAXIS) 
     do   j = lo(JAXIS), hi(JAXIS) 
-      do i = lo(KAXIS), hi(KAXIS)
+      do i = lo(IAXIS), hi(IAXIS)
         d(i,j,k,DENS_VAR) = max(d(i,j,k,DENS_VAR), gr_smallrho)
       end do
     end do
@@ -124,9 +126,9 @@ subroutine gr_postinterpolationWork(lo, hi, &
 
   do var = scomp, (scomp + ncomp - 1)
     if (gr_vartypes(var) == VARTYPE_PER_MASS) then
-      do     k = lo(IAXIS), hi(IAXIS) 
+      do     k = lo(KAXIS), hi(KAXIS) 
         do   j = lo(JAXIS), hi(JAXIS) 
-          do i = lo(KAXIS), hi(KAXIS)
+          do i = lo(IAXIS), hi(IAXIS)
             d(i,j,k,var) = d(i,j,k,var) / d(i,j,k,DENS_VAR)
           end do
         end do
@@ -140,9 +142,9 @@ subroutine gr_postinterpolationWork(lo, hi, &
   ! units correct for unacceptable values before initiating interpolation.  
   ! Therefore, incorrect values here must arise from interpolation.
   if ((ENER_VAR >= scomp) .AND. (ENER_VAR <= scomp+ncomp-1)) then
-    do     k = lo(IAXIS), hi(IAXIS) 
+    do     k = lo(KAXIS), hi(KAXIS) 
       do   j = lo(JAXIS), hi(JAXIS) 
-        do i = lo(KAXIS), hi(KAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
           d(i,j,k,ENER_VAR) = max(d(i,j,k,ENER_VAR), gr_smalle)
         end do
       end do
@@ -153,9 +155,9 @@ subroutine gr_postinterpolationWork(lo, hi, &
 #ifdef EINT_VAR
   ! See comment in ENER_VAR pre-processor block
   if ((EINT_VAR >= scomp) .AND. (EINT_VAR <= scomp+ncomp-1)) then
-    do     k = lo(IAXIS), hi(IAXIS) 
+    do     k = lo(KAXIS), hi(KAXIS) 
       do   j = lo(JAXIS), hi(JAXIS) 
-        do i = lo(KAXIS), hi(KAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
           d(i,j,k,EINT_VAR) = max(d(i,j,k,EINT_VAR), gr_smalle)
         end do
       end do

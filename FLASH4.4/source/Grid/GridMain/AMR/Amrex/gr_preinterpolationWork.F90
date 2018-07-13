@@ -90,32 +90,40 @@ subroutine gr_preinterpolationWork(lo, hi, &
 
   integer :: i, j, k, var
 
-  if (.NOT. gr_convertToConsvdInMeshInterp)    RETURN
+   ! DEV FIXME: This is termporarily commented out so that we can test
+   ! conservation as these hooks are phased in
+!  if (.NOT. gr_convertToConsvdInMeshInterp)    RETURN
 
 #ifdef DENS_VAR
   if (gr_vartypes(DENS_VAR) == VARTYPE_PER_MASS) then
     call Driver_abortFlash('[gr_preinterpolationWork] Density is PER_MASS')
   end if
-  
+
   if ((DENS_VAR < scomp) .OR. (DENS_VAR > scomp+ncomp-1)) then
     call Driver_abortFlash("[gr_preinterpolationWork] Density data not given")
   end if
+      
+  ! Zero density is non-physical for FLASH simulations and is 
+  ! incompatible with the conservative-to-primitive form conversion
+  ! done post-interpolation.
+  !
+  ! Insist that physics units prepare data as they see fit so that
+  ! interpolation proceeds with clean data.
+  do     k = lo(KAXIS), hi(KAXIS) 
+    do   j = lo(JAXIS), hi(JAXIS) 
+      do i = lo(IAXIS), hi(IAXIS)
+        if (d(i,j,k,DENS_VAR) == 0.0_wp) then
+          call Driver_abortFlash("[gr_preinterpolationWork] Density is zero")
+        end if
+      end do
+    end do
+  end do
  
   do var = scomp, (scomp + ncomp - 1)
     if (gr_vartypes(var) == VARTYPE_PER_MASS) then
-      do     k = lo(IAXIS), hi(IAXIS) 
+      do     k = lo(KAXIS), hi(KAXIS) 
         do   j = lo(JAXIS), hi(JAXIS) 
-          do i = lo(KAXIS), hi(KAXIS)
-            ! Zero density is non-physical for FLASH simulations and is 
-            ! incompatible with the conservative-to-primitive form conversion
-            ! done post-interpolation.
-            !
-            ! Insist that physics units prepare data as they see fit so that
-            ! interpolation proceeds with clean data.
-            if (d(i, j, k, var) == 0.0_wp) then
-              call Driver_abortFlash("[gr_preinterpolationWork] Density is zero")
-            end if
-
+          do i = lo(IAXIS), hi(IAXIS)
             d(i,j,k,var) = d(i,j,k,DENS_VAR) * d(i,j,k,var)
           end do
         end do
