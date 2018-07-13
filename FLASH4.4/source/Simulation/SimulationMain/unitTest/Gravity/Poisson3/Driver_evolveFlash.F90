@@ -35,7 +35,7 @@
 #ifdef DEBUG_ALL
 #define DEBUG_DRIVER
 #endif
-
+#define DEBUG_DRIVER
 
 subroutine Driver_evolveFlash()
 
@@ -52,7 +52,7 @@ subroutine Driver_evolveFlash()
   use Grid_interface, ONLY : Grid_getLocalNumBlks, &
     Grid_getListOfBlocks, Grid_updateRefinement
   use Hydro_interface, ONLY : Hydro
-  use Gravity_interface, ONLY :  Gravity_potentialListOfBlocks, Gravity_unitTest
+  use Gravity_interface, ONLY :  Gravity_potential, Gravity_unitTest
   !use IO_data, ONLY: io_justCheckpointed 
   use IO_interface, ONLY :IO_output,IO_outputFinal
 
@@ -62,8 +62,6 @@ subroutine Driver_evolveFlash()
 #include "Flash.h"
 
   integer   :: localNumBlocks
-  integer :: blockCount
-  integer :: blockList(MAXBLOCKS)
 
   ! for logfile output
   character(len=MAX_STRING_LENGTH), dimension(3,2) :: strBuff
@@ -89,16 +87,13 @@ subroutine Driver_evolveFlash()
   
   call Logfile_stamp( 'Entering evolution routine' , '[Driver_evolveFlash]')
 
+  
 
   call Timers_start("evolution")
-
+  print*,' starting ',dr_nend, dr_nbegin
   if (dr_nend .GE. dr_nbegin) then
 
 
-     !!Step forward in time. See bottom of loop for time step calculation.
-       
-     call Grid_getLocalNumBlks(localNumBlocks)
-     call Grid_getListOfBlocks(LEAF,blockList,blockCount)
      if (dr_globalMe == MASTER_PE) then
 
         write (numToStr(1:), '(I10)') dr_nstep
@@ -118,10 +113,6 @@ subroutine Driver_evolveFlash()
      !--------------------------------------------------------------------
      !- Start Physics Sequence
      !----
-#ifdef DEBUG_DRIVER
-     print*, 'going into Hydro/MHD'
-#endif
-
   
      dr_simTime = dr_simTime + dr_dt
 
@@ -129,8 +120,8 @@ subroutine Driver_evolveFlash()
 #ifdef DEBUG_DRIVER
      print*,'going into hydro'
 #endif
-     call Hydro(blockCount, blockList, &
-                dr_simTime, dr_dt, dr_dtOld, SWEEP_XYZ)
+
+     call Hydro(dr_simTime, dr_dt, dr_dtOld, SWEEP_XYZ)
 
      call Timers_stop("hydro")
 
@@ -139,41 +130,29 @@ subroutine Driver_evolveFlash()
      print*, 'return from Hydro/MHD timestep'
 #endif
 
-     call Timers_start("sourceTerms")
-     call Driver_sourceTerms(blockCount, blockList, dr_dt)
-     call Timers_stop("sourceTerms")
-#ifdef DEBUG_DRIVER
-     print*,'done source terms'
-     print*, 'return from Drivers_sourceTerms '
-#endif
      call Timers_start("Particles_advance")
      call Particles_advance(dr_dtOld, dr_dt)
 #ifdef DEBUG_DRIVER
      print*, 'return from Particles_advance '
 #endif
      call Timers_stop("Particles_advance")     
-     call Gravity_potentialListOfBlocks(blockCount,blockList)
+     call Gravity_potential()
 #ifdef DEBUG_DRIVER
      print*, 'return from Gravity_potential '
 #endif
 
      dr_simTime = dr_simTime + dr_dt
      call Timers_start("hydro")
-     call Hydro( blockCount, blockList, &
-                dr_simTime, dr_dt, dr_dtOld, SWEEP_ZYX)
+     call Hydro(dr_simTime, dr_dt, dr_dtOld, SWEEP_ZYX)
      call Timers_stop("hydro")
 
 
-
-     call Timers_start("sourceTerms")
-     call Driver_sourceTerms(blockCount, blockList, dr_dt)
-     call Timers_stop("sourceTerms")
 
      call Timers_start("Particles_advance")
      call Particles_advance(dr_dt, dr_dt)
      call Timers_stop("Particles_advance")
      
-     call Gravity_potentialListOfBlocks(blockCount,blockList)
+     call Gravity_potential()
 
      !----
      !- End Physics Sequence

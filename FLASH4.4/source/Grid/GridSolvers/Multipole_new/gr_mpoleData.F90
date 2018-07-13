@@ -18,8 +18,6 @@
 !!           (R) means data that is supplied as input through (R)untime parameters
 !!           (C) means data that is (C)alculated internally by the multipole solver code
 !!
-!!   gr_mpoleBlockCount                   (G) : Number of blocks on each processor
-!!   gr_mpoleBlockList                    (G) : List of block ID's on each processor
 !!   gr_mpoleDomainX/Y/Z/R/Phi/ThetaMax (R,C) : Largest domain boundaries of the problem
 !!   gr_mpoleDomainX/Y/Z/R/Phi/ThetaMin (R,C) : Lowest domain boundaries of the problem
 !!   gr_mpoleDr                           (C) : Smallest (atomic) radial size for the outer zone
@@ -122,7 +120,6 @@ module gr_mpoleData
   logical, save :: gr_mpoleSymmetryAxis3D
   logical, save :: gr_mpoleSymmetryPlane2D
 
-  integer, save :: gr_mpoleBlockCount
   integer, save :: gr_mpoleInnerZoneQmax
   integer, save :: gr_mpoleInnerZoneSize
   integer, save :: gr_mpoleGeometry
@@ -201,7 +198,6 @@ module gr_mpoleData
     real    :: radius
   end type cellData3D
 
-  integer,           allocatable, save :: gr_mpoleBlockList                (:)
   integer,           allocatable, save :: gr_mpoleInnerZoneQlower          (:)
   integer,           allocatable, save :: gr_mpoleInnerZoneQupper          (:)
   integer,           allocatable, save :: gr_mpoleQ                        (:)

@@ -9,8 +9,7 @@
 
 REQUESTS PhysicalConstants
 REQUESTS Grid
-# May also work without the following line
-# REQUESTS Grid/GridBoundaryConditions/Flash2HSE
+
 REQUESTS Grid/GridBoundaryConditions/Flash3HSE
 
 REQUESTS physics/Gravity

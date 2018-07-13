@@ -65,7 +65,7 @@ subroutine Driver_evolveFlash()
                                   Grid_updateRefinement
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
-  use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
+  use Gravity_interface,   ONLY : Gravity_potential
   use IO_interface,        ONLY : IO_output,IO_outputFinal
   use Cosmology_interface, ONLY : Cosmology_redshiftHydro, &
                                   Cosmology_solveFriedmannEqn, &
@@ -327,7 +327,7 @@ subroutine Driver_evolveFlash()
         ! 6. Calculate gravitational potentials
         if (.NOT. Hydro_gravPotIsAlreadyUpdated()) then
            call Timers_start("Gravity potential")
-           call Gravity_potentialListOfBlocks(blockCount,blockList)
+           call Gravity_potential()
            call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
            call Timers_stop("Gravity potential")
 #ifdef DEBUG_DRIVER

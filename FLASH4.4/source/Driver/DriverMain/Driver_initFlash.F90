@@ -53,7 +53,7 @@ subroutine Driver_initFlash()
   use Logfile_interface, ONLY : Logfile_init
   use PhysicalConstants_interface, ONLY : PhysicalConstants_init
   use Gravity_interface, ONLY : Gravity_init, &
-    Gravity_potentialListOfBlocks
+    Gravity_potential
   use Timers_interface, ONLY : Timers_init, Timers_start, Timers_stop
 
   use Grid_interface, ONLY : Grid_init, Grid_initDomain, &
@@ -209,19 +209,20 @@ subroutine Driver_initFlash()
 
 
   !For active particle simulations we must initialize particle
-  !positions before the call to Gravity_potentialListOfBlocks.
+  !positions before the call to Gravity_potential.
   call Particles_initData(dr_restart,dr_particlesInitialized)
 
   if(.not. dr_restart) then
-     call Grid_getListOfBlocks(LEAF,blockList,blockCount)
-     call Gravity_potentialListOfBlocks(blockCount,blockList)
+     print*,'calling gravity potential'
+     call Gravity_potential()
+     print*,'done with that'
      call Particles_initForces()
   end if
 
   ! If we want to free any arrays created during simulation
   ! initialization that are no longer needed, do it here.
   call Simulation_freeUserArrays()
-
+  print*,'arrays freed'
   call IO_outputInitial(  dr_nbegin, dr_initialSimTime)
   if(dr_globalMe==MASTER_PE)print*,'Initial plotfile written'
 

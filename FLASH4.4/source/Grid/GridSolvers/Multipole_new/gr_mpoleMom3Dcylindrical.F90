@@ -30,7 +30,8 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
                                 Grid_releaseBlkPtr,     &
                                 Grid_getBlkBoundBox,    &
                                 Grid_getDeltas,         &
-                                Grid_getBlkIndexLimits
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator
 
   use gr_mpoleInterface, ONLY : gr_mpoleMomBins3Dcylindrical
 
@@ -59,9 +60,10 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
 
   use gr_mpoleData,      ONLY : gr_mpoleXcenter,                &
                                 gr_mpoleYcenter,                &
-                                gr_mpoleZcenter,                &
-                                gr_mpoleBlockCount,             &
-                                gr_mpoleBlockList
+                                gr_mpoleZcenter
+
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
   
@@ -73,7 +75,6 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
 
   logical :: innerZonePotential
 
-  integer :: blockNr, blockID
   integer :: DrUnit
   integer :: i, imin, imax
   integer :: j, jmin, jmax
@@ -88,7 +89,7 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
   integer, save :: maxQtype                ! for multithreading needs to be on stack (save)
 
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: alpha, beta
   real    :: bndBoxILow, bndBoxJLow, bndBoxKLow
@@ -106,6 +107,10 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
   real    :: bndBox (LOW:HIGH,1:MDIM)
 
   real, pointer :: solnData (:,:,:,:)
+
+  integer :: lev
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
 !
 !
 !     ...The first pass over all blocks on the current processor will get us information
@@ -116,13 +121,15 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
 !$omp single
   gr_mpoleQused (:) = 0 
 
-  do blockNr = 1,gr_mpoleBlockCount
-
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+  call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
+     blkLimits=block%limits
+     
+     call Grid_getBlkBoundBox     (block, bndBox)
+     call Grid_getDeltas          (lev, delta)
+     call Grid_getBlkPtr          (block, solnData)
 
      imin = blkLimits (LOW, IAXIS)
      jmin = blkLimits (LOW, JAXIS)
@@ -242,7 +249,10 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
 
      end do
 
+     call Grid_releaseBlkPtr (block, solnData)
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
 !
 !
 !     ...Create the arrays that will contain the radial info.
@@ -264,14 +274,15 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
 
   nQ = 0
 
-  do blockNr = 1,gr_mpoleBlockCount
-
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
-     call Grid_getBlkPtr          (blockID, solnData)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+   call Grid_getLeafIterator(itor)
+   do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
+     blkLimits=block%limits
+     
+     call Grid_getBlkBoundBox     (block, bndBox)
+     call Grid_getDeltas          (lev, delta)
+     call Grid_getBlkPtr          (block, solnData)
 
      imin = blkLimits (LOW, IAXIS)
      jmin = blkLimits (LOW, JAXIS)
@@ -410,9 +421,10 @@ subroutine gr_mpoleMom3Dcylindrical (idensvar)
 
      end do
 
-     call Grid_releaseBlkPtr (blockID, solnData)
-
+     call Grid_releaseBlkPtr (block, solnData)
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
 !$omp end single
 !
 !

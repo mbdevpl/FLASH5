@@ -36,8 +36,7 @@ subroutine Grid_solvePoisson (iSoln,                   &
                               bcValues,                &
                               poisFact)
 
-  use Grid_interface,    ONLY : GRID_PDE_BND_ISOLATED,         &
-                                Grid_getListOfBlocks
+  use Grid_interface,    ONLY : GRID_PDE_BND_ISOLATED
 
   use Driver_interface,  ONLY : Driver_abortFlash
 
@@ -55,9 +54,7 @@ subroutine Grid_solvePoisson (iSoln,                   &
                                 gr_mpoleDumpMoments,           &
                                 gr_mpoleDeallocateRadialArrays
 
-  use gr_mpoleData,      ONLY : gr_mpoleBlockCount,            &
-                                gr_mpoleBlockList,             &
-                                gr_mpoleMomentsDump,           &
+  use gr_mpoleData,      ONLY : gr_mpoleMomentsDump,           &
                                 gr_mpoleMultiThreading,        &
                                 gr_mpoleRadialInfoPrint
 
@@ -88,52 +85,51 @@ subroutine Grid_solvePoisson (iSoln,                   &
 !
 !    ...Preliminary chores for setting up the run.
 !
-!
-  call Grid_getListOfBlocks         (LEAF, gr_mpoleBlockList, gr_mpoleBlockCount)
-  call gr_mpoleCenterOfExpansion    (iSrc)
-  call gr_mpoleRadialSampling       ()
-  call gr_mpoleAllocateRadialArrays ()
-  call gr_mpoleSetRadialBinData     ()
+  !
+   call gr_mpoleCenterOfExpansion    (iSrc)
+   call gr_mpoleRadialSampling       ()
+   call gr_mpoleAllocateRadialArrays ()
+   call gr_mpoleSetRadialBinData     ()
 !
 !
 !     ...Print radial info if requested by user.
 !
-!
+  !
+  
   if (gr_mpoleRadialInfoPrint) then
       call gr_mpolePrintRadialInfo ()
   end if
-
-        call Timers_start             ("gr_mpoleMoments")
-        call gr_mpoleMoments          (iSrc)
-        call Timers_stop              ("gr_mpoleMoments")
-
-        call Timers_start             ("gr_mpoleCollectMoments")   ! see 'Note' above
-          call gr_mpoleCollectMoments ()
-        call Timers_stop              ("gr_mpoleCollectMoments")   ! see 'Note' above
-
-        call Timers_start             ("gr_mpolePotentials")
-        call gr_mpolePotentials       (iSoln, poisFact)
-        call Timers_stop              ("gr_mpolePotentials")
-
-!
-!
-!    ...Dump the moments if requested by the user.
-!
-!
+  call Timers_start             ("gr_mpoleMoments")
+  call gr_mpoleMoments          (iSrc)
+  call Timers_stop              ("gr_mpoleMoments")
+  
+  call Timers_start             ("gr_mpoleCollectMoments")   ! see "Note" above
+  call gr_mpoleCollectMoments ()
+  call Timers_stop              ("gr_mpoleCollectMoments")   ! see 'Note' above
+  
+  call Timers_start             ("gr_mpolePotentials")
+  call gr_mpolePotentials       (iSoln, poisFact)
+  call Timers_stop              ("gr_mpolePotentials")
+  
+  !
+  !
+  !    ...Dump the moments if requested by the user.
+  !
+  !
   if (gr_mpoleMomentsDump) then
-      call gr_mpoleDumpMoments ()
+     call gr_mpoleDumpMoments ()
   end if
-!
-!
-!    ...Final chores.
-!
-!
+  !
+  !
+  !    ...Final chores.
+  !
+  !
   call gr_mpoleDeallocateRadialArrays ()
-!  
-!
-!    ...End timer.
-!
-!
+  !  
+  !
+  !    ...End timer.
+  !
+  !
   call Timers_stop ("Multipole Solver")
 !
 !

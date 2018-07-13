@@ -122,7 +122,7 @@ subroutine gr_applyFlash3HSEBC(bcType,bcDir,guard,dataRow,face,&
 !=====================================================================
 
 #ifndef FLASH_EOS
-  call Driver_abortFlash('Cannot execute gr_applyFlash2HSEBC without the Eos unit!')
+  call Driver_abortFlash('Cannot execute gr_applyFlash3HSEBC without the Eos unit!')
 #endif
 
   select case (bcDir)

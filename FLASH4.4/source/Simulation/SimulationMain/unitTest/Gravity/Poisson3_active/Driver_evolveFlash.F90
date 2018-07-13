@@ -52,7 +52,7 @@ subroutine Driver_evolveFlash()
   use Grid_interface, ONLY : Grid_getLocalNumBlks, &
     Grid_getListOfBlocks, Grid_updateRefinement
   use Hydro_interface, ONLY : Hydro
-  use Gravity_interface, ONLY :  Gravity_potentialListOfBlocks, Gravity_unitTest
+  use Gravity_interface, ONLY :  Gravity_potential, Gravity_unitTest
   use IO_interface, ONLY :IO_output,IO_outputFinal
 
   implicit none
@@ -154,7 +154,7 @@ subroutine Driver_evolveFlash()
      print*, 'return from Particles_advance '
 #endif
      call Timers_stop("Particles_advance")     
-     call Gravity_potentialListOfBlocks(blockCount,blockList)
+     call Gravity_potential()
 #ifdef DEBUG_DRIVER
      print*, 'return from Gravity_potential '
 #endif
@@ -175,7 +175,7 @@ subroutine Driver_evolveFlash()
      call Particles_advance(dr_dt, dr_dt)
      call Timers_stop("Particles_advance")
      
-     call Gravity_potentialListOfBlocks(blockCount,blockList)
+     call Gravity_potential()
 
      !----
      !- End Physics Sequence
