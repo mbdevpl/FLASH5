@@ -283,19 +283,13 @@ subroutine Grid_init()
 !----------------------------------------------------------------------------------
 !  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
 
-!!!  gr_meshComm = FLASH_COMM
   call RuntimeParameters_get("convertToConsvdForMeshCalls", &
                              gr_convertToConsvdForMeshCalls)
   call RuntimeParameters_get("convertToConsvdInMeshInterp", &
                              gr_convertToConsvdInMeshInterp)
-  if (gr_convertToConsvdInMeshInterp) then
-     if (gr_meshMe == MASTER_PE) then
-        print*,'WARNING : MeshInterp primitive/conserved conversion not available in AMReX.'
-        print*,'          Using MeshCalls conversion instead.'
-     end if
-     call Logfile_stampMessage("WARNING : Using MeshCalls instead of MeshInterp with AMReX")
-     gr_convertToConsvdForMeshCalls = .TRUE.
-     gr_convertToConsvdInMeshInterp = .FALSE.
+  if (gr_convertToConsvdInMeshInterp .AND. gr_convertToConsvdForMeshCalls) then
+     call Driver_abortFlash("[Grid_init] convertToConsvdForMeshCalls and " // &
+                         "convertToConsvdInMeshInterp simultaneously enabled")
   end if
 
   call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
