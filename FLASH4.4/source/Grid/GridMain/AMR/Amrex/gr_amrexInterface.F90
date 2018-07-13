@@ -129,6 +129,44 @@ module gr_amrexInterface
   end interface
  
   interface
+    subroutine gr_preinterpolationWork(lo, hi, &
+                                       d, dlo, dhi, nd, &
+                                       scomp, ncomp) bind(c)
+      use iso_c_binding,     ONLY : c_int
+      use amrex_fort_module, ONLY : wp => amrex_real
+      implicit none
+      integer(c_int), intent(in)          :: lo(MDIM), hi(MDIM)
+      integer(c_int), intent(in)          :: dlo(MDIM), dhi(MDIM)
+      integer(c_int), intent(in),   value :: nd
+      integer(c_int), intent(in),   value :: scomp
+      integer(c_int), intent(in),   value :: ncomp
+      real(wp),       intent(inout)       :: d(dlo(IAXIS):dhi(IAXIS), &
+                                               dlo(JAXIS):dhi(JAXIS), &
+                                               dlo(KAXIS):dhi(KAXIS), &
+                                               nd)
+    end subroutine gr_preinterpolationWork
+  end interface
+
+  interface
+    subroutine gr_postinterpolationWork(lo, hi, &
+                                        d, dlo, dhi, nd, &
+                                        scomp, ncomp) bind(c)
+      use iso_c_binding,     ONLY : c_int
+      use amrex_fort_module, ONLY : wp => amrex_real
+      implicit none
+      integer(c_int), intent(in)          :: lo(MDIM), hi(MDIM)
+      integer(c_int), intent(in)          :: dlo(MDIM), dhi(MDIM)
+      integer(c_int), intent(in),   value :: nd
+      integer(c_int), intent(in),   value :: scomp
+      integer(c_int), intent(in),   value :: ncomp
+      real(wp),       intent(inout)       :: d(dlo(IAXIS):dhi(IAXIS), &
+                                               dlo(JAXIS):dhi(JAXIS), &
+                                               dlo(KAXIS):dhi(KAXIS), &
+                                               nd)
+    end subroutine gr_postinterpolationWork
+  end interface
+
+  interface
     subroutine gr_primitiveToConserve(blockDesc)
       use block_metadata, ONLY : block_metadata_t
       implicit none

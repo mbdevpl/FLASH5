@@ -6,6 +6,8 @@ Grid += gr_amrexInterface.o \
         gr_initNewLevelCallback.o \
         gr_makeFineLevelFromCoarseCallback.o \
         gr_markRefineDerefineCallback.o \
+        gr_preinterpolationWork.o \
+        gr_postinterpolationWork.o \
         gr_conserveToPrimitive.o \
         gr_primitiveToConserve.o \
         gr_fillPhysicalBC.o \
