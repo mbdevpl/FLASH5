@@ -22,16 +22,15 @@
 !!  data structure type.
 !!
 !!  Specifically, this routine
-!!    (1) converts all cell-centered primitive form leaf data to conserved form,
-!!    (2) restricts data from leaf blocks down to all ancestors,
-!!    (3) fills all guardcells at all levels,
-!!    (4) reverts cell-centered conserved form leaf data to primitive form where 
-!!        necessary, and
-!!    (5) runs EoS on cell-centered leaf block guardcells if so desired.
+!!    (1) restricts data from leaf blocks down to all ancestors,
+!!    (2) fills all guardcells at all levels, and
+!!    (3) runs EoS on cell-centered leaf block guardcells if so desired.
 !!
 !!  Note that the fill step might require prolongation operations, which
 !!  use the AMReX conservative linear interpolation algorithm for guardcells
-!!  at fine/coarse boundaries.
+!!  at fine/coarse boundaries.  In such cases, AMReX will convert primitive form
+!!  quantities to conservative form before interpolating and will do the 
+!!  inverse conversion where appropriate once finished.
 !!
 !! ARGUMENTS 
 !!  gridDataStruct - integer constant that indicates which grid data structure 
@@ -106,8 +105,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_fillPhysicalFaceBC, &
                                         gr_averageDownLevels, &
-                                        gr_primitiveToConserve, &
-                                        gr_conserveToPrimitive
+                                        gr_preinterpolationWork, &
+                                        gr_postinterpolationWork
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
                                         gr_setMasks_gen, &
                                         gr_makeMaskConsistent_gen
@@ -281,20 +280,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! Figure out nlayers arguments to amr_guardcell based on our arguments
   call gr_setGcFillNLayers(layers, idir, guard, minLayers, returnLayers)
 
-  !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH CONSERVED-FORM DATA
-  ! We are only concerned with data on interior at this point
-  ! DEV: TODO Do we need P-to-C conversion for face variables as well?
-  if ((gridDataStruct == CENTER) .OR. (gridDataStruct == CENTER_FACES)) then
-    call Grid_getLeafIterator(itor, tiling=.FALSE.)
-    do while (itor%is_valid())
-      call itor%blkMetaData(blockDesc)
-      call gr_primitiveToConserve(blockDesc)
-
-      call itor%next()
-    end do
-    call Grid_releaseLeafIterator(itor)
-  end if
-
+  !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH DATA
   ! Restrict data from leaves to coarser blocks
   call gr_averageDownLevels(gridDataStruct)
 
@@ -321,10 +307,12 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                       amrex_geom(lev  ), gr_fillPhysicalBC, &
                                       0.0, scompCC, scompCC, ncompCC, &
                                       amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                      lo_bc_amrex, hi_bc_amrex) 
+                                      lo_bc_amrex, hi_bc_amrex, &
+                                      gr_preinterpolationWork, &
+                                      gr_postinterpolationWork)
     end do
 
-    !!!!! Revert conserved to primitive form and run EoS
+    !!!!! Run EoS if needed
     call Timers_start("eos gc")
 
     if (present(doEos)) then
@@ -338,20 +326,10 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
 
-          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
-
           call Grid_getBlkPtr(blockDesc, solnData)
           call Eos_guardCells(gcEosMode, solnData, corners=.true., &
                               layers=returnLayers)
           call Grid_releaseBlkPtr(blockDesc, solnData)
-
-          call itor%next()
-       end do
-    else
-       do while (itor%is_valid())
-          call itor%blkMetaData(blockDesc)
-
-          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
 
           call itor%next()
        end do
