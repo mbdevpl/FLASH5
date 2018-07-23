@@ -22,15 +22,20 @@
 !!  data structure type.
 !!
 !!  Specifically, this routine
-!!    (1) restricts data from leaf blocks down to all ancestors,
-!!    (2) fills all guardcells at all levels, and
-!!    (3) runs EoS on cell-centered leaf block guardcells if so desired.
+!!    (1) converts all primitive form leaf data to conserved form,
+!!    (2) restricts data from leaf blocks down to all ancestors,
+!!    (3) fills all guardcells at all levels,
+!!    (4) reverts conserved form leaf data to primitive form where 
+!!        necessary, and
+!!    (5) runs EoS on cell-centered leaf block guardcells if so desired.
 !!
-!!  Note that the fill step might require prolongation operations, which
-!!  use the AMReX conservative linear interpolation algorithm for guardcells
-!!  at fine/coarse boundaries.  In such cases, AMReX will convert primitive form
-!!  quantities to conservative form before interpolating and will do the 
-!!  inverse conversion where appropriate once finished.
+!!  Note that steps (1) and (4) are skipped if the runtime parameters 
+!!  convertToConsvdInMeshInterp and convertToConsvdForMeshCalls indicate that
+!!  conversion is not desired.
+!!
+!!  The fill step might require prolongation operations, which use the AMReX
+!!  conservative linear interpolation algorithm for guardcells at fine/coarse
+!!  boundaries.
 !!
 !! ARGUMENTS 
 !!  gridDataStruct - integer constant that indicates which grid data structure 
@@ -80,7 +85,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                selectBlockType, &
                                unitReadsMeshDataOnly)
   use, INTRINSIC :: iso_c_binding
-  use amrex_fort_module,         ONLY : wp => amrex_real
   use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
                                         amrex_geom, &
                                         amrex_ref_ratio
@@ -93,6 +97,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use Grid_data,                 ONLY : gr_justExchangedGC, &
                                         gr_eosMode, &
                                         gr_enableMaskedGCFill, &
+                                        gr_convertToConsvdInMeshInterp, &
                                         gr_meshMe, gr_meshComm, &
                                         gr_gcellsUpToDate, &
                                         lo_bc_amrex, hi_bc_amrex
@@ -105,8 +110,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_fillPhysicalFaceBC, &
                                         gr_averageDownLevels, &
-                                        gr_preinterpolationWork, &
-                                        gr_postinterpolationWork
+                                        gr_conserveToPrimitive
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
                                         gr_setMasks_gen, &
                                         gr_makeMaskConsistent_gen
@@ -139,6 +143,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   integer :: ierr
 
   logical :: needEos
+  logical :: needConversion
 
   logical, save :: maskWarningDone = .FALSE.
   logical :: skipThisGcellFill, skipNextGcellFill
@@ -280,9 +285,14 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! Figure out nlayers arguments to amr_guardcell based on our arguments
   call gr_setGcFillNLayers(layers, idir, guard, minLayers, returnLayers)
 
-  !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH DATA
-  ! Restrict data from leaves to coarser blocks
-  call gr_averageDownLevels(gridDataStruct)
+  !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH CONSERVATIVE FORM DATA
+  ! Only convert if requested
+  needConversion = gr_convertToConsvdInMeshInterp
+
+  ! Restrict data from leaves to coarser blocks.  Leave in conservative
+  ! form as this is potentially needed for interpolation with fillpatch
+  call gr_averageDownLevels(gridDataStruct, convertPtoC=needConversion, &
+                                            convertCtoP=.FALSE.)
 
   !!!!!----- FILL GUARDCELLS ON ALL BLOCKS, ALL LEVELS
   call Timers_start("amr_guardcell")
@@ -307,12 +317,10 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                       amrex_geom(lev  ), gr_fillPhysicalBC, &
                                       0.0, scompCC, scompCC, ncompCC, &
                                       amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                      lo_bc_amrex, hi_bc_amrex, &
-                                      gr_preinterpolationWork, &
-                                      gr_postinterpolationWork)
+                                      lo_bc_amrex, hi_bc_amrex)
     end do
 
-    !!!!! Run EoS if needed
+    !!!!! Run EoS if needed and convert back to primitive form
     call Timers_start("eos gc")
 
     if (present(doEos)) then
@@ -321,8 +329,23 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
        needEos = .FALSE.
     end if
 
-    call Grid_getLeafIterator(itor, tiling=.FALSE.)
-    if (needEos) then
+    if (needEos .AND. needConversion) then
+       call Grid_getLeafIterator(itor, tiling=.FALSE.)
+       do while (itor%is_valid())
+          call itor%blkMetaData(blockDesc)
+
+          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+
+          call Grid_getBlkPtr(blockDesc, solnData)
+          call Eos_guardCells(gcEosMode, solnData, corners=.true., &
+                              layers=returnLayers)
+          call Grid_releaseBlkPtr(blockDesc, solnData)
+
+          call itor%next()
+       end do
+       call Grid_releaseLeafIterator(itor)
+    else if (needEos .AND. (.NOT. needConversion)) then
+       call Grid_getLeafIterator(itor, tiling=.FALSE.)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
 
@@ -333,8 +356,18 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
           call itor%next()
        end do
+       call Grid_releaseLeafIterator(itor)
+    else if (needConversion) then
+       call Grid_getLeafIterator(itor, tiling=.FALSE.)
+       do while (itor%is_valid())
+          call itor%blkMetaData(blockDesc)
+
+          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+
+          call itor%next()
+       end do
+       call Grid_releaseLeafIterator(itor)
     end if
-    call Grid_releaseLeafIterator(itor)
   end if   ! End CENTER or CENTER_FACES
 
 #if NFACE_VARS > 0

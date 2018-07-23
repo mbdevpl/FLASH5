@@ -4,7 +4,16 @@
 !!  gr_averageDownLevels
 !!
 !! SYNOPSIS
-!!  call gr_averageDownLevels(integer(IN) :: gridDataStruct)
+!!  call gr_averageDownLevels(integer(IN) :: gridDataStruct, 
+!!                            logical(IN) :: convertPtoC,
+!!                            logical(IN) :: convertCtoP)
+!!
+!!  For each leaf block, average the leaf data associated with the given grid
+!!  data structure type down to all anscestor blocks.
+!!
+!!  For performance reasons, this routine does not make any assumptions about
+!!  whether the data is presently in primitive or conservative form.  Nor does
+!!  it make assumptions about which form it should be left.
 !!
 !! DESCRIPTION 
 !!
@@ -17,32 +26,44 @@
 !!                     FACEZ              Z face-centered data only
 !!                     FACES              All face-centered data only
 !!                     CENTER_FACES       cell-centered and all face-centered
+!! convertPtoC - if this value is true, then all primitive form quantities on 
+!!               all leaf blocks will be converted to conservative form before 
+!!               averaging.
+!! convertCtoP - if this value is true, then all primitive form quantities will
+!!               be reverted back to primitive form after averaging.
 !!  
 !!***
-
-#ifdef DEBUG_ALL
-#define DEBUG_GRID
-#endif
 
 #include "Flash.h"
 #include "constants.h"
 
-subroutine gr_averageDownLevels(gridDataStruct)
-    use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
-                                          amrex_geom, &
-                                          amrex_ref_ratio
-    use amrex_multifabutil_module, ONLY : amrex_average_down
+subroutine gr_averageDownLevels(gridDataStruct, convertPtoC, convertCtoP)
+  use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
+                                        amrex_geom, &
+                                        amrex_ref_ratio
+  use amrex_multifabutil_module, ONLY : amrex_average_down
 
-    use gr_physicalMultifabs,      ONLY : unk, &
-                                          facevarx, facevary, facevarz
-    use Driver_interface,          ONLY : Driver_abortFlash
+  use gr_interface,              ONLY : gr_getBlkIterator, &
+                                        gr_releaseBlkIterator
+  use gr_amrexInterface,         ONLY : gr_primitiveToConserve, &
+                                        gr_conserveToPrimitive
+  use gr_iterator,               ONLY : gr_iterator_t
+  use block_metadata,            ONLY : block_metadata_t
+  use gr_physicalMultifabs,      ONLY : unk, &
+                                        facevarx, facevary, facevarz
+  use Driver_interface,          ONLY : Driver_abortFlash
 
-    implicit none
+  implicit none
 
-    integer, intent(IN) :: gridDataStruct
+  integer, intent(IN) :: gridDataStruct
+  logical, intent(IN) :: convertPtoC
+  logical, intent(IN) :: convertCtoP
 
-    integer :: lev
-    integer :: finest_level
+  integer :: lev
+  integer :: finest_level
+
+  type(gr_iterator_t)    :: itor
+  type(block_metadata_t) :: blockDesc
 
   if (       (gridDataStruct /= CENTER) .AND. (gridDataStruct /= CENTER_FACES) &
        .AND. (gridDataStruct /= FACES)  .AND. (gridDataStruct /= FACEX) &
@@ -51,17 +72,26 @@ subroutine gr_averageDownLevels(gridDataStruct)
      call Driver_abortFlash("[gr_averageDownLevels]: Unsupported gridDataStruct")
   end if
 
-    ! Work in AMReX 0-based level indexing
-    finest_level = amrex_get_finest_level()
+  ! Work in AMReX 0-based level indexing
+  finest_level = amrex_get_finest_level()
 
   !!!!! CELL-CENTERED DATA
   if ((gridDataStruct == CENTER) .OR. (gridDataStruct == CENTER_FACES)) then
+
+    ! Convert primitive form to conservative form on leaves only as
+    ! averaging will propagate conservative form down to ancestors
+    if (convertPtoC) then
+      call gr_getBlkIterator(itor, LEAF)
+      do while (itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+        call gr_primitiveToConserve(blockDesc)
+        call itor%next()
+      end do
+      call gr_releaseBlkIterator(itor)
+    end if
+
+    ! Average from finest down to coarsest
     do lev = finest_level, 1, -1
-#ifdef DEBUG_GRID
-        write(*,'(A,A,I2,A,I2)') "[gr_averageDownLevels]", &
-                                 "               Cell-centered from ", &
-                                 lev+1, " down to ", lev
-#endif
         call amrex_average_down(unk(lev  ), &
                                 unk(lev-1), &
                                 amrex_geom(lev  ), &
@@ -69,6 +99,18 @@ subroutine gr_averageDownLevels(gridDataStruct)
                                 UNK_VARS_BEGIN, NUNK_VARS, &
                                 amrex_ref_ratio(lev-1))
     end do 
+
+    ! Revert conservative form back to primitive form on all blocks
+    if (convertCtoP) then
+      call gr_getBlkIterator(itor)
+      do while (itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+        call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+        call itor%next()
+      end do
+      call gr_releaseBlkIterator(itor)
+    end if
+
   end if
 
 #if NFACE_VARS > 0
