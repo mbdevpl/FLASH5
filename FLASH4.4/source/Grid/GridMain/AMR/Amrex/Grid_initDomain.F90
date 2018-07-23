@@ -14,8 +14,8 @@
 !!
 !!  User-defined refinement critera is applied to determine the 
 !!  blocks that require refinement.  All new child blocks are filled
-!!  with the initial conditions, EoS is run on interior, and guardcells are
-!!  filled for cell-centered variables.
+!!  with the initial conditions, guardells are filled for cell-centered
+!!  variables, and EoS is run on interiors and guardcells.
 !!
 !!  In simulations with particles, under certain conditions particle
 !!  positions will also be initialized.  Currently this is the case
@@ -49,8 +49,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
                                    Grid_releaseLeafIterator, &
                                    Grid_getBlkPtr, &
                                    Grid_releaseBlkPtr
-  use Grid_data,            ONLY : gr_doFluxCorrection, &
-                                   gr_eosModeInit
+  use Grid_data,            ONLY : gr_doFluxCorrection
   use gr_amrexInterface,    ONLY : gr_conserveToPrimitive
   use gr_physicalMultifabs, ONLY : unk, &
                                    gr_scratchCtr, &
@@ -111,29 +110,10 @@ subroutine Grid_initDomain(restart,particlesInitialized)
 
   ! DEV: TODO Implement parameters
   if (.NOT. restart) then
-    !  This creates all refinement levels needed based on ICs and fills GC.
+    !  This creates all refinement levels needed based on ICs,
+    !  runs EoS on interiors, fills GCs, and runs EoS on GCs.
     !  All this is done through the callback functions.
     call amrex_init_from_scratch(T_INIT)
-
-    ! Simulation_initBlock may write data in primitive form.  In this case,
-    ! the initNewLevel callback converts the data immediately to conserved form
-    ! as GC filling is called when checking for refinement during init.
-    !
-    ! Set all leaf data back to primitive form as needed & run EoS on leaves
-    call Grid_getLeafIterator(itor, tiling=.FALSE.)
-    do while (itor%is_valid())
-       call itor%blkMetaData(block)
-
-       call gr_conserveToPrimitive(block, allCells=.TRUE.)
-
-       call Grid_getBlkPtr(block, initData, CENTER)
-       call Eos_wrapped(gr_eosModeInit, block%limitsGC, initData)
-       call Grid_releaseBlkPtr(block, initData, CENTER)
-
-       call itor%next()
-    end do
-    call Grid_releaseLeafIterator(itor)
-
   else 
     call Driver_abortFlash("[Grid_initDomain] restarts not yet implemented")
   end if
