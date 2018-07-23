@@ -50,7 +50,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
                                    Grid_getBlkPtr, &
                                    Grid_releaseBlkPtr
   use Grid_data,            ONLY : gr_doFluxCorrection
-  use gr_amrexInterface,    ONLY : gr_conserveToPrimitive
   use gr_physicalMultifabs, ONLY : unk, &
                                    gr_scratchCtr, &
                                    facevarx, facevary, facevarz, &

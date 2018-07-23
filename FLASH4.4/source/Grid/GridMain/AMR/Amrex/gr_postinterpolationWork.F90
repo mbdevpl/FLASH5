@@ -99,9 +99,7 @@ subroutine gr_postinterpolationWork(lo, hi, &
 
   integer :: i, j, k, var
    
-   ! DEV FIXME: This is termporarily commented out so that we can test
-   ! conservation as these hooks are phased in
-!  if (.NOT. gr_convertToConsvdInMeshInterp)    RETURN
+  if (.NOT. gr_convertToConsvdInMeshInterp)    RETURN
 
 #ifdef DENS_VAR
   if (gr_vartypes(DENS_VAR) == VARTYPE_PER_MASS) then

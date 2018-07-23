@@ -287,9 +287,14 @@ subroutine Grid_init()
                              gr_convertToConsvdForMeshCalls)
   call RuntimeParameters_get("convertToConsvdInMeshInterp", &
                              gr_convertToConsvdInMeshInterp)
-  if (gr_convertToConsvdInMeshInterp .AND. gr_convertToConsvdForMeshCalls) then
-     call Driver_abortFlash("[Grid_init] convertToConsvdForMeshCalls and " // &
-                         "convertToConsvdInMeshInterp simultaneously enabled")
+  if (gr_convertToConsvdForMeshCalls) then
+    print*,'WARNING: convertToConsvdForMeshCalls not implemented for AMReX.'
+    print*,'         Using convertToConsvdInMeshInterp instead.'
+    call Logfile_stampMessage( &
+           'WARNING: convertToConsvdForMeshCalls not implemented for AMReX.' // &
+           '         Using convertToConsvdInMeshInterp instead.')
+    gr_convertToConsvdInMeshInterp = .TRUE.
+    gr_convertToConsvdForMeshCalls = .FALSE.
   end if
 
   call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
