@@ -21,7 +21,8 @@
 !!  represented in primitive/mass-specific form (e.g., velocity) from the 
 !!  corresponding conservative form (i.e., momentum density) back to the normal
 !!  primitive form.  Conversion is achieved by dividing the conservative form by
-!!  the density.  Note that for proper functioning, DENS_VAR must *not* be 
+!!  the density.  Calling functions must ensure that the density in non-zero
+!!  everywhere.  Note that for proper functioning, DENS_VAR must *not* be 
 !!  marked as PER_MASS.  If density is note a physical quantity for a
 !!  simulation, then this conversion is not done.
 !!
@@ -32,11 +33,6 @@
 !!  This routine does not check if this conversion is enabled by runtime 
 !!  parameters.  Rather, the calling routine must know that this conversion
 !!  is necessary and desired.
-!!
-!!  Interpolation might lead to non-physical data values.  Before converting, 
-!!  all density values less than the runtime parameter smlrho are set to smlrho.
-!!  After conversion, the lower cutoff smalle runtime parameter is similarly
-!!  applied to EINT_VAR and ENER_VAR if these are quantities in the simulation.
 !!
 !! ARGUMENTS
 !!  lo/hi - the lower and upper corners that define the region of cells
@@ -91,17 +87,12 @@ subroutine gr_conserveToPrimitive(lo, hi, &
     call Driver_abortFlash('[gr_conserveToPrimitive] density is PER_MASS')
   end if
 
-  ! DEV: FIXME This routine does not know that interpolation has been run.
-  !            The routines that invoke interpolation should clean the data
-  !            in this way *before* calling this routine.
-  ! Zero density values are considered as errors during the
-  ! pre-interpolation phase.  Therefore, zero density here, which
-  ! is considered to be non-physical, is the result of interpolation.
-  ! Hence, we correct before converting to primitive form.
   do     k = lo(KAXIS), hi(KAXIS) 
     do   j = lo(JAXIS), hi(JAXIS) 
       do i = lo(IAXIS), hi(IAXIS)
-        d(i,j,k,DENS_VAR) = max(d(i,j,k,DENS_VAR), gr_smallrho)
+        if (d(i,j,k,DENS_VAR) == 0.0) then
+          call Driver_abortFlash("[gr_conserveToPrimitive] Density is zero")
+        end if
       end do
     end do
   end do
@@ -116,29 +107,6 @@ subroutine gr_conserveToPrimitive(lo, hi, &
         end do
       end do
     end if
-  end do
-#endif
-
-#ifdef ENER_VAR               
-  ! Zero energy is unphysical for FLASH simulations.  It is assumed that physics
-  ! units correct for unacceptable values before initiating interpolation.  
-  ! Therefore, incorrect values here must arise from interpolation.
-  do     k = lo(KAXIS), hi(KAXIS) 
-    do   j = lo(JAXIS), hi(JAXIS) 
-      do i = lo(IAXIS), hi(IAXIS)
-        d(i,j,k,ENER_VAR) = max(d(i,j,k,ENER_VAR), gr_smalle)
-      end do
-    end do
-  end do
-#endif
-#ifdef EINT_VAR
-  ! See comment in ENER_VAR pre-processor block
-  do     k = lo(KAXIS), hi(KAXIS) 
-    do   j = lo(JAXIS), hi(JAXIS) 
-      do i = lo(IAXIS), hi(IAXIS)
-        d(i,j,k,EINT_VAR) = max(d(i,j,k,EINT_VAR), gr_smalle)
-      end do
-    end do
   end do
 #endif
 

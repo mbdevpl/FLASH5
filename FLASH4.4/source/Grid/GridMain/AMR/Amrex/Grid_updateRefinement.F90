@@ -76,11 +76,15 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                         gr_numRefineVars, &
                                         gr_eosMode, &
                                         gr_convertToConsvdInMeshInterp, &
+                                        gr_smallrho, &
+                                        gr_smalle, &
                                         gr_amrexDidRefinement, &
                                         lo_bc_amrex, hi_bc_amrex
   use gr_interface,              ONLY : gr_getBlkIterator, &
                                         gr_releaseBlkIterator
   use gr_amrexInterface,         ONLY : gr_conserveToPrimitive, &
+                                        gr_cleanDensityData, &
+                                        gr_cleanEnergyData, &
                                         gr_fillPhysicalBC, &
                                         gr_restrictAllLevels
   use gr_physicalMultifabs,      ONLY : unk
@@ -176,8 +180,9 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                        lo_bc_amrex, hi_bc_amrex)
      end do
 
-     ! Revert to primitive form if needed and run EoS on all interiors/GC
-     ! to get best possible refinement
+     ! Clean data to account for possible unphysical values caused by
+     ! interpolation, revert to primitive form if needed, and
+     ! run EoS on all interiors/GC to get best possible refinement
      ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
      ! influence refinement decisions.  If no, then we need only apply EoS to
      ! parent blocks.
@@ -188,6 +193,13 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
           call itor%blkMetaData(blockDesc)
           call Grid_getBlkPtr(blockDesc, solnData, CENTER)
 
+          call gr_cleanDensityData(gr_smallrho, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   solnData, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   NUNK_VARS)
           call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
                                       blockDesc%limitsGC(HIGH, :), &
                                       solnData, &
@@ -195,6 +207,13 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                       blockDesc%limitsGC(HIGH, :), &
                                       NUNK_VARS, &
                                       UNK_VARS_BEGIN, NUNK_VARS)
+          call gr_cleanEnergyData(gr_smalle, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  solnData, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  NUNK_VARS)
 
           call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
  
@@ -207,6 +226,21 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
           call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
+          call gr_cleanDensityData(gr_smallrho, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   solnData, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   NUNK_VARS)
+          call gr_cleanEnergyData(gr_smalle, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  solnData, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  NUNK_VARS)
 
           call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
 

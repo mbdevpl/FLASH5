@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/AMR/Amrex/gr_postinterpolationWork
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_cleanDensityData
 !!
 !! NAME
 !!  gr_postinterpolationWork
@@ -26,12 +26,8 @@
 !!  that was used to perform the interpolation and on the data that was
 !!  set via interpolation.
 !!
-!!  This routine performs conservative-to-primitive form conversion.
-!!
-!!  Interpolation might lead to non-physical data values.  Before converting, 
-!!  all density values less than the runtime parameter smlrho are set to smlrho.
-!!  After conversion, the lower cutoff smalle runtime parameter is similarly
-!!  applied to EINT_VAR and ENER_VAR if these are quantities in the simulation.
+!!  This routine performs conservative-to-primitive form conversions.  Refer to
+!!  the documentation for gr_conserveToPrimitive for more information.
 !!
 !!  For the GC fill, this routine allows for transforming conservative form data
 !!  back to primitive form on the interior cells of a coarse block at a 
@@ -60,54 +56,48 @@
 !!
 !! SEE ALSO
 !!  gr_conserveToPrimitive
-!!  gr_cleanDensityData
-!!  gr_cleanEnergyData
 !!  gr_preinterpolationWork
 !!
 !!***
 
+#include "Flash.h"
 #include "constants.h"
 
-subroutine gr_postinterpolationWork(lo, hi, &
-                                    d, dlo, dhi, nd, &
-                                    scomp, ncomp) bind(c)
-  use iso_c_binding,     ONLY : c_int
-
-  use amrex_fort_module, ONLY : wp => amrex_real
-  
-  use Grid_data,         ONLY : gr_convertToConsvdInMeshInterp, &
-                                gr_smallrho, &
-                                gr_smalle
-  use gr_amrexInterface, ONLY : gr_conserveToPrimitive
+subroutine gr_cleanEnergyData(smallE, &
+                              lo, hi, &
+                              d, dlo, dhi, nd)
 
   implicit none
   
-  integer(c_int), intent(in)          :: lo(MDIM), hi(MDIM)
-  integer(c_int), intent(in)          :: dlo(MDIM), dhi(MDIM)
-  integer(c_int), intent(in),   value :: nd
-  integer(c_int), intent(in),   value :: scomp
-  integer(c_int), intent(in),   value :: ncomp
-  real(wp),       intent(inout)       :: d(dlo(IAXIS):dhi(IAXIS), &
-                                           dlo(JAXIS):dhi(JAXIS), &
-                                           dlo(KAXIS):dhi(KAXIS), &
-                                           nd)
+  real,    intent(in)    :: smallE
+  integer, intent(in)    :: lo(MDIM), hi(MDIM)
+  integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
+  integer, intent(in)    :: nd
+  real,    intent(inout) :: d(dlo(IAXIS):dhi(IAXIS), &
+                              dlo(JAXIS):dhi(JAXIS), &
+                              dlo(KAXIS):dhi(KAXIS), &
+                              nd)
 
-  ! Zero density values are considered as errors during the
-  ! pre-interpolation phase.  Therefore, zero density here, which
-  ! is considered to be non-physical, is the result of interpolation.
-  ! Hence, we correct before converting to primitive form.
-  call gr_cleanDensityData(gr_smallrho, lo, hi, d, dlo, dhi, nd)
+  integer :: i, j, k
 
-  if (gr_convertToConsvdInMeshInterp) then
-    call gr_conserveToPrimitive(lo, hi, d, dlo, dhi, nd, scomp, ncomp)
-  end if
+#ifdef ENER_VAR               
+  do     k = lo(KAXIS), hi(KAXIS) 
+    do   j = lo(JAXIS), hi(JAXIS) 
+      do i = lo(IAXIS), hi(IAXIS)
+        d(i,j,k,ENER_VAR) = max(d(i,j,k,ENER_VAR), smallE)
+      end do
+    end do
+  end do
+#endif
+#ifdef EINT_VAR
+  do     k = lo(KAXIS), hi(KAXIS) 
+    do   j = lo(JAXIS), hi(JAXIS) 
+      do i = lo(IAXIS), hi(IAXIS)
+        d(i,j,k,EINT_VAR) = max(d(i,j,k,EINT_VAR), smallE)
+      end do
+    end do
+  end do
+#endif
 
-  ! Zero energy is unphysical for FLASH simulations.  It is assumed that physics
-  ! units correct for unacceptable values before initiating interpolation.  
-  ! Therefore, incorrect values here must arise from interpolation.  Hence,
-  ! we clean these once after they have been potentiall reverted to primitive
-  ! form
-  call gr_cleanEnergyData(gr_smalle, lo, hi, d, dlo, dhi, nd)
-
-end subroutine gr_postinterpolationWork 
+end subroutine gr_cleanEnergyData
 

@@ -201,6 +201,38 @@ module gr_amrexInterface
   end interface
  
   interface
+    subroutine gr_cleanDensityData(smallRho, &
+                                   lo, hi, &
+                                   d, dlo, dhi, nd)
+      implicit none
+      real,    intent(in)    :: smallRho
+      integer, intent(in)    :: lo(MDIM), hi(MDIM)
+      integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
+      integer, intent(in)    :: nd
+      real,    intent(inout) :: d(dlo(IAXIS):dhi(IAXIS), &
+                                  dlo(JAXIS):dhi(JAXIS), &
+                                  dlo(KAXIS):dhi(KAXIS), &
+                                  nd)
+    end subroutine gr_cleanDensityData
+  end interface
+
+  interface
+    subroutine gr_cleanEnergyData(smallE, &
+                                   lo, hi, &
+                                   d, dlo, dhi, nd)
+      implicit none
+      real,    intent(in)    :: smallE
+      integer, intent(in)    :: lo(MDIM), hi(MDIM)
+      integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
+      integer, intent(in)    :: nd
+      real,    intent(inout) :: d(dlo(IAXIS):dhi(IAXIS), &
+                                  dlo(JAXIS):dhi(JAXIS), &
+                                  dlo(KAXIS):dhi(KAXIS), &
+                                  nd)
+    end subroutine gr_cleanEnergyData
+  end interface
+
+  interface
     subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
       implicit none
       integer, intent(IN) :: gridDataStruct

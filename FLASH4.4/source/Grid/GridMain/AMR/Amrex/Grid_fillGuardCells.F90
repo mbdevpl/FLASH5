@@ -98,6 +98,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         gr_eosMode, &
                                         gr_enableMaskedGCFill, &
                                         gr_convertToConsvdInMeshInterp, &
+                                        gr_smallrho, &
+                                        gr_smalle, &
                                         gr_meshMe, gr_meshComm, &
                                         gr_gcellsUpToDate, &
                                         lo_bc_amrex, hi_bc_amrex
@@ -110,7 +112,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_fillPhysicalFaceBC, &
                                         gr_restrictAllLevels, &
-                                        gr_conserveToPrimitive
+                                        gr_conserveToPrimitive, &
+                                        gr_cleanDensityData, &
+                                        gr_cleanEnergyData
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
                                         gr_setMasks_gen, &
                                         gr_makeMaskConsistent_gen
@@ -320,7 +324,10 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                       lo_bc_amrex, hi_bc_amrex)
     end do
 
-    !!!!! Run EoS if needed and convert back to primitive form
+    !!!!! FINALIZE CELL-CENTERED DATA
+    ! Clean data to account for possible unphysical values caused by
+    ! interpolation, revert to primitive form if needed, and
+    ! run EoS if needed
     call Timers_start("eos gc")
 
     if (present(doEos)) then
@@ -329,12 +336,19 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
        needEos = .FALSE.
     end if
 
+    call Grid_getLeafIterator(itor, tiling=.FALSE.)
     if (needEos .AND. needConversion) then
-       call Grid_getLeafIterator(itor, tiling=.FALSE.)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
           call Grid_getBlkPtr(blockDesc, solnData)
 
+          call gr_cleanDensityData(gr_smallrho, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   solnData, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   NUNK_VARS)
           call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
                                       blockDesc%limitsGC(HIGH, :), &
                                       solnData, &
@@ -342,20 +356,39 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                       blockDesc%limitsGC(HIGH, :), &
                                       NUNK_VARS, &
                                       UNK_VARS_BEGIN, NUNK_VARS)
+          call gr_cleanEnergyData(gr_smalle, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  solnData, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  NUNK_VARS)
 
           call Eos_guardCells(gcEosMode, solnData, corners=.true., &
                               layers=returnLayers)
 
           call Grid_releaseBlkPtr(blockDesc, solnData)
-
           call itor%next()
        end do
-       call Grid_releaseLeafIterator(itor)
     else if (needEos .AND. (.NOT. needConversion)) then
-       call Grid_getLeafIterator(itor, tiling=.FALSE.)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
           call Grid_getBlkPtr(blockDesc, solnData)
+
+          call gr_cleanDensityData(gr_smallrho, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   solnData, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   NUNK_VARS)
+          call gr_cleanEnergyData(gr_smalle, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  solnData, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  NUNK_VARS)
 
           call Eos_guardCells(gcEosMode, solnData, corners=.true., &
                               layers=returnLayers)
@@ -363,13 +396,18 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
           call Grid_releaseBlkPtr(blockDesc, solnData)
           call itor%next()
        end do
-       call Grid_releaseLeafIterator(itor)
     else if (needConversion) then
-       call Grid_getLeafIterator(itor, tiling=.FALSE.)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
           call Grid_getBlkPtr(blockDesc, solnData)
 
+          call gr_cleanDensityData(gr_smallrho, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   solnData, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   NUNK_VARS)
           call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
                                       blockDesc%limitsGC(HIGH, :), &
                                       solnData, &
@@ -377,12 +415,42 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                       blockDesc%limitsGC(HIGH, :), &
                                       NUNK_VARS, &
                                       UNK_VARS_BEGIN, NUNK_VARS)
+          call gr_cleanEnergyData(gr_smalle, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  solnData, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  NUNK_VARS)
 
           call Grid_releaseBlkPtr(blockDesc, solnData)
           call itor%next()
        end do
-       call Grid_releaseLeafIterator(itor)
+    else
+       do while (itor%is_valid())
+          call itor%blkMetaData(blockDesc)
+          call Grid_getBlkPtr(blockDesc, solnData)
+
+          call gr_cleanDensityData(gr_smallrho, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   solnData, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   NUNK_VARS)
+          call gr_cleanEnergyData(gr_smalle, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  solnData, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  NUNK_VARS)
+
+          call Grid_releaseBlkPtr(blockDesc, solnData)
+          call itor%next()
+       end do
     end if
+    call Grid_releaseLeafIterator(itor)
   end if   ! End CENTER or CENTER_FACES
 
 #if NFACE_VARS > 0
@@ -515,4 +583,3 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 #endif
 
 end subroutine Grid_fillGuardCells
-

@@ -10,6 +10,8 @@ Grid += gr_amrexInterface.o \
         gr_postinterpolationWork.o \
         gr_conserveToPrimitive.o \
         gr_primitiveToConserve.o \
+        gr_cleanDensityData.o \
+        gr_cleanEnergyData.o \
         gr_fillPhysicalBC.o \
         gr_fillPhysicalFaceBC.o \
         gr_getFinestLevel.o \
