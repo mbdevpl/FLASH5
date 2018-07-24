@@ -33,7 +33,7 @@
 !!  density is never zero in any cell.
 !!
 !!  This routine does not check if this conversion is enabled by runtime 
-!!  parameters.  Rather, the calling could must know that this conversion
+!!  parameters.  Rather, the calling routine must know that this conversion
 !!  is necessary and desired.
 !!
 !! ARGUMENTS

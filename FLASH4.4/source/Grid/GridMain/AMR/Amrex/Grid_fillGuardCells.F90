@@ -333,12 +333,19 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
        call Grid_getLeafIterator(itor, tiling=.FALSE.)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
-
-          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
-
           call Grid_getBlkPtr(blockDesc, solnData)
+
+          call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
+                                      blockDesc%limitsGC(HIGH, :), &
+                                      solnData, &
+                                      blockDesc%limitsGC(LOW,  :), &
+                                      blockDesc%limitsGC(HIGH, :), &
+                                      NUNK_VARS, &
+                                      UNK_VARS_BEGIN, NUNK_VARS)
+
           call Eos_guardCells(gcEosMode, solnData, corners=.true., &
                               layers=returnLayers)
+
           call Grid_releaseBlkPtr(blockDesc, solnData)
 
           call itor%next()
@@ -348,12 +355,12 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
        call Grid_getLeafIterator(itor, tiling=.FALSE.)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
-
           call Grid_getBlkPtr(blockDesc, solnData)
+
           call Eos_guardCells(gcEosMode, solnData, corners=.true., &
                               layers=returnLayers)
-          call Grid_releaseBlkPtr(blockDesc, solnData)
 
+          call Grid_releaseBlkPtr(blockDesc, solnData)
           call itor%next()
        end do
        call Grid_releaseLeafIterator(itor)
@@ -361,9 +368,17 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
        call Grid_getLeafIterator(itor, tiling=.FALSE.)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
+          call Grid_getBlkPtr(blockDesc, solnData)
 
-          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+          call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
+                                      blockDesc%limitsGC(HIGH, :), &
+                                      solnData, &
+                                      blockDesc%limitsGC(LOW,  :), &
+                                      blockDesc%limitsGC(HIGH, :), &
+                                      NUNK_VARS, &
+                                      UNK_VARS_BEGIN, NUNK_VARS)
 
+          call Grid_releaseBlkPtr(blockDesc, solnData)
           call itor%next()
        end do
        call Grid_releaseLeafIterator(itor)

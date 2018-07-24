@@ -15,7 +15,7 @@
 !!
 !! DESCRIPTION
 !!  This is a callback routine that is passed to the AMReX fill patch
-!!  routines that may carry out interpolation as part of their data 
+!!  routines, which may carry out interpolation as part of their data 
 !!  movement actions.
 !!
 !!  AMReX calls this routine just before carrying out interpolation so that
@@ -24,6 +24,14 @@
 !!  the data only when necessary, rather than altering *all* data before
 !!  calling a routine that *might* perform interpolation.
 !!
+!!  This routine performs primitive-to-conservative form conversions.  Refer to
+!!  the documentation for gr_primitiveToConserve for more information.  The
+!!  gr_postinterpolationWork routine works in conjunction with this routine to
+!!  revert data back to primitive form.  To accomplish this, it is
+!!  required that the density data be non-zero.  Therefore, this routine
+!!  requires that all physics units that initiate interpolation must first
+!!  ensure that all density data is non-zero.
+!!
 !!  For the GC fill, this routine allows for transforming primitive form data
 !!  to conservative form on the interior cells of a coarse block at a 
 !!  fine/coarse boundary.
@@ -31,12 +39,6 @@
 !!  When creating a new leaf block, this routine allows for transforming 
 !!  primitive form data to conservative form on the interior and guardcells
 !!  of the parent block. 
-!!
-!!  This routine and its post-interpolation partner together perform
-!!  primitive-to-conservative and conservative-to-primitive form conversions.
-!!  To accomplish the latter, it is required that the density data be
-!!  non-zero.  Therefore, this routine requires that all physics units that 
-!!  initiate interpolation must first ensure that all density data is non-zero.
 !!
 !!  This routine should never be called directly within FLASH.
 !!
@@ -54,11 +56,8 @@
 !!  d - the data array for the box that requires interpolation
 !!
 !! SEE ALSO
+!!  gr_primitiveToConserve
 !!  gr_postinterpolationWork
-!!  Grid_fillGuardcells
-!!  Grid_updateRefinement
-!!  gr_makeFineLevelFromCoarseCallback
-!!  gr_remakeLevelCallback
 !!
 !!***
 

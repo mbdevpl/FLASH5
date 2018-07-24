@@ -186,13 +186,19 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
        call gr_getBlkIterator(itor)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
-
-          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
-
           call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
+          call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
+                                      blockDesc%limitsGC(HIGH, :), &
+                                      solnData, &
+                                      blockDesc%limitsGC(LOW,  :), &
+                                      blockDesc%limitsGC(HIGH, :), &
+                                      NUNK_VARS, &
+                                      UNK_VARS_BEGIN, NUNK_VARS)
+
           call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
+ 
           call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
-    
           call itor%next()
        end do
        call gr_releaseBlkIterator(itor)
@@ -200,11 +206,11 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
        call gr_getBlkIterator(itor)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
-
           call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
           call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
+
           call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
-    
           call itor%next()
        end do
        call gr_releaseBlkIterator(itor)

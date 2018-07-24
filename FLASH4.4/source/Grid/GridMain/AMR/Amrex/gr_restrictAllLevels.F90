@@ -67,8 +67,6 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
   type(block_metadata_t) :: blockDesc
 
   real,   pointer :: solnData(:,:,:,:) => null()
-  integer         :: dlo(1:MDIM+1)
-  integer         :: dhi(1:MDIM+1)
 
   if (       (gridDataStruct /= CENTER) .AND. (gridDataStruct /= CENTER_FACES) &
        .AND. (gridDataStruct /= FACES)  .AND. (gridDataStruct /= FACEX) &
@@ -90,13 +88,13 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
       do while (itor%is_valid())
         call itor%blkMetaData(blockDesc)
         call Grid_getBlkPtr(blockDesc, solnData, CENTER)
-
-        dlo = lbound(solnData)
-        dhi = ubound(solnData)
+        
         call gr_primitiveToConserve(blockDesc%limitsGC(LOW,  :), &
                                     blockDesc%limitsGC(HIGH, :), &
                                     solnData, &
-                                    dlo(1:MDIM), dhi(1:MDIM), NUNK_VARS, &
+                                    blockDesc%limitsGC(LOW,  :), &
+                                    blockDesc%limitsGC(HIGH, :), &
+                                    NUNK_VARS, &
                                     UNK_VARS_BEGIN, NUNK_VARS)
 
         call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
@@ -120,7 +118,17 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
       call gr_getBlkIterator(itor)
       do while (itor%is_valid())
         call itor%blkMetaData(blockDesc)
-        call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
+        call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
+        call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
+                                    blockDesc%limitsGC(HIGH, :), &
+                                    solnData, &
+                                    blockDesc%limitsGC(LOW,  :), &
+                                    blockDesc%limitsGC(HIGH, :), &
+                                    NUNK_VARS, &
+                                    UNK_VARS_BEGIN, NUNK_VARS)
+
+        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
         call itor%next()
       end do
       call gr_releaseBlkIterator(itor)
