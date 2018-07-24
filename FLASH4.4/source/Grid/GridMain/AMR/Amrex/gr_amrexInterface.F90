@@ -184,12 +184,12 @@ module gr_amrexInterface
   end interface
  
   interface
-    subroutine gr_averageDownLevels(gridDataStruct, convertPtoC, convertCtoP)
+    subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
       implicit none
       integer, intent(IN) :: gridDataStruct
       logical, intent(IN) :: convertPtoC
       logical, intent(IN) :: convertCtoP
-    end subroutine gr_averageDownLevels
+    end subroutine gr_restrictAllLevels
   end interface
  
   interface

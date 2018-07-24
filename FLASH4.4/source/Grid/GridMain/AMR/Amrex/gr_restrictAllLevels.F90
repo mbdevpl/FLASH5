@@ -1,10 +1,10 @@
-!!****if* source/Grid/GridMain/AMR/Amrex/gr_averageDownLevels
+!!****if* source/Grid/GridMain/AMR/Amrex/gr_restrictAllLevels
 !!
 !! NAME
-!!  gr_averageDownLevels
+!!  gr_restrictAllLevels
 !!
 !! SYNOPSIS
-!!  call gr_averageDownLevels(integer(IN) :: gridDataStruct, 
+!!  call gr_restrictAllLevels(integer(IN) :: gridDataStruct, 
 !!                            logical(IN) :: convertPtoC,
 !!                            logical(IN) :: convertCtoP)
 !!
@@ -37,7 +37,7 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine gr_averageDownLevels(gridDataStruct, convertPtoC, convertCtoP)
+subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
   use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
                                         amrex_geom, &
                                         amrex_ref_ratio
@@ -69,7 +69,7 @@ subroutine gr_averageDownLevels(gridDataStruct, convertPtoC, convertCtoP)
        .AND. (gridDataStruct /= FACES)  .AND. (gridDataStruct /= FACEX) &
        .AND. (gridDataStruct /= FACEY)  .AND. (gridDataStruct /= FACEZ)) then
      write(*,*) "Unsupported gridDataStruct ", gridDataStruct 
-     call Driver_abortFlash("[gr_averageDownLevels]: Unsupported gridDataStruct")
+     call Driver_abortFlash("[gr_restrictAllLevels]: Unsupported gridDataStruct")
   end if
 
   ! Work in AMReX 0-based level indexing
@@ -155,9 +155,9 @@ subroutine gr_averageDownLevels(gridDataStruct, convertPtoC, convertCtoP)
 #else
   if (     (gridDataStruct == FACES) .OR. (gridDataStruct == FACEX) &
       .OR. (gridDataStruct == FACEY) .OR. (gridDataStruct == FACEZ)) then
-    call Driver_abortFlash("[gr_averageDownLevels] No face data to work with")
+    call Driver_abortFlash("[gr_restrictAllLevels] No face data to work with")
   end if
 #endif
 
-end subroutine gr_averageDownLevels
+end subroutine gr_restrictAllLevels
 

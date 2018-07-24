@@ -20,11 +20,11 @@
 #include "constants.h"
 
 subroutine Grid_restrictAllLevels()
-    use gr_amrexInterface, ONLY : gr_averageDownLevels
+    use gr_amrexInterface, ONLY : gr_restrictAllLevels
 
     implicit none
 
-    call gr_averageDownLevels(CENTER, convertPtoC=.TRUE., &
+    call gr_restrictAllLevels(CENTER, convertPtoC=.TRUE., &
                                       convertCtoP=.TRUE.) 
 end subroutine Grid_restrictAllLevels
 

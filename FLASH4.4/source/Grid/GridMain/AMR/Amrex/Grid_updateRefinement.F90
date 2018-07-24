@@ -82,7 +82,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                         gr_releaseBlkIterator
   use gr_amrexInterface,         ONLY : gr_conserveToPrimitive, &
                                         gr_fillPhysicalBC, &
-                                        gr_averageDownLevels
+                                        gr_restrictAllLevels
   use gr_physicalMultifabs,      ONLY : unk
   use gr_iterator,               ONLY : gr_iterator_t
   use block_metadata,            ONLY : block_metadata_t
@@ -148,7 +148,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      
      ! Restrict data from leaves to coarser blocks.  Leave in conservative
      ! form as this is potentially needed for interpolation with fillpatch
-     call gr_averageDownLevels(CENTER, convertPtoC=needConversion, &
+     call gr_restrictAllLevels(CENTER, convertPtoC=needConversion, &
                                        convertCtoP=.FALSE.)
 
      !!!!! POPULATE GUARDCELLS IN ALL BLOCKS

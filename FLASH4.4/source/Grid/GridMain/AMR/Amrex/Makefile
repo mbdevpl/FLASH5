@@ -13,7 +13,7 @@ Grid += gr_amrexInterface.o \
         gr_fillPhysicalBC.o \
         gr_fillPhysicalFaceBC.o \
         gr_getFinestLevel.o \
-        gr_averageDownLevels.o \
+        gr_restrictAllLevels.o \
         gr_splitFabAtBoundary.o \
         gr_copyFabInteriorToRegion.o \
         gr_copyGuardcellRegionToFab.o \

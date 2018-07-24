@@ -109,7 +109,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         Logfile_stamp
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
                                         gr_fillPhysicalFaceBC, &
-                                        gr_averageDownLevels, &
+                                        gr_restrictAllLevels, &
                                         gr_conserveToPrimitive
   use gr_interface,              ONLY : gr_setGcFillNLayers, &
                                         gr_setMasks_gen, &
@@ -291,7 +291,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   ! Restrict data from leaves to coarser blocks.  Leave in conservative
   ! form as this is potentially needed for interpolation with fillpatch
-  call gr_averageDownLevels(gridDataStruct, convertPtoC=needConversion, &
+  call gr_restrictAllLevels(gridDataStruct, convertPtoC=needConversion, &
                                             convertCtoP=.FALSE.)
 
   !!!!!----- FILL GUARDCELLS ON ALL BLOCKS, ALL LEVELS

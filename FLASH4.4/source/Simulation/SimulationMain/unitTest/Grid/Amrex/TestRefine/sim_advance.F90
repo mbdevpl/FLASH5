@@ -4,7 +4,7 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
                                      Grid_getLeafIterator, &
                                      Grid_releaseLeafIterator
     use gr_amrexInterface,    ONLY : gr_getFinestLevel, &
-                                     gr_averageDownLevels
+                                     gr_restrictAllLevels
     use leaf_iterator,        ONLY : leaf_iterator_t 
     use block_metadata,       ONLY : block_metadata_t 
     use Driver_interface,     ONLY : Driver_abortFlash
@@ -56,7 +56,7 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
     end do
 
     ! Propogate leaf data to coarse, non-leaf blocks
-    call gr_averageDownLevels(CENTER)
+    call gr_restrictAllLevels(CENTER, convertPtoC=.FALSE., convertCtoP=.FALSE.)
 
     !!!!! REFINE/DEREFINE BASED ON NEW DATA
     write(*,*)
