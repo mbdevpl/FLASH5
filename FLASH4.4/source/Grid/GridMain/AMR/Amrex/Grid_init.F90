@@ -298,6 +298,10 @@ subroutine Grid_init()
   end if
 
   call RuntimeParameters_get("enableMaskedGCFill", gr_enableMaskedGCFill)
+  
+  ! DEV: FIXME Temporarily fix so that sims halt on error.  Allow user
+  ! specified value once this functionality is fully implemented
+  gr_sanitizeDataMode = 4
 !  call RuntimeParameters_get("gr_sanitizeDataMode",  gr_sanitizeDataMode)
 !  call RuntimeParameters_get("gr_sanitizeVerbosity", gr_sanitizeVerbosity)
 

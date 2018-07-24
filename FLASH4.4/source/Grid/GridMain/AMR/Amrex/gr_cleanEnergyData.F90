@@ -66,6 +66,8 @@
 subroutine gr_cleanEnergyData(smallE, &
                               lo, hi, &
                               d, dlo, dhi, nd)
+  use Driver_interface, ONLY : Driver_abortFlash
+  use Grid_data,        ONLY : gr_sanitizeDataMode
 
   implicit none
   
@@ -81,10 +83,21 @@ subroutine gr_cleanEnergyData(smallE, &
   integer :: i, j, k
 
 #ifdef ENER_VAR               
+  ! DEV: TODO Determine how to implement all modes and all levels of 
+  !           verbosity
   do     k = lo(KAXIS), hi(KAXIS) 
     do   j = lo(JAXIS), hi(JAXIS) 
       do i = lo(IAXIS), hi(IAXIS)
-        d(i,j,k,ENER_VAR) = max(d(i,j,k,ENER_VAR), smallE)
+        if (d(i,j,k,ENER_VAR) < smallE) then
+          if      (gr_sanitizeDataMode == 3) then
+            write(*,*) "WARNING: [gr_cleanEnergyData]"
+            write(*,*) "         Total energy data less than smalle"
+            write(*,*) "         Value set to smalle"
+            d(i,j,k,ENER_VAR) = max(d(i,j,k,ENER_VAR), smallE)
+          else if (gr_sanitizeDataMode == 4) then
+            call Driver_abortFlash("[gr_cleanEnergyData] ENER data less than smalle")
+          end if
+        end if
       end do
     end do
   end do
@@ -93,7 +106,16 @@ subroutine gr_cleanEnergyData(smallE, &
   do     k = lo(KAXIS), hi(KAXIS) 
     do   j = lo(JAXIS), hi(JAXIS) 
       do i = lo(IAXIS), hi(IAXIS)
-        d(i,j,k,EINT_VAR) = max(d(i,j,k,EINT_VAR), smallE)
+        if (d(i,j,k,EINT_VAR) < smallE) then
+          if      (gr_sanitizeDataMode == 3) then
+            write(*,*) "WARNING: [gr_cleanEnergyData]"
+            write(*,*) "         Internal energy data less than smalle"
+            write(*,*) "         Value set to smalle"
+            d(i,j,k,EINT_VAR) = max(d(i,j,k,EINT_VAR), smallE)
+          else if (gr_sanitizeDataMode == 4) then
+            call Driver_abortFlash("[gr_cleanEnergyData] EINT data less than smalle")
+          end if
+        end if
       end do
     end do
   end do

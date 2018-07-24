@@ -66,9 +66,11 @@
 subroutine gr_cleanDensityData(smallRho, &
                                lo, hi, &
                                d, dlo, dhi, nd)
+  use Driver_interface, ONLY : Driver_abortFlash
+  use Grid_data,        ONLY : gr_sanitizeDataMode
 
   implicit none
-  
+
   real,    intent(in)    :: smallRho
   integer, intent(in)    :: lo(MDIM), hi(MDIM)
   integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
@@ -77,14 +79,25 @@ subroutine gr_cleanDensityData(smallRho, &
                               dlo(JAXIS):dhi(JAXIS), &
                               dlo(KAXIS):dhi(KAXIS), &
                               nd)
-    
+
   integer :: i, j, k
 
 #ifdef DENS_VAR
+  ! DEV: TODO Determine how to implement all modes and all levels of 
+  !           verbosity
   do     k = lo(KAXIS), hi(KAXIS) 
     do   j = lo(JAXIS), hi(JAXIS) 
       do i = lo(IAXIS), hi(IAXIS)
-        d(i,j,k,DENS_VAR) = max(d(i,j,k,DENS_VAR), smallRho)
+        if (d(i,j,k,DENS_VAR) < smallRho) then
+          if      (gr_sanitizeDataMode == 3) then
+            write(*,*) "WARNING: [gr_cleanDensityData]"
+            write(*,*) "         Density data less than smlrho"
+            write(*,*) "         Value set to smlrho"
+            d(i,j,k,DENS_VAR) = max(d(i,j,k,DENS_VAR), smallRho)
+          else if (gr_sanitizeDataMode == 4) then
+            call Driver_abortFlash("[gr_cleanDensityData] Density data less than smlrho")
+          end if
+        end if
       end do
     end do
   end do
