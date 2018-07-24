@@ -43,6 +43,7 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
                                         amrex_ref_ratio
   use amrex_multifabutil_module, ONLY : amrex_average_down
 
+  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use gr_interface,              ONLY : gr_getBlkIterator, &
                                         gr_releaseBlkIterator
   use gr_amrexInterface,         ONLY : gr_primitiveToConserve, &
@@ -65,6 +66,10 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
   type(gr_iterator_t)    :: itor
   type(block_metadata_t) :: blockDesc
 
+  real,   pointer :: solnData(:,:,:,:) => null()
+  integer         :: dlo(1:MDIM+1)
+  integer         :: dhi(1:MDIM+1)
+
   if (       (gridDataStruct /= CENTER) .AND. (gridDataStruct /= CENTER_FACES) &
        .AND. (gridDataStruct /= FACES)  .AND. (gridDataStruct /= FACEX) &
        .AND. (gridDataStruct /= FACEY)  .AND. (gridDataStruct /= FACEZ)) then
@@ -84,7 +89,17 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
       call gr_getBlkIterator(itor, LEAF)
       do while (itor%is_valid())
         call itor%blkMetaData(blockDesc)
-        call gr_primitiveToConserve(blockDesc)
+        call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
+        dlo = lbound(solnData)
+        dhi = ubound(solnData)
+        call gr_primitiveToConserve(blockDesc%limitsGC(LOW,  :), &
+                                    blockDesc%limitsGC(HIGH, :), &
+                                    solnData, &
+                                    dlo(1:MDIM), dhi(1:MDIM), NUNK_VARS, &
+                                    UNK_VARS_BEGIN, NUNK_VARS)
+
+        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
         call itor%next()
       end do
       call gr_releaseBlkIterator(itor)

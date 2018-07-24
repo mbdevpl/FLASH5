@@ -62,19 +62,18 @@
 !!
 !!***
 
-#include "Flash.h"
 #include "constants.h"
 
 subroutine gr_preinterpolationWork(lo, hi, &
                                    d, dlo, dhi, nd, &
                                    scomp, ncomp) bind(c)
-  use iso_c_binding, ONLY : c_int
+  use iso_c_binding,     ONLY : c_int
 
   use amrex_fort_module, ONLY : wp => amrex_real
 
-  use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_data,        ONLY : gr_convertToConsvdInMeshInterp, &
-                               gr_vartypes
+  use Driver_interface,  ONLY : Driver_abortFlash
+  use Grid_data,         ONLY : gr_convertToConsvdInMeshInterp
+  use gr_amrexInterface, ONLY : gr_primitiveToConserve
 
   implicit none
 
@@ -88,47 +87,9 @@ subroutine gr_preinterpolationWork(lo, hi, &
                                            dlo(KAXIS):dhi(KAXIS), &
                                            nd)
 
-  integer :: i, j, k, var
-
-  if (.NOT. gr_convertToConsvdInMeshInterp)    RETURN
-
-#ifdef DENS_VAR
-  if (gr_vartypes(DENS_VAR) == VARTYPE_PER_MASS) then
-    call Driver_abortFlash('[gr_preinterpolationWork] Density is PER_MASS')
+  if (gr_convertToConsvdInMeshInterp) then
+    call gr_primitiveToConserve(lo, hi, d, dlo, dhi, nd, scomp, ncomp)
   end if
-
-  if ((DENS_VAR < scomp) .OR. (DENS_VAR > scomp+ncomp-1)) then
-    call Driver_abortFlash("[gr_preinterpolationWork] Density data not given")
-  end if
-      
-  ! Zero density is non-physical for FLASH simulations and is 
-  ! incompatible with the conservative-to-primitive form conversion
-  ! done post-interpolation.
-  !
-  ! Insist that physics units prepare data as they see fit so that
-  ! interpolation proceeds with clean data.
-  do     k = lo(KAXIS), hi(KAXIS) 
-    do   j = lo(JAXIS), hi(JAXIS) 
-      do i = lo(IAXIS), hi(IAXIS)
-        if (d(i,j,k,DENS_VAR) == 0.0_wp) then
-          call Driver_abortFlash("[gr_preinterpolationWork] Density is zero")
-        end if
-      end do
-    end do
-  end do
- 
-  do var = scomp, (scomp + ncomp - 1)
-    if (gr_vartypes(var) == VARTYPE_PER_MASS) then
-      do     k = lo(KAXIS), hi(KAXIS) 
-        do   j = lo(JAXIS), hi(JAXIS) 
-          do i = lo(IAXIS), hi(IAXIS)
-            d(i,j,k,var) = d(i,j,k,DENS_VAR) * d(i,j,k,var)
-          end do
-        end do
-      end do
-    end if
-  end do
-#endif
 
 end subroutine gr_preinterpolationWork 
 

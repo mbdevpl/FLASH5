@@ -167,10 +167,19 @@ module gr_amrexInterface
   end interface
 
   interface
-    subroutine gr_primitiveToConserve(blockDesc)
-      use block_metadata, ONLY : block_metadata_t
+    subroutine gr_primitiveToConserve(lo, hi, &
+                                      d, dlo, dhi, nd, &
+                                      scomp, ncomp)
       implicit none
-      type(block_metadata_t), intent(IN) :: blockDesc
+      integer, intent(in)    :: lo(MDIM), hi(MDIM)
+      integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
+      integer, intent(in)    :: nd
+      integer, intent(in)    :: scomp
+      integer, intent(in)    :: ncomp
+      real,    intent(inout) :: d(dlo(IAXIS):dhi(IAXIS), &
+                                  dlo(JAXIS):dhi(JAXIS), &
+                                  dlo(KAXIS):dhi(KAXIS), &
+                                  nd)
     end subroutine gr_primitiveToConserve
   end interface
 
