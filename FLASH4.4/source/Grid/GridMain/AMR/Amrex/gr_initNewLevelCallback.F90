@@ -18,15 +18,12 @@
 !!   (1) creates a multifab for each data type,
 !!   (2) initializes these structures with the initial conditions via
 !!       Simulation_initBlock,
-!!   (3) converts all cell-centered primitive form data to conserved form, and
-!!   (4) fills all cell-centered guardcells.
+!!   (3) fills all cell-centered guardcells, and
+!!   (4) runs EoS on the interiors and GCs of all blocks to make the initial
+!!       data thermodynamically consistent.
 !!
-!!  Note that this routine is not running EoS on the interiors or guardcells.
-!!  Therefore, the refinement criteria used to create the initial refinement 
-!!  must not depend on the EoS dependent variables.
-!!
-!!  Once AMReX has reached the final refinement, EoS is run on the initial data
-!!  in Grid_initDomain.
+!!  Note that all EoS runs are done in the mode specified by the eosModeInit
+!!  runtime parameter.
 !!
 !!  This routine should only be invoked by AMReX.
 !!
@@ -73,18 +70,19 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           flux_registers
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_fillPhysicalBC, &
-                                          gr_fillPhysicalFaceBC, &
-                                          gr_primitiveToConserve
+                                          gr_preinterpolationWork, &
+                                          gr_postinterpolationWork
     use gr_iterator,               ONLY : gr_iterator_t
     use block_metadata,            ONLY : block_metadata_t
     use Simulation_interface,      ONLY : Simulation_initBlock
     use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
     use gr_interface,              ONLY : gr_getBlkIterator, &
                                           gr_releaseBlkIterator
-    use Grid_data,                 ONLY : gr_doFluxCorrection, &
+    use Grid_data,                 ONLY : gr_eosModeInit, &
+                                          gr_doFluxCorrection, &
                                           lo_bc_amrex, hi_bc_amrex
+    use Eos_interface,             ONLY : Eos_wrapped
     use Logfile_interface,         ONLY : Logfile_stamp
-    use Grid_data,                 ONLY : gr_meshMe 
 
     implicit none
 
@@ -194,8 +192,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
         call Simulation_initBlock(initData, block)
         call Grid_releaseBlkPtr(block, initData, CENTER)
 
-        call gr_primitiveToConserve(block)
-
         n_blocks = n_blocks + 1
 
         call itor%next()
@@ -230,14 +226,29 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                       UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                       amrex_ref_ratio(lev-1), &
                                       amrex_interp_cell_cons, &
-                                      lo_bc_amrex, hi_bc_amrex)
+                                      lo_bc_amrex, hi_bc_amrex, &
+                                      gr_preinterpolationWork, &
+                                      gr_postinterpolationWork)
     end if
 
     call Logfile_stamp(lev+1, &
           '[gr_initNewLevelCallback] GC fill')
 
-    if(gr_meshMe==MASTER_PE) write(*,'(A,I10,A,I0)') "Created and initialized ", &
-                                             n_blocks, " blocks on level ", lev + 1
+    ! Run EoS on interiors and GCs in preparation for refinement check
+    call gr_getBlkIterator(itor, level=lev+1, tiling=.FALSE.)
+    do while (itor%is_valid())
+       call itor%blkMetaData(block)
+
+       call Grid_getBlkPtr(block, initData, CENTER)
+       call Eos_wrapped(gr_eosModeInit, block%limitsGC, initData)
+       call Grid_releaseBlkPtr(block, initData, CENTER)
+
+       call itor%next()
+    end do
+    call gr_releaseBlkIterator(itor)
+
+    write(*,'(A,I10,A,I0)') "Created and initialized ", n_blocks, &
+                           " blocks on level ", lev + 1
 
 end subroutine gr_initNewLevelCallback
 

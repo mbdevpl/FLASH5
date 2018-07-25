@@ -6,12 +6,16 @@ Grid += gr_amrexInterface.o \
         gr_initNewLevelCallback.o \
         gr_makeFineLevelFromCoarseCallback.o \
         gr_markRefineDerefineCallback.o \
+        gr_preinterpolationWork.o \
+        gr_postinterpolationWork.o \
         gr_conserveToPrimitive.o \
         gr_primitiveToConserve.o \
+        gr_cleanDensityData.o \
+        gr_cleanEnergyData.o \
         gr_fillPhysicalBC.o \
         gr_fillPhysicalFaceBC.o \
         gr_getFinestLevel.o \
-        gr_averageDownLevels.o \
+        gr_restrictAllLevels.o \
         gr_splitFabAtBoundary.o \
         gr_copyFabInteriorToRegion.o \
         gr_copyGuardcellRegionToFab.o \

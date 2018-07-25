@@ -87,6 +87,9 @@ Module Grid_data
 !  logical, save :: gr_monotone
 !  integer, save :: gr_intpol
 
+  integer, save :: gr_sanitizeDataMode
+!  integer, save :: gr_sanitizeVerbosity
+
   integer, save :: gr_numRefineVars, gr_numRefineVarsMax
 !  integer,allocatable,dimension(:) ,save :: gr_refineVars
   real,    save :: gr_globalDomain(LOW:HIGH, MDIM)
