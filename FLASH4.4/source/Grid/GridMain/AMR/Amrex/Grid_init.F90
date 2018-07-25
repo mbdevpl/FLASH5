@@ -288,11 +288,14 @@ subroutine Grid_init()
   call RuntimeParameters_get("convertToConsvdInMeshInterp", &
                              gr_convertToConsvdInMeshInterp)
   if (gr_convertToConsvdForMeshCalls) then
-    print*,'WARNING: convertToConsvdForMeshCalls not implemented for AMReX.'
-    print*,'         Using convertToConsvdInMeshInterp instead.'
+    if (gr_meshMe == MASTER_PE) then
+      print*,'WARNING: convertToConsvdForMeshCalls not implemented for AMReX.'
+      print*,'         Using convertToConsvdInMeshInterp instead.'
+    end if
     call Logfile_stampMessage( &
            'WARNING: convertToConsvdForMeshCalls not implemented for AMReX.' // &
            '         Using convertToConsvdInMeshInterp instead.')
+
     gr_convertToConsvdInMeshInterp = .TRUE.
     gr_convertToConsvdForMeshCalls = .FALSE.
   end if

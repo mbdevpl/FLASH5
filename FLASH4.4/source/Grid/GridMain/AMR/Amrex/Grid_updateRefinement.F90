@@ -262,7 +262,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      ! as we do not know which leaf blocks are new.
      !
      ! We run EoS here rather than in the callbacks as these would not
-     ! run EoS on blocks that were parents but that are now children due
+     ! run EoS on blocks that were parents but that are now leaves due
      ! to the removal of a level.
      if (gr_amrexDidRefinement) then
        call gr_getBlkIterator(itor, LEAF, tiling=.FALSE.)
