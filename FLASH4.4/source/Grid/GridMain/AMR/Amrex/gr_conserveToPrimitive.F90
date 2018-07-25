@@ -63,9 +63,7 @@ subroutine gr_conserveToPrimitive(lo, hi, &
                                   d, dlo, dhi, nd, &
                                   scomp, ncomp)
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_data,        ONLY : gr_smallrho, &
-                               gr_smalle, & 
-                               gr_vartypes
+  use Grid_data,        ONLY : gr_vartypes
 
   implicit none
 
@@ -79,8 +77,7 @@ subroutine gr_conserveToPrimitive(lo, hi, &
                               dlo(KAXIS):dhi(KAXIS), &
                               nd)
 
-  real,   pointer :: solnData(:,:,:,:) => null()
-  integer         :: i, j, k, var
+  integer :: i, j, k, var
 
 #ifdef DENS_VAR
   if (gr_vartypes(DENS_VAR) == VARTYPE_PER_MASS) then

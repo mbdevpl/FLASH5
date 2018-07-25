@@ -70,7 +70,6 @@ subroutine gr_preinterpolationWork(lo, hi, &
 
   use amrex_fort_module, ONLY : wp => amrex_real
 
-  use Driver_interface,  ONLY : Driver_abortFlash
   use Grid_data,         ONLY : gr_convertToConsvdInMeshInterp
   use gr_amrexInterface, ONLY : gr_primitiveToConserve
 
