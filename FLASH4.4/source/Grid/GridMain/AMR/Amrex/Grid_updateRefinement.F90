@@ -13,16 +13,20 @@
 !!    (1) converts all primitive form leaf data to conserved form,
 !!    (2) restricts data from leaf blocks down to all ancestors,
 !!    (3) fills all guardcells at all levels,
-!!    (4) triggers AMReX to execute grid refinement,
-!!    (5) reverts conserved form leaf data to primitive form where 
-!!        necessary, and
-!!    (6) runs EoS on interiors/GC of all leaf blocks if the mesh was updated.
+!!    (4) reverts conserved form leaf data to primitive form where 
+!!        necessary,
+!!    (5) runs EoS on interiors/GC of all blocks,
+!!    (6) triggers AMReX to execute grid refinement, and
+!!    (7) runs EoS on interiors/GC of all leaf blocks if the mesh was updated.
 !!
-!!  It is assumed that the data in all leaf block interiors is correct and that
-!!  EoS variables are not used to identify blocks for refinement/derefinement.
-!!  In addition, this routine assumes that face variable data are not used to
-!!  identify blocks for refinement/derefinement.  Upon termination, this routine
-!!  only guarantees correct data on the interiors and guardcells of leaf blocks.
+!!  Note that steps (1) and (4) are skipped if the runtime parameters 
+!!  convertToConsvdInMeshInterp and convertToConsvdForMeshCalls indicate that
+!!  conversion is not desired.
+!!
+!!  It is assumed that the data in all leaf block interiors is correct.
+!!  and that face variable data is not used to identify blocks for 
+!!  refinement/derefinement.  Upon termination, this routine only guarantees
+!!  correct data on the interiors and guardcells of leaf blocks.
 !!
 !!  Note that all EoS runs are done in the mode specified by the eosMode
 !!  runtime parameter.  Note also that a step qualifies as a refinement step 
@@ -65,23 +69,26 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use amrex_fillpatch_module,    ONLY : amrex_fillpatch
   use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
-  use Grid_interface,            ONLY : Grid_fillGuardCells, &
-                                        Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                                        Grid_getLeafIterator, &
-                                        Grid_releaseLeafIterator
+  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data,                 ONLY : gr_nrefs, &
 !                                        gr_maxRefine, &
                                         gr_refine_var, &
                                         gr_numRefineVars, &
                                         gr_eosMode, &
+                                        gr_convertToConsvdInMeshInterp, &
+                                        gr_smallrho, &
+                                        gr_smalle, &
                                         gr_amrexDidRefinement, &
                                         lo_bc_amrex, hi_bc_amrex
-  use gr_amrexInterface,         ONLY : gr_primitiveToConserve, &
-                                        gr_conserveToPrimitive, &
+  use gr_interface,              ONLY : gr_getBlkIterator, &
+                                        gr_releaseBlkIterator
+  use gr_amrexInterface,         ONLY : gr_conserveToPrimitive, &
+                                        gr_cleanDensityData, &
+                                        gr_cleanEnergyData, &
                                         gr_fillPhysicalBC, &
-                                        gr_averageDownLevels
+                                        gr_restrictAllLevels
   use gr_physicalMultifabs,      ONLY : unk
-  use leaf_iterator,             ONLY : leaf_iterator_t
+  use gr_iterator,               ONLY : gr_iterator_t
   use block_metadata,            ONLY : block_metadata_t
   use Eos_interface,             ONLY : Eos_wrapped
   use Timers_interface,          ONLY : Timers_start, Timers_stop
@@ -100,8 +107,10 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 !  integer :: iref
   integer :: lev
   integer :: i
+  
+  logical :: needConversion
 
-  type(leaf_iterator_t)          :: itor
+  type(gr_iterator_t)            :: itor
   type(block_metadata_t)         :: blockDesc
   real,                  pointer :: solnData(:, :, :, :) => null()
 
@@ -137,19 +146,14 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
      call Timers_start("Grid_updateRefinement")
 
-     !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH CONSERVED-FORM DATA
-     ! We are only concerned with data on interior at this point
-     call Grid_getLeafIterator(itor, tiling=.FALSE.)
-     do while (itor%is_valid())
-       call itor%blkMetaData(blockDesc)
-       call gr_primitiveToConserve(blockDesc)
-
-       call itor%next()
-     end do
-     call Grid_releaseLeafIterator(itor)
-
-     ! Restrict data from leaves to coarser blocks
-     call gr_averageDownLevels(CENTER)
+     !!!!! POPULATE ALL BLOCKS AT ALL LEVELS WITH CONSERVATIVE FORM DATA
+     ! Only convert if requested
+     needConversion = gr_convertToConsvdInMeshInterp
+     
+     ! Restrict data from leaves to coarser blocks.  Leave in conservative
+     ! form as this is potentially needed for interpolation with fillpatch
+     call gr_restrictAllLevels(CENTER, convertPtoC=needConversion, &
+                                       convertCtoP=.FALSE.)
 
      !!!!! POPULATE GUARDCELLS IN ALL BLOCKS
      ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
@@ -173,27 +177,97 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                        0.0d0, UNK_VARS_BEGIN, &
                                        UNK_VARS_BEGIN, NUNK_VARS, &
                                        amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                       lo_bc_amrex, hi_bc_amrex) 
+                                       lo_bc_amrex, hi_bc_amrex)
      end do
+
+     ! Clean data to account for possible unphysical values caused by
+     ! interpolation, revert to primitive form if needed, and
+     ! run EoS on all interiors/GC to get best possible refinement
+     ! DEV: TODO Confirm with AMReX team if non-parent ancestor blocks can
+     ! influence refinement decisions.  If no, then we need only apply EoS to
+     ! parent blocks.
+     ! DEV: TODO Add masking as in Grid_fillGuardCell?
+     if (needConversion)then
+       call gr_getBlkIterator(itor)
+       do while (itor%is_valid())
+          call itor%blkMetaData(blockDesc)
+          call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
+          call gr_cleanDensityData(gr_smallrho, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   solnData, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   NUNK_VARS)
+          call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
+                                      blockDesc%limitsGC(HIGH, :), &
+                                      solnData, &
+                                      blockDesc%limitsGC(LOW,  :), &
+                                      blockDesc%limitsGC(HIGH, :), &
+                                      NUNK_VARS, &
+                                      UNK_VARS_BEGIN, NUNK_VARS)
+          call gr_cleanEnergyData(gr_smalle, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  solnData, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  NUNK_VARS)
+
+          call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
+ 
+          call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+          call itor%next()
+       end do
+       call gr_releaseBlkIterator(itor)
+     else
+       call gr_getBlkIterator(itor)
+       do while (itor%is_valid())
+          call itor%blkMetaData(blockDesc)
+          call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
+          call gr_cleanDensityData(gr_smallrho, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   solnData, &
+                                   blockDesc%limitsGC(LOW,  :), &
+                                   blockDesc%limitsGC(HIGH, :), &
+                                   NUNK_VARS)
+          call gr_cleanEnergyData(gr_smalle, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  solnData, &
+                                  blockDesc%limitsGC(LOW,  :), &
+                                  blockDesc%limitsGC(HIGH, :), &
+                                  NUNK_VARS)
+
+          call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
+
+          call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+          call itor%next()
+       end do
+       call gr_releaseBlkIterator(itor)
+     end if
 
      ! Let AMReX regrid with callbacks
      gr_amrexDidRefinement = .FALSE.
      call amrex_regrid(0, time)
 
-     ! Revert variables to primitive form over all (possibly new) leaf blocks
-     ! and rerun EoS on interiors of all leaf blocks if callbacks report that
+     ! Rerun EoS on interiors+GC of all leaf blocks if callbacks report that
      !   1) a new level was created,
      !   2) an existing level was remade, or
      !   3) a level was removed completely
      ! as there will be new leaf blocks.  We iterate over all leaf blocks
      ! as we do not know which leaf blocks are new.
-     call Grid_getLeafIterator(itor)
-
+     !
+     ! We run EoS here rather than in the callbacks as these would not
+     ! run EoS on blocks that were parents but that are now leaves due
+     ! to the removal of a level.
      if (gr_amrexDidRefinement) then
+       call gr_getBlkIterator(itor, LEAF, tiling=.FALSE.)
        do while (itor%is_valid())
           call itor%blkMetaData(blockDesc)
-
-          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
 
           call Grid_getBlkPtr(blockDesc, solnData, CENTER)
           call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
@@ -201,17 +275,8 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
           call itor%next()
        end do
-     else
-       do while (itor%is_valid())
-          call itor%blkMetaData(blockDesc)
-
-          call gr_conserveToPrimitive(blockDesc, allCells=.TRUE.)
-
-          call itor%next()
-       end do
+       call gr_releaseBlkIterator(itor)
      end if
-
-     call Grid_releaseLeafIterator(itor)
 
      call Timers_stop("Grid_updateRefinement")
 

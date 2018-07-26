@@ -129,27 +129,116 @@ module gr_amrexInterface
   end interface
  
   interface
-    subroutine gr_primitiveToConserve(blockDesc)
-      use block_metadata, ONLY : block_metadata_t
+    subroutine gr_preinterpolationWork(lo, hi, &
+                                       d, dlo, dhi, nd, &
+                                       scomp, ncomp) bind(c)
+      use iso_c_binding,     ONLY : c_int
+      use amrex_fort_module, ONLY : wp => amrex_real
       implicit none
-      type(block_metadata_t), intent(IN) :: blockDesc
+      integer(c_int), intent(in)          :: lo(MDIM), hi(MDIM)
+      integer(c_int), intent(in)          :: dlo(MDIM), dhi(MDIM)
+      integer(c_int), intent(in),   value :: nd
+      integer(c_int), intent(in),   value :: scomp
+      integer(c_int), intent(in),   value :: ncomp
+      real(wp),       intent(inout)       :: d(dlo(IAXIS):dhi(IAXIS), &
+                                               dlo(JAXIS):dhi(JAXIS), &
+                                               dlo(KAXIS):dhi(KAXIS), &
+                                               nd)
+    end subroutine gr_preinterpolationWork
+  end interface
+
+  interface
+    subroutine gr_postinterpolationWork(lo, hi, &
+                                        d, dlo, dhi, nd, &
+                                        scomp, ncomp) bind(c)
+      use iso_c_binding,     ONLY : c_int
+      use amrex_fort_module, ONLY : wp => amrex_real
+      implicit none
+      integer(c_int), intent(in)          :: lo(MDIM), hi(MDIM)
+      integer(c_int), intent(in)          :: dlo(MDIM), dhi(MDIM)
+      integer(c_int), intent(in),   value :: nd
+      integer(c_int), intent(in),   value :: scomp
+      integer(c_int), intent(in),   value :: ncomp
+      real(wp),       intent(inout)       :: d(dlo(IAXIS):dhi(IAXIS), &
+                                               dlo(JAXIS):dhi(JAXIS), &
+                                               dlo(KAXIS):dhi(KAXIS), &
+                                               nd)
+    end subroutine gr_postinterpolationWork
+  end interface
+
+  interface
+    subroutine gr_primitiveToConserve(lo, hi, &
+                                      d, dlo, dhi, nd, &
+                                      scomp, ncomp)
+      implicit none
+      integer, intent(in)    :: lo(MDIM), hi(MDIM)
+      integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
+      integer, intent(in)    :: nd
+      integer, intent(in)    :: scomp
+      integer, intent(in)    :: ncomp
+      real,    intent(inout) :: d(dlo(IAXIS):dhi(IAXIS), &
+                                  dlo(JAXIS):dhi(JAXIS), &
+                                  dlo(KAXIS):dhi(KAXIS), &
+                                  nd)
     end subroutine gr_primitiveToConserve
   end interface
 
   interface
-    subroutine gr_conserveToPrimitive(blockDesc, allCells)
-      use block_metadata, ONLY : block_metadata_t
+    subroutine gr_conserveToPrimitive(lo, hi, &
+                                      d, dlo, dhi, nd, &
+                                      scomp, ncomp)
       implicit none
-      type(block_metadata_t), intent(IN) :: blockDesc
-      logical,                intent(IN) :: allCells
+      integer, intent(in)    :: lo(MDIM), hi(MDIM)
+      integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
+      integer, intent(in)    :: nd
+      integer, intent(in)    :: scomp
+      integer, intent(in)    :: ncomp
+      real,    intent(inout) :: d(dlo(IAXIS):dhi(IAXIS), &
+                                  dlo(JAXIS):dhi(JAXIS), &
+                                  dlo(KAXIS):dhi(KAXIS), &
+                                  nd)
     end subroutine gr_conserveToPrimitive
   end interface
  
   interface
-    subroutine gr_averageDownLevels(gridDataStruct)
+    subroutine gr_cleanDensityData(smallRho, &
+                                   lo, hi, &
+                                   d, dlo, dhi, nd)
+      implicit none
+      real,    intent(in)    :: smallRho
+      integer, intent(in)    :: lo(MDIM), hi(MDIM)
+      integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
+      integer, intent(in)    :: nd
+      real,    intent(inout) :: d(dlo(IAXIS):dhi(IAXIS), &
+                                  dlo(JAXIS):dhi(JAXIS), &
+                                  dlo(KAXIS):dhi(KAXIS), &
+                                  nd)
+    end subroutine gr_cleanDensityData
+  end interface
+
+  interface
+    subroutine gr_cleanEnergyData(smallE, &
+                                   lo, hi, &
+                                   d, dlo, dhi, nd)
+      implicit none
+      real,    intent(in)    :: smallE
+      integer, intent(in)    :: lo(MDIM), hi(MDIM)
+      integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
+      integer, intent(in)    :: nd
+      real,    intent(inout) :: d(dlo(IAXIS):dhi(IAXIS), &
+                                  dlo(JAXIS):dhi(JAXIS), &
+                                  dlo(KAXIS):dhi(KAXIS), &
+                                  nd)
+    end subroutine gr_cleanEnergyData
+  end interface
+
+  interface
+    subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
       implicit none
       integer, intent(IN) :: gridDataStruct
-    end subroutine gr_averageDownLevels
+      logical, intent(IN) :: convertPtoC
+      logical, intent(IN) :: convertCtoP
+    end subroutine gr_restrictAllLevels
   end interface
  
   interface

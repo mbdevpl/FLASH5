@@ -36,7 +36,6 @@ Module gr_specificData
   real,    save, allocatable :: gr_ioBlkBoundBox(:,:,:)
 
   logical, save :: gr_enableMaskedGCFill
-  integer, save :: gr_sanitizeDataMode, gr_sanitizeVerbosity
   integer,save :: gr_globalOffset !stores beginning blk offset for a proc
 
 end Module gr_specificData

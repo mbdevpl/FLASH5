@@ -31,6 +31,8 @@ lrefine_max = 4
 nrefs       = 2
 
 ##### TURN OFF ACTIONS THAT ARE UNNECESSARY FOR THIS TEST
+smlrho                      = 0.0
+smalle                      = 0.0
 convertToConsvdInMeshInterp = .FALSE.
 convertToConsvdForMeshCalls = .FALSE.
 flux_correct                = .FALSE.

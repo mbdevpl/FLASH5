@@ -4,35 +4,43 @@
 !!  gr_conserveToPrimitive
 !!
 !! SYNOPSIS
-!!  gr_conserveToPrimitive(block_metadata_t(in) :: block,
-!!                         logical(in)          :: allCells)
+!!  gr_conserveToPrimitive(integer(IN) :: lo(MDIM),
+!!                         integer(IN) :: hi(MDIM),
+!!                         real(INOUT) :: d(dlo(IAXIS):dhi(IAXIS), &
+!!                                          dlo(JAXIS):dhi(JAXIS), &
+!!                                          dlo(KAXIS):dhi(KAXIS), &
+!!                                          nd),
+!!                         integer(IN) :: dlo(MDIM),
+!!                         integer(IN) :: dhi(MDIM),
+!!                         integer(IN) :: nd,
+!!                         integer(IN) :: scomp,
+!!                         integer(IN) :: ncomp)
 !!
 !! DESCRIPTION
-!!  Given a block, convert cell-centered variables that are normally
+!!  Given a block of data, convert cell-centered variables that are normally
 !!  represented in primitive/mass-specific form (e.g., velocity) from the 
 !!  corresponding conservative form (i.e., momentum density) back to the normal
 !!  primitive form.  Conversion is achieved by dividing the conservative form by
-!!  the density.  Note that for proper functioning, DENS_VAR must *not* be 
-!!  marked as PER_MASS.
+!!  the density.  Calling functions must ensure that the density in non-zero
+!!  everywhere.  Note that for proper functioning, DENS_VAR must *not* be 
+!!  marked as PER_MASS.  If density is note a physical quantity for a
+!!  simulation, then this conversion is not done.
 !!
 !!  Cell-centered quantities are considered to be in mass-specific form if they
 !!  are explicitly marked as PER_MASS in the Config file.  Additionally,
 !!  abundances and mass scalars are considered to be mass-specific.
 !!
-!!  This conversion is made only if gr_convertToConsvdForMeshCalls is .TRUE.
-!!  Otherwise, nothing is done.
-!!
-!!  A side effect of this routine is that the lower cutoff smalle is applied
-!!  to EINT_VAR and ENER_VAR after conversion.  In addition, the lower cutoff
-!!  smlrho is applied to DENS_VAR before conversion as for FLASH simulations,
-!!  formation of regions of vacuum is considered to be unphysical.  These two
-!!  cutoff values are runtime parameters.
+!!  This routine does not check if this conversion is enabled by runtime 
+!!  parameters.  Rather, the calling routine must know that this conversion
+!!  is necessary and desired.
 !!
 !! ARGUMENTS
-!!   block - the metadata representation of block whose data shall be
-!!           transformed
-!!   allCells - act on all cells, including guardcells, if .TRUE.,
-!!              otherwise only modify interior cells.
+!!  lo/hi - the lower and upper corners that define the region of cells
+!!          in the given block of data on which the conversion shall be done
+!!  dlo/dhi/nd - the lower and upper bounds of the indices of the given data
+!!  scomp - the first physical quantity to be potentially converted
+!!  ncomp - the number of physical quantities to be potentially converted
+!!  d - the data to convert
 !!
 !! SEE ALSO
 !!  gr_primitiveToConserve 
@@ -51,85 +59,53 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine gr_conserveToPrimitive(block, allCells)
+subroutine gr_conserveToPrimitive(lo, hi, &
+                                  d, dlo, dhi, nd, &
+                                  scomp, ncomp)
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface,   ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-  use Grid_data,        ONLY : gr_smallrho, &
-                               gr_smalle, & 
-                               gr_vartypes, &
-                               gr_convertToConsvdForMeshCalls
-  use block_metadata,   ONLY : block_metadata_t
+  use Grid_data,        ONLY : gr_vartypes
 
   implicit none
 
-  type(block_metadata_t), intent(IN) :: block
-  logical,                intent(IN) :: allCells
-  
-  real, pointer :: solnData(:,:,:,:) => null()
+  integer, intent(in)    :: lo(MDIM), hi(MDIM)
+  integer, intent(in)    :: dlo(MDIM), dhi(MDIM)
+  integer, intent(in)    :: nd
+  integer, intent(in)    :: scomp
+  integer, intent(in)    :: ncomp
+  real,    intent(inout) :: d(dlo(IAXIS):dhi(IAXIS), &
+                              dlo(JAXIS):dhi(JAXIS), &
+                              dlo(KAXIS):dhi(KAXIS), &
+                              nd)
 
-  real    :: dens_old_inv
-  logical :: needToConvert
   integer :: i, j, k, var
-  integer :: ilo, ihi
-  integer :: jlo, jhi
-  integer :: klo, khi
-
-  if (.NOT. gr_convertToConsvdForMeshCalls)          RETURN
-
-  call Grid_getBlkPtr(block, solnData, CENTER)
 
 #ifdef DENS_VAR
   if (gr_vartypes(DENS_VAR) == VARTYPE_PER_MASS) then
     call Driver_abortFlash('[gr_conserveToPrimitive] density is PER_MASS')
   end if
-  
-  if (allCells) then
-    ilo = block%limitsGC(LOW,  IAXIS)
-    ihi = block%limitsGC(HIGH, IAXIS)
-    jlo = block%limitsGC(LOW,  JAXIS)
-    jhi = block%limitsGC(HIGH, JAXIS)
-    klo = block%limitsGC(LOW,  KAXIS)
-    khi = block%limitsGC(HIGH, KAXIS)
-  else
-    ilo = block%limits(LOW,  IAXIS)
-    ihi = block%limits(HIGH, IAXIS)
-    jlo = block%limits(LOW,  JAXIS)
-    jhi = block%limits(HIGH, JAXIS)
-    klo = block%limits(LOW,  KAXIS)
-    khi = block%limits(HIGH, KAXIS)
-  end if
 
-  needToConvert = ANY(gr_vartypes == VARTYPE_PER_MASS)
-
-  do     k = klo, khi
-    do   j = jlo, jhi
-      do i = ilo, ihi
-        ! cutoff -- in case the interpolants are not monotonic
-        solnData(i,j,k,DENS_VAR) = max(solnData(i,j,k,DENS_VAR), gr_smallrho)
-
-        if (needToConvert) then
-          dens_old_inv = 1.0 / solnData(i,j,k,DENS_VAR)
-
-          do var = UNK_VARS_BEGIN, UNK_VARS_END
-            if (gr_vartypes(var) == VARTYPE_PER_MASS) then
-              solnData(i,j,k,var) = dens_old_inv * solnData(i,j,k,var)
-            end if
-          end do
+  do     k = lo(KAXIS), hi(KAXIS) 
+    do   j = lo(JAXIS), hi(JAXIS) 
+      do i = lo(IAXIS), hi(IAXIS)
+        if (d(i,j,k,DENS_VAR) == 0.0) then
+          call Driver_abortFlash("[gr_conserveToPrimitive] Density is zero")
         end if
-
       end do
     end do
   end do
-#endif
 
-#ifdef ENER_VAR               
-  solnData(:,:,:,ENER_VAR) = max(solnData(:,:,:,ENER_VAR), gr_smalle)
+  do var = scomp, (scomp + ncomp - 1)
+    if (gr_vartypes(var) == VARTYPE_PER_MASS) then
+      do     k = lo(KAXIS), hi(KAXIS) 
+        do   j = lo(JAXIS), hi(JAXIS) 
+          do i = lo(IAXIS), hi(IAXIS)
+            d(i,j,k,var) = d(i,j,k,var) / d(i,j,k,DENS_VAR)
+          end do
+        end do
+      end do
+    end if
+  end do
 #endif
-#ifdef EINT_VAR
-  solnData(:,:,:,EINT_VAR) = max(solnData(:,:,:,EINT_VAR), gr_smalle)
-#endif
-
-  call Grid_releaseBlkPtr(block, solnData, CENTER)
 
 end subroutine gr_conserveToPrimitive
  
