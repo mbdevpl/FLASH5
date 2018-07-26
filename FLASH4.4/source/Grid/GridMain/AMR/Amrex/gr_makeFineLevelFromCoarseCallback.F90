@@ -16,16 +16,18 @@
 !!  with boundary data.  Prolongation is accomplished with AMReX's conservative
 !!  linear interpolation routine.
 !!
-!!  It is assumed that, where applicable, the cell-centered data is in conserved 
-!!  form.  Upon returning, the remade multifab will have data in all interiors 
-!!  as well as guardcells.  Note that since the cell-centered data is still in 
-!!  conserved form and EoS might expect primitive form, EoS is not run.  It is 
-!!  therefore the responsibility of the caller to manage this step.
+!!  The AMReX fill patch routines called by this routine might trigger calls
+!!  to gr_fillPhysicalBC, which requires that data be in primitive form.
+!!  Therefore, this routine assumes that no primitive-to-conservative
+!!  transformations have been done.  AMReX will use a FLASH-provided routine to
+!!  convert primitive form data to conservative form data before interpolation.
+!!  It will use a different FLASH-provided routine to convert interpolated
+!!  conservative form data to primitive form data as well.
 !!
-!!  NOTE: This implementation, while presently functional, is incorrect.  A user
-!!        could supply their own BC routine that sensibly assumes that data is
-!!        in primitive form.  However, here we pass the BC routines data in
-!!        conserved form.
+!!  Upon returning, the remade multifab will have data in all interiors 
+!!  as well as guardcells.  EoS is not run on blocks so that it is the 
+!!  responsibility of the code that triggered this callback to execute
+!!  EoS where needed.
 !!
 !!  This routine should only be invoked by AMReX.
 !!
@@ -39,6 +41,10 @@
 !!  pdm - a C pointer to the AMReX distribution mapping of boxes across
 !!        processors to be used for constructing the multifab for the given
 !!        level.
+!!
+!! SEE ALSO
+!!  gr_preinterpolationWork
+!!  gr_postinterpolationWork
 !!
 !!***
 
@@ -68,6 +74,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           gr_amrexDidRefinement, &
                                           lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
+                                          gr_preinterpolationWork, &
+                                          gr_postinterpolationWork, &
                                           gr_fillPhysicalBC, &
                                           gr_fillPhysicalFaceBC
     use gr_physicalMultifabs,      ONLY : unk, &
@@ -159,7 +167,9 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                          time, &
                                          UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                          amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
-                                         lo_bc_amrex, hi_bc_amrex) 
+                                         lo_bc_amrex, hi_bc_amrex, &
+                                         gr_preinterpolationWork, &
+                                         gr_postinterpolationWork)
 
 #if NFACE_VARS > 0
     call amrex_fillcoarsepatch(facevarx(lev), time,     facevarx(lev-1),  &
