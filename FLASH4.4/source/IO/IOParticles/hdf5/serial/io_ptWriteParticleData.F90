@@ -77,7 +77,7 @@ subroutine io_ptWriteParticleData( fileID, globalNumParticles, &
 
   use Grid_interface, ONLY : Grid_getLocalNumBlks, Grid_sortParticles
 
-  use Grid_data, ONLY : gr_globalOffset, gr_globalNumBlocks
+  use Grid_data, ONLY : gr_globalNumBlocks
 
   use Particles_data, ONLY : particles, pt_maxPerProc
 
