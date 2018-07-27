@@ -63,7 +63,7 @@ subroutine IO_writeParticles( particlesToCheckpoint)
        io_particleFileIntervalStep, io_nextParticleFileStep, &
        io_dumpParticleFileExist, useParticles, &
        io_particleFileIntervalZ, io_nextParticleFileZ
-  use Cosmology_interface, ONLY : Cosmology_getRedshift
+!  use Cosmology_interface, ONLY : Cosmology_getRedshift
   use IO_interface, ONLY : IO_updateScalars  
   use io_ptInterface, ONLY : io_ptWriteParticleData
   use io_intfTypesModule, ONLY : io_fileID_t
