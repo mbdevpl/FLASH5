@@ -200,7 +200,7 @@ subroutine IO_writeParticles( particlesToCheckpoint)
 
      !get the sim time and store it in a local variable
      call Driver_getSimTime(lsimTime)
-     call Cosmology_getRedshift(currentRedshift)
+!     call Cosmology_getRedshift(currentRedshift)
      
      if ((io_particleFileIntervalTime > 0.e0 .AND. lsimTime >= io_nextParticleFileTime) &
           .OR. io_justCheckpointed .OR. io_dumpParticleFileExist .OR. &
