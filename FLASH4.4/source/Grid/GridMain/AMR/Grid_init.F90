@@ -133,6 +133,7 @@ subroutine Grid_init()
 
   logical :: useProtonEmission
   logical :: useProtonImaging
+  logical :: useElectronSpectrometry
 
   integer :: i, j, k, localNumBlocks, ii, numLeafBlks
 

@@ -49,7 +49,7 @@ subroutine Grid_mapMeshToParticles (particles, part_props,part_blkID,&
 
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr,&
-       Grid_getLocalNumBlks, Grid_getBlkBoundBox, Grid_getDeltas
+       Grid_getLocalNumBlks, Grid_getBlkBoundBox, Grid_getDeltas,Grid_getBlkRefineLevel
   use Particles_interface, ONLY : Particles_mapFromMesh
 
   implicit none
@@ -74,6 +74,7 @@ subroutine Grid_mapMeshToParticles (particles, part_props,part_blkID,&
   real,dimension(MDIM) :: delta, pos
   integer :: gDataStruct
   real, dimension(numAttrib) :: partAttribVec
+  integer :: level
 
   if(present(gridDataStruct)) then
      gDataStruct=gridDataStruct
@@ -89,7 +90,8 @@ subroutine Grid_mapMeshToParticles (particles, part_props,part_blkID,&
      prevBlk=currentBlk
      call Grid_getBlkPtr(currentBlk,solnVec,gDataStruct)
      call Grid_getBlkBoundBox(currentBlk,bndBox)
-     call Grid_getDeltas(currentBlk,delta)
+     call Grid_getBlkRefineLevel(currentBlk,level)
+     call Grid_getDeltas(level,delta)
      do i = 1, numParticles
 #ifdef DEBUG_GRIDPARTICLES
         if((particles(part_blkID, i) < 0) .or. (particles(part_blkID, i) > blkCount)) then
