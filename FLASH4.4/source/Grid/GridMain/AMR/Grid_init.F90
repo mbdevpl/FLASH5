@@ -224,10 +224,10 @@ subroutine Grid_init()
   if (useProtonEmission) then
       gr_useParticles=.true.
   end if
-  call RuntimeParameters_get('useElectronSpectrometry',useElectronSpectrometry)
-  if (useElectronSpectrometry) then
-      gr_useParticles=.true.
-  end if
+!  call RuntimeParameters_get('useElectronSpectrometry',useElectronSpectrometry)
+!  if (useElectronSpectrometry) then
+!      gr_useParticles=.true.
+!  end if
 #endif
 
   !Check if there are gravitational isolated boundary conditions
