@@ -78,15 +78,8 @@ module gr_interface
      end subroutine gr_findWhichChild
   end interface
 
-  interface gr_findNeghID
-     subroutine gr_findNeghID_blkId(blockId,pos,negh,neghID)
-       implicit none
-       integer, intent(IN) :: blockId
-       real,dimension(MDIM), intent(IN) :: pos
-       integer,dimension(MDIM),intent(IN) :: negh
-       integer,dimension(BLKNO:PROCNO),intent(OUT) :: neghID
-     end subroutine gr_findNeghID_blkId
-      subroutine gr_findNeghID(block,pos,negh,neghID)
+  interface
+     subroutine gr_findNeghID(block,pos,negh,neghID)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN) :: block
