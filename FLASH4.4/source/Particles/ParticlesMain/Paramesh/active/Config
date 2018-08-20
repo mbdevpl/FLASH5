@@ -2,7 +2,7 @@
 #  contribute to force fields and respond to them by accelerating.
 # [/source/Particles/timeIntegration/active]
 
-REQUIRES Grid/GridParticles/GridParticlesMapToMesh
+REQUIRES Grid/GridParticles/Paramesh/GridParticlesMapToMesh
 
 
 

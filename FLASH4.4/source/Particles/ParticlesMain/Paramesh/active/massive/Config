@@ -2,8 +2,8 @@
 #  contribute to force fields and respond to them by accelerating.
 # [/source/Particles/timeIntegration/active]
 
-REQUIRES Grid/GridParticles/GridParticlesMapToMesh
-REQUESTS Particles/ParticlesForces/longRange/gravity/ParticleMesh
+REQUIRES Grid/GridParticles/Paramesh/GridParticlesMapToMesh
+REQUESTS Particles/ParticlesForces/Paramesh/longRange/gravity/ParticleMesh
 
 
 EXCLUSIVE Leapfrog LeapfrogCosmo Euler

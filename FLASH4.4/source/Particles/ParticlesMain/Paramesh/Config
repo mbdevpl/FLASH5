@@ -6,10 +6,10 @@ PPDEFINE FLASH_PARTICLES
 REQUIRES Driver
 REQUESTS monitors/Logfile
 REQUIRES RuntimeParameters
-REQUESTS Particles/ParticlesMapping 
-REQUESTS Particles/ParticlesInitialization 
-REQUIRES Grid/GridParticles
-REQUIRES Grid/GridParticles/GridParticlesMapFromMesh
+REQUESTS Particles/ParticlesMapping/Paramesh
+REQUESTS Particles/ParticlesInitialization/Paramesh
+REQUIRES Grid/GridParticles/Paramesh
+REQUIRES Grid/GridParticles/Paramesh/GridParticlesMapFromMesh
 
 #  Contains these submodules:
 #    active          Active particle submodule.  Particles contribute to the
