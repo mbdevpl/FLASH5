@@ -73,7 +73,10 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_receiveInputData.o \
 	Grid_getNeighProcList.o \
 	Grid_makeVector.o \
-	Grid_zeroFluxData.o
+	Grid_zeroFluxData.o \
+	Grid_zeroFluxRegister.o \
+	Grid_addFineToFluxRegister.o \
+	Grid_addCoarseToFluxRegister.o
 
 Grid += Grid_init.o Grid_coordTransfm.o
 

@@ -1371,5 +1371,30 @@ Module Grid_interface
      end subroutine Grid_zeroFluxData
   end interface
 
+  interface
+     subroutine Grid_zeroFluxRegister(level)
+       implicit none
+       integer, intent(IN)           :: level
+     end subroutine Grid_zeroFluxRegister
+  end interface
+
+  interface
+     subroutine Grid_addFineToFluxRegister(level, isDensity, coefficient)
+       implicit none
+       integer, intent(IN)           :: level
+       logical, intent(IN), optional :: isDensity(:)
+       real,    intent(IN), optional :: coefficient
+     end subroutine Grid_addFineToFluxRegister
+  end interface
+
+  interface
+     subroutine Grid_addCoarseToFluxRegister(level, isDensity, coefficient)
+       implicit none
+       integer, intent(IN)           :: level
+       logical, intent(IN), optional :: isDensity(:)
+       real,    intent(IN), optional :: coefficient
+     end subroutine Grid_addCoarseToFluxRegister
+  end interface
+
 end Module Grid_interface
 

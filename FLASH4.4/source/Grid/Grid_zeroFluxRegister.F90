@@ -22,9 +22,9 @@
 !!***
 
 subroutine Grid_zeroFluxRegister(level)
-  implicit none
-
   use Driver_interface, ONLY : Driver_abortFlash
+
+  implicit none
 
   integer, intent(IN) :: level
 

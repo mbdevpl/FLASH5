@@ -38,7 +38,8 @@ subroutine Driver_evolveFlash()
                                       amrex_mfiter_destroy
 
     use Grid_interface,        ONLY : Grid_getFluxPtr, Grid_releaseFluxPtr, &
-                                      Grid_putFluxData, &
+                                      Grid_zeroFluxRegister, &
+                                      Grid_addFineToFluxRegister, &
                                       Grid_conserveFluxes
     use gr_amrexInterface,     ONLY : gr_getFinestLevel
     use gr_iterator,           ONLY : gr_iterator_t, &
@@ -145,7 +146,8 @@ subroutine Driver_evolveFlash()
 
         ! Save corrected flux for next level
         if (lev > 1) then
-            call Grid_putFluxData(lev)
+            call Grid_zeroFluxRegister(lev)
+            call Grid_addFineToFluxRegister(lev)
         end if
     end do
 
