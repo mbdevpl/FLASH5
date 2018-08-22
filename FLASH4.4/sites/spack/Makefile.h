@@ -98,7 +98,7 @@ LIB_OPT   =
 LIB_DEBUG =
 LIB_TEST  =
 
-LIB_HDF5  = -lhdf5 -ldl -Wl,-rpath -Wl,-Bsymbolic-functions -Wl,-z,relro -lsz -lz -lm -lhdf5_fortran
+LIB_HDF5  = -lhdf5 -lhdf5_fortran
 
 LIB_LAPACK= -lopenblas
 
