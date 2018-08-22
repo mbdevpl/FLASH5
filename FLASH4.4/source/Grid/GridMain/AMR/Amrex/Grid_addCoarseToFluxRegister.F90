@@ -4,7 +4,7 @@
 !!  Grid_addCoarseToFluxRegister
 !!
 !! SYNOPSIS
-!!  call Grid_addCoarseToFluxRegister(integer(IN) :: level,
+!!  call Grid_addCoarseToFluxRegister(integer(IN) :: coarse_level,
 !!                          optional, logical(IN) :: isDensity(:),
 !!                          optional, real(IN)    :: coefficient)
 !!
@@ -31,8 +31,9 @@
 !!  interface.
 !!
 !! ARGUMENTS
-!!  level - the 1-based level index (1 is the coarsest level) indicating which
-!!          level's data should be added to the flux register as coarse data.
+!!  coarse_level - the 1-based level index (1 is the coarsest level) indicating
+!!                 which level's data should be added to the flux register as
+!!                 coarse data.
 !!  isDensity - a mask that identifies which physical flux quantities are
 !!              actually stored in the Grid unit's flux data structures as
 !!              flux densities.  If no mask is given, it is assumed that data
@@ -51,11 +52,10 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine Grid_addCoarseToFluxRegister(level, isDensity, coefficient)
+subroutine Grid_addCoarseToFluxRegister(coarse_level, isDensity, coefficient)
     use amrex_fort_module,    ONLY : wp => amrex_real
-#if DEBUG_GRID
-    use amrex_amrcore_module, ONLY : amrex_ref_ratio
-#endif
+    use amrex_amrcore_module, ONLY : amrex_get_finest_level, &
+                                     amrex_ref_ratio
 
     use Driver_interface,     ONLY : Driver_abortFlash
     use Grid_interface,       ONLY : Grid_getGeometry
@@ -63,13 +63,28 @@ subroutine Grid_addCoarseToFluxRegister(level, isDensity, coefficient)
                                      fluxes
 
     implicit none
-    
-    integer, intent(IN)           :: level
+
+    integer, intent(IN)           :: coarse_level
     logical, intent(IN), optional :: isDensity(:)
     real,    intent(IN), optional :: coefficient
 
+    integer  :: coarse
+    integer  :: fine
     integer  :: geometry
     real(wp) :: coef
+
+    if (NFLUXES < 1) then
+        RETURN
+    end if
+ 
+    ! FLASH uses 1-based level index / AMReX uses 0-based index
+    coarse = coarse_level - 1
+    fine   = coarse_level
+
+    ! The finest refinement level is never the coarse level of a flux register
+    if ((coarse < 0) .OR. (coarse >= amrex_get_finest_level())) then
+        call Driver_abortFlash("[Grid_addCoarseToFluxRegister] Invalid level")
+    end if
 
     if (present(coefficient)) then
         coef = coefficient
@@ -87,11 +102,9 @@ subroutine Grid_addCoarseToFluxRegister(level, isDensity, coefficient)
     case (CARTESIAN)
       ! The scaling factor=1/r^(NDIM-1) used here assumes that the refinement
       ! ratio, r, between levels is always 2
-#if DEBUG_GRID
-        if (amrex_ref_ratio(level-1) /= 2) then
-          call Driver_abortFlash("[Grid_addFineToFluxRegister] refinement ratio not 2")
-        end if
-#endif
+      if (amrex_ref_ratio(coarse) /= 2) then
+        call Driver_abortFlash("[Grid_addFineToFluxRegister] refinement ratio not 2")
+      end if
 
 #if   NDIM == 2
         coef = coef * 0.5_wp
@@ -99,7 +112,8 @@ subroutine Grid_addCoarseToFluxRegister(level, isDensity, coefficient)
         coef = coef * 0.25_wp
 #endif
 
-        call flux_registers(level)%crseadd(fluxes(level-1, 1:NDIM), coef)
+        ! Flux registers index is 0-based index of fine level
+        call flux_registers(fine)%crseadd(fluxes(coarse, 1:NDIM), coef)
     case default
         call Driver_abortFlash("[Grid_addFineToFluxRegister] Only works with Cartesian")
     end select

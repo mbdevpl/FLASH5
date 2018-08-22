@@ -4,7 +4,7 @@
 !!  Grid_addCoarseToFluxRegister
 !!
 !! SYNOPSIS
-!!  call Grid_addCoarseToFluxRegister(integer(IN) :: level,
+!!  call Grid_addCoarseToFluxRegister(integer(IN) :: coarse_level,
 !!                          optional, logical(IN) :: isDensity(:),
 !!                          optional, real(IN)    :: coefficient)
 !!
@@ -31,8 +31,9 @@
 !!  interface.
 !!
 !! ARGUMENTS
-!!  level - the 1-based level index (1 is the coarsest level) indicating which
-!!          level's data should be added to the flux register as coarse data.
+!!  coarse_level - the 1-based level index (1 is the coarsest level) indicating
+!!                 which level's data should be added to the flux register as
+!!                 coarse data.
 !!  isDensity - a mask that identifies which physical flux quantities are
 !!              actually stored in the Grid unit's flux data structures as
 !!              flux densities.  If no mask is given, it is assumed that data
@@ -48,12 +49,12 @@
 !!
 !!***
 
-subroutine Grid_addCoarseToFluxRegister(level, isDensity, coefficient)
+subroutine Grid_addCoarseToFluxRegister(coarse_level, isDensity, coefficient)
   use Driver_interface, ONLY : Driver_abortFlash
 
   implicit none
 
-  integer, intent(IN)           :: level
+  integer, intent(IN)           :: coarse_level
   logical, intent(IN), optional :: isDensity(:)
   real,    intent(IN), optional :: coefficient
 

@@ -4,7 +4,7 @@
 !!  Grid_zeroFluxRegister
 !!
 !! SYNOPSIS
-!!  call Grid_zeroFluxRegister(integer(IN) :: level)
+!!  call Grid_zeroFluxRegister(integer(IN) :: fine_level)
 !!
 !! DESCRIPTION 
 !!  Each flux register is associated with a fine and a coarse level.  Given an
@@ -12,8 +12,9 @@
 !!  associated flux register.
 !!
 !! ARGUMENTS
-!!  level - the 1-based level index (1 is the coarsest level) that indicates
-!!          the fine level of the flux register on which to operate.
+!!  fine_level - the 1-based level index (1 is the coarsest level) that 
+!!               indicates the fine level of the flux register on which to 
+!!               operate.
 !!
 !! SEE ALSO
 !!   Grid_addFineToFluxRegister
@@ -23,7 +24,7 @@
 
 #include "Flash.h"
 
-subroutine Grid_zeroFluxRegister(level)
+subroutine Grid_zeroFluxRegister(fine_level)
     use amrex_fort_module,    ONLY : wp => amrex_real
     use amrex_amrcore_module, ONLY : amrex_get_finest_level
 
@@ -32,18 +33,22 @@ subroutine Grid_zeroFluxRegister(level)
 
     implicit none
 
-    integer, intent(IN) :: level
+    integer, intent(IN) :: fine_level
+
+    integer :: fine
 
     ! Skip if we aren't using fluxes
     if (NFLUXES < 1) then
         RETURN
     end if
-  
+
     ! FLASH uses 1-based level index / AMReX uses 0-based index
-    if ((level-1 <= 0) .OR. (level-1 > amrex_get_finest_level())) then
+    fine = fine_level - 1
+
+    if ((fine <= 0) .OR. (fine > amrex_get_finest_level())) then
         call Driver_abortFlash("[Grid_zeroFluxRegister] Invalid level")
     end if
 
-    call flux_registers(level-1)%setval(0.0_wp)
+    call flux_registers(fine)%setval(0.0_wp)
 end subroutine Grid_zeroFluxRegister
 
