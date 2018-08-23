@@ -9,10 +9,7 @@ subroutine hy_advance(simTime, dt, dtOld)
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
                                   Grid_getLeafIterator, Grid_releaseLeafIterator,&
-                                  Grid_getMaxRefinement, Grid_conserveFluxes, &
-                                  Grid_putFluxData, &
-                                  Grid_zeroFluxRegister, &
-                                  Grid_addFineToFluxRegister
+                                  Grid_getMaxRefinement, Grid_conserveFluxes, Grid_putFluxData
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use hy_interface,        ONLY : hy_computeFluxes, hy_updateSolution
   use hy_memInterface,     ONLY : hy_memAllocScratch,      &
@@ -167,10 +164,7 @@ subroutine hy_advance(simTime, dt, dtOld)
      call Timers_stop("compute fluxes")
      call Grid_releaseLeafIterator(itor)
 
-     if (hy_fluxCorrect .AND. (level > 1)) then
-        call Grid_zeroFluxRegister(level)
-        call Grid_addFineToFluxRegister(level)
-     end if
+     if (hy_fluxCorrect .AND. (level > 1))  call Grid_putFluxData(level)
 
      if (level==maxLev) then
         CYCLE

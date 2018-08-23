@@ -50,24 +50,10 @@
 !!   Grid_conserveFluxes
 !!***
 
-#ifdef DEBUG_ALL
-#define DEBUG_GRID
-#endif
-
-#include "Flash.h"
-#include "constants.h"
-
 subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
-  use amrex_fort_module,    ONLY : wp => amrex_real
-  use amrex_amrcore_module, ONLY : amrex_get_finest_level
-#if DEBUG_GRID
-  use amrex_amrcore_module, ONLY : amrex_ref_ratio
-#endif
-
   use Driver_interface,     ONLY : Driver_abortFlash
-  use Grid_interface,       ONLY : Grid_getGeometry
-  use gr_physicalMultifabs, ONLY : flux_registers, &
-                                   fluxes
+  use Grid_interface,       ONLY : Grid_zeroFluxRegister, &
+                                   Grid_addFineToFluxRegister
 
   implicit none
 
@@ -75,8 +61,6 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   integer,                intent(IN), optional         :: axis
   integer,                intent(IN), optional, target :: pressureSlots(:)
   real,                   intent(IN), optional         :: areaLeft(:,:,:)
-
-  integer :: geometry
 
   if (present(axis)) then
     call Driver_abortFlash("[Grid_putFluxData] axis not accepted with AMReX")
@@ -90,36 +74,7 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
     call Driver_abortFlash("[Grid_putFluxData] areaLeft not accepted with AMReX")
   end if
 
-  ! No need to save flux on coarsest level or levels that don't exist
-  !
-  ! AMReX level index is 0-based
-  if (     ((level-1 <= 0) .OR. (level-1 > amrex_get_finest_level())) &
-      .OR. (NFLUXES < 1)) then
-      RETURN
-  end if
-
-  ! FLASH uses 1-based level index / AMReX uses 0-based index
-  call flux_registers(level-1)%setval(0.0_wp)
-
-  call Grid_getGeometry(geometry)
-
-  select case (geometry)
-  case (CARTESIAN)
-    ! The scaling factor=1/r^(NDIM-1) used here assumes that the refinement
-    ! ratio, r, between levels is always 2
-#if DEBUG_GRID
-    if (amrex_ref_ratio(level-1) /= 2) then
-      call Driver_abortFlash("[Grid_putFluxData] refinement ratio not 2")
-    end if
-#endif
-
-#if   NDIM == 2
-    call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 0.5_wp)
-#elif NDIM == 3
-    call flux_registers(level-1)%fineadd(fluxes(level-1, 1:NDIM), 0.25_wp)
-#endif
-  case default
-    call Driver_abortFlash("[Grid_putFluxData] Only works with Cartesian")
-  end select
+  call Grid_zeroFluxRegister(level)
+  call Grid_addFineToFluxRegister(level)
 end subroutine Grid_putFluxData
 
