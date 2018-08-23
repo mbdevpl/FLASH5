@@ -52,15 +52,14 @@
 
 subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   use Driver_interface,     ONLY : Driver_abortFlash
-  use Grid_interface,       ONLY : Grid_zeroFluxRegister, &
-                                   Grid_addFineToFluxRegister
+  use Grid_interface,       ONLY : Grid_addFineToFluxRegister
 
   implicit none
 
-  integer,                intent(IN)                   :: level
-  integer,                intent(IN), optional         :: axis
-  integer,                intent(IN), optional, target :: pressureSlots(:)
-  real,                   intent(IN), optional         :: areaLeft(:,:,:)
+  integer, intent(IN)                   :: level
+  integer, intent(IN), optional         :: axis
+  integer, intent(IN), optional, target :: pressureSlots(:)
+  real,    intent(IN), optional         :: areaLeft(:,:,:)
 
   if (present(axis)) then
     call Driver_abortFlash("[Grid_putFluxData] axis not accepted with AMReX")
@@ -74,7 +73,6 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
     call Driver_abortFlash("[Grid_putFluxData] areaLeft not accepted with AMReX")
   end if
 
-  call Grid_zeroFluxRegister(level)
-  call Grid_addFineToFluxRegister(level)
+  call Grid_addFineToFluxRegister(level, zeroFullRegister=.TRUE.)
 end subroutine Grid_putFluxData
 

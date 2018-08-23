@@ -32,7 +32,7 @@ subroutine Driver_evolveFlash()
     use amrex_fort_module,     ONLY : amrex_spacedim
 
     use Grid_interface,        ONLY : Grid_getFluxPtr, Grid_releaseFluxPtr, &
-                                      Grid_zeroFluxRegister, &
+                                      Grid_zeroFluxData, &
                                       Grid_addFineToFluxRegister, &
                                       Grid_addCoarseToFluxRegister, &
                                       Grid_conserveFluxes
@@ -78,14 +78,9 @@ subroutine Driver_evolveFlash()
     call Grid_zeroFluxData
 
     ! Zero all flux register data and transfer to flux data structure
-    do lev = 1, finest_level
-        if (lev > 1) then
-            call Grid_zeroFluxRegister(lev)
-        end if
-
-        if (lev > finest_level) then
-            call Grid_conserveFluxes(ALLDIR, lev)
-        end if
+    do lev = 1, finest_level-1
+        call Grid_addCoarseToFluxRegister(lev, zeroFullRegister=.TRUE.)
+        call Grid_conserveFluxes(ALLDIR, lev)
     end do
 
     ! Zero flux at all faces
@@ -124,10 +119,6 @@ subroutine Driver_evolveFlash()
     !!!!! ADD ONLY COARSE FLUX TO REGISTERS
     write(*,*) "Coarse Flux ONLY Test Phase"
     write(*,*) "------------------------------------------------------------"
-    do lev = 2, finest_level
-        call Grid_zeroFluxRegister(lev)
-    end do
-
     do lev = 1, finest_level
         call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
         do while (itor%is_valid())
@@ -154,7 +145,7 @@ subroutine Driver_evolveFlash()
         call destroy_iterator(itor)
 
         if (lev < finest_level) then
-            call Grid_addCoarseToFluxRegister(lev)
+            call Grid_addCoarseToFluxRegister(lev, zeroFullRegister=.TRUE.)
         end if
     end do
 
@@ -284,10 +275,6 @@ subroutine Driver_evolveFlash()
     !!!!! CREATE FLUX ERROR IN REGISTERS
     write(*,*) "Flux Error Test Phase"
     write(*,*) "------------------------------------------------------------"
-    do lev = 2, finest_level
-        call Grid_zeroFluxRegister(lev)
-    end do
-
     do lev = finest_level, 1, -1
         call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
         do while (itor%is_valid())
@@ -316,8 +303,10 @@ subroutine Driver_evolveFlash()
         ! Construct flux error in flux register whose coarse flux
         ! is associated with current level
         if (lev < finest_level) then
+            ! Zero with coarse here as we zero with fine below
+            call Grid_addCoarseToFluxRegister(lev  , coefficient=-1.0, &
+                                              zeroFullRegister=.TRUE.)
             call Grid_addFineToFluxRegister(  lev+1, coefficient= 1.0)
-            call Grid_addCoarseToFluxRegister(lev  , coefficient=-1.0)
         end if
     end do
 
@@ -455,10 +444,6 @@ subroutine Driver_evolveFlash()
     !!!!! USE FINE/COARSE MULTIPLICATIVE FACTORS TO CANCEL FLUX
     write(*,*) "Flux Cancellation Test Phase"
     write(*,*) "------------------------------------------------------------"
-    do lev = 2, finest_level
-        call Grid_zeroFluxRegister(lev)
-    end do
-
     do lev = finest_level, 1, -1
         call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
         do while (itor%is_valid())
@@ -476,8 +461,15 @@ subroutine Driver_evolveFlash()
         ! Construct flux error in flux register whose coarse flux
         ! is associated with current level
         if (lev < finest_level) then
-            call Grid_addFineToFluxRegister(  lev+1, coefficient=-DBLE(lev)/DBLE(lev+1))
-            call Grid_addCoarseToFluxRegister(lev  , coefficient=1.0)
+            ! Call each twice with half the value so that we can confirm
+            ! that we are correctly accumulating flux in the register
+            call Grid_addFineToFluxRegister(  lev+1, &
+                                            coefficient=-0.5*DBLE(lev)/DBLE(lev+1), &
+                                            zeroFullRegister=.TRUE.)
+            call Grid_addFineToFluxRegister(  lev+1, &
+                                            coefficient=-0.5*DBLE(lev)/DBLE(lev+1))
+            call Grid_addCoarseToFluxRegister(lev  , coefficient=0.5)
+            call Grid_addCoarseToFluxRegister(lev  , coefficient=0.5)
         end if
     end do
 

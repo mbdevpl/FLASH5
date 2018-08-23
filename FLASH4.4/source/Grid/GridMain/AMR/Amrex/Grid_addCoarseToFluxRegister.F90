@@ -6,7 +6,8 @@
 !! SYNOPSIS
 !!  call Grid_addCoarseToFluxRegister(integer(IN) :: coarse_level,
 !!                          optional, logical(IN) :: isDensity(:),
-!!                          optional, real(IN)    :: coefficient)
+!!                          optional, real(IN)    :: coefficient, 
+!!                          optional, logical(IN) :: zeroFullRegister)
 !!
 !! DESCRIPTION 
 !!  Each flux register is associated with a fine and a coarse level.  In normal
@@ -40,6 +41,10 @@
 !!              is stored as flux.
 !!  coefficient - a scaling parameter to apply to all flux data before applying
 !!                the data to the flux register.
+!!  zeroFullRegister - zero the current fine and coarse data in the register
+!!                     before adding the indicated flux data to the register.
+!!                     If this parameter is not given, then the current data is
+!!                     not zeroed.
 !!
 !! SEE ALSO
 !!   Grid_getFluxPtr/Grid_releaseFluxPtr
@@ -52,7 +57,8 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine Grid_addCoarseToFluxRegister(coarse_level, isDensity, coefficient)
+subroutine Grid_addCoarseToFluxRegister(coarse_level, isDensity, coefficient, &
+                                        zeroFullRegister)
     use amrex_fort_module,    ONLY : wp => amrex_real
     use amrex_amrcore_module, ONLY : amrex_get_finest_level, &
                                      amrex_ref_ratio
@@ -67,6 +73,7 @@ subroutine Grid_addCoarseToFluxRegister(coarse_level, isDensity, coefficient)
     integer, intent(IN)           :: coarse_level
     logical, intent(IN), optional :: isDensity(:)
     real,    intent(IN), optional :: coefficient
+    logical, intent(IN), optional :: zeroFullRegister
 
     integer  :: coarse
     integer  :: fine
@@ -96,6 +103,12 @@ subroutine Grid_addCoarseToFluxRegister(coarse_level, isDensity, coefficient)
         call Driver_abortFlash("[Grid_addFineToFluxRegister] isDensity not implemented")
     end if
 
+    if (present(zeroFullRegister)) then
+        if (zeroFullRegister) then
+            call flux_registers(fine)%setval(0.0_wp)
+        end if
+    end if
+
     call Grid_getGeometry(geometry)
 
     select case (geometry)
@@ -113,6 +126,8 @@ subroutine Grid_addCoarseToFluxRegister(coarse_level, isDensity, coefficient)
 #endif
 
         ! Flux registers index is 0-based index of fine level
+        ! DEV: TODO We should be able to use crseinit here instead of using the
+        ! setval call above.
         call flux_registers(fine)%crseadd(fluxes(coarse, 1:NDIM), coef)
     case default
         call Driver_abortFlash("[Grid_addFineToFluxRegister] Only works with Cartesian")
