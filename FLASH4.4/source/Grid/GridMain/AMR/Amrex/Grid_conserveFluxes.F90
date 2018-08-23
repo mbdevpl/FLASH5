@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!  call Grid_conserveFluxes(integer(IN) :: axis,
-!!                           integer(IN) :: level)
+!!                           integer(IN) :: coarse_level)
 !!  
 !! DESCRIPTION 
 !!  When FLASH is run with AMR, it is possible that some leaf blocks
@@ -27,7 +27,7 @@
 !!
 !! ARGUMENTS 
 !!  axis - the only acceptable value for AMReX is ALLDIR.
-!!  level - the 1-based level index of the coarse blocks
+!!  coarse_level - the 1-based level index of the coarse blocks
 !!
 !! SEE ALSO
 !!  Grid_getFluxPtr/Grid_releaseFluxPtr
@@ -37,7 +37,7 @@
 
 #include "constants.h"
 
-subroutine Grid_conserveFluxes(axis, level)
+subroutine Grid_conserveFluxes(axis, coarse_level)
     use amrex_fort_module,    ONLY : wp => amrex_real
     use amrex_amrcore_module, ONLY : amrex_get_finest_level
 
@@ -49,19 +49,23 @@ subroutine Grid_conserveFluxes(axis, level)
     implicit none
 
     integer, intent(IN) :: axis
-    integer, intent(IN) :: level
+    integer, intent(IN) :: coarse_level
 
+    integer :: fine
+    integer :: coarse
     integer :: geometry
 
     if (axis /= ALLDIR) then
         call Driver_abortFlash("[Grid_conserveFluxes] AMReX requires axis==ALLDIR")
     end if
+    
+    ! FLASH uses 1-based level index / AMReX uses 0-based index
+    coarse = coarse_level - 1
+    fine   = coarse_level
 
     ! No need to conserve on the finest level in existence or any
     ! level index corresponding to a finer mesh
-    !
-    ! AMReX level index is 0-based
-    if (level-1 >= amrex_get_finest_level())     RETURN
+    if (coarse >= amrex_get_finest_level())     RETURN
 
     call Grid_getGeometry(geometry)
 
@@ -72,7 +76,7 @@ subroutine Grid_conserveFluxes(axis, level)
         ! level were scaled to fluxes with the assumption that the cell lengths
         ! at the coarse level are one.  Therefore, reconversion to flux densities
         ! is automatic here.
-        call flux_registers(level)%overwrite(fluxes(level-1, :), 1.0_wp)
+        call flux_registers(fine)%overwrite(fluxes(coarse, :), 1.0_wp)
     case default
         ! DEV: TODO This routine should take an isFluxDensity array as an argument
         ! so that the routine can determine which need to be scaled and which do not
