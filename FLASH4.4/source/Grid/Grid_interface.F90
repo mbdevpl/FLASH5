@@ -146,8 +146,8 @@ Module Grid_interface
   end interface
 
   interface Grid_conserveFluxes
-     subroutine Grid_conserveFluxes( axis, level)
-       integer, intent(in) :: axis, level
+     subroutine Grid_conserveFluxes(axis, coarse_level)
+       integer, intent(in) :: axis, coarse_level
      end subroutine Grid_conserveFluxes
   end interface
 
