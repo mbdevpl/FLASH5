@@ -52,6 +52,10 @@ matrix:
       - FLASH_SETUP_OPTIONS="Sedov -2d -auto +Mode1"
       - FLASH_OBJECT_DIR="object"
 
+before_install:
+  # Load cached docker images
+  - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"; fi
+
 install:
   - docker pull "${DOCKER_IMAGE}"
   - git fetch origin "${EXPERIMENT_BRANCH}:${EXPERIMENT_BRANCH}"
