@@ -146,8 +146,8 @@ Module Grid_interface
   end interface
 
   interface Grid_conserveFluxes
-     subroutine Grid_conserveFluxes( axis, level)
-       integer, intent(in) :: axis, level
+     subroutine Grid_conserveFluxes(axis, coarse_level)
+       integer, intent(in) :: axis, coarse_level
      end subroutine Grid_conserveFluxes
   end interface
 
@@ -1369,6 +1369,28 @@ Module Grid_interface
      subroutine Grid_zeroFluxData
        implicit none
      end subroutine Grid_zeroFluxData
+  end interface
+
+  interface
+     subroutine Grid_addFineToFluxRegister(level, isDensity, coefficient, &
+                                           zeroFullRegister)
+       implicit none
+       integer, intent(IN)           :: level
+       logical, intent(IN), optional :: isDensity(:)
+       real,    intent(IN), optional :: coefficient
+       logical, intent(IN), optional :: zeroFullRegister
+     end subroutine Grid_addFineToFluxRegister
+  end interface
+
+  interface
+     subroutine Grid_addCoarseToFluxRegister(level, isDensity, coefficient, &
+                                             zeroFullRegister)
+       implicit none
+       integer, intent(IN)           :: level
+       logical, intent(IN), optional :: isDensity(:)
+       real,    intent(IN), optional :: coefficient
+       logical, intent(IN), optional :: zeroFullRegister
+     end subroutine Grid_addCoarseToFluxRegister
   end interface
 
 end Module Grid_interface
