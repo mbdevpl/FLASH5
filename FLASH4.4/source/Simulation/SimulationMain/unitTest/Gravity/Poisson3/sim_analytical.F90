@@ -139,10 +139,16 @@ subroutine sim_analytical(blockID)
 
                     select case (sim_initGeometry)
 
-                    case (CYLINDRICAL)   ! 2d axisymmetric
+                    case (POLAR)   ! 2d axisymmetric?
 
                        rFunc = (xdist*sim_a1inv)**2 + (ydist*sim_a3inv)**2
                        r2 = xdist**2 + ydist**2
+
+                    case (CYLINDRICAL)   ! 2d axisymmetric
+
+                       rFunc = (xdist*sim_a1inv)**2 + (ydist*sim_a3inv)**2
+                       r2 = xdist**2
+                       z2 = ydist**2
 
                     case (CARTESIAN)       ! 3d cartesian
 
