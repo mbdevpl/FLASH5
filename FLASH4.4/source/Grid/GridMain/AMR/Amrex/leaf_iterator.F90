@@ -169,14 +169,47 @@ contains
     !!  constants.h
     !!****
     subroutine init_iterator(itor, level, tiling)
-      use amrex_multifab_module, ONLY : amrex_multifab
+!!$      use amrex_multifab_module, ONLY : amrex_multifab
       use gr_physicalMultifabs,  ONLY : Unk
 
         type(leaf_iterator_t), intent(OUT)          :: itor
         integer,                intent(IN), optional :: level
         logical,                intent(IN), optional :: tiling
 
-        call init_iterator_mfa(itor, Unk, level, tiling)
+        integer :: lev, first, last
+        integer :: finest_level
+        logical :: v
+
+        finest_level = size(Unk)
+
+        itor%level = UNSPEC_LEVEL
+        if (present(level)) then
+            first = level
+            last = level
+         else
+            first = 1
+            last = finest_level
+        end if
+
+        allocate( itor%li (first : last) )
+
+        itor%first_level = first
+        itor%last_level = last
+        itor%level = first
+
+
+        do lev=first,last
+            itor%li(lev) = block_1lev_iterator_t(LEAF,lev,tiling=tiling)
+            v = itor%li( lev )%is_valid()
+            if (v .AND. .NOT. itor%isValid) then
+               itor%isValid = .TRUE.
+               itor%level   = lev
+            end if
+        end do
+
+        if (.NOT. itor%isValid) then
+           call destroy_iterator(itor)
+        end if
     end subroutine init_iterator
 
     !!****im* leaf_iterator_t/destroy_iterator
@@ -223,34 +256,9 @@ contains
     subroutine first(this)
         class(leaf_iterator_t), intent(INOUT) :: this
 
-        integer :: l
-        logical :: v
-
         call Driver_abortFlash('leaf_iterator: Attempting first(), not implemented!')
         print*,'leaf_iterator%first: about to do 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
 
-        do l = this%first_level, this%last_level
-           call this%li( l )%first()
-        end do
-
-        print*,'leaf_iterator%first: done 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
-
-        if (this%first_level .LE. this%last_level) then
-           l = this%first_level
-
-           v = this%li( l )%is_valid()
-
-           do while (l .LE. this%last_level .AND. .NOT. v)
-              l = l+1
-              call this%li( l )%first()
-              v = this%li( l )%is_valid()
-           end do
-
-
-           this%level = l
-           this%isValid = v
-
-        end if
 
 
 
@@ -332,7 +340,6 @@ contains
         use amrex_box_module,     ONLY : amrex_box
 
         use block_metadata,       ONLY : block_metadata_t
-        use gr_physicalMultifabs, ONLY : unk
 
         class(leaf_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: blockDesc
