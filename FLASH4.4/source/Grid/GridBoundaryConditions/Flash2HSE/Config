@@ -1,4 +1,0 @@
-#Config file for Grid/GridBoundaryConditions/Flash2HSE
-
-REQUIRES flashUtilities/interpolation/oneDim
-REQUIRES Driver

@@ -1,12 +1,12 @@
-!!****if* source/physics/Gravity/GravityMain/Poisson/Gravity_potentialListOfBlocks
+!!****if* source/physics/Gravity/GravityMain/Poisson/Gravity_potential
 !!
 !! NAME 
 !!
-!!     Gravity_potentialListOfBlocks
+!!     Gravity_potential
 !!
 !! SYNOPSIS
 !!
-!!  call Gravity_potentialListOfBlocks(integer(IN) :: blockCount,
+!!  call Gravity_potential(integer(IN) :: blockCount,
 !!                                     integer(IN) :: blockList(blockCount),
 !!                            optional,integer(IN) :: potentialIndex)
 !!
@@ -37,7 +37,7 @@
 !!
 !! NOTES
 !!
-!!  Gravity_potentialListOfBlocks can operate in one of two modes:
+!!  Gravity_potential can operate in one of two modes:
 !!  * automatic mode  - when called without the optional potentialIndex.
 !!    Such a call will usually be made once per time step, usually
 !!    from the main time advancement loop in Driver_evolveFlash.
@@ -84,39 +84,38 @@
 
 !!REORDER(4): solnVec
 
-subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
+subroutine Gravity_potential( potentialIndex)
 
 
   use Gravity_data, ONLY : grav_poisfact, grav_temporal_extrp, grav_boundary, &
        grav_unjunkPden, &
        useGravity, updateGravity, grv_meshComm
-  use Cosmology_interface, ONLY : Cosmology_getRedshift, &
-       Cosmology_getOldRedshift
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Particles_interface, ONLY: Particles_updateGridVar, &
        Particles_sinkAccelGasOnSinksAndSinksOnGas
   use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, GRID_PDE_BND_NEUMANN, &
        GRID_PDE_BND_ISOLATED, GRID_PDE_BND_DIRICHLET, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr, &
+       Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getLeafIterator, Grid_releaseLeafIterator, &
        Grid_notifySolnDataUpdate, &
        Grid_solvePoisson
+  use block_metadata, ONLY : block_metadata_t
+  use leaf_iterator, ONLY : leaf_iterator_t
+  
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
 #include "Flash_mpi.h"
 
-  integer,intent(IN) :: blockCount
-  integer,dimension(blockCount),intent(IN) :: blockList
   integer, intent(IN), optional :: potentialIndex
 
 
-  real, POINTER, DIMENSION(:,:,:,:) :: solnVec
+  real, POINTER, dimension(:,:,:,:) :: solnVec
 
   integer       :: ierr
 
-  real          :: redshift, oldRedshift
+  real          :: redshift=0, oldRedshift=0
   real          :: scaleFactor, oldScaleFactor
   real          :: invscale, rescale
   integer       :: lb
@@ -125,7 +124,9 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
   integer       :: density
   integer       :: newPotVar
   logical       :: saveLastPot
-
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+  
   saveLastPot = (.NOT. present(potentialIndex))
   if (present(potentialIndex)) then
      newPotVar = potentialIndex
@@ -133,9 +134,11 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
      newPotVar = GPOT_VAR
   end if
 
-  call Cosmology_getRedshift(redshift)
-  call Cosmology_getOldRedshift(oldRedshift)
-  
+  lb=1
+
+!!$  call Cosmology_getRedshift(redshift)
+!!$  call Cosmology_getOldRedshift(oldRedshift)
+!!$  
   scaleFactor = 1./(1.+redshift)
   oldScaleFactor = 1./(1.+oldRedshift)
   
@@ -179,10 +182,12 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
      call Driver_abortFlash("shouldn't be here right now")
      !call extrp_initial_guess( igpot, igpol, igpot )
      
-  else 
-     
-     do lb = 1, blockCount
-        call Grid_getBlkPtr(blocklist(lb), solnVec)
+  else
+     call Grid_getLeafIterator(itor)
+  
+     do while(itor%is_valid())
+        call itor%blkMetaData(block)
+        call Grid_getBlkPtr(block, solnVec)
 #ifdef GPOL_VAR
         if (saveLastPot) solnVec(GPOL_VAR,:,:,:) = solnVec(GPOT_VAR,:,:,:)
 #endif
@@ -205,9 +210,10 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
            solnVec(GAOZ_VAR,:,:,:) = solnVec(GACZ_VAR,:,:,:)
         end if
 #endif
-        call Grid_releaseBlkPtr(blocklist(lb), solnVec)
+        call Grid_releaseBlkPtr(block, solnVec)
+        call itor%next()
      enddo
-     
+     call Grid_releaseLeafIterator(itor)
 #ifdef GPOL_VAR
      if (saveLastPot) call Grid_notifySolnDataUpdate( (/GPOL_VAR/) )
 #endif
@@ -222,13 +228,19 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
   call Particles_updateGridVar(MASS_PART_PROP, PDEN_VAR)
   if (.NOT. grav_unjunkPden) call Grid_notifySolnDataUpdate( (/PDEN_VAR/) )
   density = PDEN_VAR
-#ifdef DENS_VAR           
-  do lb = 1, blockCount
-     call Grid_getBlkPtr(blocklist(lb), solnVec)
+#ifdef DENS_VAR
+  
+  call Grid_getLeafIterator(itor)
+     
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     call Grid_getBlkPtr(block, solnVec)
      solnVec(density,:,:,:) = solnVec(density,:,:,:) + &
           solnVec(DENS_VAR,:,:,:)
-     call Grid_releaseBlkPtr(blocklist(lb), solnVec)
+     call Grid_releaseBlkPtr(block, solnVec)
+     call itor%next()
   enddo
+  call Grid_releaseLeafIterator(itor)
 #endif
 #endif
 #endif
@@ -244,26 +256,30 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
   if (grav_unjunkPden) then
      density = PDEN_VAR
 #ifdef DENS_VAR           
-     do lb = 1, blockCount
-        call Grid_getBlkPtr(blocklist(lb), solnVec)
-        solnVec(density,:,:,:) = solnVec(density,:,:,:) - solnVec(DENS_VAR,:,:,:)
-        call Grid_releaseBlkPtr(blocklist(lb), solnVec)
+     do while(itor%is_valid())
+        call itor%blkMetaData(block)
+        call Grid_getBlkPtr(block, solnVec)
+        solnVec(density,:,:,:) = solnVec(density,:,:,:) + &
+             solnVec(DENS_VAR,:,:,:)
+        call Grid_releaseBlkPtr(block, solnVec)
+        call itor%next()
      enddo
+     call Grid_releaseLeafIterator(itor)
      if (density .NE. PDEN_VAR) call Grid_notifySolnDataUpdate( (/density/) )
 #endif
   end if
 #endif
-
+  
   if (.NOT. present(potentialIndex)) then
-    ! Compute acceleration of the sink particles caused by gas and vice versa
-    call Particles_sinkAccelGasOnSinksAndSinksOnGas()
+     ! Compute acceleration of the sink particles caused by gas and vice versa
+     call Particles_sinkAccelGasOnSinksAndSinksOnGas()
   end if
-
-
+  
+  
 #ifdef USEBARS
   call MPI_Barrier (grv_meshComm, ierr)
 #endif  
   call Timers_stop ("gravity")
   
   return
-end subroutine Gravity_potentialListOfBlocks
+end subroutine Gravity_potential

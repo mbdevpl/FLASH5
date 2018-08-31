@@ -47,7 +47,7 @@
 !!
 !!***
 
-subroutine Gravity_accelOneBlock ( blockID, ngcellcomp, gvec, potentialIndex)
+subroutine Gravity_accelOneBlock_blkid ( blockID, ngcellcomp, gvec, potentialIndex)
 
 
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
@@ -100,6 +100,138 @@ subroutine Gravity_accelOneBlock ( blockID, ngcellcomp, gvec, potentialIndex)
   gpot(:,:,:) = solnData(potVar, :,:,:)
 
   call Grid_releaseBlkPtr(blockID, solnData)
+
+  ! now calculate gravity, depending on geometry
+  select case (geom)
+  case (CARTESIAN)
+
+     do k = blkLimits(LOW,KAXIS)-K3D*ngcellcomp, blkLimits(HIGH,KAXIS)+K3D*ngcellcomp
+        do j = blkLimits(LOW,JAXIS)-K2D*ngcellcomp, blkLimits(HIGH,JAXIS)+K2D*ngcellcomp
+           do i = blkLimits(LOW,IAXIS)-ngcellcomp, blkLimits(HIGH,IAXIS)+ngcellcomp
+
+              gvec(IAXIS,i,j,k) = (gpot(i+1,j,k)-gpot(i-1,j,k))*inv_2delta(IAXIS)
+              if (NDIM>=2) gvec(JAXIS,i,j,k) = (gpot(i,j+1,k)-gpot(i,j-1,k))*inv_2delta(JAXIS)
+              if (NDIM==3) gvec(KAXIS,i,j,k) = (gpot(i,j,k+1)-gpot(i,j,k-1))*inv_2delta(KAXIS)
+
+           enddo
+        enddo
+     enddo
+
+  case (CYLINDRICAL)
+
+     ! need radius if theta axis is included
+     if (NDIM==3) then
+        allocate(inv_r(sizeI), STAT=istat)
+        if (istat/=0) call Driver_abortFlash("unable to allocate inv_r in Gravity_accelOneBlock")
+        inv_r(:) = 1.0/inv_r(:)
+     endif
+     do k = blkLimits(LOW,KAXIS)-K3D*ngcellcomp, blkLimits(HIGH,KAXIS)+K3D*ngcellcomp
+        do j = blkLimits(LOW,JAXIS)-K2D*ngcellcomp, blkLimits(HIGH,JAXIS)+K2D*ngcellcomp
+           do i = blkLimits(LOW,IAXIS)-ngcellcomp, blkLimits(HIGH,IAXIS)+ngcellcomp
+           
+              gvec(IAXIS,i,j,k) = (gpot(i+1,j,k)-gpot(i-1,j,k))*inv_2delta(IAXIS)
+              if (NDIM>=2) gvec(JAXIS,i,j,k) = (gpot(i,j+1,k)-gpot(i,j-1,k))*inv_2delta(JAXIS)
+              if (NDIM==3) gvec(KAXIS,i,j,k) = inv_r(i)*(gpot(i,j,k+1)-gpot(i,j,k-1))*inv_2delta(KAXIS)
+
+           enddo
+        enddo
+     enddo
+     if (NDIM==3) deallocate(inv_r)
+
+  case (SPHERICAL)
+
+     ! need radius if 2d or 3d
+     if (NDIM>=2) then
+        allocate(inv_r(sizeI), STAT=istat)
+        if (istat/=0) call Driver_abortFlash("unable to allocate inv_r in Gravity_accelOneBlock")
+        inv_r(:) = 1.0/inv_r(:)
+     endif
+     ! need sin_theta if 3d
+     if (NDIM==3) then
+        allocate(inv_sintheta(sizeJ), STAT=istat)
+        if (istat/=0) call Driver_abortFlash("unable to allocate inv_sintheta in Gravity_accelOneBlock")
+        inv_sintheta(:) = 1.0/inv_sintheta(:)
+     endif
+     do k = blkLimits(LOW,KAXIS)-K3D*ngcellcomp, blkLimits(HIGH,KAXIS)+K3D*ngcellcomp
+        do j = blkLimits(LOW,JAXIS)-K2D*ngcellcomp, blkLimits(HIGH,JAXIS)+K2D*ngcellcomp
+           do i = blkLimits(LOW,IAXIS)-ngcellcomp, blkLimits(HIGH,IAXIS)+ngcellcomp
+           
+              gvec(IAXIS,i,j,k) = (gpot(i+1,j,k)-gpot(i-1,j,k))*inv_2delta(IAXIS)
+              if (NDIM>=2) gvec(JAXIS,i,j,k) = inv_r(i)*(gpot(i,j+1,k)-gpot(i,j-1,k))*inv_2delta(JAXIS)
+              if (NDIM==3) gvec(KAXIS,i,j,k) = inv_r(i)*inv_sintheta(j)* &
+                                                    (gpot(i,j,k+1)-gpot(i,j,k-1))*inv_2delta(KAXIS)
+
+           enddo
+        enddo
+     enddo
+     if (NDIM==3) deallocate(inv_sintheta)
+     if (NDIM>=2) deallocate(inv_r)
+
+  case default
+     call Driver_abortFlash("unhandled geometry in Gravity_accelOneBlock")
+  end select
+
+  deallocate(gpot)
+  
+  return
+   
+end subroutine Gravity_accelOneBlock_blkid
+
+subroutine Gravity_accelOneBlock ( blockDesc, ngcellcomp, gvec, potentialIndex)
+
+
+  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getDeltas, Grid_getBlkIndexLimits, &
+                             Grid_getGeometry
+  use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
+
+  implicit none
+
+#include "Flash.h"
+#include "constants.h"
+
+  type(block_metadata_t) :: blockDesc
+  integer, intent(in)                    :: ngcellcomp
+  real, dimension(:,:,:,:), intent(out)  :: gvec
+  integer, intent(in),optional           :: potentialIndex
+
+  real, pointer, dimension(:,:,:,:) :: solnData
+  integer, dimension(2,MDIM)        :: blkLimits, blkLimitsGC
+  real, dimension(MDIM)             :: delta, inv_2delta
+  integer         :: sizeI, sizeJ, sizeK
+  integer         :: potVar, geom, istat
+  real, dimension(:,:,:), allocatable :: gpot(:,:,:)
+  real, dimension(:), allocatable     :: inv_r, inv_sintheta
+  integer :: i,j,k
+  
+  !==================================================
+
+  ! If a variable index is explicitly specified, assume that as the potential
+  ! otherwise use the default current potential GPOT_VAR  
+  if(present(potentialIndex)) then
+     potVar=potentialIndex
+  else
+     potVar=GPOT_VAR
+  end if
+
+  ! get block data and block info
+  call Grid_getBlkPtr(blockDesc, solnData)
+  call Grid_getDeltas(blockDesc%level, delta)
+  inv_2delta(1:NDIM) = 0.5/delta(1:NDIM)
+  call Grid_getBlkIndexLimits(blockDesc%Id, blkLimits, blkLimitsGC)
+  call Grid_getGeometry(geom)
+
+  sizeI = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
+  sizeJ = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
+  sizeK = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
+
+  ! pull out potential for better cache locality
+  allocate( gpot(sizeI,sizeJ,sizeK), STAT=istat)
+  if (istat/=0) call Driver_abortFlash("unable to allocate gpot in Gravity_accelOneBlock")
+  gpot(:,:,:) = solnData(potVar, :,:,:)
+
+  call Grid_releaseBlkPtr(blockDesc, solnData)
 
   ! now calculate gravity, depending on geometry
   select case (geom)

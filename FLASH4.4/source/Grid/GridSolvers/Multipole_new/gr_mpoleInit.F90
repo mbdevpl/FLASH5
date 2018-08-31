@@ -334,12 +334,6 @@ subroutine gr_mpoleInit ()
 !    ...Allocate the arrays related to the leaf blocks.
 !
 !
-  allocate (gr_mpoleBlockList (1:MAXBLOCKS), stat = status)
-
-  if (status > 0) then
-      call Driver_abortFlash ('[gr_mpoleInit] ERROR: gr_mpoleBlockList allocate failed')
-  end if
-!
 !
 !    ...Allocate other needed data structures.
 !

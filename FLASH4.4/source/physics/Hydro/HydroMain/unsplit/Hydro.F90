@@ -170,9 +170,9 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
 #endif
-     ! The following call invokes Gravity_potentialListOfBlocks and related stuff,
+     ! The following call invokes Gravity_potential and related stuff,
      ! to prepare for retrieving updated accelerations below.
-     call hy_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
+     call hy_prepareNewGravityAccel(gcMaskLogged)
 #ifdef FLASH_GRID_AMREXTRANSITION
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)

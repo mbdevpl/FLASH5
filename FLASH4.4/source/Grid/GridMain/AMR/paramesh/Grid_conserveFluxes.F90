@@ -228,10 +228,10 @@ subroutine Grid_conserveFluxes( axis, coarse_level)
 !!$#endif
         if (surr_blks(1,2,2,1,blockID) > 0 .AND. &
             surr_blks(3,2,2,1,blockID) == PARENT_BLK) &
-                   fluxz(:,sx:ex,sy:ey,sz  ) = flux_z(:,:,1,:nfluxes,blockID)
+                   fluxz(:,sx:ex,sy:ey,sz  ) = flux_z(:nfluxes,:,:,1,blockID)
         if (surr_blks(1,2,2,3,blockID) > 0 .AND. &
             surr_blks(3,2,2,3,blockID) == PARENT_BLK) &
-                   fluxz(:,sx:ex,sy:ey,ez+1) = flux_z(:,:,2,:nfluxes,blockID)
+                   fluxz(:,sx:ex,sy:ey,ez+1) = flux_z(:nfluxes,:,:,2,blockID)
 !!$        fluxz(:,sx:ex,sy:ey,sz+1) = gr_zflx(:,:,1,:,blockID)
 !!$        fluxz(:,sx:ex,sy:ey,ez  ) = gr_zflx(:,:,2,:,blockID)
 #if NDIM > 2

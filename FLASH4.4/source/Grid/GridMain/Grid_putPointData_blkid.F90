@@ -328,9 +328,10 @@ subroutine Grid_putPointData_blkid(blockid, gridDataStruct, structIndex, beginCo
   i = position(IAXIS) + begOffset(IAXIS)
   
   if(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
-     solnData(structIndex,i,j,k) = datablock
-     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+!!$     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
+!!$     solnData(structIndex,i,j,k) = datablock
+!!$     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
+     call Driver_abortFlash("in handling pointdata no interior pointer")
   else
      call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then

@@ -605,9 +605,6 @@ subroutine io_writeData (fileID)
                     call Grid_getBlkPtr(blockDesc, solnData, localFlag=.TRUE.)
                     unkt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi, &
                          io_klo:io_khi)
-#ifdef BLID_VAR
-                    if (i==BLID_VAR) unkt(:,:,:,lb) = lb
-#endif
                     call Grid_releaseBlkPtr(blockDesc, solnData)
                     call itor%next();              lb = lb+1
                  enddo
@@ -696,9 +693,6 @@ subroutine io_writeData (fileID)
                  call Grid_getBlkPtr(blockDesc, solnData, localFlag=.TRUE.)
                  unkt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi, &
                       io_klo:io_khi)
-#ifdef BLID_VAR
-                 if (i==BLID_VAR) unkt(:,:,:,lb) = lb + jproc * (MAXBLOCKS) 
-#endif
                  call Grid_releaseBlkPtr(blockDesc, solnData)
                  call itor%next();              lb = lb+1
               enddo

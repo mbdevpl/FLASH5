@@ -61,7 +61,7 @@ subroutine Driver_evolveFlash()
   use Grid_interface, ONLY : Grid_getLocalNumBlks, &
     Grid_getListOfBlocks, Grid_updateRefinement
   use Hydro_interface, ONLY : Hydro
-  use Gravity_interface, ONLY :  Gravity_potentialListOfBlocks
+  use Gravity_interface, ONLY :  Gravity_potential
   use IO_interface, ONLY :IO_output,IO_outputFinal
   use Eos_interface, ONLY: Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
@@ -302,7 +302,7 @@ subroutine Driver_evolveFlash()
 
 
         ! 6a. Calculate gravitational potentials
-        call Gravity_potentialListOfBlocks(blockCount,blockList)
+        call Gravity_potential()
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 #ifdef DEBUG_DRIVER
         print*, 'return from Gravity_potential '
@@ -341,7 +341,7 @@ subroutine Driver_evolveFlash()
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
      
         ! 6b. Calculate gravitational potentials
-        call Gravity_potentialListOfBlocks(blockCount,blockList)
+        call Gravity_potential()
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
 
         call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)

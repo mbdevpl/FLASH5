@@ -45,35 +45,29 @@ subroutine Driver_initFlash()
        dr_initialWCTime, dr_restart, dr_dtInit, dr_redshift,dr_particlesInitialized
 
   use Driver_interface, ONLY : Driver_initParallel, Driver_init, &
-    Driver_initMaterialProperties, Driver_initSourceTerms, &
+    Driver_initMaterialProperties,&
     Driver_verifyInitDt, Driver_abortFlash
   use RuntimeParameters_interface, ONLY : RuntimeParameters_init, RuntimeParameters_get
   use Logfile_interface, ONLY : Logfile_init
-  use Flame_interface, ONLY : Flame_init
   use PhysicalConstants_interface, ONLY : PhysicalConstants_init
   use Gravity_interface, ONLY : Gravity_init, &
-    Gravity_potentialListOfBlocks
+    Gravity_potential
   use Timers_interface, ONLY : Timers_init, Timers_start, Timers_stop
 
-  use Grid_interface, ONLY : Grid_init, Grid_initDomain, &
-    Grid_getListOfBlocks
-  use Multispecies_interface, ONLY : Multispecies_init
+  use Grid_interface, ONLY : Grid_init, Grid_initDomain
   use Particles_interface, ONLY : Particles_init,  Particles_initData, &
        Particles_initForces
  
   use Eos_interface, ONLY : Eos_init
   use Hydro_interface, ONLY : Hydro_init
   use Simulation_interface, ONLY : Simulation_init
-  use Cosmology_interface, ONLY : Cosmology_init
   use IO_interface, ONLY :IO_init, IO_outputInitial
-  use Gravity_interface, ONLY :  Gravity_potentialListOfBlocks
+  use Gravity_interface, ONLY :  Gravity_potential
   implicit none       
   
 #include "constants.h"
 #include "Flash.h"
 
-  integer :: blockCount
-  integer :: blockList(MAXBLOCKS)
   logical :: updateRefine
 
   dr_elapsedWCTime = 0.0
@@ -109,9 +103,6 @@ subroutine Driver_initFlash()
   !since their values are stamped to the logfile
   call PhysicalConstants_init( )
 
-  !must come before EOS
-  call Multispecies_init( )
-
   call Logfile_init( )
 
   call Grid_init( )
@@ -119,7 +110,6 @@ subroutine Driver_initFlash()
   call Driver_initMaterialProperties( )
   if(dr_globalMe==MASTER_PE)print*,'MaterialProperties initialized'
   
-  call Flame_init()
 
   call RuntimeParameters_get('dtInit',dr_dtInit)
 
@@ -131,18 +121,13 @@ subroutine Driver_initFlash()
 
   if(.not. dr_restart) then     
      
-     call Cosmology_init( dr_restart)
-     if(dr_globalMe==MASTER_PE)print*,'Cosmology initialized'
 
      call Driver_init()
 
      !Eos must come before Grid
      call Eos_init()
 
-     call Driver_initSourceTerms( dr_restart)
-     if(dr_globalMe==MASTER_PE)print*,'Source terms initialized'
-
-     !must come before Grid since simulation specific values must go on the Grid
+       !must come before Grid since simulation specific values must go on the Grid
 
      call Simulation_init()
 
@@ -156,14 +141,10 @@ subroutine Driver_initFlash()
      
      call IO_init( )
 
-     call Cosmology_init( dr_restart)
 
      call Driver_init()
 
      call Eos_init()
-
-     call Driver_initSourceTerms( dr_restart)
-     if(dr_globalMe==MASTER_PE)print*,'Source terms initialized'
 
      call Simulation_init()
      dr_particlesInitialized=.true.
@@ -186,7 +167,7 @@ subroutine Driver_initFlash()
   if(dr_globalMe==MASTER_PE)print*,'Initial dt verified'
  
   !For active particle simulations we must initialize particle 
-  !positions before the call to Gravity_potentialListOfBlocks.
+  !positions before the call to Gravity_potential.
   call Particles_initData(dr_restart,dr_particlesInitialized)
   
   call IO_outputInitial( dr_nbegin, dr_initialSimTime)

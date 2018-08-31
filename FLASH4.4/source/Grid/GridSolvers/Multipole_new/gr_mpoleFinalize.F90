@@ -27,8 +27,7 @@ subroutine gr_mpoleFinalize ()
                            gr_mpoleZoneScalarInv,         &
                            gr_mpoleZoneLogNormInv,        &
                            gr_mpoleZoneExponentInv,       &
-                           gr_mpoleZoneMaxRadiusFraction, &
-                           gr_mpoleBlockList
+                           gr_mpoleZoneMaxRadiusFraction
 
   implicit none
 
@@ -42,7 +41,6 @@ subroutine gr_mpoleFinalize ()
   if (allocated (gr_mpoleZoneLogNormInv)       ) deallocate (gr_mpoleZoneLogNormInv)
   if (allocated (gr_mpoleZoneExponentInv)      ) deallocate (gr_mpoleZoneExponentInv)
   if (allocated (gr_mpoleZoneMaxRadiusFraction)) deallocate (gr_mpoleZoneMaxRadiusFraction)
-  if (allocated (gr_mpoleBlockList)            ) deallocate (gr_mpoleBlockList)
 
   if (gr_mpoleMaxL > 0) then
       if (allocated (gr_mpoleNumberInv)) deallocate (gr_mpoleNumberInv)
