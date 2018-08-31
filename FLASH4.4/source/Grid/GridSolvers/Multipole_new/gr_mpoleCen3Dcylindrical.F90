@@ -61,7 +61,8 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
                                 Grid_releaseBlkPtr,     &
                                 Grid_getBlkBoundBox,    &
                                 Grid_getDeltas,         &
-                                Grid_getBlkIndexLimits, &
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator,&
                                 Grid_getCellCoords
 
   use gr_mpoleData,      ONLY : gr_mpoleDomainRmax,     &
@@ -77,9 +78,11 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
                                 gr_mpoleZcenter,        &
                                 gr_mpoleRcenter,        &
                                 gr_mpolePhiCenter,      &
-                                gr_mpoleTotalMass,      &
-                                gr_mpoleBlockCount,     &
-                                gr_mpoleBlockList
+                                gr_mpoleTotalMass
+
+
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
   
@@ -98,8 +101,8 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
   logical :: positiveYaxis, negativeYaxis
   logical :: quadrantI, quadrantII, quadrantIII, quadrantIV
 
-  integer :: blockNr
-  integer :: blockID
+  
+  
   integer :: error
   integer :: i,imin,imax
   integer :: j,jmin,jmax
@@ -112,7 +115,7 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
   integer :: locate      (1:3)
   integer :: status      (MPI_STATUS_SIZE)
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: alpha, beta
   real    :: bndBoxILow
@@ -138,7 +141,11 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
 
   real, allocatable :: shifts   (:,:)
   real, pointer     :: solnData (:,:,:,:)
-!
+
+  integer :: lev
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+  !
 !
 !     ...Sum quantities over all locally held leaf blocks.
 !
@@ -149,14 +156,16 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
   localMDYsum = ZERO
   localMDZsum = ZERO
 
-  do blockNr = 1,gr_mpoleBlockCount
+ call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
+     
+     blkLimits=block%limits
 
-     blockID = gr_mpoleBlockList  (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
-     call Grid_getBlkPtr          (blockID, solnData)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+     call Grid_getBlkBoundBox     (block, bndBox)
+     call Grid_getDeltas          (lev, delta)
+     call Grid_getBlkPtr          (block, solnData)
 
      imin = blkLimits (LOW, IAXIS)
      jmin = blkLimits (LOW, JAXIS)
@@ -258,9 +267,11 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
 
      end do
 
-     call Grid_releaseBlkPtr (blockID, solnData)
+     call Grid_releaseBlkPtr (block, solnData)
 
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
 !
 !
 !     ...Prepare for a one-time all reduce call.
@@ -377,11 +388,12 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
   messageTag = 1
   invokeRecv = .true.
 
-  do blockNr = 1,gr_mpoleBlockCount
+   call Grid_getLeafIterator(itor)
+   do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     
 
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox (blockID, bndBox)
+     call Grid_getBlkBoundBox (block, bndBox)
 
      minRcyl = bndBox (LOW ,IAXIS)
      maxRcyl = bndBox (HIGH,IAXIS)
@@ -408,85 +420,87 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
 
      if (insideBlock) then
 
-         call Grid_getDeltas          (blockID, delta)
-         call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
-
-         DeltaI = delta (IAXIS)
-         DeltaJ = delta (JAXIS)
-         DeltaK = delta (KAXIS)
-
-         gr_mpoleDrInnerZone = HALF * sqrt (DeltaI * DeltaJ)   ! based on Rcyl and Z only
-
-         imin = blkLimits (LOW, IAXIS)
-         jmin = blkLimits (LOW, JAXIS)
-         kmin = blkLimits (LOW, KAXIS)  
-         imax = blkLimits (HIGH,IAXIS)
-         jmax = blkLimits (HIGH,JAXIS)
-         kmax = blkLimits (HIGH,KAXIS)
-
-         nCellsI = imax - imin + 1
-         nCellsJ = jmax - jmin + 1
-         nCellsK = kmax - kmin + 1
-
-         nEdgesI = nCellsI + 1
-         nEdgesJ = nCellsJ + 1
-         nEdgesK = nCellsK + 1
-
-         maxEdges = max (nEdgesI, nEdgesJ, nEdgesK)
-
-         allocate (shifts (1:maxEdges,3))
-
-         guardCells = .false.
-
-         call Grid_getCellCoords (IAXIS, blockID, FACES, guardCells, shifts (1:nEdgesI,1), nEdgesI)
-         call Grid_getCellCoords (JAXIS, blockID, FACES, guardCells, shifts (1:nEdgesJ,2), nEdgesJ)
-         call Grid_getCellCoords (KAXIS, blockID, FACES, guardCells, shifts (1:nEdgesK,3), nEdgesK)
-
-         shifts (1:nEdgesI,1) = shifts (1:nEdgesI,1) - cmRcyl
-         shifts (1:nEdgesJ,2) = shifts (1:nEdgesJ,2) - cmZ
-         shifts (1:nEdgesK,3) = shifts (1:nEdgesK,3) - cmPhi
-
-         locate (1) = minloc (abs (shifts (1:nEdgesI,1)), dim = 1)
-         locate (2) = minloc (abs (shifts (1:nEdgesJ,2)), dim = 1)
-         locate (3) = minloc (abs (shifts (1:nEdgesK,3)), dim = 1)
-
-         cmRcyl = cmRcyl + shifts (locate (1),1)  ! move multipole center to nearest R edge
-         cmZ    = cmZ    + shifts (locate (2),2)  ! move multipole center to nearest Z edge
-         cmPhi  = cmPhi  + shifts (locate (3),3)  ! move multipole center to nearest Phi edge
-
-         deallocate (shifts)
-
-         gr_mpoleXcenter   = cmRcyl * cos (cmPhi)    !
-         gr_mpoleYcenter   = cmRcyl * sin (cmPhi)    ! convert back to 3D cartesian
-         gr_mpoleZcenter   = cmZ                     !
-         gr_mpoleRcenter   = cmRcyl
-         gr_mpolePhiCenter = cmPhi
-
-         localData (1) = gr_mpoleDrInnerZone
-         localData (2) = gr_mpoleXcenter
-         localData (3) = gr_mpoleYcenter
-         localData (4) = gr_mpoleZcenter
-         localData (5) = gr_mpoleRcenter
-         localData (6) = gr_mpolePhiCenter
-
-         if (gr_meshMe /= MASTER_PE) then
-
-             call MPI_Send (localData,    &
-                            6,            &
-                            FLASH_REAL,   &
-                            MASTER_PE,    &
-                            messageTag,   &
-                            gr_meshComm,  &
-                            error         )
-         else
-             invokeRecv = .false.
-         end if
-
-         exit
-
+        lev=block%level
+        call Grid_getDeltas          (lev, delta)
+        blkLimits=block%limits
+        
+        DeltaI = delta (IAXIS)
+        DeltaJ = delta (JAXIS)
+        DeltaK = delta (KAXIS)
+        
+        gr_mpoleDrInnerZone = HALF * sqrt (DeltaI * DeltaJ)   ! based on Rcyl and Z only
+        
+        imin = blkLimits (LOW, IAXIS)
+        jmin = blkLimits (LOW, JAXIS)
+        kmin = blkLimits (LOW, KAXIS)  
+        imax = blkLimits (HIGH,IAXIS)
+        jmax = blkLimits (HIGH,JAXIS)
+        kmax = blkLimits (HIGH,KAXIS)
+        
+        nCellsI = imax - imin + 1
+        nCellsJ = jmax - jmin + 1
+        nCellsK = kmax - kmin + 1
+        
+        nEdgesI = nCellsI + 1
+        nEdgesJ = nCellsJ + 1
+        nEdgesK = nCellsK + 1
+        
+        maxEdges = max (nEdgesI, nEdgesJ, nEdgesK)
+        
+        allocate (shifts (1:maxEdges,3))
+        
+        guardCells = .false.
+        
+        call Grid_getCellCoords (IAXIS, block, FACES, guardCells, shifts (1:nEdgesI,1), nEdgesI)
+        call Grid_getCellCoords (JAXIS, block, FACES, guardCells, shifts (1:nEdgesJ,2), nEdgesJ)
+        call Grid_getCellCoords (KAXIS, block, FACES, guardCells, shifts (1:nEdgesK,3), nEdgesK)
+        
+        shifts (1:nEdgesI,1) = shifts (1:nEdgesI,1) - cmRcyl
+        shifts (1:nEdgesJ,2) = shifts (1:nEdgesJ,2) - cmZ
+        shifts (1:nEdgesK,3) = shifts (1:nEdgesK,3) - cmPhi
+        
+        locate (1) = minloc (abs (shifts (1:nEdgesI,1)), dim = 1)
+        locate (2) = minloc (abs (shifts (1:nEdgesJ,2)), dim = 1)
+        locate (3) = minloc (abs (shifts (1:nEdgesK,3)), dim = 1)
+        
+        cmRcyl = cmRcyl + shifts (locate (1),1)  ! move multipole center to nearest R edge
+        cmZ    = cmZ    + shifts (locate (2),2)  ! move multipole center to nearest Z edge
+        cmPhi  = cmPhi  + shifts (locate (3),3)  ! move multipole center to nearest Phi edge
+        
+        deallocate (shifts)
+        
+        gr_mpoleXcenter   = cmRcyl * cos (cmPhi)    !
+        gr_mpoleYcenter   = cmRcyl * sin (cmPhi)    ! convert back to 3D cartesian
+        gr_mpoleZcenter   = cmZ                     !
+        gr_mpoleRcenter   = cmRcyl
+        gr_mpolePhiCenter = cmPhi
+        
+        localData (1) = gr_mpoleDrInnerZone
+        localData (2) = gr_mpoleXcenter
+        localData (3) = gr_mpoleYcenter
+        localData (4) = gr_mpoleZcenter
+        localData (5) = gr_mpoleRcenter
+        localData (6) = gr_mpolePhiCenter
+        
+        if (gr_meshMe /= MASTER_PE) then
+           
+           call MPI_Send (localData,    &
+                6,            &
+                FLASH_REAL,   &
+                MASTER_PE,    &
+                messageTag,   &
+                gr_meshComm,  &
+                error         )
+        else
+           invokeRecv = .false.
+        end if
+        
+        exit
+        
      end if
+      call itor%next()
   end do
-
+  call Grid_releaseLeafIterator(itor)  
   if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
 
        call MPI_Recv (localData,      &

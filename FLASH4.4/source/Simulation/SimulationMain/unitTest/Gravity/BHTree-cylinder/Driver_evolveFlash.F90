@@ -61,7 +61,7 @@ subroutine Driver_evolveFlash()
   use Grid_interface, ONLY : Grid_getLocalNumBlks, &
     Grid_getListOfBlocks, Grid_updateRefinement
   use Hydro_interface, ONLY : Hydro
-  use Gravity_interface, ONLY :  Gravity_potentialListOfBlocks
+  use Gravity_interface, ONLY :  Gravity_potential
   use IO_interface, ONLY :IO_output,IO_outputFinal
   use Cosmology_interface, ONLY : Cosmology_redshiftHydro, &
     Cosmology_solveFriedmannEqn, Cosmology_getRedshift
@@ -350,7 +350,7 @@ subroutine Driver_evolveFlash()
 
 
         ! 6a. Calculate gravitational potentials
-        call Gravity_potentialListOfBlocks(blockCount,blockList)
+        call Gravity_potential()
 #ifdef DEBUG_DRIVER
         print*, 'return from Gravity_potential '
 #endif
@@ -406,7 +406,7 @@ subroutine Driver_evolveFlash()
         call Timers_stop("Particles_advance")
      
         ! 6b. Calculate gravitational potentials
-        call Gravity_potentialListOfBlocks(blockCount,blockList)
+        call Gravity_potential()
 
         call sim_computeError()
 

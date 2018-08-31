@@ -53,7 +53,7 @@ subroutine Driver_initFlash()
   use Flame_interface, ONLY : Flame_init
   use PhysicalConstants_interface, ONLY : PhysicalConstants_init
   use Gravity_interface, ONLY : Gravity_init, &
-    Gravity_potentialListOfBlocks
+    Gravity_potential
   use Timers_interface, ONLY : Timers_init, Timers_start, Timers_stop
 
   use Grid_interface, ONLY : Grid_init, Grid_initDomain, &
@@ -191,12 +191,12 @@ subroutine Driver_initFlash()
 
 
   !For active particle simulations we must initialize particle 
-  !positions before the call to Gravity_potentialListOfBlocks.
+  !positions before the call to Gravity_potential.
   call Particles_initData(dr_restart,dr_particlesInitialized)
 
   if(.not. dr_restart) then
      call Grid_getListOfBlocks(LEAF,blockList,blockCount)
-     call Gravity_potentialListOfBlocks(blockCount,blockList)
+     call Gravity_potential()
      call Particles_initForces
   end if
 

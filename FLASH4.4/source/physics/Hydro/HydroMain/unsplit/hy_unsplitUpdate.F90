@@ -461,10 +461,14 @@
                    isph= ispu-NPROP_VARS
                    FL(HY_END_FLUX+isph) = xflux(HY_END_FLUX+isph,i,  j,   k   )
                    FR(HY_END_FLUX+isph) = xflux(HY_END_FLUX+isph,i+1,j,   k   )
-                   GL(HY_END_FLUX+isph) = yflux(HY_END_FLUX+isph,i,  j,   k   )*ky
-                   GR(HY_END_FLUX+isph) = yflux(HY_END_FLUX+isph,i,  j+ky,k   )*ky
-                   HL(HY_END_FLUX+isph) = zflux(HY_END_FLUX+isph,i,  j,   k   )*kz
-                   HR(HY_END_FLUX+isph) = zflux(HY_END_FLUX+isph,i,  j,   k+kz)*kz
+                   if (NDIM .GE. 2) then
+                      GL(HY_END_FLUX+isph) = yflux(HY_END_FLUX+isph,i,  j,   k   )*ky
+                      GR(HY_END_FLUX+isph) = yflux(HY_END_FLUX+isph,i,  j+ky,k   )*ky
+                   end if
+                   if (NDIM == 3) then
+                      HL(HY_END_FLUX+isph) = zflux(HY_END_FLUX+isph,i,  j,   k   )*kz
+                      HR(HY_END_FLUX+isph) = zflux(HY_END_FLUX+isph,i,  j,   k+kz)*kz
+                   end if
                 enddo
 #endif
 
@@ -1039,10 +1043,18 @@
                    isph= ispu-NPROP_VARS
                    FL(HY_END_FLUX+isph) = xflux(HY_END_FLUX+isph,i,  j,   k   )
                    FR(HY_END_FLUX+isph) = xflux(HY_END_FLUX+isph,i+1,j,   k   )
+#if NDIM >= 2
                    GL(HY_END_FLUX+isph) = yflux(HY_END_FLUX+isph,i,  j,   k   )*ky
                    GR(HY_END_FLUX+isph) = yflux(HY_END_FLUX+isph,i,  j+ky,k   )*ky
+#else
+                   GL(:) = 0.0; GR(:) = 0.0
+#endif
+#if NDIM == 3
                    HL(HY_END_FLUX+isph) = zflux(HY_END_FLUX+isph,i,  j,   k   )*kz
                    HR(HY_END_FLUX+isph) = zflux(HY_END_FLUX+isph,i,  j,   k+kz)*kz
+#else
+                   HL(:) = 0.0; HR(:) = 0.0
+#endif
                 enddo
 
 

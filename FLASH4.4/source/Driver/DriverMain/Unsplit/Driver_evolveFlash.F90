@@ -87,7 +87,7 @@ subroutine Driver_evolveFlash()
 #endif
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
-  use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
+  use Gravity_interface,   ONLY : Gravity_potential
   use IO_interface,        ONLY : IO_output,IO_outputFinal
   use RadTrans_interface,  ONLY : RadTrans
   use Eos_interface,       ONLY : Eos_logDiagnostics

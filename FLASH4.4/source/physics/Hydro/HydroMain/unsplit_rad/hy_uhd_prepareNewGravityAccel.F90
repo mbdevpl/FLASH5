@@ -12,7 +12,7 @@
 !!
 !! DESCRIPTION
 !!
-!!  Call Gravity_potentialListOfBlocks to update the gravitational potential
+!!  Call Gravity_potential to update the gravitational potential
 !!  stored in UNK, for configurations with self-gravity.
 !!
 !!  Also perform ancillary actions needed in some configurations,
@@ -32,16 +32,16 @@
 !!
 !! ARGUMENTS
 !!
-!!   blockCount : block count, passed on to Gravity_potentialListOfBlocks
+!!   blockCount : block count, passed on to Gravity_potential
 !!
-!!   blocklist : list of blocks, passed on to Gravity_potentialListOfBlocks
+!!   blocklist : list of blocks, passed on to Gravity_potential
 !!
 !!   gcMaskLogged : a flag to control logging of the guard cell mask for the
 !!                  Grid_fillGuardCells call
 !!
 !! SEE ALSO
 !!
-!!  Gravity_potentialListOfBlocks
+!!  Gravity_potential
 !!  Gravity_accelOneRow
 !!***
 
@@ -55,7 +55,7 @@ subroutine hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
   use Grid_interface, ONLY : Grid_fillGuardCells,    &
                              Grid_addToVar
   use Logfile_interface, ONLY : Logfile_stampVarMask
-  use Gravity_interface, ONLY : Gravity_potentialListOfBlocks
+  use Gravity_interface, ONLY : Gravity_potential
 
 #if defined(GRAVITY) && defined(GPOT_VAR)
   use Particles_interface, ONLY : Particles_sinkAccelGasOnSinksAndSinksOnGas
@@ -82,12 +82,12 @@ subroutine hy_uhd_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
 
      !! Gravity calculation at n+1 by calling Poisson solver
      if (hy_gpotVar .LE. 0) then
-        call Gravity_potentialListOfBlocks(blockCount, blockList)
+        call Gravity_potential()
         hy_gpotAlreadyUpToDate = .TRUE.
         !! Fill guardcells for only the gpot variable
         gcMask(GPOT_VAR) = .true.
      else
-        call Gravity_potentialListOfBlocks(blockCount, blockList, potentialIndex=hy_gpotVar)
+        call Gravity_potential( potentialIndex=hy_gpotVar)
         !! Fill guardcells for only the gpoh or gpol variable
         hy_gpotAlreadyUpToDate = (hy_gpotVar==GPOT_VAR)
         gcMask(hy_gpotVar) = .true.

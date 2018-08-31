@@ -62,7 +62,8 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
                                 Grid_releaseBlkPtr,     &
                                 Grid_getBlkBoundBox,    &
                                 Grid_getDeltas,         &
-                                Grid_getBlkIndexLimits, &
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator,&
                                 Grid_getCellCoords
 
   use gr_mpoleData,      ONLY : gr_mpoleSymmetryPlane2D, &
@@ -76,9 +77,10 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
                                 gr_mpoleZcenter,         &
                                 gr_mpoleRcenter,         &
                                 gr_mpoleThetaCenter,     &
-                                gr_mpoleTotalMass,       &
-                                gr_mpoleBlockCount,      &
-                                gr_mpoleBlockList
+                                gr_mpoleTotalMass
+  
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
   
@@ -95,8 +97,8 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
   logical :: insideBlock
   logical :: invokeRecv
 
-  integer :: blockNr
-  integer :: blockID
+  
+  
   integer :: error
   integer :: i,imin,imax
   integer :: j,jmin,jmax
@@ -107,7 +109,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
   integer :: locate      (1:1)
   integer :: status      (MPI_STATUS_SIZE)
   integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
 
   real    :: alpha, beta
   real    :: angularVolumePart
@@ -131,6 +133,10 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
 
   real, allocatable :: shifts   (:)
   real, pointer     :: solnData (:,:,:,:)
+
+  integer :: lev
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
 !
 !
 !     ...Sum quantities over all locally held leaf blocks.
@@ -140,14 +146,16 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
   localMDsum  = ZERO
   localMDZsum = ZERO
 
-  do blockNr = 1,gr_mpoleBlockCount
+  call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
+     
+     blkLimits=block%limits
 
-     blockID = gr_mpoleBlockList  (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
-     call Grid_getBlkPtr          (blockID, solnData)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
+     call Grid_getBlkBoundBox     (block, bndBox)
+     call Grid_getDeltas          (lev, delta)
+     call Grid_getBlkPtr          (block, solnData)
 
      imin = blkLimits (LOW, IAXIS)
      jmin = blkLimits (LOW, JAXIS)
@@ -269,9 +277,10 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
         thetaCosine   = thetaCosine - (alpha * thetaCosine + beta * thetaSineSave)
      end do
 
-     call Grid_releaseBlkPtr (blockID, solnData)
-
+     call Grid_releaseBlkPtr (block, solnData)
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
 !
 !
 !     ...Prepare for a one-time all reduce call.
@@ -348,11 +357,12 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
   messageTag = 1
   invokeRecv = .true.
 
-  do blockNr = 1,gr_mpoleBlockCount
+  call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     
 
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox (blockID, bndBox)
+     call Grid_getBlkBoundBox (block, bndBox)
 
      minRsph  = bndBox (LOW ,IAXIS)
      maxRsph  = bndBox (HIGH,IAXIS)
@@ -373,9 +383,10 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
 
      if (insideBlock) then
 
-         call Grid_getDeltas          (blockID, delta)
-         call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
-
+        lev=block%level
+        call Grid_getDeltas          (lev, delta)
+        blkLimits=block%limits
+ 
          DeltaI = delta (IAXIS)
          DeltaJ = delta (JAXIS)
 
@@ -391,7 +402,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
 
          guardCells = .false.
 
-         call Grid_getCellCoords (IAXIS, blockID, FACES, guardCells, shifts (1:nEdgesI), nEdgesI)
+         call Grid_getCellCoords (IAXIS, block, FACES, guardCells, shifts (1:nEdgesI), nEdgesI)
 
          shifts (1:nEdgesI) = shifts (1:nEdgesI) - cmRsph
          locate (1) = minloc (abs (shifts (1:nEdgesI)), dim = 1)
@@ -425,7 +436,9 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
          exit
 
      end if
+     call itor%next()
   end do
+  call Grid_releaseLeafIterator(itor)
 
   if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
 

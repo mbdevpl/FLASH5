@@ -6,7 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_putRowData(integer(IN) :: blockID,
+!!  Grid_putRowData(integer(IN) :: blockDesc,
 !!                  integer(IN) :: gridDataStruct,
 !!                  integer(IN) :: structIndex,
 !!                  integer(IN) :: beginCount, 
@@ -29,7 +29,7 @@
 !!  
 !! ARGUMENTS 
 !!
-!!  blockID : the local blockid
+!!  blockDesc : the local blockid
 !!
 !!  gridDataStruct : integer value specifying data structure. 
 !!                   The options are defined in constants.h and they are :
@@ -130,7 +130,7 @@
 !!       
 !!      integer ::    startingPos(MDIM)
 !!      integer ::    dataSize
-!!      integer ::    blockID
+!!      integer ::    blockDesc
 !!      real    ::    dataBlock(:)
 !!       
 !!          startingPos(1) = 1    
@@ -146,9 +146,9 @@
 !!          ! code to fill the elements of datablock ...
 !!          ! ...
 !!
-!!          do blockID = 1, localNumBlocks
+!!          do blockDesc = 1, localNumBlocks
 !!  
-!!             call Grid_putRowData(blockID, CENTER, DENS_VAR, EXTERIOR, IAXIS, &
+!!             call Grid_putRowData(blockDesc, CENTER, DENS_VAR, EXTERIOR, IAXIS, &
 !!                               startingPos, dataBlock, dataSize)
 !!  
 !!          end do
@@ -191,7 +191,7 @@
 !!       
 !!      integer ::    startingPos(MDIM)
 !!      integer ::    dataSize
-!!      integer ::    blockID
+!!      integer ::    blockDesc
 !!      real    ::    dataBlock(:)
 !!       
 !!          startingPos(1) = 4    
@@ -206,9 +206,9 @@
 !!          ! code to fill the 3 elements of datablock ...
 !!          ! ...
 !!
-!!          do blockID = 1, localNumBlocks
+!!          do blockDesc = 1, localNumBlocks
 !!  
-!!             call Grid_putRowData(blockID, CENTER, PRES_VAR, INTERIOR, IAXIS, &
+!!             call Grid_putRowData(blockDesc, CENTER, PRES_VAR, INTERIOR, IAXIS, &
 !!                               startingPos, dataBlock, dataSize)
 !!  
 !!          end do

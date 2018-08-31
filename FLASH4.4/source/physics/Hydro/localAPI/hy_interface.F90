@@ -672,9 +672,7 @@ Module hy_interface
 
 
     interface
-       subroutine hy_prepareNewGravityAccel(blockCount,blockList,gcMaskLogged)
-         integer, INTENT(IN) ::  blockCount
-         integer, INTENT(IN), dimension(blockCount) :: blockList
+       subroutine hy_prepareNewGravityAccel(gcMaskLogged)
          logical,intent(in) :: gcMaskLogged
        end subroutine hy_prepareNewGravityAccel
     end interface

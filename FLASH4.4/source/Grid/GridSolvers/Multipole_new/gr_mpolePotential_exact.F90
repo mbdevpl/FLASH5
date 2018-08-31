@@ -51,15 +51,17 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
                                           Grid_releaseBlkPtr,    &
                                           Grid_getBlkBoundBox,   &
                                           Grid_getDeltas,        &
-                                          Grid_getBlkIndexLimits
+                                          Grid_getLeafIterator,   &
+                                          Grid_releaseLeafIterator
 
   use gr_mpoleData,                ONLY : gr_mpoleSymmetryPlane2D, &
                                           gr_mpoleTwoPi,           &
                                           gr_mpoleFourPi,          &
                                           gr_mpoleFourPiInv,       &
-                                          gr_mpoleGeometry,        &
-                                          gr_mpoleBlockCount,      &
-                                          gr_mpoleBlockList
+                                          gr_mpoleGeometry
+
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
   
@@ -97,13 +99,13 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
   real    :: bndBox_B      (LOW:HIGH,MDIM)
   integer :: blkLimits_A   (LOW:HIGH,MDIM)
   integer :: blkLimits_B   (LOW:HIGH,MDIM)
-  integer :: blkLimitsGC_A (LOW:HIGH,MDIM)
-  integer :: blkLimitsGC_B (LOW:HIGH,MDIM)
 
   real, pointer :: solnData (:,:,:,:)
 
-  integer :: blockNr_A,blockNr_B
-  integer :: blockID_A,blockID_B
+  integer :: lev
+  type(block_metadata_t) :: block,block1
+  type(leaf_iterator_t) :: itor, itor1
+
   integer :: fileUnit
   integer :: iA,jA,kA
   integer :: iB,jB,kB
@@ -167,13 +169,15 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
 
   potdiff_max = ZERO
 
-  do blockNr_A = 1,gr_mpoleBlockCount
-     blockID_A = gr_mpoleBlockList (blockNr_A)
-
-     call Grid_getBlkBoundBox     (blockID_A,  bndBox_A)
-     call Grid_getDeltas          (blockID_A,  delta_A )
-     call Grid_getBlkIndexLimits  (blockID_A,  blkLimits_A, blkLimitsGC_A)
-
+  call Grid_getLeafIterator(itor1)
+  do while(itor1%is_valid())
+     call itor1%blkMetaData(block1)
+     lev=block1%level
+     blkLimits_A=block1%limits
+     
+     call Grid_getBlkBoundBox     (block1, bndBox_A)
+     call Grid_getDeltas          (lev, delta_A)
+     
      imin_A         = blkLimits_A (LOW, IAXIS)
      jmin_A         = blkLimits_A (LOW, JAXIS)
      kmin_A         = blkLimits_A (LOW, KAXIS)  
@@ -191,253 +195,271 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
      bndBoxKLow_A = bndBox_A (LOW,KAXIS)
 
      select case (gr_mpoleGeometry)
-
+        
      case (GRID_3DCARTESIAN)
-
-       zA = bndBoxKLow_A + DeltaKHalf_A
-       do kA = kmin_A,kmax_A
-          yA = bndBoxJLow_A + DeltaJHalf_A
-          do jA = jmin_A,jmax_A
-             xA = bndBoxILow_A + DeltaIHalf_A
-             do iA = imin_A,imax_A
-!
-!
-!        Evaluate now the exact FLASH potential at cell cube (xA,yA,zA).
-!
-!
-                potential_exact = ZERO 
-
-                do blockNr_B = 1,gr_mpoleBlockCount
-                   blockID_B = gr_mpoleBlockList (blockNr_B)
-
-                   call Grid_getBlkBoundBox     (blockID_B,  bndBox_B)
-                   call Grid_getDeltas          (blockID_B,  delta_B )
-                   call Grid_getBlkPtr          (blockID_B,  solnData)
-                   call Grid_getBlkIndexLimits  (blockID_B,  blkLimits_B, blkLimitsGC_B)
-
-                   imin_B         = blkLimits_B (LOW, IAXIS)
-                   jmin_B         = blkLimits_B (LOW, JAXIS)
-                   kmin_B         = blkLimits_B (LOW, KAXIS)  
-                   imax_B         = blkLimits_B (HIGH,IAXIS)
-                   jmax_B         = blkLimits_B (HIGH,JAXIS)
-                   kmax_B         = blkLimits_B (HIGH,KAXIS)
-                   DeltaI_B      = delta_B (IAXIS)
-                   DeltaJ_B      = delta_B (JAXIS)
-                   DeltaK_B      = delta_B (KAXIS)
-                   DeltaIHalf_B = DeltaI_B * HALF
-                   DeltaJHalf_B = DeltaJ_B * HALF
-                   DeltaKHalf_B = DeltaK_B * HALF
-                   bndBoxILow_B = bndBox_B (LOW,IAXIS)
-                   bndBoxJLow_B = bndBox_B (LOW,JAXIS)
-                   bndBoxKLow_B = bndBox_B (LOW,KAXIS)
-
-                   zB = bndBoxKLow_B + DeltaKHalf_B
-                   do kB = kmin_B,kmax_B
-                      yB = bndBoxJLow_B + DeltaJHalf_B
-                      do jB = jmin_B,jmax_B
-                         xB = bndBoxILow_B + DeltaIHalf_B
-                         do iB = imin_B,imax_B
-
-                            same_cube = xA.eq.xB .and. yA.eq.yB .and. zA.eq.zB
-
-                            if (.not.same_cube) then
+        
+        zA = bndBoxKLow_A + DeltaKHalf_A
+        do kA = kmin_A,kmax_A
+           yA = bndBoxJLow_A + DeltaJHalf_A
+           do jA = jmin_A,jmax_A
+              xA = bndBoxILow_A + DeltaIHalf_A
+              do iA = imin_A,imax_A
+                 !
+                 !
+                 !        Evaluate now the exact FLASH potential at cell cube (xA,yA,zA).
+                 !
+                 !
+                 potential_exact = ZERO 
+                 
+                 call Grid_getLeafIterator(itor)
+                 do while(itor%is_valid())
+                    call itor%blkMetaData(block)
+                    lev=block%level
+                    blkLimits_B=block%limits
+                    
+                    call Grid_getBlkBoundBox     (block, bndBox_b)
+                    call Grid_getDeltas          (lev, delta_B)
+                    call Grid_getBlkPtr          (block, solnData)
+                    
+                    imin_B         = blkLimits_B (LOW, IAXIS)
+                    jmin_B         = blkLimits_B (LOW, JAXIS)
+                    kmin_B         = blkLimits_B (LOW, KAXIS)  
+                    imax_B         = blkLimits_B (HIGH,IAXIS)
+                    jmax_B         = blkLimits_B (HIGH,JAXIS)
+                    kmax_B         = blkLimits_B (HIGH,KAXIS)
+                    DeltaI_B      = delta_B (IAXIS)
+                    DeltaJ_B      = delta_B (JAXIS)
+                    DeltaK_B      = delta_B (KAXIS)
+                    DeltaIHalf_B = DeltaI_B * HALF
+                    DeltaJHalf_B = DeltaJ_B * HALF
+                    DeltaKHalf_B = DeltaK_B * HALF
+                    bndBoxILow_B = bndBox_B (LOW,IAXIS)
+                    bndBoxJLow_B = bndBox_B (LOW,JAXIS)
+                    bndBoxKLow_B = bndBox_B (LOW,KAXIS)
+                    
+                    zB = bndBoxKLow_B + DeltaKHalf_B
+                    do kB = kmin_B,kmax_B
+                       yB = bndBoxJLow_B + DeltaJHalf_B
+                       do jB = jmin_B,jmax_B
+                          xB = bndBoxILow_B + DeltaIHalf_B
+                          do iB = imin_B,imax_B
+                             
+                             same_cube = xA.eq.xB .and. yA.eq.yB .and. zA.eq.zB
+                             
+                             if (.not.same_cube) then
                                 cellVolume = DeltaI_B * DeltaJ_B * DeltaK_B
                                 cellMass = solnData (idensvar,iB,jB,kB) * cellVolume
                                 r = sqrt ((xA-xB)*(xA-xB) + (yA-yB)*(yA-yB) + (zA-zB)*(zA-zB))
                                 potential_exact = potential_exact + cellMass / r
-                            end if
-
-                            xB = xB + DeltaI_B
-                         end do
-                         yB = yB + DeltaJ_B
-                      end do
-                      zB = zB + DeltaK_B
-                   end do
-
-                   call Grid_releaseBlkPtr (blockID_B, solnData)
-
-                end do
-
-                potential_exact = - gr_mpoleGravityConstant * potential_exact
-!
-!
-!        The entire exact FLASH potential at cell (iA,jA,kA) is ready.
-!        Compare with the one evaluated using the multipoles.
-!
-!
-                call Grid_getBlkPtr          (blockID_A, solnData)
-
-                potential_mpole = solnData (ipotvar,iA,jA,kA)
-
-                call Grid_releaseBlkPtr      (blockID_A, solnData)
-
-                potdiff = abs (potential_exact - potential_mpole)
-                if (potdiff > potdiff_max) then
-!                    write (fileUnit,'(4(2X,I3,2X),E20.12,E20.12)') &
-!                                      blockNr_A,iA,jA,kA,   potential_exact,potential_mpole
+                             end if
+                             
+                             xB = xB + DeltaI_B
+                          end do
+                          yB = yB + DeltaJ_B
+                       end do
+                       zB = zB + DeltaK_B
+                    end do
+                    
+                    call Grid_releaseBlkPtr (block, solnData)
+                    call itor%next()
+                 end do
+                 call Grid_releaseLeafIterator(itor)
+                 !
+                 
+                 potential_exact = - gr_mpoleGravityConstant * potential_exact
+                 !
+                 !
+                 !        The entire exact FLASH potential at cell (iA,jA,kA) is ready.
+                 !        Compare with the one evaluated using the multipoles.
+                 !
+                 !
+                 call Grid_getBlkPtr          (block1, solnData)
+                 
+                 potential_mpole = solnData (ipotvar,iA,jA,kA)
+                 
+                 call Grid_releaseBlkPtr      (block1, solnData)
+                 
+                 potdiff = abs (potential_exact - potential_mpole)
+                 if (potdiff > potdiff_max) then
+                    !                    write (fileUnit,'(4(2X,I3,2X),E20.12,E20.12)') &
+                    !                                      iA,jA,kA,   potential_exact,potential_mpole
                     potdiff_max = potdiff
-                end if
-
-                write (fileUnit,'(4(2X,I3,2X),E20.12,E20.12)') &
-                                   blockNr_A,iA,jA,kA,   potential_exact,potential_mpole
-
-                xA = xA + DeltaI_A
-             end do
-             yA = yA + DeltaJ_A
-          end do
-          zA = zA + DeltaK_A
-       end do
-
-       write (fileUnit,*) ' maximum potential difference = ',potdiff_max
-
+                 end if
+                 
+                 write (fileUnit,'(4(2X,I3,2X),E20.12,E20.12)') &
+                      iA,jA,kA,   potential_exact,potential_mpole
+                 
+                 xA = xA + DeltaI_A
+              end do
+              yA = yA + DeltaJ_A
+           end do
+           zA = zA + DeltaK_A
+        end do
+        
+        write (fileUnit,*) ' maximum potential difference = ',potdiff_max
+        
      case (GRID_2DCYLINDRICAL)
-
-       zA = bndBoxJLow_A + DeltaJHalf_A
-       do jA = jmin_A,jmax_A
-          Rcyl_A = bndBoxILow_A + DeltaIHalf_A
-          do iA = imin_A,imax_A
-!
-!
-!        Evaluate now the potential at point (zA,RA). This 'point' represents,
-!        in the 2D cylindrical case, actually a thin ring of crosssection:
-!
-!                                   -------
-!                                  |       |
-!                   O------------->|       | gr_mpoleDelta z
-!                        Rcyl     |       |
-!                                   -------
-!                                 gr_mpoleDelta Rcyl
-!
-!        revolving in a circle around the coordinate origin 'O'.
-!
-!
-             potential_exact = ZERO 
-
-             do blockNr_B = 1,gr_mpoleBlockCount
-                blockID_B = gr_mpoleBlockList (blockNr_B)
-
-                call Grid_getBlkBoundBox     (blockID_B,  bndBox_B)
-                call Grid_getDeltas          (blockID_B,  delta_B )
-                call Grid_getBlkPtr          (blockID_B,  solnData)
-                call Grid_getBlkIndexLimits  (blockID_B,  blkLimits_B, blkLimitsGC_B)
-
-                imin_B         = blkLimits_B (LOW, IAXIS)
-                jmin_B         = blkLimits_B (LOW, JAXIS)
-                imax_B         = blkLimits_B (HIGH,IAXIS)
-                jmax_B         = blkLimits_B (HIGH,JAXIS)
-                DeltaI_B      = delta_B (IAXIS)
-                DeltaJ_B      = delta_B (JAXIS)
-                DeltaIHalf_B = DeltaI_B * HALF
-                DeltaJHalf_B = DeltaJ_B * HALF
-                bndBoxILow_B = bndBox_B (LOW,IAXIS)
-                bndBoxJLow_B = bndBox_B (LOW,JAXIS)
-
-                zB = bndBoxJLow_B + DeltaJHalf_B
-                do jB = jmin_B,jmax_B
-                   Rcyl_B = bndBoxILow_B + DeltaIHalf_B
-                   do iB = imin_B,imax_B
-
-                      same_ring = zA.eq.zB .and. Rcyl_A.eq.Rcyl_B
-
-                      if (.not.same_ring) then
+        
+        zA = bndBoxJLow_A + DeltaJHalf_A
+        do jA = jmin_A,jmax_A
+           Rcyl_A = bndBoxILow_A + DeltaIHalf_A
+           do iA = imin_A,imax_A
+              !
+              !
+              !        Evaluate now the potential at point (zA,RA). This 'point' represents,
+              !        in the 2D cylindrical case, actually a thin ring of crosssection:
+              !
+              !                                   -------
+              !                                  |       |
+              !                   O------------->|       | gr_mpoleDelta z
+              !                        Rcyl     |       |
+              !                                   -------
+              !                                 gr_mpoleDelta Rcyl
+              !
+              !        revolving in a circle around the coordinate origin 'O'.
+              !
+              !
+              potential_exact = ZERO 
+              
+              call Grid_getLeafIterator(itor)
+              do while(itor%is_valid())
+                 call itor%blkMetaData(block)
+                 lev=block%level
+                 blkLimits_B=block%limits
+                 
+                 call Grid_getBlkBoundBox     (block, bndBox_B)
+                 call Grid_getDeltas          (lev, delta_B)
+                 call Grid_getBlkPtr          (block, solnData)
+                 
+                 
+                 imin_B         = blkLimits_B (LOW, IAXIS)
+                 jmin_B         = blkLimits_B (LOW, JAXIS)
+                 imax_B         = blkLimits_B (HIGH,IAXIS)
+                 jmax_B         = blkLimits_B (HIGH,JAXIS)
+                 DeltaI_B      = delta_B (IAXIS)
+                 DeltaJ_B      = delta_B (JAXIS)
+                 DeltaIHalf_B = DeltaI_B * HALF
+                 DeltaJHalf_B = DeltaJ_B * HALF
+                 bndBoxILow_B = bndBox_B (LOW,IAXIS)
+                 bndBoxJLow_B = bndBox_B (LOW,JAXIS)
+                 
+                 zB = bndBoxJLow_B + DeltaJHalf_B
+                 do jB = jmin_B,jmax_B
+                    Rcyl_B = bndBoxILow_B + DeltaIHalf_B
+                    do iB = imin_B,imax_B
+                       
+                       same_ring = zA.eq.zB .and. Rcyl_A.eq.Rcyl_B
+                       
+                       if (.not.same_ring) then
                           cellVolume = Rcyl_B * gr_mpoleTwoPi * DeltaI_B * DeltaJ_B
                           cellMass = solnData (idensvar,iB,jB,1) * cellVolume
                           r = sqrt ((zA-zB)*(zA-zB) + (Rcyl_A - Rcyl_B)*(Rcyl_A - Rcyl_B))
                           potential_exact = potential_exact + cellMass / r
-                      end if
-
-                      Rcyl_B = Rcyl_B + DeltaI_B
-                   end do
-                   zB = zB + DeltaJ_B
-                end do
-
-             end do
-
-             potential_exact = - gr_mpoleGravityConstant * potential_exact
-!
-!
-!        The entire exact FLASH potential at cell (iA,jA) is ready.
-!        Compare with the one evaluated using the multipoles.
-!
-!
-             potential_mpole = solnData (ipotvar,iA,jA,1)
-
-             write (fileUnit,'(2(2X,I3,2X),7X,E20.12,E20.12)') &
-                               iA,jA,   potential_exact,potential_mpole
-
-             Rcyl_A = Rcyl_A + DeltaI_A
-          end do
-          zA = zA + DeltaJ_A
-       end do
-
+                       end if
+                       
+                       Rcyl_B = Rcyl_B + DeltaI_B
+                    end do
+                    zB = zB + DeltaJ_B
+                 end do
+                 
+                 call Grid_releaseBlkPtr (block, solnData)
+                 call itor%next()
+              end do
+              call Grid_releaseLeafIterator(itor)
+              !              end do
+              
+              potential_exact = - gr_mpoleGravityConstant * potential_exact
+              !
+              !
+              !        The entire exact FLASH potential at cell (iA,jA) is ready.
+              !        Compare with the one evaluated using the multipoles.
+              !
+              !
+              potential_mpole = solnData (ipotvar,iA,jA,1)
+              
+              write (fileUnit,'(2(2X,I3,2X),7X,E20.12,E20.12)') &
+                   iA,jA,   potential_exact,potential_mpole
+              
+              Rcyl_A = Rcyl_A + DeltaI_A
+           end do
+           zA = zA + DeltaJ_A
+        end do
+        
      case (GRID_1DSPHERICAL)
-
-       Rsph_A = bndBoxILow_A + DeltaIHalf_A
-       do iA = imin_A,imax_A
-!
-!
-!        Evaluate now the potential at point (Rsph_A). This 'point' represents,
-!        in the 1D spherical case, actually a thin spherical layer of thickness
-!        (delta Rsph) with radius Rsph.
-!
-!
-          potential_exact = ZERO 
-
-          do blockNr_B = 1,gr_mpoleBlockCount
-             blockID_B = gr_mpoleBlockList (blockNr_B)
-
-             call Grid_getBlkBoundBox     (blockID_B,  bndBox_B)
-             call Grid_getDeltas          (blockID_B,  delta_B )
-             call Grid_getBlkPtr          (blockID_B,  solnData)
-             call Grid_getBlkIndexLimits  (blockID_B,  blkLimits_B, blkLimitsGC_B)
-
-             imin_B         = blkLimits_B (LOW, IAXIS)
-             imax_B         = blkLimits_B (HIGH,IAXIS)
-             DeltaI_B      = delta_B (IAXIS)
-             DeltaIHalf_B = DeltaI_B * HALF
-             bndBoxILow_B = bndBox_B (LOW,IAXIS)
-
-             Rsph_B = bndBoxILow_B + DeltaIHalf_B
-             do iB = imin_B,imax_B
-
-                same_layer = Rsph_A .eq. Rsph_B
-
-                if (.not.same_layer) then
+        
+        Rsph_A = bndBoxILow_A + DeltaIHalf_A
+        do iA = imin_A,imax_A
+           !
+           !
+           !        Evaluate now the potential at point (Rsph_A). This 'point' represents,
+           !        in the 1D spherical case, actually a thin spherical layer of thickness
+           !        (delta Rsph) with radius Rsph.
+           !
+           !
+           potential_exact = ZERO 
+           
+           call Grid_getLeafIterator(itor)
+           do while(itor%is_valid())
+              call itor%blkMetaData(block)
+              lev=block%level
+              blkLimits_B=block%limits
+              
+              call Grid_getBlkBoundBox     (block, bndBox_B)
+              call Grid_getDeltas          (lev, delta_B)
+              call Grid_getBlkPtr          (block, solnData)
+              
+              imin_B         = blkLimits_B (LOW, IAXIS)
+              imax_B         = blkLimits_B (HIGH,IAXIS)
+              DeltaI_B      = delta_B (IAXIS)
+              DeltaIHalf_B = DeltaI_B * HALF
+              bndBoxILow_B = bndBox_B (LOW,IAXIS)
+              
+              Rsph_B = bndBoxILow_B + DeltaIHalf_B
+              do iB = imin_B,imax_B
+                 
+                 same_layer = Rsph_A .eq. Rsph_B
+                 
+                 if (.not.same_layer) then
                     cellVolume = Rsph_B * Rsph_B * gr_mpoleFourPi * DeltaI_B
                     cellMass = solnData (idensvar,iB,1,1) * cellVolume
                     potential_exact = potential_exact + cellMass / Rsph_B
-                end if
-
-                Rsph_B = Rsph_B + DeltaI_B
-             end do
-
-          end do
-
-          potential_exact = - gr_mpoleGravityConstant * potential_exact
-!
-!
-!        The entire exact FLASH potential at cell (iA) is ready.
-!        Compare with the one evaluated using the multipoles.
-!
-!
-          potential_mpole = solnData (ipotvar,iA,1,1)
-
-          write (fileUnit,'((2X,I3,2X),2(7X),E20.12,E20.12)') &
-                            iA,   potential_exact,potential_mpole
-
-          Rsph_A = Rsph_A + DeltaI_A
-       end do
-
+                 end if
+                 
+                 Rsph_B = Rsph_B + DeltaI_B
+              end do
+              
+              call Grid_releaseBlkPtr (block, solnData)
+              call itor%next()
+           end do
+           call Grid_releaseLeafIterator(itor)
+           
+           potential_exact = - gr_mpoleGravityConstant * potential_exact
+           !
+           !
+           !        The entire exact FLASH potential at cell (iA) is ready.
+           !        Compare with the one evaluated using the multipoles.
+           !
+           !
+           potential_mpole = solnData (ipotvar,iA,1,1)
+           
+           write (fileUnit,'((2X,I3,2X),2(7X),E20.12,E20.12)') &
+                iA,   potential_exact,potential_mpole
+           
+           Rsph_A = Rsph_A + DeltaI_A
+        end do
+        
      end select
-!
-!
-!        Next leaf block.
-!
-!
+     !
+     !
+     !        Next leaf block.
+     !
+     !
+     call itor1%next()
   end do
-
+  call Grid_releaseLeafIterator(itor1)
+  
   write (fileUnit,'(A38)') '  --- finished present iteration ---  '
   close (fileUnit)
-
+  
   return
 end subroutine gr_mpolePotential_exact

@@ -27,24 +27,25 @@
 
 
 
-subroutine Simulation_initBlock(blockID)
+subroutine Simulation_initBlock(solnData,block)
 
   use Simulation_data, ONLY : sim_sigma,sim_xctr,sim_yctr,sim_zctr,&
                               sim_smlrho,Npeak, sim_subSample
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
     Grid_getCellCoords, Grid_putRowData, Grid_getDeltas
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
-  integer, intent(IN)  :: blockID
-  
+  type(block_metadata_t), intent(in)   :: block
+  real, pointer, dimension(:,:,:,:) :: solnData
   real,allocatable, dimension(:) :: xlCoord, ylCoord, zlCoord, &
        xrCoord, yrCoord, zrCoord
   
-  integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   real,dimension(MDIM) :: deltas
   integer :: sizeX,sizeY,sizeZ
   integer,dimension(MDIM) :: startingPos
@@ -67,7 +68,7 @@ subroutine Simulation_initBlock(blockID)
   !get the size of the block and allocate the arrays holding the coordinate info
   !this is done on a blk by block basis for compatibility with block sizes that might
   !not be fixed at compile time
-  call Grid_getBlkIndexLimits(blockId,blkLimits,blkLimitsGC)
+  blkLimitsGC=block%limitsGC
   
   sizeX = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
   sizeY = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
@@ -96,19 +97,19 @@ subroutine Simulation_initBlock(blockID)
 
   gam = 1.5
 
-  call Grid_getDeltas(blockID,deltas)
+  call Grid_getDeltas(block%level,deltas)
   if (NDIM > 2) then 
-     call Grid_getCellCoords(KAXIS, blockID, LEFT_EDGE, gcell, zlCoord, sizeZ)
-     call Grid_getCellCoords(KAXIS, blockID, RIGHT_EDGE, gcell, zrCoord, sizeZ)
+     call Grid_getCellCoords(KAXIS, block, LEFT_EDGE, gcell, zlCoord, sizeZ)
+     call Grid_getCellCoords(KAXIS, block, RIGHT_EDGE, gcell, zrCoord, sizeZ)
   endif
   
   if (NDIM > 1) then
-     call Grid_getCellCoords(JAXIS, blockID, LEFT_EDGE, gcell, ylCoord, sizeY)
-     call Grid_getCellCoords(JAXIS, blockID, RIGHT_EDGE, gcell, yrCoord, sizeY)
+     call Grid_getCellCoords(JAXIS, block, LEFT_EDGE, gcell, ylCoord, sizeY)
+     call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, gcell, yrCoord, sizeY)
   endif
   
-  call Grid_getCellCoords(IAXIS, blockID, LEFT_EDGE, gcell, xlCoord, sizeX)
-  call Grid_getCellCoords(IAXIS, blockID, RIGHT_EDGE, gcell, xrCoord, sizeX)
+  call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xlCoord, sizeX)
+  call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xrCoord, sizeX)
   
   !  Loop over cells in the block.  For each, compute the physical
   !  position of its left and right edge and its center as well as
@@ -157,9 +158,9 @@ subroutine Simulation_initBlock(blockID)
         startingPos(JAXIS) = j
         startingPos(KAXIS) = k
         
-        !!call Grid_putRowData(blockID, CENTER, GAME_VAR, EXTERIOR, IAXIS, startingPos, gam, sizeX)
-        !!call Grid_putRowData(blockID, CENTER, GAMC_VAR, EXTERIOR, IAXIS, startingPos, gam, sizeX)
-        call Grid_putRowData(blockID, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
+        !!call Grid_putRowData(block, CENTER, GAME_VAR, EXTERIOR, IAXIS, startingPos, gam, sizeX)
+        !!call Grid_putRowData(block, CENTER, GAMC_VAR, EXTERIOR, IAXIS, startingPos, gam, sizeX)
+        call Grid_putRowData(block, CENTER, DENS_VAR, EXTERIOR, IAXIS, startingPos, rho, sizeX)
         
      enddo
   enddo
