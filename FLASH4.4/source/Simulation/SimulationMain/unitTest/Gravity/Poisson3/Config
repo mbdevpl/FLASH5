@@ -12,13 +12,13 @@ REQUIRES physics/Gravity/GravityMain/Poisson/unitTest
 LINKIF IO_writeIntegralQuantities.F90 IO/IOMain
 LINKIF IO_outputFinal.F90 IO/IOMain
 
-# Multipole requires 3d geometry
+# Multipole requires 3d or 2d-cylindrical geometry
 # Ideally we'd like to test against having Multipole used, but
 #  the USESETUPVARS only works if the option is specified on the command line
 # So, if another version of Poisson is implemented, comment out these lines
 USESETUPVARS nDim
-IF nDim <> 3
-  SETUPERROR unitTest/Gravity/Poisson3 and Poisson/Multipole must run in 3d.  Use ./setup unitTest/Gravity/Poisson3 -3d blah blah
+IF nDim <> 3 and nDim <> 2 and nDim <> ''
+  SETUPERROR unitTest/Gravity/Poisson3 must run in 3d or 2d-cylindrical. Use ./setup with -3d or -2d +cylindrical
 ENDIF
 
 
