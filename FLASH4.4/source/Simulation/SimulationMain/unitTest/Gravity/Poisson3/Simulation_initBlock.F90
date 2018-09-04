@@ -116,6 +116,16 @@ subroutine Simulation_initBlock(solnData, block)
 
                     select case (sim_initGeometry)
 
+                    case (POLAR)   ! 2d axisymmetric?
+
+                       dist2 = (xdist*sim_a1inv)**2 + (ydist*sim_a3inv)**2
+                       rxy   = xdist
+                       rxyz2 = dist2
+                       rinv  = 1./sqrt(xdist**2 + ydist**2)
+                       vxfac = 0.0
+                       vyfac = 0.0
+                       vzfac = 0.0
+
                     case (CYLINDRICAL)   ! 2d axisymmetric
 
                        dist2 = (xdist*sim_a1inv)**2 + (ydist*sim_a3inv)**2

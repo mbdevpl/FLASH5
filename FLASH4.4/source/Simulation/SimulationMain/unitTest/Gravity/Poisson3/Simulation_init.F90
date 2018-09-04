@@ -42,7 +42,7 @@ subroutine Simulation_init()
   real    :: amean, p0, mass, AA3
 
 
-  call PhysicalConstants_get("pi", sim_pi)
+  sim_pi = PI
   call PhysicalConstants_get("Newton", sim_Newton)
 
   call RuntimeParameters_get("eccentricity", sim_e)
@@ -105,7 +105,14 @@ subroutine Simulation_init()
   ! Eventually should also support 3D cylindrical and spherical.
 
   call Grid_getGeometry(geometry)
-  if ((NDIM == 2) .and. (geometry == POLAR)) then                      
+  if ((NDIM == 2) .and. (geometry == CYLINDRICAL)) then
+     ! 2D axisymmetric
+     sim_initGeometry = geometry
+     sim_xctr = 0.0
+     sim_zctr = 0.0
+     call RuntimeParameters_set("xctr", sim_xctr)
+
+  else if ((NDIM == 2) .and. (geometry == POLAR)) then
      ! 2D axisymmetric
      sim_initGeometry = geometry
      sim_xctr = 0.0
