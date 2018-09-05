@@ -1,0 +1,10 @@
+REQUIRES  Grid/GridMain/AMR/Amrex
+REQUIRES  flashUtilities/testing
+
+GUARDCELLS 2
+
+VARIABLE dens TYPE: PER_VOLUME       # density
+VARIABLE pres TYPE: GENERIC          # pressure
+VARIABLE ener TYPE: PER_MASS         # specific total energy (T+U)
+VARIABLE temp TYPE: GENERIC
+
