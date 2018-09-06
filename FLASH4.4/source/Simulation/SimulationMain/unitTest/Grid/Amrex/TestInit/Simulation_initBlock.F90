@@ -111,7 +111,7 @@ subroutine Simulation_initBlock(initData, block)
                     do var=1,NFACE_VARS
                         faceDataZ(i, j, k, var) = &
 !                              DBLE((coords(IAXIS) + coords(JAXIS)) * var+ coords(KAXIS))
-                             DBLE(i*i+j*j+1.15*k*k)
+                             DBLE(i*i+j*j+1.1*k*k)
                     end do
                 end do
             end do
