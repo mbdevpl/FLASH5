@@ -144,9 +144,11 @@ subroutine Grid_getMaxRefinement(maxRefinement, mode, scope, inputComm)
   end if
 
   if (present(scope)) then
-    call Driver_abortFlash("[Grid_getMaxRefinement] Not coded yet for AMReX")
+     if (myMode == 4 .AND.  myScope .NE. 3) then
+        call Driver_abortFlash("[Grid_getMaxRefinement] scope not coded yet for AMReX")
+     end if
   else if (present(inputComm)) then
-    call Driver_abortFlash("[Grid_getMaxRefinement] Not coded yet for AMReX")
+    call Driver_abortFlash("[Grid_getMaxRefinement] inputComm not coded yet for AMReX")
   end if
 
 #else
