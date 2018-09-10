@@ -3,16 +3,53 @@
 !! NAME
 !!  leaf_iterator
 !!
+!! SYNOPSIS
+!!
+!!  use leaf_iterator, ONLY : leaf_iterator_t, build_iterator
+!!  type(leaf_iterator_t) :: itor
+!!  call build_iterator(leaf_iterator_t(OUT) :: itor,
+!!                      integer(IN), optional :: level,
+!!                      logical(IN), optional :: tiling )
+!!
+!! DESCRIPTION
+!!
+!! This Fortran module provides the leaf_iterator_t type, which can be
+!! instantiated (or rather 'built') by iterator-using code outside of the
+!! Grid unit to yield an iterator that iterates over leaf blocks only.
+!!
 !! Ideally, we will be able to use the AMReX iterator directly in the code
 !! and client code will gain access to it through implementation-specific
 !! code like Grid_getBlkIterator.
 !!
 !! This is a variant that uses type(block_1lev_iterator_t) as underlying iterator.
 !!
+!! ARGUMENTS
+!!  itor     - the requested block iterator
+!!  level    - iterate only over leaf blocks/tiles located at this level of
+!!             refinement.
+!!             A level value of UNSPEC_LEVEL is equivalent to omitting
+!!             this optional argument.
+!!  tiling   - an optional optimization hint.  If TRUE, then the iterator will
+!!             walk across all associated blocks on a tile-by-tile basis *if*
+!!             the implementation supports this feature.  If a value is not
+!!             given, is FALSE, or the implementation does not support tiling,
+!!             the iterator will iterate on a block-by-block basis.
+!!
+!! NOTES
+!!
+!!  The notion of 'iteration over leaf blocks only' assumes that the
+!!  AMReX Grid is organized in a valid octree structure. This does not
+!!  mean that FLASH has to use the 'amrex_octree' module. I means,
+!!  however, that the boxes that make up the multifabs that represent the
+!!  FLASH solution variables like Unk, etc., satisfy certain rules; in
+!!  particular, in a grid hierarchy the valid box of each block must be
+!!  either fully covered or not covered at all by valid boxes of the next
+!!  finer refinement level.
+!!
 !! SEE ALSO
-!!  gr_getBlkIterator
-!!  gr_releaseBlkIterator
-!!  block_descriptor_t
+!!  Grid_getLeafIterator
+!!  Grid_releaseLeafIterator
+!!  block_metadata_t
 !!
 !!****
 
@@ -169,7 +206,6 @@ contains
     !!  constants.h
     !!****
     subroutine init_iterator(itor, level, tiling)
-!!$      use amrex_multifab_module, ONLY : amrex_multifab
       use gr_physicalMultifabs,  ONLY : Unk
 
         type(leaf_iterator_t), intent(OUT)          :: itor
@@ -326,7 +362,7 @@ contains
     !!****m* leaf_iterator_t/blkMetaData
     !!
     !! NAME
-    !!  blkMetaData 
+    !!  blkMetaData
     !!
     !! SYNPOSIS
     !!  call itor%blkMetaData(block_metadata_t(OUT) : block)
@@ -364,6 +400,6 @@ contains
 
 
     end subroutine blkMetaData
- 
+
 end module leaf_iterator
 
