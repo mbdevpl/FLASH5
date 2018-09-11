@@ -112,16 +112,16 @@ subroutine Burn_finalize()
      allocate(t_ALL_avg(ntimers))
 
      !$omp parallel default(shared)
-     t_MPI_burner(xnet_mythread) = timer_burner
-     t_MPI_xnet(xnet_mythread)   = timer_xnet
-     t_MPI_tstep(xnet_mythread)  = timer_tstep
-     t_MPI_nraph(xnet_mythread)  = timer_nraph
-     t_MPI_deriv(xnet_mythread)  = timer_deriv
-     t_MPI_jacob(xnet_mythread)  = timer_jacob
-     t_MPI_solve(xnet_mythread)  = timer_solve
-     t_MPI_csect(xnet_mythread)  = timer_csect
-     t_MPI_scrn(xnet_mythread)   = timer_scrn
-     t_MPI_eoscrn(xnet_mythread) = timer_eoscrn
+!     t_MPI_burner(xnet_mythread) = timer_burner
+!     t_MPI_xnet(xnet_mythread)   = timer_xnet
+!     t_MPI_tstep(xnet_mythread)  = timer_tstep
+!     t_MPI_nraph(xnet_mythread)  = timer_nraph
+!     t_MPI_deriv(xnet_mythread)  = timer_deriv
+!     t_MPI_jacob(xnet_mythread)  = timer_jacob
+!     t_MPI_solve(xnet_mythread)  = timer_solve
+!     t_MPI_csect(xnet_mythread)  = timer_csect
+!     t_MPI_scrn(xnet_mythread)   = timer_scrn
+!     t_MPI_eoscrn(xnet_mythread) = timer_eoscrn
      !$omp end parallel
 
      call MPI_GATHER(t_MPI_burner, xnet_nthread, MPI_REAL8, t_ALL_burner, xnet_nthread, MPI_REAL8, 0, MPI_COMM_WORLD, ierr)
