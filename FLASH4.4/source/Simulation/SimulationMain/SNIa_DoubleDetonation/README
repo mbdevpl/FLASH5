@@ -1,0 +1,4 @@
+Setup:
+/home/sauc/research/flash-branches/FLASH-subset/FLASH4.4/bin/setup.py SNIa_DoubleDetonation -auto -3d +cartesian -nxb=16 -nyb=16 -nzb=16 -maxblocks=1000 xnet=True xnetData=Data_SN160 xnetGPU=False +uhd +starkiller starkillerGPU=False +Mode1 -debug +newMpole -site=sauc.xps -objdir=sn1a-doubledet
+
+Modification of setup from Austin's email to Saurabh on 8/31/2018
