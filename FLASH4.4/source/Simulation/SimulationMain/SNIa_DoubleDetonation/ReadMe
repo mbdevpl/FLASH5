@@ -1,0 +1,27 @@
+SNIa_DoubleDetonation:
+Adaptaed from SnDet Simulation Unit Implementation by Townsley (2009)
+
+This simulation unit loads a 1D WD profile (wd_profile_rhoc_415e5_M_106_correct.dat
+by default), with the option of adding a shell or belt, and ignites a detonation by
+placing a matchhead at an arbitary location.
+
+Multiple initial 1D WD profiles are provided in this directory:
+* wd_profile_rhoc_415e5_M_106_correct.dat
+  Analytic 1.06 M_solar sub-Chandra model from Timmes' public_coldwd setup
+* cc_Tc_7e8_rhoc_22e8_C_50_Ne_00_linear_wd_plain.dat
+  Analytic 1.38 M_solar Chandrasekhar model from Townsley
+
+
+Example setup commands:
+
+* 2D, with default Aprox13 burner, default .par file
+> ./setup SNIa_DoubleDetonation -auto -2d -nxb=16 -nyb=16 -maxblocks=1024 +hdf5
+
+* 2D, threading over blocks, with default Aprox13 burner, centrally detonated analytic WD
+> ./setup SNIa_DoubleDetonation -auto -2d -nxb=16 -nyb=16 -maxblocks=1024 +hdf5 threadBlockList=True -parfile=flash_r10_centerDet_analytic_M106_2d.par
+
+* 3D, threading over blocks, with XNet SN160 network, using GPU, edge lit analytic WD w/ He-shell
+> ./setup SNIa_DoubleDetonation -auto -3d -nxb=16 -nyb=16 -nzb=16 -maxblocks=64 +hdf5 threadBlockList=True xnet=True xnetData=Data_SN160 xnetGPU=True -parfile=flash_r10_shellDet_analytic_M106_3d.par
+
+* 3D, threading over blocks, with XNet SN160 network, using GPU, with starkiller EOS, edge lit analytic WD w/ He-shell
+> ./setup SNIa_DoubleDetonation -auto -3d -nxb=16 -nyb=16 -nzb=16 -maxblocks=64 +hdf5 threadBlockList=True xnet=True xnetData=Data_SN160 xnetGPU=True +starkiller starkillerGPU=True -parfile=flash_r10_shellDet_analytic_M106_3d.par
