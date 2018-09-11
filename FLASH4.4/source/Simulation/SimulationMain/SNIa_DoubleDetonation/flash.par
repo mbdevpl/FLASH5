@@ -1,0 +1,261 @@
+#####################################################################
+#
+#  This parameter file is for WD double detonation simulation
+#
+#####################################################################
+
+#####
+# I/O
+#####
+
+wall_clock_checkpoint			= 42600	# slightly less than 1 hour
+
+# names of files
+basenm					= "snd_"
+log_file				= "snd.log"
+
+restart					= .false.
+
+checkpointFileNumber			= 0
+plotFileNumber				= 0
+
+#output_directory			= "./chk"
+checkpointFileIntervalStep		= 0
+checkpointFileIntervalTime		= 5.0e-2
+
+plotFileIntervalStep			= 0
+plotFileIntervalTime			= 1.0e+4
+
+ignoreForcedPlot			= .false.
+
+#eachProcWritesSummary			= .true.
+#writeStatSummary			= .true.
+
+#gr_sanitizeDataMode			= 0
+#gr_sanitizeVerbosity			= 0
+
+# go for nend steps or tmax seconds, whichever comes first
+nend					= 10
+
+tmax					= 0.4
+
+# variables for plotting
+plot_var_1				= "pres" # "none" 
+plot_var_2				= "dens" # "none" 
+plot_var_3				= "temp" # "none" 
+plot_var_4				= "enuc" # "none" 
+plot_var_5				= "velx" # "none" 
+plot_var_6				= "vely" # "none" 
+plot_var_7				= "velz" # "none" 
+plot_var_8				= "gamc" # "none" 
+plot_var_9				= "he4" # "none" 
+plot_var_10				= "c12" # "none" 
+plot_var_11				= "o16" # "none" 
+plot_var_12				= "ne20" # "none" 
+plot_var_13				= "mg24" # "none" 
+plot_var_14				= "si28" # "none" 
+plot_var_15				= "s32" # "none" 
+plot_var_16				= "ar36" # "none" 
+plot_var_17				= "ca40" # "none" 
+plot_var_18				= "ti44" # "none" 
+plot_var_19				= "cr48" # "none" 
+plot_var_20				= "fe52" # "none" 
+plot_var_21				= "ni56" # "none" 
+#stats_file				= "./stats.dat" # "flash.dat" 
+
+##################
+# ignition parameters
+##################
+
+# ignition specific size of spherical region set as burned material at time zero
+ignite					= .true.
+r_match_inner				= 0.0
+r_match_outer				= 150.0e5
+t_ignite_inner				= 2.0e9
+t_ignite_outer				= 1.2e9
+x_match					= 0.0
+y_match					= 0.0
+z_match					= 0.0
+
+# shell properties
+#useShell				= .true.
+#radShellMin				= 3.61000651e+08
+#radShellMax				= 5.43017346e+08
+#thtShellMin				= 0.0
+#thtShellMax				= 180.0
+#densShellMult				= 1.0
+#tempShellMult				= 1.0
+
+#xhe4_shell				= 0.0
+#xc12_shell				= 0.0
+#xni56_shell				= 0.0
+
+#########
+# initial model
+#########
+
+initialWDFile				= "Profiles/wd_profile_rhoc_415e5_M_106_correct.dat"
+
+# density, temperature and composition of the fluff
+dens_fluff				= 1.e-3
+temp_fluff				= 3.e7
+xc12_fluff				= 0.5e0
+xne22_fluff				= 0.0e0
+
+#rep_ne_frac				= 0.00
+
+#########
+# refinement
+#########
+
+# use custom refinement criteria
+refine_var_count			= 2
+
+refine_var_1				= "dens"
+refine_cutoff_1				= 0.8
+derefine_cutoff_1			= 0.2
+
+refine_var_2				= "pres"
+refine_cutoff_2				= 0.8
+derefine_cutoff_2			= 0.2
+
+#refine_var_3				= "enuc"
+#refine_cutoff_3				= 0.7
+#derefine_cutoff_3			= 0.2
+
+#################
+# mesh definition
+#################
+
+# physical domain
+geometry				= "cartesian"
+#geometry				= "cylindrical"
+#geometry				= "spherical"
+
+xmin					=  -32768.e5
+xmax					=  32768.e5
+ymin					=  -32768.e5
+ymax					=  32768.e5
+zmin					=  -32768.e5
+zmax					=  32768.e5
+
+nblockx					= 8
+nblocky					= 8
+nblockz					= 8
+
+# max and min levels of refinement
+lrefine_min				= 1
+lrefine_max				= 1     # 1 km resolution @ 10 levels
+
+# boundary conditions for the whole star
+xl_boundary_type			= "outflow"
+xr_boundary_type			= "outflow"
+yl_boundary_type			= "outflow"
+yr_boundary_type			= "outflow"
+zl_boundary_type			= "outflow"
+zr_boundary_type			= "outflow"
+
+#grav_boundary_type			= "isolated"
+mpole_lmax				= 8
+
+##########
+# timestep
+##########
+
+# CFL limit
+#cfl					= 0.50e0
+#cfl_ini					= 0.1e0
+
+# initial and minimum
+dtinit					= 1.0e-6
+dtmin					= 1.0e-20
+dtmax					= 8.0e-3
+tstep_change_factor			= 1.2e-0
+
+# flag to stop at tmax exactly
+dr_shortenLastStepBeforeTMax		= .true.
+
+enucDtFactor				= 1.0e-1
+
+#############
+# miscellaneous
+#############
+
+# floor values
+# set to 1/5 of dens_fluff
+smlrho					= 2.0e-4
+
+small					= 1.0e-100
+smalle					= 1.0e-100
+smallt					= 1.0e+6 
+smallu					= 1.0e-10
+smallp					= 1.0e+15
+smallx					= 1.0e-100
+
+#eintSwitch				= 0.e0
+#eos_fluff_dens				= 10.0
+eosModeInit				= "dens_temp"
+
+# no gravity, but do burn
+useBurn					= .true.
+useShockBurn				= .false.
+
+# threshold to cut off burning.
+#nuclearNI56Max				= 1.0
+nuclearTempMin				= 3.0e+8
+#nuclearFuelMax				= 0.5
+
+# assume that ignoring the difference between mass-specific and conserved form is a reasonable approximation
+#convertToConsvdForMeshCalls		= .false.
+#convertToConsvdInMeshInterp		= .false.
+
+# this should be true as long as we are using AMR
+#flux_correct				= .true.
+
+## -------------------------------------------------------------##
+##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
+#	I. INTERPOLATION SCHEME:
+order					= 3      # Interpolation order (first/second/third/fifth order)
+slopeLimiter				= "vanLeer"   # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
+LimitedSlopeBeta			= 1.     # Slope parameter for the "limited" slope by Toro
+charLimiting				= .true. # Characteristic limiting vs. Primitive limiting
+
+use_avisc				= .true. # use artificial viscosity (originally for PPM)
+cvisc					= 0.1     # coefficient for artificial viscosity
+use_flattening				= .true. # use flattening (dissipative) (originally for PPM)
+use_steepening				= .true. # use contact steepening (originally for PPM)
+use_upwindTVD				= .false. # use upwind biased TVD slope for PPM (need nguard=6)
+
+#	II. RIEMANN SOLVERS:
+RiemannSolver				= "HLLC"      # Roe, HLL, HLLC, LLF, Marquina
+hybrid_riemann				= .true.
+EOSforRiemann				= .false.     # Call EoS for Riemann solves
+entropy					= .false.     # Entropy fix for the Roe solver
+
+#	III. STRONG SHOCK HANDELING SCHEME:
+shockDetect				= .true.     # Shock Detect for numerical stability
+## -------------------------------------------------------------##
+
+## Helmholtz
+eos_coulombMult				= 1.0
+
+## XNet
+#xnet_iweak				= 1
+#xnet_iscrn				= 1
+xnet_iprocess				= 1
+#xnet_isolv				= 3
+#xnet_iconvc				= 3
+#xnet_changemx				= 1.0e-01
+#xnet_yacc				= 1.0e-10
+#xnet_tolc				= 1.0e-4
+#xnet_ymin				= 1.0e-99
+#xnet_kitmx				= 10
+#xnet_iheat				= 1
+#xnet_changemxt				= 1.0e-01
+#xnet_tolt9				= 1.0e-4
+xnet_nzbatchmx				= 32
+#xnet_idiag				= -1
+
+## starkiller
+eos_useStarkiller                       = .true.
+eos_vecLenACC                           = 1024

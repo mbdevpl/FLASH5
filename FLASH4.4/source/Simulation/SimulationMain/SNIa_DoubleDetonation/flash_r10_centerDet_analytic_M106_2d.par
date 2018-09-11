@@ -1,0 +1,212 @@
+#####################################################################
+#
+#  This parameter file is for WD double detonation simulation
+#
+#####################################################################
+
+#####
+# I/O
+#####
+
+wall_clock_checkpoint			= 3.42e3	# slightly less than 1 hour
+
+# names of files
+basenm					= "snd_"
+log_file				= "snd.log"
+
+restart					= .false.
+
+checkpointFileNumber			= 0
+plotFileNumber				= 0
+
+checkpointFileIntervalStep		= 20
+#checkpointFileIntervalTime		= 0.001
+
+plotFileIntervalStep			= 0
+plotFileIntervalTime			= 0.02
+
+ignoreForcedPlot			= .false.
+
+#eachProcWritesSummary			= .true.
+#writeStatSummary			= .true.
+
+# go for nend steps or tmax seconds, whichever comes first
+#nend					= 10
+nend					= 10000
+
+#tmax					= 1.5
+tmax					= 0.4	# this is about the time the shock reaches the edge of the WD
+
+# variables for plotting
+plot_var_1				= "dens"
+plot_var_2				= "temp"
+plot_var_3				= "pres"
+plot_var_4				= "enuc"
+plot_var_5				= "velx"
+plot_var_6				= "vely"
+plot_var_7				= "entr"
+
+##################
+# ignition parameters
+##################
+
+# ignition specific size of spherical region set as burned material at time zero
+ignite					= .true.
+r_match_inner				= 0.0
+r_match_outer				= 150.0e5
+t_ignite_inner				= 2.0e9
+t_ignite_outer				= 1.2e9
+x_match					= 0.0
+y_match					= 0.0
+z_match					= 0.0
+
+# shell properties
+useShell				= .false.
+radShellMin				= 3828.0e5
+radShellMax				= 6476.0e5
+thtShellMin				= 0.0
+thtShellMax				= 180.0
+densShellMult				= 1.0
+tempShellMult				= 1.0
+
+xhe4_shell				= 1.0
+xc12_shell				= 0.0
+xni56_shell				= 0.0
+
+#########
+# initial model
+#########
+
+initialWDFile				= "wd_profile_rhoc_415e5_M_106_correct.dat"
+
+# density, temperature and composition of the fluff
+dens_fluff				= 1.e-3
+temp_fluff				= 3.e7
+xc12_fluff				= 0.5e0
+xne22_fluff				= 0.00e0
+
+rep_ne_frac				= 0.00
+
+#########
+# refinement
+#########
+
+# use custom refinement criteria
+refine_var_1				= "dens"
+refine_cutoff_1				= 0.8
+derefine_cutoff_1			= 0.2
+
+refine_var_2				= "pres"
+refine_cutoff_2				= 0.8
+derefine_cutoff_2			= 0.2
+
+#################
+# mesh definition
+#################
+
+# physical domain
+#geometry				= "cartesian"
+geometry				= "cylindrical"
+#geometry				= "spherical"
+
+xmin					=  0.e0
+xmax					=  32768.e5
+ymin					= -32768.e5
+ymax					=  32768.e5
+
+nblockx					= 4
+nblocky					= 8
+
+# max and min levels of refinement
+lrefine_min				= 1
+lrefine_max				= 10
+
+# boundary conditions for the whole star
+xl_boundary_type			= "reflect"
+xr_boundary_type			= "diode"
+yl_boundary_type			= "diode"
+yr_boundary_type			= "diode"
+
+grav_boundary_type			= "isolated"
+mpole_lmax				= 8
+
+##########
+# timestep
+##########
+
+# CFL limit
+cfl					= 0.50e0
+cfl_ini					= 0.1e0
+
+# initial and minimum
+dtinit					= 1.
+dtmin					= 1.e-20
+dtmax					= 8.e-4
+tstep_change_factor			= 1.2e0
+
+# flag to stop at tmax exactly
+dr_shortenLastStepBeforeTMax		= .true.
+
+#############
+# miscellaneous
+#############
+
+# floor values
+# set to 1/5 of dens_fluff
+smlrho					= 2.e-4
+
+small					= 1.e-100
+smalle					= 1.e-100
+smallt					= 1.e6
+smallu					= 1.e-10
+smallp					= 1.e15
+smallx					= 1.e-100
+
+eintSwitch				= 0.e0
+eos_fluff_dens				= 10.0
+
+# no gravity, but do burn
+useBurn					= .true.
+useShockBurn				= .false.
+
+# threshold to cut off burning.
+nuclearNI56Max				= 1.0
+
+# assume that ignoring the difference between mass-specific and conserved form is a reasonable approximation
+#convertToConsvdForMeshCalls		= .false.
+#convertToConsvdInMeshInterp		= .false.
+
+# this should be true as long as we are using AMR
+flux_correct				= .true.
+
+## -------------------------------------------------------------##
+##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
+#	I. INTERPOLATION SCHEME:
+order					= 3      # Interpolation order (first/second/third/fifth order)
+slopeLimiter				= "vanLeer"   # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
+LimitedSlopeBeta			= 1.     # Slope parameter for the "limited" slope by Toro
+charLimiting				= .true. # Characteristic limiting vs. Primitive limiting
+
+use_avisc				= .true. # use artificial viscosity (originally for PPM)
+cvisc					= 0.1     # coefficient for artificial viscosity
+use_flattening				= .true. # use flattening (dissipative) (originally for PPM)
+use_steepening				= .true. # use contact steepening (originally for PPM)
+use_upwindTVD				= .false. # use upwind biased TVD slope for PPM (need nguard=6)
+
+#	II. RIEMANN SOLVERS:
+RiemannSolver				= "hybrid"      # Roe, HLL, HLLC, LLF, Marquina
+hybrid_riemann				= .true.
+EOSforRiemann				= .false.     # Call EoS for Riemann solves
+entropy					= .false.     # Entropy fix for the Roe solver
+
+#	III. STRONG SHOCK HANDELING SCHEME:
+shockDetect				= .true.     # Shock Detect for numerical stability
+## -------------------------------------------------------------##
+
+## XNet
+xnet_nzbatchmx				= 32
+xnet_iprocess				= 1
+
+## starkiller
+eos_useStarkiller                       = .true.
+eos_vecLenACC                           = 1024

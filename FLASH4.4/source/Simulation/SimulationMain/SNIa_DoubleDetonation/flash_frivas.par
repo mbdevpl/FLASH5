@@ -1,0 +1,86 @@
+#### IO 
+
+initialWDFile = "equispaced_wd_6.0to1.04.dat"
+basenm = "../otp/"
+log_file = "../run.log"
+
+checkpointFileIntervalTime = 0.01
+
+plotFileIntervalTime = 0.008
+plot_var_1 = "dens"
+plot_var_2 = "temp"
+plot_var_3 = "pres"
+plot_var_4 = "enuc"
+
+restart = .false.
+checkpointFileNumber = 0
+
+#### Run Options
+
+run_comment = "edge lit detonation"
+ignite = .true.
+useBurn = .true.
+#useShockBurn = .true.
+tmax = 1.5
+x_match = 4.882403e8
+y_match = 4.882403e8
+z_match = 0.0
+t_ignite = 2.0e9
+r_match = 150.0e5
+
+r_heStart = 6.90476e8
+r_heStop = 647800000000.0
+
+#### Grid/Domain
+
+geometry = "cylindrical"
+
+xl_boundary_type = "reflect"
+xr_boundary_type = "outflow"
+yl_boundary_type = "outflow"
+yr_boundary_type = "outflow"
+xmax = 35.8035e8
+xmin = 0.e5
+ymax = 35.8035e8
+ymin = -35.8035e8
+
+nblockx = 4
+nblocky = 8
+#nblockz = 4
+
+lrefine_min = 1
+lrefine_max = 9
+
+refine_var_count = 2
+refine_var_1 = "dens"
+refine_cutoff_1 = 0.7
+derefine_cutoff_1 = 0.0375
+refine_var_2 = "pres"
+refine_cutoff_2 = 0.7
+derefine_cutoff_2 = 0.0375
+
+#### Material properties
+
+dens_fluff = 2.e3
+temp_fluff = 3.e7 
+xne22_fluff = 0.00e0
+mpole_lmax = 2
+
+#### Step/value ranges
+
+cfl = 0.60e0
+nend = 1e6
+dtinit = 0.0093
+dtmax = 8.e-4
+dtmin = 1.e-20
+tstep_change_factor = 1.2e0
+
+small = 1.e-100
+smalle = 1.e-100
+smallp = 1.e15
+smallt = 1.e6
+smallu = 1.e-10
+smallx = 1.e-100
+smlrho = 2.e-4
+
+
