@@ -100,7 +100,9 @@ LIB_TEST  =
 
 LIB_HDF5  = -lhdf5 -lhdf5_fortran
 
-LIB_LAPACK= -lopenblas
+LIB_BLAS   = -lopenblas
+LIB_SUPERLU= -lsuperlu
+LIB_LAPACK = $(LIB_BLAS) $(LIB_SUPERLU)
 
 LIB_PAPI  =
 LIB_MATH  =
