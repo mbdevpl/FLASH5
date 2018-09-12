@@ -139,9 +139,9 @@ ymax					=  32768.e5
 zmin					=  -32768.e5
 zmax					=  32768.e5
 
-nblockx					= 8
-nblocky					= 8
-nblockz					= 8
+nblockx					= 2
+nblocky					= 2
+nblockz					= 2
 
 # max and min levels of refinement
 lrefine_min				= 1
