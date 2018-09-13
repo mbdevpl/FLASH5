@@ -1,0 +1,84 @@
+REQUIRES Driver
+REQUIRES Grid
+REQUIRES physics/Hydro
+REQUIRES physics/Gravity/GravityMain/Poisson
+REQUIRES physics/Eos/EosMain/Helmholtz
+REQUIRES physics/sourceTerms/Burn/BurnMain/nuclearBurn
+REQUIRES Simulation/SimulationComposition
+REQUIRES Multispecies
+REQUESTS IO
+REQUESTS IO/IOMain/hdf5
+
+
+## Load balancing with burning timesteps
+LINKIF mpi_amr_refine_derefine.F90.pm4 Grid/GridMain/paramesh/paramesh4
+
+#
+# progenitor
+#
+
+DATAFILES       Profiles
+PARAMETER       initialWDFile   STRING  "wd_profile_rhoc_415e5_M_106_correct.dat"
+
+#
+# ambient medium outside star
+#
+
+D dens_fluff            density of the fluff
+D temp_fluff            temperature of the fluff
+D xc12_fluff            c12 mass fraction of the fluff
+D xo16_fluff            o16 mass fraction of the fluff
+PARAMETER       dens_fluff      REAL    1.0e-3  [0.0 to ]
+PARAMETER       temp_fluff      REAL    3.0e7   [0.0 to ]
+PARAMETER       xc12_fluff      REAL    0.5e0   [0.0 to 1.0]
+PARAMETER       xne22_fluff     REAL    0.0e0   [0.0 to 1.0]
+
+#
+# ignition
+#
+
+D ignite                flag to ignite a spherical region with matchhead
+D x_match               X-coordinate of center of matchhead
+D y_match               Y-coordinate of center of matchhead
+D z_match               Z-coordinate of center of matchhead
+D r_match_inner         Inner radius of spherical matchhead region
+D r_match_outer         Outer radius of spherical matchhead region
+D t_ignite_inner        Temperature of matchhead at r_match_inner
+D t_ignite_outer        Temperature of matchhead at r_match_outer
+PARAMETER     ignite             BOOLEAN  FALSE
+PARAMETER     x_match            REAL     0.e0
+PARAMETER     y_match            REAL     0.e0
+PARAMETER     z_match            REAL     0.e0
+PARAMETER     r_match_inner      REAL     0.e0  [0.0 to ]
+PARAMETER     r_match_outer      REAL     0.e0  [0.0 to ]
+PARAMETER     t_ignite_inner     REAL     4.e9  [0.0 to ]
+PARAMETER     t_ignite_outer     REAL     4.e9  [0.0 to ]
+
+D useShell              flag to add a shell/belt to the profile
+D radShellMin           Inner radius of shell
+D radShellMax           Outer radius of shell
+D thtShellMin           Min angle of belt (0.0 for shell)
+D thtShellMax           Max angle of belt (180.0 for shell)
+PARAMETER     useShell           BOOLEAN  FALSE
+PARAMETER     radShellMin        REAL     0.e0  [0.0 to ]
+PARAMETER     radShellMax        REAL     0.e0  [0.0 to ]
+PARAMETER     thtShellMin        REAL     0.e0  [0.0 to 180.0]
+PARAMETER     thtShellMax        REAL     0.e0  [0.0 to 180.0]
+
+D densShellMult         Density multiplier if shell is within profile
+D tempShellMult         Temperture multiplier if shell is within profile
+D densShell             Density of shell if exterior to profile
+D tempShell             Temperture of shell if exterior to profile
+PARAMETER     densShellMult      REAL     1.e0  [0.0 to ]
+PARAMETER     tempShellMult      REAL     1.e0  [0.0 to ]
+PARAMETER     densShell          REAL     0.e0  [0.0 to ]
+PARAMETER     tempShell          REAL     0.e0  [0.0 to ]
+
+D xhe4_shell            Helium mass fraction of shell
+D xc12_shell            Carbon mass fraction of shell
+D xni56_shell           Nickel mass fraction of shell (ash)
+PARAMETER     xhe4_shell         REAL     1.e0  [0.0 to 1.0]
+PARAMETER     xc12_shell         REAL     0.e0  [0.0 to 1.0]
+PARAMETER     xni56_shell        REAL     0.e0  [0.0 to 1.0]
+
+VARIABLE        entr    EOSMAP: ENTR

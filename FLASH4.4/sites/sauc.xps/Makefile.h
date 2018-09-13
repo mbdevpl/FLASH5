@@ -8,13 +8,17 @@ HDF5_PATH = ${SPACK_GCC}/hdf5-1.8.19-o37nepbsolbgwzs2qrqdfglr3tmhai2c
 #HDF5_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/hdf5-1.8.19-tgq3sf66sw3agicwotbrgpvgtrfgdoie
 #AMREX_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/amrex-master-6jw7hbzurjx3w7zq7yxdiulpn5w4czer
 #AMREX_PATH = ${SPACK_GCC}/amrex-master-xavsjpdiznbgzuessdvwbb2yk4yorzdx
-AMREX_PATH = /home/sauc/Softwares/amrex/build-3d
+AMREX_PATH = /home/sauc/amrex/build-3d
 HYPRE_PATH = ${SPACK_GCC}/hypre-2.10.0b-q7c6jt2acstfmxviujmeh57gxgxltvzs
 #HYPRE_PATH = /home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/hypre-2.10.0b-7pe44q2taksk77wdoksdmbenoxtd3fyl
 ZLIB_PATH  =
 
 PAPI_PATH  =
 PAPI_FLAGS =
+
+SUPERLU_PATH = ${SPACK_GCC}/superlu-5.2.1-gitgrwfoft6ilqt76ifcr62v4hjkncmf
+BLAS_PATH = ${SPACK_GCC}/openblas-0.2.20-3fdwz5zyh5vkcdr7q7h75xs7j6x5vde7
+LIB_LAPACK=
 
 LIB_NCMPI = /usr/local
 MPE_PATH   =
@@ -131,6 +135,12 @@ LIB_STDCXX =
 #LIB_STDCXX = -L/usr/lib/gcc/x86_64-linux-gnu/5.4.0 -lstdc++
 LIB_STDCXX = -L/usr/include/c++/5 -lstdc++
 #LIB_STDCXX = -L/home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/gcc-6.4.0-vh4t4mqp6q3xnzt3zht2dvhw7ikzbzfu/include/c++/6.4.0 -lstdc++ -Wl,-rpath,/home/sauc/Softwares/spack/opt/spack/linux-ubuntu16.04-x86_64/gcc-5.4.0/gcc-6.4.0-vh4t4mqp6q3xnzt3zht2dvhw7ikzbzfu/include/c++/6.4.0
+
+LIB_BLAS = -L${BLAS_PATH}/lib -lopenblas -Wl,-rpath,${BLAS_PATH}/lib
+
+LIB_SUPERLU = -L${SUPERLU_PATH}/lib -lsuperlu
+
+LIB_LAPACK = $(LIB_BLAS) $(LIB_SUPERLU)
 
 # Uncomment the following line to use electic fence memory debugger.
 # Need the following environmental variable (see env.sh):

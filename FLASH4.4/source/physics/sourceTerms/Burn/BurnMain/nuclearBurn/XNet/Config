@@ -72,7 +72,7 @@ def genLines(setupvars):
     yield 'PARAMETER xnet_changemxt        REAL            1.0e-2  [0.0 to 1.0]'
     yield 'PARAMETER xnet_tolt9            REAL            1.0e-4  [0.0 to 1.0]'
     yield 'PARAMETER xnet_idiag            INTEGER         0       [0 to 5]'
-    yield 'PARAMETER xnet_writeTimers      BOOLEAN         TRUE'
+    yield 'PARAMETER xnet_writeTimers      BOOLEAN         FALSE'
 
     ##
     if 'xnetData' in setupvars:

@@ -375,7 +375,7 @@ subroutine Burn (  dt  )
         !$omp end parallel do
    
 #ifdef FLASH_GRID_PARAMESH
-        bflags(1,blockID) = sumBurn_TS(thisBlock)
+        !bflags(1,blockID) = sumBurn_TS(thisBlock)
 #endif
         solnData(MTSB_VAR,:,:,:) = sumBurn_TS(thisBlock)
 
