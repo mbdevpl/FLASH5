@@ -53,6 +53,7 @@ module block_1lev_iterator
         integer,              private          :: level    = INVALID_LEVEL
         logical,              private          :: isValid  = .FALSE.
         integer,              private          :: finest_grid_level
+        integer,              allocatable      :: dummy
     contains
         procedure, public :: is_valid
         procedure, public :: next
