@@ -1,6 +1,6 @@
 # Configuration for Euler time integration of active particles
 
-REQUIRES Grid/GridParticles/Paramesh/GridParticlesMapToMesh
+REQUIRES Grid/GridParticles/GridParticlesMapToMesh/Paramesh
 
 #  Properties needed for active particles.
 

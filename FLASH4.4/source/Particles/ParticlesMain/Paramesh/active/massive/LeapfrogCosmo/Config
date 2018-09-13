@@ -3,7 +3,7 @@
 # [/source/Particles/timeIntegration/active/LeapfrogCosmo]
 
 REQUIRES physics/Cosmology
-REQUIRES Grid/GridParticles/Paramesh/GridParticlesMapToMesh
+REQUIRES Grid/GridParticles/GridParticlesMapToMesh/Paramesh
 
 
 #  Properties needed for active particles.

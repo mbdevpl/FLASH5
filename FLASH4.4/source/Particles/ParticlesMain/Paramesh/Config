@@ -8,8 +8,8 @@ REQUESTS monitors/Logfile
 REQUIRES RuntimeParameters
 REQUESTS Particles/ParticlesMapping/Paramesh
 REQUESTS Particles/ParticlesInitialization/Paramesh
-REQUIRES Grid/GridParticles/Paramesh
-REQUIRES Grid/GridParticles/Paramesh/GridParticlesMapFromMesh
+REQUIRES Grid/GridParticles
+REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Paramesh
 
 #  Contains these submodules:
 #    active          Active particle submodule.  Particles contribute to the

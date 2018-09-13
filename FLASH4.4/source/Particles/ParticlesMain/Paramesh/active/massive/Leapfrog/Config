@@ -1,7 +1,7 @@
 # Configuration for leapfrog time integration of active particles
 # [/source/Particles/timeIntegration/active/Leapfrog]
 
-REQUIRES Grid/GridParticles/Paramesh/GridParticlesMapToMesh
+REQUIRES Grid/GridParticles/GridParticlesMapToMesh/Paramesh
 
 #  Properties needed for active particles.
 
