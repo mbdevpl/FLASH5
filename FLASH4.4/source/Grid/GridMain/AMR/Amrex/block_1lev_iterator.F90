@@ -240,7 +240,7 @@ contains
           !IMPORTANT: data in bx is changed on return!
           type(amrex_box), intent(INOUT) :: bx
           integer,         intent(IN)    :: lev
-          integer,         intent(IN)    :: finest ! Passing this saves a function call.
+          integer,         intent(IN)    :: finest_level ! Passing this saves a function call.
 
           type(amrex_boxarray) :: fba
           integer :: rr
