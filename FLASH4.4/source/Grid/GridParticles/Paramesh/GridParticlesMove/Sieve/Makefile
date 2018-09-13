@@ -1,1 +1,0 @@
-Grid += gr_ptSieveInterface.o gr_ptMoveSieve.o
