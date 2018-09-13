@@ -12,7 +12,7 @@ EXCLUSIVE Paramesh UG Amrex
 IF Grid=='AMREX'
   REQUIRES Grid/GridParticles/Amrex
 ELSE
-  REQUIRES Grid/GridParticles/Paramesh/GridParticlesMove
+  REQUIRES Grid/GridParticles/GridParticlesMove/Paramesh
 ENDIF
 
 D gr_ptRemove  boolean.  This is a switch which determines the action if the number
