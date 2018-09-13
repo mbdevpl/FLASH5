@@ -85,7 +85,6 @@ module leaf_iterator
         real,POINTER            :: fp(:,:,:,:)
     contains
         procedure, public :: is_valid
-        procedure, public :: first
         procedure, public :: next
         procedure, public :: blkMetaData
     end type leaf_iterator_t
@@ -276,29 +275,6 @@ contains
       itor%isValid = .FALSE.
 
     end subroutine destroy_iterator
-
-    !!****m* leaf_iterator_t/first
-    !!
-    !! NAME
-    !!  first
-    !!
-    !! SYNPOSIS
-    !!  call itor%first()
-    !!
-    !! DESCRIPTION
-    !!  Reset iterator to the initial block managed by process
-    !!
-    !!****
-    subroutine first(this)
-        class(leaf_iterator_t), intent(INOUT) :: this
-
-        call Driver_abortFlash('leaf_iterator: Attempting first(), not implemented!')
-        print*,'leaf_iterator%first: about to do 1lev%first''s on this=',this%isValid,this%level,allocated(this%li)
-
-
-
-
-    end subroutine first
 
     !!****m* leaf_iterator_t/is_valid
     !!
