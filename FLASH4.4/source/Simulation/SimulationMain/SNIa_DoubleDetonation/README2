@@ -1,8 +1,0 @@
-Setup:
-./setup SNIa_DoubleDetonation -auto -3d +cartesian -nxb=16 -nyb=16 -nzb=16 -maxblocks=500 xnet=True xnetData=Data_SN160 xnetGPU=False +uhd +starkiller starkillerGPU=False +Mode1 +newMpole -debug
-
-Expanded setup without shortcut:
---gridinterpolation=monotonic SNIa_DoubleDetonation --auto --3d --geometry=cartesian --nxb=16 --nyb=16 --nzb=16 --maxblocks=1000 --with-unit=physics/Hydro/HydroMain/unsplit/OnlyHydro --without-unit=physics/Hydro/HydroMain/split --with-unit=physics/Hydro/HydroMain/unsplit/OnlyHydro --without-unit=physics/Hydro/HydroMain/split --index-reorder --debug --without-unit=physics/Gravity/GravityMain/Poisson/Multigrid --without-unit=Grid/GridSolvers/Multipole --with-unit=physics/Gravity/GravityMain/Poisson/Multipole --with-unit=Grid/GridSolvers/Multipole_new
-
-
-Setup string is a modified version of setup script from Austin's email to Saurabh on 8/31/2018. +starkiller is not defined and ignored here for now. TBD.

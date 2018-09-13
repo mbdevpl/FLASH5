@@ -25,3 +25,6 @@ Example setup commands:
 
 * 3D, threading over blocks, with XNet SN160 network, using GPU, with starkiller EOS, edge lit analytic WD w/ He-shell
 > ./setup SNIa_DoubleDetonation -auto -3d -nxb=16 -nyb=16 -nzb=16 -maxblocks=64 +hdf5 threadBlockList=True xnet=True xnetData=Data_SN160 xnetGPU=True +starkiller starkillerGPU=True -parfile=flash_r10_shellDet_analytic_M106_3d.par
+
+Setup script for FLASH5 Mode1 that works currently:
+./setup SNIa_DoubleDetonation -auto -3d +cartesian -nxb=16 -nyb=16 -nzb=16 -maxblocks=125 xnet=True xnetData=Data_SN160 xnetGPU=False +uhd +Mode1 +newMpole
