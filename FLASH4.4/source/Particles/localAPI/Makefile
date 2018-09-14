@@ -2,7 +2,7 @@
 # [source/Particles/ParticlesInitialization]
 
 Particles += pt_interface.o pt_initPositions.o pt_initPositionsLattice.o \
-        pt_initPositionsWithDensity.o pt_initFinalize.o \
+        pt_initPositionsLattice_desc.o pt_initPositionsWithDensity.o pt_initFinalize.o \
 	pt_initLocal.o pt_mapStringParamToInt.o pt_mapFromMeshQuadratic.o \
 	pt_mapFromMeshWeighted.o pt_assignWeights.o \
 	pt_updateTypeDS.o pt_prepareEsti.o pt_advanceRK.o \

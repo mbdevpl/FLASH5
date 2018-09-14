@@ -15,11 +15,18 @@ Module pt_interface
      end subroutine pt_initPositions
   end interface
 
-  interface
+  interface pt_initPositionsLattice
      subroutine pt_initPositionsLattice(blockID,success)
        integer, intent(IN) :: blockID
        logical,intent(OUT) :: success
      end subroutine pt_initPositionsLattice
+
+     subroutine pt_initPositionsLattice_desc(block,success)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: block
+       logical,intent(OUT) :: success
+     end subroutine pt_initPositionsLattice_desc
   end interface
 
   interface
