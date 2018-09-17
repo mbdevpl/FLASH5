@@ -1,4 +1,4 @@
-!!****if* source/Particles/ParticlesInitialization/Particles_initPositions
+!!****if* source/Particles/ParticlesInitialization/Amrex/Particles_initPositions
 !!
 !! NAME
 !!    Particles_initPositions
@@ -88,11 +88,13 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
   use Driver_interface, ONLY : Driver_abortFlash
   use pt_interface, ONLY : pt_initPositions,pt_createTag
   use Particles_data, ONLY : pt_posInitialized,pt_numLocal,useParticles,&
-       pt_typeInfo, particles, pt_meshNumProcs, pt_meshMe
+       pt_typeInfo, particles, pt_meshNumProcs, pt_meshMe, &
+       pt_containers
 
   use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata,        ONLY : block_metadata_t
-  use pt_interface, ONLY :  pt_initLocal
+  use pt_interface, ONLY :  pt_initLocal, pt_initPositionsLattice
+  use amrex_particlecontainer_module, ONLY : amrex_particlecontainer, amrex_particle
 
   implicit none
 #include "constants.h"
@@ -102,7 +104,7 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
   logical, INTENT(INOUT) :: partPosInitialized
   logical, INTENT(OUT) :: updateRefine
 
-  integer       :: i, j, k, b
+  integer       :: i, j, k
   integer       :: p
   integer       :: numLocalThisType, numNewLocalThisType, numLocalPreviousTypes
   integer       :: numPreviousLocal
@@ -135,7 +137,6 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
   
   ! Distribute initial positions
 
-  call Grid_getLeafIterator(itor)
 #ifdef DEBUG_PARTICLES
   if (pt_meshMe == MASTER_PE .OR. pt_meshNumProcs .LE. 4) then
      print*,pt_meshMe,': am initializing particles on number of blocks=',blkCount
@@ -155,20 +156,17 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
   do i = 1,NPART_TYPES
      if(.not.updateRefine) pt_typeInfo(PART_LOCAL,i) = 0
      numLocalThisType = pt_typeInfo(PART_LOCAL,i)
-     
-     b=0
+
      numNewLocalThisType = 0
      numPreviousLocal = pt_numLocal
+     call Grid_getLeafIterator(itor)
      do while(itor%is_valid())
         call itor%blkMetaData(block)
-!         blkLimits   = block%limits
-!         blkLimitsGC = block%limitsGC
         call Grid_getBlkPtr(block, solnData)
-!!        print*,'pt_initPositions',blockID, pt_typeInfo(PART_INITMETHOD,i)
         select case(pt_typeInfo(PART_INITMETHOD,i))
         case(LATTICE)
            call pt_initPositionsLattice(block,partPosInitialized)
-!!DevNote :: Following two options to be implemented later
+!DevNote :: Following two options to be implemented later
 !         case(WITH_DENSITY, CELLMASS, REJECTION)
 !            call pt_initPositionsWithDensity(blockID,partPosInitialized)
 !         case(CUSTOM)
@@ -184,6 +182,8 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
         call itor%next()
      enddo
   call Grid_releaseLeafIterator(itor)
+
+
 #ifdef TYPE_PART_PROP
      particles(TYPE_PART_PROP, &
           pt_numLocal-numNewLocalThisType+1:pt_numLocal) = pt_typeInfo(PART_TYPE,i) 
