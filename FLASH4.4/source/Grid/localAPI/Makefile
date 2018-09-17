@@ -1,4 +1,4 @@
-Grid += gr_ptInterface.o gr_ptInit.o gr_ptMove.o\
+Grid += gr_ptInterface.o gr_ptInit.o gr_ptMove.o gr_ptMoveSieve.o\
         gr_ptFinalize.o gr_ptMarkRefineDerefine.o \
         gr_ptMoveOffBlk.o\
         gr_ptFillBlkParticleInfo.o gr_ensureValidNeighborInfo.o \

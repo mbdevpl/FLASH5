@@ -23,9 +23,7 @@ Particles +=  \
 	Particles_getCountPerBlk.o \
 	Particles_accumCount.o \
 	Particles_initData.o \
-	Particles_initForces.o \
 	Particles_manageLost.o \
-	Particles_addNew.o \
 	Particles_sinkAccelGasOnSinksAndSinksOnGas.o \
 	Particles_sinkAdvanceParticles.o \
 	Particles_sinkCreateAccrete.o \
@@ -35,4 +33,5 @@ Particles +=  \
 	Particles_sinkMoveParticles.o \
 	Particles_sinkSortParticles.o \
 	Particles_sinkSyncWithParticles.o \
-	Particles_clean.o 	
+	Particles_clean.o \
+	Particles_createDataStructs.o
