@@ -116,13 +116,13 @@ subroutine Particles_initData(restart, partPosInitialized)
 
   if (.NOT. restart) then
      call Particles_initPositions(partPosInitialized,updateRefineUnused)
-#ifdef TYPE_PART_PROP
-  call Grid_sortParticles(particles,NPART_PROPS,pt_numLocal,NPART_TYPES, &
-       pt_maxPerProc,particlesPerBlk,BLK_PART_PROP, TYPE_PART_PROP)
-#else
-  call Grid_sortParticles(particles,NPART_PROPS,pt_numLocal,NPART_TYPES, &
-       pt_maxPerProc,particlesPerBlk,BLK_PART_PROP)
-#endif
+! #ifdef TYPE_PART_PROP
+!   call Grid_sortParticles(particles,NPART_PROPS,pt_numLocal,NPART_TYPES, &
+!        pt_maxPerProc,particlesPerBlk,BLK_PART_PROP, TYPE_PART_PROP)
+! #else
+!   call Grid_sortParticles(particles,NPART_PROPS,pt_numLocal,NPART_TYPES, &
+!        pt_maxPerProc,particlesPerBlk,BLK_PART_PROP)
+! #endif
      ! Now update the pt_typeInfo data structure
 
      call pt_updateTypeDS(particlesPerBlk)
