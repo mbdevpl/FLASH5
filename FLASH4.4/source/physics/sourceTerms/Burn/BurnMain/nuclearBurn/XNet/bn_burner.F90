@@ -47,7 +47,7 @@
 
 subroutine bn_burner(tstep,temp,density,xIn,xOut,sdotRate,burnedZone,kstep)
 
-  use Burn_dataEOS, ONLY : btemp, bden, bye
+  use Burn_dataEOS, ONLY : btemp, bden=>den, bye=>ye
   use Burn_data, ONLY : xmass, bion, sneut, aion, aioninv
 
   use bn_interface, ONLY : bn_azbar, bn_sneutx
