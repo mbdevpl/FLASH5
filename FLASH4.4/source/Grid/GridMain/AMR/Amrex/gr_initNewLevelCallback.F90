@@ -83,6 +83,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           lo_bc_amrex, hi_bc_amrex
     use Eos_interface,             ONLY : Eos_wrapped
     use Logfile_interface,         ONLY : Logfile_stamp
+    use Particles_interface, ONLY :  Particles_createDataStructs
 
     implicit none
 
@@ -102,6 +103,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 
     integer :: dir
     logical :: nodal(1:MDIM)
+    logical, save :: isPtDataStructCreated = .false.
 
     ba = pba
     dm = pdm
@@ -246,7 +248,11 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
        call itor%next()
     end do
     call gr_releaseBlkIterator(itor)
-
+    if(.not.isPtDataStructCreated) then
+        call Particles_createDataStructs()
+        isPtDataStructCreated = .true.
+        print*, "pt_containers created!!"
+    end if
     write(*,'(A,I10,A,I0)') "Created and initialized ", n_blocks, &
                            " blocks on level ", lev + 1
 

@@ -260,4 +260,10 @@ Module Particles_interface
     end subroutine Particles_sinkSyncWithParticles
   end interface
 
+  interface
+    subroutine Particles_createDataStructs()
+        implicit none
+    end subroutine Particles_createDataStructs
+  end interface
+
 end Module Particles_interface
