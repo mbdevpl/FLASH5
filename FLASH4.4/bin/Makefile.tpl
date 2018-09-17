@@ -141,7 +141,7 @@ endif
 %%.o : %%.F90
 \t$(ECHO-COMPILING) 
 \t$(FCOMP) $(FFLAGS) $(F90FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
-%%.mod : %%.F90
+%%.mod : %%.F90 %%.o
 \t$(ECHO-COMPILING) 
 \t$(FCOMP) $(FFLAGS) $(F90FLAGS) $(FDEFINES) $<
 ifdef MODUPPERCASE
