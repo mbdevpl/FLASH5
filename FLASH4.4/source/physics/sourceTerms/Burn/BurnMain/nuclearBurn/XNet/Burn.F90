@@ -191,7 +191,7 @@ subroutine Burn (  dt  )
 
         allocate(shock(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
                        blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
-                       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
+                       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 
         ! identify the range of batches in each block (use floor/ceil in case of overlap)
         batch_lo(thisBlock) = nzones / xnet_nzbatchmx + 1
