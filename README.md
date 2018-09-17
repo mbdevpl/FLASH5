@@ -1,5 +1,7 @@
 # FLASH5
 
+[![Build status from Travis CI](https://img.shields.io/travis/com/mbdevpl/FLASH5/travis.svg)](https://travis-ci.com/mbdevpl/FLASH5)
+
 ## Git/Testing Workflow
 
 The current rules for collaborating via git are as follows

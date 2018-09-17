@@ -1,0 +1,80 @@
+sudo: required
+
+language: generic
+
+services:
+  - docker
+
+env:
+  global:
+    - DOCKER_IMAGE="mbdevpl/flash:dependencies-latest"
+
+matrix:
+  include:
+    - env:
+      - EXPERIMENT_BRANCH="spack_SNIa"
+      - FLASH_SETUP_OPTIONS="SNIa_DoubleDetonation -auto -3d +cartesian -nxb=16 -nyb=16 -nzb=16 -maxblocks=100 xnet=True xnetData=Data_SN160 xnetGPU=False +uhd +starkiller starkillerGPU=False +Mode1 -debug +newMpole -objdir=sn1a-doubledet +noio"
+      - FLASH_OBJECT_DIR="sn1a-doubledet"
+    #- env:
+    #  - EXPERIMENT_BRANCH="spack_chimera"
+    #  - FLASH_SETUP_OPTIONS=""
+    #  - FLASH_OBJECT_DIR="CCSN_Chimera"
+    - env:
+      - EXPERIMENT_BRANCH="transpyle_experiments"
+      - FLASH_SETUP_OPTIONS="Sod -2d -auto +Mode1"
+      - FLASH_OBJECT_DIR="object"
+    - env:
+      - EXPERIMENT_BRANCH="transpyle_experiments"
+      - FLASH_SETUP_OPTIONS="Sod -2d -auto +Mode3"
+      - FLASH_OBJECT_DIR="object"
+    - env:
+      - EXPERIMENT_BRANCH="transpyle_experiments"
+      - FLASH_SETUP_OPTIONS="Sedov -2d -auto +Mode1"
+      - FLASH_OBJECT_DIR="object"
+    - env:
+      - EXPERIMENT_BRANCH="transpyle_experiments"
+      - FLASH_SETUP_OPTIONS="Sedov -2d -auto +Mode3"
+      - FLASH_OBJECT_DIR="object"
+    - env:
+      - EXPERIMENT_BRANCH="transpyle_experiments_outlined"
+      - FLASH_SETUP_OPTIONS="Sod -2d -auto +Mode1"
+      - FLASH_OBJECT_DIR="object"
+    - env:
+      - EXPERIMENT_BRANCH="transpyle_experiments_outlined"
+      - FLASH_SETUP_OPTIONS="Sedov -2d -auto +Mode1"
+      - FLASH_OBJECT_DIR="object"
+    - env:
+      - EXPERIMENT_BRANCH="transpyle_experiments_autoinlined"
+      - FLASH_SETUP_OPTIONS="Sod -2d -auto +Mode1"
+      - FLASH_OBJECT_DIR="object"
+    - env:
+      - EXPERIMENT_BRANCH="transpyle_experiments_autoinlined"
+      - FLASH_SETUP_OPTIONS="Sedov -2d -auto +Mode1"
+      - FLASH_OBJECT_DIR="object"
+
+install:
+  - docker pull "${DOCKER_IMAGE}"
+  - git fetch origin "${EXPERIMENT_BRANCH}:${EXPERIMENT_BRANCH}"
+  - git branch -vav
+  - git checkout "${EXPERIMENT_BRANCH}"
+
+script:
+  - export SOURCE_PATH="$(pwd)"
+  - export TARGET_PATH="/home/user/Projects/${TRAVIS_REPO_SLUG}"
+  # --mount type=bind,source="${SOURCE_PATH}",target="${TARGET_PATH}"
+  # --volume "${SOURCE_PATH}":"${TARGET_PATH}"
+  - docker run --volume "${SOURCE_PATH}":"${TARGET_PATH}" -t "${DOCKER_IMAGE}"
+    -c "sudo chown -R user:user ${TARGET_PATH} &&
+    spack load -r mpich &&
+    spack load -r hdf5 &&
+    spack load -r hypre &&
+    spack load -r amrex &&
+    spack load -r superlu &&
+    cd ${TARGET_PATH}/FLASH4.4 &&
+    ./setup ${FLASH_SETUP_OPTIONS} -site spack &&
+    cd ${FLASH_OBJECT_DIR} &&
+    make --quiet 2>_stderr.log || (tail -n 1000 _stderr.log && false) &&
+    ./flash4"
+
+notifications:
+  email: false

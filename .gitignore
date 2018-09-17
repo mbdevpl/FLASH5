@@ -16,3 +16,11 @@ lib/ma28/source/*__genmod.mod
 lib/ma28/source/*__genmod.f90
 tools/sfocu/sfocu
 source/physics/sourceTerms/Burn/BurnMain/nuclearBurn/MesaNet/kernel/external_codes_with_mesa/min_net/run
+
+# OS: macOS
+.DS_Store
+
+# OS: Windows
+desktop.ini
+
+/FLASH4.4/sn1a-doubledet
