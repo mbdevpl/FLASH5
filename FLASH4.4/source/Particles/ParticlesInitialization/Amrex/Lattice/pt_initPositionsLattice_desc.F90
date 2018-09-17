@@ -52,12 +52,10 @@ subroutine pt_initPositionsLattice_desc (block,success)
   use Grid_interface, ONLY : Grid_getBlkBoundBox, Grid_mapMeshToParticles
   use Logfile_interface, ONLY:  Logfile_stamp
   use block_metadata,        ONLY : block_metadata_t
-  use amrex_particlecontainer_module, ONLY : amrex_particlecontainer, amrex_particle,&
+  use amrex_particlecontainer_module, ONLY : amrex_particle,&
                                                             amrex_get_next_particle_id, amrex_get_cpu
-  use gr_physicalMultifabs, ONLY : unk
-  use amrex_multifab_module, ONLY : amrex_mfiter, &
-                                      amrex_mfiter_build, &
-                                      amrex_mfiter_destroy
+   use amrex_particlecontainer_module, ONLY : amrex_particlecontainer_build, amrex_particlecontainer_destroy
+   use amrex_amr_module, ONLY : amrex_get_amrcore
 
   implicit none
 #include "constants.h"
@@ -79,9 +77,7 @@ subroutine pt_initPositionsLattice_desc (block,success)
   real, dimension(2,MDIM):: boundBox
   integer :: part_props=NPART_PROPS
   type(amrex_particle) :: thisParticle
-  type(amrex_particlecontainer) :: thisPc
   integer :: grd_index,tile_index,level_amrex
-  type(amrex_mfiter) :: mfi
 !----------------------------------------------------------------------
 
   !       Initialization now done in Particles_init.
@@ -116,15 +112,6 @@ subroutine pt_initPositionsLattice_desc (block,success)
   zpos = 0.0
   ypos = 0.0
   xpos = 0.0
-  !!Find mfi for amrex_particlecontainer routines
-  level_amrex = block%level-1
-  call amrex_mfiter_build(mfi, unk(level_amrex), tiling=.false.)
-    do while(mfi%next())
-        if((mfi%grid_index())==(block%grid_index)) then
-            print*,"mfi found with grid_index", mfi%grid_index()
-            exit
-        endif
-    end do
   
   loop_x:  do i = 1, pt_numX
      xpos = (i-0.5)*dxParticle(IAXIS) + pt_initialXMin
@@ -184,15 +171,14 @@ subroutine pt_initPositionsLattice_desc (block,success)
               !! particle is defined, set up data structure
               
               
-!               particles(BLK_PART_PROP,p) = real(blockID)
-!               particles(PROC_PART_PROP,p) = real(pt_meshMe)
-! #ifdef MASS_PART_PROP
-!               particles(MASS_PART_PROP,p) = 1.
-! #endif
-!               particles(POSX_PART_PROP,p) = xpos
-!               particles(POSY_PART_PROP,p)  = ypos
-!               particles(POSZ_PART_PROP,p)  = zpos
-                thisPc=pt_containers(1)
+              particles(BLK_PART_PROP,p) = real(block%grid_index)
+              particles(PROC_PART_PROP,p) = real(pt_meshMe)
+#ifdef MASS_PART_PROP
+              particles(MASS_PART_PROP,p) = 1.
+#endif
+              particles(POSX_PART_PROP,p) = xpos
+              particles(POSY_PART_PROP,p)  = ypos
+              particles(POSZ_PART_PROP,p)  = zpos
                 thisParticle%pos(1) = xpos
                 if (NDIM > 1) then
                     thisParticle%pos(2) = ypos
@@ -206,18 +192,14 @@ subroutine pt_initPositionsLattice_desc (block,success)
                 grd_index=block%grid_index
                 !!DevNote Hard set tile index =0 for no tiling. This should come from block%a_new_field_for_tile_index
                 tile_index=0
-                print*,"pc size = ", size(pt_containers)
                 print*,"level, grid_index, tile_index: ",level_amrex,grd_index,tile_index
-!                 call pc%add_particle(lev, mfi, thisParticle)
-                call thisPc%add_particle(level_amrex, mfi, thisParticle)
-              
+                call pt_containers(1)%add_particle(level_amrex, grd_index, tile_index, thisParticle)  
               
            endif   !! end of IsInBlock .and. IsInSphere is true
            
         enddo loop_z
      enddo loop_y
   enddo loop_x
-  call amrex_mfiter_destroy(mfi)
   !       Setting the particle database local number of particles
   pt_numLocal = p
   !       Now initialize velocity properties for the new particles
@@ -227,7 +209,6 @@ subroutine pt_initPositionsLattice_desc (block,success)
        pt_posAttrib,pt_velNumAttrib,pt_velAttrib,mapType)
 
   success=.true.
-
 
   return
 
