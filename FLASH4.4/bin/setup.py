@@ -51,7 +51,7 @@ def main():
     unitList = UnitList() # A class which encapsulates operations of unit collections
 
     objdir = os.path.join(GVars.flashHomeDir,GVars.objectDir)
-    if not os.path.isdir(objdir): os.mkdir(objdir)
+    if not os.path.isdir(objdir): os.makedirs(objdir)
 
     if GVars.unitsFile: # copy over the user specified units file
        sname = os.path.join(GVars.flashHomeDir,GVars.unitsFile)
