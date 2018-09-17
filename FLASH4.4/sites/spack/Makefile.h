@@ -23,11 +23,11 @@ PP      = -D
 
 
 
-FFLAGS_OPT = -c -O2 -fdefault-real-8 -fdefault-double-8 \
+FFLAGS_OPT = -g -c -O2 -fdefault-real-8 -fdefault-double-8 \
 $(shell echo -I${CPATH} | sed 's|:| -I|g') \
 -Wuninitialized
 
-FFLAGS_DEBUG = -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
+FFLAGS_DEBUG = -g -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
 $(shell echo -I${CPATH} | sed 's|:| -I|g') \
 -pedantic -Wall -Wextra -Waliasing \
 -Wsurprising -Wconversion -Wunderflow \
@@ -35,7 +35,7 @@ $(shell echo -I${CPATH} | sed 's|:| -I|g') \
 -fimplicit-none -fstack-protector-all \
 -fbacktrace -fbounds-check
 
-FFLAGS_TEST = -ggdb -c -fdefault-real-8 -fdefault-double-8 \
+FFLAGS_TEST = -g -ggdb -c -fdefault-real-8 -fdefault-double-8 \
 $(shell echo -I${CPATH} | sed 's|:| -I|g') \
 -ffree-line-length-none
 
@@ -50,14 +50,17 @@ F90FLAGS =
 #The macro _FORTIFY_SOURCE adds some lightweight checks for buffer
 #overflows at both compile time and run time (only active at -O1 or higher)
 #http://gcc.gnu.org/ml/gcc-patches/2004-09/msg02055.html
-CFLAGS_OPT = -c -O2 -Wuninitialized -D_FORTIFY_SOURCE=2
+CFLAGS_OPT = -g -c -O2 \
+-Wuninitialized -D_FORTIFY_SOURCE=2
 
-CFLAGS_DEBUG = -ggdb -c -O0 -Wno-div-by-zero -Wundef \
+CFLAGS_DEBUG = -g -ggdb -c -O0 \
+-Wno-div-by-zero -Wundef \
 -Wconversion -Wstrict-prototypes -Wunreachable-code \
 -pedantic -Wall -Wextra -Winit-self -ftree-vrp -Wfloat-equal \
 -Wunsafe-loop-optimizations -Wpadded -fstack-protector-all
 
-CFLAGS_TEST = -c
+CFLAGS_TEST = -g -c
+
 
 # Platform symbol
 CDEFINES += -DDarwin
@@ -72,13 +75,13 @@ CFLAGS_NCMPI =
 #  _DEBUG, and _TEST cases.
 #----------------------------------------------------------------------------
 
-LFLAGS_OPT   = \
+LFLAGS_OPT   = -g \
 $(shell echo -L${LD_LIBRARY_PATH} | sed 's|:| -L|g') \
 -o
-LFLAGS_DEBUG = -O0 \
+LFLAGS_DEBUG = -g -O0 \
 $(shell echo -L${LD_LIBRARY_PATH} | sed 's|:| -L|g') \
 -o
-LFLAGS_TEST  = \
+LFLAGS_TEST  = -g \
 $(shell echo -L${LD_LIBRARY_PATH} | sed 's|:| -L|g') \
 -o
 
