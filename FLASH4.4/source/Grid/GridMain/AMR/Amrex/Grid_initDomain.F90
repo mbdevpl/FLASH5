@@ -59,6 +59,9 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   use Eos_interface,        ONLY : Eos_wrapped
   use leaf_iterator,        ONLY : leaf_iterator_t
   use block_metadata,       ONLY : block_metadata_t
+  use Particles_data, ONLY :  pt_containers, useParticles
+  use amrex_amr_module, ONLY : amrex_get_amrcore
+  use amrex_particlecontainer_module, ONLY : amrex_particlecontainer_build
 
   implicit none
 
@@ -70,6 +73,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   type(leaf_iterator_t)         :: itor
   type(block_metadata_t)        :: block
   real(wp), contiguous, pointer :: initData(:,:,:,:)
+  integer :: i
 
   !!!!!----- ALLOCATE DATA STRUCTURES
   ! multifabs 
@@ -113,6 +117,13 @@ subroutine Grid_initDomain(restart,particlesInitialized)
     !  runs EoS on interiors, fills GCs, and runs EoS on GCs.
     !  All this is done through the callback functions.
     call amrex_init_from_scratch(T_INIT)
+    !Particle containers are created here because it needs to be called after levels are created.
+    !This limits the ability to refine on particle at initial time because refinement is already done
+    if(useParticles) then
+        do i=1, NPART_TYPES
+        call amrex_particlecontainer_build(pt_containers(i), amrex_get_amrcore())
+        end do
+    endif
   else 
     call Driver_abortFlash("[Grid_initDomain] restarts not yet implemented")
   end if

@@ -46,8 +46,6 @@ subroutine Particles_init ( restart)
   use Logfile_interface, ONLY : Logfile_stamp
   use pt_interface, ONLY : pt_mapStringParamToInt, pt_picInit, pt_setMask, pt_setDataStructures
   use Particles_interface, ONLY : Particles_specifyMethods, Particles_sinkInit
-  use amrex_amr_module, ONLY : amrex_get_amrcore
-  use amrex_particlecontainer_module, ONLY : amrex_particlecontainer_build
  
   implicit none
   
@@ -179,13 +177,6 @@ subroutine Particles_init ( restart)
   
 
   if (.not. restart) then !if we starting from scratch
-!! Create the ParticleContainer instances here - 1 each per Particle Type.
-!! For now, leave the allocation of old particles(:,:) array as is but tobedeleted later.
-     do i=1,NPART_TYPES
-       call amrex_particlecontainer_build(pt_containers(i), amrex_get_amrcore())
-!       call amrex_init_particles_one_per_cell()
-     end do
-     
      ! allocate data structures for particle storage
      if (.not. allocated(particles)) &
           allocate (particles(NPART_PROPS,pt_maxPerProc), stat=ierr)
