@@ -202,7 +202,7 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
   end if
 #endif
 
-  call pt_createTag()
+!   call pt_createTag()
   return
   
 end subroutine Particles_initPositions
