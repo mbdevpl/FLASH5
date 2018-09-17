@@ -4,19 +4,34 @@
 PPDEFINE FLASH_PARTICLES
 
 USESETUPVARS Grid
+USESETUPVARS Grid
 
 REQUIRES Driver
 REQUESTS monitors/Logfile
 REQUIRES RuntimeParameters
-REQUESTS Particles/ParticlesMapping 
-REQUESTS Particles/ParticlesInitialization 
+#REQUESTS Particles/ParticlesMapping 
+#REQUESTS Particles/ParticlesInitialization 
 REQUIRES Grid/GridParticles
-REQUIRES Grid/GridParticles/GridParticlesMapFromMesh
-
-IF Grid=='AMREX'
+#REQUIRES Grid/GridParticles/GridParticlesMapFromMesh
   REQUIRES Particles/ParticlesMain/Amrex
-ELSE
+  REQUESTS Particles/ParticlesInitialization/Amrex
+  REQUESTS Particles/ParticlesMapping/Amrex
+  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Amrex
+
+IF Grid=='Amrex'
+  REQUIRES Particles/ParticlesMain/Amrex
+  REQUESTS Particles/ParticlesInitialization/Amrex
+  REQUESTS Particles/ParticlesMapping/Amrex
+  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Amrex
+ELSEIF Grid=="Paramesh"
   REQUIRES Particles/ParticlesMain/Paramesh
+  REQUESTS Particles/ParticlesInitialization/Paramesh
+  REQUESTS Particles/ParticlesMapping/Paramesh
+  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Paramesh
+ELSE
+  REQUESTS Particles/ParticlesInitialization 
+  REQUESTS Particles/ParticlesMapping 
+#  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/UG
 ENDIF
 
 #  Contains these submodules:

@@ -3,13 +3,21 @@
 # Set up a name to use in ifdef/ifndef lines
 PPDEFINE FLASH_PARTICLES
 
+USESETUPVARS Grid
+
 REQUIRES Driver
 REQUESTS monitors/Logfile
 REQUIRES RuntimeParameters
-REQUESTS Particles/ParticlesMapping/Paramesh
-REQUESTS Particles/ParticlesInitialization/Paramesh
+REQUESTS Particles/ParticlesMapping 
+REQUESTS Particles/ParticlesInitialization 
 REQUIRES Grid/GridParticles
-REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Paramesh
+REQUIRES Grid/GridParticles/GridParticlesMapFromMesh
+
+IF Grid=='AMREX'
+  REQUIRES Particles/ParticlesMain/Amrex
+ELSE
+  REQUIRES Particles/ParticlesMain/Paramesh
+ENDIF
 
 #  Contains these submodules:
 #    active          Active particle submodule.  Particles contribute to the
