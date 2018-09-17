@@ -188,6 +188,7 @@ subroutine pt_initPositionsLattice_desc (block,success)
                 endif
                 thisParticle%vel = 0.d0
                 thisParticle%id  = amrex_get_next_particle_id()
+                particles(TAG_PART_PROP,p) = thisParticle%id
                 thisParticle%cpu = amrex_get_cpu()  !DevNote :: or = pt_meshMe
                 grd_index=block%grid_index
                 !!DevNote Hard set tile index =0 for no tiling. This should come from block%a_new_field_for_tile_index
