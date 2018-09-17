@@ -51,7 +51,7 @@ def main():
     unitList = UnitList() # A class which encapsulates operations of unit collections
 
     objdir = os.path.join(GVars.flashHomeDir,GVars.objectDir)
-    if not os.path.isdir(objdir): os.mkdir(objdir)
+    if not os.path.isdir(objdir): os.makedirs(objdir)
 
     if GVars.unitsFile: # copy over the user specified units file
        sname = os.path.join(GVars.flashHomeDir,GVars.unitsFile)
@@ -189,20 +189,32 @@ def main():
     # Copy/link datafiles to object directory
     if GVars.portable:
       func = lambda real,link : shutil.copy2(real,link)
+      recf = lambda real,link : shutil.copytree(real,link)
+      rmdir = lambda real : shutil.rmtree(real)
     else:
       cwd = os.getcwd()
       func = lambda real,link : os.symlink(getRelPath(real,cwd),link)
+      recf = lambda real,link : os.symlink(getRelPath(real,cwd),link)
+      rmdir = lambda real : os.remove(real)
 
     datafiles = []
     for wildcard in configInfo['DATAFILES']:
         for file in glob.glob(os.path.join(GVars.sourceDir,wildcard)):
             datafiles.append(file[len(GVars.sourceDir):].strip("/"))
             bname = os.path.basename(file)
-            try:
-               func(file,bname)
-            except:
-               os.remove(bname)
-               func(file,bname)
+            if os.path.isdir(file):
+                try:
+                    recf(file,bname)
+                except:
+                    rmdir(bname)
+                    recf(file,bname)
+            else:
+                try:
+                    func(file,bname)
+                except:
+                    os.remove(bname)
+                    func(file,bname)
+
     simDir = os.path.join(GVars.simulationsDir, GVars.simulationName)
     for wildcard in GVars.datafiles:
         for file in glob.glob(os.path.join(simDir,wildcard)):
