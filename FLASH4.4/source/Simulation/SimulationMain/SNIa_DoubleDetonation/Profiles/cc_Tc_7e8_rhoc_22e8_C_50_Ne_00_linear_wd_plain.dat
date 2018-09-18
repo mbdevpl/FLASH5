@@ -1,4 +1,4 @@
-#radius(zone center) density  temperature  C12  Ne22#got 6.325140e-01 Msun of C12 in core#got 1.380178e+00 Msun
+# radius density  temperature  C12  Ne22
 256
 4.000000e+05  2.200000e+09  7.000000e+08  0.500000  0.000000
 1.200000e+06  2.198978e+09  6.998334e+08  0.500000  0.000000

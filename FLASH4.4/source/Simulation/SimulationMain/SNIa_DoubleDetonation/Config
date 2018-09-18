@@ -24,14 +24,19 @@ PARAMETER       initialWDFile   STRING  "wd_profile_rhoc_415e5_M_106_correct.dat
 # ambient medium outside star
 #
 
-D dens_fluff            density of the fluff
-D temp_fluff            temperature of the fluff
+D dens_fluff            density of the fluff; use last zone in profile if <= 0.0
+D temp_fluff            temperature of the fluff; use last zone in profile if <= 0.0
+PARAMETER     dens_fluff         REAL     1.e-3
+PARAMETER     temp_fluff         REAL     3.e7
+
+D xhe4_fluff            he4 mass fraction of the fluff; use last zone in profile if all (he4,c12,o16,ni56) fluff composition <= 0.0
 D xc12_fluff            c12 mass fraction of the fluff
 D xo16_fluff            o16 mass fraction of the fluff
-PARAMETER       dens_fluff      REAL    1.0e-3  [0.0 to ]
-PARAMETER       temp_fluff      REAL    3.0e7   [0.0 to ]
-PARAMETER       xc12_fluff      REAL    0.5e0   [0.0 to 1.0]
-PARAMETER       xne22_fluff     REAL    0.0e0   [0.0 to 1.0]
+D xni56_fluff           ni56 mass fraction of the fluff
+PARAMETER     xhe4_fluff         REAL     1.e0  [0.0 to 1.0]
+PARAMETER     xc12_fluff         REAL     0.e0  [0.0 to 1.0]
+PARAMETER     xo16_fluff         REAL     0.e0  [0.0 to 1.0]
+PARAMETER     xni56_fluff        REAL     0.e0  [0.0 to 1.0]
 
 #
 # ignition
