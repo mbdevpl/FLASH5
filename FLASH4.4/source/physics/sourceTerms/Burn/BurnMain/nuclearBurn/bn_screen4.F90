@@ -43,7 +43,7 @@
 !! NOTES
 !!   input through Burn_dataEOS:
 !!   temp = temperature
-!!   den  = density
+!!   bden = density
 !!
 !!   Used by network/bn_networkScreen
 !!
@@ -54,7 +54,7 @@ subroutine bn_screen4(zbarr,abarr,z2barr,z1,a1,z2,a2, &
      &                   jscreen,init,scorr,scorrdt)
 
   
-  use Burn_dataEOS, ONLY:  btemp, den
+  use Burn_dataEOS, ONLY:  btemp, bden
   use Burn_data, ONLY:  nrat, zs13, zs13inv, zhat, zhat2, lzav, aznut
 
   implicit none
@@ -107,17 +107,17 @@ subroutine bn_screen4(zbarr,abarr,z2barr,z1,a1,z2,a2, &
 
 !!   calculate average plasma, if need be
   if (btemp_old  .ne. btemp .or. & 
-       &    den_old    .ne. den   .or.   & 
+       &    den_old    .ne. bden   .or.   &
        &    zbarr_old  .ne. zbarr  .or.   & 
        &    abarr_old  .ne. abarr ) then
 
      btemp_old  = btemp
-     den_old    = den
+     den_old    = bden
      zbarr_old  = zbarr
      abarr_old  = abarr
 
      btempi = 1.0e0/btemp
-     dd     = den/abarr
+     dd     = bden/abarr
      qlam0z = 1.88e8 * btempi * sqrt(dd*btempi*(z2barr + zbarr*theta)) 
      taufac = x13 * 4.248719e3 * btempi**x13 
      xni    = (dd * zbarr)**x13

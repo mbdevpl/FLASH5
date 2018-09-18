@@ -15,7 +15,7 @@
 !!    this routine computes neutrino losses from the analytic fits of
 !!    itoh et al. apjs 102, 411, 1996
 !!    
-!!    input is the temperature temp, density den, 
+!!    input is the temperature temp, density bden, 
 !!    mean number of nucleons abar, and mean charge zbar.
 !!    the input comes from data structure Burn_dataEOS
 !!    
@@ -35,7 +35,7 @@
 
 subroutine bn_sneutx
 
-  use Burn_dataEOS, ONLY:  btemp,den,abar,zbar,z2bar,ytot1,ye
+  use Burn_dataEOS, ONLY:  btemp,bden,abar,zbar,z2bar,ytot1,bye
   use Burn_data, ONLY: sneut,sphot,spair,splas,sbrem,srecomb
   use bn_interface, ONLY: bn_ifermi12
 
@@ -105,7 +105,7 @@ subroutine bn_sneutx
 
 !!    some frequent factors
   xmue  = abar/zbar
-  ye    = zbar/abar
+  bye   = zbar/abar
   t9    = btemp * 1.0e-9
 
   xl    = t9 * con1
@@ -121,7 +121,7 @@ subroutine bn_sneutx
   xlm2  = xlm1*xlm1
   xlm3  = xlm1*xlm2
 
-  rm    = den/xmue
+  rm    = bden/xmue
   zeta  = (rm * 1.0e-9)**third * xlm1
   zeta2 = zeta * zeta
   zeta3 = zeta2 * zeta
@@ -373,7 +373,7 @@ subroutine bn_sneutx
 !!                       n  + n     => n + n + nu + nubar
 !!                       n  + p     => n + p + nu + nubar
 !!    equation 4.3
-  den6   = den * 1.0e-6
+  den6   = bden * 1.0e-6
   tfermi = 5.9302e9*(sqrt(1.0e0+1.018e0*(den6/xmue)**twoth)-1.0e0)
 
 !!    "weak" degenerate electrons only
@@ -401,11 +401,11 @@ subroutine bn_sneutx
      c00   = 7.75e5*t832 + 247.0e0*t8**(3.85e0)
      c01   = 4.07e0 + 0.0240e0 * t8**(1.4e0)
      c02   = 4.59e-5 * t8**(-0.110e0)
-     xden  = 1.0e0/(c00/rm + c01 + c02 * den**(0.656e0))
+     xden  = 1.0e0/(c00/rm + c01 + c02 * bden**(0.656e0))
      gbrem = xnum + xden
 
    !!    equation 5.1
-     sbrem  = 0.5738e0*zbar*ye*t86*den * (tfac4*fbrem - tfac5*gbrem)
+     sbrem  = 0.5738e0*zbar*bye*t86*bden * (tfac4*fbrem - tfac5*gbrem)
 
 
    !!    liquid metal with c12 parameters (not too different for other elements)
@@ -413,7 +413,7 @@ subroutine bn_sneutx
   else
      t8    = btemp * 1.0e-8
      t86   = t8 * t8 * t8 * t8 * t8 * t8
-     u     = fac3 * (log10(den) - 3.0e0)
+     u     = fac3 * (log10(bden) - 3.0e0)
      gamma = 2.275e-1 * zbar * zbar/t8 * (den6/abar)**third
      gm1   = 1.0e0/gamma
      gm13  = gm1**third
@@ -472,7 +472,7 @@ subroutine bn_sneutx
      gliq = w*gb + (1.0e0 - w)*gt
 
    !!    equation 5.17
-     sbrem = 0.5738e0*zbar*ye*t86*den * (tfac4*fliq - tfac5*gliq)
+     sbrem = 0.5738e0*zbar*bye*t86*bden * (tfac4*fliq - tfac5*gliq)
   end if
 
 
@@ -481,7 +481,7 @@ subroutine bn_sneutx
 !!    recombination neutrino section
 !!    for reactions like e- (continuum) => e- (bound) + nu_e + nubar_e
 !!    equation 6.11 solved for nu
-  xnum = 1.10520e8 * den * ye /(btemp*sqrt(btemp))
+  xnum = 1.10520e8 * bden * bye /(btemp*sqrt(btemp))
   nu   = bn_ifermi12(xnum)
   nu2  = nu * nu
   nu3  = nu2 * nu
@@ -517,14 +517,14 @@ subroutine bn_sneutx
           &        / (1.0e0 + b*exp(c*nu)*(1.0e0 + d*z))
 
    !!    equation 6.5
-     srecomb = tfac6 * 2.649e-18 * ye* zbar**13 * den * bigj & 
+     srecomb = tfac6 * 2.649e-18 * bye* zbar**13 * bden * bigj & 
           &          / (exp(zeta + nu) + 1.0e0) 
   end if
 
 
 !!    convert from erg/cm^3/s to erg/g/s 
 !!    comment these out to duplicate the itoh et al plots
-  deni   = 1.0e0/den
+  deni   = 1.0e0/bden
   spair   = spair*deni
   splas   = splas*deni
   sphot   = sphot*deni
