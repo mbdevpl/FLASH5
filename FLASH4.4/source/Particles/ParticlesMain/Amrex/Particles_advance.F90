@@ -137,28 +137,9 @@ subroutine Particles_advance (dtOld,dtNew)
 
   end do
 
-  ! sink particle routines
-
-#ifdef DEBUG_PARTICLES
-  if (dr_globalMe .eq. MASTER_PE) print *, 'Particles_advance: entering sink routines.'
-#endif
-  ! advance sink particles based on velocity and acceleration
-  call Particles_sinkAdvanceParticles(dtNew)
-  ! check for creation and accretion
-  call Particles_sinkCreateAccrete(dtNew)
-  ! move sink particles to the right blocks/procs
-  call Particles_sinkMoveParticles(regrid)
-  ! sort sink particles
-  call Particles_sinkSortParticles()
-#ifdef DEBUG_PARTICLES
-  if (dr_globalMe .eq. MASTER_PE) print *, 'Particles_advance: done with sink routines.'
-#endif
-
-
 #ifdef DEBUG_PARTICLES
   print*,' ready to move Particles'
 #endif
-
 
 #ifdef DEBUG_VPARTICLES
   do kk=1,pt_numLocal
@@ -171,36 +152,11 @@ subroutine Particles_advance (dtOld,dtNew)
   call Grid_moveParticles(particles,NPART_PROPS,pt_maxPerProc,pt_numLocal, &
        pt_indexList, pt_indexCount, regrid) 
 
-#ifdef TYPE_PART_PROP
-  call Grid_sortParticles(particles,NPART_PROPS,pt_numLocal,NPART_TYPES, &
-       pt_maxPerProc,particlesPerBlk,BLK_PART_PROP, TYPE_PART_PROP)
-#else
-  call Grid_sortParticles(particles,NPART_PROPS,pt_numLocal,NPART_TYPES, &
-       pt_maxPerProc,particlesPerBlk,BLK_PART_PROP)
-#endif
- 
-  if(pt_keepLostParticles) then
-     pfor=pt_numLocal
-     do while(particles(BLK_PART_PROP,pt_numLocal)==LOST)
-        pt_numLocal=pt_numLocal-1
-     end do
-     lostNow=pfor-pt_numLocal
-     pt_numLost=pt_numLost+lostNow
-     pbak=pt_maxPerProc-pt_numLost
-     if(pbak<pt_numLocal)call Driver_abortFlash("no more space for lost particles")
-     do i = 1,lostNow
-        particles(:,pbak+i)=particles(:,pt_numLocal+i)
-     end do
-  end if
-
-
   ! Now update the pt_typeInfo data structure
+  !! ?? Why is call to pt_updateTypeDS required after Grid_sortParticles??
   call pt_updateTypeDS(particlesPerBlk)
 
   
-#ifdef DEBUG_PARTICLES
-  print*,' back from Grid_moveParticles'
-#endif
   ! If predictive routines are used, they will need to sort and prepare for the
   !  next time step.  Since sorting is so expensive, we suffer code duplication
   !  and do it in the pt_preparePassive routines.
