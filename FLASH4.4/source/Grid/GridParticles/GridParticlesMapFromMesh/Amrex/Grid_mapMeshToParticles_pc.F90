@@ -100,14 +100,16 @@ subroutine Grid_mapMeshToParticles_pc (ptContainerPos, part_props,part_blkID,&
                 do i = 1, numParticlesOnBlock
                     call Grid_getBlkBoundBox(block,bndBox)
                     call Grid_getDeltas(block%level,delta)
-                    do j = 1,MDIM
+                    do j = 1,NDIM
                         pos(j) = particles(i)%pos(j)
                     end do
                     call Particles_mapFromMesh (mapType, numAttrib, attrib,&
                     pos, bndBox,delta,solnData, partAttribVec)
 !                   Assign values to particles(i)%vel from output partAttribVec
 !                   Assuming that velocities are in partAttribVec are in indices 1 to 3
-                    do j = 1,MDIM
+!                   To change this, keep the old particle array and then 1) assign partAttribVec(j)
+!                   to particles(attrib(PART_DS_IND,j),i) ; 2) particles(i)%vel(j) = particle(pt_velAttrib(PART_DS_IND?? , j), i)
+                    do j = 1,NDIM
                         particles(i)%vel(j) = partAttribVec(j)
                     end do
                 end do
