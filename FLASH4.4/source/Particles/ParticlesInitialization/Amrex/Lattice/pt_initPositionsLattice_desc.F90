@@ -85,7 +85,14 @@ subroutine pt_initPositionsLattice_desc (block,success)
   !        Particle slot number
   
   p = pt_numLocal
-
+  
+  !Block information used by ParticleContainer functions
+  level_amrex = block%level-1
+  grd_index=block%grid_index
+  !!DevNote Hard set tile index =0 for no tiling. This should come from block%a_new_field_for_tile_index
+  tile_index=0
+  print*,"level, grid_index, tile_index: ",level_amrex,grd_index,tile_index
+  
   ! Get grid geometry for this block 
 
   call Grid_getBlkBoundBox(block,boundBox)
@@ -190,10 +197,6 @@ subroutine pt_initPositionsLattice_desc (block,success)
                 thisParticle%id  = amrex_get_next_particle_id()
                 particles(TAG_PART_PROP,p) = thisParticle%id
                 thisParticle%cpu = amrex_get_cpu()  !DevNote :: or = pt_meshMe
-                grd_index=block%grid_index
-                !!DevNote Hard set tile index =0 for no tiling. This should come from block%a_new_field_for_tile_index
-                tile_index=0
-                print*,"level, grid_index, tile_index: ",level_amrex,grd_index,tile_index
                 call pt_containers(1)%add_particle(level_amrex, grd_index, tile_index, thisParticle)  
               
            endif   !! end of IsInBlock .and. IsInSphere is true
