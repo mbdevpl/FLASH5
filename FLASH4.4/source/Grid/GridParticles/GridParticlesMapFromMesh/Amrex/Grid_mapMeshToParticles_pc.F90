@@ -105,11 +105,11 @@ subroutine Grid_mapMeshToParticles_pc (ptContainerPos, part_props,part_blkID,&
                     end do
                     call Particles_mapFromMesh (mapType, numAttrib, attrib,&
                     pos, bndBox,delta,solnData, partAttribVec)
-!                    Assign values to particles(i)%vel from output partAttribVec
-!                    particles(i)%vel(1) = partAttribVec(???)
-!                    particles(i)%vel(1) = partAttribVec(???)
-!                    particles(i)%vel(1) = partAttribVec(???)
-                    
+!                   Assign values to particles(i)%vel from output partAttribVec
+!                   Assuming that velocities are in partAttribVec are in indices 1 to 3
+                    do j = 1,MDIM
+                        particles(i)%vel(j) = partAttribVec(j)
+                    end do
                 end do
             end if
         call Grid_releaseBlkPtr(block, solnData)
