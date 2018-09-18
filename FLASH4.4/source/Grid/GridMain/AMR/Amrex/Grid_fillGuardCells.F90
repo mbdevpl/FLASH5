@@ -89,7 +89,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         amrex_geom, &
                                         amrex_ref_ratio
   use amrex_fillpatch_module,    ONLY : amrex_fillpatch
-  use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
   use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
                                         Grid_getLeafIterator, &
@@ -102,6 +101,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         gr_smalle, &
                                         gr_meshMe, gr_meshComm, &
                                         gr_gcellsUpToDate, &
+                                        gr_interpolator, &
                                         lo_bc_amrex, hi_bc_amrex
   use Eos_interface,             ONLY : Eos_guardCells
   use Driver_interface,          ONLY : Driver_abortFlash
@@ -320,7 +320,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                       0.0, unk(lev  ), &
                                       amrex_geom(lev  ), gr_fillPhysicalBC, &
                                       0.0, scompCC, scompCC, ncompCC, &
-                                      amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                      amrex_ref_ratio(lev-1), gr_interpolator, &
                                       lo_bc_amrex, hi_bc_amrex)
     end do
 
@@ -473,7 +473,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                             0.0, facevarx(lev  ), &
                                             amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
                                             0.0, 1, 1, NFACE_VARS, &
-                                            amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                            amrex_ref_ratio(lev-1), gr_interpolator, &
                                             lo_bc_amrex, hi_bc_amrex) 
      end do
   end if
@@ -495,7 +495,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                             0.0, facevary(lev  ), &
                                             amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
                                             0.0, 1, 1, NFACE_VARS, &
-                                            amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                            amrex_ref_ratio(lev-1), gr_interpolator, &
                                             lo_bc_amrex, hi_bc_amrex) 
      end do
   end if
@@ -518,7 +518,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                             0.0, facevarz(lev  ), &
                                             amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
                                             0.0, 1, 1, NFACE_VARS, &
-                                            amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                            amrex_ref_ratio(lev-1), gr_interpolator, &
                                             lo_bc_amrex, hi_bc_amrex) 
      end do
   end if
