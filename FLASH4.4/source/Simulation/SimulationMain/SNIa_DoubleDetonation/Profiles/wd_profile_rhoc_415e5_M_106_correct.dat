@@ -1,4 +1,4 @@
-#radius(zone center) density  temperature  c12  ne22
+# radius density  temperature  c12  ne22
 810
 4.000000e+05  4.150000e+07  1.900000e+08  0.5  0.0
 1.200000e+06  4.149855e+07  1.900000e+08  0.5  0.0
