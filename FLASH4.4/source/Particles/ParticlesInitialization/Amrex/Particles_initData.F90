@@ -125,7 +125,7 @@ subroutine Particles_initData(restart, partPosInitialized)
 ! #endif
      ! Now update the pt_typeInfo data structure
 
-     call pt_updateTypeDS(particlesPerBlk)
+!      call pt_updateTypeDS(particlesPerBlk)
      if(.not.partPosInitialized)&
           call Driver_abortFlash("initialization of Particles positions failed")
      if (.NOT. pt_velInitialized) then
@@ -138,8 +138,8 @@ subroutine Particles_initData(restart, partPosInitialized)
               p_begin=pt_typeInfo(PART_TYPE_BEGIN,i)
               p_count=pt_typeInfo(PART_LOCAL,i)
               p_end=p_begin+p_count-1
-              call Grid_mapMeshToParticles(particles(:,p_begin:p_end),&
-                   part_props,BLK_PART_PROP,p_count,&
+              call Grid_mapMeshToParticles(i,&
+                   part_props,BLK_PART_PROP,&
                    pt_posAttrib,pt_velNumAttrib,pt_velAttrib,&
                    pt_typeInfo(PART_MAPMETHOD,i))
            end if
