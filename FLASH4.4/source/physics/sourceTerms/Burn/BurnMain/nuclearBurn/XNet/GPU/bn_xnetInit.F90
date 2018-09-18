@@ -1,4 +1,4 @@
-!!****if* source/physics/sourceTerms/Burn/BurnMain/nuclearBurn/XNet/bn_xnetInit
+!!****if* source/physics/sourceTerms/Burn/BurnMain/nuclearBurn/XNet/GPU/bn_xnetInit
 !!
 !! NAME
 !!
@@ -35,6 +35,7 @@ subroutine bn_xnetInit(data_dir,data_desc)
     lun_diag, lun_ev, lun_ts, lun_stdout
   use xnet_eos, ONLY : eos_initialize
   use xnet_flux, ONLY : flux_init
+  use xnet_gpu, ONLY : gpu_init
   use xnet_integrate_bdf, ONLY : bdf_init
   use xnet_jacobian, ONLY : read_jacobian_data
   use xnet_match, ONLY : read_match_data
@@ -60,6 +61,8 @@ subroutine bn_xnetInit(data_dir,data_desc)
   Call parallel_initialize(dr_globalComm)
   myid = parallel_myproc()
   nproc = parallel_nprocs()
+
+  Call gpu_init
 
   ! Initialize MPI/OpenMP identifiers
   mythread = 1

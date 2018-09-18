@@ -18,7 +18,7 @@
 module bn_xnetData
 
   ! Rename XNet runtime controls to match FLASH naming conventions
-  use controls, ONLY : &
+  use xnet_controls, ONLY : &
     xnet_iweak0 => iweak0, &             ! Saves input iweak flag
     xnet_iscrn => iscrn, &               ! If =0, screening is ignored
     xnet_iprocess => iprocess, &         ! If >0, then run network pre-processing (slows calculation)
@@ -42,8 +42,8 @@ module bn_xnetData
     xnet_lun_diag => lun_diag, &         ! Logical units for per-thread diagnostic output file
     xnet_myid => myid, &                 ! Global MPI rank ID
     xnet_nproc => nproc, &               ! Number of MPI ranks
-    xnet_mythread => mythread, &         ! OpenMP thread ID
-    xnet_nthread => nthread              ! Number of OpenMP threads
+    mythread, &                          ! OpenMP thread ID
+    nthread                              ! Number of OpenMP threads
   
   use nuclear_data, ONLY : &
     xnet_aa => aa, &

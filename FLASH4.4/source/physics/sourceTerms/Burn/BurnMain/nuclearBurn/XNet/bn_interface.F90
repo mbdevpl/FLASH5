@@ -24,6 +24,12 @@ Module bn_interface
   end interface
 
   interface
+     subroutine bn_xnetFinalize()
+        implicit none
+     end subroutine bn_xnetFinalize
+  end interface
+
+  interface
      subroutine bn_burner(tstep,temp,density,xIn,xOut,sdotRate,burnedZone,kstep)
        implicit none
        logical, intent(IN), dimension(:)              :: burnedZone
