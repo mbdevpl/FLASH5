@@ -52,7 +52,7 @@ subroutine Grid_mapMeshToParticles_pc (ptContainerPos, part_props,part_blkID,&
 
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr,&
-       Grid_getLeafIterator, Grid_releaseLeafIterator, Grid_getBlkBoundBox, Grid_getDeltas,Grid_getBlkRefineLevel
+       Grid_getLeafIterator, Grid_releaseLeafIterator, Grid_getBlkBoundBox, Grid_getDeltas
   use Particles_interface, ONLY : Particles_mapFromMesh
   use Particles_data, ONLY : pt_containers
 
@@ -75,7 +75,10 @@ subroutine Grid_mapMeshToParticles_pc (ptContainerPos, part_props,part_blkID,&
   type(leaf_iterator_t) :: itor
   type(block_metadata_t)    :: block
   type(amrex_particle), pointer :: particles(:)
-  integer :: numParticlesOnBlock, tile_index 
+  integer :: numParticlesOnBlock, tile_index, i, j
+  real, dimension(LOW:HIGH,MDIM) :: bndBox
+  real,dimension(MDIM) :: delta, pos
+  real, dimension(numAttrib) :: partAttribVec
 
     if(present(gridDataStruct)) then
      gDataStruct=gridDataStruct
@@ -94,8 +97,21 @@ subroutine Grid_mapMeshToParticles_pc (ptContainerPos, part_props,part_blkID,&
         numParticlesOnBlock = size(particles)
         print*, "size of particles on this block = ", numParticlesOnBlock
             if(numParticlesOnBlock>0) then
-                !!Do stuff for this block
-            endif
+                do i = 1, numParticlesOnBlock
+                    call Grid_getBlkBoundBox(block,bndBox)
+                    call Grid_getDeltas(block%level,delta)
+                    do j = 1,MDIM
+                        pos(j) = particles(i)%pos(j)
+                    end do
+                    call Particles_mapFromMesh (mapType, numAttrib, attrib,&
+                    pos, bndBox,delta,solnData, partAttribVec)
+!                    Assign values to particles(i)%vel from output partAttribVec
+!                    particles(i)%vel(1) = partAttribVec(???)
+!                    particles(i)%vel(1) = partAttribVec(???)
+!                    particles(i)%vel(1) = partAttribVec(???)
+                    
+                end do
+            end if
         call Grid_releaseBlkPtr(block, solnData)
         nullify(solnData)
         call itor%next()
