@@ -250,8 +250,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call gr_releaseBlkIterator(itor)
     if(.not.isPtDataStructCreated) then
         call Particles_createDataStructs()
-        isPtDataStructCreated = .true.
-        print*, "pt_containers created!!"
+!        isPtDataStructCreated = .true.
     end if
     write(*,'(A,I10,A,I0)') "Created and initialized ", n_blocks, &
                            " blocks on level ", lev + 1
