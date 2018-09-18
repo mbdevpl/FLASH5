@@ -123,7 +123,6 @@ subroutine Grid_init()
   use amrex_base_module,           ONLY : amrex_spacedim
   use amrex_bc_types_module,       ONLY : amrex_bc_int_dir, &
                                           amrex_bc_ext_dir
-  use amrex_interpolater_module,   ONLY : amrex_interp_cell_cons
 
   use Grid_data
   use Grid_interface,              ONLY : Grid_getDeltas, &

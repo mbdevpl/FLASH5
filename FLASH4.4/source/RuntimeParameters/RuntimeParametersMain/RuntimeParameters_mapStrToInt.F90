@@ -494,7 +494,7 @@ case ("HYPRE_HYBRID", "hypre_hybrid")
     constKey = amrex_interp_quartic
 #endif
 
-! DEV: FIXME This interpolator is not working with FLASH
+! DEV: FIXME This interpolator is not working with FLASH (Issue 138)
 !  case ("NODE_BILINEAR", "node_bilinear")
 !#ifdef FLASH_GRID_AMREX
 !    constKey = amrex_interp_node_bilinear
@@ -510,7 +510,7 @@ case ("HYPRE_HYBRID", "hypre_hybrid")
     constKey = amrex_interp_quadratic
 #endif
 
-! DEV: FIXME This interpolator is not working with FLASH
+! DEV: FIXME This interpolator is not working with FLASH (Issue 138)
 !  case ("PC_INTERP", "pc_interp")
 !#ifdef FLASH_GRID_AMREX
 !    constKey = amrex_interp_pc
