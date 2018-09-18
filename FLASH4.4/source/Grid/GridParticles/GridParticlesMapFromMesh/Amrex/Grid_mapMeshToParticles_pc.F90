@@ -90,12 +90,12 @@ subroutine Grid_mapMeshToParticles_pc (ptContainerPos, part_props,part_blkID,&
         call itor%blkMetaData(block)
         call Grid_getBlkPtr(block, solnData)
         tile_index = 0 ! Set 0 beccause no tiling in flash now. Should come from block%tile_index if tiling=.true.
-!         particles => pt_containers(ptContainerPos)%get_particles(block%level-1,block%grid_index, tile_index)
-!         numParticlesOnBlock = size(particles)
-!         print*, "size of particles on this block = ", numParticlesOnBlock
-!             if(numParticlesOnBlock>0) then
-!                 !!Do stuff for this block
-!             endif
+        particles => pt_containers(ptContainerPos)%get_particles(block%level-1,block%grid_index, tile_index)
+        numParticlesOnBlock = size(particles)
+        print*, "size of particles on this block = ", numParticlesOnBlock
+            if(numParticlesOnBlock>0) then
+                !!Do stuff for this block
+            endif
         call Grid_releaseBlkPtr(block, solnData)
         nullify(solnData)
         call itor%next()
