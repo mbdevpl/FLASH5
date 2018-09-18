@@ -64,7 +64,6 @@ module block_1lev_iterator
     end type block_1lev_iterator_t
 
     interface block_1lev_iterator_t
-        procedure :: init_iterator_mf
         procedure :: init_iterator
     end interface block_1lev_iterator_t
 
@@ -103,33 +102,6 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-  function init_iterator_mf(nodetype, mf, level, tiling) result(this)
-    use amrex_multifab_module, ONLY : amrex_multifab
-
-        type(block_1lev_iterator_t)        :: this
-        integer, intent(IN)           :: nodetype
-        type(amrex_multifab),intent(IN),TARGET :: mf
-        integer, intent(IN), optional :: level
-        logical, intent(IN), optional :: tiling
-
-        this%nodetype = nodetype
-        if (present(level)) then
-            this%level = level
-        end if
- 
-        allocate(this%mfi)
-
-        ! DEVNOTE: the AMReX iterator is not built based on nodetype.
-        ! It appears that we get leaves every time.  !DEV: REALLY? Not ALL_BLKS??
-
-        ! Initial iterator is not primed.  Advance to first compatible block.
-        call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
-        this%mf => mf
-!!$        print*,'block_1lev_iterator: init_iterator_mf  on this=',this%isValid,this%level,associated(this%mfi)
-        this%isValid = .TRUE.
-        call this%next()
-  end function init_iterator_mf
-
     function init_iterator(nodetype, level, tiling) result(this)
       use Driver_interface,      ONLY : Driver_abortFlash
       use gr_physicalMultifabs,  ONLY : unk
