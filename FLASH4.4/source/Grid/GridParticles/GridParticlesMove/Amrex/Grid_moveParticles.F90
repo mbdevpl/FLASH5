@@ -70,10 +70,14 @@
 !!
 !!***
 
+#include "Flash.h"
+
 subroutine Grid_moveParticles(dataBuf, propCount, maxCount, localCount, &
      index_list,indexCount,&
      coords_in_blk)
- 
+
+  use Particles_data, ONLY : pt_containers
+
   implicit none
 
   integer,intent(IN) :: maxCount, propCount,indexCount
@@ -83,5 +87,11 @@ subroutine Grid_moveParticles(dataBuf, propCount, maxCount, localCount, &
   integer,dimension(indexCount), intent(IN) :: index_list
 
   logical, intent(IN) :: coords_in_blk
-
+  
+  integer :: i
+  
+  do i=1, NPART_TYPES
+    print*, "[Grid_moveParticles] Redistributing particles in container ", i
+    call pt_containers(i)%redistribute()
+  end do
 end subroutine Grid_moveParticles
