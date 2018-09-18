@@ -46,3 +46,7 @@ D &                  to always ignore optional mask arguments when present in ca
 D &                  This is the default behavior.
 D &                  Set enableMaskedGCFill TRUE to enable masked guard cell filling.
 PARAMETER enableMaskedGCFill BOOLEAN FALSE
+
+D amrexInterpolator Name of AMReX interpolator to use
+PARAMETER amrexInterpolator STRING "CELL_CONSERVATIVE_LINEAR"
+

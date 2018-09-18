@@ -41,12 +41,22 @@
 !!
 !!***
 
-subroutine RuntimeParameters_mapStrToInt (inputString, constKey)
-
-implicit none
 #include "Flash.h"
 #include "constants.h"
 #include "Eos.h"
+
+subroutine RuntimeParameters_mapStrToInt (inputString, constKey)
+#ifdef FLASH_GRID_AMREX
+use amrex_interpolater_module, ONLY : amrex_interp_cell_cons, &
+                                      amrex_interp_pc, &
+                                      amrex_interp_node_bilinear, &
+                                      amrex_interp_cell_bilinear, &
+                                      amrex_interp_quadratic, &
+                                      amrex_interp_protected, &
+                                      amrex_interp_quartic
+#endif
+
+implicit none
 
 character(len=*), intent(in) :: inputString
 integer, intent(inout) :: constKey
@@ -468,6 +478,43 @@ case ("HYPRE_HYBRID", "hypre_hybrid")
 #ifdef SMOOTH_HARMONIC_SOR
      constKey = SMOOTH_HARMONIC_SOR
 #endif
+
+  case ("CELL_CONSERVATIVE_LINEAR", "cell_conservative_linear")
+#ifdef FLASH_GRID_AMREX
+    constKey = amrex_interp_cell_cons
+#endif
+
+  case ("CELL_CONSERVATIVE_PROTECTED", "cell_conservative_protected")
+#ifdef FLASH_GRID_AMREX
+    constKey = amrex_interp_protected
+#endif
+
+  case ("CELL_CONSERVATIVE_QUARTIC", "cell_conservative_quartic")
+#ifdef FLASH_GRID_AMREX
+    constKey = amrex_interp_quartic
+#endif
+
+! DEV: FIXME This interpolator is not working with FLASH (Issue 138)
+!  case ("NODE_BILINEAR", "node_bilinear")
+!#ifdef FLASH_GRID_AMREX
+!    constKey = amrex_interp_node_bilinear
+!#endif
+
+  case ("CELL_BILINEAR", "cell_bilinear")
+#ifdef FLASH_GRID_AMREX
+    constKey = amrex_interp_cell_bilinear
+#endif
+
+  case ("CELL_QUADRATIC", "cell_quadratic")
+#ifdef FLASH_GRID_AMREX
+    constKey = amrex_interp_quadratic
+#endif
+
+! DEV: FIXME This interpolator is not working with FLASH (Issue 138)
+!  case ("PC_INTERP", "pc_interp")
+!#ifdef FLASH_GRID_AMREX
+!    constKey = amrex_interp_pc
+!#endif
 
   case DEFAULT
      constKey = NONEXISTENT
