@@ -45,7 +45,7 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_getMinCellSizes.o \
 	Grid_subcellGeometry.o \
 	Grid_getGeometry.o Grid_sortParticles.o \
-	Grid_mapMeshToParticles.o Grid_mapParticlesToMesh.o \
+	Grid_mapMeshToParticles.o Grid_mapMeshToParticles_pc.o Grid_mapParticlesToMesh.o \
 	Grid_solvePoisson.o Grid_conserveField.o Grid_interface.o \
         Grid_bcApplyToRegion.o\
 	Grid_bcApplyToRegionSpecialized.o\
