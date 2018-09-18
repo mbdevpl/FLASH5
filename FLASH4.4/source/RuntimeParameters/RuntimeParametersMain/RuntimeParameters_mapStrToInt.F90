@@ -41,12 +41,16 @@
 !!
 !!***
 
-subroutine RuntimeParameters_mapStrToInt (inputString, constKey)
-
-implicit none
 #include "Flash.h"
 #include "constants.h"
 #include "Eos.h"
+
+subroutine RuntimeParameters_mapStrToInt (inputString, constKey)
+#ifdef FLASH_GRID_AMREX
+use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
+#endif
+
+implicit none
 
 character(len=*), intent(in) :: inputString
 integer, intent(inout) :: constKey
@@ -467,6 +471,11 @@ case ("HYPRE_HYBRID", "hypre_hybrid")
   case ("SMOOTH_HARMONIC_SOR", "smooth_harmonic_sor")
 #ifdef SMOOTH_HARMONIC_SOR
      constKey = SMOOTH_HARMONIC_SOR
+#endif
+
+  case ("CELL_CONSERVATIVE_LINEAR", "cell_conservative_linear")
+#ifdef FLASH_GRID_AMREX
+    constKey = amrex_interp_cell_cons
 #endif
 
   case DEFAULT

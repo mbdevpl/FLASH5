@@ -152,6 +152,7 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: yl_bcString, yr_bcString
   character(len=MAX_STRING_LENGTH) :: zl_bcString, zr_bcString
   character(len=MAX_STRING_LENGTH) :: eosModeString
+  character(len=MAX_STRING_LENGTH) :: interpolatorString
   integer :: refVar
   integer :: nonrep
 
@@ -313,7 +314,12 @@ subroutine Grid_init()
 
 !!  call RuntimeParameters_get("grid_monotone_hack", gr_monotone) ! for "quadratic_cartesian" interpolation
 !  call RuntimeParameters_get("interpol_order",gr_intpol) ! for "monotonic" interpolation
-  gr_interpolator = amrex_interp_cell_cons
+  call RuntimeParameters_get("amrexInterpolator", interpolatorString)
+  call RuntimeParameters_mapStrToInt(interpolatorString, gr_interpolator)
+  if (gr_interpolator == NONEXISTENT) then
+    call Driver_abortFlash("[Grid_init] Unknown amrexInterpolator runtime parameter value")
+  end if
+
 #ifdef GRID_WITH_MONOTONIC
   gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
 #endif
