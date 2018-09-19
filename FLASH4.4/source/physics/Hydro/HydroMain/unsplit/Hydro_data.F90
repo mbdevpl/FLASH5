@@ -68,6 +68,7 @@ Module Hydro_data
   real, save :: hy_smalldens
   real, save :: hy_smallpres
   real, save :: hy_smallE
+  real, save :: hy_smallu
   real, save :: hy_LimitedSlopeBeta
   real, save :: hy_maxDiff
   real, save :: hy_cvisc
