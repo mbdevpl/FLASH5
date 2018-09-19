@@ -68,10 +68,10 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           amrex_mfiter_destroy
     use amrex_fluxregister_module, ONLY : amrex_fluxregister_build
     use amrex_fillpatch_module,    ONLY : amrex_fillcoarsepatch
-    use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
     use Grid_data,                 ONLY : gr_doFluxCorrection, &
                                           gr_amrexDidRefinement, &
+                                          gr_interpolator, &
                                           lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_preinterpolationWork, &
@@ -166,7 +166,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                          amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                          time, &
                                          UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                                         amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                         amrex_ref_ratio(lev-1), gr_interpolator, &
                                          lo_bc_amrex, hi_bc_amrex, &
                                          gr_preinterpolationWork, &
                                          gr_postinterpolationWork)
@@ -178,7 +178,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                               amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
                                               time, &
                                               1, 1, NFACE_VARS, &
-                                              amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                              amrex_ref_ratio(lev-1), gr_interpolator, &
                                               lo_bc_amrex, hi_bc_amrex) 
 #if NDIM >= 2
     call amrex_fillcoarsepatch(facevary(lev), time,     facevary(lev-1),  &
@@ -187,7 +187,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                               amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
                                               time, &
                                               1, 1, NFACE_VARS, &
-                                              amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                              amrex_ref_ratio(lev-1), gr_interpolator, &
                                               lo_bc_amrex, hi_bc_amrex) 
 #endif
 #if NDIM == 3
@@ -197,7 +197,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                               amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
                                               time, &
                                               1, 1, NFACE_VARS, &
-                                              amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                              amrex_ref_ratio(lev-1), gr_interpolator, &
                                               lo_bc_amrex, hi_bc_amrex) 
 #endif
 #endif
