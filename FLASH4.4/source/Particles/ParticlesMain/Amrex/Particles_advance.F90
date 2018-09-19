@@ -41,7 +41,8 @@ subroutine Particles_advance (dtOld,dtNew)
        pt_reduceGcellFills
   use Driver_interface, ONLY : Driver_abortFlash
 
-  use pt_interface, ONLY: pt_advancePassive, pt_advanceActive,  pt_updateTypeDS
+  use pt_interface, ONLY: pt_advancePassive, pt_advanceActive,  pt_updateTypeDS,&
+                                        pt_advanceRK
   use Grid_interface, ONLY : Grid_moveParticles, Grid_fillGuardCells, &
                              Grid_mapMeshToParticles, Grid_sortParticles
   use Particles_interface, ONLY: Particles_sinkMoveParticles, Particles_sinkSortParticles, &
@@ -104,8 +105,7 @@ subroutine Particles_advance (dtOld,dtNew)
      p_end=p_begin+p_count-1
      select case(pt_typeInfo(PART_ADVMETHOD,i))
      case(RUNGEKUTTA) 
-        call pt_advanceRK(dtOld,dtNew,particles(:,p_begin:p_end),&
-             p_count, i)
+        call pt_advanceRK(dtOld,dtNew, i)
      case(MIDPOINT)
         call pt_advanceMidpoint(dtOld,dtNew,particles(:,p_begin:p_end),&
              p_count, i)
