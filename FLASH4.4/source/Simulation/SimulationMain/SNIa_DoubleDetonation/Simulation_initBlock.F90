@@ -196,7 +196,7 @@ subroutine Simulation_initBlock(solnData, block)
 
            ! Giant traffic cone
            if ( dens < sim_smallrho .or. temp < sim_smallt) then
-              write(*,'(2(a,i5),a,3i3)') '[Before EOS] Bad value(s) on PE=',sim_globalMe,', blockID=',block%id,', (i,j,k)=',i,j,k
+              write(*,'(a,i5,a,3i3)') '[Before EOS] Bad value(s) on PE=',sim_globalMe,', (i,j,k)=',i,j,k
               write(*,'(a,2es15.7)') '  radCenter, thtCenter = ', radCenter, thtCenter
               write(*,'(a,2es15.7)') '     radMin,    radMax = ', radMin, radMax
               write(*,'(a,1es15.7)') '          radCenterVol = ', radCenterVol
@@ -261,7 +261,7 @@ subroutine Simulation_initBlock(solnData, block)
            pres = solnData(PRES_VAR,i,j,k)
            eint = solnData(EINT_VAR,i,j,k)
            if ( dens < sim_smallrho .or. temp < sim_smallt .or. pres < sim_smallp .or. eint < sim_smalle ) then
-              write(*,'(2(a,i5),a,3i3)') '[After EOS] Bad value(s) on PE=',sim_globalMe,', blockID=',block%id,', (i,j,k)=',i,j,k
+              write(*,'(a,i5,a,3i3)') '[After EOS] Bad value(s) on PE=',sim_globalMe,', (i,j,k)=',i,j,k
               write(*,'(a,3es15.7)') '        x,y,z (center) = ', xCenter(i), yCenter(j), zCenter(k)
               write(*,'(a,3es15.7)') '        x,y,z   (left) = ', xLeft(i),   yLeft(j),   zLeft(k)
               write(*,'(a,3es15.7)') '        x,y,z  (right) = ', xRight(i),  yRight(j),  zRight(k)
