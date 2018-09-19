@@ -99,13 +99,18 @@ Module pt_interface
      end subroutine pt_advancePassive
   end interface
 
-  interface
+  interface pt_advanceRK
      subroutine pt_advanceRK (dtOld,dtNew,particles,p_count, ind)
        
        real, INTENT(in)  :: dtOld, dtNew
        integer, INTENT(in) :: p_count, ind
        real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
      end subroutine pt_advanceRK
+      subroutine pt_advanceRK_pc (dtOld,dtNew, ind)
+       
+       real, INTENT(in)  :: dtOld, dtNew
+       integer, INTENT(in) :: ind
+     end subroutine pt_advanceRK_pc
   end interface
 
   interface

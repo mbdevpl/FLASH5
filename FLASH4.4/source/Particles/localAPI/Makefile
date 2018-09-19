@@ -5,7 +5,7 @@ Particles += pt_interface.o pt_initPositions.o pt_initPositionsLattice.o \
         pt_initPositionsLattice_desc.o pt_initPositionsWithDensity.o pt_initFinalize.o \
 	pt_initLocal.o pt_mapStringParamToInt.o pt_mapFromMeshQuadratic.o \
 	pt_mapFromMeshWeighted.o pt_assignWeights.o \
-	pt_updateTypeDS.o pt_prepareEsti.o pt_advanceRK.o \
+	pt_updateTypeDS.o pt_prepareEsti.o pt_advanceRK.o pt_advanceRK_pc.o \
 	pt_advanceEuler_passive.o pt_advanceMidpoint.o \
 	pt_advanceEsti.o pt_advanceEuler_active.o \
 	pt_advanceLeapfrog.o pt_advanceLeapfrog_cosmo.o \
