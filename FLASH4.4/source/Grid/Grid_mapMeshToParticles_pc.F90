@@ -46,6 +46,7 @@ subroutine Grid_mapMeshToParticles_pc (pt_containerPos, part_props,part_blkID,&
                                     numAttrib, attrib,&
                                     mapType,gridDataStruct)
 
+#include "Flash.h"
   implicit none
 
   integer, INTENT(in) :: part_props, numAttrib, part_blkID

@@ -4,27 +4,24 @@
 PPDEFINE FLASH_PARTICLES
 
 USESETUPVARS Grid
-USESETUPVARS Grid
 
 REQUIRES Driver
 REQUESTS monitors/Logfile
 REQUIRES RuntimeParameters
-#REQUESTS Particles/ParticlesMapping 
-#REQUESTS Particles/ParticlesInitialization 
 REQUIRES Grid/GridParticles
-#REQUIRES Grid/GridParticles/GridParticlesMapFromMesh
-  REQUIRES Particles/ParticlesMain/Amrex
-  REQUESTS Particles/ParticlesInitialization/Amrex
-  REQUESTS Particles/ParticlesMapping/Amrex
-  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Amrex
 
-IF Grid=='Amrex'
-  REQUIRES Particles/ParticlesMain/Amrex
+REQUESTS Particles/ParticlesMain/passive/Amrex
+REQUESTS Particles/ParticlesInitialization/Amrex
+REQUESTS Particles/ParticlesMapping/Amrex
+REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Amrex
+
+IF Grid=='AMR'
+  REQUESTS Particles/ParticlesMain/passive/Amrex
   REQUESTS Particles/ParticlesInitialization/Amrex
   REQUESTS Particles/ParticlesMapping/Amrex
   REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Amrex
 ELSEIF Grid=="Paramesh"
-  REQUIRES Particles/ParticlesMain/Paramesh
+  REQUIRES Particles/ParticlesMain/passive/Paramesh
   REQUESTS Particles/ParticlesInitialization/Paramesh
   REQUESTS Particles/ParticlesMapping/Paramesh
   REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Paramesh
@@ -34,25 +31,6 @@ ELSE
 #  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/UG
 ENDIF
 
-#  Contains these submodules:
-#    active          Active particle submodule.  Particles contribute to the
-#                    dynamics (e.g. through long-range forces) and in turn
-#                    respond to forces.
-#  Has the following passive time integrators
-#    RungeKutta2 -- second order R-K, aka Heun, aka improved Euler
-#    EstiMidpoint -- estimated midpoint, second order if time steps are constant
-#    EstiMidpoint2 -- estimated midpoint with correction, second order
-#    Midpoint -- second order, two-step
-#    EulerPassive -- first order
-#    PredictorCorrectorOld -- name for old estimated midpoint
-#  HISTORICAL - these two have been removed, use EstiMidpoint or EstiMidpoint2
-#               or RungeKutta2 instead:
-#    PredictorCorrector -- old name for estimated midpoint
-#    PredCorrFLASH2 -- same as predictor corrector version in FLASH2
-#  Has the following active time integrators
-#        EulerActive       Should be merged to the passive Euler in the future
-#        Leapfrog
-#        LeapfrogCosmo     Leapfrog Cosmological
 
 DEFAULT passive
 

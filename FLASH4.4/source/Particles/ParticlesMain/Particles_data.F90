@@ -32,6 +32,7 @@
 
 
 module Particles_data
+ use amrex_particlecontainer_module, ONLY : amrex_particlecontainer
 !===============================================================================
 
   implicit none
@@ -45,6 +46,8 @@ module Particles_data
 !! The particles data structure is an real array of size (NPART_PROPS,MAX_PARTICLES_PER_PROCESSOR)
 !! It is allocated at runtime, as MAX_PARTICLES_PER_PROCESSOR is a runtime parameter = pt_maxPerProc
    real, save, allocatable, dimension(:,:), target :: particles
+!! Particle containers array to store the particles of each type.
+   type(amrex_particlecontainer), save :: pt_containers(1:NPART_TYPES)
 
 
   integer, save   :: pt_numLocal, pt_numLost

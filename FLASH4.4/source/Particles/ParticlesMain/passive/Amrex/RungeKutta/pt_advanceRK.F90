@@ -54,7 +54,7 @@
 
 !===============================================================================
 
-subroutine pt_advanceRK_pc (dtOld,dtNew, ind)
+subroutine pt_advanceRK(dtOld,dtNew, p_beg, p_end, ind)
     
   use Particles_data, ONLY: pt_numLocal, pt_maxPerProc, &
        useParticles, pt_typeInfo, &
@@ -76,7 +76,7 @@ subroutine pt_advanceRK_pc (dtOld,dtNew, ind)
 #include "Particles.h"
   
   real, INTENT(in)  :: dtOld, dtNew
-  integer, INTENT(in) :: ind
+  integer, INTENT(in) :: ind, p_beg, p_end
 
   integer       :: i,particleTypes, p_count
   
@@ -178,6 +178,6 @@ subroutine pt_advanceRK_pc (dtOld,dtNew, ind)
   return
 !!------------------------------------------------------------------------------
   
-end subroutine pt_advanceRK_pc
+end subroutine pt_advanceRK
 
 

@@ -81,7 +81,7 @@ plot_var_2 = "pres"
 plot_var_3 = "temp"
 
 #  Adaptive Grid refinement parameters
-lrefine_max       = 4
+lrefine_max       = 2
 refine_var_1      = "dens"
 refine_var_2      = "pres"
 refine_cutoff_1   = 0.75

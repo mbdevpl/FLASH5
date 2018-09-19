@@ -8,11 +8,18 @@ Module pt_interface
 #include "constants.h"
 #include "Flash.h"
 
-  interface
+  interface pt_initPositions
      subroutine pt_initPositions(blockID,success)
        integer, intent(IN) :: blockID
        logical,intent(OUT) :: success
      end subroutine pt_initPositions
+
+     subroutine pt_initPositions_desc(block,success)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN) :: block
+       logical,intent(OUT) :: success
+     end subroutine pt_initPositions_desc
   end interface
 
   interface pt_initPositionsLattice
@@ -100,87 +107,50 @@ Module pt_interface
   end interface
 
   interface pt_advanceRK
-     subroutine pt_advanceRK (dtOld,dtNew,particles,p_count, ind)
+     subroutine pt_advanceRK (dtOld,dtNew,sp,ep,ind)
        
        real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
+       integer, INTENT(in) :: sp,ep,ind
      end subroutine pt_advanceRK
-      subroutine pt_advanceRK_pc (dtOld,dtNew, ind)
-       
-       real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: ind
-     end subroutine pt_advanceRK_pc
+
   end interface
 
   interface
-     subroutine pt_advanceEuler_passive (dtOld,dtNew,particles,p_count, ind)
-       
+     subroutine pt_advanceEuler_passive (dtOld,dtNew,sp,ep,ind)
        real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
+       integer, INTENT(in) :: sp,ep, ind
      end subroutine pt_advanceEuler_passive
   end interface
 
   interface
-     subroutine pt_advanceEsti (dtOld,dtNew,particles,p_count, ind)
+     subroutine pt_advanceEuler_active (dtOld,dtNew,sp,ep,ind)
        
        real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
-     end subroutine pt_advanceEsti
-  end interface
-
-  interface
-     subroutine pt_advanceMidpoint (dtOld,dtNew,particles,p_count, ind)
-       
-       real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
-     end subroutine pt_advanceMidpoint
-  end interface
-
-  interface
-     subroutine pt_advanceEuler_active (dtOld,dtNew,particles,p_count, ind)
-       
-       real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
+       integer, INTENT(in) :: sp,ep, ind
      end subroutine pt_advanceEuler_active
   end interface
 
   interface
-     subroutine pt_advanceLeapfrog (dtOld,dtNew,particles,p_count, ind)
+     subroutine pt_advanceLeapfrog (dtOld,dtNew,sp,ep,ind)
        
        real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
+       integer, INTENT(in) :: sp,ep, ind
      end subroutine pt_advanceLeapfrog
   end interface
 
   interface
-     subroutine pt_advanceLeapfrog_cosmo (dtOld,dtNew,particles,p_count, ind)
+     subroutine pt_advanceLeapfrog_cosmo (dtOld,dtNew,sp,ep,ind)
        
        real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
+       integer, INTENT(in) :: sp,ep, ind
      end subroutine pt_advanceLeapfrog_cosmo
   end interface
 
   interface
-     subroutine pt_advanceActive (dtOld,dtNew,particles,p_count, ind)
-       real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
-     end subroutine pt_advanceActive
-  end interface
-
-  interface
-     subroutine pt_advanceCustom (dtOld,dtNew,particles,p_count, ind)
+     subroutine pt_advanceCustom (dtOld,dtNew,sp,ep,ind)
        
        real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
+       integer, INTENT(in) :: sp,ep, ind
      end subroutine pt_advanceCustom
   end interface
 
@@ -242,14 +212,6 @@ Module pt_interface
      end subroutine pt_picInit
   end interface
 
-  interface
-     subroutine pt_prepareEsti (dtOld,dtNew,particles,p_count, ind)
-       real, INTENT(in)  :: dtOld, dtNew
-       integer, INTENT(in) :: p_count, ind
-       real,dimension(NPART_PROPS,p_count),intent(inout) :: particles
-     end subroutine pt_prepareEsti
-  end interface
-  
   interface
      subroutine pt_findTagOffset(newcount, tagoffset)
        integer, intent(IN) :: newcount

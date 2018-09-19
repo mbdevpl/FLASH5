@@ -8,7 +8,7 @@
 !!
 !!  call pt_advanceRK(real(in)   :: dtOld,
 !!                         real(in)   :: dtNew,
-!!                         real(inout):: particles(:,p_count),
+!!                    
 !!                         integer(in):: p_count,
 !!                         integer(in):: ind)
 !!
@@ -58,9 +58,9 @@
 
 !===============================================================================
 
-subroutine pt_advanceRK (dtOld,dtNew,particles,p_count, ind)
+subroutine pt_advanceRK (dtOld,dtNew,p_beg,p_end, ind)
     
-  use Particles_data, ONLY: pt_numLocal, pt_maxPerProc, &
+  use Particles_data, ONLY: particles, pt_numLocal, pt_maxPerProc, &
        useParticles, pt_typeInfo, &
        pt_gcMaskForAdvance, pt_gcMaskSizeForAdvance, pt_meshMe, &
        pt_posAttrib, pt_velNumAttrib,pt_velAttrib
@@ -76,7 +76,7 @@ subroutine pt_advanceRK (dtOld,dtNew,particles,p_count, ind)
 #include "Particles.h"
   
   real, INTENT(in)  :: dtOld, dtNew
-  integer, INTENT(in) :: p_count, ind
+  integer, INTENT(in) :: p_beg,p_end, ind
   real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
 
   integer       :: i,particleTypes
@@ -95,7 +95,7 @@ subroutine pt_advanceRK (dtOld,dtNew,particles,p_count, ind)
   mapType=pt_typeInfo(PART_MAPMETHOD,ind)
 
   ! Update the particle positions to temporary ("predicted") values
-  do i = 1, p_count
+  do i = p_beg, p_end
  
      jumpx = dtNew * particles(VELX_PART_PROP,i)
      particles(POSX_PART_PROP,i) = particles(POSX_PART_PROP,i) + jumpx
@@ -114,19 +114,19 @@ subroutine pt_advanceRK (dtOld,dtNew,particles,p_count, ind)
 
   ! Now save the original velocity values
   allocate(origVel(p_count,MDIM))
-  origVel(:,1) = particles(VELX_PART_PROP,1:p_count)
-  origVel(:,2) = particles(VELY_PART_PROP,1:p_count)
-  origVel(:,3) = particles(VELZ_PART_PROP,1:p_count)
+  origVel(:,1) = particles(VELX_PART_PROP,p_beg:p_end)
+  origVel(:,2) = particles(VELY_PART_PROP,p_beg:p_end)
+  origVel(:,3) = particles(VELZ_PART_PROP,p_beg:p_end)
 
   ! Map the updated gas velocity field at the temporary positions to
   ! obtain a second estimate of velocities;
 
-  call Grid_mapMeshToParticles(particles,&
+  call Grid_mapMeshToParticles(particles(p_beg:p_end),&
        part_props, BLK_PART_PROP, p_count,&
        pt_posAttrib,pt_velNumAttrib,pt_velAttrib,mapType)
 
   ! Adjust particle positions, using the second point velocities
-  do i = 1, p_count
+  do i = p_beg,p_end
      particles(POSX_PART_PROP,i) =  particles(POSX_PART_PROP,i) + &
           dtNew * 0.5*(particles(VELX_PART_PROP,i) - origVel(i,1))
      if(NDIM>1)&

@@ -9,8 +9,6 @@
 #                    positions -- not a mesh weighting, but true
 #                    interpolation
 
-REQUESTS Particles/ParticlesMain/Amrex
-REQUESTS Particles/ParticlesInitialization/Amrex
 
 DEFAULT Quadratic
 

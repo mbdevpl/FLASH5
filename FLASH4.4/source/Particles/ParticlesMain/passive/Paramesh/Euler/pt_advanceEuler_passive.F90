@@ -47,9 +47,9 @@
 
 !===============================================================================
 
-subroutine pt_advanceEuler_passive (dtOld,dtNew,particles,p_count, ind)
+subroutine pt_advanceEuler_passive (dtOld,dtNew,p_begin,p_end, ind)
     
-  use Particles_data, ONLY: useParticles, pt_typeInfo,&
+  use Particles_data, ONLY: particles, useParticles, pt_typeInfo,&
        pt_posAttrib, pt_velNumAttrib,pt_velAttrib
 
 
@@ -63,7 +63,7 @@ subroutine pt_advanceEuler_passive (dtOld,dtNew,particles,p_count, ind)
 #include "Particles.h"
   
   real, INTENT(in)  :: dtOld, dtNew
-  integer, INTENT(in) :: p_count, ind
+  integer, INTENT(in) :: p_beg,p_end, ind
   real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
   integer       :: i,nstep
   real          :: jumpx,jumpy,jumpz
@@ -82,7 +82,7 @@ subroutine pt_advanceEuler_passive (dtOld,dtNew,particles,p_count, ind)
 
      
   ! Update the particle positions.
-  do i = 1, p_count
+  do i = p_begin, p_end
  
      jumpx = dtNew * particles(VELX_PART_PROP,i)
      particles(POSX_PART_PROP,i) = particles(POSX_PART_PROP,i) + jumpx
@@ -98,7 +98,7 @@ subroutine pt_advanceEuler_passive (dtOld,dtNew,particles,p_count, ind)
   ! Map the updated gas velocity field onto the current particle positions to
   ! obtain the updated particle velocities.
 
-  call Grid_mapMeshToParticles(particles,&
+  call Grid_mapMeshToParticles(particles(p_begin:p_end),&
        part_props, BLK_PART_PROP,p_count,&
        pt_posAttrib,pt_velNumAttrib,pt_velAttrib,mapType)
   
