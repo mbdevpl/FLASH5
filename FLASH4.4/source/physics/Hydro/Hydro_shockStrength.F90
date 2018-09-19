@@ -69,21 +69,12 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
   integer, intent(IN), dimension(2,MDIM) :: blkLimits, blkLimitsGC
   integer, intent(IN) :: guardCells(MDIM)
   real, pointer :: solnData(:,:,:,:) 
-#ifdef FIXEDBLOCKSIZE
-  real, intent(inout),dimension(GRID_ILO_GC:GRID_IHI_GC,&
-                              GRID_JLO_GC:GRID_JHI_GC,&
-                              GRID_KLO_GC:GRID_KHI_GC):: shock
-  real,intent(IN),dimension(GRID_ILO_GC:GRID_IHI_GC) :: primaryCoord
-  real,intent(IN),dimension(GRID_JLO_GC:GRID_JHI_GC) :: secondCoord
-  real,intent(IN),dimension(GRID_KLO_GC:GRID_KHI_GC) :: thirdCoord
-#else
   real,intent(inout),dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
                                blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
                                blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: shock
   real,intent(IN),dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)) :: primaryCoord
   real,intent(IN),dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)) :: secondCoord
   real,intent(IN),dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: thirdCoord
-#endif
   real, intent(IN) :: threshold
   integer, intent(IN) :: mode
  
