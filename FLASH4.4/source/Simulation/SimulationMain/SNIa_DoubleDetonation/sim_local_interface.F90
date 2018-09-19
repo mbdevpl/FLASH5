@@ -8,10 +8,10 @@ module sim_local_interface
   real (dp), parameter :: one = 1.0_dp
 
   interface sim_interpolate1dWd
-     subroutine sim_interpolate1dWd( volume, r_inner, r_outer, dens, temp, xc12, xne22)
+     subroutine sim_interpolate1dWd( volume, r_inner, r_outer, dens, temp, x)
      implicit none
      real, intent(in) :: volume, r_inner, r_outer
-     real, intent(out):: dens, temp, xc12, xne22
+     real, intent(inout):: dens, temp, x(:)
      end subroutine
   end interface
 

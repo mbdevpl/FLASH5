@@ -7,20 +7,20 @@
 !!REORDER(4): solnData
 
 subroutine Simulation_initBlock(solnData, block)
-  
+
   use Simulation_data
   use sim_local_interface, ONLY : sim_interpolate1dWd
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getDeltas, Grid_getCellCoords, &
-     Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_renormAbundance
+  use Grid_interface, ONLY : Grid_getDeltas, Grid_getCellCoords, Grid_getGeometry, &
+     Grid_renormAbundance
   use Eos_interface, ONLY : Eos_wrapped
   use block_metadata, ONLY : block_metadata_t
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
-  
-  real,dimension(:,:,:,:),pointer :: solnData
+
+  real, dimension(:,:,:,:), pointer :: solnData
   type(block_metadata_t), intent(in) :: block
 
   logical, parameter :: useGuardCell = .true.
@@ -32,23 +32,21 @@ subroutine Simulation_initBlock(solnData, block)
   real, dimension(MDIM) :: delta
   integer :: meshGeom
 
-  real, dimension(SPECIES_BEGIN:SPECIES_END) :: massFraction
-
+  real, allocatable, dimension(:) :: xinitial
   real :: radCenter, thtCenter, radCenterVol, dVol, ign_dist, dx, dy, dz, dr
   real :: radMin, radMax, x2Min, x2Max, y2Min, y2Max, z2Min, z2Max
-  real :: xc12initial, xne22initial
-  real :: velx, vely, velz, dens, temp, pres, eint, etot
-  integer :: i, j, k, n
+  real :: velx, vely, velz, dens, temp, pres, eint, xsum, xmissing
+  integer :: i, j, k, n, nunk
 
 !==============================================================================
 
   call Grid_getGeometry(meshGeom)
 
-!   call Grid_getBlkPtr(block,solnData,CENTER)
+  allocate(xinitial(sim_wd_nspec))
 
   ! Get the indices of the blocks
-  blkLimits=block%Limits
-  blkLimitsGC=block%LimitsGC
+  blkLimits = block%limits
+  blkLimitsGC = block%limitsGC
   iSizeGC = blkLimitsGC(HIGH,IAXIS) - blkLimitsGC(LOW,IAXIS) + 1
   jSizeGC = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
   kSizeGC = blkLimitsGC(HIGH,KAXIS) - blkLimitsGC(LOW,KAXIS) + 1
@@ -151,22 +149,17 @@ subroutine Simulation_initBlock(solnData, block)
               call Driver_abortFlash("Geometry not supported")
            end if
 
-           call sim_interpolate1dWd(radCenterVol, radMin, radMax, dens, temp, xc12initial, xne22initial)
-
-           ! the initial composition
-           massFraction(:) = sim_smallx
-           if ( C12_SPEC > 0 ) massFraction(C12_SPEC) = max(xc12initial,sim_smallx)
-           if ( O16_SPEC > 0 ) massFraction(O16_SPEC) = max(1.0-xc12initial-xne22initial,sim_smallx)
+           call sim_interpolate1dWd(radCenterVol, radMin, radMax, dens, temp, xinitial)
 
            if(sim_useShell) then
              ! add a shell/belt
               if ( radCenter >= sim_radShellMin .and. radCenter <= sim_radShellMax .and. &
                  & thtCenter >= sim_thtShellMin .and. thtCenter <= sim_thtShellMax ) then
-                 massFraction(:) = sim_smallx
-                 if ( HE4_SPEC  > 0 ) massFraction(HE4_SPEC)  = max(sim_xhe4Shell,sim_smallx)
-                 if ( C12_SPEC  > 0 ) massFraction(C12_SPEC)  = max(sim_xc12Shell,sim_smallx)
-                 if ( NI56_SPEC > 0 ) massFraction(NI56_SPEC) = max(sim_xni56Shell,sim_smallx)
-                 if ( O16_SPEC  > 0 ) massFraction(O16_SPEC)  = max(1.0-sim_xhe4Shell-sim_xc12Shell-sim_xni56Shell,sim_smallx)
+                 xinitial(:) = 0.0
+                 if ( sim_wd_unk2spec(HE4_SPEC) > 0 ) xinitial(sim_wd_unk2spec(HE4_SPEC)) = sim_xhe4Shell
+                 if ( sim_wd_unk2spec(C12_SPEC) > 0 ) xinitial(sim_wd_unk2spec(C12_SPEC)) = sim_xc12Shell
+                 if ( sim_wd_unk2spec(NI56_SPEC) > 0 ) xinitial(sim_wd_unk2spec(NI56_SPEC)) = sim_xni56Shell
+                 if ( sim_wd_unk2spec(O16_SPEC) > 0 ) xinitial(sim_wd_unk2spec(O16_SPEC)) = 1.0-sim_xhe4Shell-sim_xc12Shell-sim_xni56Shell
 
                  if ( dens > sim_densFluff ) then
                     dens = sim_densShellMult*dens
@@ -184,11 +177,9 @@ subroutine Simulation_initBlock(solnData, block)
            end if
 
            if (sim_ignite) then
-
               !-----------------------------------------------
               ! initialize burned region
               !-----------------------------------------------
-
               ! default to a spherical region centered at specified coordinates
               ! distance from center of ignition region
               ign_dist = (xCenter(i) - sim_ignX)**2
@@ -203,6 +194,20 @@ subroutine Simulation_initBlock(solnData, block)
 
            end if ! sim_ignite
 
+           ! Giant traffic cone
+           if ( dens < sim_smallrho .or. temp < sim_smallt) then
+              write(*,'(a,i5,a,3i3)') '[Before EOS] Bad value(s) on PE=',sim_globalMe,', (i,j,k)=',i,j,k
+              write(*,'(a,2es15.7)') '  radCenter, thtCenter = ', radCenter, thtCenter
+              write(*,'(a,2es15.7)') '     radMin,    radMax = ', radMin, radMax
+              write(*,'(a,1es15.7)') '          radCenterVol = ', radCenterVol
+              write(*,'(a,3es15.7)') '        x,y,z (center) = ', xCenter(i), yCenter(j), zCenter(k)
+              write(*,'(a,3es15.7)') '        x,y,z   (left) = ', xLeft(i),   yLeft(j),   zLeft(k)
+              write(*,'(a,3es15.7)') '        x,y,z  (right) = ', xRight(i),  yRight(j),  zRight(k)
+              write(*,'(a,3es15.7)') '              dx,dy,dz = ', dx, dy, dz
+              write(*,'(a,2es15.7)') '             dens,temp = ', dens, temp
+              call Driver_abortFlash("[Simulation_initBlock] Bad values BEFORE EOS call.")
+           end if
+
            !-----------------------------------------------
            !  Now store all this info on the grid
            !-----------------------------------------------
@@ -215,8 +220,30 @@ subroutine Simulation_initBlock(solnData, block)
            solnData(VELZ_VAR,i,j,k) = velz
            solnData(DENS_VAR,i,j,k) = dens
            solnData(TEMP_VAR,i,j,k) = temp
-           solnData(SPECIES_BEGIN:SPECIES_END,i,j,k) = &
-                          massFraction(SPECIES_BEGIN:SPECIES_END)
+
+           ! Copy interpolated values into UNK, do the renormalization later in Grid_renormAbundance
+           solnData(SPECIES_BEGIN:SPECIES_END,i,j,k) = sim_smallx
+           xsum = 0.0
+           do n = 1, sim_wd_nspec
+              nunk = sim_wd_spec2unk(n)
+              if ( nunk /= NONEXISTENT ) then
+                 solnData(nunk,i,j,k) = max(sim_smallx, min(1.0,xinitial(n)) )
+                 xsum = xsum + solnData(nunk,i,j,k)
+              end if
+           end do
+
+           ! Dump whatever is leftover into Ne22 (or Ne20 if Ne22 is not in the network)
+           xmissing = 1.0 - xsum
+           if ( xmissing > 0.0 ) then
+#ifdef NE22_SPEC
+              if ( NE22_SPEC > 0 ) solnData(NE22_SPEC,i,j,k) = solnData(NE22_SPEC,i,j,k) + xmissing
+#elif NE20_SPEC
+              if ( NE20_SPEC > 0 ) solnData(NE20_SPEC,i,j,k) = solnData(NE20_SPEC,i,j,k) + xmissing
+#elif NSPECIES > 0
+             solnData(SPECIES_BEGIN,i,j,k) = solnData(SPECIES_BEGIN,i,j,k) + xmissing
+#endif
+           end if
+
         end do
      end do
   end do
@@ -234,7 +261,7 @@ subroutine Simulation_initBlock(solnData, block)
            pres = solnData(PRES_VAR,i,j,k)
            eint = solnData(EINT_VAR,i,j,k)
            if ( dens < sim_smallrho .or. temp < sim_smallt .or. pres < sim_smallp .or. eint < sim_smalle ) then
-!               write(*,'(2(a,i5),a,3i3)') '[After EOS] Bad value(s) on PE=',myPE,', blockID=',blockID,', (i,j,k)=',i,j,k
+              write(*,'(a,i5,a,3i3)') '[After EOS] Bad value(s) on PE=',sim_globalMe,', (i,j,k)=',i,j,k
               write(*,'(a,3es15.7)') '        x,y,z (center) = ', xCenter(i), yCenter(j), zCenter(k)
               write(*,'(a,3es15.7)') '        x,y,z   (left) = ', xLeft(i),   yLeft(j),   zLeft(k)
               write(*,'(a,3es15.7)') '        x,y,z  (right) = ', xRight(i),  yRight(j),  zRight(k)
@@ -246,8 +273,6 @@ subroutine Simulation_initBlock(solnData, block)
      end do
   end do
 
-!   call Grid_releaseBlkPtr(block,solnData,CENTER)
-
   deallocate(xLeft)
   deallocate(xRight)
   deallocate(xCenter)
@@ -258,5 +283,6 @@ subroutine Simulation_initBlock(solnData, block)
   deallocate(zRight)
   deallocate(zCenter)
 
+  deallocate(xinitial)
   return
 end subroutine Simulation_initBlock

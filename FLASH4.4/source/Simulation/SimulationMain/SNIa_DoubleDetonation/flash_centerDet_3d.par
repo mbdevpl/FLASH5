@@ -124,13 +124,13 @@ derefine_cutoff_2			= 0.2
 #derefine_cutoff_3			= 0.2
 
 # base blocks
-nblockx					= 4
+nblockx					= 8
 nblocky					= 8
-#nblockz					= 8
+nblockz					= 8
 
 # max and min levels of refinement
 lrefine_min				= 1
-lrefine_max				= 4
+lrefine_max				= 3
 #lrefine_min_init			= 1       # Min level for initialization
 #lrefine_del				= 0       # Try to reduce max level by this number of levels on restart
 
@@ -139,24 +139,24 @@ lrefine_max				= 4
 ## -------------------------------------------------------------
 
 # physical domain
-#geometry				= "cartesian"
-geometry				= "cylindrical"
+geometry				= "cartesian"
+#geometry				= "cylindrical"
 #geometry				= "spherical"
 
-xmin					=  0.e0
+xmin					= -65536.e5
 xmax					=  65536.e5
 ymin					= -65536.e5
 ymax					=  65536.e5
-#zmin					= -65536.e5
-#zmax					=  65536.e5
+zmin					= -65536.e5
+zmax					=  65536.e5
 
 # boundary conditions for the whole star
-xl_boundary_type			= "reflect"
+xl_boundary_type			= "outflow"
 xr_boundary_type			= "outflow"
 yl_boundary_type			= "outflow"
 yr_boundary_type			= "outflow"
-#zl_boundary_type			= "outflow"
-#zr_boundary_type			= "outflow"
+zl_boundary_type			= "outflow"
+zr_boundary_type			= "outflow"
 
 ## -------------------------------------------------------------
 ## timestep
