@@ -6,15 +6,16 @@ REQUIRES Driver
 REQUIRES physics/Hydro
 REQUIRES physics/Eos
 
-IF withParticles
+#IF withParticles
    PARTICLETYPE passive INITMETHOD lattice MAPMETHOD quadratic ADVMETHOD rungekutta
 
    REQUIRES Particles/ParticlesMain
-   REQUESTS Particles/ParticlesInitialization/Lattice
-   REQUESTS Particles/ParticlesMapping/Quadratic
+#  Right now only one Init and map method implemented in Amrex Particles
+   REQUESTS Particles/ParticlesInitialization/Amrex/Lattice
+   REQUESTS Particles/ParticlesMapping/Amrex/Quadratic
    REQUESTS IO/IOMain/
    REQUESTS IO/IOParticles
-ENDIF
+#ENDIF
 
 LINKIF Grid_markRefineDerefine.F90 Grid/GridMain/AMR/paramesh
 LINKIF gr_expandDomain.F90         Grid/GridMain/AMR/paramesh
