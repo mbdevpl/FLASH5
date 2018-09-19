@@ -8,6 +8,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   use Grid_interface,      ONLY : Grid_fillGuardCells
   use Grid_interface,      ONLY : Grid_getMaxRefinement
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+  use Driver_interface,    ONLY : Driver_getSimTime
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
