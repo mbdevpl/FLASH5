@@ -20,6 +20,7 @@ subroutine gr_amrexInit()
                                           amrex_init_virtual_functions, &
                                           amrex_max_level, &
                                           amrex_ref_ratio
+  use amrex_octree_module,         ONLY : amrex_octree_init
   use amrex_parmparse_module,      ONLY : amrex_parmparse, &
                                           amrex_parmparse_build, &
                                           amrex_parmparse_destroy
@@ -29,7 +30,8 @@ subroutine gr_amrexInit()
                                           RuntimeParameters_mapStrToInt
   use Driver_interface,            ONLY : Driver_abortFlash
   use Grid_data,                   ONLY : gr_geometry, &
-                                          gr_domainBC
+                                          gr_domainBC, &
+                                          gr_meshMe
   use gr_amrexInterface,           ONLY : gr_initNewLevelCallback, &
                                           gr_makeFineLevelFromCoarseCallback, &
                                           gr_remakeLevelCallback, &
@@ -68,7 +70,7 @@ subroutine gr_amrexInit()
   integer :: is_periodic(MDIM) = 0
   integer :: is_periodic_am(MDIM) = 0
 
-  write(*,*) "[gr_amrexInit] Starting"
+  if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexInit] Starting"
  
   !!!!!----- INITIALIZE AMReX & CONFIGURE MANUALLY
   ! Do not parse command line or any file for configuration
@@ -146,7 +148,6 @@ subroutine gr_amrexInit()
   call pp_amr%add   ("blocking_factor_y", 2*NYB)
   call pp_amr%add   ("blocking_factor_z", 2*NZB)
   call pp_amr%add   ("refine_grid_layout", 0)
-  call pp_amr%add   ("grid_eff",  1.0)
  
   ! According to Weiqun n_proper=1 is an appropriate setting that will result in
   ! correct nesting.
@@ -161,6 +162,7 @@ subroutine gr_amrexInit()
   call amrex_parmparse_destroy(pp_amr)
 #endif
 
+  call amrex_octree_init()
   call amrex_amrcore_init()
  
   !!!!!----- REGISTER REFINE CALLBACKS WITH AMReX
@@ -195,6 +197,6 @@ subroutine gr_amrexInit()
 #endif
 #endif
   
-  write(*,*) "[gr_amrexInit] Finished"
+  if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexInit] Finished"
 end subroutine gr_amrexInit
 
