@@ -59,14 +59,16 @@
 
 subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
                                       zeroFullRegister)
-    use amrex_fort_module,    ONLY : wp => amrex_real
-    use amrex_amrcore_module, ONLY : amrex_get_finest_level, &
-                                     amrex_ref_ratio
+    use amrex_fort_module,         ONLY : wp => amrex_real
+    use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
+                                          amrex_ref_ratio
+    ! DEV: See note below related to Intel ICE
+    use amrex_fluxregister_module, ONLY : amrex_fluxregister
 
-    use Driver_interface,     ONLY : Driver_abortFlash
-    use Grid_interface,       ONLY : Grid_getGeometry
-    use gr_physicalMultifabs, ONLY : flux_registers, &
-                                     fluxes
+    use Driver_interface,          ONLY : Driver_abortFlash
+    use Grid_interface,            ONLY : Grid_getGeometry
+    use gr_physicalMultifabs,      ONLY : flux_registers, &
+                                          fluxes
 
     implicit none
 
@@ -125,6 +127,11 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
         coef = coef * 0.25_wp
 #endif
 
+        ! When compiling with ifort (IFORT) 17.0.0 20160721, the following line
+        ! results in an ICE.  
+        ! /tmp/ifortACzzAq.i90: catastrophic error: **Internal compiler error: segmentation violation signal raised**
+        !
+        !This error is overcome by importing amrex_flux_register above
         call flux_registers(fine)%fineadd(fluxes(fine, 1:NDIM), coef)
     case default
         call Driver_abortFlash("[Grid_addFineToFluxRegister] Only works with Cartesian")
