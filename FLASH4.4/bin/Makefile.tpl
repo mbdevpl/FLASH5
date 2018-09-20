@@ -138,12 +138,9 @@ endif
 %%.o : %%.f90
 \t$(ECHO-COMPILING) 
 \t$(FCOMP) $(FFLAGS) $(f90FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
-%%.o : %%.F90
+%%.o %%.mod : %%.F90
 \t$(ECHO-COMPILING) 
 \t$(FCOMP) $(FFLAGS) $(F90FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
-%%.mod : %%.F90 %%.o
-\t$(ECHO-COMPILING) 
-\t$(FCOMP) $(FFLAGS) $(F90FLAGS) $(FDEFINES) $<
 ifdef MODUPPERCASE
 \t-$(if $(wildcard $*.mod),if [ -w $*.mod -a -s $(shell echo $*|tr a-z A-Z).mod -a \( $(shell echo $*|tr a-z A-Z).mod -nt $*.mod \) ] ;then ln -f $(shell echo $*|tr a-z A-Z).mod $*.mod;fi)
 else
