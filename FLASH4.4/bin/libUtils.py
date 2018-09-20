@@ -114,6 +114,11 @@ class LibUnion(UserDict.UserDict):
      base = string.lower(lib)
      libDir = os.path.join(GVars.libDir,base)
      relLibDir = getRelPath(libDir,".")
+
+     if self[lib]["TYPE"]=="INTERNAL": # make sure object directory exists for internal lib
+        objDir = os.path.join(libDir,'object')
+        if not os.path.isdir(objDir): os.mkdir(objDir)
+
      if not os.path.isdir(libDir): 
         return self.extLibFlags(lib,buildFlag) # args are of no use here
 
