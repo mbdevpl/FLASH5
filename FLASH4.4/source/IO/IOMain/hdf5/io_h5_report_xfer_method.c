@@ -102,9 +102,11 @@ int io_h5_report_xfer_method(const int myPE, const hid_t hXferList,
       if (global_cause & H5D_MPIO_NOT_CONTIGUOUS_OR_CHUNKED_DATASET) {
 	ADD_CAUSE_TO_STR("H5D_MPIO_NOT_CONTIGUOUS_OR_CHUNKED_DATASET ");
       }
+#if (H5_VERSION_LE(1,10,2))
       if (global_cause & H5D_MPIO_FILTERS) {
 	ADD_CAUSE_TO_STR("H5D_MPIO_FILTERS ");
       }
+#endif
 
       printf(" [%s]: Dataset '%s' - no collective I/O because %s\n",
 	     __FILE__, datasetName, cause_str);
