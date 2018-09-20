@@ -10,17 +10,12 @@ REQUESTS monitors/Logfile
 REQUIRES RuntimeParameters
 REQUIRES Grid/GridParticles
 
-REQUESTS Particles/ParticlesMain/passive/Amrex
-REQUESTS Particles/ParticlesInitialization/Amrex
-REQUESTS Particles/ParticlesMapping/Amrex
-REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Amrex
-
-IF Grid=='AMR'
+IF Grid=='Amrex'
   REQUESTS Particles/ParticlesMain/passive/Amrex
   REQUESTS Particles/ParticlesInitialization/Amrex
   REQUESTS Particles/ParticlesMapping/Amrex
   REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Amrex
-ELSEIF Grid=="Paramesh"
+ELSEIF Grid=="PM4DEV"
   REQUIRES Particles/ParticlesMain/passive/Paramesh
   REQUESTS Particles/ParticlesInitialization/Paramesh
   REQUESTS Particles/ParticlesMapping/Paramesh

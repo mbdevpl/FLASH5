@@ -11,8 +11,6 @@ REQUIRES physics/Eos
 
    REQUIRES Particles/ParticlesMain
 #  Right now only one Init and map method implemented in Amrex Particles
-   REQUESTS Particles/ParticlesInitialization/Amrex/Lattice
-   REQUESTS Particles/ParticlesMapping/Amrex/Quadratic
    REQUESTS IO/IOMain/
    REQUESTS IO/IOParticles
 #ENDIF

@@ -77,7 +77,6 @@ subroutine pt_advanceRK (dtOld,dtNew,p_beg,p_end, ind)
   
   real, INTENT(in)  :: dtOld, dtNew
   integer, INTENT(in) :: p_beg,p_end, ind
-  real,dimension(NPART_PROPS,p_count),intent(INOUT) :: particles
 
   integer       :: i,particleTypes
   
@@ -86,14 +85,14 @@ subroutine pt_advanceRK (dtOld,dtNew,p_beg,p_end, ind)
   real,allocatable :: origVel(:,:)
   integer :: part_props=NPART_PROPS
 
-  integer :: mapType 
+  integer :: mapType, p_count
 !!------------------------------------------------------------------------------
   
   ! Don't do anything if runtime parameter isn't set
   if (.not.useParticles ) return
 
   mapType=pt_typeInfo(PART_MAPMETHOD,ind)
-
+  p_count=p_end-p_beg+1
   ! Update the particle positions to temporary ("predicted") values
   do i = p_beg, p_end
  
@@ -121,7 +120,7 @@ subroutine pt_advanceRK (dtOld,dtNew,p_beg,p_end, ind)
   ! Map the updated gas velocity field at the temporary positions to
   ! obtain a second estimate of velocities;
 
-  call Grid_mapMeshToParticles(particles(p_beg:p_end),&
+  call Grid_mapMeshToParticles(particles(:,p_beg:p_end),&
        part_props, BLK_PART_PROP, p_count,&
        pt_posAttrib,pt_velNumAttrib,pt_velAttrib,mapType)
 

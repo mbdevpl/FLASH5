@@ -49,7 +49,7 @@ chombo_amr:-unit=Grid/GridMain/Chombo/AMR:-index-reorder:Grid=Chombo:-nofbs:-mak
 
 amrext:-unit=Grid/GridMain/AMR/paramesh/AmrexTransition:-index-reorder
 
-Mode3:+uhd:-unit=Grid/GridMain/AMR/Amrex:+serialio:-unit=IO/IOMain/hdf5/serial/AM:--index-reorder
+Mode3:+uhd:-unit=Grid/GridMain/AMR/Amrex:+serialio:-unit=IO/IOMain/hdf5/serial/AM:--index-reorder:Grid=Amrex
 Mode2:+uhd:+amrext
 Mode1:+uhd:--index-reorder
 

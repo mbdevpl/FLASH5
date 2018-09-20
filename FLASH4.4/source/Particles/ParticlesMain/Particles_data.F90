@@ -30,14 +30,17 @@
 !!***
 !*******************************************************************************
 
+#include "Flash.h"
 
 module Particles_data
+
+#ifdef FLASH_GRID_AMREX
  use amrex_particlecontainer_module, ONLY : amrex_particlecontainer
+#endif
 !===============================================================================
 
   implicit none
 
-#include "Flash.h"
 #include "constants.h"
 #include "Particles.h"
 #include "GridParticles.h"
@@ -47,8 +50,9 @@ module Particles_data
 !! It is allocated at runtime, as MAX_PARTICLES_PER_PROCESSOR is a runtime parameter = pt_maxPerProc
    real, save, allocatable, dimension(:,:), target :: particles
 !! Particle containers array to store the particles of each type.
+#ifdef FLASH_GRID_AMREX
    type(amrex_particlecontainer), save :: pt_containers(1:NPART_TYPES)
-
+#endif
 
   integer, save   :: pt_numLocal, pt_numLost
   logical, save   :: pt_keepLostParticles

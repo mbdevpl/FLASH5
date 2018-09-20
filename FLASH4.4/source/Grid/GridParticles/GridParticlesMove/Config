@@ -9,7 +9,7 @@ USESETUPVARS Grid
 IF Grid=='UG'
   REQUESTS Grid/GridParticles/GridParticlesMove/UG/Directional
 ELSEIF Grid == 'PM4DEV'
-  REQUESTS Grid/GridParticles/GridParticlesMove/paramesh
+  REQUESTS Grid/GridParticles/GridParticlesMove/Paramesh
   REQUESTS Grid/GridParticles/GridParticlesMove/Sieve
 ELSE
   REQUESTS Grid/GridParticles/GridParticlesMove/Amrex

@@ -9,9 +9,6 @@
 #                    positions -- not a mesh weighting, but true
 #                    interpolation
 
-REQUESTS Particles/ParticlesMain/Paramesh
-REQUESTS Particles/ParticlesInitialization/Paramesh
-
 DEFAULT Quadratic
 
 
