@@ -1,6 +1,4 @@
 #!/bin/bash
 cmd=`head -1 setup_call`
-bindir=`head -1 setup_call | cut -d' ' -f1`
-bindir=${bindir%/*}
-cd $bindir
+cd ../bin
 exec $cmd "$@"
