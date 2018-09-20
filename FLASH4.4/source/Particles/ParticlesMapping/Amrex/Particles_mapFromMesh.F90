@@ -88,7 +88,7 @@ subroutine Particles_mapFromMesh (mapType,numAttrib, attrib, pos, bndBox,&
   select case(mapType)
   case(QUADRATIC)
      call pt_mapFromMeshQuadratic(numAttrib, attrib, pos, bndBox,&
-          deltaCell, solnVec, partAttribVec)
+          deltaCell, blkLimits, solnVec, partAttribVec)
   case(WEIGHTED)
      call pt_mapFromMeshWeighted(numAttrib, attrib, pos, bndBox,&
           deltaCell,solnVec, partAttribVec)

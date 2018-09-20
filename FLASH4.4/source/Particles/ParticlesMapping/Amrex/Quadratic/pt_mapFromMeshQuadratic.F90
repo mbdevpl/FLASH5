@@ -1,4 +1,4 @@
-!!****if* source/Particles/ParticlesMapping/Quadratic/pt_mapFromMeshQuadratic
+!!****if* source/Particles/ParticlesMapping/Amrex/Quadratic/pt_mapFromMeshQuadratic
 !!
 !! NAME
 !!
@@ -11,6 +11,7 @@
 !!                           real, INTENT(in)    :: pos(MDIM),
 !!                           real, INTENT(in)    :: bndBox(2,MDIM),
 !!                           real, INTENT(in)    :: deltaCell(MDIM),
+!!                           int  , INTENT(in)    :: blkLimits(LOW:HIGH,MDIM),
 !!                           real, pointer       :: solnVec(:,:,:,:),
 !!                           real, INTENT(OUT)   :: partAttribVec(numAttrib))
 !!
@@ -51,6 +52,7 @@
 !!   pos       : The physical coordinates of the particle
 !!   bndBox    : the bounding box of the block containing the particle
 !!   deltaCell : the dx,dy,dz of the block
+!!   blkLimits : containes low and high index limits of the block (without GuardCells)
 !!   solnVec   : Pointer to the solution data block in which particle is found
 !!   partAttribVec  : calculated particle attribute values 
 !!
@@ -66,7 +68,7 @@
 !!REORDER(4):solnVec
 
 subroutine pt_mapFromMeshQuadratic (numAttrib, attrib, pos, bndBox,&
-     deltaCell,solnVec, partAttribVec)
+     deltaCell, blkLimits, solnVec, partAttribVec)
   
   use Particles_data, ONLY : pt_geometry, pt_str_geometry
   use Driver_interface, ONLY : Driver_abortFlash
@@ -81,6 +83,7 @@ subroutine pt_mapFromMeshQuadratic (numAttrib, attrib, pos, bndBox,&
   integer, dimension(2, numAttrib),intent(IN) :: attrib
   real,dimension(MDIM), INTENT(in)    :: pos,deltaCell
   real, dimension(LOW:HIGH,MDIM), intent(IN) :: bndBox
+  integer,dimension(LOW:HIGH, MDIM), INTENT(in)    :: blkLimits
   real, pointer       :: solnVec(:,:,:,:)
   real,dimension(numAttrib), intent(OUT) :: partAttribVec
 
@@ -115,8 +118,8 @@ subroutine pt_mapFromMeshQuadratic (numAttrib, attrib, pos, bndBox,&
 ! x-coord
   deltaCellInverseX = 1. / deltaCell(1)                ! inverse of deltaCell
   xp   = (x - coord(1)) * deltaCellInverseX     ! offset of particle from block edge
-  ip   = floor(xp) + 1 + NGUARD    ! actual cell index (including guards)
-  hx   = deltaCell(1) * (modulo(xp,1.) - 0.5)  ! remainder of something...??
+  ip   = floor(xp) + blkLimits(LOW,IAXIS)    ! actual cell index (including guards)
+  hx   = deltaCell(1) * (modulo(xp,1.) - 0.5)  ! distance of particle from the center of the cell it lies in
 
 
 #ifdef DEBUG_GRIDPARTICLES
@@ -134,7 +137,7 @@ subroutine pt_mapFromMeshQuadratic (numAttrib, attrib, pos, bndBox,&
   if (NDIM >= 2) then
     deltaCellInverseY = 1. / deltaCell(2)
     yp   = (y - coord(2)) * deltaCellInverseY
-    jp   = floor(yp) + 1 + NGUARD
+    jp   = floor(yp) + blkLimits(LOW,JAXIS)
     hy   = deltaCell(2) * (modulo(yp,1.) - 0.5)
   else
     jp = 1
@@ -157,7 +160,7 @@ subroutine pt_mapFromMeshQuadratic (numAttrib, attrib, pos, bndBox,&
   if (NDIM == 3) then
     deltaCellInverseZ = 1. / deltaCell(3)
     zp   = (z - coord(3)) * deltaCellInverseZ
-    kp   = floor(zp) + 1 + NGUARD
+    kp   = floor(zp) + blkLimits(LOW,KAXIS)
     hz   = deltaCell(3) * (modulo(zp,1.) - 0.5)
   else
     kp = 1
