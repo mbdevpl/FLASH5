@@ -95,16 +95,15 @@ subroutine Grid_mapMeshToParticles_pc (ptContainerPos, part_props,part_blkID,&
         tile_index = 0 ! Set 0 beccause no tiling in flash now. Should come from block%tile_index if tiling=.true.
         particles => pt_containers(ptContainerPos)%get_particles(block%level-1,block%grid_index, tile_index)
         numParticlesOnBlock = size(particles)
-        print*, "size of particles on this block = ", numParticlesOnBlock
             if(numParticlesOnBlock>0) then
+                call Grid_getBlkBoundBox(block,bndBox)
+                call Grid_getDeltas(block%level,delta)
                 do i = 1, numParticlesOnBlock
-                    call Grid_getBlkBoundBox(block,bndBox)
-                    call Grid_getDeltas(block%level,delta)
                     do j = 1,NDIM
                         pos(j) = particles(i)%pos(j)
                     end do
                     call Particles_mapFromMesh (mapType, numAttrib, attrib,&
-                    pos, bndBox,delta,solnData, partAttribVec)
+                    pos, bndBox,delta, block%limits, solnData, partAttribVec)
 !                   Assign values to particles(i)%vel from output partAttribVec
 !                   Assuming that velocities are in partAttribVec are in indices 1 to 3
 !                   To change this, keep the old particle array and then 1) assign partAttribVec(j)

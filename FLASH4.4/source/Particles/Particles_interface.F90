@@ -110,12 +110,13 @@ Module Particles_interface
 
   interface
      subroutine Particles_mapFromMesh (mapType,numAttrib, attrib, pos, bndBox,&
-          deltaCell,solnVec,  partAttribVec)
+          deltaCell,blkLimits, solnVec,  partAttribVec)
        
        integer, INTENT(in) :: mapType,numAttrib
        integer, dimension(2, numAttrib),intent(IN) :: attrib
        real,dimension(MDIM), INTENT(in)    :: pos,deltaCell
        real, dimension(LOW:HIGH,MDIM), intent(IN) :: bndBox
+       integer,dimension(LOW:HIGH, MDIM), INTENT(in)    :: blkLimits
        real, pointer       :: solnVec(:,:,:,:)
        real,dimension(numAttrib), intent(OUT) :: partAttribVec
        

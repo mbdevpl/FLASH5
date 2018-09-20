@@ -92,6 +92,7 @@ subroutine pt_initPositionsLattice_desc (block,success)
   !!DevNote Hard set tile index =0 for no tiling. This should come from block%a_new_field_for_tile_index
   tile_index=0
   print*,"level, grid_index, tile_index: ",level_amrex,grd_index,tile_index
+  print*,"blklimits", block%limits
   
   ! Get grid geometry for this block 
 
