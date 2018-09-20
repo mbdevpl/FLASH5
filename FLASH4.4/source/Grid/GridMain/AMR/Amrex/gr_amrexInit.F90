@@ -20,7 +20,6 @@ subroutine gr_amrexInit()
                                           amrex_init_virtual_functions, &
                                           amrex_max_level, &
                                           amrex_ref_ratio
-  use amrex_octree_module,         ONLY : amrex_octree_init
   use amrex_parmparse_module,      ONLY : amrex_parmparse, &
                                           amrex_parmparse_build, &
                                           amrex_parmparse_destroy
@@ -147,6 +146,7 @@ subroutine gr_amrexInit()
   call pp_amr%add   ("blocking_factor_y", 2*NYB)
   call pp_amr%add   ("blocking_factor_z", 2*NZB)
   call pp_amr%add   ("refine_grid_layout", 0)
+  call pp_amr%add   ("grid_eff",  1.0)
  
   ! According to Weiqun n_proper=1 is an appropriate setting that will result in
   ! correct nesting.
@@ -161,7 +161,6 @@ subroutine gr_amrexInit()
   call amrex_parmparse_destroy(pp_amr)
 #endif
 
-  call amrex_octree_init()
   call amrex_amrcore_init()
  
   !!!!!----- REGISTER REFINE CALLBACKS WITH AMReX

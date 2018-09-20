@@ -47,19 +47,18 @@
 
 subroutine bn_burner(tstep,temp,density,xIn,xOut,sdotRate,burnedZone,kstep)
 
-  use Burn_dataEOS, ONLY : btemp, bden=>den, bye=>ye
+  use Burn_dataEOS, ONLY : btemp, bden, bye
   use Burn_data, ONLY : xmass, bion, sneut, aion, aioninv
 
   use bn_interface, ONLY : bn_azbar, bn_sneutx
 
-  use abundances, ONLY : y, ystart
-  use conditions, ONLY : tdel, t, t9, rho, ye
-  use controls, ONLY : szbatch, nzbatch, lzactive
-  use thermo_data, ONLY : tstart, tstop, tdelstart, t9start, rhostart, &
-    yestart, th, t9h, rhoh, yeh, nh
-  use timers, ONLY : timer_burner, xnet_wtime
+  use xnet_abundances, ONLY : y, ystart
+  use xnet_conditions, ONLY : tdel, t, t9, rho, ye, tstart, tstop, tdelstart, &
+    t9start, rhostart, yestart, th, t9h, rhoh, yeh, nh
   use xnet_constants, ONLY : avn, epmev
-  use xnet_interface, ONLY : full_net
+  use xnet_controls, ONLY : szbatch, nzbatch, lzactive
+  use xnet_evolve, ONLY : full_net
+  use xnet_timers, ONLY : timer_burner, xnet_wtime
 
   implicit none
 

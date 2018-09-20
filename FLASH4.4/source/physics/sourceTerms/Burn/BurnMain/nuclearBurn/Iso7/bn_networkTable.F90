@@ -21,7 +21,7 @@ subroutine bn_networkTable
 
   use bnNetwork_interface, ONLY: bn_networkRates
 
-  use Burn_dataEOS, ONLY:  btemp, den
+  use Burn_dataEOS, ONLY:  btemp, bden
   use Burn_data
   use bn_dataIso7
 
@@ -55,10 +55,10 @@ subroutine bn_networkTable
 
      !..save the input
      btemp_sav = btemp
-     den_sav   = den
+     den_sav   = bden
 
      !..form the table
-     den = 1.0e0
+     bden = 1.0e0
      do i=1,imax
         btemp = tlo + float(i-1)*tstp
         btemp = 10.0e0**(btemp)
@@ -70,27 +70,27 @@ subroutine bn_networkTable
      enddo
 
      !..restore the input
-     den  = den_sav
+     bden  = den_sav
      btemp = btemp_sav
   end if
 
 
   !..normal execution starts here
   !..set the density dependence vector
-  dtab(ircag)  = den 
+  dtab(ircag)  = bden
   dtab(iroga)  = 1.0e0
-  dtab(ir3a)   = den*den
+  dtab(ir3a)   = bden*bden
   dtab(irg3a)  = 1.0e0
-  dtab(ir1212) = den 
-  dtab(ir1216) = den 
-  dtab(ir1616) = den 
-  dtab(iroag)  = den
+  dtab(ir1212) = bden
+  dtab(ir1216) = bden
+  dtab(ir1616) = bden
+  dtab(iroag)  = bden
   dtab(irnega) = 1.0e0
-  dtab(irneag) = den 
+  dtab(irneag) = bden
   dtab(irmgga) = 1.0e0
-  dtab(irmgag) = den 
+  dtab(irmgag) = bden
   dtab(irsiga) = 1.0e0
-  dtab(ircaag) = den
+  dtab(ircaag) = bden
   dtab(irtiga) = 1.0e0
 
 

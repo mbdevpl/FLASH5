@@ -12,11 +12,13 @@
 # Set the HDF5 library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
 
+LC_PE_ENV = $(shell echo ${PE_ENV} | tr A-Z a-z)
+
 MPI_PATH   =
 PAPI_PATH  = 
 PAPI_FLAGS = 
 NCMPI_PATH = 
-AMREX_PATH = ${AMREX_DIR}
+AMREX_PATH = ${AMREX_DIR}/titan_${NDIM}d_${LC_PE_ENV}
 
 #----------------------------------------------------------------------------
 # Compiler and linker commands

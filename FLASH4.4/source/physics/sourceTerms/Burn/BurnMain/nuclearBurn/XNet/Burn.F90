@@ -7,9 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!   call Burn ( integer, intent(IN)    :: blockCount, 
-!!               integer(:), intent(IN) :: blockList, 
-!!               real, intent(IN)       ::  dt  )    
+!!   call Burn ( real, intent(IN) ::  dt  )
 !!
 !! DESCRIPTION
 !!
@@ -17,9 +15,7 @@
 !!
 !! ARGUMENTS
 !!
-!!   blockCount -- dimension of blockList
-!!   blockList -- array of blocks which should receive burning
-!!   dt  --       passed to the internal bn_burner module  
+!!   dt  --       passed to the internal bn_burner module
 !!
 !! PARAMETERS
 !!
@@ -39,11 +35,11 @@
 !!                where burning can occur.
 !!  nuclearNI56Max -- Real, 1.0.  Maximum mass fraction of nickel where burning
 !!                can occur.
-!!  enucDtFactor -- Real, 1.0E+30.  Timestep limiter.See Burn_computeDt for details.              
+!!  enucDtFactor -- Real, 1.0E+30.  Timestep limiter.See Burn_computeDt for details.
 !!
 !! NOTES
 !!
-!!  The burning unit adds a new mesh variable ENUC_VAR which is the nuclear energy 
+!!  The burning unit adds a new mesh variable ENUC_VAR which is the nuclear energy
 !!             generation rate
 !!
 !!***
@@ -52,9 +48,9 @@
 
 #include "Flash.h"
 
-subroutine Burn (  dt  )    
+subroutine Burn (  dt  )
 
-  use bn_interface, ONLY : bn_burner   
+  use bn_interface, ONLY : bn_burner
   use bn_xnetData, ONLY : xnet_myid, xnet_nzbatchmx, xnet_inuc2unk
   use Burn_data, ONLY : bn_nuclearTempMin, bn_nuclearTempMax, bn_nuclearDensMin, &
        &   bn_nuclearDensMax, bn_nuclearNI56Max, bn_useShockBurn, &
@@ -73,6 +69,10 @@ subroutine Burn (  dt  )
   use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
+#ifdef FLASH_GRID_PARAMESH
+  use tree, ONLY : bflags
+#endif
+
   !$ use omp_lib
 
   implicit none
@@ -82,7 +82,7 @@ subroutine Burn (  dt  )
 #include "Eos.h"
 
   !args
-  real,    intent(in) :: dt
+  real, intent(in) :: dt
 
   ! locals
   integer :: blockID, thisBlock, blockCount
@@ -189,9 +189,9 @@ subroutine Burn (  dt  )
         jSize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1
         kSize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1
 
-        !allocate(shock(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
-        !               blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
-        !               blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS))
+        allocate(shock(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
+                       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
+                       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 
         ! identify the range of batches in each block (use floor/ceil in case of overlap)
         batch_lo(thisBlock) = nzones / xnet_nzbatchmx + 1
@@ -207,16 +207,16 @@ subroutine Burn (  dt  )
         call Grid_getCellCoords(JAXIS,blockDesc,CENTER,getGuardCells,yCoord,jSizeGC)
         call Grid_getCellCoords(KAXIS,blockDesc,CENTER,getGuardCells,zCoord,kSizeGC)
 
-        ! Get a pointer to solution data 
+        ! Get a pointer to solution data
         call Grid_getBlkPtr(blockDesc, solnData)
 
-        ! Shock detector (post-poning AMREx implementation)
-        !if (.NOT. bn_useShockBurn) then
-        !   call Hydro_detectShock(solnData, shock, blkLimits, blkLimitsGC, (/0,0,0/), &
-        !      xCoord,yCoord,zCoord)
-        !else
-        !   shock(:,:,:) = 0
-        !endif
+        ! Shock detector
+        if (.NOT. bn_useShockBurn) then
+           call Hydro_detectShock(solnData, shock, blkLimits, blkLimitsGC, (/0,0,0/), &
+              xCoord,yCoord,zCoord)
+        else
+           shock(:,:,:) = 0
+        endif
 
         solnData(NMPI_VAR,:,:,:) = xnet_myid
 
@@ -245,7 +245,7 @@ subroutine Burn (  dt  )
 
                  okBurnTemp = (tmp(ii,jj,kk,thisBlock) >= bn_nuclearTempMin .AND. tmp(ii,jj,kk,thisBlock) <= bn_nuclearTempMax)
                  okBurnDens = (rho(ii,jj,kk,thisBlock) >= bn_nuclearDensMin .AND. rho(ii,jj,kk,thisBlock) <= bn_nuclearDensMax)
-                 !okBurnShock = (shock(i,j,k) == 0.0 .OR. (shock(i,j,k) == 1.0 .AND. bn_useShockBurn))
+                 okBurnShock = (shock(i,j,k) == 0.0 .OR. (shock(i,j,k) == 1.0 .AND. bn_useShockBurn))
                  okBurnShock = .TRUE.
 
                  if (okBurnTemp .AND. okBurnDens .AND. okBurnShock) then
@@ -273,7 +273,7 @@ subroutine Burn (  dt  )
         deallocate(xCoord)
         deallocate(yCoord)
         deallocate(zCoord)
-        !deallocate(shock)
+        deallocate(shock)
 
         call itor%next()
 
@@ -331,7 +331,7 @@ subroutine Burn (  dt  )
         ! get dimensions/limits and coordinates
         blkLimits = blockDesc%limits
 
-        ! Get a pointer to solution data 
+        ! Get a pointer to solution data
         call Grid_getBlkPtr(blockDesc,solnData)
 
         ! Now put updated local data arrays back into unk through solnData pointer
@@ -373,24 +373,22 @@ subroutine Burn (  dt  )
            end do
         end do
         !$omp end parallel do
-   
+
 #ifdef FLASH_GRID_PARAMESH
         bflags(1,blockID) = sumBurn_TS(thisBlock)
 #endif
         solnData(MTSB_VAR,:,:,:) = sumBurn_TS(thisBlock)
 
         ! we've altered the EI, let's equilabrate
-        call Timers_start("eos")
         if (any(burnedZone(:,:,:,thisBlock))) then
 
 #ifdef FLASH_UHD_3T
            call Eos_wrapped(MODE_DENS_EI_GATHER,blkLimits,solnData,CENTER) ! modified for 3T
-#else 
+#else
            call Eos_wrapped(MODE_DENS_EI,blkLimits,solnData,CENTER)
 #endif
 
         end if
-        call Timers_stop("eos")
 
         call Grid_releaseBlkPtr(blockDesc,solnData)
         nullify(solnData)
