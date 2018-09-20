@@ -61,7 +61,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use amrex_multifab_module,     ONLY : amrex_multifab_build
     use amrex_fluxregister_module, ONLY : amrex_fluxregister_build
     use amrex_fillpatch_module,    ONLY : amrex_fillpatch
-    use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
     use gr_physicalMultifabs,      ONLY : unk, &
                                           gr_scratchCtr, &
@@ -80,6 +79,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           gr_releaseBlkIterator
     use Grid_data,                 ONLY : gr_eosModeInit, &
                                           gr_doFluxCorrection, &
+                                          gr_interpolator, &
                                           lo_bc_amrex, hi_bc_amrex
     use Eos_interface,             ONLY : Eos_wrapped
     use Logfile_interface,         ONLY : Logfile_stamp
@@ -225,7 +225,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                       time, &
                                       UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
                                       amrex_ref_ratio(lev-1), &
-                                      amrex_interp_cell_cons, &
+                                      gr_interpolator, &
                                       lo_bc_amrex, hi_bc_amrex, &
                                       gr_preinterpolationWork, &
                                       gr_postinterpolationWork)

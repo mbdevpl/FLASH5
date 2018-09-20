@@ -25,6 +25,12 @@ Module bnNetwork_interface
      end subroutine bn_initNetwork
   end interface
 
+  interface
+     subroutine bn_finalizeNetwork
+       implicit none
+     end subroutine bn_finalizeNetwork
+  end interface
+
   interface 
      subroutine bn_networkRates
        implicit none

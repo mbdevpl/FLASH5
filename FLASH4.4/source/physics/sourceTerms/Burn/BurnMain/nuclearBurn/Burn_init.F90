@@ -47,6 +47,7 @@
 
 subroutine Burn_init()
 
+  use bnNetwork_interface, ONLY : bn_initNetwork
   use Burn_data, ONLY: bn_algebra, bn_odeStepper, bn_useBurnTable, bn_useBurn, bn_meshMe, &
      &    bn_useShockBurn, bn_smallx, &
      &    bn_nuclearTempMin, bn_nuclearTempMax, bn_nuclearDensMin, bn_nuclearDensMax, &

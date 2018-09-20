@@ -1,178 +1,334 @@
 !***************************************************************************************************
-! util.f90 10/18/17
+! xnet_util.f90 10/18/17
 ! This file contains various utility routines that are common throughout XNet.
 !***************************************************************************************************
 
-Subroutine benuc(y,enb,enm,ytot,ztot,atot)
+Module xnet_util
   !-------------------------------------------------------------------------------------------------
-  ! This routine finds moments of the abundance distribution useful for hydrodynamics, including the
-  ! total abundance, electron fraction, binding energy, and mass excess energy and outputs in mol/g
-  ! and ergs/g.
+  ! This module contains the data and routines for an assortment of (mostly independent) utility
+  ! routines.
   !-------------------------------------------------------------------------------------------------
-  Use xnet_constants, Only: epmev, avn
-  Use nuclear_data, Only: zz, nn, aa, be, mex_p, mex_n
-  Use xnet_types, Only: dp
   Implicit None
 
-  ! Input variables
-  Real(dp), Intent(in) :: y(:)
+  Interface readnext
+    Module Procedure readnext_i
+    Module Procedure readnext_r
+    Module Procedure readnext_d
+  End Interface readnext
 
-  ! Output variables
-  Real(dp), Intent(out) :: enb ! Binding energy [ergs g^{-1}]
-  Real(dp), Intent(out) :: enm ! Mass excess [ergs g^{-1}]
-  Real(dp), Intent(out) :: ytot, ztot, atot ! Abundance moments
+Contains
 
-  ytot = sum(y)
-  ztot = sum(y * zz)
-  atot = sum(y * aa)
-  enb  = sum(y * be)
-  enm  = mex_p*ztot + mex_n*(1.0-ztot) - enb
+  Integer Function ifactorial(n)
+    !-----------------------------------------------------------------------------------------------
+    ! This function computes factorials.
+    !-----------------------------------------------------------------------------------------------
+    Implicit None
 
-  ! Change units from MeV/nucleon to erg/g
-  enb = epmev * avn * enb
-  enm = epmev * avn * enm
+    ! Input variables
+    Integer, Intent(in) :: n
 
-  Return
-End Subroutine benuc
+    ! Local variable
+    Integer :: i
 
-Subroutine norm(yy)
-  !-------------------------------------------------------------------------------------------------
-  ! This routine renormalizes the abundances to guarantee mass conservation.
-  !-------------------------------------------------------------------------------------------------
-  Use nuclear_data, Only: aa
-  Use xnet_types, Only: dp
-  Implicit None
-
-  ! Input/Output variables
-  Real(dp), Intent(inout) :: yy(:)
-
-  ! Local variables
-  Real(dp) :: xtot, rxt
-
-  ! Renormalize total mass fraction to 1
-  xtot = sum(yy * aa)
-  rxt  = 1.0 / xtot
-  yy   = yy * rxt
-
-  Return
-End Subroutine norm
-
-Subroutine ye_norm(yy,ye)
-  !-------------------------------------------------------------------------------------------------
-  ! This routine renormalizes the abundances to guarantee mass and charge conservation.
-  !-------------------------------------------------------------------------------------------------
-  Use nuclear_data, Only: zz, nn, aa
-  Use xnet_types, Only: dp
-  Implicit None
-
-  ! Input variables
-  Real(dp), Intent(in) :: ye
-
-  ! Input/Output variables
-  Real(dp), Intent(inout) :: yy(:)
-
-  ! Local variables
-  Real(dp) :: zy, nny, zny, zzy, beta, alph
-
-  ! Calculate moments needed to calculate normalization coefficients
-  nny  = sum(nn * yy)
-  zy   = sum(zz * yy)
-  zny  = sum(nn * zz * yy / aa)
-  zzy  = sum(zz * zz * yy / aa)
-  beta = (ye*nny - zny) / (nny*zzy - zy*zny)
-  alph = (1.0 - beta*zy) / nny
-  yy   = yy * (alph*nn + beta*zz) / aa
-
-  Return
-End Subroutine ye_norm
-
-Subroutine index_from_name(nuc_name,inuc)
-  !-------------------------------------------------------------------------------------------------
-  ! This routine takes a nuclear name and finds the corresponding index for the current data set.
-  ! inuc = 0      indicates a blank name.
-  ! inuc = ny + 1 indicates that the nuclear name is not found in the current set.
-  !-------------------------------------------------------------------------------------------------
-  Use nuc_number, Only: ny
-  Use nuclear_data, Only: nname
-  Implicit None
-
-  ! Input variables
-  Character(*), Intent(in) :: nuc_name
-
-  ! Output variables
-  Integer, Intent(out) :: inuc
-
-  ! Local variables
-  Integer :: i, name_len
-
-  name_len = len_trim(nuc_name)
-  If ( name_len > 0 ) then
-    Do i = 1, ny
-      If ( trim(adjustl(nuc_name)) == trim(adjustl(nname(i))) ) Exit
+    ! Compute factorial of n
+    ifactorial = 1
+    Do i = 1, n
+      ifactorial = ifactorial*i
     EndDo
-    inuc = i
-  Else
-    inuc = 0
-  EndIf
 
-  Return
-End Subroutine index_from_name
+    Return
+  End Function ifactorial
 
-Subroutine name_ordered(base_string,n,nmax)
-  !-------------------------------------------------------------------------------------------------
-  ! This routine appends the integer n (padded with "0"s up to the size of the integer nmax) to the
-  ! character variable base_string.
-  !-------------------------------------------------------------------------------------------------
-  Implicit None
+  Integer Function getNewUnit(unit)
+    !-----------------------------------------------------------------------------------------------
+    ! Get a free unit number within range 7-999.
+    !-----------------------------------------------------------------------------------------------
+    Implicit None
+    Integer, Intent(out), Optional :: unit
+    Logical :: connected
+    Integer :: number
+    getNewUnit = 0
+    Do number = 7,999
+      Inquire(unit=number, opened=connected)
+      If ( .not. connected ) Then
+        getNewUnit = number
+        Exit
+      EndIf
+    EndDo
+    If ( present(unit) ) unit = getNewUnit
+    Return
+  End Function getNewUnit
 
-  ! Input variables
-  Integer, Intent(in) :: n, nmax
+  Subroutine replace_tabs(string)
+    !-----------------------------------------------------------------------------------------------
+    ! Replace all tabs in a string with spaces
+    !-----------------------------------------------------------------------------------------------
+    Implicit None
 
-  ! Input/Output variables
-  Character(*), Intent(inout) :: base_string
+    ! Input/Output variables
+    Character(*), Intent(inout) :: string
 
-  ! Local variables
-  Integer :: nmax_digits
-  Character(1) :: nmax_digits_string
-  Character(6) :: n_format
-  Character(9) :: n_string
+    ! Local variables
+    Integer, Parameter :: iachar_tab = 9
+    Integer :: i, iachar_buffer
 
-  ! Find character length of imax
-  Write(nmax_digits_string,"(i1)") int(log10(real(nmax))) + 1
+    Do i = 1, len_trim(string)
+      iachar_buffer = iachar(string(i:i))
+      If ( iachar_buffer == iachar_tab ) string(i:i) = ' '
+    EndDo
 
-  ! Construct format spec and write n as zero padded string
-  n_format = "(i"//nmax_digits_string//"."//nmax_digits_string//")"
-  Write(n_string,n_format) n
+    Return
+  End Subroutine replace_tabs
 
-  ! Append n_string to base_string
-  base_string = trim(base_string)//trim(n_string)
+  Subroutine readnext_i(string, pos, xx)
+    !-----------------------------------------------------------------------------------------------
+    ! Given a starting position in a string, skip any whitespace and read the next number as a int.
+    ! Return the value (zero if non-existant) and the new position in the string.
+    !-----------------------------------------------------------------------------------------------
+    Implicit None
+    Character(*), Intent(in) :: string
+    Integer, Intent(inout) :: pos
+    Integer, Intent(out) :: xx
 
-  Return
-End Subroutine name_ordered
+    Integer :: i1, i2
 
-Subroutine string_lc(string)
-  !-------------------------------------------------------------------------------------------------
-  ! This routine converts an ASCII string to all lower case.
-  !-------------------------------------------------------------------------------------------------
-  Implicit None
+    i2 = len_trim(string)
 
-  ! Input/Output variables
-  Character(*), Intent(inout) :: string
-
-  ! Local variables
-  Integer, Parameter :: lc_a_ascii=iachar('a')
-  Integer, Parameter :: uc_a_ascii=iachar('A')
-  Integer, Parameter :: lc_z_ascii=iachar('z')
-  Integer, Parameter :: uc_z_ascii=iachar('Z')
-  Integer :: i, x
-
-  Do i = 1, len_trim(string)
-    x = iachar(string(i:i))
-    If ( x >= uc_a_ascii .and. x <= uc_z_ascii ) Then
-      x = x + (lc_a_ascii - uc_a_ascii)
-      string(i:i) = achar(x)
+    ! initial values
+    If ( pos > i2 ) Then
+      pos = 0
+      xx = 0
+      Return
     EndIf
-  EndDo
 
-  Return
-End Subroutine string_lc
+    ! skip blanks
+    i1 = pos
+    Do
+      If ( string(i1:i1) /= ' ' ) Exit
+      i1 = i1 + 1
+    EndDo
+
+    ! read real value and set pos
+    Read(string(i1:i2), *) xx
+    pos = scan(string(i1:i2), ' ')
+    If ( pos == 0 ) Then
+      pos = i2 + 1
+    Else
+      pos = pos + i1 - 1
+    EndIf
+
+    Return
+  End Subroutine readnext_i
+
+  Subroutine readnext_r(string, pos, xx)
+    !-----------------------------------------------------------------------------------------------
+    ! Given a starting position in a string, skip any whitespace and read the next number as a real.
+    ! Return the value (zero if non-existant) and the new position in the string.
+    !-----------------------------------------------------------------------------------------------
+    Use xnet_types, Only: sp
+    Implicit None
+    Character(*), Intent(in) :: string
+    Integer, Intent(inout) :: pos
+    Real(sp), Intent(out) :: xx
+
+    Integer :: i1, i2
+
+    i2 = len_trim(string)
+
+    ! initial values
+    If ( pos < 1 .or. pos > i2 ) Then
+      pos = 0
+      xx = 0.0
+      Return
+    EndIf
+
+    ! skip blanks
+    i1 = pos
+    Do
+      If ( string(i1:i1) /= ' ' ) Exit
+      i1 = i1 + 1
+    EndDo
+
+    ! read real value and set pos
+    Read(string(i1:i2), *) xx
+    pos = scan(string(i1:i2), ' ')
+    If ( pos == 0 ) Then
+      pos = i2 + 1
+    Else
+      pos = pos + i1 - 1
+    EndIf
+
+    Return
+  End Subroutine readnext_r
+
+  Subroutine readnext_d(string, pos, xx)
+    !-----------------------------------------------------------------------------------------------
+    ! Given a starting position in a string, skip any whitespace and read the next number as a dbl.
+    ! Return the value (zero if non-existant) and the new position in the string.
+    !-----------------------------------------------------------------------------------------------
+    Use xnet_types, Only: dp
+    Implicit None
+    Character(*), Intent(in) :: string
+    Integer, Intent(inout) :: pos
+    Real(dp), Intent(out) :: xx
+
+    Integer :: i1, i2
+
+    i2 = len_trim(string)
+
+    ! initial values
+    If ( pos > i2 ) Then
+      pos = 0
+      xx = 0.0
+      Return
+    EndIf
+
+    ! skip blanks
+    i1 = pos
+    Do
+      If ( string(i1:i1) /= ' ' ) Exit
+      i1 = i1 + 1
+    EndDo
+
+    ! read real value and set pos
+    Read(string(i1:i2), *) xx
+    pos = scan(string(i1:i2), ' ')
+    If ( pos == 0 ) Then
+      pos = i2 + 1
+    Else
+      pos = pos + i1 - 1
+    EndIf
+
+    Return
+  End Subroutine readnext_d
+
+  Subroutine norm(yy,aa)
+    !-----------------------------------------------------------------------------------------------
+    ! This routine renormalizes the abundances to guarantee mass conservation.
+    !-----------------------------------------------------------------------------------------------
+    Use xnet_types, Only: dp
+    Implicit None
+
+    ! Input variables
+    Real(dp), Intent(in) :: aa(:)
+
+    ! Input/Output variables
+    Real(dp), Intent(inout) :: yy(:)
+
+    ! Local variables
+    Real(dp) :: xtot, rxt
+
+    ! Renormalize total mass fraction to 1
+    xtot = sum(yy * aa)
+    rxt  = 1.0 / xtot
+    yy   = yy * rxt
+
+    Return
+  End Subroutine norm
+
+  Subroutine ye_norm(yy,ye,zz,nn,aa)
+    !-----------------------------------------------------------------------------------------------
+    ! This routine renormalizes the abundances to guarantee mass and charge conservation.
+    !-----------------------------------------------------------------------------------------------
+    Use xnet_types, Only: dp
+    Implicit None
+
+    ! Input variables
+    Real(dp), Intent(in) :: ye
+    Real(dp), Intent(in) :: zz(:)
+    Real(dp), Intent(in) :: nn(:)
+    Real(dp), Intent(in) :: aa(:)
+
+    ! Input/Output variables
+    Real(dp), Intent(inout) :: yy(:)
+
+    ! Local variables
+    Real(dp) :: zy, nny, zny, zzy, beta, alph
+
+    ! Calculate moments needed to calculate normalization coefficients
+    nny  = sum(nn * yy)
+    zy   = sum(zz * yy)
+    zny  = sum(nn * zz * yy / aa)
+    zzy  = sum(zz * zz * yy / aa)
+    beta = (ye*nny - zny) / (nny*zzy - zy*zny)
+    alph = (1.0 - beta*zy) / nny
+    yy   = yy * (alph*nn + beta*zz) / aa
+
+    Return
+  End Subroutine ye_norm
+
+  Subroutine name_ordered(base_string,n,nmax)
+    !-----------------------------------------------------------------------------------------------
+    ! This routine appends the integer n (padded with "0"s up to the size of the integer nmax) to
+    ! the character variable base_string.
+    !-----------------------------------------------------------------------------------------------
+    Implicit None
+
+    ! Input variables
+    Integer, Intent(in) :: n, nmax
+
+    ! Input/Output variables
+    Character(*), Intent(inout) :: base_string
+
+    ! Local variables
+    Character(1) :: nmax_digits_string
+    Character(6) :: n_format
+    Character(9) :: n_string
+
+    ! Find character length of imax
+    Write(nmax_digits_string,"(i1)") int(log10(real(nmax))) + 1
+
+    ! Construct format spec and write n as zero padded string
+    n_format = "(i"//nmax_digits_string//"."//nmax_digits_string//")"
+    Write(n_string,n_format) n
+
+    ! Append n_string to base_string
+    base_string = trim(base_string)//trim(n_string)
+
+    Return
+  End Subroutine name_ordered
+
+  Subroutine string_lc(string)
+    !-----------------------------------------------------------------------------------------------
+    ! This routine converts an ASCII string to all lower case.
+    !-----------------------------------------------------------------------------------------------
+    Implicit None
+
+    ! Input/Output variables
+    Character(*), Intent(inout) :: string
+
+    ! Local variables
+    Integer, Parameter :: lc_a_ascii=iachar('a')
+    Integer, Parameter :: uc_a_ascii=iachar('A')
+    Integer, Parameter :: uc_z_ascii=iachar('Z')
+    Integer :: i, x
+
+    Do i = 1, len_trim(string)
+      x = iachar(string(i:i))
+      If ( x >= uc_a_ascii .and. x <= uc_z_ascii ) Then
+        x = x + (lc_a_ascii - uc_a_ascii)
+        string(i:i) = achar(x)
+      EndIf
+    EndDo
+
+    Return
+  End Subroutine string_lc
+
+  Subroutine xnet_terminate(c_diagnostic,i_diagnostic)
+    !-----------------------------------------------------------------------------------------------
+    ! This routine gracefully exits XNet with a diagnostic statement in the event of an error.
+    !-----------------------------------------------------------------------------------------------
+    Use Driver_interface, Only: Driver_abortFlash
+    Implicit None
+
+    ! Input variables
+    Character(*), Intent(in) :: c_diagnostic
+    Integer, Intent(in), Optional :: i_diagnostic
+
+    ! Print the diagnostic statement
+    Call Driver_abortFlash(c_diagnostic)
+
+    Return
+  End Subroutine xnet_terminate
+
+End Module xnet_util

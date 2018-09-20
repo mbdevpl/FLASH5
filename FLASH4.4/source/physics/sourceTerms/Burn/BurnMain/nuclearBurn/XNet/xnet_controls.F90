@@ -1,9 +1,9 @@
 !***************************************************************************************************
-! control.f90 10/18/17
+! xnet_controls.f90 10/18/17
 ! This file contains modules and subroutines to control the execution of XNet.
 !***************************************************************************************************
 
-Module controls
+Module xnet_controls
   !-------------------------------------------------------------------------------------------------
   ! This module contains the values of the flags and limits which control the behavior of the
   ! network. Generally read from the control file.
@@ -29,7 +29,7 @@ Module controls
   !$omp threadprivate(zone_id,iweak)
 
   ! Zone Batching Controls
-  Integer  :: nzbatchmx = 1           ! Maximum number of zones in a batch
+  Integer  :: nzbatchmx               ! Maximum number of zones in a batch
   Integer  :: nzbatch                 ! Active number of zones in a batch
   Integer  :: szbatch                 ! Starting zone for a batch
   Logical, Allocatable, Target :: lzactive(:) ! Mask for active zones
@@ -64,9 +64,10 @@ Module controls
   Integer  :: ineutrino    ! If >0, the include neutrino capture reactions
 
   ! Output controls
-  Integer, Parameter :: nnucout = 14           ! Number of species to be output in condensed form
-  Integer       :: inucout(nnucout)            ! List of species to output in condensed form
-  Character(5)  :: output_nuc(nnucout)         ! Names of nuclei to be output in condensed form
+  Integer                   :: nnucout         ! Number of species to be output in condensed form
+  Character(4)              :: nnucout_string  ! For output formatting
+  Integer, Allocatable      :: inucout(:)      ! List of species to output in condensed form
+  Character(5), Allocatable :: output_nuc(:)   ! Names of nuclei to be output in condensed form
   Integer       :: idiag                       ! Sets level of diagnostic output
   Integer       :: itsout                      ! Sets level of time series output
   Character(80) :: ev_file_base, bin_file_base ! Output filename bases
@@ -86,24 +87,6 @@ Module controls
   !$omp threadprivate(mythread)
 
 Contains
-
-  integer function getNewUnit(unit)
-    !   ...Get a free unit number within range 7-999.
-    implicit none
-    integer, intent(out), optional :: unit
-    logical :: connected
-    integer :: number
-    getNewUnit = 0
-    do number = 7,999
-      inquire (UNIT = number, OPENED = connected)
-      if (.not.connected) then
-        getNewUnit = number
-        exit
-      end if
-    end do
-    if (present(unit)) unit = getNewUnit
-    return
-  end function getNewUnit
 
   Subroutine find_controls_block(lun_control,block_string,ifcb)
     !-----------------------------------------------------------------------------------------------
@@ -167,7 +150,8 @@ Contains
     ! The control file contains the parameters which determine the actions of XNet.
     !-----------------------------------------------------------------------------------------------
     Use, Intrinsic :: iso_fortran_env, Only: iostat_end
-    Use xnet_interface, Only: name_ordered
+    Use xnet_parallel, Only: parallel_bcast, parallel_IOProcessor
+    Use xnet_util, Only: name_ordered, xnet_terminate
     Implicit None
 
     ! Output variables
@@ -176,78 +160,119 @@ Contains
     ! Local variables
     Integer :: lun_control, i, ierr, izone, nzone_read
 
-    Open(getNewUnit(lun_control), file='control', status='old')
-
     ! Read Problem Description
-    Call find_controls_block(lun_control,'Problem Description',ierr)
-    Read(lun_control,"(a80)") (descript(i), i=1,3) ! text description of the problem.
+    If ( parallel_IOProcessor() ) Then
+      Open(newunit=lun_control, file='control', status='old')
+      Call find_controls_block(lun_control,'Problem Description',ierr)
+      Read(lun_control,"(a80)") (descript(i), i=1,3) ! text description of the problem.
+    EndIf
+    Call parallel_bcast(descript)
 
     ! Read Job Controls
-    Call find_controls_block(lun_control,'Job Controls',ierr)
-    Read(lun_control,*) szone        ! number of the zone with which to begin
-    Read(lun_control,*) nzone        ! total # of zones
-    Read(lun_control,*) iweak0       ! controls the treatment of weak reactions
-    Read(lun_control,*) iscrn        ! controls the treatment of nuclear screening
-    Read(lun_control,*) iprocess     ! controls the runtime pre-processing of the network data
+    If ( parallel_IOProcessor() ) Then
+      Call find_controls_block(lun_control,'Job Controls',ierr)
+      Read(lun_control,*) szone        ! number of the zone with which to begin
+      Read(lun_control,*) nzone        ! total # of zones
+      Read(lun_control,*) iweak0       ! controls the treatment of weak reactions
+      Read(lun_control,*) iscrn        ! controls the treatment of nuclear screening
+      Read(lun_control,*) iprocess     ! controls the runtime pre-processing of the network data
+    EndIf
+    Call parallel_bcast(szone)
+    Call parallel_bcast(nzone)
+    Call parallel_bcast(iweak0)
+    Call parallel_bcast(iscrn)
 
     ! Read Zone Batching Controls
-    Call find_controls_block(lun_control,'Zone Batching Controls',ierr)
-    If ( ierr /= 0 ) Then
-      Read(lun_control,*) nzbatchmx  ! maximum number of zones in a batch
-    Else
-      Write(lun_stdout,*) 'Using Default Zone Batching behavior'
-      nzbatchmx = 1
+    If ( parallel_IOProcessor() ) Then
+      Call find_controls_block(lun_control,'Zone Batching Controls',ierr)
+      If ( ierr /= 0 ) Then
+        Read(lun_control,*) nzbatchmx  ! maximum number of zones in a batch
+      Else
+        Write(lun_stdout,*) 'Using Default Zone Batching behavior'
+        nzbatchmx = 1
+      EndIf
     EndIf
+    Call parallel_bcast(nzbatchmx)
     !$omp parallel default(shared)
     Allocate (lzactive(nzbatchmx))
     Allocate (iweak(nzbatchmx),lun_ev(nzbatchmx),lun_ts(nzbatchmx))
-    Allocate (kmon(2,nzbatchmx),ktot(2,nzbatchmx))
+    Allocate (kmon(2,nzbatchmx),ktot(5,nzbatchmx))
     !$omp end parallel
 
     ! Read Integration Controls
-    Call find_controls_block(lun_control,'Integration Controls',ierr)
-    Read(lun_control,*) isolv        ! Choice of integrations scheme
-    Read(lun_control,*) kstmx        ! max # of timesteps for each zone
-    Read(lun_control,*) kitmx        ! max # of iterations before retry
-    Read(lun_control,*) ijac         ! rebuild jacobian every ijac iterations after the first
-    Read(lun_control,*) iconvc       ! determines which convergence condition is Used
-    Read(lun_control,*) changemx     ! allowed abundance change used to set the timestep.
-    Read(lun_control,*) yacc         ! abundances > yacc Used for timestep calculation
-    Read(lun_control,*) tolm         ! mass conservation convergence criterion
-    Read(lun_control,*) tolc         ! convergence limit on the iterative abundance change
-    Read(lun_control,*) ymin         ! abundance < ymin is set to 0.0
-    Read(lun_control,*) tdel_maxmult ! max factor by which the timestep is changed
+    If ( parallel_IOProcessor() ) Then
+      Call find_controls_block(lun_control,'Integration Controls',ierr)
+      Read(lun_control,*) isolv        ! Choice of integrations scheme
+      Read(lun_control,*) kstmx        ! max # of timesteps for each zone
+      Read(lun_control,*) kitmx        ! max # of iterations before retry
+      Read(lun_control,*) ijac         ! rebuild jacobian every ijac iterations after the first
+      Read(lun_control,*) iconvc       ! determines which convergence condition is Used
+      Read(lun_control,*) changemx     ! allowed abundance change used to set the timestep.
+      Read(lun_control,*) yacc         ! abundances > yacc Used for timestep calculation
+      Read(lun_control,*) tolm         ! mass conservation convergence criterion
+      Read(lun_control,*) tolc         ! convergence limit on the iterative abundance change
+      Read(lun_control,*) ymin         ! abundance < ymin is set to 0.0
+      Read(lun_control,*) tdel_maxmult ! max factor by which the timestep is changed
+    EndIf
+    Call parallel_bcast(isolv)
+    Call parallel_bcast(kstmx)
+    Call parallel_bcast(kitmx)
+    Call parallel_bcast(ijac)
+    Call parallel_bcast(iconvc)
+    Call parallel_bcast(changemx)
+    Call parallel_bcast(yacc)
+    Call parallel_bcast(tolm)
+    Call parallel_bcast(tolc)
+    Call parallel_bcast(ymin)
+    Call parallel_bcast(tdel_maxmult)
 
     ! Read Self-heating Controls (off by default)
-    Call find_controls_block(lun_control,'Self-heating Controls',ierr)
-    If ( ierr /= 0 ) Then
-      Read(lun_control,*) iheat      ! controls the coupling of the network to temperature
-      Read(lun_control,*) changemxt  ! allowed temperature change used to set the timestep.
-      Read(lun_control,*) tolt9      ! convergence limit on the iterative temperature change
-    Else
-      Write(lun_stdout,*) 'Using Default Self-heating behavior'
-      iheat = 0
-      changemxt = 1.0e-2
-      tolt9 = 1.0e-4
+    If ( parallel_IOProcessor() ) Then
+      Call find_controls_block(lun_control,'Self-heating Controls',ierr)
+      If ( ierr /= 0 ) Then
+        Read(lun_control,*) iheat      ! controls the coupling of the network to temperature
+        Read(lun_control,*) changemxt  ! allowed temperature change used to set the timestep.
+        Read(lun_control,*) tolt9      ! convergence limit on the iterative temperature change
+      Else
+        Write(lun_stdout,*) 'Using Default Self-heating behavior'
+        iheat = 0
+        changemxt = 1.0e-2
+        tolt9 = 1.0e-4
+      EndIf
+    EndIf
+    Call parallel_bcast(iheat)
+    Call parallel_bcast(changemxt)
+    Call parallel_bcast(tolt9)
+
+    ! If using higher-order solver, XNet does not need to further limit the timestep size
+    If ( isolv == 3 ) Then
+      changemx = 1.0e+10
+      changemxt = 1.0e+10
     EndIf
 
     ! Read NSE Initial Conditions Controls (t9nse = 8.0 by default)
-    Call find_controls_block(lun_control,'NSE Initial Conditions',ierr)
-    If ( ierr /= 0 ) Then
-      Read(lun_control,*) t9nse
-    Else
-      Write(lun_stdout,*) 'Using Default NSE behavior'
-      t9nse = 8.0
+    If ( parallel_IOProcessor() ) Then
+      Call find_controls_block(lun_control,'NSE Initial Conditions',ierr)
+      If ( ierr /= 0 ) Then
+        Read(lun_control,*) t9nse
+      Else
+        Write(lun_stdout,*) 'Using Default NSE behavior'
+        t9nse = 8.0
+      EndIf
     EndIf
+    Call parallel_bcast(t9nse)
 
-  ! Read Neutrino Controls
-    Call find_controls_block(lun_control,'Neutrinos',ierr)
-    If ( ierr /= 0 ) Then
-      Read(lun_control,*) ineutrino
-    Else
-      Write(lun_stdout,*) 'Using Default Neutrinos behavior'
-      ineutrino = 0
+    ! Read Neutrino Controls
+    If ( parallel_IOProcessor() ) Then
+      Call find_controls_block(lun_control,'Neutrinos',ierr)
+      If ( ierr /= 0 ) Then
+        Read(lun_control,*) ineutrino
+      Else
+        Write(lun_stdout,*) 'Using Default Neutrinos behavior'
+        ineutrino = 0
+      EndIf
     EndIf
+    Call parallel_bcast(ineutrino)
 
     !-----------------------------------------------------------------------------------------------
     ! XNet output controls include the base of the filenames to which ASCII and binary output are
@@ -255,15 +280,29 @@ Contains
     ! ASCII output file.
     !-----------------------------------------------------------------------------------------------
     ! Read Output Controls
-    Call find_controls_block(lun_control,'Output Controls',ierr)
-    Read(lun_control,*) idiag        ! sets diagnostic output level
-    Read(lun_control,*) itsout       ! sets per timestep output level
-    Read(lun_control,*)
-    Read(lun_control,"(a80)") ev_file_base
-    Read(lun_control,*)
-    Read(lun_control,"(a80)") bin_file_base
-    Read(lun_control,*)
-    Read(lun_control,"(14a5)") output_nuc
+    If ( parallel_IOProcessor() ) Then
+      Call find_controls_block(lun_control,'Output Controls',ierr)
+      Read(lun_control,*) idiag        ! sets diagnostic output level
+      Read(lun_control,*) itsout       ! sets per timestep output level
+      Read(lun_control,*)
+      Read(lun_control,"(a80)") ev_file_base
+      Read(lun_control,*)
+      Read(lun_control,"(a80)") bin_file_base
+      Read(lun_control,"(50x,i4)") nnucout
+    EndIf
+    Call parallel_bcast(idiag)
+    Call parallel_bcast(itsout)
+    Call parallel_bcast(ev_file_base)
+    Call parallel_bcast(bin_file_base)
+    Call parallel_bcast(nnucout)
+    Allocate(output_nuc(nnucout),inucout(nnucout))
+    Write(nnucout_string,"(i4)") nnucout
+    nnucout_string = adjustl(nnucout_string)
+    If ( parallel_IOProcessor() ) Then
+      Read(lun_control,"("//nnucout_string//"a5)") output_nuc
+      Write(lun_stdout,*) 'nnucout',nnucout
+    EndIf
+    Call parallel_bcast(output_nuc)
 
     !-----------------------------------------------------------------------------------------------
     ! XNet input controls include the relative directory from which the nuclear data should be
@@ -271,119 +310,51 @@ Contains
     ! trajectories.
     !-----------------------------------------------------------------------------------------------
     ! Read Input Controls
-    Call find_controls_block(lun_control,'Input Controls',ierr)
-    Read(lun_control,*)
-    Read(lun_control,"(a80)") data_dir
-    Read(lun_control,*)
     Allocate (inab_file(nzone),thermo_file(nzone))
-    nzone_read = nzone
-    Do izone = 1, nzone
-      Read(lun_control,"(a80)",iostat=ierr) inab_file(izone)
-      If ( ierr == iostat_end ) Then
-        Exit
-      ElseIf ( ierr /= 0 ) Then
-        Write(lun_stdout,*) 'Problem reading Input Filenames'
-      EndIf
-      Read(lun_control,"(a80)",iostat=ierr) thermo_file(izone)
-      If ( ierr == iostat_end ) Then
-        Exit
-      ElseIf ( ierr /= 0 ) Then
-        Write(lun_stdout,*) 'Problem reading Input Filenames'
-      EndIf
-    EndDo
-    Close(lun_control)
-    nzone_read = izone - 1
-    If ( nzone_read == 1 .and. nzone_read < nzone ) Then
-      inab_file_base = inab_file(1)
-      thermo_file_base = thermo_file(1)
+    If ( parallel_IOProcessor() ) Then
+      Call find_controls_block(lun_control,'Input Controls',ierr)
+      Read(lun_control,*)
+      Read(lun_control,"(a80)") data_dir
+      Read(lun_control,*)
+      nzone_read = nzone
       Do izone = 1, nzone
-        thermo_file(izone) = trim(thermo_file_base)
-        Call name_ordered(thermo_file(izone),izone,nzone)
-        inab_file(izone) = trim(inab_file_base)
-        Call name_ordered(inab_file(izone),izone,nzone)
+        Read(lun_control,"(a80)",iostat=ierr) inab_file(izone)
+        If ( ierr == iostat_end ) Then
+          Exit
+        ElseIf ( ierr /= 0 ) Then
+          Write(lun_stdout,*) 'Problem reading Input Filenames'
+        EndIf
+        Read(lun_control,"(a80)",iostat=ierr) thermo_file(izone)
+        If ( ierr == iostat_end ) Then
+          Exit
+        ElseIf ( ierr /= 0 ) Then
+          Write(lun_stdout,*) 'Problem reading Input Filenames'
+        EndIf
       EndDo
-    ElseIf ( nzone_read /= nzone ) Then
-      Write(lun_stdout,*) 'Number of datafiles does not match number of zones!'
-!     Call xnet_terminate('Number of datafiles does not match number of zones!')
-    Else
-      inab_file_base = ''
-      thermo_file_base = ''
+      Close(lun_control)
+      nzone_read = izone - 1
+      If ( nzone_read == 1 .and. nzone_read < nzone ) Then
+        inab_file_base = inab_file(1)
+        thermo_file_base = thermo_file(1)
+        Do izone = 1, nzone
+          thermo_file(izone) = trim(thermo_file_base)
+          Call name_ordered(thermo_file(izone),izone,nzone)
+          inab_file(izone) = trim(inab_file_base)
+          Call name_ordered(inab_file(izone),izone,nzone)
+        EndDo
+      ElseIf ( nzone_read /= nzone ) Then
+        Write(lun_stdout,*) 'Number of datafiles does not match number of zones!'
+!       Call xnet_terminate('Number of datafiles does not match number of zones!')
+      Else
+        inab_file_base = ''
+        thermo_file_base = ''
+      EndIf
     EndIf
+    Call parallel_bcast(data_dir)
+    Call parallel_bcast(inab_file)
+    Call parallel_bcast(thermo_file)
 
     Return
   End Subroutine read_controls
 
-End Module controls
-
-Module timers
-  !-------------------------------------------------------------------------------------------------
-  ! This module contains the performance timers for XNet.
-  !-------------------------------------------------------------------------------------------------
-  Use xnet_types, Only: dp
-  Implicit None
-  Real(dp) :: timer_burner = 0.0  ! Total burner execution time
-  Real(dp) :: timer_xnet   = 0.0  ! Total XNet execution time
-  Real(dp) :: timer_setup  = 0.0  ! Data loading or preprocessing time
-  Real(dp) :: timer_csect  = 0.0  ! Cross section calculation time
-  Real(dp) :: timer_deriv  = 0.0  ! Derivative calculation time
-  Real(dp) :: timer_jacob  = 0.0  ! Jacobian building time
-  Real(dp) :: timer_decmp  = 0.0  ! LU Decomposition time
-  Real(dp) :: timer_bksub  = 0.0  ! Backsubstitution time
-  Real(dp) :: timer_nraph  = 0.0  ! Newton Raphson iteration timer
-  Real(dp) :: timer_tstep  = 0.0  ! Time integration step timer
-  Real(dp) :: timer_solve  = 0.0  ! Solution time
-  Real(dp) :: timer_scrn   = 0.0  ! Screening and EOS time
-  Real(dp) :: timer_eoscrn = 0.0  ! Screening and EOS time
-  Real(dp) :: timer_output = 0.0  ! Output time
-  Real(dp) :: start_timer  = 0.0  ! cpu time at the beginning of the timer block
-  Real(dp) :: stop_timer   = 0.0  ! cpu time at the end of the timer block
-  !$omp threadprivate(timer_burner,timer_xnet,timer_setup,timer_csect,timer_deriv,timer_jacob,timer_decmp, &
-  !$omp   timer_bksub,timer_nraph,timer_tstep,timer_solve,timer_scrn,timer_eoscrn,timer_output,start_timer,stop_timer)
-
-Contains
-
-  Function xnet_wtime()
-    !-----------------------------------------------------------------------------------------------
-    ! This function returns the wall time in a manner akin to omp_get_wtime().
-    !-----------------------------------------------------------------------------------------------
-    Use xnet_types, Only: i8
-    Implicit None
-
-    ! Function variable
-    Real(dp) :: xnet_wtime
-
-    ! Local variables
-    Integer(i8) :: clock_read
-    Integer(i8) :: clock_rate
-    Integer(i8) :: clock_max
-
-!   !$omp critical(wtime)
-    Call system_clock(clock_read,clock_rate,clock_max)
-    xnet_wtime = real(clock_read,dp) / real(clock_rate,dp)
-!   !$omp end critical(wtime)
-
-    Return
-  End Function xnet_wtime
-
-  Subroutine reset_timers
-    !-----------------------------------------------------------------------------------------------
-    ! This routine resets timers for zone-independent timing.
-    !-----------------------------------------------------------------------------------------------
-    Implicit None
-    timer_xnet  = 0.0
-    timer_setup = 0.0
-    timer_csect = 0.0
-    timer_deriv = 0.0
-    timer_jacob = 0.0
-    timer_decmp = 0.0
-    timer_bksub = 0.0
-    timer_nraph = 0.0
-    timer_tstep = 0.0
-    timer_solve = 0.0
-    timer_scrn  = 0.0
-    timer_eoscrn= 0.0
-
-    Return
-  End Subroutine reset_timers
-
-End Module timers
+End Module xnet_controls

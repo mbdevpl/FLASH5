@@ -63,7 +63,7 @@ FDEFINES = %(fDefines)s
 #\tprint the compiler flags to file in FLASH/object/
 #\t(files name are also hard-coded into make_bstats)
 
-PRINT_F77_FLAGS = @$(ECHO) F77: $(FCOMP) $(FFLAGS) $(FDEFINES)
+PRINT_F77_FLAGS = @$(ECHO) F77: $(FCOMP) $(FFLAGS) $(F77FLAGS) $(FDEFINES)
 PRINT_F90_FLAGS = @$(ECHO) F90: $(FCOMP) $(FFLAGS) $(F90FLAGS) $(FDEFINES)
 PRINT_C_FLAGS = @$(ECHO) C: $(CCOMP) $(CFLAGS) $(CDEFINES)
 PRINT_L_FLAGS = @$(ECHO) Linker: $(LINK) $(LFLAGS) $(EXE) \(Object files of units\) $(LIB) $(CONFIG_LIB)
@@ -131,19 +131,16 @@ endif
   
 %%.o : %%.f
 \t$(ECHO-COMPILING) 
-\t$(FCOMP) $(FFLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
+\t$(FCOMP) $(FFLAGS) $(f77FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
 %%.o : %%.F
 \t$(ECHO-COMPILING) 
-\t$(FCOMP) $(FFLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
+\t$(FCOMP) $(FFLAGS) $(F77FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
 %%.o : %%.f90
 \t$(ECHO-COMPILING) 
 \t$(FCOMP) $(FFLAGS) $(f90FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
-%%.o : %%.F90
+%%.o %%.mod : %%.F90
 \t$(ECHO-COMPILING) 
 \t$(FCOMP) $(FFLAGS) $(F90FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
-%%.mod : %%.F90
-\t$(ECHO-COMPILING) 
-\t$(FCOMP) $(FFLAGS) $(F90FLAGS) $(FDEFINES) $<
 ifdef MODUPPERCASE
 \t-$(if $(wildcard $*.mod),if [ -w $*.mod -a -s $(shell echo $*|tr a-z A-Z).mod -a \( $(shell echo $*|tr a-z A-Z).mod -nt $*.mod \) ] ;then ln -f $(shell echo $*|tr a-z A-Z).mod $*.mod;fi)
 else

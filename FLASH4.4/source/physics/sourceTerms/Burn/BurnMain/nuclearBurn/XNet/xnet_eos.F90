@@ -1,11 +1,12 @@
 !***************************************************************************************************
-! xnet_eos_flash.f90 10/18/17
+! eos_helm.f90 10/18/17
 ! Interface to FLASH EoS.
 ! This file contains routines which calculate EoS quantites needed to calculate screening
 ! corrections for reaction rates.
 !***************************************************************************************************
 
 Module xnet_eos
+  Use Driver_interface, Only: Driver_abortFlash
   Use Eos_interface, Only: Eos
   Use Simulation_interface, Only: Simulation_mapStrToInt
   Use xnet_types, Only: dp
@@ -26,16 +27,19 @@ Contains
 
   Subroutine eos_initialize
     !-----------------------------------------------------------------------------------------------
-    ! This routine initializes the Helmholtz EoS.
+    ! This routine initializes the FLASH EoS interface.
     !-----------------------------------------------------------------------------------------------
-    Use controls, Only: iheat, iscrn
+    Use xnet_controls, Only: iheat, iscrn
     Use nuclear_data, Only: nname
     Implicit None
     Character(5) :: tmp_name
     Character(4) :: unk_name
     Integer :: inuc, iunk
     eosMask = .false.
-    if ( iheat > 0 ) eosMask(EOS_CV) = .true.
+    if ( iheat > 0 ) then
+      eosMask(EOS_CV) = .true.
+      eosMask(EOS_DET) = .true.
+    end if
     if ( iscrn > 0 ) eosMask(EOS_ETA) = .true.
 #ifdef EOS_DETAT
     if ( iheat > 0 .and. iscrn > 0 ) eosMask(EOS_DETAT) = .true.
@@ -46,13 +50,14 @@ Contains
       call Simulation_mapStrToInt(unk_name,iunk,MAPBLOCK_UNK)
       inuc2unk(inuc) = iunk
     EndDo
+
     Return
   End Subroutine eos_initialize
 
-  Subroutine eos_cv(rho,t9,y,cv)
-    Use controls, Only: idiag, iscrn, lun_diag
+  Subroutine xnet_eos_interface(t9,rho,y,ye,cv,etae,detaedt9)
     Use nuclear_data, Only: aa
     Use xnet_constants, Only: avn, epmev
+    Use xnet_controls, Only: idiag, iheat, iscrn, lun_diag, lun_stdout
     Use xnet_types, Only: dp
     Implicit None
 
@@ -60,16 +65,16 @@ Contains
     Real(dp), Intent(in) :: t9, rho, y(:)
 
     ! Ouput variables
-    Real(dp), Intent(out) :: cv
+    Real(dp), Intent(out) :: ye, cv, etae, detaedt9
 
     ! Local variables
-    Real(dp) :: ye, ytot, abar, zbar, z2bar, zibar
+    Real(dp) :: ytot, abar, zbar, z2bar, zibar
+    Integer :: ierr
 
-    ! Call the eos if it hasn't already been called for screening
-    If ( iscrn <= 0 ) Then
+    ! Calculate Ye
+    Call y_moment(y,ye,ytot,abar,zbar,z2bar,zibar)
 
-      ! Calculate Ye and other needed moments of the abundance distribution
-      Call y_moment(y,ye,ytot,abar,zbar,z2bar,zibar)
+    If ( iscrn > 0 .or. iheat > 0 ) Then
 
       ! Load input variables for the eos
       eosData(EOS_TEMP) = t9*1.0e9
@@ -77,90 +82,74 @@ Contains
       massFrac(inuc2unk) = y*aa
 
       ! Call the eos
-      call Eos(MODE_DENS_TEMP,1,eosData,massFrac,eosMask)
+      call Eos(MODE_DENS_TEMP,1,eosData,massFrac=massFrac,mask=eosMask,diagFlag=ierr)
+
+      ! Convert units from ergs/g to MeV/nucleon and K to GK
+      etae = eosData(EOS_ETA)
+      cv = eosData(EOS_CV)*1.0e9/epmev/avn
+#ifdef EOS_DETAT
+      detaedt9 = eosData(EOS_DETAT)*1.0e9
+#else
+      detaedt9 = -etae / t9
+#endif
+      if ( ierr > 0 ) then
+        Write(lun_stdout,"(a,6es23.15)") 'EOS',t9,rho,ye,cv,etae,detaedt9
+        call Driver_abortFlash('[xnet_eos] Error: too many Newton-Raphson iterations in Eos')
+      endif
+    Else
+      etae = 0.0
+      detaedt9 = 0.0
+      cv = 0.0
     EndIf
-
-    ! Convert units from ergs/g to MeV/nucleon and K to GK
-    cv = eosData(EOS_CV)*1.0d9/epmev/avn
-
-    If ( idiag > 0 ) Write(lun_diag,"(a,5es23.15)") 'CV',t9,rho,eosData(EOS_ZBAR)/eosData(EOS_ABAR),cv
+    If ( idiag >= 3 ) Write(lun_diag,"(a,6es23.15)") 'EOS',t9,rho,ye,cv,etae,detaedt9
 
     Return
-  End Subroutine eos_cv
+  End Subroutine xnet_eos_interface
 
-  Subroutine xnet_eos_interface(t9,rho,y,ye,ztilde,zinter,lambda0,gammae,dztildedt9)
-    !-------------------------------------------------------------------------------------------------
+  Subroutine eos_screen(t9,rho,y,etae,detaedt9,ztilde,zinter,lambda0,gammae,dztildedt9)
+    !-----------------------------------------------------------------------------------------------
     ! This routine calls the Helmholtz EOS with the input temperature, density and composition. It
     ! returns the factors needed for screening.
-    !-------------------------------------------------------------------------------------------------
-    Use controls, Only: idiag, iheat, lun_diag
-    Use nuclear_data, Only: aa
-    Use screening_data, Only: thbim2, twm2bi
-    Use timers, Only: xnet_wtime, start_timer, stop_timer, timer_eoscrn
-    Use xnet_constants, Only: avn, bok, clt, e2, ele_en, emass, hbar, pi, pi2, third, two3rd
+    !-----------------------------------------------------------------------------------------------
+    Use xnet_constants, Only: avn, bok, clt, e2, ele_en, emass, hbar, pi, pi2, third, two3rd, &
+      & thbim2, twm2bi
+    Use xnet_controls, Only: idiag, iheat, lun_diag
     Use xnet_types, Only: dp
     Implicit None
 
     ! Input variables
-    Real(dp), Intent(in) :: t9, rho, y(:)
+    Real(dp), Intent(in) :: t9, rho, y(:), etae, detaedt9
 
     ! Output variables
-    Real(dp), Intent(out) :: ztilde, zinter, lambda0, gammae, ye, dztildedt9
+    Real(dp), Intent(out) :: ztilde, zinter, lambda0, gammae, dztildedt9
 
     ! Local variables
-    Real(dp) :: ytot, bkt, abar, zbar, z2bar, zibar
-    Real(dp) :: etae, sratio, efermkt, rel_ef, efc, ae, dsratiodeta, detadt9
-
-    start_timer = xnet_wtime()
-    timer_eoscrn = timer_eoscrn - start_timer
+    Real(dp) :: ye, ytot, bkt, abar, zbar, z2bar, zibar
+    Real(dp) :: sratio, ae, dsratiodeta
 
     ! Calculate Ye and other needed moments of the abundance distribution
     Call y_moment(y,ye,ytot,abar,zbar,z2bar,zibar)
 
-    ! Load input variables for the eos
-    eosData(EOS_TEMP) = t9*1.0e9
-    eosData(EOS_DENS) = rho
-    massFrac(inuc2unk) = y*aa
-
-    ! Call the eos
-    call Eos(MODE_DENS_TEMP,1,eosData,massFrac,eosMask)
-    etae = eosData(EOS_ETA)
-
-    ! Calculate electon distribution
-    bkt = bok*t9
-    rel_ef = hbar * (3.0*pi2*rho*avn*ye)**third / (emass*clt)
-    efermkt = ele_en * (sqrt(1.0 + rel_ef**2) - 1.0) / bkt
-    efc = 0.5*hbar**2 * (3.0*pi2*rho*avn*ye)**two3rd / (emass*bkt)
-!   Write(lun_diag,"(a4,6es12.5)") 'MUh',bkt,etae,efermkt,efc,rel_ef
-
     ! Calculate ratio f'/f for electrons (Salpeter, Eq. 24)
     Call salpeter_ratio(etae,sratio,dsratiodeta)
     ztilde = sqrt(z2bar + zbar*sratio)
-
     If ( iheat > 0 ) Then
-#ifdef EOS_DETAT
-      detadt9 = eosData(EOS_DETAT)*1.0e9
-#else
-      detadt9 = -etae / t9
-#endif
-      dztildedt9 = 0.5*zbar/ztilde * dsratiodeta*detadt9
+      dztildedt9 = 0.5*zbar/ztilde * dsratiodeta*detaedt9
     Else
       dztildedt9 = 0.0
     EndIf
 
     ! Calculate plasma quantities
+    bkt = bok*t9
     lambda0 = sqrt(4.0*pi*rho*avn*ytot) * (e2/bkt)**1.5 ! DGC, Eq. 3
     ae = (3.0 / (4.0*pi*avn*rho*ye))**third ! electron-sphere radius
     gammae = e2 / (ae*bkt) ! electron Coulomb coupling parameter
     zinter = zibar / (ztilde**thbim2 * zbar**twm2bi)
-    If ( idiag > 0 ) Write(lun_diag,"(a14,9es23.15)") 'Helmholtz EOS', &
+    If ( idiag >= 3 ) Write(lun_diag,"(a14,9es23.15)") 'EOS Screen', &
       & t9,rho,ye,z2bar,zbar,sratio,ztilde,ztilde*lambda0,gammae
 
-    stop_timer = xnet_wtime()
-    timer_eoscrn = timer_eoscrn + stop_timer
-
     Return
-  End Subroutine xnet_eos_interface
+  End Subroutine eos_screen
 
   Subroutine salpeter_ratio(eta,ratio,dratiodeta)
     !-----------------------------------------------------------------------------------------------
@@ -170,8 +159,8 @@ Contains
     ! Calculation uses Fermi function relation d/dx f_(k+1) = (k+1) f_k and the rational function
     ! expansions of Fukushima (2015; AMC 259 708) for the F-D integrals of order 1/2, -1/2, and -3/2.
     !-----------------------------------------------------------------------------------------------
-    Use controls, Only: iheat, lun_diag
     Use fd, Only: fdm1h, fd1h, fdm3h
+    Use xnet_controls, Only: iheat
     Use xnet_types, Only: dp
     Implicit None
 
@@ -182,7 +171,6 @@ Contains
     Real(dp), Intent(out) :: ratio, dratiodeta
 
     ! Local variables
-    Integer :: i
     Real(dp) :: fermip, fermim
     Real(dp) :: dfmdeta, dfpdeta
 
@@ -199,7 +187,6 @@ Contains
     Else
       dratiodeta = 0.0
     EndIf
-    ! Write(lun_diag,"(1x,4es12.4)") eta,ratio,fermim,fermip
 
     Return
   End Subroutine salpeter_ratio
@@ -208,8 +195,8 @@ Contains
     !-----------------------------------------------------------------------------------------------
     ! This routine calculates moments of the abundance distribution for the EOS.
     !-----------------------------------------------------------------------------------------------
-    Use controls, Only: idiag, lun_diag
     Use nuclear_data, Only: aa, zz, zz2, zzi
+    Use xnet_controls, Only: idiag, lun_diag
     Use xnet_types, Only: dp
     Implicit None
 
@@ -223,15 +210,15 @@ Contains
     Real(dp) :: atot, ztot
 
     ! Calculate abundance moments
-    ytot  = sum(y)
-    atot  = sum(y * aa)
-    ztot  = sum(y * zz)
+    ytot  = sum(y(:))
+    atot  = sum(y(:) * aa(:))
+    ztot  = sum(y(:) * zz(:))
     abar  = atot / ytot
     zbar  = ztot / ytot
-    z2bar = sum(y * zz2) / ytot
-    zibar = sum(y * zzi) / ytot
-    ye = ztot
-    If ( idiag > 0 ) Write(lun_diag,"(a4,6es23.15)") 'YMom',ytot,abar,zbar,z2bar,zibar,ye
+    z2bar = sum(y(:) * zz2(:)) / ytot
+    zibar = sum(y(:) * zzi(:)) / ytot
+    ye = ztot / atot
+    If ( idiag >= 3 ) Write(lun_diag,"(a4,6es23.15)") 'YMom',ytot,abar,zbar,z2bar,zibar,ye
 
     Return
   End Subroutine y_moment

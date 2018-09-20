@@ -1,421 +1,375 @@
-MODULE cudaf
-!===============================================================================
-! INTERFACE to CUDA C routines
-!===============================================================================
-    USE, INTRINSIC :: ISO_C_BINDING
+!***************************************************************************************************
+! cudaf.f90 10/18/17
+! This file contains the module defining Fortran interfaces for the CUDA Runtime API
+!***************************************************************************************************
 
-    ENUM, BIND(C) !:: cudaMemcpyKind
-    ENUMERATOR :: cudaMemcpyHostToHost=0
-    ENUMERATOR :: cudaMemcpyHostToDevice=1
-    ENUMERATOR :: cudaMemcpyDeviceToHost=2
-    ENUMERATOR :: cudaMemcpyDeviceToDevice=3
-    ENUMERATOR :: cudaMemcpyDefault=4
-    END ENUM !cudaMemcpyKind
+module cudaf
+  !-------------------------------------------------------------------------------------------------
+  ! Interface to CUDA Runtime API
+  !-------------------------------------------------------------------------------------------------
+  use, intrinsic :: iso_c_binding
 
-    ENUM, BIND(C) !:: cudaHostFlags
-    ENUMERATOR :: cudaHostAllocDefault=INT(z'00')
-    ENUMERATOR :: cudaHostAllocPortable=INT(z'01')
-    ENUMERATOR :: cudaHostAllocMapped=INT(z'02')
-    ENUMERATOR :: cudaHostAllocWriteCombined=INT(z'04')
-    END ENUM !cudaHostFlags
+  enum, bind(c) !:: cudaMemcpyKind
+    enumerator :: cudaMemcpyHostToHost = 0
+    enumerator :: cudaMemcpyHostToDevice = 1
+    enumerator :: cudaMemcpyDeviceToHost = 2
+    enumerator :: cudaMemcpyDeviceToDevice = 3
+    enumerator :: cudaMemcpyDefault = 4
+  end enum !cudaMemcpyKind
 
-    ENUM, BIND(C) !:: cudaDeviceFlags
-    ENUMERATOR :: cudaDeviceScheduleAuto=INT(z'00')
-    ENUMERATOR :: cudaDeviceScheduleSpin=INT(z'01')
-    ENUMERATOR :: cudaDeviceScheduleYield=INT(z'02')
-    ENUMERATOR :: cudaDeviceScheduleBlockingSync=INT(z'04')
-    ENUMERATOR :: cudaDeviceBlockingSync=INT(z'04')
-    ENUMERATOR :: cudaDeviceScheduleMask=INT(z'07')
-    ENUMERATOR :: cudaDeviceMapHost=INT(z'08')
-    ENUMERATOR :: cudaDeviceLmemResizeToMax=INT(z'10')
-    ENUMERATOR :: cudaDeviceMask=INT(z'1f')
-    END ENUM !cudaDeviceFlags
+  enum, bind(c) !:: cudaMallocManaged
+    enumerator :: cudaMemAttachGlobal = int(z'01')
+    enumerator :: cudaMemAttachHost = int(z'02')
+    enumerator :: cudaMemAttachSingle = int(z'04')
+  end enum !cudaMallocManaged
 
-    ENUM, BIND(C) !:: cudaStreamFlags
-    ENUMERATOR :: cudaStreamDefault=INT(z'00')
-    ENUMERATOR :: cudaStreamNonBlocking=INT(z'01')
-    END ENUM
+  enum, bind(c) !:: cudaHostFlags
+    enumerator :: cudaHostAllocDefault = int(z'00')
+    enumerator :: cudaHostAllocPortable = int(z'01')
+    enumerator :: cudaHostAllocMapped = int(z'02')
+    enumerator :: cudaHostAllocWriteCombined = int(z'04')
+  end enum !cudaHostFlags
 
-    ENUM, BIND(C) !:: cudaEventFlags
-    ENUMERATOR :: cudaEventDefault=INT(z'00')
-    ENUMERATOR :: cudaEventBlockingSync=INT(z'01')
-    ENUMERATOR :: cudaEventDisableTiming=INT(z'02')
-    ENUMERATOR :: cudaEventInterprocess=INT(z'04')
-    END ENUM
+  enum, bind(c) !:: cudaDeviceFlags
+    enumerator :: cudaDeviceScheduleAuto = int(z'00')
+    enumerator :: cudaDeviceScheduleSpin = int(z'01')
+    enumerator :: cudaDeviceScheduleYield = int(z'02')
+    enumerator :: cudaDeviceScheduleBlockingSync = int(z'04')
+    enumerator :: cudaDeviceBlockingSync = int(z'04')
+    enumerator :: cudaDeviceScheduleMask = int(z'07')
+    enumerator :: cudaDeviceMapHost = int(z'08')
+    enumerator :: cudaDeviceLmemResizeToMax = int(z'10')
+    enumerator :: cudaDeviceMask = int(z'1f')
+  end enum !cudaDeviceFlags
 
-    ENUM, BIND(C) !:: cudaSharedMemConfig
-    ENUMERATOR :: cudaSharedMemBankSizeDefault   = 0
-    ENUMERATOR :: cudaSharedMemBankSizeFourByte  = 1
-    ENUMERATOR :: cudaSharedMemBankSizeEightByte = 2
-    END ENUM
+  enum, bind(c) !:: cudaStreamFlags
+    enumerator :: cudaStreamDefault = int(z'00')
+    enumerator :: cudaStreamNonBlocking = int(z'01')
+  end enum
 
-    ENUM, BIND(C) !:: cudaFuncCache
-    ENUMERATOR :: cudaFuncCachePreferNone   = 0
-    ENUMERATOR :: cudaFuncCachePreferShared = 1
-    ENUMERATOR :: cudaFuncCachePreferL1     = 2
-    ENUMERATOR :: cudaFuncCachePreferEqual  = 3
-    END ENUM
+  enum, bind(c) !:: cudaEventFlags
+    enumerator :: cudaEventDefault = int(z'00')
+    enumerator :: cudaEventBlockingSync = int(z'01')
+    enumerator :: cudaEventDisableTiming = int(z'02')
+    enumerator :: cudaEventInterprocess = int(z'04')
+  end enum
 
-    ENUM, BIND(C) !:: cudaError
-    ENUMERATOR :: cudaSuccess                           =      0
-    ENUMERATOR :: cudaErrorMissingConfiguration         =      1
-    ENUMERATOR :: cudaErrorMemoryAllocation             =      2
-    ENUMERATOR :: cudaErrorInitializationError          =      3
-    ENUMERATOR :: cudaErrorLaunchFailure                =      4
-    ENUMERATOR :: cudaErrorPriorLaunchFailure           =      5
-    ENUMERATOR :: cudaErrorLaunchTimeout                =      6
-    ENUMERATOR :: cudaErrorLaunchOutOfResources         =      7
-    ENUMERATOR :: cudaErrorInvalidDeviceFunction        =      8
-    ENUMERATOR :: cudaErrorInvalidConfiguration         =      9
-    ENUMERATOR :: cudaErrorInvalidDevice                =     10
-    ENUMERATOR :: cudaErrorInvalidValue                 =     11
-    ENUMERATOR :: cudaErrorInvalidPitchValue            =     12
-    ENUMERATOR :: cudaErrorInvalidSymbol                =     13
-    ENUMERATOR :: cudaErrorMapBufferObjectFailed        =     14
-    ENUMERATOR :: cudaErrorUnmapBufferObjectFailed      =     15
-    ENUMERATOR :: cudaErrorInvalidHostPointer           =     16
-    ENUMERATOR :: cudaErrorInvalidDevicePointer         =     17
-    ENUMERATOR :: cudaErrorInvalidTexture               =     18
-    ENUMERATOR :: cudaErrorInvalidTextureBinding        =     19
-    ENUMERATOR :: cudaErrorInvalidChannelDescriptor     =     20
-    ENUMERATOR :: cudaErrorInvalidMemcpyDirection       =     21
-    ENUMERATOR :: cudaErrorAddressOfConstant            =     22
-    ENUMERATOR :: cudaErrorTextureFetchFailed           =     23
-    ENUMERATOR :: cudaErrorTextureNotBound              =     24
-    ENUMERATOR :: cudaErrorSynchronizationError         =     25
-    ENUMERATOR :: cudaErrorInvalidFilterSetting         =     26
-    ENUMERATOR :: cudaErrorInvalidNormSetting           =     27
-    ENUMERATOR :: cudaErrorMixedDeviceExecution         =     28
-    ENUMERATOR :: cudaErrorCudartUnloading              =     29
-    ENUMERATOR :: cudaErrorUnknown                      =     30
-    ENUMERATOR :: cudaErrorNotYetImplemented            =     31
-    ENUMERATOR :: cudaErrorMemoryValueTooLarge          =     32
-    ENUMERATOR :: cudaErrorInvalidResourceHandle        =     33
-    ENUMERATOR :: cudaErrorNotReady                     =     34
-    ENUMERATOR :: cudaErrorInsufficientDriver           =     35
-    ENUMERATOR :: cudaErrorSetOnActiveProcess           =     36
-    ENUMERATOR :: cudaErrorInvalidSurface               =     37
-    ENUMERATOR :: cudaErrorNoDevice                     =     38
-    ENUMERATOR :: cudaErrorECCUncorrectable             =     39
-    ENUMERATOR :: cudaErrorSharedObjectSymbolNotFound   =     40
-    ENUMERATOR :: cudaErrorSharedObjectInitFailed       =     41
-    ENUMERATOR :: cudaErrorUnsupportedLimit             =     42
-    ENUMERATOR :: cudaErrorDuplicateVariableName        =     43
-    ENUMERATOR :: cudaErrorDuplicateTextureName         =     44
-    ENUMERATOR :: cudaErrorDuplicateSurfaceName         =     45
-    ENUMERATOR :: cudaErrorDevicesUnavailable           =     46
-    ENUMERATOR :: cudaErrorInvalidKernelImage           =     47
-    ENUMERATOR :: cudaErrorNoKernelImageForDevice       =     48
-    ENUMERATOR :: cudaErrorIncompatibleDriverContext    =     49
-    ENUMERATOR :: cudaErrorPeerAccessAlreadyEnabled     =     50
-    ENUMERATOR :: cudaErrorPeerAccessNotEnabled         =     51
-    ENUMERATOR :: cudaErrorDeviceAlreadyInUse           =     54
-    ENUMERATOR :: cudaErrorProfilerDisabled             =     55
-    ENUMERATOR :: cudaErrorProfilerNotInitialized       =     56
-    ENUMERATOR :: cudaErrorProfilerAlreadyStarted       =     57
-    ENUMERATOR :: cudaErrorProfilerAlreadyStopped       =     58
-    ENUMERATOR :: cudaErrorAssert                       =     59
-    ENUMERATOR :: cudaErrorTooManyPeers                 =     60
-    ENUMERATOR :: cudaErrorHostMemoryAlreadyRegistered  =     61
-    ENUMERATOR :: cudaErrorHostMemoryNotRegistered      =     62
-    ENUMERATOR :: cudaErrorOperatingSystem              =     63
-    ENUMERATOR :: cudaErrorPeerAccessUnsupported        =     64
-    ENUMERATOR :: cudaErrorLaunchMaxDepthExceeded       =     65
-    ENUMERATOR :: cudaErrorLaunchFileScopedTex          =     66
-    ENUMERATOR :: cudaErrorLaunchFileScopedSurf         =     67
-    ENUMERATOR :: cudaErrorSyncDepthExceeded            =     68
-    ENUMERATOR :: cudaErrorLaunchPendingCountExceeded   =     69
-    ENUMERATOR :: cudaErrorNotPermitted                 =     70
-    ENUMERATOR :: cudaErrorNotSupported                 =     71
-    ENUMERATOR :: cudaErrorStartupFailure               =   INT(z'7f')
-    ENUMERATOR :: cudaErrorApiFailureBase               =  10000
-    END ENUM !cudaError
+  enum, bind(c) !:: cudaSharedMemConfig
+    enumerator :: cudaSharedMemBankSizeDefault   = 0
+    enumerator :: cudaSharedMemBankSizeFourByte  = 1
+    enumerator :: cudaSharedMemBankSizeEightByte = 2
+  end enum
 
-    TYPE, bind(C) :: cudaDeviceProp
-        Character(C_CHAR) :: name(256)
-        INTEGER(C_SIZE_T) :: totalGlobalMem
-        INTEGER(C_SIZE_T) :: sharedMemPerBlock
-        INTEGER(C_INT) :: regsPerBlock
-        INTEGER(C_INT) :: warpSize
-        INTEGER(C_SIZE_T) :: memPitch
-        INTEGER(C_INT) :: maxThreadsPerBlock
-        INTEGER(C_INT) :: maxThreadsDim(3)
-        INTEGER(C_INT) :: maxGridSize(3)
-        INTEGER(C_INT) :: clockRate
-        INTEGER(C_SIZE_T) :: totalConstMem
-        INTEGER(C_INT) :: major
-        INTEGER(C_INT) :: minor
-        INTEGER(C_SIZE_T) :: textureAlignment
-        INTEGER(C_SIZE_T) :: texturePitchAlignment
-        INTEGER(C_INT) :: deviceOverlap
-        INTEGER(C_INT) :: multiProcessorCount
-        INTEGER(C_INT) :: kernelExecTimeoutEnabled
-        INTEGER(C_INT) :: integrated
-        INTEGER(C_INT) :: canMapHostMemory
-        INTEGER(C_INT) :: computeMode
-        INTEGER(C_INT) :: maxTexture1D
-        INTEGER(C_INT) :: maxTexture1DMipmap
-        INTEGER(C_INT) :: maxTexture1DLinear
-        INTEGER(C_INT) :: maxTexture2D(2)
-        INTEGER(C_INT) :: maxTexture2DMipmap(2)
-        INTEGER(C_INT) :: maxTexture2DLinear(2)
-        INTEGER(C_INT) :: maxTexture2DGather(2)
-        INTEGER(C_INT) :: maxTexture3D(3)
-        INTEGER(C_INT) :: maxTexture3DAlt(3)
-        INTEGER(C_INT) :: maxTextureCubemap
-        INTEGER(C_INT) :: maxTexture1DLayered(2)
-        INTEGER(C_INT) :: maxTexture2DLayered(3)
-        INTEGER(C_INT) :: maxTextureCubemapLayered(2)
-        INTEGER(C_INT) :: maxSurface1D
-        INTEGER(C_INT) :: maxSurface2D(2)
-        INTEGER(C_INT) :: maxSurface3D(3)
-        INTEGER(C_INT) :: maxSurface1DLayered(2)
-        INTEGER(C_INT) :: maxSurface2DLayered(3)
-        INTEGER(C_INT) :: maxSurfaceCubemap
-        INTEGER(C_INT) :: maxSurfaceCubemapLayered(2)
-        INTEGER(C_SIZE_T) :: surfaceAlignment
-        INTEGER(C_INT) :: concurrentKernels
-        INTEGER(C_INT) :: ECCEnabled
-        INTEGER(C_INT) :: pciBusID
-        INTEGER(C_INT) :: pciDeviceID
-        INTEGER(C_INT) :: pciDomainID
-        INTEGER(C_INT) :: tccDriver
-        INTEGER(C_INT) :: asyncEngineCount
-        INTEGER(C_INT) :: unifiedAddressing
-        INTEGER(C_INT) :: memoryClockRate
-        INTEGER(C_INT) :: memoryBusWidth
-        INTEGER(C_INT) :: l2CacheSize
-        INTEGER(C_INT) :: maxThreadsPerMultiProcessor
-        INTEGER(C_INT) :: streamPrioritiesSupported
-        INTEGER(C_INT) :: globalL1CacheSupported
-        INTEGER(C_INT) :: localL1CacheSupported
-        INTEGER(C_SIZE_T) :: sharedMemPerMultiprocessor
-        INTEGER(C_INT) :: regsPerMultiprocessor
-        INTEGER(C_INT) :: managedMemSupported
-        INTEGER(C_INT) :: isMultiGpuBoard
-        INTEGER(C_INT) :: multiGpuBoardGroupID
-        INTEGER(C_INT) :: singleToDoublePrecisionPerfRatio
-        INTEGER(C_INT) :: pageableMemoryAccess
-        INTEGER(C_INT) :: concurrentManagedAccess
-    END TYPE cudaDeviceProp
+  enum, bind(c) !:: cudaFuncCache
+    enumerator :: cudaFuncCachePreferNone   = 0
+    enumerator :: cudaFuncCachePreferShared = 1
+    enumerator :: cudaFuncCachePreferL1     = 2
+    enumerator :: cudaFuncCachePreferEqual  = 3
+  end enum
 
-    INTERFACE
+  enum, bind(c) !:: cudaError
+    enumerator :: cudaSuccess                           = 0
+    enumerator :: cudaErrorMissingConfiguration         = 1
+    enumerator :: cudaErrorMemoryAllocation             = 2
+    enumerator :: cudaErrorInitializationError          = 3
+    enumerator :: cudaErrorLaunchFailure                = 4
+    enumerator :: cudaErrorPriorLaunchFailure           = 5
+    enumerator :: cudaErrorLaunchTimeout                = 6
+    enumerator :: cudaErrorLaunchOutOfResources         = 7
+    enumerator :: cudaErrorInvalidDeviceFunction        = 8
+    enumerator :: cudaErrorInvalidConfiguration         = 9
+    enumerator :: cudaErrorInvalidDevice                = 10
+    enumerator :: cudaErrorInvalidValue                 = 11
+    enumerator :: cudaErrorInvalidPitchValue            = 12
+    enumerator :: cudaErrorInvalidSymbol                = 13
+    enumerator :: cudaErrorMapBufferObjectFailed        = 14
+    enumerator :: cudaErrorUnmapBufferObjectFailed      = 15
+    enumerator :: cudaErrorInvalidHostPointer           = 16
+    enumerator :: cudaErrorInvalidDevicePointer         = 17
+    enumerator :: cudaErrorInvalidTexture               = 18
+    enumerator :: cudaErrorInvalidTextureBinding        = 19
+    enumerator :: cudaErrorInvalidChannelDescriptor     = 20
+    enumerator :: cudaErrorInvalidMemcpyDirection       = 21
+    enumerator :: cudaErrorAddressOfConstant            = 22
+    enumerator :: cudaErrorTextureFetchFailed           = 23
+    enumerator :: cudaErrorTextureNotBound              = 24
+    enumerator :: cudaErrorSynchronizationError         = 25
+    enumerator :: cudaErrorInvalidFilterSetting         = 26
+    enumerator :: cudaErrorInvalidNormSetting           = 27
+    enumerator :: cudaErrorMixedDeviceExecution         = 28
+    enumerator :: cudaErrorCudartUnloading              = 29
+    enumerator :: cudaErrorUnknown                      = 30
+    enumerator :: cudaErrorNotYetImplemented            = 31
+    enumerator :: cudaErrorMemoryValueTooLarge          = 32
+    enumerator :: cudaErrorInvalidResourceHandle        = 33
+    enumerator :: cudaErrorNotReady                     = 34
+    enumerator :: cudaErrorInsufficientDriver           = 35
+    enumerator :: cudaErrorSetOnActiveProcess           = 36
+    enumerator :: cudaErrorInvalidSurface               = 37
+    enumerator :: cudaErrorNoDevice                     = 38
+    enumerator :: cudaErrorECCUncorrectable             = 39
+    enumerator :: cudaErrorSharedObjectSymbolNotFound   = 40
+    enumerator :: cudaErrorSharedObjectInitFailed       = 41
+    enumerator :: cudaErrorUnsupportedLimit             = 42
+    enumerator :: cudaErrorDuplicateVariableName        = 43
+    enumerator :: cudaErrorDuplicateTextureName         = 44
+    enumerator :: cudaErrorDuplicateSurfaceName         = 45
+    enumerator :: cudaErrorDevicesUnavailable           = 46
+    enumerator :: cudaErrorInvalidKernelImage           = 47
+    enumerator :: cudaErrorNoKernelImageForDevice       = 48
+    enumerator :: cudaErrorIncompatibleDriverContext    = 49
+    enumerator :: cudaErrorPeerAccessAlreadyEnabled     = 50
+    enumerator :: cudaErrorPeerAccessNotEnabled         = 51
+    enumerator :: cudaErrorDeviceAlreadyInUse           = 54
+    enumerator :: cudaErrorProfilerDisabled             = 55
+    enumerator :: cudaErrorProfilerNotInitialized       = 56
+    enumerator :: cudaErrorProfilerAlreadyStarted       = 57
+    enumerator :: cudaErrorProfilerAlreadyStopped       = 58
+    enumerator :: cudaErrorAssert                       = 59
+    enumerator :: cudaErrorTooManyPeers                 = 60
+    enumerator :: cudaErrorHostMemoryAlreadyRegistered  = 61
+    enumerator :: cudaErrorHostMemoryNotRegistered      = 62
+    enumerator :: cudaErrorOperatingSystem              = 63
+    enumerator :: cudaErrorPeerAccessUnsupported        = 64
+    enumerator :: cudaErrorLaunchMaxDepthExceeded       = 65
+    enumerator :: cudaErrorLaunchFileScopedTex          = 66
+    enumerator :: cudaErrorLaunchFileScopedSurf         = 67
+    enumerator :: cudaErrorSyncDepthExceeded            = 68
+    enumerator :: cudaErrorLaunchPendingCountExceeded   = 69
+    enumerator :: cudaErrorNotPermitted                 = 70
+    enumerator :: cudaErrorNotSupported                 = 71
+    enumerator :: cudaErrorStartupFailure               = int(z'7f')
+    enumerator :: cudaErrorApiFailureBase               = 10000
+  end enum !cudaError
 
-        FUNCTION cudaHostAlloc(cPtr, size, flags) &
-        &   BIND(C, NAME="cudaHostAlloc")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaHostAlloc
-            TYPE(C_PTR) :: cPtr
-            INTEGER(C_SIZE_T), VALUE :: size
-            INTEGER(C_INT), VALUE :: flags
-        END FUNCTION cudaHostAlloc
+  !include "cudaDeviceProp.fh"
 
-        FUNCTION cudaMallocHost(cPtr, size) &
-        &   BIND(C, NAME="cudaMallocHost")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaMallocHost
-            TYPE(C_PTR) :: cPtr
-            INTEGER(C_SIZE_T), VALUE :: size
-        END FUNCTION cudaMallocHost
+  interface
 
-        FUNCTION cudaFreeHost(cPtr) &
-        &   BIND(C, NAME="cudaFreeHost")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaFreeHost
-            TYPE(C_PTR), VALUE :: cPtr
-        END FUNCTION cudaFreeHost
+    integer(c_int) function &
+        & cudaHostAlloc(cPtr, size, flags) &
+        & bind(c, name="cudaHostAlloc")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: cPtr
+      integer(c_size_t), value :: size
+      integer(c_int), value :: flags
+    end function cudaHostAlloc
 
-        FUNCTION cudaMalloc(dPtr, size) &
-        &   BIND(C, NAME="cudaMalloc")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaMalloc
-            TYPE(C_PTR) :: dPtr
-            INTEGER(C_SIZE_T), VALUE :: size
-        END FUNCTION cudaMalloc
+    integer(c_int) function &
+        & cudaMallocHost(cPtr, size) &
+        & bind(c, name="cudaMallocHost")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: cPtr
+      integer(c_size_t), value :: size
+    end function cudaMallocHost
 
-        FUNCTION cudaFree(dPtr) &
-        &   BIND(C, NAME="cudaFree")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaFree
-            TYPE(C_PTR), VALUE :: dPtr
-        END FUNCTION cudaFree
+    integer(c_int) function &
+        & cudaMallocManaged(dPtr, size, flags) &
+        & bind(c, name="cudaMallocManaged")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: dPtr
+      integer(c_size_t), value :: size
+      integer(c_int), value :: flags
+    end function cudaMallocManaged
 
-        FUNCTION cudaMemcpy(dst, src, memSize, cpyKind) &
-        &   BIND(C, NAME="cudaMemcpy")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaMemcpy
-            TYPE(C_PTR), VALUE :: dst
-            TYPE(C_PTR), VALUE :: src
-            INTEGER(C_SIZE_T), VALUE :: memSize
-            INTEGER(kind(cudaMemcpyHostToHost)), VALUE :: cpyKind
-        END FUNCTION cudaMemcpy
+    integer(c_int) function &
+        & cudaFreeHost(cPtr) &
+        & bind(c, name="cudaFreeHost")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: cPtr
+    end function cudaFreeHost
 
-        FUNCTION cudaMemcpyAsync(dst, src, memSize, cpyKind, stream) &
-        &   BIND(C, NAME="cudaMemcpyAsync")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaMemcpyAsync
-            TYPE(C_PTR), VALUE :: dst
-            TYPE(C_PTR), VALUE :: src
-            INTEGER(C_SIZE_T), VALUE :: memSize
-            INTEGER(kind(cudaMemcpyHostToHost)), VALUE :: cpyKind
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cudaMemcpyAsync
+    integer(c_int) function &
+        & cudaMalloc(dPtr, size) &
+        & bind(c, name="cudaMalloc")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: dPtr
+      integer(c_size_t), value :: size
+    end function cudaMalloc
 
-        FUNCTION cudaStreamCreate(stream) &
-        &   BIND(C, NAME="cudaStreamCreate")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaStreamCreate
-            TYPE(C_PTR) :: stream
-        END FUNCTION cudaStreamCreate
+    integer(c_int) function &
+        & cudaFree(dPtr) &
+        & bind(c, name="cudaFree")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: dPtr
+    end function cudaFree
 
-        FUNCTION cudaStreamCreateWithFlags(stream, flags) &
-        &   BIND(C, NAME="cudaStreamCreateWithFlags")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaStreamCreateWithFlags
-            TYPE(C_PTR) :: stream
-            INTEGER(C_INT), VALUE :: flags
-        END FUNCTION cudaStreamCreateWithFlags
+    integer(c_int) function &
+        & cudaMemcpy(dst, src, memSize, cpyKind) &
+        & bind(c, name="cudaMemcpy")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: dst
+      type(c_ptr), value :: src
+      integer(c_size_t), value :: memSize
+      integer(c_int), value :: cpyKind
+    end function cudaMemcpy
 
-        FUNCTION cudaStreamDestroy(stream) &
-        &   BIND(C, NAME="cudaStreamDestroy")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaStreamDestroy
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cudaStreamDestroy
+    integer(c_int) function &
+        & cudaMemcpyAsync(dst, src, memSize, cpyKind, stream) &
+        & bind(c, name="cudaMemcpyAsync")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: dst
+      type(c_ptr), value :: src
+      integer(c_size_t), value :: memSize
+      integer(c_int), value :: cpyKind
+      type(c_ptr), value :: stream
+    end function cudaMemcpyAsync
 
-        FUNCTION cudaStreamSynchronize(stream) &
-        &   BIND(C, NAME="cudaStreamSynchronize")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaStreamSynchronize
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cudaStreamSynchronize
+    integer(c_int) function &
+        & cudaStreamCreate(stream) &
+        & bind(c, name="cudaStreamCreate")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: stream
+    end function cudaStreamCreate
 
-        FUNCTION cudaStreamWaitEvent(stream, event) &
-        &   BIND(C, NAME="cudaStreamWaitEvent")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaStreamWaitEvent
-            TYPE(C_PTR), VALUE :: stream
-            TYPE(C_PTR), VALUE :: event
-        END FUNCTION cudaStreamWaitEvent
+    integer(c_int) function &
+        & cudaStreamCreateWithFlags(stream, flags) &
+        & bind(c, name="cudaStreamCreateWithFlags")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: stream
+      integer(c_int), value :: flags
+    end function cudaStreamCreateWithFlags
 
-        FUNCTION cudaGetDeviceCount(deviceCount) &
-        &   BIND(C, NAME="cudaGetDeviceCount")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaGetDeviceCount
-            INTEGER(C_INT) :: deviceCount
-        END FUNCTION cudaGetDeviceCount
+    integer(c_int) function &
+        & cudaStreamDestroy(stream) &
+        & bind(c, name="cudaStreamDestroy")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: stream
+    end function cudaStreamDestroy
 
-        FUNCTION cudaGetDeviceProperties(prop, device) &
-        &   BIND(C, NAME="cudaGetDeviceProperties")
-            USE, INTRINSIC :: ISO_C_BINDING
-            IMPORT cudaDeviceProp
-            INTEGER(KIND(cudaSuccess)) :: cudaGetDeviceProperties
-            TYPE(cudaDeviceProp) :: prop
-            INTEGER(C_INT), VALUE :: device
-        END FUNCTION cudaGetDeviceProperties
+    integer(c_int) function &
+        & cudaStreamSynchronize(stream) &
+        & bind(c, name="cudaStreamSynchronize")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: stream
+    end function cudaStreamSynchronize
 
-        FUNCTION cudaSetDevice(device) &
-        &   BIND(C, NAME="cudaSetDevice")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaSetDevice
-            INTEGER(C_INT), VALUE :: device
-        END FUNCTION cudaSetDevice
+    integer(c_int) function &
+        & cudaStreamWaitEvent(stream, event) &
+        & bind(c, name="cudaStreamWaitEvent")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: stream
+      type(c_ptr), value :: event
+    end function cudaStreamWaitEvent
 
-        FUNCTION cudaSetDeviceFlags(flags) &
-        &   BIND(C, NAME="cudaSetDeviceFlags")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaSetDeviceFlags
-            INTEGER(C_INT), VALUE :: flags
-        END FUNCTION cudaSetDeviceFlags
+    integer(c_int) function &
+        & cudaGetDeviceCount(deviceCount) &
+        & bind(c, name="cudaGetDeviceCount")
+      use, intrinsic :: iso_c_binding
+      integer(c_int) :: deviceCount
+    end function cudaGetDeviceCount
 
-        FUNCTION cudaHostGetDevicePointer(dPtr, cPtr, flags) &
-        &   BIND(C, NAME="cudaHostGetDevicePointer")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaHostGetDevicePointer
-            TYPE(C_PTR) :: dPtr
-            TYPE(C_PTR), VALUE :: cPtr
-            INTEGER(C_INT), VALUE :: flags
-        END FUNCTION cudaHostGetDevicePointer
+    !integer(c_int) function &
+    !    & cudaGetDeviceProperties(prop, device) &
+    !    & bind(c, name="cudaGetDeviceProperties")
+    !  use, intrinsic :: iso_c_binding
+    !  import cudaDeviceProp
+    !  type(cudaDeviceProp) :: prop
+    !  integer(c_int), value :: device
+    !end function cudaGetDeviceProperties
 
-        FUNCTION cudaDeviceSynchronize() &
-        &   BIND(C, NAME="cudaDeviceSynchronize")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaDeviceSynchronize
-        END FUNCTION cudaDeviceSynchronize
+    integer(c_int) function &
+        & cudaSetDevice(device) &
+        & bind(c, name="cudaSetDevice")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: device
+    end function cudaSetDevice
 
-        FUNCTION cudaDeviceReset() &
-        &   BIND(C, NAME="cudaDeviceReset")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaDeviceReset
-        END FUNCTION cudaDeviceReset
+    integer(c_int) function &
+        & cudaSetDeviceFlags(flags) &
+        & bind(c, name="cudaSetDeviceFlags")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: flags
+    end function cudaSetDeviceFlags
 
-        FUNCTION cudaEventCreate( event ) &
-        &   BIND(C, NAME="cudaEventCreate")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaEventCreate
-            TYPE(C_PTR) :: event
-        END FUNCTION cudaEventCreate
+    integer(c_int) function &
+        & cudaHostGetDevicePointer(dPtr, cPtr, flags) &
+        & bind(c, name="cudaHostGetDevicePointer")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: dPtr
+      type(c_ptr), value :: cPtr
+      integer(c_int), value :: flags
+    end function cudaHostGetDevicePointer
 
-        FUNCTION cudaEventCreateWithFlags( event, flags ) &
-        &   BIND(C, NAME="cudaEventCreateWithFlags")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaEventCreateWithFlags
-            TYPE(C_PTR) :: event
-            INTEGER(C_INT), VALUE :: flags
-        END FUNCTION cudaEventCreateWithFlags
+    integer(c_int) function &
+        & cudaDeviceSynchronize() &
+        & bind(c, name="cudaDeviceSynchronize")
+      use, intrinsic :: iso_c_binding
+    end function cudaDeviceSynchronize
 
-        FUNCTION cudaEventDestroy( event ) &
-        &   BIND(C, NAME="cudaEventDestroy")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaEventDestroy
-            TYPE(C_PTR), VALUE :: event
-        END FUNCTION cudaEventDestroy
+    integer(c_int) function &
+        & cudaDeviceReset() &
+        & bind(c, name="cudaDeviceReset")
+      use, intrinsic :: iso_c_binding
+    end function cudaDeviceReset
 
-        FUNCTION cudaEventElapsedTime( eventTime, eventStart, eventStop ) &
-        &   BIND(C, NAME="cudaEventElapsedTime")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaEventElapsedTime
-            REAL(C_FLOAT) :: eventTime
-            TYPE(C_PTR), VALUE :: eventStart
-            TYPE(C_PTR), VALUE :: eventStop
-        END FUNCTION cudaEventElapsedTime
+    integer(c_int) function &
+        & cudaEventCreate( event ) &
+        & bind(c, name="cudaEventCreate")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: event
+    end function cudaEventCreate
 
-        FUNCTION cudaEventQuery( event ) &
-        &   BIND(C, NAME="cudaEventQuery")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaEventQuery
-            TYPE(C_PTR), VALUE :: event
-        END FUNCTION cudaEventQuery
+    integer(c_int) function &
+        & cudaEventCreateWithFlags( event, flags ) &
+        & bind(c, name="cudaEventCreateWithFlags")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: event
+      integer(c_int), value :: flags
+    end function cudaEventCreateWithFlags
 
-        FUNCTION cudaEventRecord( event, stream ) &
-        &   BIND(C, NAME="cudaEventRecord")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaEventRecord
-            TYPE(C_PTR), VALUE :: event
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cudaEventRecord
+    integer(c_int) function &
+        & cudaEventDestroy( event ) &
+        & bind(c, name="cudaEventDestroy")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: event
+    end function cudaEventDestroy
 
-        FUNCTION cudaEventSynchronize( event ) &
-        &   BIND(C, NAME="cudaEventSynchronize")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaEventSynchronize
-            TYPE(C_PTR), VALUE :: event
-        END FUNCTION cudaEventSynchronize
+    integer(c_int) function &
+        & cudaEventElapsedTime( eventTime, eventStart, eventStop ) &
+        & bind(c, name="cudaEventElapsedTime")
+      use, intrinsic :: iso_c_binding
+      real(c_float) :: eventTime
+      type(c_ptr), value :: eventStart
+      type(c_ptr), value :: eventStop
+    end function cudaEventElapsedTime
 
-        FUNCTION cudaDeviceSetSharedMemConfig( config ) &
-        &   BIND(C, NAME="cudaDeviceSetSharedMemConfig")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaDeviceSetSharedMemConfig
-            INTEGER(C_INT), VALUE :: config
-        END FUNCTION cudaDeviceSetSharedMemConfig
+    integer(c_int) function &
+        & cudaEventQuery( event ) &
+        & bind(c, name="cudaEventQuery")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: event
+    end function cudaEventQuery
 
-        FUNCTION cudaDeviceSetCacheConfig( cacheConfig ) &
-        &   BIND(C, NAME="cudaDeviceSetCacheConfig")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(cudaSuccess)) :: cudaDeviceSetCacheConfig
-            INTEGER(C_INT), VALUE :: cacheConfig
-        END FUNCTION cudaDeviceSetCacheConfig
+    integer(c_int) function &
+        & cudaEventRecord( event, stream ) &
+        & bind(c, name="cudaEventRecord")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: event
+      type(c_ptr), value :: stream
+    end function cudaEventRecord
 
-    END INTERFACE
+    integer(c_int) function &
+        & cudaEventSynchronize( event ) &
+        & bind(c, name="cudaEventSynchronize")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: event
+    end function cudaEventSynchronize
 
-END MODULE cudaf
+    integer(c_int) function &
+        & cudaDeviceSetSharedMemConfig( config ) &
+        & bind(c, name="cudaDeviceSetSharedMemConfig")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: config
+    end function cudaDeviceSetSharedMemConfig
+
+    integer(c_int) function &
+        & cudaDeviceSetCacheConfig( cacheConfig ) &
+        & bind(c, name="cudaDeviceSetCacheConfig")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: cacheConfig
+    end function cudaDeviceSetCacheConfig
+
+  end interface
+
+end module cudaf
