@@ -83,9 +83,11 @@ subroutine sim_interpolate1dWd( volume, r_inner, r_outer, dens, temp, x )
      else
          ! Interpolate density in volume
         call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts), volume, dens)
-        call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts)*sim_wd_temp_tab(1:sim_wd_npnts), volume, temp)
+        call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts)*&
+				sim_wd_temp_tab(1:sim_wd_npnts), volume, temp)
         do i = 1, sim_wd_nspec
-           call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts)*sim_wd_spec_tab(1:sim_wd_npnts,i), volume, x(i))
+           call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts)*&
+				sim_wd_spec_tab(1:sim_wd_npnts,i), volume, x(i))
         end do
         temp = temp / dens
         x(:) = x(:) / dens

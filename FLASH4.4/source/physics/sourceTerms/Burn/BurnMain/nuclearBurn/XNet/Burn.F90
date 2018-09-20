@@ -65,6 +65,7 @@ subroutine Burn (  dt  )
   use Hydro_interface, ONLY : Hydro_detectShock
   use Simulation_interface, ONLY : Simulation_mapStrToInt
   use Timers_interface, ONLY : Timers_start, Timers_stop
+  use tree, ONLY : bflags
 
   use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
