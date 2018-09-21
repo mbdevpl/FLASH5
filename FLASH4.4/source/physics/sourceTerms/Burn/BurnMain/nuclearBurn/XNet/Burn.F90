@@ -62,7 +62,7 @@ subroutine Burn (  dt  )
        Grid_releaseBlkPtr, Grid_getMaxRefinement, Grid_getLeafIterator, &
        Grid_releaseLeafIterator
   use Hydro_data, ONLY : hy_gcMaskSD
-  use Hydro_interface, ONLY : Hydro_detectShock
+  use Hydro_interface, ONLY : Hydro_shockStrength
   use Simulation_interface, ONLY : Simulation_mapStrToInt
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use tree, ONLY : bflags
@@ -110,6 +110,8 @@ subroutine Burn (  dt  )
   integer, dimension(:), allocatable :: batch_lo, batch_hi
   integer, dimension(:), allocatable :: sumBurn_TS
 
+  integer, parameter :: shock_mode = 1
+  real, parameter :: shock_thresh = 0.33
   real :: ei, ek, enuc
   integer :: i, j, k, m, n, ii, jj, kk, mm, nn
 
@@ -200,9 +202,9 @@ subroutine Burn (  dt  )
         batch_hi(thisBlock) = (nzones + xnet_nzbatchmx - 1) / xnet_nzbatchmx
 
         ! allocate space for dimensions
-        allocate(xCoord(iSizeGC))
-        allocate(yCoord(jSizeGC))
-        allocate(zCoord(kSizeGC))
+        allocate(xCoord(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+        allocate(yCoord(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+        allocate(zCoord(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 
         call Grid_getCellCoords(IAXIS,blockDesc,CENTER,getGuardCells,xCoord,iSizeGC)
         call Grid_getCellCoords(JAXIS,blockDesc,CENTER,getGuardCells,yCoord,jSizeGC)
@@ -213,10 +215,10 @@ subroutine Burn (  dt  )
 
         ! Shock detector
         if (.NOT. bn_useShockBurn) then
-           call Hydro_detectShock(solnData, shock, blkLimits, blkLimitsGC, (/0,0,0/), &
-              xCoord,yCoord,zCoord)
+           call Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, (/0,0,0/), &
+              xCoord,yCoord,zCoord,shock_thresh,shock_mode)
         else
-           shock(:,:,:) = 0
+           shock(:,:,:) = 0.0
         endif
 
         solnData(NMPI_VAR,:,:,:) = xnet_myid
@@ -246,8 +248,7 @@ subroutine Burn (  dt  )
 
                  okBurnTemp = (tmp(ii,jj,kk,thisBlock) >= bn_nuclearTempMin .AND. tmp(ii,jj,kk,thisBlock) <= bn_nuclearTempMax)
                  okBurnDens = (rho(ii,jj,kk,thisBlock) >= bn_nuclearDensMin .AND. rho(ii,jj,kk,thisBlock) <= bn_nuclearDensMax)
-                 okBurnShock = (shock(i,j,k) == 0.0 .OR. (shock(i,j,k) == 1.0 .AND. bn_useShockBurn))
-                 okBurnShock = .TRUE.
+                 okBurnShock = (shock(i,j,k) <= 0.0 .OR. (shock(i,j,k) > 0.0 .AND. bn_useShockBurn))
 
                  if (okBurnTemp .AND. okBurnDens .AND. okBurnShock) then
 
