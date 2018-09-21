@@ -65,7 +65,6 @@ subroutine Burn (  dt  )
   use Hydro_interface, ONLY : Hydro_detectShock
   use Simulation_interface, ONLY : Simulation_mapStrToInt
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use tree, ONLY : bflags
 
   use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
@@ -376,7 +375,7 @@ subroutine Burn (  dt  )
         !$omp end parallel do
 
 #ifdef FLASH_GRID_PARAMESH
-        !bflags(1,blockID) = sumBurn_TS(thisBlock)
+        bflags(1,blockID) = sumBurn_TS(thisBlock)
 #endif
         solnData(MTSB_VAR,:,:,:) = sumBurn_TS(thisBlock)
 
