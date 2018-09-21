@@ -31,7 +31,7 @@
 !!***
 subroutine bn_network(tt,y,dydt)   
 
-  use Burn_dataEOS, ONLY: btemp, den
+  use Burn_dataEOS, ONLY: btemp, bden
   use Burn_data
   use bn_dataIso7
 
@@ -75,8 +75,8 @@ subroutine bn_network(tt,y,dydt)
   if (t9 .gt. 2.5 .and. y(ic12)+y(io16) .le. 4.0e-3) then
      yeff_ca40 = (t9i32**3) * exp(239.42*t9i-74.741)
      yeff_ti44 = (t932**3) * exp(-274.12*t9i+74.914)
-     rsi2ni = yeff_ca40*den**3 * y(ihe4)**3 * ratdum(ircaag)*y(isi28)
-     rni2si = min(1.0e20,yeff_ti44*ratdum(irtiga)/(den**3*y(ihe4)**3))
+     rsi2ni = yeff_ca40*bden**3 * y(ihe4)**3 * ratdum(ircaag)*y(isi28)
+     rni2si = min(1.0e20,yeff_ti44*ratdum(irtiga)/(bden**3*y(ihe4)**3))
   end if
 
 

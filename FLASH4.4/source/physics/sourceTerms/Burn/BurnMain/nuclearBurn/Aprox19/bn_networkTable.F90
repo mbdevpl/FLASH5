@@ -23,7 +23,7 @@ subroutine bn_networkTable()
 #include "Flash.h"
 
    
-  use Burn_dataEOS, ONLY: btemp, den
+  use Burn_dataEOS, ONLY: btemp, bden
   use Burn_data
   use bn_dataAprox19
 
@@ -55,10 +55,10 @@ subroutine bn_networkTable()
 
      !..save the input
      btemp_sav = btemp
-     den_sav   = den
+     den_sav   = bden
 
      !..form the table
-     den = 1.0e0
+     bden = 1.0e0
      do i=1,imax
         btemp = tlo + float(i-1)*tstp
         btemp = 10.0e0**(btemp)
@@ -70,92 +70,92 @@ subroutine bn_networkTable()
      enddo
 
      !..restore the input
-     den  = den_sav
+     bden  = den_sav
      btemp = btemp_sav
   end if
 
 
   !..normal execution starts here
   !..set the density dependence vector
-  dtab(irpp)    = den
-  dtab(irheng)  = den
+  dtab(irpp)    = bden
+  dtab(irheng)  = bden
   dtab(irhegn)  = 1.0e0
-  dtab(irhng)   = den
+  dtab(irhng)   = bden
   dtab(irdgn)   = 1.0e0
-  dtab(irdpg)   = den
+  dtab(irdpg)   = bden
   dtab(irhegp)  = 1.0e0
-  dtab(ir33)    = den
-  dtab(ir34)    = den
-  dtab(ircpg)   = den 
-  dtab(irnpg)   = den 
+  dtab(ir33)    = bden
+  dtab(ir34)    = bden
+  dtab(ircpg)   = bden
+  dtab(irnpg)   = bden
   dtab(ifa)     = 1.0e0
   dtab(ifg)     = 1.0e0
-  dtab(iropg)   = den
-  dtab(irnag)   = den
-  dtab(ircag)   = den
+  dtab(iropg)   = bden
+  dtab(irnag)   = bden
+  dtab(ircag)   = bden
   dtab(iroga)   = 1.0e0
-  dtab(ir3a)    = den*den
+  dtab(ir3a)    = bden*bden
   dtab(irg3a)   = 1.0e0
-  dtab(ir1212)  = den
-  dtab(ir1216)  = den
-  dtab(ir1616)  = den
-  dtab(iroag)   = den
+  dtab(ir1212)  = bden
+  dtab(ir1216)  = bden
+  dtab(ir1616)  = bden
+  dtab(iroag)   = bden
   dtab(irnega)  = 1.0e0
-  dtab(irneag)  = den
+  dtab(irneag)  = bden
   dtab(irmgga)  = 1.0e0
-  dtab(irmgag)  = den
+  dtab(irmgag)  = bden
   dtab(irsiga)  = 1.0e0
-  dtab(irmgap)  = den 
-  dtab(iralpa)  = den
-  dtab(iralpg)  = den
+  dtab(irmgap)  = bden
+  dtab(iralpa)  = bden
+  dtab(iralpg)  = bden
   dtab(irsigp)  = 1.0e0
-  dtab(irsiag)  = den
+  dtab(irsiag)  = bden
   dtab(irsga)   = 1.0e0
-  dtab(irppa)   = den
-  dtab(irsiap)  = den
-  dtab(irppg)   = den
+  dtab(irppa)   = bden
+  dtab(irsiap)  = bden
+  dtab(irppg)   = bden
   dtab(irsgp)   = 1.0e0
-  dtab(irsag)   = den
+  dtab(irsag)   = bden
   dtab(irarga)  = 1.0e0
-  dtab(irsap)   = den
-  dtab(irclpa)  = den
-  dtab(irclpg)  = den
+  dtab(irsap)   = bden
+  dtab(irclpa)  = bden
+  dtab(irclpg)  = bden
   dtab(irargp)  = 1.0e0
-  dtab(irarag)  = den
+  dtab(irarag)  = bden
   dtab(ircaga)  = 1.0e0
-  dtab(irarap)  = den
-  dtab(irkpa)   = den
-  dtab(irkpg)   = den
+  dtab(irarap)  = bden
+  dtab(irkpa)   = bden
+  dtab(irkpg)   = bden
   dtab(ircagp)  = 1.0e0
-  dtab(ircaag)  = den
+  dtab(ircaag)  = bden
   dtab(irtiga)  = 1.0e0
-  dtab(ircaap)  = den
-  dtab(irscpa)  = den
-  dtab(irscpg)  = den
+  dtab(ircaap)  = bden
+  dtab(irscpa)  = bden
+  dtab(irscpg)  = bden
   dtab(irtigp)  = 1.0e0
-  dtab(irtiag)  = den
+  dtab(irtiag)  = bden
   dtab(ircrga)  = 1.0e0
-  dtab(irtiap)  = den
-  dtab(irvpa)   = den
-  dtab(irvpg)   = den
+  dtab(irtiap)  = bden
+  dtab(irvpa)   = bden
+  dtab(irvpg)   = bden
   dtab(ircrgp)  = 1.0e0
-  dtab(ircrag)  = den
+  dtab(ircrag)  = bden
   dtab(irfega)  = 1.0e0
-  dtab(ircrap)  = den
-  dtab(irmnpa)  = den
-  dtab(irmnpg)  = den
+  dtab(ircrap)  = bden
+  dtab(irmnpa)  = bden
+  dtab(irmnpg)  = bden
   dtab(irfegp)  = 1.0e0
-  dtab(irfeag)  = den
+  dtab(irfeag)  = bden
   dtab(irniga)  = 1.0e0
-  dtab(irfeap)  = den
-  dtab(ircopa)  = den
-  dtab(ircopg)  = den
+  dtab(irfeap)  = bden
+  dtab(ircopa)  = bden
+  dtab(ircopg)  = bden
   dtab(irnigp)  = 1.0e0
-  dtab(irfepg)  = den
+  dtab(irfepg)  = bden
   dtab(ircogp)  = 1.0e0
-  dtab(ir52ng)  = den
+  dtab(ir52ng)  = bden
   dtab(ir53gn)  = 1.0e0
-  dtab(ir53ng)  = den
+  dtab(ir53ng)  = bden
   dtab(ir54gn)  = 1.0e0
   dtab(irpen)   = 1.0e0
   dtab(ispen)   = 1.0e0
