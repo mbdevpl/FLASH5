@@ -6,7 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Driver_evolveFlash()
+!!  call Driver_evolveFlash()
 !!
 !! DESCRIPTION
 !!
@@ -20,8 +20,9 @@ subroutine Driver_evolveFlash()
 
   use Driver_data, ONLY: dr_globalMe 
   use Eos_interface, ONLY : Eos_unitTest
-  use Grid_interface, ONLY : Grid_getMaxRefinement, Grid_getBlkPtr
-    use block_iterator, ONLY : block_iterator_t
+  use Grid_interface, ONLY : Grid_getMaxRefinement, Grid_getBlkPtr,Grid_releaseBlkPtr, &
+       Grid_getLeafIterator, Grid_releaseLeafIterator
+  use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -38,8 +39,8 @@ subroutine Driver_evolveFlash()
   integer,dimension(4) :: prNum
   integer :: temp,i
   integer,dimension(LOW:HIGH,MDIM)::tileLimits
-  type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+  type(block_metadata_t) :: blockDesc
   integer:: level, maxLev
   real,pointer,dimension(:,:,:,:) :: Uout
 
@@ -62,20 +63,22 @@ subroutine Driver_evolveFlash()
 
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
   do level=1,maxLev
-     itor = block_iterator_t(LEAF, level=level)
+     call Grid_getLeafIterator(itor, level=level)
      do while(itor%is_valid())
-        call itor%blkMetaData(block)
+        call itor%blkMetaData(blockDesc)
         
-        tileLimits = block%limits
-        call Grid_getBlkPtr(block, Uout)
+        tileLimits = blockDesc%limits
+        call Grid_getBlkPtr(blockDesc, Uout)
 
         print *, "Preparing to call Eos_unitTest"
         thisBlock=.true.
         Call Eos_unitTest(fileUnit,thisBlock, Uout, tileLimits)
         print *, "    Returned from Eos_unitTest"
         perfect=perfect.and.thisBlock
+        call Grid_releaseBlkPtr(blockDesc, Uout)
         call itor%next()
      end do
+     call Grid_releaseLeafIterator(itor)
   end do
   
   if (perfect) then
