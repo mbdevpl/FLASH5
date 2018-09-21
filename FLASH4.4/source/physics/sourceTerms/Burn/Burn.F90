@@ -7,9 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!   call Burn ( integer, intent(IN)    :: blockCount, 
-!!               integer(:), intent(IN) :: blockList, 
-!!               real, intent(IN)       ::  dt  )    
+!!   call Burn ( real, intent(IN) ::  dt  )    
 !!
 !! DESCRIPTION
 !!
@@ -17,8 +15,6 @@
 !!
 !! ARGUMENTS
 !!
-!!   blockCount -- dimension of blockList
-!!   blockList -- array of blocks which should receive burning
 !!   dt  --       passed to the internal bn_burner module  
 !!
 !! PARAMETERS
@@ -48,14 +44,12 @@
 !!
 !!***
 
-subroutine Burn ( blockCount, blockList, dt  )    
+subroutine Burn (  dt  )    
 
   implicit none
 
   !args
-  integer, INTENT(in)                        :: blockCount
-  integer, INTENT(in), DIMENSION(blockCount)  :: blockList
-  real,    INTENT(in)                        :: dt
+  real, INTENT(in) :: dt
 
 
   return

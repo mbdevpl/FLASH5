@@ -24,9 +24,7 @@ Module Burn_interface
   end interface
 
   interface Burn
-     subroutine Burn(blockCount,blockList,dt)
-       integer, intent(IN) :: blockCount
-       integer,dimension(blockCount), intent(IN) :: blockList
+     subroutine Burn(dt)
        real,intent(IN) :: dt
      end subroutine Burn
   end interface

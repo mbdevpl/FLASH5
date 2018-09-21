@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/gr_getDataOffsets
+!!****if* source/Grid/GridMain/gr_getDataOffsets_blkid
 !!
 !! NAME
 !!  gr_getDataOffsets
@@ -55,13 +55,13 @@
 !!          the non permanent mode when using PARAMESH 4.
 !!
 !!***
-subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,begOffset,getIntPtr)
-  use block_metadata, ONLY : block_metadata_t
+subroutine gr_getDataOffsets_blkid(blockID,gridDataStruct,startingPos,length,beginCount,begOffset,getIntPtr)
+  use Grid_interface, ONLY : Grid_getBlkIndexLimits
 
 #include "constants.h"
 #include "Flash.h"
   implicit none
-  type(block_metadata_t), intent(IN)  :: block
+  integer, intent(IN)  :: blockID
   integer, intent(IN)  :: gridDataStruct
   integer, intent(IN)  :: beginCount
   integer,dimension(MDIM),intent(IN) :: startingPos
@@ -70,9 +70,7 @@ subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,
   logical,intent(OUT) :: getIntPtr
 
   integer,dimension(LOW:HIGH,MDIM) :: blkLimits
-#ifdef FL_NON_PERMANENT_GUARDCELLS 
   integer,dimension(LOW:HIGH,MDIM) :: blkLimitsGC
-#endif
   integer :: i
   logical :: formBlk
 
@@ -89,10 +87,7 @@ subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,
        (gridDataStruct == FACEZ).or.(gridDataStruct==WORK)) then
      formBlk=.false.
      if(beginCount == EXTERIOR) then
-        ! DEV: blkLimits was changed to localLimits below at commit 7c1fb877
-        ! Do we need the same change here?
-        blkLimits   = block%limits
-        blkLimitsGC = block%limitsGC
+        call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC, gridDataStruct)
         do i = 1,NDIM
            formBlk = formBlk.or.(startingPos(i) < blkLimits(LOW,i))
            formBlk = formBlk.or.((startingPos(i)+length(i)-1)>blkLimits(HIGH,i))
@@ -108,9 +103,10 @@ subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,
 #endif
   !! If operating with permanent guardcells, then the interior implies offset by gcell
   if(beginCount == INTERIOR) then
-     blkLimits = block%localLimits
+     call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC, gridDataStruct)
      begOffset(1:NDIM) = blkLimits(LOW,1:NDIM)-1
   end if
   
   return
-end subroutine gr_getDataOffsets
+end subroutine gr_getDataOffsets_blkid
+

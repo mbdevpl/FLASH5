@@ -45,6 +45,8 @@ subroutine Grid_getBlkCenterCoords(blockId, blockCenter)
 
   integer, intent(IN)  :: blockId
   real,    intent(OUT) :: blockCenter(MDIM)
+ 
+  blockCenter(:) = 0.0
 
   call Driver_abortFlash("[Grid_getBlkCenterCoords] Not implemented for AMReX")
 end subroutine Grid_getBlkCenterCoords
