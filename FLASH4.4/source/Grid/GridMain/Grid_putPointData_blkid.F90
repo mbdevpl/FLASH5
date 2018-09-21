@@ -208,7 +208,8 @@ subroutine Grid_putPointData_blkid(blockid, gridDataStruct, structIndex, beginCo
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_getInteriorBlkPtr,gr_releaseInteriorBlkPtr
+  use gr_interface, ONLY : gr_getInteriorBlkPtr,gr_releaseInteriorBlkPtr, &
+                           gr_getDataOffsets
 
   implicit none
 

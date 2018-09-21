@@ -67,6 +67,7 @@ subroutine Grid_getSingleCellCoords(ind, blockId,edge, beginCount,coords)
   integer, intent(in) :: beginCount
   real, dimension(MDIM), intent(out) :: coords
 
+  coords(:) = 0.0
   CALL Driver_abortFlash("[Grid_getSingleCellCoords] AMReX does *not* deal in block IDs")
 end subroutine Grid_getSingleCellCoords
 
@@ -108,6 +109,7 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
      if((ind(KAXIS)<1).or.(ind(KAXIS)>NZB))&
           call Driver_abortFlash('GetSingleCellCoords : K index out of blkLimits')
   else
+     coords(:) = 0.0
      call Driver_abortFlash("Grid_getSingleCellCoords, incorrect value for beginCount")
   end if
 #endif
@@ -124,6 +126,7 @@ subroutine Grid_getSingleCellCoords_Itor(ind, block, edge, beginCount, coords)
     else if (edge == RIGHT_EDGE) then
       shift = 1.0
     else
+      coords(:) = 0.0
       call Driver_abortFlash('[Grid_getSingleCellCoods] invalid edge')
     end if
 

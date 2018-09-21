@@ -71,6 +71,7 @@ subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
   integer, intent(in) :: point(MDIM)
   real, intent(out) :: cellvolume
 
+  cellvolume = 0.0
   call Driver_abortFlash("[Grid_getSingleCellVol] AMReX does *not* deal in blockIDs")
 end subroutine Grid_getSingleCellVol
 
@@ -106,6 +107,7 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
 
   if (.NOT. ((geometry == CARTESIAN                  ) .OR. &
              (geometry == CYLINDRICAL .AND. NDIM == 2))  ) then
+    cellvolume = 0.0
     call Driver_abortFlash("[Grid_getSingleCellVol] Not tested yet")
   end if
 

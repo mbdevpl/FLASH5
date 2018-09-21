@@ -488,4 +488,30 @@ module gr_interface
     end subroutine gr_releaseBlkIterator
   end interface
 
+  interface gr_getDataOffsets
+     subroutine gr_getDataOffsets(block, gridDataStruct, startingPos, &
+                                  length, beginCount, begOffset, getIntPtr)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN)  :: block
+       integer,                intent(IN)  :: gridDataStruct
+       integer,                intent(IN)  :: beginCount
+       integer,                intent(IN)  :: startingPos(MDIM)
+       integer,                intent(IN)  :: length(MDIM)
+       integer,                intent(OUT) :: begOffset(MDIM)
+       logical,                intent(OUT) :: getIntPtr
+     end subroutine gr_getDataOffsets
+     subroutine gr_getDataOffsets_blkid(blockID, gridDataStruct, startingPos, &
+                                        length, beginCount, begOffset, getIntPtr)
+       implicit none
+       integer, intent(IN)  :: blockID
+       integer, intent(IN)  :: gridDataStruct
+       integer, intent(IN)  :: beginCount
+       integer, intent(IN)  :: startingPos(MDIM)
+       integer, intent(IN)  :: length(MDIM)
+       integer, intent(OUT) :: begOffset(MDIM)
+       logical, intent(OUT) :: getIntPtr
+     end subroutine gr_getDataOffsets_blkid
+  end interface gr_getDataOffsets
+
 end module gr_interface
