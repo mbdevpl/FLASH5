@@ -40,5 +40,5 @@ In its present form, FlashTest does not allow for simultaneous execution of test
 suites.  Therefore, when launching test suite runs on Jenkins, please confirm
 first that no other runs are already in progress.
 
-We presently run on a weekly basis the small subset of AMReX-only tests ([![Flash-Staged-Intel](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/badge/icon)](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/)) that are built in debug mode with the Intel compiler suite.  `
+We presently run on a weekly basis the small subset of AMReX-only tests ([![Flash-Staged-Intel](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/badge/icon)](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/)) that are built in debug mode with the Intel compiler suite.
 
