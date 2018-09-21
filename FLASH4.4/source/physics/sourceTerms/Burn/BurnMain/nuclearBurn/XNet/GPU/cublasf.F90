@@ -1,392 +1,397 @@
-MODULE cublasf
-!===============================================================================
-! INTERFACE to CUBLAS routines
-!===============================================================================
-    USE, INTRINSIC :: ISO_C_BINDING
+!***************************************************************************************************
+! cublasf.f90 10/18/17
+! This file contains the module defining Fortran interfaces for the cuBLAS library
+!***************************************************************************************************
 
-    ENUM, BIND(C) !:: cublasStatus_t
-    ENUMERATOR :: CUBLAS_STATUS_SUCCESS=0
-    ENUMERATOR :: CUBLAS_STATUS_NOT_INITIALIZED =1
-    ENUMERATOR :: CUBLAS_STATUS_ALLOC_FAILED=3
-    ENUMERATOR :: CUBLAS_STATUS_INVALID_VALUE=7
-    ENUMERATOR :: CUBLAS_STATUS_ARCH_MISMATCH=8
-    ENUMERATOR :: CUBLAS_STATUS_MAPPING_ERROR=11
-    ENUMERATOR :: CUBLAS_STATUS_EXECUTION_FAILED=13
-    ENUMERATOR :: CUBLAS_STATUS_INTERNAL_ERROR=14
-    END ENUM !cublasStatus_t
+module cublasf
+  !-------------------------------------------------------------------------------------------------
+  ! Interface to cuBLAS routines
+  !-------------------------------------------------------------------------------------------------
+  use, intrinsic :: iso_c_binding
 
-    ENUM, BIND(C) !:: cublasFillMode_t
-    ENUMERATOR :: CUBLAS_FILL_MODE_LOWER=0
-    ENUMERATOR :: CUBLAS_FILL_MODE_UPPER=1
-    END ENUM !cublasFillMode_t
+  enum, bind(c) !:: cublasStatus_t
+    enumerator :: CUBLAS_STATUS_SUCCESS = 0
+    enumerator :: CUBLAS_STATUS_NOT_INITIALIZED = 1
+    enumerator :: CUBLAS_STATUS_ALLOC_FAILED = 3
+    enumerator :: CUBLAS_STATUS_INVALID_VALUE = 7
+    enumerator :: CUBLAS_STATUS_ARCH_MISMATCH = 8
+    enumerator :: CUBLAS_STATUS_MAPPING_ERROR = 11
+    enumerator :: CUBLAS_STATUS_EXECUTION_FAILED = 13
+    enumerator :: CUBLAS_STATUS_INTERNAL_ERROR = 14
+  end enum !cublasStatus_t
 
-    ENUM, BIND(C) !:: cublasDiag    TYPE_t
-    ENUMERATOR :: CUBLAS_DIAG_NON_UNIT=0
-    ENUMERATOR :: CUBLAS_DIAG_UNIT=1
-    END ENUM !cublasDiag    TYPE_t
+  enum, bind(c) !:: cublasFillMode_t
+    enumerator :: CUBLAS_FILL_MODE_LOWER = 0
+    enumerator :: CUBLAS_FILL_MODE_UPPER = 1
+  end enum !cublasFillMode_t
 
-    ENUM, BIND(C) !:: cublasSideMode_t
-    ENUMERATOR :: CUBLAS_SIDE_LEFT =0
-    ENUMERATOR :: CUBLAS_SIDE_RIGHT=1
-    END ENUM !cublasSideMode_t
+  enum, bind(c) !:: cublasDiag type_t
+    enumerator :: CUBLAS_DIAG_NON_UNIT = 0
+    enumerator :: CUBLAS_DIAG_UNIT = 1
+  end enum !cublasDiag    type_t
 
-    ENUM, BIND(C) !:: cublasOperation_t
-    ENUMERATOR :: CUBLAS_OP_N=0
-    ENUMERATOR :: CUBLAS_OP_T=1
-    ENUMERATOR :: CUBLAS_OP_C=2
-    END ENUM !cublasOperation_t
+  enum, bind(c) !:: cublasSideMode_t
+    enumerator :: CUBLAS_SIDE_LEFT = 0
+    enumerator :: CUBLAS_SIDE_RIGHT = 1
+  end enum !cublasSideMode_t
 
-    INTERFACE
+  enum, bind(c) !:: cublasOperation_t
+    enumerator :: CUBLAS_OP_N = 0
+    enumerator :: CUBLAS_OP_T = 1
+    enumerator :: CUBLAS_OP_C = 2
+  end enum !cublasOperation_t
 
-        FUNCTION cublasInit() &
-        &   BIND(C, NAME="cublasInit")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasInit
-        END FUNCTION cublasInit
+  interface
 
-        FUNCTION cublasShutdown() &
-        &   BIND(C, NAME="cublasShutdown")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasShutdown
-        END FUNCTION cublasShutdown
+    integer(c_int) function &
+        & cublasInit() &
+        & bind(c, name="cublasInit")
+      use, intrinsic :: iso_c_binding
+    end function cublasInit
 
-        FUNCTION cublasCreate_v2(handle) &
-        &   BIND(C, NAME="cublasCreate_v2")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasCreate_v2
-            TYPE(C_PTR) :: handle
-        END FUNCTION cublasCreate_v2
+    integer(c_int) function &
+        & cublasShutdown() &
+        & bind(c, name="cublasShutdown")
+      use, intrinsic :: iso_c_binding
+    end function cublasShutdown
 
-        FUNCTION cublasDestroy_v2(handle) &
-        &   BIND(C, NAME="cublasDestroy_v2")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDestroy_v2
-            TYPE(C_PTR), VALUE :: handle
-        END FUNCTION cublasDestroy_v2
+    integer(c_int) function &
+        & cublasCreate_v2(handle) &
+        & bind(c, name="cublasCreate_v2")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr) :: handle
+    end function cublasCreate_v2
 
-        FUNCTION cublasGetStream_v2(handle, stream) &
-        &   BIND(C, NAME="cublasGetStream_v2")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasGetStream_v2
-            TYPE(C_PTR), VALUE :: handle
-            TYPE(C_PTR) :: stream
-        END FUNCTION cublasGetStream_v2
+    integer(c_int) function &
+        & cublasDestroy_v2(handle) &
+        & bind(c, name="cublasDestroy_v2")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+    end function cublasDestroy_v2
 
-        FUNCTION cublasSetStream_v2(handle, stream) &
-        &   BIND(C, NAME="cublasSetStream_v2")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasSetStream_v2
-            TYPE(C_PTR), VALUE :: handle
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cublasSetStream_v2
+    integer(c_int) function &
+        & cublasGetStream_v2(handle, stream) &
+        & bind(c, name="cublasGetStream_v2")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      type(c_ptr) :: stream
+    end function cublasGetStream_v2
 
-        FUNCTION cublasGetVector(n, elemSize, dx_src, incx, hy_dst, incy) &
-        &   BIND(C, NAME="cublasGetVector")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasGetVector
-            INTEGER(C_INT), VALUE :: n
-            INTEGER(C_SIZE_T), VALUE :: elemSize
-            TYPE(C_PTR), VALUE :: dx_src
-            INTEGER(C_INT), VALUE :: incx
-            TYPE(C_PTR), VALUE :: hy_dst
-            INTEGER(C_INT), VALUE :: incy
-        END FUNCTION cublasGetVector
+    integer(c_int) function &
+        & cublasSetStream_v2(handle, stream) &
+        & bind(c, name="cublasSetStream_v2")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      type(c_ptr), value :: stream
+    end function cublasSetStream_v2
 
-        FUNCTION cublasGetVectorAsync(n, elemSize, dx_src, incx, hy_dst, incy, stream) &
-        &   BIND(C, NAME="cublasGetVectorAsync")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasGetVectorAsync
-            INTEGER(C_INT), VALUE :: n
-            INTEGER(C_SIZE_T), VALUE :: elemSize
-            TYPE(C_PTR), VALUE :: dx_src
-            INTEGER(C_INT), VALUE :: incx
-            TYPE(C_PTR), VALUE :: hy_dst
-            INTEGER(C_INT), VALUE :: incy
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cublasGetVectorAsync
+    integer(c_int) function &
+        & cublasGetVector(n, elemSize, dx_src, incx, hy_dst, incy) &
+        & bind(c, name="cublasGetVector")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: n
+      integer(c_size_t), value :: elemSize
+      type(c_ptr), value :: dx_src
+      integer(c_int), value :: incx
+      type(c_ptr), value :: hy_dst
+      integer(c_int), value :: incy
+    end function cublasGetVector
 
-        FUNCTION cublasSetVector(n, elemSize, hx_src, incx, dy_dst, incy) &
-        &   BIND(C, NAME="cublasSetVector")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasSetVector
-            INTEGER(C_INT), VALUE :: n
-            INTEGER(C_SIZE_T), VALUE :: elemSize
-            TYPE(C_PTR), VALUE :: hx_src
-            INTEGER(C_INT), VALUE :: incx
-            TYPE(C_PTR), VALUE :: dy_dst
-            INTEGER(C_INT), VALUE :: incy
-        END FUNCTION cublasSetVector
+    integer(c_int) function &
+        & cublasGetVectorAsync(n, elemSize, dx_src, incx, hy_dst, incy, stream) &
+        & bind(c, name="cublasGetVectorAsync")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: n
+      integer(c_size_t), value :: elemSize
+      type(c_ptr), value :: dx_src
+      integer(c_int), value :: incx
+      type(c_ptr), value :: hy_dst
+      integer(c_int), value :: incy
+      type(c_ptr), value :: stream
+    end function cublasGetVectorAsync
 
-        FUNCTION cublasSetVectorAsync(n, elemSize, hx_src, incx, dy_dst, incy, stream) &
-        &   BIND(C, NAME="cublasSetVectorAsync")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasSetVectorAsync
-            INTEGER(C_INT), VALUE :: n
-            INTEGER(C_SIZE_T), VALUE :: elemSize
-            TYPE(C_PTR), VALUE :: hx_src
-            INTEGER(C_INT), VALUE :: incx
-            TYPE(C_PTR), VALUE :: dy_dst
-            INTEGER(C_INT), VALUE :: incy
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cublasSetVectorAsync
+    integer(c_int) function &
+        & cublasSetVector(n, elemSize, hx_src, incx, dy_dst, incy) &
+        & bind(c, name="cublasSetVector")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: n
+      integer(c_size_t), value :: elemSize
+      type(c_ptr), value :: hx_src
+      integer(c_int), value :: incx
+      type(c_ptr), value :: dy_dst
+      integer(c_int), value :: incy
+    end function cublasSetVector
 
-        FUNCTION cublasSetMatrix(rows, cols, elemSize, hA_src, lda, dB_dst, lddb) &
-        &   BIND(C, NAME="cublasSetMatrix")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasSetMatrix
-            INTEGER(C_INT), VALUE :: rows
-            INTEGER(C_INT), VALUE :: cols
-            INTEGER(C_SIZE_T), VALUE :: elemSize
-            TYPE(C_PTR), VALUE :: hA_src
-            INTEGER(C_INT), VALUE :: lda
-            TYPE(C_PTR), VALUE :: dB_dst
-            INTEGER(C_INT), VALUE :: lddb
-        END FUNCTION cublasSetMatrix
+    integer(c_int) function &
+        & cublasSetVectorAsync(n, elemSize, hx_src, incx, dy_dst, incy, stream) &
+        & bind(c, name="cublasSetVectorAsync")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: n
+      integer(c_size_t), value :: elemSize
+      type(c_ptr), value :: hx_src
+      integer(c_int), value :: incx
+      type(c_ptr), value :: dy_dst
+      integer(c_int), value :: incy
+      type(c_ptr), value :: stream
+    end function cublasSetVectorAsync
 
-        FUNCTION cublasSetMatrixAsync(rows, cols, elemSize, hA_src, lda, dB_dst, lddb, stream) &
-        &   BIND(C, NAME="cublasSetMatrixAsync")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasSetMatrixAsync
-            INTEGER(C_INT), VALUE :: rows
-            INTEGER(C_INT), VALUE :: cols
-            INTEGER(C_SIZE_T), VALUE :: elemSize
-            TYPE(C_PTR), VALUE :: hA_src
-            INTEGER(C_INT), VALUE :: lda
-            TYPE(C_PTR), VALUE :: dB_dst
-            INTEGER(C_INT), VALUE :: lddb
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cublasSetMatrixAsync
+    integer(c_int) function &
+        & cublasSetMatrix(rows, cols, elemSize, hA_src, lda, dB_dst, lddb) &
+        & bind(c, name="cublasSetMatrix")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: rows
+      integer(c_int), value :: cols
+      integer(c_size_t), value :: elemSize
+      type(c_ptr), value :: hA_src
+      integer(c_int), value :: lda
+      type(c_ptr), value :: dB_dst
+      integer(c_int), value :: lddb
+    end function cublasSetMatrix
 
-        FUNCTION cublasSetBatchMatrixAsync(rows, cols, batch, elemSize, hA_src, lda, dB_dst, lddb, stream) &
-        &   BIND(C, NAME="cublasSetBatchMatrixAsync")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasSetBatchMatrixAsync
-            INTEGER(C_INT), VALUE :: rows
-            INTEGER(C_INT), VALUE :: cols
-            INTEGER(C_INT), VALUE :: batch
-            INTEGER(C_SIZE_T), VALUE :: elemSize
-            TYPE(C_PTR), VALUE :: hA_src
-            INTEGER(C_INT), VALUE :: lda
-            TYPE(C_PTR), VALUE :: dB_dst
-            INTEGER(C_INT), VALUE :: lddb
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cublasSetBatchMatrixAsync
+    integer(c_int) function &
+        & cublasSetMatrixAsync(rows, cols, elemSize, hA_src, lda, dB_dst, lddb, stream) &
+        & bind(c, name="cublasSetMatrixAsync")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: rows
+      integer(c_int), value :: cols
+      integer(c_size_t), value :: elemSize
+      type(c_ptr), value :: hA_src
+      integer(c_int), value :: lda
+      type(c_ptr), value :: dB_dst
+      integer(c_int), value :: lddb
+      type(c_ptr), value :: stream
+    end function cublasSetMatrixAsync
 
-        FUNCTION cublasGetMatrix(rows, cols, elemSize, dA_src, ldda, hB_dst, ldb) &
-        &   BIND(C, NAME="cublasGetMatrix")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasGetMatrix
-            INTEGER(C_INT), VALUE :: rows
-            INTEGER(C_INT), VALUE :: cols
-            INTEGER(C_SIZE_T), VALUE :: elemSize
-            TYPE(C_PTR), VALUE :: dA_src
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: hB_dst
-            INTEGER(C_INT), VALUE :: ldb
-        END FUNCTION cublasGetMatrix
+    integer(c_int) function &
+        & cublasSetBatchMatrixAsync(rows, cols, batch, elemSize, hA_src, lda, dB_dst, lddb, stream) &
+        & bind(c, name="cublasSetBatchMatrixAsync")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: rows
+      integer(c_int), value :: cols
+      integer(c_int), value :: batch
+      integer(c_size_t), value :: elemSize
+      type(c_ptr), value :: hA_src
+      integer(c_int), value :: lda
+      type(c_ptr), value :: dB_dst
+      integer(c_int), value :: lddb
+      type(c_ptr), value :: stream
+    end function cublasSetBatchMatrixAsync
 
-        FUNCTION cublasGetMatrixAsync(rows, cols, elemSize, dA_src, ldda, hB_dst, ldb, stream) &
-        &   BIND(C, NAME="cublasGetMatrixAsync")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasGetMatrixAsync
-            INTEGER(C_INT), VALUE :: rows
-            INTEGER(C_INT), VALUE :: cols
-            INTEGER(C_SIZE_T), VALUE :: elemSize
-            TYPE(C_PTR), VALUE :: dA_src
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: hB_dst
-            INTEGER(C_INT), VALUE :: ldb
-            TYPE(C_PTR), VALUE :: stream
-        END FUNCTION cublasGetMatrixAsync
+    integer(c_int) function &
+        & cublasGetMatrix(rows, cols, elemSize, dA_src, ldda, hB_dst, ldb) &
+        & bind(c, name="cublasGetMatrix")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: rows
+      integer(c_int), value :: cols
+      integer(c_size_t), value :: elemSize
+      type(c_ptr), value :: dA_src
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: hB_dst
+      integer(c_int), value :: ldb
+    end function cublasGetMatrix
 
-        FUNCTION cublasDgetrfBatched(handle, n, dA, ldda, dP, dInfo, nbatch) &
-        &   BIND(C, NAME="cublasDgetrfBatched")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDgetrfBatched
-            TYPE(C_PTR), VALUE :: handle
-            INTEGER(C_INT), VALUE :: n
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dP
-            TYPE(C_PTR), VALUE :: dInfo
-            INTEGER(C_INT), VALUE :: nbatch
-        END FUNCTION cublasDgetrfBatched
+    integer(c_int) function &
+        & cublasGetMatrixAsync(rows, cols, elemSize, dA_src, ldda, hB_dst, ldb, stream) &
+        & bind(c, name="cublasGetMatrixAsync")
+      use, intrinsic :: iso_c_binding
+      integer(c_int), value :: rows
+      integer(c_int), value :: cols
+      integer(c_size_t), value :: elemSize
+      type(c_ptr), value :: dA_src
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: hB_dst
+      integer(c_int), value :: ldb
+      type(c_ptr), value :: stream
+    end function cublasGetMatrixAsync
 
-        FUNCTION cublasDgetriBatched(handle, n, dA, ldda, dP, dC, lddc, dInfo, nbatch) &
-        &   BIND(C, NAME="cublasDgetriBatched")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDgetriBatched
-            TYPE(C_PTR), VALUE :: handle
-            INTEGER(C_INT), VALUE :: n
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dP
-            TYPE(C_PTR), VALUE :: dC
-            INTEGER(C_INT), VALUE :: lddc
-            TYPE(C_PTR), VALUE :: dInfo
-            INTEGER(C_INT), VALUE :: nbatch
-        END FUNCTION cublasDgetriBatched
+    integer(c_int) function &
+        & cublasDgetrfBatched(handle, n, dA, ldda, dP, dInfo, nbatch) &
+        & bind(c, name="cublasDgetrfBatched")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: n
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dP
+      type(c_ptr), value :: dInfo
+      integer(c_int), value :: nbatch
+    end function cublasDgetrfBatched
 
-        FUNCTION cublasDtrsmBatched(handle, side, uplo, trans, diag, m, n, alpha, dA, ldda, dB, lddb, nbatch) &
-        &   BIND(C, NAME="cublasDtrsmBatched")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDtrsmBatched
-            TYPE(C_PTR), VALUE :: handle
-            INTEGER(KIND(CUBLAS_SIDE_LEFT)), VALUE :: side
-            INTEGER(KIND(CUBLAS_FILL_MODE_LOWER)), VALUE :: uplo
-            INTEGER(KIND(CUBLAS_OP_N)), VALUE :: trans
-            INTEGER(KIND(CUBLAS_DIAG_NON_UNIT)), VALUE :: diag
-            INTEGER(C_INT), VALUE :: m
-            INTEGER(C_INT), VALUE :: n
-            REAL(C_DOUBLE) :: alpha
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dB
-            INTEGER(C_INT), VALUE :: lddb
-            INTEGER(C_INT), VALUE :: nbatch
-        END FUNCTION cublasDtrsmBatched
+    integer(c_int) function &
+        & cublasDgetriBatched(handle, n, dA, ldda, dP, dC, lddc, dInfo, nbatch) &
+        & bind(c, name="cublasDgetriBatched")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: n
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dP
+      type(c_ptr), value :: dC
+      integer(c_int), value :: lddc
+      type(c_ptr), value :: dInfo
+      integer(c_int), value :: nbatch
+    end function cublasDgetriBatched
 
-        FUNCTION cublasDgemmBatched(handle, transa, transb, m, n, k, alpha, dA, ldda, dB, lddb, beta, dC, lddc, nbatch) &
-        &   BIND(C, NAME="cublasDgemmBatched")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDgemmBatched
-            TYPE(C_PTR), VALUE :: handle
-            INTEGER(KIND(CUBLAS_OP_N)), VALUE :: transa
-            INTEGER(KIND(CUBLAS_OP_N)), VALUE :: transb
-            INTEGER(C_INT), VALUE :: m
-            INTEGER(C_INT), VALUE :: n
-            INTEGER(C_INT), VALUE :: k
-            REAL(C_DOUBLE) :: alpha
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dB
-            INTEGER(C_INT), VALUE :: lddb
-            REAL(C_DOUBLE) :: beta
-            TYPE(C_PTR), VALUE :: dC
-            INTEGER(C_INT), VALUE :: lddc
-            INTEGER(C_INT), VALUE :: nbatch
-        END FUNCTION cublasDgemmBatched
+    integer(c_int) function &
+        & cublasDtrsmBatched(handle, side, uplo, trans, diag, m, n, alpha, dA, ldda, dB, lddb, nbatch) &
+        & bind(c, name="cublasDtrsmBatched")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: side
+      integer(c_int), value :: uplo
+      integer(c_int), value :: trans
+      integer(c_int), value :: diag
+      integer(c_int), value :: m
+      integer(c_int), value :: n
+      real(c_double) :: alpha
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dB
+      integer(c_int), value :: lddb
+      integer(c_int), value :: nbatch
+    end function cublasDtrsmBatched
 
-        FUNCTION cublasDtrsv(uplo, trans, diag, n, dA, ldda, dx, incx) &
-        &   BIND(C, NAME="cublasDtrsv")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDtrsv
-            CHARACTER(C_CHAR), VALUE :: uplo
-            CHARACTER(C_CHAR), VALUE :: trans
-            CHARACTER(C_CHAR), VALUE :: diag
-            INTEGER(C_INT), VALUE :: n
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dx
-            INTEGER(C_INT), VALUE :: incx
-        END FUNCTION cublasDtrsv
+    integer(c_int) function &
+        & cublasDgemmBatched(handle, transa, transb, m, n, k, alpha, dA, ldda, dB, lddb, beta, dC, lddc, nbatch) &
+        & bind(c, name="cublasDgemmBatched")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: transa
+      integer(c_int), value :: transb
+      integer(c_int), value :: m
+      integer(c_int), value :: n
+      integer(c_int), value :: k
+      real(c_double) :: alpha
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dB
+      integer(c_int), value :: lddb
+      real(c_double) :: beta
+      type(c_ptr), value :: dC
+      integer(c_int), value :: lddc
+      integer(c_int), value :: nbatch
+    end function cublasDgemmBatched
 
-        FUNCTION cublasDtrsv_v2(handle, uplo, trans, diag, n, dA, ldda, dx, incx) &
-        &   BIND(C, NAME="cublasDtrsv_v2")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDtrsv_v2
-            TYPE(C_PTR), VALUE :: handle
-            INTEGER(KIND(CUBLAS_FILL_MODE_LOWER)), VALUE :: uplo
-            INTEGER(KIND(CUBLAS_OP_N)), VALUE :: trans
-            INTEGER(KIND(CUBLAS_DIAG_NON_UNIT)), VALUE :: diag
-            INTEGER(C_INT), VALUE :: n
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dx
-            INTEGER(C_INT), VALUE :: incx
-        END FUNCTION cublasDtrsv_v2
+    integer(c_int) function &
+        & cublasDtrsv(uplo, trans, diag, n, dA, ldda, dx, incx) &
+        & bind(c, name="cublasDtrsv")
+      use, intrinsic :: iso_c_binding
+      character(c_char), value :: uplo
+      character(c_char), value :: trans
+      character(c_char), value :: diag
+      integer(c_int), value :: n
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dx
+      integer(c_int), value :: incx
+    end function cublasDtrsv
 
-        FUNCTION cublasDtrsm(uplo, side, trans, diag, m, n, alpha, dA, ldda, dB, lddb) &
-        &   BIND(C, NAME="cublasDtrsm")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDtrsm
-            CHARACTER(C_CHAR), VALUE :: uplo
-            CHARACTER(C_CHAR), VALUE :: side
-            CHARACTER(C_CHAR), VALUE :: trans
-            CHARACTER(C_CHAR), VALUE :: diag
-            INTEGER(C_INT), VALUE :: m
-            INTEGER(C_INT), VALUE :: n
-            REAL(C_DOUBLE), VALUE :: alpha
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dB
-            INTEGER(C_INT), VALUE :: lddb
-        END FUNCTION cublasDtrsm
+    integer(c_int) function &
+        & cublasDtrsv_v2(handle, uplo, trans, diag, n, dA, ldda, dx, incx) &
+        & bind(c, name="cublasDtrsv_v2")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: uplo
+      integer(c_int), value :: trans
+      integer(c_int), value :: diag
+      integer(c_int), value :: n
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dx
+      integer(c_int), value :: incx
+    end function cublasDtrsv_v2
 
-        FUNCTION cublasDtrsm_v2(handle, uplo, side, trans, diag, m, n, alpha, dA, ldda, dB, lddb) &
-        &   BIND(C, NAME="cublasDtrsm_v2")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDtrsm_v2
-            TYPE(C_PTR), VALUE :: handle
-            INTEGER(KIND(CUBLAS_FILL_MODE_LOWER)), VALUE :: uplo
-            INTEGER(KIND(CUBLAS_SIDE_LEFT)), VALUE :: side
-            INTEGER(KIND(CUBLAS_OP_N)), VALUE :: trans
-            INTEGER(KIND(CUBLAS_DIAG_NON_UNIT)), VALUE :: diag
-            INTEGER(C_INT), VALUE :: m
-            INTEGER(C_INT), VALUE :: n
-            REAL(C_DOUBLE), VALUE :: alpha
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dB
-            INTEGER(C_INT), VALUE :: lddb
-        END FUNCTION cublasDtrsm_v2
+    integer(c_int) function &
+        & cublasDtrsm(uplo, side, trans, diag, m, n, alpha, dA, ldda, dB, lddb) &
+        & bind(c, name="cublasDtrsm")
+      use, intrinsic :: iso_c_binding
+      character(c_char), value :: uplo
+      character(c_char), value :: side
+      character(c_char), value :: trans
+      character(c_char), value :: diag
+      integer(c_int), value :: m
+      integer(c_int), value :: n
+      real(c_double), value :: alpha
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dB
+      integer(c_int), value :: lddb
+    end function cublasDtrsm
 
-        FUNCTION cublasDgemm(transa, transb, m, n, k, alpha, dA, ldda, dB, lddb, beta, dC, lddc) &
-        &   BIND(C, NAME="cublasDgemm")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDgemm
-            CHARACTER(C_CHAR), VALUE :: transa
-            CHARACTER(C_CHAR), VALUE :: transb
-            INTEGER(C_INT), VALUE :: m
-            INTEGER(C_INT), VALUE :: n
-            INTEGER(C_INT), VALUE :: k
-            REAL(C_DOUBLE), VALUE :: alpha
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dB
-            INTEGER(C_INT), VALUE :: lddb
-            REAL(C_DOUBLE), VALUE :: beta
-            TYPE(C_PTR), VALUE :: dC
-            INTEGER(C_INT), VALUE :: lddc
-        END FUNCTION cublasDgemm
+    integer(c_int) function &
+        & cublasDtrsm_v2(handle, uplo, side, trans, diag, m, n, alpha, dA, ldda, dB, lddb) &
+        & bind(c, name="cublasDtrsm_v2")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: uplo
+      integer(c_int), value :: side
+      integer(c_int), value :: trans
+      integer(c_int), value :: diag
+      integer(c_int), value :: m
+      integer(c_int), value :: n
+      real(c_double), value :: alpha
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dB
+      integer(c_int), value :: lddb
+    end function cublasDtrsm_v2
 
-        FUNCTION cublasDgemm_v2(handle, transa, transb, m, n, k, alpha, dA, ldda, dB, lddb, beta, dC, lddc) &
-        &   BIND(C, NAME="cublasDgemm_v2")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDgemm_v2
-            TYPE(C_PTR), VALUE :: handle
-            INTEGER(KIND(CUBLAS_OP_N)), VALUE :: transa
-            INTEGER(KIND(CUBLAS_OP_N)), VALUE :: transb
-            INTEGER(C_INT), VALUE :: m
-            INTEGER(C_INT), VALUE :: n
-            INTEGER(C_INT), VALUE :: k
-            REAL(C_DOUBLE), VALUE :: alpha
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dB
-            INTEGER(C_INT), VALUE :: lddb
-            REAL(C_DOUBLE), VALUE :: beta
-            TYPE(C_PTR), VALUE :: dC
-            INTEGER(C_INT), VALUE :: lddc
-        END FUNCTION cublasDgemm_v2
+    integer(c_int) function &
+        & cublasDgemm(transa, transb, m, n, k, alpha, dA, ldda, dB, lddb, beta, dC, lddc) &
+        & bind(c, name="cublasDgemm")
+      use, intrinsic :: iso_c_binding
+      character(c_char), value :: transa
+      character(c_char), value :: transb
+      integer(c_int), value :: m
+      integer(c_int), value :: n
+      integer(c_int), value :: k
+      real(c_double), value :: alpha
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dB
+      integer(c_int), value :: lddb
+      real(c_double), value :: beta
+      type(c_ptr), value :: dC
+      integer(c_int), value :: lddc
+    end function cublasDgemm
 
-        FUNCTION cublasDgetrsBatched(handle, trans, n, nrhs, dA, ldda, dP, dB, lddb, hInfo, nbatch) &
-        &   BIND(C, NAME="cublasDgetrsBatched")
-            USE, INTRINSIC :: ISO_C_BINDING
-            INTEGER(KIND(CUBLAS_STATUS_SUCCESS)) :: cublasDgetrsBatched
-            TYPE(C_PTR), VALUE :: handle
-            INTEGER(C_INT), VALUE :: trans
-            INTEGER(C_INT), VALUE :: n
-            INTEGER(C_INT), VALUE :: nrhs
-            TYPE(C_PTR), VALUE :: dA
-            INTEGER(C_INT), VALUE :: ldda
-            TYPE(C_PTR), VALUE :: dP
-            TYPE(C_PTR), VALUE :: dB
-            INTEGER(C_INT), VALUE :: lddb
-            TYPE(C_PTR), VALUE :: hInfo
-            INTEGER(C_INT), VALUE :: nbatch
-        END FUNCTION cublasDgetrsBatched
+    integer(c_int) function &
+        & cublasDgemm_v2(handle, transa, transb, m, n, k, alpha, dA, ldda, dB, lddb, beta, dC, lddc) &
+        & bind(c, name="cublasDgemm_v2")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: transa
+      integer(c_int), value :: transb
+      integer(c_int), value :: m
+      integer(c_int), value :: n
+      integer(c_int), value :: k
+      real(c_double), value :: alpha
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dB
+      integer(c_int), value :: lddb
+      real(c_double), value :: beta
+      type(c_ptr), value :: dC
+      integer(c_int), value :: lddc
+    end function cublasDgemm_v2
 
-    END INTERFACE
+    integer(c_int) function &
+        & cublasDgetrsBatched(handle, trans, n, nrhs, dA, ldda, dP, dB, lddb, hInfo, nbatch) &
+        & bind(c, name="cublasDgetrsBatched")
+      use, intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: trans
+      integer(c_int), value :: n
+      integer(c_int), value :: nrhs
+      type(c_ptr), value :: dA
+      integer(c_int), value :: ldda
+      type(c_ptr), value :: dP
+      type(c_ptr), value :: dB
+      integer(c_int), value :: lddb
+      type(c_ptr), value :: hInfo
+      integer(c_int), value :: nbatch
+    end function cublasDgetrsBatched
 
-END MODULE cublasf
+  end interface
+
+end module cublasf

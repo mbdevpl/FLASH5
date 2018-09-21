@@ -19,14 +19,18 @@
 
 
 subroutine bn_initNetwork
-  use Burn_data, Only: aion, bion, zion, aioninv, zionsq, ionam
-  use Driver_interface, ONLY : Driver_getMype, Driver_getNumProcs
+  use Burn_data, ONLY: aion, bion, zion, aioninv, zionsq, ionam
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
 
-  use bn_xnetData
+  use bn_xnetData, ONLY : xnet_data_dir, xnet_nzbatchmx, xnet_iweak0, &
+                          xnet_iscrn, xnet_iprocess, xnet_isolv, xnet_kstmx, &
+                          xnet_kitmx, xnet_ijac, xnet_iconvc, xnet_changemx, &
+                          xnet_yacc, xnet_tolm, xnet_tolc, xnet_ymin, &
+                          xnet_tdel_maxmult, xnet_iheat, xnet_changemxt, &
+                          xnet_tolt9, xnet_idiag, xnet_itsout, &
+                          xnet_writeTimers, xnet_data_desc, xnet_aa, xnet_zz, &
+                          xnet_be, xnet_nname
   use bn_interface, ONLY : bn_xnetInit
-
-  !$ use omp_lib
 
   implicit none
 
@@ -35,21 +39,6 @@ subroutine bn_initNetwork
 
   character(len=5) :: tmp_name
   integer :: i
-
-  ! Initialize MPI/OpenMP identifiers
-  call Driver_getMype(GLOBAL_COMM,xnet_myid)
-  call Driver_getNumProcs(GLOBAL_COMM,xnet_nproc)
-  xnet_mythread = 1
-  xnet_nthread = 1
-  !$omp parallel default(shared)
-  !$ xnet_mythread = omp_get_thread_num()
-  !$omp single
-  !$ xnet_nthread = omp_get_num_threads()
-  !$omp end single
-  !$omp end parallel
-
-  ! Read and distribute control file data (get from FLASH runtime parameters instead)
-  !call control_bcast(xnet_data_dir)
 
   ! XNet/REACLIB Data directory
   call RuntimeParameters_get('xnet_data_dir',xnet_data_dir)
@@ -76,6 +65,10 @@ subroutine bn_initNetwork
   call RuntimeParameters_get('xnet_idiag',xnet_idiag)
   !call RuntimeParameters_get('xnet_itsout',xnet_itsout)
   xnet_itsout = 0
+  If ( xnet_isolv == 3 ) Then
+     xnet_changemx = 1.0e+10
+     xnet_changemxt = 1.0e+10
+  EndIf
 
   call RuntimeParameters_get('xnet_writeTimers',xnet_writeTimers)
 

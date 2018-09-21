@@ -1,5 +1,5 @@
 !***************************************************************************************************
-! constants.f90 10/18/17
+! xnet_constants.f90 10/18/17
 ! This file contains numerical and physical constants used by XNet.
 !***************************************************************************************************
 
@@ -43,4 +43,17 @@ Module xnet_constants
   Real(dp), Parameter :: m_u     = amu * clt**2         ! = 931.4940954     ! Atomic mass unit [MeV c^{-2}]
   Real(dp), Parameter :: e2      = 1.0e-28*epmev*clt**2 ! = 1.439964533e-13 ! (elementary charge)^2 [MeV^2]
   Real(dp), Parameter :: emass   = m_e / clt**2         ! Electron mass [MeV]
+
+  ! Screening factors from Table 4 of Graboske+ (1973)
+  Real(dp), Parameter   :: bw = 1.0,  kbw = 0.5            ! Weak screening parameters
+  Real(dp), Parameter   :: bi = 0.86, kbi = 0.38           ! Intermediate screening parmaeters
+  Real(dp), Parameter   :: bip1 = 1.86                     ! bi + 1
+  Real(dp), Parameter   :: thbim1 = 1.58                   ! 3*bi - 1
+  Real(dp), Parameter   :: thbim2 = 0.58                   ! 3*bi - 2
+  Real(dp), Parameter   :: twm2bi = 0.28                   ! 2 - 2*bi
+
+  ! Strong screening fitting coefficients from DeWitt & Slattery (2003), Eq. 4:
+  !   f(gamma) = a*gamma + (1/s)*b*gamma^s + c*ln(gamma) + d
+  Real(dp), Parameter   :: cds(5) = (/ -0.899172, 0.602249, -0.274823, -1.401915, 0.3230064 /)
+
 End Module xnet_constants

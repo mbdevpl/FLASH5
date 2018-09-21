@@ -48,13 +48,13 @@ subroutine bn_networkWeak(y)
   use Eos_interface, ONLY: Eos
   use bn_interface, ONLY: bn_ecapnuc, bn_mazurek
 
-  use Burn_dataEOS, ONLY: btemp, den, ye
+  use Burn_dataEOS, ONLY: btemp, bden, bye
   use Burn_data
   use bn_dataAprox19
 
   implicit none
 
-  ! it appears that den and btemp are passed in via eos_common.fh or Burn_dataEOS
+  ! it appears that bden and btemp are passed in via eos_common.fh or Burn_dataEOS
   ! we use the declarations of abar and zbar from there as well. 
 
   !..electron capture rates on nucleons for aprox19
@@ -88,7 +88,7 @@ subroutine bn_networkWeak(y)
   mask(EOS_DEA) = .FALSE.
   mask(EOS_DEZ) = .FALSE.
   
-  eosData(EOS_DENS) = den
+  eosData(EOS_DENS) = bden
 #ifdef FLASH_UHD_3T
 #if EOSCOMP_MATTER == EOSCOMP_ELE
   eosData(EOS_TEMPELE) = btemp
@@ -127,7 +127,7 @@ subroutine bn_networkWeak(y)
 
 
   !..ni56 electron capture rate
-  call bn_mazurek(btemp,den,y(ini56),ye,                &
+  call bn_mazurek(btemp,bden,y(ini56),bye,              &
                     ratdum(irn56ec),ratdum(isn56ec))
 
   return

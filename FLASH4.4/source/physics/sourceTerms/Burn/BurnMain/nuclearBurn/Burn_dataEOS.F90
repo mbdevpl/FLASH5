@@ -24,16 +24,16 @@ module Burn_dataEOS
 !..equation of state communication:
 
 !..btemp    = temperature
-!..den      = density
+!..bden     = density
 !..abar     = average number of nucleons per nuclei
 !..zbar     = average number of protons per nuclei
 !..z2bar    = square of zbar
 !..ytot1    = total number of moles per gram
-!..ye       = electron mole number
+!..bye      = electron mole number
 
 
-      real           ::  btemp,den,abar,zbar,z2bar,ytot1,ye
+      real           ::  btemp,bden,abar,zbar,z2bar,ytot1,bye
 
-!$omp threadprivate(btemp,den,abar,zbar,z2bar,ytot1,ye)
+!$omp threadprivate(btemp,bden,abar,zbar,z2bar,ytot1,bye)
 
 end module Burn_dataEOS

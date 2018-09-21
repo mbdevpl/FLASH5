@@ -55,7 +55,7 @@ Module Burn_data
   logical, save :: bn_useShockBurn, bn_useBurnTable
   real, save    :: bn_smallx, bn_enucDtFactor
   real, save    :: bn_nuclearTempMin, bn_nuclearTempMax, bn_nuclearDensMin, &
-       &           bn_nuclearDensMax, bn_nuclearNI56Max
+       &           bn_nuclearDensMax, bn_nuclearNI56Max, bn_nuclearFuelMax
 
 ! were in network_size.fh, specific to aprox13, I believe.
 !! Now in bn_dataNetworkSize
