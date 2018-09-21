@@ -68,7 +68,7 @@
 
 !!REORDER(4): solnData
 
-subroutine Eos_unitTest(fileUnit, perfect, solnData, blkLimits)
+subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
 
   use Eos_interface, ONLY : Eos_wrapped, Eos
 
@@ -368,7 +368,7 @@ subroutine Eos_unitTest(fileUnit, perfect, solnData, blkLimits)
   
   perfect = test1allB.and.test2allB.and.test3allB.and.test4allB
   return
-end subroutine Eos_unitTest
+end subroutine Eos_unitTest4
 
 
 
