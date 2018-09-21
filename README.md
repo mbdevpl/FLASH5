@@ -11,8 +11,8 @@ author or by a pull request assigned to a different developer.
 manual tests related to changes made in the feature branch and believes that the
 feature branch is ready for inclusion in FLASH5, a pull request is issued for
 merging the feature branch into the staged branch.
-  * One can trigger a code review at this point if so desired.
-  * If all changes made in the feature branch are made to a portion of the code
+    * One can trigger a code review at this point if so desired.
+    * If all changes made in the feature branch are made to a portion of the code
 that is not yet under automated testing and if it is believed that the changes can not break
 any automated tests, then the pull request can be managed fully by the creator.
 Else, the pull request should be assigned to Klaus or Jared.
