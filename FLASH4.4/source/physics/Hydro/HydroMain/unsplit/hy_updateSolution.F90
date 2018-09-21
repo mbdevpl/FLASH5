@@ -67,7 +67,7 @@
 !!  the way mostly tested.
 !!
 !!  2. Schematically (omitting any bothersome details about
-!!  directionanlity, about whether solution variables are in
+!!  directionality, about whether solution variables are in
 !!  primitive or conservative form and fluxes are really fluxes or
 !!  flux densities, etc.), the function of this routine is to do the
 !!  following, in order:
@@ -86,7 +86,7 @@
 !!  (b) Additional Solution Modifications:
 !!      These are applied to the variables now in Uout, and can include
 !!      * calling hy_unsplitUpdateMultiTemp (for 3T Hydro, not currently
-!!        implemented here));
+!!        implemented here);
 !!      * calling hy_energyFix (to update internal energies, and
 !!        possibly other fixups);
 !!      * calling hy_unitConvert (for obscure MHD purposes);

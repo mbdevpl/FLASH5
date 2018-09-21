@@ -52,6 +52,7 @@ module block_1lev_iterator
         integer,              private          :: nodetype = LEAF
         integer,              private          :: level    = INVALID_LEVEL
         logical,              private          :: isValid  = .FALSE.
+        integer,              private          :: finest_grid_level
         integer,              allocatable      :: dummy
     contains
         procedure, public :: is_valid
@@ -113,7 +114,8 @@ contains
 
       integer :: finest_level
 
-      finest_level = amrex_get_finest_level() + 1
+      this%finest_grid_level = amrex_get_finest_level() ! 0-based finest existing level
+      finest_level = this%finest_grid_level + 1 ! level and finest_level are 1-based
       if (level > finest_level) then
         call Driver_abortFlash("[init_iterator] No unk multifab for level")
       end if
@@ -217,7 +219,7 @@ contains
                     exit
                  case(LEAF)
                     bx = this%mfi%tilebox()
-                    hasChildren = boxIsCovered(bx, this%level-1)
+                    hasChildren = boxIsCovered(bx, this%level-1, this%finest_grid_level)
                     if (.NOT.hasChildren) exit
                  case default
                     call Driver_abortFlash("[block_1lev_iterator]: Unsupported nodetype")
@@ -230,21 +232,21 @@ contains
 
     contains
 
-        logical function boxIsCovered(bx,lev) result(covered)
+        logical function boxIsCovered(bx,lev,finest_level) result(covered)
           use amrex_boxarray_module, ONLY : amrex_boxarray
-          use amrex_amrcore_module,  ONLY : amrex_max_level, &
-                                            amrex_ref_ratio, &
+          use amrex_amrcore_module,  ONLY : amrex_ref_ratio, &
                                             amrex_get_boxarray
 
           !IMPORTANT: data in bx is changed on return!
           type(amrex_box), intent(INOUT) :: bx
           integer,         intent(IN)    :: lev
+          integer,         intent(IN)    :: finest_level ! Passing this saves a function call.
 
           type(amrex_boxarray) :: fba
           integer :: rr
 
           ! Assume lev is 0-based
-          if (lev .GE. amrex_max_level) then
+          if (lev .GE. finest_level) then
              covered = .FALSE.
           else
              fba = amrex_get_boxarray(lev+1)
