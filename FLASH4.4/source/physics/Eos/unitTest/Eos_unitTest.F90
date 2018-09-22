@@ -159,7 +159,7 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
      call Grid_getBlkType(blockID, nodeType)
 #else
      blockID = blockDesc % grid_index
-     nodelType = -1                !We do not really know.
+     nodeType = -1                !We do not really know.
 #endif
      level = blockDesc % level
   end if
