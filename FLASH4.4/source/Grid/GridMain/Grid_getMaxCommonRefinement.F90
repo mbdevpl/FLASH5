@@ -75,7 +75,7 @@ subroutine Grid_getMaxCommonRefinement(inputComm, maxCommonRefinement)
   maxCommonRefinement = 1
 
 #else
-
+  maxCommonRefinement = 1
   call Driver_abortFlash("Not yet coded")
 
 #endif

@@ -120,9 +120,9 @@
     integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
     integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
     integer, dimension(MDIM+1),intent(IN)        :: loFl
-    real, intent(OUT) :: XFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZED TO PREVENT INDEX REORDERING!
-    real, intent(OUT) :: YFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
-    real, intent(OUT) :: ZFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
+    real, intent(IN) :: XFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZED TO PREVENT INDEX REORDERING!
+    real, intent(IN) :: YFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
+    real, intent(IN) :: ZFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZATION INTENTIONAL!
     real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),& 
          intent(IN) :: gravX,gravY,gravZ
     real, pointer, dimension(:,:,:,:) :: Uin, Uout, scrch_Ptr

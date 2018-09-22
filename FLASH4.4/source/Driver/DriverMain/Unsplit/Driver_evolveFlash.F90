@@ -85,6 +85,7 @@ subroutine Driver_evolveFlash()
 #ifdef FLASH_GRID_AMREXTRANSITION
   use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
 #endif
+  use Burn_interface,      ONLY : Burn
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potential
