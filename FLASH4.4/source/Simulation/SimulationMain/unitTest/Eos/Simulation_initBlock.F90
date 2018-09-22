@@ -54,6 +54,7 @@ subroutine Simulation_initBlock(solnData,blockDesc)
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
 
   
+  integer :: blockID
   integer :: i, j, k, n, even, put
 
   integer ::  npts_x, npts_y, npts_z
@@ -82,7 +83,12 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 
   if (sim_debug .AND. (sim_meshMe == MASTER_PE)) then
      callNo = callNo + 1
-     print*,'call Simulation_initBlock #',callNo,blockDesc%id
+#ifdef FLASH_GRID_PARAMESH
+     blockID = blockDesc%id
+#else
+     blockID = blockDesc % grid_index
+#endif
+     print*,'call Simulation_initBlock #',callNo,blockID
      print*,'globalInd  :',globalInd
      print*,'blkLimits  :',blkLimits
      print*,'blkLimitsGC:',blkLimitsGC
