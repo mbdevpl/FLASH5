@@ -20,6 +20,9 @@ subroutine Driver_evolveFlash()
 
   use Driver_data, ONLY: dr_globalMe 
   use Eos_interface, ONLY : Eos_unitTest
+  use Logfile_interface,   ONLY : Logfile_stamp, Logfile_close
+  use Timers_interface,    ONLY : Timers_getSummary
+  use IO_interface,        ONLY : IO_writeCheckpoint, IO_outputFinal
   use Grid_interface, ONLY : Grid_getMaxRefinement, Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
   use gr_iterator, ONLY : gr_iterator_t
@@ -48,6 +51,8 @@ subroutine Driver_evolveFlash()
   ! stays true if no errors are found
   perfect = .true.
   
+  call Logfile_stamp( 'Entering testing loop' , '[Driver_evolveFlash]')
+
   temp = dr_globalMe
 
   do i = 1,4
@@ -87,6 +92,13 @@ subroutine Driver_evolveFlash()
   
   close(fileUnit)
   
+  call Logfile_stamp( 'Exiting testing loop' , '[Driver_evolveFlash]')
+  !if we write files, do final output
+  call IO_writeCheckpoint()
+  call IO_outputFinal()
+  call Timers_getSummary( 0)
+  call Logfile_stamp( "FLASH run complete.", "LOGFILE_END")
+  call Logfile_close()
   
   return
   
