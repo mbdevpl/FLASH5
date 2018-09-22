@@ -28,6 +28,7 @@
 !!
 !!***
 
+!!REORDER(4): solnData
 subroutine Simulation_initBlock(solnData,blockDesc)
 
 
