@@ -82,17 +82,6 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
   integer, intent(IN), dimension(2,MDIM) :: blkLimits, blkLimitsGC
   integer, intent(IN) :: guardCells(MDIM)
   real, pointer :: solnData(:,:,:,:) 
-#ifdef FIXEDBLOCKSIZE
-  real, intent(inout),dimension(GRID_ILO_GC:GRID_IHI_GC,&
-                              GRID_JLO_GC:GRID_JHI_GC,&
-                              GRID_KLO_GC:GRID_KHI_GC):: shock
-  real,intent(IN),dimension(GRID_ILO_GC:GRID_IHI_GC) :: primaryCoord
-  real,intent(IN),dimension(GRID_JLO_GC:GRID_JHI_GC) :: secondCoord
-  real,intent(IN),dimension(GRID_KLO_GC:GRID_KHI_GC) :: thirdCoord
-  real, dimension(MDIM,GRID_ILO_GC:GRID_IHI_GC,&
-                  GRID_JLO_GC:GRID_JHI_GC,&
-                  GRID_KLO_GC:GRID_KHI_GC):: div_v
-#else
   real,intent(inout),dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
                                blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
                                blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: shock
@@ -102,7 +91,6 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
   real, dimension(MDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
                   blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
                   blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: div_v
-#endif
   real, intent(IN) :: threshold
   integer, intent(IN) :: mode
 
