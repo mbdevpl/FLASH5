@@ -58,6 +58,9 @@
 !!
 !!   perfect : indicates test ran without error is true.
 !!
+!!   blockDesc : describes a block on which we are being called.
+!!               For informational messages ony, can be omitted.
+!!
 !!  PARAMETERS
 !!
 !!  eintSwitch  a rarely used switch which ensures that internal energy calculations 
@@ -68,10 +71,11 @@
 
 !!REORDER(4): solnData
 
-subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
+subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
 
   use Eos_interface, ONLY : Eos_wrapped, Eos
 
+  use block_metadata, ONLY : block_metadata_t
   use Eos_data, ONLY : eos_meshMe, eos_meshNumProcs
   use eos_testData, ONLY: eos_testPresModeStr, &
                           eos_testEintModeStr, &
@@ -79,6 +83,11 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
                           eos_testPresMode, &
                           eos_testEintMode, &
                           eos_testTempMode
+  ! logical flags meaning partiall success for all blocks:
+  use eos_testData, ONLY: test1allB => eos_test1allB, &
+                          test2allB => eos_test2allB, &
+                          test3allB => eos_test3allB, &
+                          test4allB => eos_test4allB
   implicit none
 
 # include "Eos.h"
@@ -89,11 +98,13 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
   logical, intent(out) :: perfect
   integer,dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits
   real,dimension(:,:,:,:),pointer :: solnData
+  type(block_metadata_t),OPTIONAL, intent(in) :: blockDesc
+
+  integer :: blockID
   real, parameter :: tolerance = 1e-9
   real :: presErr, tempErr, eintErr
 
   logical:: test1,test2,test3,test4 !for a block
-  logical:: test1allB,test2allB,test3allB,test4allB !for all blocks
 
   integer :: vecLen, blockOffset,  pres, dens, temp, e, n, m
   integer :: isize, jsize, ksize, i,j,k, nStartsAtOne
@@ -105,6 +116,8 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
   character(len=7),pointer:: ap
   character(len=7),target :: a
   integer,parameter :: maxPrintPE = 20
+  integer :: level
+  integer :: nodeType
   integer :: ib,ie,jb,je,kb,ke
   real presErr1, presErr2
 
@@ -137,8 +150,22 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
   
   kb=blkLimits(LOW,KAXIS)
   ke=blkLimits(HIGH,KAXIS)
-  
+
+  ! This is just to get more information into the output, FLASH4-like
+  blockID = -1; nodeType = -1; level = -1
+  if (present(blockDesc)) then
+#ifdef FLASH_GRID_PARAMESH
+     blockID = blockDesc%id
+     call Grid_getBlkType(blockID, nodeType)
+#else
+     blockID = blockDesc % grid_index
+     nodelType = -1                !We do not really know.
+#endif
+     level = blockDesc % level
+  end if
+
   ! Testing density/temperature in; energy/pressure out
+  if (eos_meshMe<maxPrintPE .AND. level > -1) print *,ap,'Block',blockID,' type',nodeType,' level',level
   if (eos_meshMe<maxPrintPE) print *,ap,'MODE_DENS_TEMP or similar: Density, temperature in; energy, pressure out; mode=', &
        eos_testTempMode,eos_testTempModeStr
   if (eos_meshMe<maxPrintPE) then
@@ -173,8 +200,9 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
   
 
 
-  test1allB = .TRUE.
+!!$  test1allB = .TRUE.
   !  Testing density/energy in, temperature/pressure out
+  if (eos_meshMe<maxPrintPE .AND. level > -1) print *,ap,'Block',blockID,' type',nodeType,' level',level
   if (eos_meshMe<maxPrintPE) print *,ap,'MODE_DENS_EI or similar: Density, energy in; temperature, pressure out; mode=', &
        eos_testEintMode,eos_testEintModeStr
   !  Zero output variables
@@ -215,8 +243,9 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
 
 
 
-  test2allB = .TRUE.
+!!$  test2allB = .TRUE.
 ! Testing density/pressure in, energy/temp out
+  if (eos_meshMe<maxPrintPE .AND. level > -1) print *,ap,'Block',blockID,' type',nodeType,' level',level
   if (eos_meshMe<maxPrintPE) print *,ap,'MODE_DENS_PRES or similar: Density, pressure in; energy, temperature out; mode=', &
        eos_testPresMode,eos_testPresModeStr
   solnData(EINT_VAR,ib:ie,jb:je,kb:ke)=0
@@ -246,8 +275,9 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
   endif
   
 
-  test3allB = .TRUE.
-  test4allB = .TRUE.
+!!$  test3allB = .TRUE.
+!!$  test4allB = .TRUE.
+  if (eos_meshMe<maxPrintPE .AND. level > -1) print *,ap,'Block',blockID,' type',nodeType,' level',level
   if (eos_meshMe<maxPrintPE) print*,ap,'And now to verify the other solutions'
   
   ! Generate the initial conditions again
@@ -258,6 +288,7 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
   ! Density and pressure in, energy and temperature out
   !solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)=0   ! don't zero TEMP or eos_helm cannot converge
   solnData(EINT_VAR,ib:ie,jb:je,kb:ke)=0 
+  call Eos_wrapped(MODE_DENS_PRES, blkLimits,solnData)
   ! Now we have a "true"  temperature and internal energy; save them for comparison
   solnData(OPRS_VAR,ib:ie,jb:je,kb:ke)=solnData(PRES_VAR,ib:ie,jb:je,kb:ke)
   solnData(OENT_VAR,ib:ie,jb:je,kb:ke)=solnData(EINT_VAR,ib:ie,jb:je,kb:ke)
@@ -367,6 +398,16 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
   deallocate(derivedVariables)
   
   perfect = test1allB.and.test2allB.and.test3allB.and.test4allB
+  if(perfect) then
+     if (eos_meshMe<maxPrintPE) print*,ap,'SUCCESS(so far) all tests were fine'
+  else
+     if (eos_meshMe<maxPrintPE) then
+        print*,ap,'FAILURE(so far) some tests failed'
+        if (.NOT.(test1.and.test2.and.test3.and.test4)) then
+           print*,ap,'FAILURE(block) tests1..4:',test1,test2,test3,test4
+        end if
+     end if
+  end if
   return
 end subroutine Eos_unitTest4
 
