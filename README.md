@@ -38,7 +38,7 @@ nor automatically in response to work done in GitHub.
 
 In its present form, FlashTest does not allow for simultaneous execution of test
 suites.  Therefore, when launching test suite runs on Jenkins, please confirm
-first that no other runs are already in progress.
+first that no other runs are already in progress.  This can be done by consulting the [main Jenkins page](https://jenkins-ci.mcs.anl.gov), which shows all Jenkins runs in progress in the Build Executor Pane.
 
 We presently run on a weekly basis the small subset of AMReX-only tests ([![Flash-Staged-Intel](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/badge/icon)](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/)) that are built in debug mode with the Intel compiler suite.
 
