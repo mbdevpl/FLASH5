@@ -349,7 +349,7 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits)
            
         do e=EOS_VARS+1,EOS_NUM
            m = (e-1)*vecLen
-           derivedVariables(1:vecLen,j-NGUARD,k-NGUARD,e) =  eosData(m+1:m+vecLen)
+           derivedVariables(1:vecLen,j-jb+1,k-kb+1,e) =  eosData(m+1:m+vecLen)
         end do
      end do
   end do

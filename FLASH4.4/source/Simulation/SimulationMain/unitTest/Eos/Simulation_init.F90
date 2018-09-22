@@ -5,7 +5,7 @@
 !!
 !!
 !! SYNOPSIS
-!!  Simulation_init( )
+!!  call Simulation_init( )
 !!
 !!
 !! DESCRIPTION
@@ -13,7 +13,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  
+!!  none
 !!
 !!***
 
@@ -24,16 +24,21 @@ subroutine Simulation_init()
                               sim_densMin,sim_tempMin,sim_xnMin,sim_presMin,&
                               sim_densMax, sim_tempMax, sim_xnMax, sim_presMax, &
                               sim_initialMass
-  use Driver_interface, ONLY : Driver_abortFlash
+  use Simulation_data, ONLY : sim_meshMe, sim_debug
+  use Driver_interface, ONLY : Driver_abortFlash, Driver_getMype
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
 
   implicit none
 
 # include "Flash.h"
+# include "constants.h"
 
   
 
   integer :: lrefine_max, factor, nblockx,nblocky,nblockz
+
+  call Driver_getMype(MESH_COMM,   sim_meshMe)
+  call RuntimeParameters_get('sim_debug',sim_debug)
 
   call eos_initTest
   

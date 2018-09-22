@@ -21,5 +21,6 @@ module Simulation_data
   real, save :: sim_densMin, sim_tempMin, sim_xnMin, sim_presMin
   real, save :: sim_densMax, sim_tempMax, sim_xnMax, sim_presMax
 
-integer, save :: sim_meshMe
+  integer, save :: sim_meshMe
+  logical, save :: sim_debug
 end module Simulation_data
