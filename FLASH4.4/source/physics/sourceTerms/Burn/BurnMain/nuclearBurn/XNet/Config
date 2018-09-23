@@ -57,28 +57,28 @@ def genLines(setupvars):
     yield 'PARAMETER xnet_iweak            INTEGER         1       [0 to 1]'
     yield 'PARAMETER xnet_iscrn            INTEGER         1       [0 to 1]'
     yield 'PARAMETER xnet_iprocess         INTEGER         1       [0 to 1]'
-    yield 'PARAMETER xnet_isolv            INTEGER         1       [1 to 2]'
-    yield 'PARAMETER xnet_kstmx            INTEGER         2000    [1 to ]'
-    yield 'PARAMETER xnet_kitmx            INTEGER         5       [1 to ]'
+    yield 'PARAMETER xnet_isolv            INTEGER         3       [1 to 3]'
+    yield 'PARAMETER xnet_kstmx            INTEGER         6000    [1 to ]'
+    yield 'PARAMETER xnet_kitmx            INTEGER         10      [1 to ]'
     yield 'PARAMETER xnet_ijac             INTEGER         1       [1 to ]'
-    yield 'PARAMETER xnet_iconvc           INTEGER         0       [0 to 1]'
-    yield 'PARAMETER xnet_changemx         REAL            1.0e-1  [0.0 to 1.0]'
+    yield 'PARAMETER xnet_iconvc           INTEGER         3       [0 to 3]'
+    yield 'PARAMETER xnet_changemx         REAL            1.0e-1  [0.0 to ]'
     yield 'PARAMETER xnet_yacc             REAL            1.0e-7  [0.0 to 1.0]'
     yield 'PARAMETER xnet_tolm             REAL            1.0e-6  [0.0 to 1.0]'
     yield 'PARAMETER xnet_tolc             REAL            1.0e-4  [0.0 to 1.0]'
-    yield 'PARAMETER xnet_ymin             REAL            1.0e-25 [0.0 to 1.0]'
+    yield 'PARAMETER xnet_ymin             REAL            1.0e-99 [0.0 to 1.0]'
     yield 'PARAMETER xnet_tdel_maxmult     REAL            2.0e+0  [1.0 to ]'
-    yield 'PARAMETER xnet_iheat            INTEGER         0       [0 to 1]'
-    yield 'PARAMETER xnet_changemxt        REAL            1.0e-2  [0.0 to 1.0]'
+    yield 'PARAMETER xnet_iheat            INTEGER         1       [0 to 1]'
+    yield 'PARAMETER xnet_changemxt        REAL            1.0e-2  [0.0 to ]'
     yield 'PARAMETER xnet_tolt9            REAL            1.0e-4  [0.0 to 1.0]'
-    yield 'PARAMETER xnet_idiag            INTEGER         0       [0 to 5]'
-    yield 'PARAMETER xnet_writeTimers      BOOLEAN         TRUE'
+    yield 'PARAMETER xnet_idiag            INTEGER         -1      [-1 to 5]'
+    yield 'PARAMETER xnet_writeTimers      BOOLEAN         FALSE'
 
     ##
     if 'xnetData' in setupvars:
         xnet_data_dir = os.path.join('Networks',setupvars['xnetData'])
     else:
-        xnet_data_dir = os.path.join('Networks','Data_SN150')
+        xnet_data_dir = os.path.join('Networks','Data_SN160')
 
     yield 'PARAMETER xnet_data_dir         STRING          "%s"' % xnet_data_dir
     

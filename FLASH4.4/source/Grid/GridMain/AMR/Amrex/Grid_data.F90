@@ -108,6 +108,8 @@ Module Grid_data
 
   logical, save :: gr_enableMaskedGCFill
 
+  integer, save :: gr_interpolator
+
 #ifdef GRID_WITH_MONOTONIC
   integer, save :: gr_intpolStencilWidth
 #else

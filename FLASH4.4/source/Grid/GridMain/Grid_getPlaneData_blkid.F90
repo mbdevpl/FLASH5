@@ -505,7 +505,7 @@ subroutine Grid_getPlaneData_blkid(blockID, gridDataStruct, structIndex, beginCo
      dataLen(IAXIS)=dataSize(1)
      dataLen(KAXIS)=dataSize(2)
   end if
-  call gr_getDataOffsets(blockIDID,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(blockID,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
   
   yb=1
   ye=1
@@ -547,11 +547,11 @@ subroutine Grid_getPlaneData_blkid(blockID, gridDataStruct, structIndex, beginCo
      if(plane==YZPLANE)datablock(:,:)=cellvalues(xb,yb:ye,zb:ze)
      deallocate(cellvalues)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockIDID,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(blockID,solnData,gridDataStruct)
      if(plane==XYPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb:ye,zb)
      if(plane==XZPLANE)datablock(:,:) = solnData(structIndex,xb:xe,yb,zb:ze)
      if(plane==YZPLANE)datablock(:,:) = solnData(structIndex,xb,yb:ye,zb:ze)
-     call gr_releaseInteriorBlkPtr(blockIDID,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(blockID,solnData,gridDataStruct)
   else
      call Grid_getBlkPtr(blockID,solnData,gridDataStruct)
 !!$     if(gridDataStruct==SCRATCH) then

@@ -24,7 +24,7 @@
 
 subroutine bn_networkRates
 
-  use Burn_dataEOS, ONLY:  btemp, den
+  use Burn_dataEOS, ONLY:  btemp, bden
   use Burn_data
   use bn_dataIso7
 
@@ -78,7 +78,7 @@ subroutine bn_networkRates
        &                + 1.25e3*t9i32*exp(-27.499*t9i)                   &
        &                + 1.43e-2*t92*t93*exp(-15.541*t9i)
   term          = 1.7e0 * term
-  ratraw(ircag) = term * den 
+  ratraw(ircag) = term * bden
   rev           = 5.13e10 * t9r32 * exp(-83.111*t9ri)
   ratraw(iroga) = rev * term
 
@@ -104,7 +104,7 @@ subroutine bn_networkRates
           &        (1.0e0 + 4.0e0*exp(-(t9/0.025)**9.227))) +                &
           &        0.1 * 1.35e-07 * t9i32 * exp(-24.811*t9i)
   end if
-  ratraw(ir3a)  = term * (den*den)/6.0e0
+  ratraw(ir3a)  = term * (bden*bden)/6.0e0
   rev           = 2.00e+20*exp(-84.424*t9ri)
   ratraw(irg3a) = rev*(t9r*t9r*t9r) * term
 
@@ -115,7 +115,7 @@ subroutine bn_networkRates
   t9a56          = t9a**fivsix
   term           = 4.27e+26 * t9a56/t932 *                          &
        &                 exp(-84.165/t9a13-2.12e-03*t9*t9*t9)
-  ratraw(ir1212) = 0.5e0 * den * term
+  ratraw(ir1212) = 0.5e0 * bden * term
 
 
   !..c12 + o16 reaction;  q = 16.755; valid for t9 .gt. 0.5
@@ -127,7 +127,7 @@ subroutine bn_networkRates
      t9a56 = t9a**fivsix
      term  = 1.72e+31 * t9a56 * t9i32 * exp(-106.594/t9a13) /         &
           &         (exp(-0.18*t9a*t9a) + 1.06e-03*exp(2.562*t9a23))
-     ratraw(ir1216) = den * term
+     ratraw(ir1216) = bden * term
   else
      ratraw(ir1216) = 0.0e0
   endif
@@ -138,7 +138,7 @@ subroutine bn_networkRates
   term           = 7.10e36 * t9i23 *                                &
        &                 exp(-135.93 * t9i13 - 0.629*t923 -               &
        &                 0.445*t943 + 0.0103*t9*t9)
-  ratraw(ir1616) = 0.5e0 * den * term                     
+  ratraw(ir1616) = 0.5e0 * bden * term
 
 
   !..16o(ag)20ne + inverse
@@ -148,7 +148,7 @@ subroutine bn_networkRates
        &                 538.0e0 * t9i32 * exp(-12.226*t9i) +             &
        &                 13.0e0 * t92 * exp(-20.093*t9i)
   term           = term1 + term2
-  ratraw(iroag)  = den * term
+  ratraw(iroag)  = bden * term
   rev            = 5.65e+10*t9r32*exp(-54.937*t9ri)
   ratraw(irnega) = rev * term
 
@@ -164,7 +164,7 @@ subroutine bn_networkRates
        &                 32.0 * t9i23 * exp(-9.383*t9i))
   term           = (term1+term2+term3)/                             &
        &                 (1.0e0 + 5.0e0*exp(-18.960*t9i))
-  ratraw(irneag) = den * term
+  ratraw(irneag) = bden * term
   rev            = 6.01e+10 * t9r32 * exp(-108.059*t9ri)
   ratraw(irmgga) = term * rev
 
@@ -177,7 +177,7 @@ subroutine bn_networkRates
        &                 0.1 * (1.72e-09 * t9i32 * exp(-5.028*t9i) +      &
        &                 1.25e-03 * t9i32 * exp(-7.929*t9i) +             &
        &                 2.43e+01 * t9i * exp(-11.523*t9i)))/term1
-  ratraw(irmgag) = den * term
+  ratraw(irmgag) = bden * term
   rev            = 6.27e+10 * t9r32 * exp(-115.862*t9ri)
   ratraw(irsiga) = rev * term 
 
@@ -190,7 +190,7 @@ subroutine bn_networkRates
        &                 (1.0e0 + 1.650e-02*t9 + 5.973e-03*t92 -          &
        &                  3.889e-04*t93))
   rev            = 6.843e+10 * t9r32 * exp(-59.510*t9ri)
-  ratraw(ircaag) = den*term
+  ratraw(ircaag) = bden*term
   ratraw(irtiga) = rev*term * gca40/gti44
 
   return

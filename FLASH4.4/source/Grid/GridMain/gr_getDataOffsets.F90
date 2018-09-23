@@ -70,6 +70,9 @@ subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,
   logical,intent(OUT) :: getIntPtr
 
   integer,dimension(LOW:HIGH,MDIM) :: blkLimits
+#ifdef FL_NON_PERMANENT_GUARDCELLS 
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimitsGC
+#endif
   integer :: i
   logical :: formBlk
 
@@ -86,7 +89,10 @@ subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,
        (gridDataStruct == FACEZ).or.(gridDataStruct==WORK)) then
      formBlk=.false.
      if(beginCount == EXTERIOR) then
-        blkLimits = block%limits
+        ! DEV: blkLimits was changed to localLimits below at commit 7c1fb877
+        ! Do we need the same change here?
+        blkLimits   = block%limits
+        blkLimitsGC = block%limitsGC
         do i = 1,NDIM
            formBlk = formBlk.or.(startingPos(i) < blkLimits(LOW,i))
            formBlk = formBlk.or.((startingPos(i)+length(i)-1)>blkLimits(HIGH,i))

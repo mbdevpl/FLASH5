@@ -32,7 +32,7 @@ subroutine bn_networkDenseJakob(tt,y,dfdy,nlog,nphys)
 
 
   !      save
-  use Burn_dataEOS, ONLY:  den, btemp
+  use Burn_dataEOS, ONLY:  bden, btemp
   use Burn_data
   use bn_dataIso7
 
@@ -89,10 +89,10 @@ subroutine bn_networkDenseJakob(tt,y,dfdy,nlog,nphys)
   if (t9 .gt. 2.5 .and. y(ic12)+y(io16) .le. 4.0e-3) then
      yeff_ca40 = (t9i32**3) * exp(239.42*t9i-74.741)
      yeff_ti44 = (t932**3) * exp(-274.12*t9i+74.914)
-     rsi2ni    = yeff_ca40*den**3*y(ihe4)**3*ratdum(ircaag)*y(isi28)
+     rsi2ni    = yeff_ca40*bden**3*y(ihe4)**3*ratdum(ircaag)*y(isi28)
      rsi2nida  = 3.0e0 * rsi2ni/y(ihe4)
      rsi2nidsi = rsi2ni/y(isi28)
-     rni2si = min(1.0e20,yeff_ti44*ratdum(irtiga)/(den**3*y(ihe4)**3))
+     rni2si = min(1.0e20,yeff_ti44*ratdum(irtiga)/(bden**3*y(ihe4)**3))
      rni2sida  = -3.0e0 * rni2si/y(ihe4)
      if (rni2si .eq. 1.0e20) rni2sida = 0.0e0
   end if

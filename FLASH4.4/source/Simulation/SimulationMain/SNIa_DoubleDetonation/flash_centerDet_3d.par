@@ -1,0 +1,277 @@
+#####################################################################
+#
+#  This parameter file is for centrally ignited WD detonation.
+#
+#####################################################################
+
+## -------------------------------------------------------------
+## I/O
+## -------------------------------------------------------------
+
+#wall_clock_checkpoint			= 3000
+
+# names of files
+basenm					= "snd_"
+log_file				= "snd.log"
+
+restart					= .false.
+
+checkpointFileNumber			= 0
+plotFileNumber				= 0
+
+#output_directory			= "./chk"
+checkpointFileIntervalStep		= 0
+checkpointFileIntervalTime		= 1.0e-1
+
+plotFileIntervalStep			= 0
+plotFileIntervalTime			= 1.0e+4
+
+#ignoreForcedPlot			= .true.
+#summaryOutputOnly			= .true.
+
+#eachProcWritesSummary			= .true.
+#writeStatSummary			= .true.
+
+#gr_sanitizeDataMode			= 0
+#gr_sanitizeVervosity			= 0
+
+# variables for plotting
+plot_var_1				= "pres"
+plot_var_2				= "dens"
+plot_var_3				= "temp"
+plot_var_4				= "enuc"
+plot_var_5				= "velx"
+plot_var_6				= "vely"
+plot_var_7				= "velz"
+#plot_var_8				= "gamc"
+#plot_var_9				= "he4"
+#plot_var_10				= "c12"
+#plot_var_11				= "o16"
+#plot_var_12				= "ne20"
+#plot_var_13				= "mg24"
+#plot_var_14				= "si28"
+#plot_var_15				= "s32"
+#plot_var_16				= "ar36"
+#plot_var_17				= "ca40"
+#plot_var_18				= "ti44"
+#plot_var_19				= "cr48"
+#plot_var_20				= "fe52"
+#plot_var_21				= "ni56"
+
+## -------------------------------------------------------------
+## initial model
+## -------------------------------------------------------------
+
+initialWDFile				= "Profiles/wd_profile_rhoc_415e5_M_106_correct.dat"
+
+# density and temperature of the fluff (use last zone if <= 0)
+dens_fluff				= 1.0e-3
+temp_fluff				= 3.0e+7
+
+# composition of the fluff (use last zone if all zero)
+xhe4_fluff				= 0.0
+xc12_fluff				= 0.5
+xo16_fluff				= 0.5
+xni56_fluff				= 0.0
+
+# ignition conditions for matchhead
+ignite					= .true.
+t_ignite_inner				= 4.0e+9  # temperature at r_match_inner
+t_ignite_outer				= 4.0e+9  # temperature at r_match_outer
+
+# center of matchhead location
+x_match					= 0.0
+y_match					= 0.0
+z_match					= 0.0
+
+# matchhead size
+r_match_inner				= 0.0     # inner radius of matchhead from its center
+r_match_outer				= 150.0e5 # outer radius of matchhead from its center
+
+# shell/belt properties
+useShell				= .false.
+radShellMin				= 3828.0e+5
+radShellMax				= 6476.0e+5
+thtShellMin				= 0.0     # min theta for belt
+thtShellMax				= 180.0   # max theta for belt
+densShell				= 0.0     # shell dens if density <= fluff density (if > 0)
+densShellMult				= 1.0     # shell dens multiplier if density > fluff density
+tempShell				= 0.0     # shell temp if density <= fluff density (if > 0)
+tempShellMult				= 1.0     # shell temp multiplier if density > fluff density
+
+# composition of shell/belt (1-sum placed as o16)
+xhe4_shell				= 1.0
+xc12_shell				= 0.0
+xni56_shell				= 0.0
+
+## -------------------------------------------------------------
+## refinement
+## -------------------------------------------------------------
+
+# use custom refinement criteria
+refine_var_count			= 2
+
+refine_var_1				= "dens"
+refine_cutoff_1				= 0.8
+derefine_cutoff_1			= 0.2
+
+refine_var_2				= "pres"
+refine_cutoff_2				= 0.8
+derefine_cutoff_2			= 0.2
+
+#refine_var_3				= "enuc"
+#refine_cutoff_3				= 0.8
+#derefine_cutoff_3			= 0.2
+
+# base blocks
+nblockx					= 8
+nblocky					= 8
+nblockz					= 8
+
+# max and min levels of refinement
+lrefine_min				= 1
+lrefine_max				= 3
+#lrefine_min_init			= 1       # Min level for initialization
+#lrefine_del				= 0       # Try to reduce max level by this number of levels on restart
+
+## -------------------------------------------------------------
+## mesh definition
+## -------------------------------------------------------------
+
+# physical domain
+geometry				= "cartesian"
+#geometry				= "cylindrical"
+#geometry				= "spherical"
+
+xmin					= -65536.e5
+xmax					=  65536.e5
+ymin					= -65536.e5
+ymax					=  65536.e5
+zmin					= -65536.e5
+zmax					=  65536.e5
+
+# boundary conditions for the whole star
+xl_boundary_type			= "outflow"
+xr_boundary_type			= "outflow"
+yl_boundary_type			= "outflow"
+yr_boundary_type			= "outflow"
+zl_boundary_type			= "outflow"
+zr_boundary_type			= "outflow"
+
+## -------------------------------------------------------------
+## timestep
+## -------------------------------------------------------------
+
+# go for nend steps or tmax seconds, whichever comes first
+nend					= 10
+tmax					= 0.6
+
+cfl					= 0.5     # CFL factor
+dr_tstepSlowStartFactor			= 0.1     # Further restrict CFL by this factor for initial step
+dr_shortenLastStepBeforeTMax		= .true.  # Stop at tmax exactly
+
+dtinit					= 1.0e-6  # Initial tstep
+dtmin					= 1.0e-20 # Min tstep size
+dtmax					= 8.0e-4  # Max tstep size
+tstep_change_factor			= 1.2e-0  # Max tstep change per step
+
+enucDtFactor				= 1.0e-0  # Factor to limit burning energy deposition
+
+## -------------------------------------------------------------
+## EOS
+## -------------------------------------------------------------
+
+# helmholtz
+#eos_forceConstantInput			= .true.  # Keep inputs constant when inverting EOS
+eos_coulombMult				= 1.0     # Coulomb correction multiplier
+
+# starkiller
+eos_useStarkiller                       = .true.
+eos_vecLenACC                           = 1024
+
+## -------------------------------------------------------------
+## burning
+## -------------------------------------------------------------
+
+useBurn					= .true.
+useShockBurn				= .false.
+
+# thresholds to cut off burning
+#nuclearNI56Max				= 1.0
+nuclearTempMin				= 3.0e8
+
+# XNet
+xnet_iweak				= 1       # (-1) Weak rxns only, (0) Weak rxns off, (1) Weak rxns on
+xnet_iscrn				= 1       # Screening
+xnet_iprocess				= 1       # Network data pre-processing?
+xnet_isolv				= 1       # Integration scheme: (1) Backward-Euler, (3) BDF/Gear
+xnet_kstmx				= 6000    # Max XNet steps for each zone
+xnet_kitmx				= 5       # Max NR iterations
+xnet_iconvc				= 1       # Convergence condition (error weights for BDF integrator)
+xnet_yacc				= 1.0e-7  # Abundances > yacc used for XNet timestep calculation
+xnet_tolm				= 1.0e-6  # Mass conservation tolerance
+xnet_tolc				= 1.0e-4  # Tolerance for iterative abundance change
+xnet_ymin				= 1.0e-25 # Abundance < ymin is set to 0.0
+xnet_iheat				= 0       # Self-heating (couple temperature to abundance evolution)
+xnet_tolt9				= 1.0e-4  # Tolerance for iterative temperature change
+xnet_nzbatchmx				= 16      # Number of zones to batch
+xnet_writeTimers                        = .true.  # Write XNet timers to stdout at end of run
+
+## -------------------------------------------------------------
+## gravity
+## -------------------------------------------------------------
+
+mpole_lmax				= 2       # Maximum multipole moment
+
+## -------------------------------------------------------------
+## miscellaneous
+## -------------------------------------------------------------
+
+# floor values
+smlrho					= 2.0e-4
+smalle					= 1.0e-100
+smallt					= 1.0e+6
+smallu					= 1.0e-10
+smallp					= 1.0e+15
+smallx					= 1.0e-100
+small					= 1.0e-100
+
+## -------------------------------------------------------------
+## Hydro (SPLIT AND UNSPLIT)
+## -------------------------------------------------------------
+
+irenorm					= 0       # Renormalize the abundances before EOS
+use_steepening				= .true.  # Steepen contact discontinuities for PPM
+
+charLimiting				= .true.  # Characteristic limiting vs. Primitive limiting
+cvisc					= 0.1     # Coefficient for artificial viscosity
+
+## -------------------------------------------------------------
+## Hydro (SPLIT ONLY)
+## -------------------------------------------------------------
+
+use_cma_advection			= .true.  # Use partial masses as primary variables
+use_cma_flattening			= .true.  # Use the flattening procedure for the abundances in CMA
+hybrid_riemann				= .true.  # Use HLLE in shocks to avoid odd-even decoupling
+
+## -------------------------------------------------------------
+# Hydro (UNSPLIT ONLY)
+## -------------------------------------------------------------
+
+# interpolation scheme
+order					= 3       # Interpolation order (first/second/third/fifth order)
+slopeLimiter				= "hybrid" # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
+LimitedSlopeBeta			= 1.      # Slope parameter for the "limited" slope by Toro
+
+use_avisc				= .true.  # Use artificial viscosity (originally for PPM)
+use_flattening				= .true.  # Use flattening (dissipative) (originally for PPM)
+use_upwindTVD				= .false. # Use upwind biased TVD slope for PPM (need nguard=6)
+
+# riemann solver
+RiemannSolver				= "HLLC"  # Roe, HLL, HLLC, LLF, Marquina, MarquinaModified, Hybrid
+EOSforRiemann				= .true.  # Call EoS for Riemann solves
+entropy					= .false. # Entropy fix for the Roe solver
+
+# shock detection
+shockDetect				= .true.  # Shock Detect for numerical stability
+shockLowerCFL                           = .true.  # Lower CFL if shock detected

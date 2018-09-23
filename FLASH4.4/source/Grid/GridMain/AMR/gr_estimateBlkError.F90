@@ -60,7 +60,7 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
   real,intent(INOUT) :: error
   
   integer, parameter :: SQNDIM = NDIM*NDIM
-  integer, parameter :: WITH_GC = .TRUE.
+  logical, parameter :: WITH_GC = .TRUE.
 
   real,dimension(MDIM) ::  del, del_f, delta
   integer,dimension(MDIM) :: ncell

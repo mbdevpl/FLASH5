@@ -248,7 +248,6 @@ subroutine Grid_getRowData_blkid(blockID, gridDataStruct, structIndex, beginCoun
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
-  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 

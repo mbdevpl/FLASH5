@@ -237,21 +237,21 @@ module gr_interface
      end subroutine gr_updateRefinement
   end interface
   
-  interface 
-     subroutine gr_getInteriorBlkPtr(block,dataPtr,gridDataStruct)
+  interface
+     subroutine gr_getInteriorBlkPtr(blockDesc,dataPtr,gridDataStruct)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(IN) :: block
+       type(block_metadata_t), intent(IN) :: blockDesc
        real,dimension(:,:,:,:),pointer :: dataPtr
        integer, intent(IN) :: gridDataStruct
      end subroutine gr_getInteriorBlkPtr
   end interface
 
   interface 
-     subroutine gr_releaseInteriorBlkPtr(block,dataPtr,gridDataStruct)
+     subroutine gr_releaseInteriorBlkPtr(blockDesc,dataPtr,gridDataStruct)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(IN) :: block
+       type(block_metadata_t), intent(IN) :: blockDesc
        real,dimension(:,:,:,:),pointer :: dataPtr
        integer, intent(IN) :: gridDataStruct
      end subroutine gr_releaseInteriorBlkPtr
@@ -487,5 +487,31 @@ module gr_interface
       type(gr_iterator_t), intent(INOUT) :: itor
     end subroutine gr_releaseBlkIterator
   end interface
+
+  interface gr_getDataOffsets
+     subroutine gr_getDataOffsets(block, gridDataStruct, startingPos, &
+                                  length, beginCount, begOffset, getIntPtr)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(IN)  :: block
+       integer,                intent(IN)  :: gridDataStruct
+       integer,                intent(IN)  :: beginCount
+       integer,                intent(IN)  :: startingPos(MDIM)
+       integer,                intent(IN)  :: length(MDIM)
+       integer,                intent(OUT) :: begOffset(MDIM)
+       logical,                intent(OUT) :: getIntPtr
+     end subroutine gr_getDataOffsets
+     subroutine gr_getDataOffsets_blkid(blockID, gridDataStruct, startingPos, &
+                                        length, beginCount, begOffset, getIntPtr)
+       implicit none
+       integer, intent(IN)  :: blockID
+       integer, intent(IN)  :: gridDataStruct
+       integer, intent(IN)  :: beginCount
+       integer, intent(IN)  :: startingPos(MDIM)
+       integer, intent(IN)  :: length(MDIM)
+       integer, intent(OUT) :: begOffset(MDIM)
+       logical, intent(OUT) :: getIntPtr
+     end subroutine gr_getDataOffsets_blkid
+  end interface gr_getDataOffsets
 
 end module gr_interface

@@ -117,8 +117,6 @@
 #include "Flash.h"
 #include "constants.h"
 
-! DEVNOTE: Need REORDER directive for scratch, scratch_ctr, scratch_facevar[xyz], gr_[xyz]flx?
-! DEVNOTE: Need REORDER directive for gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face?
 subroutine Grid_init()
   use iso_c_binding,               ONLY : c_loc, c_null_ptr
 
@@ -153,6 +151,7 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: yl_bcString, yr_bcString
   character(len=MAX_STRING_LENGTH) :: zl_bcString, zr_bcString
   character(len=MAX_STRING_LENGTH) :: eosModeString
+  character(len=MAX_STRING_LENGTH) :: interpolatorString
   integer :: refVar
   integer :: nonrep
 
@@ -311,8 +310,15 @@ subroutine Grid_init()
   call RuntimeParameters_get("smalle", gr_smalle)
   call RuntimeParameters_get("smlrho", gr_smallrho)
 !  call RuntimeParameters_get("smallx",gr_smallx) !
+
 !!  call RuntimeParameters_get("grid_monotone_hack", gr_monotone) ! for "quadratic_cartesian" interpolation
 !  call RuntimeParameters_get("interpol_order",gr_intpol) ! for "monotonic" interpolation
+  call RuntimeParameters_get("amrexInterpolator", interpolatorString)
+  call RuntimeParameters_mapStrToInt(interpolatorString, gr_interpolator)
+  if (gr_interpolator == NONEXISTENT) then
+    call Driver_abortFlash("[Grid_init] Unknown amrexInterpolator runtime parameter value")
+  end if
+
 #ifdef GRID_WITH_MONOTONIC
   gr_intpolStencilWidth = 2     !Could possibly be less if gr_intpol < 2  - KW
 #endif

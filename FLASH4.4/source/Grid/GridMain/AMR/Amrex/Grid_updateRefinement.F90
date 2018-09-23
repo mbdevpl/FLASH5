@@ -67,7 +67,6 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                         amrex_geom, &
                                         amrex_ref_ratio
   use amrex_fillpatch_module,    ONLY : amrex_fillpatch
-  use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
   use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_data,                 ONLY : gr_nrefs, &
@@ -79,6 +78,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                         gr_smallrho, &
                                         gr_smalle, &
                                         gr_amrexDidRefinement, &
+                                        gr_interpolator, &
                                         lo_bc_amrex, hi_bc_amrex
   use gr_interface,              ONLY : gr_getBlkIterator, &
                                         gr_releaseBlkIterator
@@ -176,7 +176,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                        amrex_geom(lev  ), gr_fillPhysicalBC, &
                                        0.0d0, UNK_VARS_BEGIN, &
                                        UNK_VARS_BEGIN, NUNK_VARS, &
-                                       amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                       amrex_ref_ratio(lev-1), gr_interpolator, &
                                        lo_bc_amrex, hi_bc_amrex)
      end do
 

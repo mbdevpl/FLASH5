@@ -742,7 +742,7 @@
 !          ! fixed loop range - KW
            do i = 2,nxu-2
 !             ! prmapc(i) = a_{i+1/2}
-              !    = a_i + 0.5 (a_{i+1}-a_i) -1/6 delta_m a_{i+1} + 1/6 delta_m a_i
+!    = a_i + 0.5 (a_{i+1}-a_i) -1/6 delta_m a_{i+1} + 1/6 delta_m a_i
               prmapc(i)   =   p1u(i)
      &                      + half  * wvmap1(i+1)
      &                      - c1by6 * wvmap4(i+1)
