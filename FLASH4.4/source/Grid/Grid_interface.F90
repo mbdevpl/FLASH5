@@ -652,7 +652,7 @@ Module Grid_interface
      end subroutine Grid_putPointData
   end interface
 
-  interface
+  interface Grid_putRowData
      subroutine Grid_putRowData_blkid(blockID, gridDataStruct, variable, beginCount, &
           row, startingPos, datablock, dataSize)
        implicit none
