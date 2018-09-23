@@ -38,6 +38,7 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_putPointData.o \
 	Grid_putPointData_blkid.o \
 	Grid_putRowData.o \
+	Grid_putRowData_blkid.o \
 	Grid_putPlaneData.o \
 	Grid_moveParticles.o \
 	Grid_computeUserVars.o \

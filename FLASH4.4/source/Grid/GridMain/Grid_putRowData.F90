@@ -229,7 +229,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_putRowData(block, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_putRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
      row, startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
@@ -249,7 +249,7 @@ subroutine Grid_putRowData(block, gridDataStruct, structIndex, beginCount, &
 #endif
 
 
-  type(block_metadata_t), intent(in) :: block
+  type(block_metadata_t), intent(in) :: blockDesc
   integer, intent(in) :: structIndex, beginCount, row, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, intent(in) :: dataSize
@@ -266,7 +266,7 @@ subroutine Grid_putRowData(block, gridDataStruct, structIndex, beginCount, &
 
 #ifdef DEBUG_GRID
   isget=.true.
-  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
+  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
 
 
   !verify requested row is available given number of dims in problem
@@ -431,7 +431,7 @@ subroutine Grid_putRowData(block, gridDataStruct, structIndex, beginCount, &
 
   dataLen=0
   dataLen(row)=dataSize
-  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+  call gr_getDataOffsets(blockDesc,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
 
   i=1
   j=1
@@ -444,13 +444,13 @@ subroutine Grid_putRowData(block, gridDataStruct, structIndex, beginCount, &
   if(NDIM > 2) k = startingPos(KAXIS) + begOffset(KAXIS)
   
   if(getIntPtr) then
-     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
      if(row==IAXIS)solnData(structIndex,i:i+datasize-1,j,k)= datablock(:)
      if(row==JAXIS)solnData(structIndex,i,j:j+datasize-1,k)= datablock(:)
      if(row==KAXIS)solnData(structIndex,i,j,k:k+datasize-1)= datablock(:)
-     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
   else
-     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
+     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
 !!$        if(row==IAXIS)solnData(i:i+datasize-1,j,k,structIndex)= datablock(:)
 !!$        if(row==JAXIS)solnData(i,j:j+datasize-1,k,structIndex)= datablock(:)
@@ -460,7 +460,7 @@ subroutine Grid_putRowData(block, gridDataStruct, structIndex, beginCount, &
      if(row==IAXIS)solnData(structIndex,i:i+datasize-1,j,k)= datablock(:)
      if(row==JAXIS)solnData(structIndex,i,j:j+datasize-1,k)= datablock(:)
      if(row==KAXIS)solnData(structIndex,i,j,k:k+datasize-1)= datablock(:)
-     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
   end if
   return
 end subroutine Grid_putRowData
