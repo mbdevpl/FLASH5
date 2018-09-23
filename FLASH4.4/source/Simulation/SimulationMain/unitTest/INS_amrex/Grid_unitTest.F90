@@ -52,7 +52,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
 
   real,dimension(:,:,:,:),pointer :: solnData
   type(leaf_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(block_metadata_t) :: blockDesc
 
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
   integer, dimension(2*MDIM) :: bcTypes
@@ -104,19 +104,17 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   Linf_err = 0.
   Tvol = 0.
   ! Get Block iterator
-!   itor = block_iterator_t(LEAF)
   call Grid_getLeafIterator(itor)
   do while (itor%is_valid())
-     call itor%blkMetaData(block)
+     call itor%blkMetaData(blockDesc)
      !get the index limits of the block
-     blkLimits   = block%limits
-     blkLimitsGC = block%limitsGC
+     blkLimits   = blockDesc%limits
+     blkLimitsGC = blockDesc%limitsGC
 
      ! get a pointer to the current block of data
-!     call Grid_getBlkPtr(block, solnData)
-     call Grid_getBlkPtr(block,solnData,CENTER)
+     call Grid_getBlkPtr(blockDesc,solnData,CENTER)
 
-     call Grid_getDeltas(block%level,del)
+     call Grid_getDeltas(blockDesc%level,del)
 
      select case (NDIM)
      case(1)
@@ -157,7 +155,7 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
           blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),           & 
           blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),DIFF_VAR) ))
 
-     call Grid_releaseBlkPtr(block,solnData,CENTER)
+     call Grid_releaseBlkPtr(blockDesc,solnData,CENTER)
      call itor%next()
   enddo
  call Grid_releaseLeafIterator(itor)

@@ -77,13 +77,18 @@ Module Eos_interface
   end interface
 
   interface Eos_unitTest
-     subroutine Eos_unitTest(fileUnit, perfect, solnData, blkLimits)
+     subroutine Eos_unitTest(fileUnit, perfect)
+       integer, intent(in) :: fileUnit
+       logical, intent(out) :: perfect
+     end subroutine Eos_unitTest
+     subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
+       use block_metadata, ONLY : block_metadata_t
        integer, intent(in) :: fileUnit
        logical, intent(out) :: perfect
        integer,dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits
        real,dimension(:,:,:,:),pointer :: solnData
-
-     end subroutine Eos_unitTest
+       type(block_metadata_t),OPTIONAL, intent(in) :: blockDesc
+     end subroutine Eos_unitTest4
   end interface
 
   interface Eos_getAbarZbar
