@@ -237,21 +237,21 @@ module gr_interface
      end subroutine gr_updateRefinement
   end interface
   
-  interface 
-     subroutine gr_getInteriorBlkPtr(block,dataPtr,gridDataStruct)
+  interface
+     subroutine gr_getInteriorBlkPtr(blockDesc,dataPtr,gridDataStruct)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(IN) :: block
+       type(block_metadata_t), intent(IN) :: blockDesc
        real,dimension(:,:,:,:),pointer :: dataPtr
        integer, intent(IN) :: gridDataStruct
      end subroutine gr_getInteriorBlkPtr
   end interface
 
   interface 
-     subroutine gr_releaseInteriorBlkPtr(block,dataPtr,gridDataStruct)
+     subroutine gr_releaseInteriorBlkPtr(blockDesc,dataPtr,gridDataStruct)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t), intent(IN) :: block
+       type(block_metadata_t), intent(IN) :: blockDesc
        real,dimension(:,:,:,:),pointer :: dataPtr
        integer, intent(IN) :: gridDataStruct
      end subroutine gr_releaseInteriorBlkPtr

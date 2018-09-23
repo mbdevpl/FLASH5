@@ -19,7 +19,7 @@
 !!  
 !!  This routine allows the user to get an entire row or any contiguous
 !!  part of a row of data depending on the arguments passed. The user is also
-!!  allowed to specify if indice counting should begin at the exterior edge
+!!  allowed to specify if index counting should begin at the exterior edge
 !!  of the block, (that is including guardcells)
 !!  or the interior edge of the block. 
 !!
@@ -67,11 +67,11 @@
 !!                defined in constants.h
 !!  
 !!
-!!  beginCount : tells the routine where to start indice counting.  beginCount can
+!!  beginCount : tells the routine where to start index counting.  beginCount can
 !!               be set to INTERIOR or EXTERIOR.  If INTERIOR is specified
 !!               guardcell indices are not included and index 1 is the first interior cell. 
 !!               If EXTERIOR is specified
-!!               the first index, 1, is the left most guardcell.  See example
+!!               the first index, 1, is the leftmost guardcell.  See example
 !!               below for more explanation.  (For most of the FLASH architecture code,
 !!               we use EXTERIOR.  Some physics routines, however, find it helpful 
 !!               only to work on the internal parts of the blocks (without
@@ -233,13 +233,15 @@
 !!
 !!***
 
-subroutine Grid_getRowData(block, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_getRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
      row, startingPos, datablock, dataSize)
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
-  type(block_metadata_t), intent(in) :: block
+#include "constants.h"
+
+  type(block_metadata_t), intent(in) :: blockDesc
   integer, intent(in) :: structIndex, beginCount, row, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, intent(in) :: dataSize

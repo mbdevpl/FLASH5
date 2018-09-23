@@ -652,19 +652,21 @@ Module Grid_interface
      end subroutine Grid_putPointData
   end interface
 
-  interface
-     subroutine Grid_putRowData_blockID(blockID, gridDataStruct, variable, beginCount, &
+  interface Grid_putRowData
+     subroutine Grid_putRowData_blkid(blockID, gridDataStruct, variable, beginCount, &
           row, startingPos, datablock, dataSize)
+       implicit none
        integer, intent(in) :: blockID
        integer, intent(IN) :: variable, beginCount, row, gridDataStruct
        integer, dimension(MDIM), intent(IN) :: startingPos
        integer, intent(IN) :: dataSize
        real, dimension(datasize),intent(IN) :: datablock
-     end subroutine Grid_putRowData_blockID
-     subroutine Grid_putRowData(block, gridDataStruct, variable, beginCount, &
+     end subroutine Grid_putRowData_blkid
+     subroutine Grid_putRowData(blockDesc, gridDataStruct, variable, beginCount, &
           row, startingPos, datablock, dataSize)
        use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: block
+       implicit none
+       type(block_metadata_t), intent(in) :: blockDesc
        integer, intent(IN) :: variable, beginCount, row, gridDataStruct
        integer, dimension(MDIM), intent(IN) :: startingPos
        integer, intent(IN) :: dataSize
