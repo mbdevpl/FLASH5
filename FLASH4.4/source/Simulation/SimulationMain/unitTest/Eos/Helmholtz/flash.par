@@ -13,6 +13,8 @@ sim_tempMin = 1.e6
 sim_tempMax = 1.e8
 sim_densMin = 1.e-2
 sim_densMax = 1.e8
+#sim_presMin = 1.e10   # Enable if using a larger grid
+#sim_presMax = 1.e24   # Enable if using a larger grid
 sim_xnMin = 1.e-10
 sim_xnMax = 1.0
 
@@ -40,6 +42,7 @@ nblockx = 1
 nblocky = 1
 nblockz = 1
 #eintSwitch     = 1.e-4
+#eosModeInit = "eos_nop"	# Enable if using a larger grid
 
 #output the derived variables
 plot_grid_var_1 = "drv1"
