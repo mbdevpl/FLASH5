@@ -481,10 +481,10 @@ subroutine Eos_unitTest(fileUnit, perfect)
               m = (e-1)*vecLen
               derivedVariables(1:vecLen,j-jb+1,k-kb+1,e) =  eosData(m+1:m+vecLen)
               if (e==EOS_DEA) &
-                 call Grid_putRowData(blockDesc,SCRATCH_CTR,DRV1_SCRATCH_CENTER_VAR,EXTERIOR,IAXIS, &
+                 call Grid_putRowData(blockDesc,SCRATCH_CTR,DRV1_SCRATCH_CENTER_VAR,GLOBALIDX1,IAXIS, &
                       startRow,eosData(m+1:m+vecLen),vecLen)
               if (e==EOS_DPT) &
-                 call Grid_putRowData(blockDesc,SCRATCH_CTR,DRV2_SCRATCH_CENTER_VAR,EXTERIOR,IAXIS, &
+                 call Grid_putRowData(blockDesc,SCRATCH_CTR,DRV2_SCRATCH_CENTER_VAR,GLOBALIDX1,IAXIS, &
                       startRow,eosData(m+1:m+vecLen),vecLen)
 
            end do
