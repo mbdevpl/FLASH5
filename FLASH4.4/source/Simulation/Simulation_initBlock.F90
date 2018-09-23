@@ -42,6 +42,7 @@
 
 subroutine Simulation_initBlock(solnData,blockDesc)
 
+  use block_metadata, ONLY : block_metadata_t
   
   implicit none
   
