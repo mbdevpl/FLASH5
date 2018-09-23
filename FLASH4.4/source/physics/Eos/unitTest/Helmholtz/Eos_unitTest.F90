@@ -76,8 +76,7 @@
 subroutine Eos_unitTest(fileUnit, perfect)
 
   use Eos_interface, ONLY : Eos_wrapped, Eos
-  use Grid_interface, ONLY :  Grid_getLocalNumBlks, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr, &
+  use Grid_interface,ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
        Grid_getLeafIterator, Grid_releaseLeafIterator, &
        Grid_getBlkType, Grid_putRowData
   use leaf_iterator, ONLY : leaf_iterator_t
@@ -98,7 +97,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
 
   integer, intent(in) :: fileUnit
   logical, intent(out) :: perfect
-  integer :: localBlkCount, blockID
+  integer :: blockID
   integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
   type(leaf_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
@@ -140,11 +139,14 @@ subroutine Eos_unitTest(fileUnit, perfect)
 
   mask = .true.
 
-  call Grid_getLocalNumBlks(localBlkCount)
-
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
+#ifdef FLASH_GRID_PARAMESH
+     blockID = blockDesc%id     ! only used for some useful screen output
+#else
+     blockID = blockDesc % grid_index  ! only for some useful output
+#endif
      call Grid_getBlkType(blockId,nodeType)
      call Grid_getBlkPtr(blockDesc,solnData)
      blkLimits = blockDesc%limits
@@ -210,6 +212,11 @@ subroutine Eos_unitTest(fileUnit, perfect)
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
+#ifdef FLASH_GRID_PARAMESH
+     blockID = blockDesc%id
+#else
+     blockID = blockDesc % grid_index
+#endif
      call Grid_getBlkType(blockId,nodeType)
      call Grid_getBlkPtr(blockDesc,solnData)
      blkLimits = blockDesc%limits
@@ -274,6 +281,11 @@ subroutine Eos_unitTest(fileUnit, perfect)
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
+#ifdef FLASH_GRID_PARAMESH
+     blockID = blockDesc%id
+#else
+     blockID = blockDesc % grid_index
+#endif
      call Grid_getBlkType(blockId,nodeType)
      call Grid_getBlkPtr(blockDesc,solnData)
      blkLimits = blockDesc%limits
@@ -331,6 +343,11 @@ subroutine Eos_unitTest(fileUnit, perfect)
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
+#ifdef FLASH_GRID_PARAMESH
+     blockID = blockDesc%id
+#else
+     blockID = blockDesc % grid_index
+#endif
      call Grid_getBlkType(blockId,nodeType)
      call Grid_getBlkPtr(blockDesc,solnData)
      blkLimits = blockDesc%limits
@@ -462,7 +479,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
            startRow(3) = k
            do e=EOS_VARS+1,EOS_NUM
               m = (e-1)*vecLen
-              derivedVariables(1:vecLen,j-NGUARD,k-NGUARD,e) =  eosData(m+1:m+vecLen)
+              derivedVariables(1:vecLen,j-jb+1,k-kb+1,e) =  eosData(m+1:m+vecLen)
               if (e==EOS_DEA) &
                  call Grid_putRowData(blockDesc,SCRATCH_CTR,DRV1_SCRATCH_CENTER_VAR,EXTERIOR,IAXIS, &
                       startRow,eosData(m+1:m+vecLen),vecLen)
@@ -475,8 +492,8 @@ subroutine Eos_unitTest(fileUnit, perfect)
           !!Stuff a few test derivatives into scratch storage so you can see what they look like
           !!  Feel free to change the variable inserted
            do i= 1, vecLen
-              deriv1(i,j-NGUARD,k-NGUARD) = derivedVariables(i,j-NGUARD,k-NGUARD,EOS_DEA)
-              deriv2(i,j-NGUARD,k-NGUARD) = derivedVariables(i,j-NGUARD,k-NGUARD,EOS_DPT)
+              deriv1(i,j-jb+1,k-kb+1) = derivedVariables(i,j-jb+1,k-kb+1,EOS_DEA)
+              deriv2(i,j-jb+1,k-kb+1) = derivedVariables(i,j-jb+1,k-kb+1,EOS_DPT)
            end do
         end do
      end do
