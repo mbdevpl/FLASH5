@@ -20,6 +20,7 @@ refine_var_4 = "he4"
 
 smlrho = 1.e-10
 smallt = 1.e-10
+smallE = 1.e-30
 
 xmin = 0.0
 xmax = 1.0
@@ -34,3 +35,5 @@ nblockx = 2
 nblocky = 2
 nblockz = 1
 #eintSwitch     = 1.e-4
+eosModeInit = "eos_nop"
+eosMode     = "eos_nop"

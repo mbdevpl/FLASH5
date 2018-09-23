@@ -20,7 +20,7 @@
 subroutine Simulation_init()
   
   use Simulation_data, ONLY : sim_xmin,sim_xmax,sim_ymin,sim_ymax,&
-                              sim_zmin,sim_zmax,sim_smallx,&
+                              sim_zmin,sim_zmax,sim_smallx,sim_smallE,&
                               sim_densMin,sim_tempMin,sim_xnMin,sim_presMin,&
                               sim_densMax, sim_tempMax, sim_xnMax, sim_presMax, &
                               sim_initialMass
@@ -52,6 +52,7 @@ subroutine Simulation_init()
   call RuntimeParameters_get( 'zmax', sim_zmax)
   
   call RuntimeParameters_get( 'smallx', sim_smallx)
+  call RuntimeParameters_get( 'smallE', sim_smallE)
 
 ! sim_initialMass must be less than NSPECIES
   call RuntimeParameters_get( 'sim_initialMass', sim_initialMass)

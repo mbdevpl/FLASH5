@@ -33,7 +33,7 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 
 
   use Simulation_data, ONLY : sim_xmin,sim_xmax,sim_ymin,sim_ymax,&
-                              sim_zmin,sim_zmax,sim_smallx,&
+                              sim_zmin,sim_zmax,sim_smallx,sim_smallE,&
                               sim_densMin, sim_tempMin, sim_xnMin, sim_presMin,&
                               sim_densMax, sim_tempMax, sim_xnMax, sim_presMax, &
                               sim_initialMass
@@ -161,6 +161,12 @@ subroutine Simulation_initBlock(solnData,blockDesc)
            solnData(CTMP_VAR,i,j,k)=temp
            solnData(TEMP_VAR,i,j,k)=temp
            solnData(CPRS_VAR,i,j,k)=pres
+           ! Put some small value in energies, so Eos_wrapped called at grid
+           ! init will not have to floor then with smallE
+           solnData(ENER_VAR,i,j,k)=sim_smallE*1.02
+#ifdef EINT_VAR
+           solnData(EINT_VAR,i,j,k)=sim_smallE*1.02
+#endif
 
            if (sim_debug) then
               print*,'i,j,k,dens,temp,pres:',i,j,k,dens,temp,pres

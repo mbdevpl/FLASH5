@@ -14,7 +14,7 @@ module Simulation_data
   implicit none
   real, save :: sim_xmin, sim_xmax, sim_ymin, sim_ymax, sim_zmin, sim_zmax
 
-  real, save :: sim_smallx
+  real, save :: sim_smallx, sim_smallE
 
   integer, save ::  sim_initialMass
 
