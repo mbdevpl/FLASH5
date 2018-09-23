@@ -223,13 +223,17 @@
 !!***
 
 
-subroutine Grid_putRowData(blockID, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_putRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
      row, startingPos, datablock, dataSize)
 
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
-  integer, intent(in) :: blockID, structIndex, beginCount, row, gridDataStruct
+#include "constants.h"
+
+  type(block_metadata_t), intent(in) :: blockDesc
+  integer, intent(in) :: structIndex, beginCount, row, gridDataStruct
   integer, dimension(MDIM), intent(in) :: startingPos
   integer, intent(in) :: dataSize
   real, dimension(datasize),intent(in) :: datablock

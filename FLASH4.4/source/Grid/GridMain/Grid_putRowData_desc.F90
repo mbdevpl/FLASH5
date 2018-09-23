@@ -2,7 +2,7 @@
 !!
 !!
 !! NAME
-!!  Grid_putRowData_desc
+!!  Grid_putRowData_blkid
 !!
 !! SYNOPSIS
 !!
@@ -229,7 +229,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_putRowData_desc(blockID, gridDataStruct, structIndex, beginCount, &
+subroutine Grid_putRowData_blkid(blockID, gridDataStruct, structIndex, beginCount, &
      row, startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
@@ -269,7 +269,7 @@ subroutine Grid_putRowData_desc(blockID, gridDataStruct, structIndex, beginCount
 
   !verify requested row is available given number of dims in problem
   if((row==KAXIS) .and. (NDIM < 3)) then
-     print *, "Error: Grid_putRowData_desc "
+     print *, "Error: Grid_putRowData_blkid "
      call Driver_abortFlash("you have requested to return the KAXIS in a 1d or 2d problem")
   end if
   
@@ -279,20 +279,20 @@ subroutine Grid_putRowData_desc(blockID, gridDataStruct, structIndex, beginCount
 
   !verify requested row is available given number of dims in problem
   if((row==JAXIS) .and. (NDIM < 2)) then
-     print *, "Error: Grid_putRowData_desc"
+     print *, "Error: Grid_putRowData_blkid"
      call Driver_abortFlash("you have requested to return the JAXIS in a 1d problem")
   end if
      
 
   !verify we have a valid blockid
   if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print*,"Error: Grid_putRowData_desc : invalid blockid "
-     call Driver_abortFlash("Grid_putRowData_desc : invalid blockid ")
+     print*,"Error: Grid_putRowData_blkid : invalid blockid "
+     call Driver_abortFlash("Grid_putRowData_blkid : invalid blockid ")
   end if
   
   !verify beginCount is set to a valid value
   if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
-     print *, "Error: Grid_putRowData_desc: beginCount set to improper value"
+     print *, "Error: Grid_putRowData_blkid: beginCount set to improper value"
      print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
      call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
   end if
@@ -300,21 +300,21 @@ subroutine Grid_putRowData_desc(blockID, gridDataStruct, structIndex, beginCount
 
   !verify that there is enough space in datablock
   if ((row==IAXIS) .and. (dataSize > imax)) then
-     print *, "Error: Grid_putRowData_desc: dataSize too big"
+     print *, "Error: Grid_putRowData_blkid: dataSize too big"
      print *,"You are requesting more cells than block has in a dimension"
-     call Driver_abortFlash("Grid_putRowData_desc: dataSize too big")
+     call Driver_abortFlash("Grid_putRowData_blkid: dataSize too big")
   end if
 
   if ((row==JAXIS) .and. (dataSize > jmax)) then
-     print *, "Error: Grid_putRowData_desc: dataSize too big"
+     print *, "Error: Grid_putRowData_blkid: dataSize too big"
      print *,"You are requesting more cells than block has in a dimension"
-     call Driver_abortFlash("Grid_putRowData_desc: dataSize too big")
+     call Driver_abortFlash("Grid_putRowData_blkid: dataSize too big")
   end if
 
   if ((row==KAXIS) .and. (dataSize > kmax)) then
-     print *, "Error: Grid_putRowData_desc: dataSize too big"
+     print *, "Error: Grid_putRowData_blkid: dataSize too big"
      print *,"You are requesting more cells than block has in a dimension"
-     call Driver_abortFlash("Grid_putRowData_desc: dataSize too big")
+     call Driver_abortFlash("Grid_putRowData_blkid: dataSize too big")
   end if
 
 
@@ -322,9 +322,9 @@ subroutine Grid_putRowData_desc(blockID, gridDataStruct, structIndex, beginCount
   !verify that there is enough space in datablock
   if ((dataSize < 1)) then 
      
-     print *, "Error: Grid_putRowData_desc: dataSize too small"
+     print *, "Error: Grid_putRowData_blkid: dataSize too small"
      print *,"You are requesting more < 1 cell in a dimension of block, 1 is the min"
-     call Driver_abortFlash("Grid_putRowData_desc: dataSize too small")
+     call Driver_abortFlash("Grid_putRowData_blkid: dataSize too small")
   end if
   
 
@@ -334,53 +334,53 @@ subroutine Grid_putRowData_desc(blockID, gridDataStruct, structIndex, beginCount
   if(beginCount == EXTERIOR) then
     
      if (startingPos(1) > imax) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(1) index larger than block")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(1) index larger than block")
      end if
 
      if ((NDIM > 1) .and. (startingPos(2) > jmax)) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(2) index larger than block")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(2) index larger than block")
      end if
     
      if ((NDIM > 2) .and. (startingPos(3) > kmax)) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(3) index larger than block")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(3) index larger than block")
      end if
     
      if (startingPos(1) < 1) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(1) index smaller than 1")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(1) index smaller than 1")
      end if
 
      if ((NDIM > 1) .and. (startingPos(2) < 1)) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(2) index smaller than 1")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(2) index smaller than 1")
      end if
     
      if ((NDIM > 2) .and. (startingPos(3) < 1)) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(3) index smaller than 1")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(3) index smaller than 1")
      end if
         
   else !beginCount == INTERIOR
 
      if ((startingPos(1) + gr_iguard -1) > imax) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(1) index larger than block")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(1) index larger than block")
      end if
 
      if ((NDIM > 1) .and. ((startingPos(2) + gr_jguard -1) > jmax)) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(2) index larger than block")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(2) index larger than block")
      end if
     
      if ((NDIM > 2) .and. ((startingPos(3) + gr_kguard -1) > kmax)) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(3) index larger than block")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(3) index larger than block")
      end if
     
      if (startingPos(1) < 1) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(1) index smaller than 1")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(1) index smaller than 1")
      end if
 
      if ((NDIM > 1) .and. (startingPos(2) < 1)) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(2) index smaller than 1")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(2) index smaller than 1")
      end if
     
      if ((NDIM > 2) .and. (startingPos(3) <  1)) then
-        call Driver_abortFlash("Grid_putRowData_desc startingPos(3) index smaller than 1")
+        call Driver_abortFlash("Grid_putRowData_blkid startingPos(3) index smaller than 1")
      end if
 
   end if
@@ -392,43 +392,43 @@ subroutine Grid_putRowData_desc(blockID, gridDataStruct, structIndex, beginCount
   if(beginCount == EXTERIOR) then
      if(row == IAXIS) then
         if ((startingPos(IAXIS) + dataSize -1) > imax) then
-           print *, "Error: Grid_putRowData_desc"
-           call Driver_abortFlash("Grid_putRowData_desc indices too large")
+           print *, "Error: Grid_putRowData_blkid"
+           call Driver_abortFlash("Grid_putRowData_blkid indices too large")
         end if
      end if
 
      if(row == JAXIS) then
         if ((startingPos(JAXIS) + dataSize -1) > jmax) then
-           print *, "Error: Grid_putRowData_desc"
-           call Driver_abortFlash("Grid_putRowData_desc indices too large")
+           print *, "Error: Grid_putRowData_blkid"
+           call Driver_abortFlash("Grid_putRowData_blkid indices too large")
         end if
      end if
 
      if(row == KAXIS) then
         if ((startingPos(KAXIS) + dataSize -1) > kmax) then
-           print *, "Error: Grid_putRowData_desc"
-           call Driver_abortFlash("Grid_putRowData_desc indices too large")
+           print *, "Error: Grid_putRowData_blkid"
+           call Driver_abortFlash("Grid_putRowData_blkid indices too large")
         end if
      end if
   else if(beginCount == INTERIOR) then
      if(row == IAXIS) then
         if ((startingPos(IAXIS) + dataSize + gr_iguard -1) > imax) then
-           print *, "Error: Grid_putRowData_desc"
-           call Driver_abortFlash("Grid_putRowData_desc indices too large")
+           print *, "Error: Grid_putRowData_blkid"
+           call Driver_abortFlash("Grid_putRowData_blkid indices too large")
         end if
      end if
 
      if(row == JAXIS) then
         if ((startingPos(JAXIS) + dataSize + gr_jguard -1) > jmax) then
-           print *, "Error: Grid_putRowData_desc"
-           call Driver_abortFlash("Grid_putRowData_desc indices too large")
+           print *, "Error: Grid_putRowData_blkid"
+           call Driver_abortFlash("Grid_putRowData_blkid indices too large")
         end if
      end if
 
      if(row == KAXIS) then
         if ((startingPos(KAXIS) + dataSize + gr_kguard -1) > kmax) then
-           print *, "Error: Grid_putRowData_desc"
-           call Driver_abortFlash("Grid_putRowData_desc indices too large")
+           print *, "Error: Grid_putRowData_blkid"
+           call Driver_abortFlash("Grid_putRowData_blkid indices too large")
         end if
      end if
   end if
@@ -468,4 +468,4 @@ subroutine Grid_putRowData_desc(blockID, gridDataStruct, structIndex, beginCount
      call Grid_releaseBlkPtr(blockID,solnData,gridDataStruct)
   end if
   return
-end subroutine Grid_putRowData_desc
+end subroutine Grid_putRowData_blkid
