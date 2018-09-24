@@ -172,7 +172,6 @@ subroutine pt_initPositionsLattice (blockID,success)
               particles(POSY_PART_PROP,p)  = ypos
               particles(POSZ_PART_PROP,p)  = zpos
               
-              
            endif   !! end of IsInBlock .and. IsInSphere is true
            
         enddo loop_z

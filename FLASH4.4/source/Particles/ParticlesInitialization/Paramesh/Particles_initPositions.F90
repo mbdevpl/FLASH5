@@ -158,7 +158,7 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
      do while((b<blkCount).and.partPosInitialized)
         b=b+1
         blockID = blkList(b)
-!!        print*,'pt_initPositions',blockID, pt_typeInfo(PART_INITMETHOD,i)
+        !print*,'pt_initPositions',blockID, pt_typeInfo(PART_INITMETHOD,i)
         select case(pt_typeInfo(PART_INITMETHOD,i))
         case(LATTICE)
            call pt_initPositionsLattice(blockID,partPosInitialized)
@@ -180,7 +180,7 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
      numLocalPreviousTypes = numLocalPreviousTypes + numLocalThisType
   end do
   pt_numLocal=sum(pt_typeInfo(PART_LOCAL,1:NPART_TYPES))
-!!  print*,'Particles_initPositions: pt_numLocal now is',pt_numLocal
+  !!print*,'Particles_initPositions: pt_numLocal now is',pt_numLocal
 
   pt_posInitialized = partPosInitialized
 

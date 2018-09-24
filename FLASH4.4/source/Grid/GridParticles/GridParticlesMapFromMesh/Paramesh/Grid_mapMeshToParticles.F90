@@ -75,6 +75,7 @@ subroutine Grid_mapMeshToParticles (particles, part_props,part_blkID,&
   integer :: gDataStruct
   real, dimension(numAttrib) :: partAttribVec
   integer :: level
+  integer,dimension(LOW:HIGH,MDIM):: blkLimits
 
   if(present(gridDataStruct)) then
      gDataStruct=gridDataStruct
@@ -86,12 +87,6 @@ subroutine Grid_mapMeshToParticles (particles, part_props,part_blkID,&
 
      call Grid_getLocalNumBlks(blkCount)
 
-     currentBlk=int(particles(part_blkID,1))
-     prevBlk=currentBlk
-     call Grid_getBlkPtr(currentBlk,solnVec,gDataStruct)
-     call Grid_getBlkBoundBox(currentBlk,bndBox)
-     call Grid_getBlkRefineLevel(currentBlk,level)
-     call Grid_getDeltas(level,delta)
      do i = 1, numParticles
 #ifdef DEBUG_GRIDPARTICLES
         if((particles(part_blkID, i) < 0) .or. (particles(part_blkID, i) > blkCount)) then
@@ -100,24 +95,22 @@ subroutine Grid_mapMeshToParticles (particles, part_props,part_blkID,&
 #endif
         
         currentBlk=int(particles(part_blkID,i))
-        if(currentBlk /= prevBlk)then
-           call Grid_releaseBlkPtr(prevBlk,solnVec,gridDataStruct)
-           call Grid_getBlkPtr(currentBlk,solnVec,gridDataStruct)
-           call Grid_getBlkBoundBox(currentBlk,bndBox)
-           call Grid_getDeltas(currentBlk,delta)
-        end if
+        call Grid_getBlkPtr(currentBlk,solnVec,gridDataStruct)
+        call Grid_getBlkBoundBox(currentBlk,bndBox)
+        call Grid_getBlkRefineLevel(currentBlk,level)
+        call Grid_getDeltas(level,delta)
+        
         do j = 1,MDIM
            pos(j)=particles(posAttrib(j),i)
         end do
         
         call Particles_mapFromMesh (mapType, numAttrib, attrib,&
-             pos, bndBox,delta,solnVec, partAttribVec)
+             pos, bndBox,delta,blkLimits,solnVec, partAttribVec)
         do j = 1,numAttrib
            particles(attrib(PART_DS_IND,j),i)=partAttribVec(j)
         end do
-        prevBlk=currentBlk
+        call Grid_releaseBlkPtr(currentBlk,solnVec,gridDataStruct)
      enddo
-     call Grid_releaseBlkPtr(currentBlk,solnVec,gridDataStruct)
   end if
 
 end subroutine Grid_mapMeshToParticles

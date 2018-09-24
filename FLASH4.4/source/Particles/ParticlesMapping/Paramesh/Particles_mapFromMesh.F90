@@ -66,7 +66,7 @@
 !!***
 
 subroutine Particles_mapFromMesh (mapType,numAttrib, attrib, pos, bndBox,&
-     deltaCell,solnVec, partAttribVec)
+     deltaCell,blkLimits,solnVec, partAttribVec)
   
   use pt_interface, ONLY : pt_mapFromMeshQuadratic,pt_mapFromMeshWeighted
   implicit none
@@ -81,11 +81,11 @@ subroutine Particles_mapFromMesh (mapType,numAttrib, attrib, pos, bndBox,&
   real, dimension(LOW:HIGH,MDIM), intent(IN) :: bndBox
   real, pointer       :: solnVec(:,:,:,:)
   real,dimension(numAttrib), intent(OUT) :: partAttribVec
-
+  integer, dimension(LOW:HIGH,MDIM),intent(IN):: blkLimits
   select case(mapType)
   case(QUADRATIC)
      call pt_mapFromMeshQuadratic(numAttrib, attrib, pos, bndBox,&
-          deltaCell,solnVec, partAttribVec)
+          deltaCell,blkLimits,solnVec, partAttribVec)
   case(WEIGHTED)
      call pt_mapFromMeshWeighted(numAttrib, attrib, pos, bndBox,&
           deltaCell,solnVec, partAttribVec)

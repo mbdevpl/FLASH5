@@ -63,10 +63,11 @@
 !!
 !!***
 
+#define DEBUG_GRIDPARTICLES
 !!REORDER(4):solnVec
 
 subroutine pt_mapFromMeshQuadratic (numAttrib, attrib, pos, bndBox,&
-     deltaCell,solnVec, partAttribVec)
+     deltaCell,blkLimits,solnVec, partAttribVec)
   
   use Particles_data, ONLY : pt_geometry, pt_str_geometry
   use Driver_interface, ONLY : Driver_abortFlash
@@ -83,7 +84,7 @@ subroutine pt_mapFromMeshQuadratic (numAttrib, attrib, pos, bndBox,&
   real, dimension(LOW:HIGH,MDIM), intent(IN) :: bndBox
   real, pointer       :: solnVec(:,:,:,:)
   real,dimension(numAttrib), intent(OUT) :: partAttribVec
-
+  integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
   real, dimension(MDIM)   :: coord
   real                :: deltaCellInverseX, deltaCellInverseY, deltaCellInverseZ, xp, yp, zp
   real                :: hx, hy, hz, A, B, C, D, E, F, G, h1, h2
