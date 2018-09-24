@@ -1,5 +1,8 @@
 # flash file for a 1d, 2d, or 3d cellular detonation of carbon
 # [source/Simulation/SimulationMain/Cellular]
+#
+# example setup:
+# ./setup Cellular -auto -2d +cartesian -nxb=16 -nyb=16 -maxblocks=256 +xnet xnetData=Data_SN160 xnetGPU=False +Mode3 -parfile=test_amr_2d.par
 
 ## -------------------------------------------------------------
 ## I/O
