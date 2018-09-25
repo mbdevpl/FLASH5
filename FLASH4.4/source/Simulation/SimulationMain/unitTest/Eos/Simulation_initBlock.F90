@@ -169,6 +169,7 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 #endif
 
            if (sim_debug) then
+!!$              if (i==1 .AND. j==1 .AND. k==1) &
               print*,'i,j,k,dens,temp,pres:',i,j,k,dens,temp,pres
            end if
 #if NSPECIES > 0

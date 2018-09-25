@@ -83,6 +83,7 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
                           eos_testPresMode, &
                           eos_testEintMode, &
                           eos_testTempMode
+  use eos_testData, ONLY: tolerance => eos_testTolerance
   ! logical flags meaning partiall success for all blocks:
   use eos_testData, ONLY: test1allB => eos_test1allB, &
                           test2allB => eos_test2allB, &
@@ -101,7 +102,6 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
   type(block_metadata_t),OPTIONAL, intent(in) :: blockDesc
 
   integer :: blockID
-  real, parameter :: tolerance = 1e-9
   real :: presErr, tempErr, eintErr
 
   logical:: test1,test2,test3,test4 !for a block
@@ -170,10 +170,10 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
        eos_testTempMode,eos_testTempModeStr
   if (eos_meshMe<maxPrintPE) then
      print*,ap,'The initialized extreme values are '
-     print*,ap,'Initialized Density min',minval(abs(solnData(DENS_VAR,ib:ie,jb:je,kb:ke)))
-     print*,ap,'Initialized Density max',maxval(abs(solnData(DENS_VAR,ib:ie,jb:je,kb:ke)))
-     print*,ap,'Initialized Temperature min',minval(abs(solnData(CTMP_VAR,ib:ie,jb:je,kb:ke)))
-     print*,ap,'Initialized Temperature max',maxval(abs(solnData(CTMP_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'Initialized Density min abs',minval(abs(solnData(DENS_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'Initialized Density max abs',maxval(abs(solnData(DENS_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'Initialized Temperature min abs',minval(abs(solnData(CTMP_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'Initialized Temperature max abs',maxval(abs(solnData(CTMP_VAR,ib:ie,jb:je,kb:ke)))
      print*,ap,'Initialized Pressure min',minval(solnData(CPRS_VAR,ib:ie,jb:je,kb:ke))
      print*,ap,'Initialized Pressure max',maxval(solnData(CPRS_VAR,ib:ie,jb:je,kb:ke))
   end if
@@ -183,14 +183,14 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
   !! Summarize results of MODE_DENS_TEMP (or similar) call
   if (eos_meshMe<maxPrintPE) then
      print*,ap,'The resulting extreme values are '
-!!$        print*,ap,'Resulting Density min',minval(abs(solnData(DENS_VAR,ib:ie,jb:je,kb:ke)))
-!!$        print*,ap,'Resulting Density max',maxval(abs(solnData(DENS_VAR,ib:ie,jb:je,kb:ke)))
-     print*,ap,'Resulting Temperature min',minval(abs(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)))
-     print*,ap,'Resulting Temperature max',maxval(abs(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)))
+        print*,ap,'Resulting Density min',minval(solnData(DENS_VAR,ib:ie,jb:je,kb:ke))
+        print*,ap,'Resulting Density max',maxval(solnData(DENS_VAR,ib:ie,jb:je,kb:ke))
+     print*,ap,'Resulting Temperature min',minval(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke))
+     print*,ap,'Resulting Temperature max',maxval(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke))
      print*,ap,'Resulting Pressure min',minval(solnData(PRES_VAR,ib:ie,jb:je,kb:ke))
      print*,ap,'Resulting Pressure max',maxval(solnData(PRES_VAR,ib:ie,jb:je,kb:ke))
-     print*,ap,'Resulting internal energy min',minval(abs(solnData(EINT_VAR,ib:ie,jb:je,kb:ke)))
-     print*,ap,'Resulting internal energy max',maxval(abs(solnData(EINT_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'Resulting internal energy min',minval(solnData(EINT_VAR,ib:ie,jb:je,kb:ke))
+     print*,ap,'Resulting internal energy max',maxval(solnData(EINT_VAR,ib:ie,jb:je,kb:ke))
   end if
   
   ! Save the equilibrium values in O variables and (hopefully) write them out
@@ -206,7 +206,7 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
   if (eos_meshMe<maxPrintPE) print *,ap,'MODE_DENS_EI or similar: Density, energy in; temperature, pressure out; mode=', &
        eos_testEintMode,eos_testEintModeStr
   !  Zero output variables
-  ! solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)=0  ! don't zero TEMP or eos_helm cannot converge in MODE_DENS_EI
+  solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)=1.e-10  ! don't zero TEMP or eos_helm cannot converge in MODE_DENS_EI
   solnData(PRES_VAR,:,:,:)=0 
   call Eos_wrapped(eos_testEintMode,blkLimits,solnData,CENTER)
 
@@ -249,7 +249,7 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
   if (eos_meshMe<maxPrintPE) print *,ap,'MODE_DENS_PRES or similar: Density, pressure in; energy, temperature out; mode=', &
        eos_testPresMode,eos_testPresModeStr
   solnData(EINT_VAR,ib:ie,jb:je,kb:ke)=0
-  ! solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)=0  ! don't zero TEMP or eos_helm cannot converge in any mode
+  solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)=1.1e4  ! don't zero TEMP or eos_helm cannot converge in any mode
   call Eos_wrapped(eos_testPresMode,blkLimits,solnData,CENTER)
 
   !! Summarize results of MODE_DENS_PRES (or similar) call;
@@ -289,6 +289,22 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
   !solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)=0   ! don't zero TEMP or eos_helm cannot converge
   solnData(EINT_VAR,ib:ie,jb:je,kb:ke)=0 
   call Eos_wrapped(MODE_DENS_PRES, blkLimits,solnData)
+  if (eos_meshMe<maxPrintPE) then
+     print*,ap,'The resulting extreme values from MODE_DENS_PRES are '
+     print*,ap,'Resulting Pressure min',minval(solnData(PRES_VAR,ib:ie,jb:je,kb:ke))
+     print*,ap,'Resulting Pressure max',maxval(solnData(PRES_VAR,ib:ie,jb:je,kb:ke))
+     print*,ap,'Resulting Temperature min abs',minval(abs(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'Resulting Temperature max abs',maxval(abs(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'Resulting internal energy min abs',minval(abs(solnData(EINT_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'Resulting internal energy max abs',maxval(abs(solnData(EINT_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'Resulting Temperature min',minval(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke))
+     print*,ap,'Resulting Temperature max',maxval(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke))
+     print*,ap,'Resulting internal energy min',minval(solnData(EINT_VAR,ib:ie,jb:je,kb:ke))
+     print*,ap,'Resulting internal energy max',maxval(solnData(EINT_VAR,ib:ie,jb:je,kb:ke))
+     presErr = maxval(abs((solnData(PRES_VAR,ib:ie,jb:je,kb:ke)-solnData(CPRS_VAR,ib:ie,jb:je,kb:ke))/&
+          solnData(PRES_VAR,ib:ie,jb:je,kb:ke)))
+     print*,ap,'The calculated error in pressure is ',presErr
+  end if
   ! Now we have a "true"  temperature and internal energy; save them for comparison
   solnData(OPRS_VAR,ib:ie,jb:je,kb:ke)=solnData(PRES_VAR,ib:ie,jb:je,kb:ke)
   solnData(OENT_VAR,ib:ie,jb:je,kb:ke)=solnData(EINT_VAR,ib:ie,jb:je,kb:ke)
@@ -298,7 +314,7 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
   ! Density and energy in, temperature and pressure out
   !! zero output values to make sure they're being calculated
   solnData(PRES_VAR,ib:ie,jb:je,kb:ke)=0.0
-  !solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)=0.0   ! don't zero TEMP or eos_helm cannot converge 
+  !solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)=1.0e-11   ! don't zero TEMP or eos_helm cannot converge
   call Eos_wrapped(MODE_DENS_EI,blkLimits,solnData,CENTER)
   presErr1 = maxval(solnData(PRES_VAR,ib:ie,jb:je,kb:ke))
   presErr2 = maxval(solnData(OPRS_VAR,ib:ie,jb:je,kb:ke))
@@ -312,6 +328,8 @@ subroutine Eos_unitTest4(fileUnit, perfect, solnData, blkLimits, blockDesc)
   test3 = (tolerance > tempErr)
   test3 = test3.and.(tolerance > presErr)
   if (eos_meshMe<maxPrintPE) print*,ap,'The calculated error in pressure from EI is ',presErr
+  if (eos_meshMe<maxPrintPE) print*,ap,'  Temperature min is',minval(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke))
+  if (eos_meshMe<maxPrintPE) print*,ap,'  Temperature max is',maxval(solnData(TEMP_VAR,ib:ie,jb:je,kb:ke))
   if (eos_meshMe<maxPrintPE) print*,ap,'The calculated error in temperature from EI is ',tempErr
   if(test3) then
      if (eos_meshMe<maxPrintPE) print*,ap,'MODE_DENS_EI is fine '

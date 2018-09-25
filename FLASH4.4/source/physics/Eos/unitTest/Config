@@ -1,3 +1,6 @@
+D eos_testTolerance       Tolerance for relative errors in Eos results
+PARAMETER eos_testTolerance REAL    1.e-9	 [ 0.0 ... ]
+
 D eos_testPresMode        The Eos mode for getting other variables from
 D & density and a pressure.
 PARAMETER eos_testPresMode  STRING "dens_pres"

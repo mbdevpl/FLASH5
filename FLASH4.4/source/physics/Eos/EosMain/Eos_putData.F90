@@ -116,6 +116,7 @@ subroutine Eos_putData(range,vecLen,solnData,gridDataStruct,eosData)
   integer :: pres_map,entr_map,gamc_map,temp_map
   integer :: eint_map,ener_map,game_map
 
+  integer :: flagLoc(1),firstFlag
   integer,allocatable,dimension(:) :: iFlag
 
 
@@ -162,6 +163,11 @@ subroutine Eos_putData(range,vecLen,solnData,gridDataStruct,eosData)
         print*,'eosData (eint+1:eint+vecLen)  =',eosData(eint+1:eint+vecLen)
         print*,'solnData(DENS_VAR,ib:ie,jb,kb)=',solnData(DENS_VAR,ib:ie,jb,kb)
         print*,'eosData(dens+1:dens+vecLen)   =',eosData(dens+1:dens+vecLen)
+        flagLoc = maxloc(iflag); firstFlag = flagLoc(1)
+        if (firstFlag > ie-ib+1) then
+           print*,'first error at element #',firstFlag,' of',vecLen
+        end if
+        print*,'eosData at first error:',eosData(firstFlag::vecLen)
         write(*,*) "  Perhaps the initialization routine is wrong..... or"
         write(*,*) "  perhaps the runtime parameter eosMode is wrong."
         write(*,*) "     Check constants.h to determine value of MODE_DENS_??"
