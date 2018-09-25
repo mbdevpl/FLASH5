@@ -17,11 +17,11 @@ that is not yet under automated testing and if it is believed that the changes c
 any automated tests, then the pull request can be managed fully by the creator.
 Else, the pull request should be assigned to Klaus or Jared.
 4.  If the pull request is accepted, then the merge can be made and the person
-that executes the merge must launch the compute001/Jenkins staged test suite ([![Flash-Staged](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged/badge/icon)](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged/)).
+that executes the merge must launch the compute001/Jenkins staged test suite ([Flash-Staged](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged/)).
 5.  If all tests in Flash-Staged have passed, then the person who performed the
 merge into the staged branch issues a pull request from the feature branch to
 the master branch.  This same individual accepts the request and subsequently
-launches the compute001/Jenkins master test suite ([![Flash-Master](https://jenkins-ci.mcs.anl.gov/job/Flash-Master/badge/icon)](https://jenkins-ci.mcs.anl.gov/job/Flash-Master/)).
+launches the compute001/Jenkins master test suite ([Flash-Master](https://jenkins-ci.mcs.anl.gov/job/Flash-Master/)).
 6.  The person who triggered the Flash-Master test run follows up to confirm
 that the master branch was not broken by the feature branch.
 7.  To avoid accidentally including in the master branch commits that were
@@ -40,5 +40,5 @@ In its present form, FlashTest does not allow for simultaneous execution of test
 suites.  Therefore, when launching test suite runs on Jenkins, please confirm
 first that no other runs are already in progress.  This can be done by consulting the [main Jenkins page](https://jenkins-ci.mcs.anl.gov), which shows all Jenkins runs in progress in the Build Executor Pane.
 
-We presently run on a weekly basis the small subset of AMReX-only tests ([![Flash-Staged-Intel](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/badge/icon)](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/)) that are built in debug mode with the Intel compiler suite.
+We presently run on a weekly basis the small subset of AMReX-only tests ([Flash-Staged-Intel](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/)) that are built in debug mode with the Intel compiler suite.
 
