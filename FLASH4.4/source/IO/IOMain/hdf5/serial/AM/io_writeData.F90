@@ -790,21 +790,6 @@ subroutine io_writeData (fileID)
            call MPI_SEND(localNumblocks, 1, FLASH_INTEGER, 0, &
                 1, io_globalComm, ierr)
 
-              if (localNumBlockst > 0) then
-                 allocate(unkt(NXB,NYB,NZB, localNumBlockst))
-                 call gr_getBlkIterator(itor);  lb = 1
-                 do while (itor%is_valid())
-                    call itor%blkMetaData(blockDesc)
-                    call Grid_getBlkPtr(blockDesc, solnData, localFlag=.TRUE.)
-                    unkt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi, &
-                         io_klo:io_khi)
-                    call Grid_releaseBlkPtr(blockDesc, solnData)
-                    call itor%next();              lb = lb+1
-                 enddo
-                 call gr_releaseBlkIterator(itor)
-              end if
-
-
            if (localNumBlocks > 0) then
               !pack facevars for sending:
               allocate(facext(NXB+1,NYB,NZB,localNumBlocks))
