@@ -9,6 +9,6 @@ IF Grid=='UG'
    DEFAULT UG
 ENDIF
 
-REQUESTS Particles/ParticlesMapping/meshWeighting
-REQUESTS Particles/ParticlesMapping/meshWeighting/MapToMesh
+REQUESTS Particles/ParticlesMapping/ParticlesOwned/meshWeighting
+REQUESTS Particles/ParticlesMapping/ParticlesOwned/meshWeighting/MapToMesh
 REQUESTS flashUtilities/contiguousConversion

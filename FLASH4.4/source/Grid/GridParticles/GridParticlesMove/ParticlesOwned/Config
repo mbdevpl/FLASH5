@@ -6,6 +6,12 @@ REQUIRES flashUtilities/sorting
 
 USESETUPVARS Grid
 
+IF Grid=='UG'
+  REQUESTS Grid/GridParticles/GridParticlesMove/ParticlesOwned/UG/Directional
+ELSEIF Grid == 'PM4DEV'
+  REQUESTS Grid/GridParticles/GridParticlesMove/ParticlesOwned/Paramesh
+  REQUESTS Grid/GridParticles/GridParticlesMove/ParticlesOwned/Sieve
+ENDIF
 
 D gr_ptRemove  boolean.  This is a switch which determines the action if the number
 D of particles on a processor exceeds the maximum allowed

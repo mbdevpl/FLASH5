@@ -11,18 +11,22 @@ REQUIRES RuntimeParameters
 REQUIRES Grid/GridParticles
 
 IF Grid=='Amrex'
-  REQUESTS Particles/ParticlesMain/passive/Amrex
-  REQUESTS Particles/ParticlesInitialization/Amrex
-  REQUESTS Particles/ParticlesMapping/Amrex
-  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Amrex
+  REQUESTS Particles/ParticlesMain/passive/MeshOwned
+  REQUESTS Particles/ParticlesInitialization/MeshOwned
+  REQUESTS Particles/ParticlesMapping/MeshOwned
+  REQUESTS Grid/GridParticles/GridParticlesMapFromMesh/MeshOwned
+  REQUESTS Grid/GridParticles/GridParticlesMove/MeshOwned
 ELSEIF Grid=="PM4DEV"
-  REQUIRES Particles/ParticlesMain/passive/Paramesh
-  REQUESTS Particles/ParticlesInitialization/Paramesh
-  REQUESTS Particles/ParticlesMapping/Paramesh
-  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/Paramesh
+  REQUESTS Particles/ParticlesMain/passive/ParticlesOwned
+  REQUESTS Particles/ParticlesInitialization/ParticlesOwned
+  REQUESTS Particles/ParticlesMapping/ParticlesOwned
+  REQUESTS Grid/GridParticles/GridParticlesMapFromMesh/ParticlesOwned
+  REQUESTS Grid/GridParticles/GridParticlesMove/ParticlesOwned
 ELSE
-  REQUESTS Particles/ParticlesInitialization 
-  REQUESTS Particles/ParticlesMapping 
+  REQUESTS Particles/ParticlesInitialization/ParticlesOwned 
+  REQUESTS Particles/ParticlesMapping/ParticlesOwned 
+  REQUESTS Grid/GridParticles/GridParticlesMapFromMesh/ParticlesOwned
+  REQUESTS Grid/GridParticles/GridParticlesMove/ParticlesOwned
 #  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/UG
 ENDIF
 
