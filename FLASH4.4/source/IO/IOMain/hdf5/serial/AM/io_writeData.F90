@@ -796,9 +796,30 @@ subroutine io_writeData (fileID)
               if(NDIM .gt. 1) allocate(faceyt(NXB,NYB+1,NZB,localNumBlocks))
               if(NDIM .gt. 2) allocate(facezt(NXB,NYB,NZB+1,localNumBlocks))
 
-              facext(:,:,:,:) = facevarx(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi, 1:localNumBlocks)
-              if(NDIM .gt. 1) faceyt(:,:,:,:) = facevary(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi, 1:localNumBlocks)
-              if(NDIM .gt. 2) facezt(:,:,:,:) = facevarz(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1, 1:localNumBlocks)
+                call gr_getBlkIterator(itor);  lb = 1
+                do while (itor%is_valid())
+                call itor%blkMetaData(blockDesc)
+                call Grid_getBlkPtr(blockDesc, solnData, FACEX, localFlag=.TRUE.)
+                facext(:,:,:,lb) = solnData(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi)
+                call Grid_releaseBlkPtr(blockDesc, solnData)
+                
+                if(NDIM .gt. 1) then
+                    call Grid_getBlkPtr(blockDesc, solnData, FACEY, localFlag=.TRUE.)
+                    faceyt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi)
+                    call Grid_releaseBlkPtr(blockDesc, solnData)
+                endif
+                
+                if(NDIM .gt. 2) then
+                    call Grid_getBlkPtr(blockDesc, solnData, FACEZ, localFlag=.TRUE.)
+                    facezt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1)
+                    call Grid_releaseBlkPtr(blockDesc, solnData)
+                endif
+                call itor%next();              lb = lb+1
+                enddo
+                call gr_releaseBlkIterator(itor)
+!               facext(:,:,:,:) = facevarx(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi, 1:localNumBlocks)
+!               if(NDIM .gt. 1) faceyt(:,:,:,:) = facevary(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi, 1:localNumBlocks)
+!               if(NDIM .gt. 2) facezt(:,:,:,:) = facevarz(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1, 1:localNumBlocks)
 
 
               !send what facevars we have now
@@ -850,9 +871,30 @@ subroutine io_writeData (fileID)
                  if(NDIM .gt. 1) allocate(faceyt(NXB,NYB+1,NZB,localNumBlocks))
                  if(NDIM .gt. 2) allocate(facezt(NXB,NYB,NZB+1,localNumBlocks))
 
-                 facext(:,:,:,:) = facevarx(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi, 1:localNumBlocks)
-                 if(NDIM .gt. 1) faceyt(:,:,:,:) = facevary(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi, 1:localNumBlocks)
-                 if(NDIM .gt. 2) facezt(:,:,:,:) = facevarz(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1, 1:localNumBlocks)
+                call gr_getBlkIterator(itor);  lb = 1
+                do while (itor%is_valid())
+                call itor%blkMetaData(blockDesc)
+                call Grid_getBlkPtr(blockDesc, solnData, FACEX, localFlag=.TRUE.)
+                facext(:,:,:,lb) = solnData(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi)
+                call Grid_releaseBlkPtr(blockDesc, solnData)
+                
+                if(NDIM .gt. 1) then
+                    call Grid_getBlkPtr(blockDesc, solnData, FACEY, localFlag=.TRUE.)
+                    faceyt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi)
+                    call Grid_releaseBlkPtr(blockDesc, solnData)
+                endif
+                
+                if(NDIM .gt. 2) then
+                    call Grid_getBlkPtr(blockDesc, solnData, FACEZ, localFlag=.TRUE.)
+                    facezt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1)
+                    call Grid_releaseBlkPtr(blockDesc, solnData)
+                endif
+                call itor%next();              lb = lb+1
+                enddo
+                call gr_releaseBlkIterator(itor)
+!                  facext(:,:,:,:) = facevarx(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi, 1:localNumBlocks)
+!                  if(NDIM .gt. 1) faceyt(:,:,:,:) = facevary(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi, 1:localNumBlocks)
+!                  if(NDIM .gt. 2) facezt(:,:,:,:) = facevarz(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1, 1:localNumBlocks)
               end if
 
               localNumBlockst = localNumBlocks

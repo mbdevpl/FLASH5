@@ -458,7 +458,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   ! Fill FACEVARX GC if it exists and is so desired
   ! DEV: TODO Do we need C-to-P conversion here for face vars?
   if (     (gridDataStruct == CENTER_FACES) &
-      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEX) then
+      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEX)) then
      lev = 0
      call amrex_fillpatch(facevarx(lev), 1.0, facevarx(lev), &
                                          0.0, facevarx(lev), &
@@ -480,7 +480,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 #if NDIM >= 2
   ! Fill FACEVARY GC if it exists and is so desired
   if (     (gridDataStruct == CENTER_FACES) &
-      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEY) then
+      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEY)) then
      lev = 0
      call amrex_fillpatch(facevary(lev), 1.0, facevary(lev), &
                                          0.0, facevary(lev), &
@@ -503,7 +503,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 #if NDIM == 3
   ! Fill FACEVARZ GC if it exists and is so desired
   if (     (gridDataStruct == CENTER_FACES) &
-      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEZ) then
+      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEZ)) then
      lev = 0
      call amrex_fillpatch(facevarz(lev), 1.0, facevarz(lev), &
                                          0.0, facevarz(lev), &

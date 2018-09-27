@@ -25,36 +25,44 @@
 !!
 !!***
 
+#include "constants.h"
+#include "Flash.h"
+ 
 subroutine Simulation_initBlock(initData, block)
-    use block_metadata, ONLY : block_metadata_t, bmd_print
     use Grid_interface, ONLY : Grid_getSingleCellCoords, Grid_getBlkPtr, Grid_releaseBlkPtr
+    use block_metadata, ONLY : block_metadata_t, bmd_print
+    
     implicit none
     
     real,                   intent(IN), pointer :: initData(:, :, :, :)
     type(block_metadata_t), intent(IN)          :: block
 
-#include "constants.h"
-#include "Flash.h"
-  
-    integer :: i = 1
-    integer :: j = 1
-    integer :: k = 1
-    integer :: var = 1
-    real, dimension(:,:,:,:), pointer :: faceDataX, faceDataY, faceDataZ
+    integer :: i, j, k, var
+
     integer :: idx(1:MDIM)
     real    :: coords(1:MDIM)
+    real, dimension(:,:,:,:), pointer :: faceDataX, faceDataY, faceDataZ
 
-    associate(lo => block%limitsGC(LOW,  :), &
-              hi => block%limitsGC(HIGH, :))
+    ! Set data only in interiors so that GC are set to zero
+    initData(:, :, :, :) = 0.0d0
+    associate(lo => block%limits(LOW,  :), &
+              hi => block%limits(HIGH, :))
         do         k = lo(KAXIS), hi(KAXIS)
             do     j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
+                    idx = [i - lo(IAXIS) + 1, &
+                           j - lo(JAXIS) + 1, &
+                           k - lo(KAXIS) + 1]
+                    call Grid_getSingleCellCoords(idx, block, &
+                                                  CENTER, INTERIOR, coords)
                     do var=UNK_VARS_BEGIN, UNK_VARS_END
-                        initData(i, j, k, var) = 1.1d0 * var
+                        initData(i, j, k, var) = &
+                             DBLE((coords(IAXIS) + coords(JAXIS)) * var)
                     end do
                 end do
             end do
         end do
+
 !Set face centererd data in interiors
 #if NFACE_VARS>0
         !Set faceDataX
@@ -69,8 +77,7 @@ subroutine Simulation_initBlock(initData, block)
                                                   LEFT_EDGE, INTERIOR, coords)  !Coord of LEFT_EDGE
                     do var=1,NFACE_VARS
                         faceDataX(i, j, k, var) = &
-!                              DBLE((coords(IAXIS) + coords(JAXIS)) * var)
-                             DBLE(1.3*i*i)
+                             DBLE((coords(IAXIS) + coords(JAXIS)) * var)
                     end do
                 end do
             end do
@@ -89,8 +96,7 @@ subroutine Simulation_initBlock(initData, block)
                                                   LEFT_EDGE, INTERIOR, coords)  !Coord of LEFT_EDGE
                     do var=1,NFACE_VARS
                         faceDataY(i, j, k, var) = &
-!                              DBLE((coords(IAXIS) + coords(JAXIS)) * var)
-                             DBLE(i*i+1.2**j*j)
+                             DBLE((coords(IAXIS) + coords(JAXIS)) * var)
                     end do
                 end do
             end do
@@ -110,8 +116,7 @@ subroutine Simulation_initBlock(initData, block)
                                                   LEFT_EDGE, INTERIOR, coords)  !Coord of LEFT_EDGE
                     do var=1,NFACE_VARS
                         faceDataZ(i, j, k, var) = &
-!                              DBLE((coords(IAXIS) + coords(JAXIS)) * var+ coords(KAXIS))
-                             DBLE(i*i+j*j+1.1*k*k)
+                             DBLE((coords(IAXIS) + coords(JAXIS)) * var)
                     end do
                 end do
             end do
