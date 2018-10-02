@@ -122,7 +122,7 @@ subroutine gr_mpolePot2Dspherical (ipotvar)
 !     ...Sum quantities over all locally held leaf blocks.
 !
 !
-!$omp do schedule (static)
+  !$omp single
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
@@ -466,8 +466,8 @@ subroutine gr_mpolePot2Dspherical (ipotvar)
      call itor%next()
   end do
   call Grid_releaseLeafIterator(itor)
+  !$omp end single
 
-!$omp end do
 !
 !
 !    ...Ready!
