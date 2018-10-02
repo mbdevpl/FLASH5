@@ -10,14 +10,15 @@ subroutine gr_writeData(stepno, t_new)
     use amrex_plotfile_module, ONLY : amrex_write_plotfile
 
     use gr_physicalMultifabs,  ONLY : unk, facevarx, facevary, facevarz
+    use IO_data, ONLY : io_baseName
 
     implicit none
 
     integer,  intent(IN) :: stepno
     real(wp), intent(IN) :: t_new
 
-    character(17), parameter :: PLOT_FILE = "sedov_amrex_plot_"
-    character(17), parameter :: PLOT_FILE_FACEVAR = "amrex_plot_face_"
+    character(17), parameter :: PLOT_FILE = "plt_cnt_"
+    character(17), parameter :: PLOT_FILE_FACEVAR = "plt_face"
 
     integer              :: nlevs
     character(len=127)   :: filename
@@ -40,7 +41,7 @@ subroutine gr_writeData(stepno, t_new)
     else
        write(current_step,fmt='(i15.15)') stepno
     end if
-    filename = trim(plot_file) // current_step
+    filename = trim(io_baseName) // trim(plot_file) // current_step
 
     nlevs = amrex_get_numlevels()
 
@@ -67,16 +68,16 @@ subroutine gr_writeData(stepno, t_new)
         call amrex_string_build(varname(i), "var"//TRIM(current_var))
     end do
 
-    filename = trim(PLOT_FILE_FACEVAR) // "x_"// current_step
+    filename = trim(io_baseName) // trim(PLOT_FILE_FACEVAR) // "x_"// current_step
     call amrex_write_plotfile(filename, nlevs, facevarx, varname, amrex_geom, &
                               t_new, stepno_arr, amrex_ref_ratio)
 #if(NDIM>1)
-    filename = trim(PLOT_FILE_FACEVAR) // "y_"// current_step
+    filename = trim(io_baseName) // trim(PLOT_FILE_FACEVAR) // "y_"// current_step
     call amrex_write_plotfile(filename, nlevs, facevary, varname, amrex_geom, &
                               t_new, stepno_arr, amrex_ref_ratio)
 #endif
 #if(NDIM>2)
-    filename = trim(PLOT_FILE_FACEVAR) // "z_"// current_step
+    filename = trim(io_baseName) // trim(PLOT_FILE_FACEVAR) // "z_"// current_step
     call amrex_write_plotfile(filename, nlevs, facevarz, varname, amrex_geom, &
                               t_new, stepno_arr, amrex_ref_ratio)
 #endif
