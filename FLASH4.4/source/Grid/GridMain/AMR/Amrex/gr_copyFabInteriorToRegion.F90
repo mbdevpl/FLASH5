@@ -75,10 +75,11 @@ subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
     ! n, m must be 1-based, cell-centered for FLASH and local for region
     ! i, j, k must be 0-based, cell-centered for AMReX and global for FAB
     ! var is 1-based for both
-    
-    if (gds /= CENTER) then
+
+    if ((gds /= CENTER) .AND. &
+        (gds /= FACEX)  .AND. (gds /= FACEY) .AND. (gds /= FACEZ)) then
         call Driver_abortFlash("[gr_copyFabInteriorToRegion] " // &
-                               "GDS must be cell-centered")
+                               "GDS must be cell- or face-centered")
     end if
 
     ! Assume boundary extends fully across patch along other directions
