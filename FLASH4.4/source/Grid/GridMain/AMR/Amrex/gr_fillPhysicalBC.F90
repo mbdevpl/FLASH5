@@ -165,19 +165,31 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
 
     call amrex_mfiter_build(mfi, mfab, tiling=.false.)
     do while(mfi%next())
-       ! 0-based, cell-centered, and global indices
+       ! 0-based and global indices
        solnData => mfab%dataPtr(mfi)
 
-       ! 0-based, cell-centered, and global indices
+       ! 0-based and global indices
        box = mfi%fabbox()
        limitsGC(:, :) = 0
        limitsGC(LOW,  1:NDIM) = box%lo(1:NDIM)
        limitsGC(HIGH, 1:NDIM) = box%hi(1:NDIM)
 
-       ! DEV: The given box is not necessarily a FLASH block, but rather
+       ! In FLASH, limits/limitsGC in a block descriptor must be 
+       ! cell-centered
+       if      (gds == FACEX) then
+          limitsGC(HIGH, IAXIS) = limitsGC(HIGH, IAXIS) - 1
+       else if (gds == FACEY) then
+          limitsGC(HIGH, JAXIS) = limitsGC(HIGH, JAXIS) - 1
+       else if (gds == FACEZ) then
+          limitsGC(HIGH, KAXIS) = limitsGC(HIGH, KAXIS) - 1
+       end if
+
+       ! The given box is not necessarily a FLASH block, but rather
        ! could be an arbitrary rectangular region in the domain and its GC
        !
        ! One result of this is that grid_index is non-sensical here
+       !
+       ! 1-based, cell-centered and global indices
        blockDesc%level = level
        blockDesc%grid_index = -1
        blockDesc%limits(LOW,  :)   = limitsGC(LOW,  :) + 1 + NGUARD
@@ -221,6 +233,22 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              else
                 endPts(LOW,  axis) = (interior(HIGH, axis)   + 1) - (NGUARD - 1)
                 endPts(HIGH, axis) = (interior(HIGH, axis)   + 1) +  NGUARD
+             end if
+
+             ! If necessary, convert interior, guardcells, and endPts
+             ! to match index space of given multifab
+             if      (gds == FACEX) then
+                endPts(    HIGH, IAXIS) = endPts(    HIGH, IAXIS) + 1
+                interior(  HIGH, IAXIS) = interior(  HIGH, IAXIS) + 1
+                guardcells(HIGH, IAXIS) = guardcells(HIGH, IAXIS) + 1
+             else if (gds == FACEY) then
+                endPts(    HIGH, JAXIS) = endPts(    HIGH, JAXIS) + 1
+                interior(  HIGH, JAXIS) = interior(  HIGH, JAXIS) + 1
+                guardcells(HIGH, JAXIS) = guardcells(HIGH, JAXIS) + 1
+             else if (gds == FACEZ) then
+                endPts(    HIGH, KAXIS) = endPts(    HIGH, KAXIS) + 1
+                interior(  HIGH, KAXIS) = interior(  HIGH, KAXIS) + 1
+                guardcells(HIGH, KAXIS) = guardcells(HIGH, KAXIS) + 1
              end if
 
              ! Create buffer to hold data with indices permuted for use with
