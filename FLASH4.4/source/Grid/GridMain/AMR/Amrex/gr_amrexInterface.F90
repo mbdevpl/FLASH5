@@ -121,10 +121,11 @@ module gr_amrexInterface
   end interface
 
   interface
-    subroutine gr_writeData(stepno, t_new)
+    subroutine gr_writeData(stepno, t_new, argBaseName)
       implicit none
       integer, intent(IN) :: stepno
       real,    intent(IN) :: t_new
+      character(len=*), intent(IN), optional :: argBaseName
     end subroutine gr_writeData
   end interface
  
