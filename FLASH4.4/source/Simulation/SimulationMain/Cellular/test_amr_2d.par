@@ -1,0 +1,217 @@
+# flash file for a 1d, 2d, or 3d cellular detonation of carbon
+# [source/Simulation/SimulationMain/Cellular]
+#
+# example setup:
+# ./setup Cellular -auto -2d +cartesian -nxb=16 -nyb=16 -maxblocks=256 +xnet xnetData=Data_SN160 xnetGPU=False +Mode3 -parfile=test_amr_2d.par
+
+## -------------------------------------------------------------
+## I/O
+## -------------------------------------------------------------
+
+# names of files
+basenm					= "cellular_"
+log_file				= "cellular.log"
+stats_files				= "cellular.dat"
+
+# for starting a new run
+restart					= .false.
+checkpointFileNumber			= 0
+plotFileNumber				= 0
+
+# specify the plot variables
+plot_var_1				= "pres"
+plot_var_2				= "si28"
+
+# for restarting an old one
+#restart					= .true.
+#checkpointFileNumber			= 57
+#plotFileNumber				= 125
+
+# dump checkpoint files every checkpointFileIntervalTime seconds
+checkpointFileIntervalTime		= 1.0e-9
+#checkpointFileIntervalStep		= 1
+
+# dump plot files every plotFileIntervalTime seconds
+plotFileIntervalTime			= 1.0e+8
+#plotFileIntervalStep			= 1
+
+## -------------------------------------------------------------
+## refinement
+## -------------------------------------------------------------
+
+# use custom refinement criteria
+refine_var_count			= 2
+refine_var_1				= "pres"
+refine_var_2				= "dens"
+
+# base blocks, this gives square grids
+nblockx					= 10
+nblocky					= 1
+nblockz					= 1
+
+# max and min levels of refinement
+# 5 levels puts about 10 mesh points per burning length scale, and is about 
+# as crude a mesh as one dares to go. in 3d this is the most refinement
+# levels i've run with. in 2d the most i've run it with is 8 levels in 2d, 
+# which makes some really great pictures.
+lrefine_min				= 1
+lrefine_max				= 5
+
+## -------------------------------------------------------------
+## mesh definition
+## -------------------------------------------------------------
+
+# cartesian geometry
+geometry				= "cartesian"
+
+# physical domain
+xmin					=  0.0
+xmax					=  128.0
+ymin					=  0.0
+ymax					=  12.8
+zmin					=  0.0
+zmax					=  12.8
+
+# boundary conditions for the whole star
+xl_boundary_type			= "reflect"
+xr_boundary_type			= "reflect"
+yl_boundary_type			= "periodic"
+yr_boundary_type			= "periodic"
+zl_boundary_type			= "periodic"
+zr_boundary_type			= "periodic"
+
+## -------------------------------------------------------------
+## timestep
+## -------------------------------------------------------------
+
+# go for nend steps or tmax seconds, whichever comes first
+nend					= 1000
+tmax					= 3.0e-9
+
+cfl					= 0.8     # CFL factor
+dr_shortenLastStepBeforeTMax		= .true.  # Stop at tmax exactly
+
+dtinit					= 1.0e-16 # Initial tstep
+dtmin					= 1.0e-20 # Min tstep size
+
+# for fine time slices, you may want to limit the timestep
+#dtmax					= 1.25e-7  # Max tstep size
+
+## -------------------------------------------------------------
+## EOS
+## -------------------------------------------------------------
+
+eintSwitch				= 1.e-4
+eos_coulombMult				= 0.0     # Coulomb correction multiplier
+
+# starkiller
+eos_useStarkiller                       = .true.
+eos_vecLenACC                           = 1024
+
+## -------------------------------------------------------------
+## burning
+## -------------------------------------------------------------
+
+useBurn					= .true.
+useShockBurn				= .true.
+
+# control when the burner is called, dont call it in the cold stuff
+nuclearNI56Max				= 1.0
+nuclearTempMin				= 2.1e8
+nuclearTempMax				= 1.0e12
+nuclearDensMin				= 1.0e-10
+nuclearDensMax				= 1.0e14
+
+# XNet
+xnet_iweak				= 1       # (-1) Weak rxns only, (0) Weak rxns off, (1) Weak rxns on
+xnet_iscrn				= 1       # Screening
+xnet_iprocess				= 1       # Network data pre-processing?
+xnet_isolv				= 3       # Integration scheme: (1) Backward-Euler, (3) BDF/Gear
+xnet_kstmx				= 6000    # Max XNet steps for each zone
+xnet_kitmx				= 10      # Max NR iterations
+xnet_iconvc				= 3       # Convergence condition (error weights for BDF integrator)
+xnet_yacc				= 1.0e-7  # Abundances > yacc used for XNet timestep calculation
+xnet_tolm				= 1.0e-6  # Mass conservation tolerance
+xnet_tolc				= 1.0e-4  # Tolerance for iterative abundance change
+xnet_ymin				= 1.0e-99 # Abundance < ymin is set to 0.0
+xnet_iheat				= 0       # Self-heating (couple temperature to abundance evolution)
+xnet_tolt9				= 1.0e-4  # Tolerance for iterative temperature change
+xnet_nzbatchmx				= 1       # Number of zones to batch
+xnet_writeTimers                        = .false. # Write XNet timers to stdout at end of run
+
+# controls for other integrators
+# choose integration method 1 = bader-deuflhard, 2 = rosenbrock
+# rosenbrock is faster under some circumstances.
+# until i test it some more, i'll stick with the bader-deuflhard.
+odeStepper				= 1
+
+# choose linear algebra package 1 = ma28, 2 = gift
+# gift is faster under some circumstances, and this problem
+# satisfies those conditions. either package will get the right answer.
+algebra					= 2
+
+## -------------------------------------------------------------
+## miscellaneous
+## -------------------------------------------------------------
+
+# floor values
+smlrho					= 1.0e-2
+smallt					= 1.0e+5
+
+## -------------------------------------------------------------
+## Hydro (SPLIT AND UNSPLIT)
+## -------------------------------------------------------------
+
+use_steepening				= .true.  # Steepen contact discontinuities for PPM
+charLimiting				= .true.  # Characteristic limiting vs. Primitive limiting
+cvisc					= 0.1     # Coefficient for artificial viscosity
+
+## -------------------------------------------------------------
+# Hydro (UNSPLIT ONLY)
+## -------------------------------------------------------------
+
+# interpolation scheme
+order					= 3       # Interpolation order (first/second/third/fifth order)
+slopeLimiter				= "mc"    # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
+LimitedSlopeBeta			= 1.      # Slope parameter for the "limited" slope by Toro
+
+# riemann solver
+RiemannSolver				= "Roe"   # Roe, HLL, HLLC, LLF, Marquina, MarquinaModified, Hybrid
+entropy					= .true.  # Entropy fix for the Roe solver
+shockInstabilityFix			= .false. # Carbuncle instability fix for the Roe solver
+EOSforRiemann				= .false. # Call EoS for Riemann solves
+
+# shock detection
+shockDetect				= .false. # Shock Detect for numerical stability
+
+## -------------------------------------------------------------
+## problem setup
+## -------------------------------------------------------------
+
+# set the composition
+xhe4					= 0.0
+xc12					= 1.0
+xo16					= 0.0
+
+# upstream fuel conditions for pure carbon
+tempAmbient				= 2.0e8
+rhoAmbient				= 1.0e7
+velxAmbient				= 0.0e0
+
+# these are the fuel conditions, for a self-sustained detonation
+# at the upstream conditions, just after the shock has passed
+# these values from /f1/fxt/flam/cjdet/cjdet.exe
+tempPerturb				= 4.423e9
+rhoPerturb				= 4.236e7
+velxPerturb				= 2.876e8
+
+# seed the density perturbations with white-noise
+noiseAmplitude				= 1.0e-2
+noiseDistance				= 5.0
+
+# apply the jump conditions below a distance of radiusPerturb
+radiusPerturb				= 25.6
+xCenterPerturb				= 0.0
+yCenterPerturb				= 0.0
+zCenterPerturb				= 0.0
+usePseudo1d				= .true.
