@@ -211,7 +211,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                  regionSize(STRUCTSIZE)) )
 
              regionData(:, :, :, :) = 0.0d0
-             call gr_copyFabInteriorToRegion(solnData, face, axis, &
+             call gr_copyFabInteriorToRegion(solnData, CENTER, face, axis, &
                                              interior, scomp, ncomp, regionData)
 
              ! As regionData only contains those physical quantities that AMReX
@@ -237,7 +237,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                           axis2, axis3, endPts, 0)
              end if
 
-             call gr_copyGuardcellRegionToFab(regionData, face, axis, &
+             call gr_copyGuardcellRegionToFab(regionData, CENTER, face, axis, &
                                               guardcells, scomp, ncomp, solnData)
 
              deallocate(regionData)

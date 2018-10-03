@@ -7,6 +7,7 @@
 !! SYNOPSIS
 !!
 !!  call gr_copyFabInteriorToRegion(real(IN)    :: fab(:,:,:,:),
+!!                                  integer(IN) :: gds,
 !!                                  integer(IN) :: face,
 !!                                  integer(IN) :: axis,
 !!                                  integer(IN) :: interior(LOW:HIGH, MDIM),
@@ -26,6 +27,8 @@
 !!  fab -  an AMReX FAB containing the interior data.  The spatial indices are
 !!         with respect to a 0-based, cell-centered index space.  The index
 !!         over physical quantities is 1-based.
+!!  gds  - the grid data structure associated with fab, interior, and region.
+!!         Presently, the only acceptable value is CENTER.
 !!  face - specify with a value of LOW or HIGH the boundary of interest.
 !!  axis - specify with a value of {I,J,K}AXIS the direction to which the
 !!         boundary of interest is perpendicular.
@@ -42,13 +45,16 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, &
+subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
                                       scomp, ncomp, region)
     use amrex_fort_module, ONLY : wp => amrex_real
+
+    use Driver_interface,  ONLY : Driver_abortFlash
 
     implicit none
 
     real(wp), pointer, contiguous, intent(IN)    :: fab(:, :, :, :)
+    integer,                       intent(IN)    :: gds
     integer,                       intent(IN)    :: face
     integer,                       intent(IN)    :: axis
     integer,                       intent(IN)    :: interior(LOW:HIGH, 1:MDIM)
@@ -63,30 +69,48 @@ subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, &
     integer :: n, m
 
     integer :: rStrt, rFin
+    integer :: offset
+    integer :: rOffset
 
     ! n, m must be 1-based, cell-centered for FLASH and local for region
     ! i, j, k must be 0-based, cell-centered for AMReX and global for FAB
     ! var is 1-based for both
     
+    if (gds /= CENTER) then
+        call Driver_abortFlash("[gr_copyFabInteriorToRegion] " // &
+                               "GDS must be cell-centered")
+    end if
+
     ! Assume boundary extends fully across patch along other directions
     lo(:) = 1
     hi(:) = 1
     lo(1:NDIM) = interior(LOW,  1:NDIM)
     hi(1:NDIM) = interior(HIGH, 1:NDIM)
 
+    ! Assume that we have cell centers along the BC axis.
+    ! Else, we have face centers and must grow by one.
+    offset = NGUARD - 1
+    rOffset = 0
+    if (     ((gds == FACEX) .AND. (axis == IAXIS)) &
+        .OR. ((gds == FACEY) .AND. (axis == JAXIS)) &
+        .OR. ((gds == FACEZ) .AND. (axis == KAXIS))) then
+        offset = NGUARD
+        rOffset = 1
+    end if
+
     ! Only need from FAB interior closest NGUARD cells along BC direction
     if (face == LOW) then
         lo(axis) = interior(LOW, axis)
-        hi(axis) = interior(LOW, axis)  + (NGUARD - 1)
+        hi(axis) = interior(LOW, axis)  + offset
         ! Skip over guardcells
         rStrt = NGUARD + 1
-        rFin  = 2*NGUARD
+        rFin  = 2*NGUARD + rOffset
     else 
-        lo(axis) = interior(HIGH, axis) - (NGUARD - 1)
+        lo(axis) = interior(HIGH, axis) - offset
         hi(axis) = interior(HIGH, axis)
         ! Ignore guardcells at end
         rStrt = 1
-        rFin  = NGUARD
+        rFin  = NGUARD + rOffset
     end if
 
     associate (strt   => lo(axis), &

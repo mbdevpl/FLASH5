@@ -6,13 +6,14 @@
 !!
 !! SYNOPSIS
 !!
-!!  call gr_copyGuardcellRegionToFab(real(IN)   :: region(:,:,:,:),
-!!                                  integer(IN) :: face,
-!!                                  integer(IN) :: axis,
-!!                                  integer(IN) :: guardcells(LOW:HIGH, MDIM),
-!!                                  integer(IN) :: scomp,
-!!                                  integer(IN) :: ncomp,
-!!                                  real(INOUT) :: fab(:,:,:,:))
+!!  call gr_copyGuardcellRegionToFab(real(IN)    :: region(:,:,:,:),
+!!                                   integer(IN) :: gds,
+!!                                   integer(IN) :: face,
+!!                                   integer(IN) :: axis,
+!!                                   integer(IN) :: guardcells(LOW:HIGH, MDIM),
+!!                                   integer(IN) :: scomp,
+!!                                   integer(IN) :: ncomp,
+!!                                   real(INOUT) :: fab(:,:,:,:))
 !!
 !! DESCRIPTION 
 !!  
@@ -24,6 +25,8 @@
 !!
 !!  region - Data structure that sources GC data.  Please see 
 !!           Grid_bcApplyToRegion.
+!!  gds  - the grid data structure associated with fab, interior, and region.
+!!         Presently, the only acceptable value is CENTER.
 !!  face - specify with a value of LOW or HIGH the boundary of interest
 !!  axis - specify with a value of {I,J,K}AXIS the direction to which the
 !!         boundary of interest is perpendicular
@@ -41,17 +44,16 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
+subroutine gr_copyGuardcellRegionToFab(region, gds, face, axis, guardcells, &
                                        scomp, ncomp, fab)
     use amrex_fort_module, ONLY : wp => amrex_real
 
-#ifdef DEBUG_GRID
     use Driver_interface,  ONLY : Driver_abortFlash
-#endif
 
     implicit none
 
     real(wp), intent(IN),    pointer, contiguous :: region(:, :, :, :)
+    integer,  intent(IN)                         :: gds
     integer,  intent(IN)                         :: face
     integer,  intent(IN)                         :: axis
     integer,  intent(IN)                         :: guardcells(LOW:HIGH, 1:MDIM)
@@ -66,10 +68,16 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
     integer :: n, m
 
     integer :: rStrt, rFin
+    integer :: rOffset
 
     ! n, m must be 1-based, cell-centered for FLASH and local for region
     ! i, j, k must be 0-based, cell-centered for AMReX and global for FAB
     ! var is 1-based for both
+
+    if (gds /= CENTER) then
+        call Driver_abortFlash("[gr_copyGuardcellRegionToFab] " // &
+                               "GDS must be cell-centered")
+    end if
 
     ! Assume boundary extends fully across patch along other directions
     lo(:) = 1
@@ -77,10 +85,19 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
     lo(1:NDIM) = guardcells(LOW,  1:NDIM)
     hi(1:NDIM) = guardcells(HIGH, 1:NDIM)
     
+    ! Assume that we have cell centers along the BC axis.
+    ! Else, we have face centers and must grow by one.
+    rOffset = 0
+    if (     ((gds == FACEX) .AND. (axis == IAXIS)) &
+        .OR. ((gds == FACEY) .AND. (axis == JAXIS)) &
+        .OR. ((gds == FACEZ) .AND. (axis == KAXIS))) then
+        rOffset = 1
+    end if
+
     associate (strt  => lo(axis), &
                fin   => hi(axis), &
                width => (hi(axis) - lo(axis) + 1))
-   
+
 #ifdef DEBUG_GRID
         if (width > NGUARD) then
             call Driver_abortFlash("[gr_copyGuardcellsToFab] Given patch is too wide")
@@ -91,7 +108,7 @@ subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
         ! NOTE: The width of the intersection of patch and GC region
         ! can be can be less than NGUARD
         if (face == LOW) then
-            rFin  = NGUARD
+            rFin  = NGUARD + rOffset
             rStrt = rFin  - (width - 1)
         else
             rStrt = NGUARD + 1
