@@ -1,11 +1,9 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/gr_fillPhysicalBC
 !!
 !! NAME
-!!
 !!  gr_fillPhysicalBC
 !!
 !! SYNOPSIS
-!!
 !!  call gr_fillPhysicalBC(amrex_multifab(IN) :: pmf,
 !!                         integer(IN)        :: scomp,
 !!                         integer(IN)        :: ncomp,
@@ -13,7 +11,6 @@
 !!                         amrex_geometry(IN) :: pgeom)
 !!
 !! DESCRIPTION 
-!!  
 !!  This routine is a callback function that is given to AMReX when using the
 !!  fillpatch routines.  It is given a multifab where each FAB already contains
 !!  valid interior data and needs to have its guardcells filled with data that
@@ -24,8 +21,12 @@
 !!  fill via the routine Grid_bcApplyToRegionSpecialized.  If this routine does
 !!  not handle the fill, then the fill is done via Grid_bcApplyToRegion.
 !!
-!! ARGUMENTS 
+!!  If the given multifab data is defined with respect to a face-centered index
+!!  space, then face data in the multifab that coincides with the domain
+!!  boundaries will be passed to Grid_bcApplyToRegionSpecialized and 
+!!  Grid_bcApplyToRegion.
 !!
+!! ARGUMENTS 
 !!  pmf - the multifab on which to operate
 !!  scomp - the 1-based index of the first physical quantity on which to carry
 !!          out the operation
@@ -159,8 +160,8 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
         gds = FACEZ
         write(*,*) "I am a facevarz multifab"
     else
-        call Driver_abortFlash("[gr_fillPhysicalBC] I am some exotic " // &
-                               "beast that exists outside the realm of FLASH")
+        call Driver_abortFlash("[gr_fillPhysicalBC] " // &
+                               "Given mfab must be cell- or face-centered")
     end if
 
     call amrex_mfiter_build(mfi, mfab, tiling=.false.)
@@ -224,7 +225,8 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              if (.NOT. found)   CYCLE
 
              ! Grow GC region to meet needs of Grid_bcApplyToRegion
-             ! i.e. include NGUARD cells on either side of boundary and 1-based
+             ! i.e. include NGUARD cells on either side of boundary
+             ! 1-based, cell-centered, and global indices
              endPts(:, :) = 1
              endPts(:, 1:NDIM) = guardcells(:, 1:NDIM) + 1
              if (face == LOW) then
@@ -258,13 +260,13 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              regionSize(THIRD_DIR)  = endPts(HIGH, axis3) - endPts(LOW, axis3) + 1
              regionSize(STRUCTSIZE) = ncomp
 
-             ! 1-based, cell-centered, and local indices 
+             ! 1-based and local indices 
              allocate(regionData(regionSize(BC_DIR), &
                                  regionSize(SECOND_DIR), &
                                  regionSize(THIRD_DIR), &
                                  regionSize(STRUCTSIZE)) )
 
-             regionData(:, :, :, :) = 0.0d0
+             regionData(:, :, :, :) = 0.0
              call gr_copyFabInteriorToRegion(solnData, gds, face, axis, &
                                              interior, scomp, ncomp, regionData)
 

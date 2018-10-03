@@ -1,11 +1,9 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/gr_copyGuardcellRegionToFab
 !!
 !! NAME
-!!
 !!  gr_copyGuardcellRegionToFab
 !!
 !! SYNOPSIS
-!!
 !!  call gr_copyGuardcellRegionToFab(real(IN)    :: region(:,:,:,:),
 !!                                   integer(IN) :: gds,
 !!                                   integer(IN) :: face,
@@ -16,23 +14,24 @@
 !!                                   real(INOUT) :: fab(:,:,:,:))
 !!
 !! DESCRIPTION 
-!!  
 !!  This routine is used to copy guardcell data from a special data structure
 !!  filled by Grid_bcApplyToRegion into the AMReX FAB that manages physical
 !!  data.
 !!
-!! ARGUMENTS
+!!  This routine assumes that the fab, guardcells, and region data structures
+!!  are all specified with respect to the same index space.
 !!
+!! ARGUMENTS
 !!  region - Data structure that sources GC data.  Please see 
 !!           Grid_bcApplyToRegion.
 !!  gds  - the grid data structure associated with fab, interior, and region.
-!!         Presently, the only acceptable value is CENTER.
+!!         Acceptable values are CENTER and FACE[XYZ].
 !!  face - specify with a value of LOW or HIGH the boundary of interest
-!!  axis - specify with a value of {I,J,K}AXIS the direction to which the
+!!  axis - specify with a value of [IJK]AXIS the direction to which the
 !!         boundary of interest is perpendicular
 !!  guardcells - the specification of the GC region into which data shall be
 !!               copied.  It is defined by its lower and upper points in a
-!!               0-based, cell-centered index space.
+!!               0-based index space.
 !!  scomp - the 1-based index of the first physical quantity to copy
 !!  ncomp - the number of physical quantities to copy starting from scomp
 !!  fab - a pointer to the FAB to which data will be transferred.  Since
@@ -70,8 +69,8 @@ subroutine gr_copyGuardcellRegionToFab(region, gds, face, axis, guardcells, &
     integer :: rStrt, rFin
     integer :: rOffset
 
-    ! n, m must be 1-based, cell-centered for FLASH and local for region
-    ! i, j, k must be 0-based, cell-centered for AMReX and global for FAB
+    ! n, m must be 1-based for FLASH and local for region
+    ! i, j, k must be 0-based for AMReX and global for FAB
     ! var is 1-based for both
 
     if ((gds /= CENTER) .AND. &
@@ -85,7 +84,7 @@ subroutine gr_copyGuardcellRegionToFab(region, gds, face, axis, guardcells, &
     hi(:) = 1
     lo(1:NDIM) = guardcells(LOW,  1:NDIM)
     hi(1:NDIM) = guardcells(HIGH, 1:NDIM)
-    
+ 
     ! Assume that we have cell centers along the BC axis.
     ! Else, we have face centers and must grow by one.
     rOffset = 0
