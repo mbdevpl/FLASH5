@@ -77,6 +77,8 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
 
     type(amrex_geometry)   :: geom
     type(amrex_multifab)   :: mfab
+    logical                :: ntype(MDIM)
+    integer                :: gds
     type(amrex_mfiter)     :: mfi
     type(amrex_box)        :: box
     type(block_metadata_t) :: blockDesc
@@ -135,6 +137,31 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     write(*,'(A,A,I3)') "[gr_fillPhysicalBC]", &
                         "                  Level ", level
 #endif
+
+    ntype = mfab%nodal_type()
+    if      (      (.NOT. ntype(IAXIS))  &
+             .AND. (.NOT. ntype(JAXIS)) &
+             .AND. (.NOT. ntype(KAXIS))) then
+        gds = CENTER
+    else if (             ntype(IAXIS)  &
+             .AND. (.NOT. ntype(JAXIS)) &
+             .AND. (.NOT. ntype(KAXIS))) then
+        gds = FACEX
+        write(*,*) "I am a facevarx multifab"
+    else if (      (.NOT. ntype(IAXIS)) &
+             .AND.        ntype(JAXIS) &
+             .AND. (.NOT. ntype(KAXIS))) then
+        gds = FACEY
+        write(*,*) "I am a facevary multifab"
+    else if (      (.NOT. ntype(IAXIS))  &
+             .AND. (.NOT. ntype(JAXIS)) &
+             .AND.        ntype(KAXIS)) then
+        gds = FACEZ
+        write(*,*) "I am a facevarz multifab"
+    else
+        call Driver_abortFlash("[gr_fillPhysicalFaceBC] I am some exotic " // &
+                               "beast that exists outside the realm of FLASH")
+    end if
 
     call amrex_mfiter_build(mfi, mfab, tiling=.false.)
     do while(mfi%next())
@@ -210,7 +237,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                  regionSize(STRUCTSIZE)) )
 
              regionData(:, :, :, :) = 0.0d0
-             call gr_copyFabInteriorToRegion(solnData, CENTER, face, axis, &
+             call gr_copyFabInteriorToRegion(solnData, gds, face, axis, &
                                              interior, scomp, ncomp, regionData)
 
              ! As regionData only contains those physical quantities that AMReX
@@ -220,7 +247,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              ! Let simulation do BC fill if so desired
              applied = .FALSE.
              call Grid_bcApplyToRegionSpecialized(gr_domainBC(face, axis), &
-                                                  CENTER, NGUARD, &
+                                                  gds, NGUARD, &
                                                   axis, face, &
                                                   regionData, regionSize, &
                                                   mask, applied, blockDesc, &
@@ -229,14 +256,14 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              if (.NOT. applied) then
                 ! Have FLASH fill GC in special data buffer
                 call Grid_bcApplyToRegion(gr_domainBC(face, axis), &
-                                          CENTER, NGUARD, &
+                                          gds, NGUARD, &
                                           axis, face, &
                                           regionData, regionSize, &
                                           mask, applied, blockDesc, &
                                           axis2, axis3, endPts, 0)
              end if
 
-             call gr_copyGuardcellRegionToFab(regionData, CENTER, face, axis, &
+             call gr_copyGuardcellRegionToFab(regionData, gds, face, axis, &
                                               guardcells, scomp, ncomp, solnData)
 
              deallocate(regionData)
@@ -249,7 +276,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
 
        nullify(solnData)
     end do
-    
+
     call amrex_mfiter_destroy(mfi)
 end subroutine gr_fillPhysicalBC
 
