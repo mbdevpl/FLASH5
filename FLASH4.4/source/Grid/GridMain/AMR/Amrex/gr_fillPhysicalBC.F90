@@ -159,7 +159,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
         gds = FACEZ
         write(*,*) "I am a facevarz multifab"
     else
-        call Driver_abortFlash("[gr_fillPhysicalFaceBC] I am some exotic " // &
+        call Driver_abortFlash("[gr_fillPhysicalBC] I am some exotic " // &
                                "beast that exists outside the realm of FLASH")
     end if
 

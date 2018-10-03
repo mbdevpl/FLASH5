@@ -110,7 +110,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         Logfile_stampVarMask, &
                                         Logfile_stamp
   use gr_amrexInterface,         ONLY : gr_fillPhysicalBC, &
-                                        gr_fillPhysicalFaceBC, &
                                         gr_restrictAllLevels, &
                                         gr_conserveToPrimitive, &
                                         gr_cleanDensityData, &
@@ -462,16 +461,16 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      lev = 0
      call amrex_fillpatch(facevarx(lev), 1.0, facevarx(lev), &
                                          0.0, facevarx(lev), &
-                                         amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                         amrex_geom(lev), gr_fillPhysicalBC, &
                                          0.0, 1, 1, NFACE_VARS)
 
      do lev=1, amrex_get_finest_level()
         call amrex_fillpatch(facevarx(lev), 1.0, facevarx(lev-1), &
                                             0.0, facevarx(lev-1), &
-                                            amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                            amrex_geom(lev-1), gr_fillPhysicalBC, &
                                             1.0, facevarx(lev  ), &
                                             0.0, facevarx(lev  ), &
-                                            amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                            amrex_geom(lev  ), gr_fillPhysicalBC, &
                                             0.0, 1, 1, NFACE_VARS, &
                                             amrex_ref_ratio(lev-1), gr_interpolator, &
                                             lo_bc_amrex, hi_bc_amrex) 
@@ -484,16 +483,16 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      lev = 0
      call amrex_fillpatch(facevary(lev), 1.0, facevary(lev), &
                                          0.0, facevary(lev), &
-                                         amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                         amrex_geom(lev), gr_fillPhysicalBC, &
                                          0.0, 1, 1, NFACE_VARS)
 
      do lev=1, amrex_get_finest_level()
         call amrex_fillpatch(facevary(lev), 1.0, facevary(lev-1), &
                                             0.0, facevary(lev-1), &
-                                            amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                            amrex_geom(lev-1), gr_fillPhysicalBC, &
                                             1.0, facevary(lev  ), &
                                             0.0, facevary(lev  ), &
-                                            amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                            amrex_geom(lev  ), gr_fillPhysicalBC, &
                                             0.0, 1, 1, NFACE_VARS, &
                                             amrex_ref_ratio(lev-1), gr_interpolator, &
                                             lo_bc_amrex, hi_bc_amrex) 
@@ -507,16 +506,16 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      lev = 0
      call amrex_fillpatch(facevarz(lev), 1.0, facevarz(lev), &
                                          0.0, facevarz(lev), &
-                                         amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                         amrex_geom(lev), gr_fillPhysicalBC, &
                                          0.0, 1, 1, NFACE_VARS)
 
      do lev=1, amrex_get_finest_level()
         call amrex_fillpatch(facevarz(lev), 1.0, facevarz(lev-1), &
                                             0.0, facevarz(lev-1), &
-                                            amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                            amrex_geom(lev-1), gr_fillPhysicalBC, &
                                             1.0, facevarz(lev  ), &
                                             0.0, facevarz(lev  ), &
-                                            amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                            amrex_geom(lev  ), gr_fillPhysicalBC, &
                                             0.0, 1, 1, NFACE_VARS, &
                                             amrex_ref_ratio(lev-1), gr_interpolator, &
                                             lo_bc_amrex, hi_bc_amrex) 

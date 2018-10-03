@@ -99,20 +99,7 @@ module gr_amrexInterface
       real(wp),       value :: time
     end subroutine gr_fillPhysicalBC
   end interface
-  
-  interface
-    subroutine gr_fillPhysicalFaceBC(pmf, scomp, ncomp, time, pgeom) bind(c)
-      use iso_c_binding,     ONLY : c_ptr, c_int
-      use amrex_fort_module, ONLY : wp => amrex_real
-      implicit none
-      type(c_ptr),    value :: pmf
-      type(c_ptr),    value :: pgeom
-      integer(c_int), value :: scomp
-      integer(c_int), value :: ncomp
-      real(wp),       value :: time
-    end subroutine gr_fillPhysicalFaceBC
-  end interface
- 
+
   interface
     subroutine gr_getFinestLevel(level)
       implicit none
