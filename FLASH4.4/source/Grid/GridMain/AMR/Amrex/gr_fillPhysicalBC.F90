@@ -80,6 +80,9 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     type(amrex_mfiter)     :: mfi
     type(amrex_box)        :: box
     type(block_metadata_t) :: blockDesc
+    
+    integer :: n_cells_domain
+    integer :: n_cells_level
 
     integer :: j
     real    :: delta, delta_j
@@ -110,19 +113,15 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     ! level number.  Therefore, when fillpatch calls this routine, we as well
     ! do not know the level number.
     !
-    ! DEV: FIXME User BC routines could need the level information to obtain the
-    ! deltas and to determine which multifab to get data from.  We have at least
-    ! the following options:
-    !   1) Keep this hack
-    !   2) Get AMReX to give level value instead of pgeom
-    !   3) Get AMReX to include level in amrex_geometry
-    delta = geom%dx(IAXIS)
+    ! Therefore, we reverse engineer the level by looking at the number of cells
+    ! in the physical domain at the refinement level associated with the given
+    ! multifab
     level = INVALID_LEVEL
-
-    ! AMReX uses 0-based level index set / FLASH uses 1-based
+    n_cells_domain = geom%domain%hi(IAXIS) - geom%domain%lo(IAXIS)
     do j = 0, gr_maxRefine
-        delta_j = amrex_geom(j)%dx(IAXIS)
-        if (delta == delta_j) then
+        n_cells_level= amrex_geom(j)%domain%hi(IAXIS) - &
+                       amrex_geom(j)%domain%lo(IAXIS)
+        if (n_cells_domain == n_cells_level) then
             level = j + 1
             EXIT
         end if
