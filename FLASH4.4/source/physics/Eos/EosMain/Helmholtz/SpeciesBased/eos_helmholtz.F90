@@ -451,9 +451,14 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
         print *, ' '
         print *, 'too many iterations', eos_maxNewton
         print *, ' '
+        print *, ' k    = ', k,vecBegin,vecEnd
         print *, ' temp = ', tempRow(k)
         print *, ' dens = ', denRow(k)
+        print *, ' abar = ', abarRow(k)
+        print *, ' zbar = ', zbarRow(k)
         print *, ' pres = ', ptotRow(k)
+        print *, ' etot = ', etotRow(k)
+        print *, ' ewant= ', ewantRow(k)
 
 
         call Driver_abortFlash('[eos_helmholtz] Error: too many iterations in Helmholtz Eos')
@@ -575,7 +580,11 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
         print *, ' k    = ', k,vecBegin,vecEnd
         print *, ' temp = ', tempRow(k)
         print *, ' dens = ', denRow(k)
+        print *, ' abar = ', abarRow(k)
+        print *, ' zbar = ', zbarRow(k)
+        print *, ' etot = ', etotRow(k)
         print *, ' pres = ', ptotRow(k)
+        print *, ' pwant= ', pwantRow(k)
 
         call Driver_abortFlash('[Eos] Error: too many Newton-Raphson iterations in eos_helmholtz')
 

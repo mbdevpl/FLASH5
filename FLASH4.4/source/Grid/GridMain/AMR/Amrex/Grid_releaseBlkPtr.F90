@@ -51,7 +51,8 @@ subroutine Grid_releaseBlkPtr_Itor(block, blkPtr, gridDataStruct)
   call Driver_abortFlash("[Grid_releaseBlkPtr_desc] NON-PERMANENT GCs not implemented yet")
 #else
   if (      (gds /= CENTER) &
-      .AND. (gds /= FACEX) .AND. (gds /= FACEY) .AND. (gds /= FACEZ)) then
+      .AND. (gds /= FACEX) .AND. (gds /= FACEY) .AND. (gds /= FACEZ)  &
+      .AND. (gds /= SCRATCH_CTR)                                    ) then
      call Driver_abortFlash("[Grid_releaseBlkPtr_desc] gridDataStruct not implemented yet")
   end if
 #endif

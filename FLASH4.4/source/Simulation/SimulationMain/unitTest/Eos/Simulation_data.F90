@@ -14,12 +14,13 @@ module Simulation_data
   implicit none
   real, save :: sim_xmin, sim_xmax, sim_ymin, sim_ymax, sim_zmin, sim_zmax
 
-  real, save :: sim_smallx
+  real, save :: sim_smallx, sim_smallE
 
   integer, save ::  sim_initialMass
 
   real, save :: sim_densMin, sim_tempMin, sim_xnMin, sim_presMin
   real, save :: sim_densMax, sim_tempMax, sim_xnMax, sim_presMax
 
-integer, save :: sim_meshMe
+  integer, save :: sim_meshMe
+  logical, save :: sim_debug
 end module Simulation_data
