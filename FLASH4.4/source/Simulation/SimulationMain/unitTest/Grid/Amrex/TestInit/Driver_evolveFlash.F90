@@ -399,25 +399,69 @@ subroutine Driver_evolveFlash()
     call Grid_getLeafIterator(itor)
     do while (itor%is_valid())
         call itor%blkMetaData(block)
-        call Grid_getBlkPtr(block, solnData)
 
         associate(lo => block%limits(LOW, :), &
                   hi => block%limits(HIGH, :))
+        call Grid_getBlkPtr(block, solnData)
             do         k = lo(KAXIS), hi(KAXIS)
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)
                         do var = UNK_VARS_BEGIN, UNK_VARS_END 
                             call assertEqual(solnData(i, j, k, var), &
                                              1.1d0 * var, &
+                                             "Incorrect initial condition in unk")
+                        end do
+                    end do
+                end do
+            end do
+        call Grid_releaseBlkPtr(block, solnData)
+    !!!!! CONFIRM PROPER INITIAL CONDITIONS for FACEVARS
+#if NFACE_VARS>0
+        call Grid_getBlkPtr(block,solnData,FACEX)
+            do         k = lo(KAXIS), hi(KAXIS)
+                do     j = lo(JAXIS), hi(JAXIS)
+                    do i = lo(IAXIS), hi(IAXIS)+1
+                        do var = 1, NFACE_VARS 
+                            call assertEqual(solnData(i, j, k, var), &
+                                             1.3*i*i, &
                                              "Incorrect initial condition")
                         end do
                     end do
                 end do
             end do
+        call Grid_releaseBlkPtr(block,solnData,FACEX)
+#if NDIM>1
+        call Grid_getBlkPtr(block,solnData,FACEY)
+            do         k = lo(KAXIS), hi(KAXIS)
+                do     j = lo(JAXIS), hi(JAXIS)+1
+                    do i = lo(IAXIS), hi(IAXIS)
+                        do var = 1, NFACE_VARS
+                            call assertEqual(solnData(i, j, k, var), &
+                                             i*i+1.2**j*j, &
+                                             "Incorrect initial condition")
+                        end do
+                    end do
+                end do
+            end do
+        call Grid_releaseBlkPtr(block,solnData,FACEY)
+#endif
+#if NDIM>2
+        call Grid_getBlkPtr(block,solnData,FACEZ)
+            do         k = lo(KAXIS), hi(KAXIS)+1
+                do     j = lo(JAXIS), hi(JAXIS)
+                    do i = lo(IAXIS), hi(IAXIS)
+                        do var = 1, NFACE_VARS
+                            call assertEqual(solnData(i, j, k, var), &
+                                             i*i+j*j+1.1*k*k, &
+                                             "Incorrect initial condition")
+                        end do
+                    end do
+                end do
+            end do
+        call Grid_releaseBlkPtr(block,solnData,FACEZ)
+#endif
+#endif
         end associate
-
-        call Grid_releaseBlkPtr(block, solnData)
-
         call itor%next()
     end do
     call Grid_releaseLeafIterator(itor)

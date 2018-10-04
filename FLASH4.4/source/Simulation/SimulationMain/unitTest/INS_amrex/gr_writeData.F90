@@ -1,6 +1,6 @@
 #include "Flash.h"
 
-subroutine gr_writeData(stepno, t_new)
+subroutine gr_writeData(stepno, t_new, argBaseName)
     use amrex_fort_module,     ONLY : wp => amrex_real
     use amrex_amrcore_module,  ONLY : amrex_get_numlevels, &
                                       amrex_geom, &
@@ -15,6 +15,7 @@ subroutine gr_writeData(stepno, t_new)
 
     integer,  intent(IN) :: stepno
     real(wp), intent(IN) :: t_new
+    character(len=*), intent(IN), optional :: argBaseName
 
     character(17), parameter :: PLOT_FILE = "ins_amrex_plot_"
 

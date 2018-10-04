@@ -139,7 +139,7 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
 #if NFACE_VARS > 0
   !!!!! FACE-CENTERED DATA
   if (     (gridDataStruct == CENTER_FACES) &
-      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEX) then
+      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEX)) then
     do lev = finest_level, 1, -1
         call amrex_average_down(facevarx(lev  ), &
                                 facevarx(lev-1), &
@@ -151,7 +151,7 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
   end if
 #if NDIM >= 2
   if (     (gridDataStruct == CENTER_FACES) &
-      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEY) then
+      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEY)) then
     do lev = finest_level, 1, -1
         call amrex_average_down(facevary(lev  ), &
                                 facevary(lev-1), &
@@ -164,7 +164,7 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
 #endif
 #if NDIM == 3
   if (     (gridDataStruct == CENTER_FACES) &
-      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEZ) then
+      .OR. (gridDataStruct == FACES) .OR. (gridDataStruct == FACEZ)) then
     do lev = finest_level, 1, -1
         call amrex_average_down(facevarz(lev  ), &
                                 facevarz(lev-1), &
