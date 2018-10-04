@@ -69,6 +69,9 @@
 !!        maintain sufficient precision. Important only if energyTotal is dominated 
 !!        by energyKinetic.
 !!
+!!  eos_testTolerance
+!!      tolerance for relative errors in Eos results
+!!
 !!***
 
 !!REORDER(4): solnData
@@ -89,6 +92,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
                           eos_testPresMode, &
                           eos_testEintMode, &
                           eos_testTempMode
+  use eos_testData, ONLY: tolerance => eos_testTolerance
   implicit none
 
 # include "Eos.h"
@@ -101,7 +105,6 @@ subroutine Eos_unitTest(fileUnit, perfect)
   integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
   type(leaf_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
-  real, parameter :: tolerance = 1e-9
   real :: presErr, tempErr, eintErr
 
   real, pointer, dimension(:,:,:,:):: solnData

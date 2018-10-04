@@ -10,6 +10,8 @@ sim_tempMin = 1.e6
 sim_tempMax = 1.e8
 sim_densMin = 1.e-2
 sim_densMax = 1.e8
+#sim_presMin = 1.e10   # Maybe enable if using with Helmholtz Eos
+#sim_presMax = 1.e24   # Maybe enable if using with Helmholtz Eos
 sim_xnMin = 1.e-10
 sim_xnMax = 1.0
 
@@ -37,3 +39,9 @@ nblockz = 1
 #eintSwitch     = 1.e-4
 eosModeInit = "eos_nop"
 eosMode     = "eos_nop"
+
+#eos_coulombMult = 0.05   # or 0.0. Enable if using with Helmholtz Eos
+#eos_tolerance = 2.e-9     # Request more precision than default
+#eos_maxNewton = 59
+#eos_testTolerance = 4.e-9 # Loosens criteria for success a bit
+#eos_forceConstantInput = .TRUE.  $ May try this, too, if using with Helmholtz Eos
