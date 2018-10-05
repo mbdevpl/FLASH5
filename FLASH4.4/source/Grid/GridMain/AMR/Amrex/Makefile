@@ -13,7 +13,6 @@ Grid += gr_amrexInterface.o \
         gr_cleanDensityData.o \
         gr_cleanEnergyData.o \
         gr_fillPhysicalBC.o \
-        gr_fillPhysicalFaceBC.o \
         gr_getFinestLevel.o \
         gr_restrictAllLevels.o \
         gr_splitFabAtBoundary.o \

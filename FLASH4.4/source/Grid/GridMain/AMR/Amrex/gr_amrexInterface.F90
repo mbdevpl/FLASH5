@@ -99,20 +99,7 @@ module gr_amrexInterface
       real(wp),       value :: time
     end subroutine gr_fillPhysicalBC
   end interface
-  
-  interface
-    subroutine gr_fillPhysicalFaceBC(pmf, scomp, ncomp, time, pgeom) bind(c)
-      use iso_c_binding,     ONLY : c_ptr, c_int
-      use amrex_fort_module, ONLY : wp => amrex_real
-      implicit none
-      type(c_ptr),    value :: pmf
-      type(c_ptr),    value :: pgeom
-      integer(c_int), value :: scomp
-      integer(c_int), value :: ncomp
-      real(wp),       value :: time
-    end subroutine gr_fillPhysicalFaceBC
-  end interface
- 
+
   interface
     subroutine gr_getFinestLevel(level)
       implicit none
@@ -257,11 +244,12 @@ module gr_amrexInterface
   end interface
 
   interface
-    subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, &
+    subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
                                           scomp, ncomp, region)
       use amrex_fort_module, ONLY : wp => amrex_real
       implicit none
       real(wp), pointer, contiguous, intent(IN)    :: fab(:, :, :, :)
+      integer,                       intent(IN)    :: gds
       integer,                       intent(IN)    :: face
       integer,                       intent(IN)    :: axis
       integer,                       intent(IN)    :: interior(LOW:HIGH, 1:MDIM)
@@ -272,11 +260,12 @@ module gr_amrexInterface
   end interface
  
   interface
-    subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
+    subroutine gr_copyGuardcellRegionToFab(region, gds, face, axis, guardcells, &
                                            scomp, ncomp, fab)
       use amrex_fort_module, ONLY : wp => amrex_real
       implicit none
       real(wp), intent(IN),    pointer, contiguous :: region(:, :, :, :)
+      integer,  intent(IN)                         :: gds
       integer,  intent(IN)                         :: face
       integer,  intent(IN)                         :: axis
       integer,  intent(IN)                         :: guardcells(LOW:HIGH, 1:MDIM)

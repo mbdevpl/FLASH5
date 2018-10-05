@@ -1,11 +1,9 @@
 !!****if* source/Grid/GridMain/AMR/Amrex/gr_fillPhysicalBC
 !!
 !! NAME
-!!
 !!  gr_fillPhysicalBC
 !!
 !! SYNOPSIS
-!!
 !!  call gr_fillPhysicalBC(amrex_multifab(IN) :: pmf,
 !!                         integer(IN)        :: scomp,
 !!                         integer(IN)        :: ncomp,
@@ -13,7 +11,6 @@
 !!                         amrex_geometry(IN) :: pgeom)
 !!
 !! DESCRIPTION 
-!!  
 !!  This routine is a callback function that is given to AMReX when using the
 !!  fillpatch routines.  It is given a multifab where each FAB already contains
 !!  valid interior data and needs to have its guardcells filled with data that
@@ -24,8 +21,12 @@
 !!  fill via the routine Grid_bcApplyToRegionSpecialized.  If this routine does
 !!  not handle the fill, then the fill is done via Grid_bcApplyToRegion.
 !!
-!! ARGUMENTS 
+!!  If the given multifab data is defined with respect to a face-centered index
+!!  space, then face data in the multifab that coincides with the domain
+!!  boundaries will be passed to Grid_bcApplyToRegionSpecialized and 
+!!  Grid_bcApplyToRegion.
 !!
+!! ARGUMENTS 
 !!  pmf - the multifab on which to operate
 !!  scomp - the 1-based index of the first physical quantity on which to carry
 !!          out the operation
@@ -77,9 +78,14 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
 
     type(amrex_geometry)   :: geom
     type(amrex_multifab)   :: mfab
+    logical                :: ntype(MDIM)
+    integer                :: gds
     type(amrex_mfiter)     :: mfi
     type(amrex_box)        :: box
     type(block_metadata_t) :: blockDesc
+    
+    integer :: n_cells_domain
+    integer :: n_cells_level
 
     integer :: j
     real    :: delta, delta_j
@@ -110,19 +116,15 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     ! level number.  Therefore, when fillpatch calls this routine, we as well
     ! do not know the level number.
     !
-    ! DEV: FIXME User BC routines could need the level information to obtain the
-    ! deltas and to determine which multifab to get data from.  We have at least
-    ! the following options:
-    !   1) Keep this hack
-    !   2) Get AMReX to give level value instead of pgeom
-    !   3) Get AMReX to include level in amrex_geometry
-    delta = geom%dx(IAXIS)
+    ! Therefore, we reverse engineer the level by looking at the number of cells
+    ! in the physical domain at the refinement level associated with the given
+    ! multifab
     level = INVALID_LEVEL
-
-    ! AMReX uses 0-based level index set / FLASH uses 1-based
+    n_cells_domain = geom%domain%hi(IAXIS) - geom%domain%lo(IAXIS)
     do j = 0, gr_maxRefine
-        delta_j = amrex_geom(j)%dx(IAXIS)
-        if (delta == delta_j) then
+        n_cells_level= amrex_geom(j)%domain%hi(IAXIS) - &
+                       amrex_geom(j)%domain%lo(IAXIS)
+        if (n_cells_domain == n_cells_level) then
             level = j + 1
             EXIT
         end if
@@ -137,27 +139,48 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                         "                  Level ", level
 #endif
 
+    ntype = mfab%nodal_type()
+    if      (      (.NOT. ntype(IAXIS))  &
+             .AND. (.NOT. ntype(JAXIS)) &
+             .AND. (.NOT. ntype(KAXIS))) then
+        gds = CENTER
+    else if (             ntype(IAXIS)  &
+             .AND. (.NOT. ntype(JAXIS)) &
+             .AND. (.NOT. ntype(KAXIS))) then
+        gds = FACEX
+    else if (      (.NOT. ntype(IAXIS)) &
+             .AND.        ntype(JAXIS) &
+             .AND. (.NOT. ntype(KAXIS))) then
+        gds = FACEY
+    else if (      (.NOT. ntype(IAXIS))  &
+             .AND. (.NOT. ntype(JAXIS)) &
+             .AND.        ntype(KAXIS)) then
+        gds = FACEZ
+    else
+        call Driver_abortFlash("[gr_fillPhysicalBC] " // &
+                               "Given mfab must be cell- or face-centered")
+    end if
+
     call amrex_mfiter_build(mfi, mfab, tiling=.false.)
     do while(mfi%next())
-       ! 0-based, cell-centered, and global indices
+       ! 0-based and global indices
        solnData => mfab%dataPtr(mfi)
 
-       ! 0-based, cell-centered, and global indices
+       ! 0-based and global indices
        box = mfi%fabbox()
        limitsGC(:, :) = 0
        limitsGC(LOW,  1:NDIM) = box%lo(1:NDIM)
        limitsGC(HIGH, 1:NDIM) = box%hi(1:NDIM)
 
-       ! DEV: The given box is not necessarily a FLASH block, but rather
-       ! could be an arbitrary rectangular region in the domain and its GC
-       !
-       ! One result of this is that grid_index is non-sensical here
-       blockDesc%level = level
-       blockDesc%grid_index = -1
-       blockDesc%limits(LOW,  :)   = limitsGC(LOW,  :) + 1 + NGUARD
-       blockDesc%limits(HIGH, :)   = limitsGC(HIGH, :) + 1 - NGUARD
-       blockDesc%limitsGC(LOW,  :) = limitsGC(LOW,  :) + 1
-       blockDesc%limitsGC(HIGH, :) = limitsGC(HIGH, :) + 1
+       ! In FLASH, limits/limitsGC in a block descriptor must be 
+       ! cell-centered
+       if      (gds == FACEX) then
+          limitsGC(HIGH, IAXIS) = limitsGC(HIGH, IAXIS) - 1
+       else if (gds == FACEY) then
+          limitsGC(HIGH, JAXIS) = limitsGC(HIGH, JAXIS) - 1
+       else if (gds == FACEZ) then
+          limitsGC(HIGH, KAXIS) = limitsGC(HIGH, KAXIS) - 1
+       end if
 
        ! Check for boundaries on both faces along all directions
        do axis = 1, NDIM
@@ -186,7 +209,8 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              if (.NOT. found)   CYCLE
 
              ! Grow GC region to meet needs of Grid_bcApplyToRegion
-             ! i.e. include NGUARD cells on either side of boundary and 1-based
+             ! i.e. include NGUARD cells on either side of boundary
+             ! 1-based, cell-centered, and global indices
              endPts(:, :) = 1
              endPts(:, 1:NDIM) = guardcells(:, 1:NDIM) + 1
              if (face == LOW) then
@@ -197,6 +221,48 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                 endPts(HIGH, axis) = (interior(HIGH, axis)   + 1) +  NGUARD
              end if
 
+             ! The box is not necessarily a FLASH block, but rather
+             ! could be an arbitrary rectangular region in the domain and its GC
+             !
+             ! One result of this is that grid_index is non-sensical here
+             !
+             ! 1-based, cell-centered and global indices
+             !
+             ! DEV: FIXME This presently captures the useful information in
+             ! terms of box size and location.  However, it is not clear
+             ! how to map this box onto limits and limitsGC.  This is especially
+             ! true since this code might not know the identity of the block
+             ! that contains this box.
+             !
+             ! So far, simple uses of this blockDesc work, but certain routines
+             ! such as Grid_getBlkBC require that the limit field contain
+             ! information consistent with the notion of a block's
+             ! limits/interior.
+             blockDesc%level = level
+             blockDesc%grid_index = -1
+             blockDesc%limits(:,  :)          = 1
+             blockDesc%limits(LOW,  1:NDIM)   = endPts(LOW,  1:NDIM)
+             blockDesc%limits(HIGH, 1:NDIM)   = endPts(HIGH, 1:NDIM)
+             blockDesc%limitsGC(:,  :)        = 1
+             blockDesc%limitsGC(LOW,  1:NDIM) = endPts(LOW,  1:NDIM) - NGUARD
+             blockDesc%limitsGC(HIGH, 1:NDIM) = endPts(HIGH, 1:NDIM) + NGUARD
+
+             ! If necessary, convert interior, guardcells, and endPts
+             ! to match index space of given multifab
+             if      (gds == FACEX) then
+                endPts(    HIGH, IAXIS) = endPts(    HIGH, IAXIS) + 1
+                interior(  HIGH, IAXIS) = interior(  HIGH, IAXIS) + 1
+                guardcells(HIGH, IAXIS) = guardcells(HIGH, IAXIS) + 1
+             else if (gds == FACEY) then
+                endPts(    HIGH, JAXIS) = endPts(    HIGH, JAXIS) + 1
+                interior(  HIGH, JAXIS) = interior(  HIGH, JAXIS) + 1
+                guardcells(HIGH, JAXIS) = guardcells(HIGH, JAXIS) + 1
+             else if (gds == FACEZ) then
+                endPts(    HIGH, KAXIS) = endPts(    HIGH, KAXIS) + 1
+                interior(  HIGH, KAXIS) = interior(  HIGH, KAXIS) + 1
+                guardcells(HIGH, KAXIS) = guardcells(HIGH, KAXIS) + 1
+             end if
+
              ! Create buffer to hold data with indices permuted for use with
              ! Grid_bcApplyToRegion
              regionSize(BC_DIR)     = endPts(HIGH, axis)  - endPts(LOW, axis)  + 1
@@ -204,14 +270,14 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              regionSize(THIRD_DIR)  = endPts(HIGH, axis3) - endPts(LOW, axis3) + 1
              regionSize(STRUCTSIZE) = ncomp
 
-             ! 1-based, cell-centered, and local indices 
+             ! 1-based and local indices 
              allocate(regionData(regionSize(BC_DIR), &
                                  regionSize(SECOND_DIR), &
                                  regionSize(THIRD_DIR), &
                                  regionSize(STRUCTSIZE)) )
 
-             regionData(:, :, :, :) = 0.0d0
-             call gr_copyFabInteriorToRegion(solnData, face, axis, &
+             regionData(:, :, :, :) = 0.0
+             call gr_copyFabInteriorToRegion(solnData, gds, face, axis, &
                                              interior, scomp, ncomp, regionData)
 
              ! As regionData only contains those physical quantities that AMReX
@@ -221,7 +287,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              ! Let simulation do BC fill if so desired
              applied = .FALSE.
              call Grid_bcApplyToRegionSpecialized(gr_domainBC(face, axis), &
-                                                  CENTER, NGUARD, &
+                                                  gds, NGUARD, &
                                                   axis, face, &
                                                   regionData, regionSize, &
                                                   mask, applied, blockDesc, &
@@ -230,14 +296,14 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              if (.NOT. applied) then
                 ! Have FLASH fill GC in special data buffer
                 call Grid_bcApplyToRegion(gr_domainBC(face, axis), &
-                                          CENTER, NGUARD, &
+                                          gds, NGUARD, &
                                           axis, face, &
                                           regionData, regionSize, &
                                           mask, applied, blockDesc, &
                                           axis2, axis3, endPts, 0)
              end if
 
-             call gr_copyGuardcellRegionToFab(regionData, face, axis, &
+             call gr_copyGuardcellRegionToFab(regionData, gds, face, axis, &
                                               guardcells, scomp, ncomp, solnData)
 
              deallocate(regionData)
@@ -250,7 +316,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
 
        nullify(solnData)
     end do
-    
+
     call amrex_mfiter_destroy(mfi)
 end subroutine gr_fillPhysicalBC
 
