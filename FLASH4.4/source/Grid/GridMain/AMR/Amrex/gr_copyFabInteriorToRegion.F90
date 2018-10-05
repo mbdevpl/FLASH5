@@ -120,40 +120,34 @@ subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
                fin    => hi(axis))
 
         if (axis == IAXIS) then
-            do k = lo(KAXIS), hi(KAXIS)
-                m = k - lo(KAXIS) + 1
-
-                do j = lo(JAXIS), hi(JAXIS)
-                    n = j - lo(JAXIS) + 1
-                    do var = 1, ncomp
+            do        var = 1, ncomp
+                do      k = lo(KAXIS), hi(KAXIS)
+                        m = k - lo(KAXIS) + 1
+                    do  j = lo(JAXIS), hi(JAXIS)
+                        n = j - lo(JAXIS) + 1
                         region(rStrt:rFin, n, m, var) = fab(strt:fin, j, k, var+scomp-1)
                     end do
                 end do
-
             end do
         else if (axis == JAXIS) then
-            do k = lo(KAXIS), hi(KAXIS)
-                m = k - lo(KAXIS) + 1
-
-                do i = lo(IAXIS), hi(IAXIS)
-                    n = i - lo(IAXIS) + 1
-                    do var = 1, ncomp
+            do        var = 1, ncomp
+                do      k = lo(KAXIS), hi(KAXIS)
+                        m = k - lo(KAXIS) + 1
+                    do  i = lo(IAXIS), hi(IAXIS)
+                        n = i - lo(IAXIS) + 1
                         region(rStrt:rFin, n, m, var) = fab(i, strt:fin, k, var+scomp-1)
                     end do
                 end do
-
             end do
         else if (axis == KAXIS) then
-            do j = lo(JAXIS), hi(JAXIS)
-                m = j - lo(JAXIS) + 1
-
-                do i = lo(IAXIS), hi(IAXIS)
-                    n = i - lo(IAXIS) + 1
-                    do var = 1, ncomp
+            do        var = 1, ncomp
+                do      j = lo(JAXIS), hi(JAXIS)
+                        m = j - lo(JAXIS) + 1
+                    do  i = lo(IAXIS), hi(IAXIS)
+                        n = i - lo(IAXIS) + 1
                         region(rStrt:rFin, n, m, var) = fab(i, j, strt:fin, var+scomp-1)
                     end do
                 end do
-
             end do
         end if
 
