@@ -148,17 +148,14 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              .AND. (.NOT. ntype(JAXIS)) &
              .AND. (.NOT. ntype(KAXIS))) then
         gds = FACEX
-        write(*,*) "I am a facevarx multifab"
     else if (      (.NOT. ntype(IAXIS)) &
              .AND.        ntype(JAXIS) &
              .AND. (.NOT. ntype(KAXIS))) then
         gds = FACEY
-        write(*,*) "I am a facevary multifab"
     else if (      (.NOT. ntype(IAXIS))  &
              .AND. (.NOT. ntype(JAXIS)) &
              .AND.        ntype(KAXIS)) then
         gds = FACEZ
-        write(*,*) "I am a facevarz multifab"
     else
         call Driver_abortFlash("[gr_fillPhysicalBC] " // &
                                "Given mfab must be cell- or face-centered")
@@ -184,19 +181,6 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
        else if (gds == FACEZ) then
           limitsGC(HIGH, KAXIS) = limitsGC(HIGH, KAXIS) - 1
        end if
-
-       ! The given box is not necessarily a FLASH block, but rather
-       ! could be an arbitrary rectangular region in the domain and its GC
-       !
-       ! One result of this is that grid_index is non-sensical here
-       !
-       ! 1-based, cell-centered and global indices
-       blockDesc%level = level
-       blockDesc%grid_index = -1
-       blockDesc%limits(LOW,  :)   = limitsGC(LOW,  :) + 1 + NGUARD
-       blockDesc%limits(HIGH, :)   = limitsGC(HIGH, :) + 1 - NGUARD
-       blockDesc%limitsGC(LOW,  :) = limitsGC(LOW,  :) + 1
-       blockDesc%limitsGC(HIGH, :) = limitsGC(HIGH, :) + 1
 
        ! Check for boundaries on both faces along all directions
        do axis = 1, NDIM
@@ -236,6 +220,32 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                 endPts(LOW,  axis) = (interior(HIGH, axis)   + 1) - (NGUARD - 1)
                 endPts(HIGH, axis) = (interior(HIGH, axis)   + 1) +  NGUARD
              end if
+
+             ! The box is not necessarily a FLASH block, but rather
+             ! could be an arbitrary rectangular region in the domain and its GC
+             !
+             ! One result of this is that grid_index is non-sensical here
+             !
+             ! 1-based, cell-centered and global indices
+             !
+             ! DEV: FIXME This presently captures the useful information in
+             ! terms of box size and location.  However, it is not clear
+             ! how to map this box onto limits and limitsGC.  This is especially
+             ! true since this code might not know the identity of the block
+             ! that contains this box.
+             !
+             ! So far, simple uses of this blockDesc work, but certain routines
+             ! such as Grid_getBlkBC require that the limit field contain
+             ! information consistent with the notion of a block's
+             ! limits/interior.
+             blockDesc%level = level
+             blockDesc%grid_index = -1
+             blockDesc%limits(:,  :)          = 1
+             blockDesc%limits(LOW,  1:NDIM)   = endPts(LOW,  1:NDIM)
+             blockDesc%limits(HIGH, 1:NDIM)   = endPts(HIGH, 1:NDIM)
+             blockDesc%limitsGC(:,  :)        = 1
+             blockDesc%limitsGC(LOW,  1:NDIM) = endPts(LOW,  1:NDIM) - NGUARD
+             blockDesc%limitsGC(HIGH, 1:NDIM) = endPts(HIGH, 1:NDIM) + NGUARD
 
              ! If necessary, convert interior, guardcells, and endPts
              ! to match index space of given multifab
