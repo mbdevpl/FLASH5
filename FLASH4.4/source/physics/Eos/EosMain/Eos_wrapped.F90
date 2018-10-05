@@ -310,7 +310,5 @@ subroutine Eos_wrapped(mode,range,solnData, gridDataStruct)
   deallocate(eosData)
   deallocate(massFraction)
 
-  !$omp end parallel
-
   return
 end subroutine Eos_wrapped
