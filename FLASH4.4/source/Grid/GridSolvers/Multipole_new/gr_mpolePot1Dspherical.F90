@@ -100,7 +100,10 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
 !     ...Sum quantities over all locally held leaf blocks.
 !
 !
-!$omp do schedule (static)
+
+  ! Replaced `!$omp do schedule(static)` with `!$omp single` below as temporary fix until we determine
+  ! the proper way to parallelize leaf iterator loops with OpenMP - JAH
+  !$omp single
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(block)
@@ -225,7 +228,7 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
      call itor%next()
   end do
   call Grid_releaseLeafIterator(itor)
-!$omp end do
+  !$omp end single
 !
 !
 !    ...Ready!

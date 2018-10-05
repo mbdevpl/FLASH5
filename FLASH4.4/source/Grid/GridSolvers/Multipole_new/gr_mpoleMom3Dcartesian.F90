@@ -115,7 +115,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 !        radial bin index, how many cells it will contain.
 !
 !
-!$omp single
+  !$omp single
   gr_mpoleQused (:) = 0 
 
   call Grid_getLeafIterator(itor)
@@ -348,7 +348,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
      call itor%next()
   end do
   call Grid_releaseLeafIterator(itor)
-!!$omp end single
+  !$omp end single
 !
 !
 !    ...Call the radial bin clustered moment evaluation routine (all threads).

@@ -128,16 +128,17 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   integer :: lev
   type(block_metadata_t) :: block
   type(leaf_iterator_t) :: itor
- !  
   !
   !     ...Sum quantities over all locally held leaf blocks.
   !
   !
 
+  call Grid_getLeafIterator(itor)
+
   !$omp parallel if (gr_mpoleMultiThreading) &
   !$omp default(private) &
-  !$omp shared( blockID,ipotvar,&
-  !$omp         bndBox,delta,solnData,blkLimits,&
+  !$omp shared( block,itor,ipotvar,&
+  !$omp         lev,bndBox,delta,solnData,blkLimits,&
   !$omp         imin,jmin,kmin,imax,jmax,kmax,&
   !$omp         iCmax,jCmax,kCmax,iFmax,jFmax,kFmax,&
   !$omp         DeltaI,DeltaJ,DeltaK,DeltaIHalf,DeltaJHalf,DeltaKHalf,&
@@ -153,8 +154,9 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   !$omp         gr_mpoleOuterZoneQshift,gr_mpoleXcenter,gr_mpoleYcenter,gr_mpoleZcenter,&
   !$omp         gr_mpoleQDampingR,gr_mpoleQDampingI, gr_mpoleMomentR,gr_mpoleMomentI)
   
- call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
+
+     !$omp single
      call itor%blkMetaData(block)
      lev=block%level
      blkLimits=block%limits
@@ -657,9 +659,12 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
      !$omp single
      call Grid_releaseBlkPtr (block, solnData)
      call itor%next()
+     !$omp end single
   end do
-  call Grid_releaseLeafIterator(itor)
+
   !$omp end parallel
+
+  call Grid_releaseLeafIterator(itor)
   !
   !
   !    ...Ready!
