@@ -1,0 +1,53 @@
+basenm = "AMReXInitTest_"
+
+# These exact values are used in the unittest.  They should not be
+# changed here and different values should not be given at setup.
+
+##### PHYSICAL SPACE DISCRETIZATION
+geometry = "cartesian"
+
+xmin     = -1.0
+xmax     =  2.0
+ymin     = -1.5
+ymax     =  4.5
+zmin     =  0.5
+zmax     =  0.75
+
+##### PARTITION OF PHYSICAL SPACE INTO BLOCKS
+nblockx = 2
+nblocky = 2
+nblockz = 1
+
+##### BOUNDARY CONDITIONS
+xl_boundary_type = "outflow"
+xr_boundary_type = "reflect"
+yl_boundary_type = "dirichlet"
+yr_boundary_type = "diode"
+# DEVNOTE: One periodic on Z and the other Z not is an unacceptable user error
+zl_boundary_type = "periodic"
+zr_boundary_type = "dirichlet"
+
+##### AMR CONFIGURATION
+lrefine_max = 4
+nrefs       = 5
+
+refine_var_1    = "dens"
+refine_var_2    = "temp"
+refine_var_3    = "ener"
+
+refine_cutoff_1 = 0.8
+refine_cutoff_2 = 0.5
+refine_cutoff_3 = 0.6
+
+derefine_cutoff_1 = 0.45
+derefine_cutoff_2 = 0.325
+derefine_cutoff_3 = 0.35
+
+refine_filter_1 = 0.05
+refine_filter_2 = 0.025
+refine_filter_3 = 0.035
+
+##### EoS CONFIGURATION
+eosMode     = "dens_ie"
+eosModeInit = "dens_temp"
+

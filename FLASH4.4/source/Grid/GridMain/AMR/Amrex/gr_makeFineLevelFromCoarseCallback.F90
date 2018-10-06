@@ -76,8 +76,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_preinterpolationWork, &
                                           gr_postinterpolationWork, &
-                                          gr_fillPhysicalBC, &
-                                          gr_fillPhysicalFaceBC
+                                          gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           gr_scratchCtr, &
                                           facevarx, facevary, facevarz, &
@@ -174,8 +173,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 #if NFACE_VARS > 0
     call amrex_fillcoarsepatch(facevarx(lev), time,     facevarx(lev-1),  &
                                               time+0.1, facevarx(lev-1),  &
-                                              amrex_geom(lev-1), gr_fillPhysicalFaceBC,  &
-                                              amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
+                                              amrex_geom(lev-1), gr_fillPhysicalBC,  &
+                                              amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                               time, &
                                               1, 1, NFACE_VARS, &
                                               amrex_ref_ratio(lev-1), gr_interpolator, &
@@ -183,8 +182,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 #if NDIM >= 2
     call amrex_fillcoarsepatch(facevary(lev), time,     facevary(lev-1),  &
                                               time+0.1, facevary(lev-1),  &
-                                              amrex_geom(lev-1), gr_fillPhysicalFaceBC,  &
-                                              amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
+                                              amrex_geom(lev-1), gr_fillPhysicalBC,  &
+                                              amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                               time, &
                                               1, 1, NFACE_VARS, &
                                               amrex_ref_ratio(lev-1), gr_interpolator, &
@@ -193,8 +192,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 #if NDIM == 3
     call amrex_fillcoarsepatch(facevarz(lev), time,     facevarz(lev-1),  &
                                               time+0.1, facevarz(lev-1),  &
-                                              amrex_geom(lev-1), gr_fillPhysicalFaceBC,  &
-                                              amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
+                                              amrex_geom(lev-1), gr_fillPhysicalBC,  &
+                                              amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                               time, &
                                               1, 1, NFACE_VARS, &
                                               amrex_ref_ratio(lev-1), gr_interpolator, &
