@@ -90,7 +90,7 @@ Contains
 #ifdef EOS_DETAT
       detaedt9 = eosData(EOS_DETAT)*1.0e9
 #else
-      detaedt9 = -etae / t9
+      detaedt9 = 0.0
 #endif
       if ( ierr > 0 ) then
         Write(lun_stdout,"(a,6es23.15)") 'EOS',t9,rho,ye,cv,etae,detaedt9
