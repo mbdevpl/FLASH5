@@ -247,7 +247,7 @@ subroutine Eos(mode, vecLen, eosData, massFrac, mask, vecBegin,vecEnd)
        eos_forceConstantInput, eos_singleSpeciesA, eos_singleSpeciesZ
   use eos_vecData, ONLY:  tempRow, denRow, etotRow, abarRow, zbarRow, &
        gamcRow, ptotRow, deaRow, dezRow, &
-       detRow, dptRow, dpdRow, dedRow, pelRow, neRow, etaRow, cvRow, cpRow
+       detRow, dptRow, dpdRow, dedRow, pelRow, neRow, etaRow, detatRow, cvRow, cpRow
 
   implicit none
 
@@ -270,7 +270,7 @@ subroutine Eos(mode, vecLen, eosData, massFrac, mask, vecBegin,vecEnd)
   integer :: ilo, ihi
   integer :: pres, temp, dens, gamc, eint
   integer :: abar, zbar
-  integer :: dpt, dpd, det, ded, dea, dez, pel, ne, eta, c_v, c_p
+  integer :: dpt, dpd, det, ded, dea, dez, pel, ne, eta, detat, c_v, c_p
   real    :: abarInv, zbarFrac
 
   ! declare some local storage for the results of the Newton iteration
@@ -649,6 +649,10 @@ subroutine Eos(mode, vecLen, eosData, massFrac, mask, vecBegin,vecEnd)
      if(mask(EOS_ETA))then 
         eta = (EOS_ETA-1)*vecLen 
         eosData(eta+1:eta+vecLen) = etaRow(1:vecLen)
+     end if
+     if(mask(EOS_DETAT))then
+        detat = (EOS_DETAT-1)*vecLen
+        eosData(detat+1:detat+vecLen) = detatRow(1:vecLen)
      end if
      
      if(mask(EOS_CV))then

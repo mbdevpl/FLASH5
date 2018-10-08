@@ -256,7 +256,7 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
   use Eos_data, ONLY : eos_smallt, eos_meshMe, eos_singleSpeciesA, eos_singleSpeciesZ
   use eos_vecData, ONLY:  tempRow, denRow, etotRow, abarRow, zbarRow, &
        gamcRow, ptotRow, deaRow, dezRow, stotRow, dsdRow, dstRow, &
-       detRow, dptRow, dpdRow, dedRow, pelRow, neRow, etaRow, cvRow, cpRow
+       detRow, dptRow, dpdRow, dedRow, pelRow, neRow, etaRow, detatRow, cvRow, cpRow
   !$ use omp_lib
   implicit none
 
@@ -279,7 +279,7 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
   integer :: pres, temp, dens, gamc, eint
   integer :: abar, zbar
   integer :: entr, dst, dsd
-  integer :: dpt, dpd, det, ded, dea, dez, pel, ne, eta, c_v, c_p
+  integer :: dpt, dpd, det, ded, dea, dez, pel, ne, eta, detat, c_v, c_p
   real    :: abarInv, zbarFrac
 
   ! declare some local storage for the results of the Newton iteration
@@ -670,6 +670,10 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
      if(mask(EOS_ETA))then 
         eta = (EOS_ETA-1)*vecLen
         eosData(eta+1:eta+vecLen) = etaRow(1:vecLen)
+     end if
+     if(mask(EOS_DETAT))then
+        detat = (EOS_DETAT-1)*vecLen
+        eosData(detat+1:detat+vecLen) = detatRow(1:vecLen)
      end if
 
      if(mask(EOS_CV))then

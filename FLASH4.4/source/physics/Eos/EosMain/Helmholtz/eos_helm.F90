@@ -99,7 +99,7 @@ subroutine eos_helm(eos_jlo,eos_jhi,mask)
        ptotRow, etotRow, stotRow, &
        dpdRow, dptRow, dstRow, dedRow, detRow, dsdRow, &
        deaRow, dezRow, & !Calhoun
-       pelRow, neRow, etaRow, gamcRow, cvRow, cpRow
+       pelRow, neRow, etaRow, detatRow, gamcRow, cvRow, cpRow
 
   !! physical constants to high precision
   use eos_helmConstData, ONLY: kerg, kergavo, asoli3, avo, avoInv, sioncon, pi
@@ -138,7 +138,7 @@ subroutine eos_helm(eos_jlo,eos_jhi,mask)
        entr, & 
        presi,chit,chid,gamc,kavoy
 
- real :: cv, cp, etaele, xnefer,          &
+ real :: cv, cp, etaele, detadt, xnefer, &
          denerdd,dentrdd,dentrdt
 
 
@@ -609,6 +609,11 @@ subroutine eos_helm(eos_jlo,eos_jhi,mask)
                     si0t,   si1t,   si0mt,   si1mt, & 
                     si0d,   si1d,   si0md,   si1md)
 
+     !! derivative with respect to temperature
+     detadt  = h3e(iat,jat, &
+                    dsi0t,  dsi1t,  dsi0mt,  dsi1mt, &
+                    si0d,   si1d,   si0md,   si1md)
+
 
      !!  electron + positron number densities
      xnefer   = h3x(iat,jat, & 
@@ -880,7 +885,8 @@ subroutine eos_helm(eos_jlo,eos_jhi,mask)
      !UNUSED     seleRow(j)   = sele
 
      neRow(j)    = xnefer   ! used as EOS_NE  
-     etaRow(j) = etaele     ! used as EOS_ETA 
+     etaRow(j)   = etaele   ! used as EOS_ETA
+     detatRow(j) = detadt   ! used as EOS_DETAT
 
      gamcRow(j)   = gamc    !used as EOS_GAMC = GAMC_VAR
 
