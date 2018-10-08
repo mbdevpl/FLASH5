@@ -15,6 +15,7 @@
 LC_PE_ENV = $(shell echo ${PE_ENV} | tr A-Z a-z)
 
 MPI_PATH   =
+CUDA_PATH  = ${CUDATOOLKIT_HOME}
 PAPI_PATH  = 
 PAPI_FLAGS = 
 NCMPI_PATH = 
