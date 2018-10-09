@@ -96,7 +96,7 @@ Subroutine local_tree_build ()
   Integer, Parameter :: cart_dims = 1
   Integer, dimension(cart_dims) :: blkCommDims
   Integer :: blkComm, blkCartComm, inBlkComm, blkCartCommMyPE
-  Logical, Parameter, dimension(cart_dims) :: periodic = (/ .true. /)
+  Logical, Save, dimension(cart_dims) :: periodic = (/ .true. /)
   Logical, Parameter :: reorder = .false.
 
   !-----Begin Executable Code
