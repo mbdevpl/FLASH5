@@ -28,7 +28,7 @@ subroutine eos_vecAlloc(vecLen)
        ptotRow, dptRow, dpdRow, etotRow,&
        detRow, dedRow,  deaRow, dezRow, &
        dstRow, dsdRow, stotRow, &
-       pelRow, neRow, etaRow, cpRow, cvRow, gamcRow
+       pelRow, neRow, etaRow, detatRow, cpRow, cvRow, gamcRow
 
   implicit none
   integer, intent(IN) :: vecLen
@@ -77,6 +77,7 @@ subroutine eos_vecAlloc(vecLen)
   allocate(pelRow(vecLen))
   allocate(neRow(vecLen))
   allocate(etaRow(vecLen))
+  allocate(detatRow(vecLen))
 
 
   !..coulomb contributions -- all UNUSED and REMOVED
