@@ -112,7 +112,7 @@ subroutine bn_xnetInit(data_dir,data_desc)
   call read_jacobian_data(data_dir)
 
   ! Initialize EoS for screening or self-heating
-  if ( iscrn > 0 .or. iheat > 0 ) call eos_initialize
+  call eos_initialize
 
   ! Initialize BDF integrator
   call bdf_init
