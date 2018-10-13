@@ -129,23 +129,27 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   
   integer, dimension(MDIM) :: datasize
 
-  real, pointer, dimension(:,:,:,:)   :: flx => null()
-  real, pointer, dimension(:,:,:,:)   :: fly => null()
-  real, pointer, dimension(:,:,:,:)   :: flz => null()
+  real, pointer, dimension(:,:,:,:)   :: flx !=> null()
+  real, pointer, dimension(:,:,:,:)   :: fly !=> null()
+  real, pointer, dimension(:,:,:,:)   :: flz !=> null()
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
   real, target, dimension(0,0,0,0)   :: empty4
 
-  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrch_Ptr     => null()
+  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr !=> null()
+  real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr !=> null()
+  real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr !=> null()
+  real, pointer, dimension(:,:,:,:) :: scrch_Ptr     !=> null()
   real, pointer, dimension(:,:,:,:,:) :: hy_SpcR     => null()
   real, pointer, dimension(:,:,:,:,:) :: hy_SpcL     => null()
   real, pointer, dimension(:,:,:,:,:) :: hy_SpcSig   => null()
 
   integer :: updateMode ! will be set to one of UPDATE_ALL, UPDATE_INTERIOR, UPDATE_BOUND
 
+  scrchFaceXPtr => null()
+  scrchFaceYPtr => null()
+  scrchFaceZPtr => null()
+  scrch_Ptr     => null()
   nullify(flx)
   nullify(fly)
   nullify(flz)
