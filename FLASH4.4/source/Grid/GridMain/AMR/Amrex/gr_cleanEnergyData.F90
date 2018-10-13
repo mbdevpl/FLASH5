@@ -90,6 +90,14 @@ subroutine gr_cleanEnergyData(smallE, &
     do   j = lo(JAXIS), hi(JAXIS) 
       do i = lo(IAXIS), hi(IAXIS)
         if (d(i,j,k,ENER_VAR) < smallE*0.999999999) then
+           ! The factor 0.999999999 is used to avoid triggering aborts
+           ! when some physics code, in particular in the Eos unit,
+           ! has put a floor of smallE under a very low internal
+           ! energy and this then becomes even slightly smaller as a
+           ! result of rounding. If it is intended that situations
+           ! like that produce messages or aborts, it should be the
+           ! responsibility of the physics unit that applied the
+           ! smallE floor to take care that that happens.
           if      (gr_sanitizeDataMode == 3) then
             write(*,*) "WARNING: [gr_cleanEnergyData]"
             write(*,*) "         Total energy data less than smalle:", d(i,j,k,ENER_VAR)
@@ -108,6 +116,7 @@ subroutine gr_cleanEnergyData(smallE, &
     do   j = lo(JAXIS), hi(JAXIS) 
       do i = lo(IAXIS), hi(IAXIS)
         if (d(i,j,k,EINT_VAR) < smallE*0.999999999) then
+           ! For the factor 0.999999999 see above.
           if      (gr_sanitizeDataMode == 3) then
             write(*,*) "WARNING: [gr_cleanEnergyData]"
             write(*,*) "         Internal energy data less than smalle:", d(i,j,k,EINT_VAR)
