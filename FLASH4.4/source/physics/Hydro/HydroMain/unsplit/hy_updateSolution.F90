@@ -157,16 +157,16 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 
   integer, dimension(MDIM) :: datasize
 
-  real, pointer, dimension(:,:,:,:)   :: flx => null() 
-  real, pointer, dimension(:,:,:,:)   :: fly => null() 
-  real, pointer, dimension(:,:,:,:)   :: flz => null()
+  real, pointer, dimension(:,:,:,:)   :: flx !=> null()
+  real, pointer, dimension(:,:,:,:)   :: fly !=> null()
+  real, pointer, dimension(:,:,:,:)   :: flz !=> null()
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
   real, allocatable :: faceAreas(:,:,:)
 
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr => null()
   real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr => null()
   real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrch_Ptr     => null()
+  real, pointer, dimension(:,:,:,:) :: scrch_Ptr     !=> null()
   real, pointer, dimension(:,:,:,:,:) :: hy_SpcR     => null()
   real, pointer, dimension(:,:,:,:,:) :: hy_SpcL     => null()
   real, pointer, dimension(:,:,:,:,:) :: hy_SpcSig   => null()
@@ -176,6 +176,11 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 
 
   call Timers_start("update solution body")
+
+  flx => null()
+  fly => null()
+  flz => null()
+  scrch_Ptr     => null()
 
   loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
   loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
