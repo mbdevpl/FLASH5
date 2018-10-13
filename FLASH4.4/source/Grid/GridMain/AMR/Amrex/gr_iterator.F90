@@ -68,7 +68,7 @@ module gr_iterator
     !!        1-based level indexing.
     !!****
     type, public :: gr_iterator_t
-        type(block_1lev_iterator_t), private, allocatable :: li(:)
+        type(block_1lev_iterator_t), private, pointer :: li(:)
         integer,                     private              :: first_level = INVALID_LEVEL
         integer,                     private              :: last_level  = INVALID_LEVEL
         integer,                     private              :: level       = INVALID_LEVEL
@@ -191,7 +191,7 @@ contains
 
       integer :: lev
 
-      if (allocated(itor%li)) then
+      if (associated(itor%li)) then
          do lev = itor%first_level, itor%last_level
 
             call itor%li(lev)%destroy_iterator()

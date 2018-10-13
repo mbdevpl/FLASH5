@@ -26,6 +26,11 @@ ELSE
 ENDIF
 LINKIF Grid_dump.F90               Grid/GridMain/AMR/paramesh
 
+USESETUPVARS threadBlockList
+IF threadBlockList and withHydro
+   LINKIF hy_advance.F90.tryOMP	physics/Hydro/HydroMain/unsplit
+ENDIF
+
 D sim_pAmbient       Initial ambient pressure
 PARAMETER sim_pAmbient     REAL    1.E-5
 
