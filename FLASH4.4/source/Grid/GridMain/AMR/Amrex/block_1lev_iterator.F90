@@ -19,6 +19,7 @@
 
 #include "FortranLangFeatures.fh"
 #include "constants.h"
+#define DEBUG_ITERATOR
 
 module block_1lev_iterator
 
@@ -26,7 +27,7 @@ module block_1lev_iterator
     use amrex_multifab_module, ONLY : amrex_mfiter, &
                                       amrex_mfiter_build, &
                                       amrex_mfiter_destroy
-
+    use iso_c_binding,         ONLY : c_associated
     implicit none
 
     private
@@ -117,17 +118,21 @@ contains
             this%level = level
         end if
  
-        allocate(this%mfi)
+        if (c_associated(mf%p)) then
 
-        ! DEVNOTE: the AMReX iterator is not built based on nodetype.
-        ! It appears that we get leaves every time.  !DEV: REALLY? Not ALL_BLKS??
+           allocate(this%mfi)
 
         ! Initial iterator is not primed.  Advance to first compatible block.
-        call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
-        this%mf => mf
+           call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
+           this%mf => mf
 !!$        print*,'block_1lev_iterator: init_iterator_mf  on this=',this%isValid,this%level,associated(this%mfi)
-        this%isValid = .TRUE.
-        call this%next()
+           this%isValid = .TRUE.
+           call this%next()
+        else
+#ifdef DEBUG_ITERATOR
+         print*,"[init_iterator] INFO: multifab mf is not valid, this level is",this%level
+#endif
+      end if
   end function init_iterator_mf
 
     function init_iterator(nodetype, level, tiling) result(this)
@@ -145,7 +150,10 @@ contains
       this%finest_grid_level = amrex_get_finest_level() ! 0-based finest existing level
       finest_level = this%finest_grid_level + 1 ! level and finest_level are 1-based
       if (level > finest_level) then
-        call Driver_abortFlash("[init_iterator] No unk multifab for level")
+#ifdef DEBUG_ITERATOR
+         print*,"[init_iterator] INFO: skipping level",level," finest_level is",finest_level
+#endif
+         RETURN                 !Skip the rest of initialization, leaving isValid false.
       end if
 
       this%nodetype = nodetype
@@ -157,14 +165,21 @@ contains
         call Driver_abortFlash("[init_iterator] Destroy iterator before initializing again")
       end if
 
-      allocate(this%mfi)
-      call amrex_mfiter_build(this%mfi, this%mf, tiling=tiling)
+      if (c_associated(this%mf%p)) then
 
-      ! Set to True so that next() works
-      this%isValid = .TRUE.
+         allocate(this%mfi)
+         call amrex_mfiter_build(this%mfi, this%mf, tiling=tiling)
 
-      ! Initial MFIter is not primed.  Advance to first compatible block.
-      call this%next()
+         ! Set to True so that next() works
+         this%isValid = .TRUE.
+
+         ! Initial MFIter is not primed.  Advance to first compatible block.
+         call this%next()
+      else
+#ifdef DEBUG_ITERATOR
+         print*,"[init_iterator] INFO: unk(level-1) is not valid for level",level
+#endif
+      end if
     end function init_iterator
 
     !!****im* block_1lev_iterator_t/destroy_iterator

@@ -361,13 +361,16 @@ contains
         box = this%li( this%level )%tilebox()
         fabbox=this%li(this%level )%fabbox()
 
-        ! TODO: Determine if box contains GC or not
         blockDesc%grid_index        = this%li( this%level )%grid_index()
         blockDesc%level             = this%level
-        blockDesc%limits(LOW, :)    = box%lo
-        blockDesc%limits(HIGH, :)   = box%hi
-        blockDesc%limitsGC(LOW, :)  = fabbox%lo
-        blockDesc%limitsGC(HIGH, :) = fabbox%hi
+
+        ! FLASH uses 1-based spatial indices / AMReX uses 0-based
+        blockDesc%limits(:, :) = 1
+        blockDesc%limits(LOW,  1:N_DIM) = box%lo(1:N_DIM) + 1
+        blockDesc%limits(HIGH, 1:N_DIM) = box%hi(1:N_DIM) + 1
+        blockDesc%limitsGC(:, :) = 1
+        blockDesc%limitsGC(LOW,  1:N_DIM) = fabbox%lo(1:N_DIM) + 1
+        blockDesc%limitsGC(HIGH, 1:N_DIM) = fabbox%hi(1:N_DIM) + 1
 
         blockDesc%localLimits(LOW, :)   = blockDesc%limits(LOW, :)   - blockDesc%limitsGC(LOW, :) + 1
         blockDesc%localLimits(HIGH, :)  = blockDesc%limits(HIGH, :)  - blockDesc%limitsGC(LOW, :) + 1
