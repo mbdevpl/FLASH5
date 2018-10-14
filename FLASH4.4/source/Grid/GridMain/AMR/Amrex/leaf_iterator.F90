@@ -75,9 +75,11 @@ module leaf_iterator
     !!  This class maintains a set of single-level iterators, which are used
     !!  internally to walk blocks/tiles.
     !!
+    !!  NOTE: The three level integers as well as the index of li use FLASH's
+    !!        1-based level indexing.
     !!****
     type, public :: leaf_iterator_t
-        type(block_1lev_iterator_t),allocatable :: li(:)
+        type(block_1lev_iterator_t), private, pointer :: li(:)
         integer                 :: first_level   = INVALID_LEVEL
         integer                 :: last_level    = INVALID_LEVEL
         integer                 :: level    = INVALID_LEVEL
@@ -264,7 +266,7 @@ contains
 
       integer :: lev
 
-      if (allocated(itor%li)) then
+      if (associated(itor%li)) then
          do lev = itor%first_level, itor%last_level
 
             call itor%li(lev)%destroy_iterator()
