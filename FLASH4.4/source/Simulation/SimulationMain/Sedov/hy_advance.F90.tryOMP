@@ -7,13 +7,13 @@ subroutine hy_advance(simTime, dt, dtOld)
                                   Grid_zeroFluxData, &
                                   Grid_getBlkPtr,&
                                   Grid_releaseBlkPtr,&
+                                  Grid_getLeafIterator, Grid_releaseLeafIterator,&
                                   Grid_getMaxRefinement, Grid_conserveFluxes, Grid_putFluxData
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use hy_interface,        ONLY : hy_computeFluxes, hy_updateSolution
   use hy_memInterface,     ONLY : hy_memAllocScratch,      &
                                   hy_memDeallocScratch
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
-  use gr_iterator, ONLY : gr_iterator_t
+  use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Hydro_data, ONLY : hy_fluxCorrect, hy_fluxCorrectPerLevel
   use Hydro_data, ONLY : hy_threadBlockList
@@ -30,7 +30,7 @@ subroutine hy_advance(simTime, dt, dtOld)
 
   integer:: level, maxLev
   
-  type(gr_iterator_t)  :: itor
+  type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
   call Grid_zeroFluxData
@@ -45,7 +45,7 @@ subroutine hy_advance(simTime, dt, dtOld)
      !$omp private(itor,blockDesc,level,blkLimits,blkLimitsGC,&
      !$omp Uin,del,Uout) &
      !$omp shared(simTime,dt,dtOld,sweepDummy)
-     call gr_getBlkIterator(itor,nodetype=LEAF)
+     call Grid_getLeafIterator(itor)
      call Timers_start("hy_advance")
      do while(itor%is_valid())
         call itor%blkMetaData(blockDesc)
@@ -64,7 +64,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         call itor%next()
      end do
      call Timers_stop("hy_advance")
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseLeafIterator(itor)
      !$omp end parallel
 
      RETURN                     ! DONE, return from here!
@@ -79,7 +79,7 @@ subroutine hy_advance(simTime, dt, dtOld)
   if (.NOT. hy_fluxCorrectPerLevel) then
 
      call Timers_start("compute fluxes")
-     call gr_getBlkIterator(itor,nodetype=LEAF)
+     call Grid_getLeafIterator(itor)
      do while(itor%is_valid())
         call itor%blkMetaData(blockDesc)
 
@@ -100,7 +100,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         call itor%next()
      end do
      call Timers_stop("compute fluxes")
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseLeafIterator(itor)
 
      if (hy_fluxCorrect) then
         call Grid_putFluxData(level=UNSPEC_LEVEL)
@@ -109,7 +109,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         call Timers_stop("conserveFluxes")
      end if
 
-     call gr_getBlkIterator(itor,nodetype=LEAF)
+     call Grid_getLeafIterator(itor)
      call Timers_start("update solution")
      do while(itor%is_valid())
         call itor%blkMetaData(blockDesc)
@@ -131,7 +131,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         call itor%next()
      end do
      call Timers_stop("update solution")
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseLeafIterator(itor)
 
 !!$     call hy_memDeallocScratch(SCRATCH_CTR) !done in Hydro_freeBuffers
      RETURN                     ! DONE, return from here!
@@ -156,7 +156,7 @@ subroutine hy_advance(simTime, dt, dtOld)
      
      call Timers_start("compute fluxes")
      call Grid_getDeltas(level,del)
-     call gr_getBlkIterator(itor,nodetype=LEAF, level=level)
+     call Grid_getLeafIterator(itor, level=level)
      do while(itor%is_valid())
         call itor%blkMetaData(blockDesc)
         
@@ -174,7 +174,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         call Grid_releaseBlkPtr(blockDesc, Uin)
         call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseLeafIterator(itor)
      !$omp barrier
      call Timers_stop("compute fluxes")
 
@@ -194,7 +194,7 @@ subroutine hy_advance(simTime, dt, dtOld)
      end if
      !$omp end single
 
-     call gr_getBlkIterator(itor,nodetype=LEAF, level=level)
+     call Grid_getLeafIterator(itor, level=level, tiling=.TRUE.)
      call Timers_start("update solution")
      do while(itor%is_valid())
         call itor%blkMetaData(blockDesc)
@@ -210,7 +210,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         call itor%next()
      end do
      call Timers_stop("update solution")
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseLeafIterator(itor)
 
 #ifdef DEBUG_DRIVER
      print*, 'return from Hydro/MHD timestep'  ! DEBUG
