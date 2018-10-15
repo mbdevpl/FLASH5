@@ -1,6 +1,5 @@
 #include "Flash.h"
 #include "constants.h"
-#include "UHD.h"
 
 subroutine hy_advance(simTime, dt, dtOld)
 
@@ -176,7 +175,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         call Timers_stop("conserveFluxes")
      end if
 
-     call Grid_getLeafIterator(itor, level=level)
+     call Grid_getLeafIterator(itor, level=level, tiling=.TRUE.)
      call Timers_start("update solution")
      do while(itor%is_valid())
         call itor%blkMetaData(blockDesc)
@@ -198,8 +197,8 @@ subroutine hy_advance(simTime, dt, dtOld)
      print*, 'return from Hydro/MHD timestep'  ! DEBUG
      print*,'returning from hydro myPE=',dr_globalMe
 #endif
-     
-     
+
+
   end do
   
 !!$  call hy_memDeallocScratch(SCRATCH_CTR) ! done in Hydro_freeBuffers
