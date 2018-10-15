@@ -194,7 +194,7 @@ subroutine hy_advance(simTime, dt, dtOld)
      end if
      !$omp end single
 
-     call Grid_getLeafIterator(itor, level=level)
+     call Grid_getLeafIterator(itor, level=level, tiling=.TRUE.)
      call Timers_start("update solution")
      do while(itor%is_valid())
         call itor%blkMetaData(blockDesc)
