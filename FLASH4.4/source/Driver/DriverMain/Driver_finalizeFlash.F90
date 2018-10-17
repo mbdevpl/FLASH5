@@ -21,7 +21,6 @@ subroutine Driver_finalizeFlash()
   use Eos_interface, ONLY : Eos_finalize
   use Driver_interface, ONLY : Driver_finalizeSourceTerms
   use NSE_interface, ONLY: NSE_finalize
-  use PlasmaState_interface, ONLY: PlasmaState_finalize
   use RuntimeParameters_interface, ONLY : RuntimeParameters_finalize
   use Multispecies_interface, ONLY : Multispecies_finalize
   use Particles_interface, ONLY : Particles_finalize
@@ -50,8 +49,6 @@ implicit none
   call Driver_finalizeSourceTerms( dr_restart) ! some of these exist only as stubs
 
   call NSE_finalize()             ! NSE material property
-
-  call PlasmaState_finalize()     ! Plasma state utility unit
 
   call Grid_finalize()            ! Grid package
  
