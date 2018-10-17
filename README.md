@@ -1,4 +1,4 @@
-# FLASH-subset
+# FLASH5
 
 ## Git/Testing Workflow
 
