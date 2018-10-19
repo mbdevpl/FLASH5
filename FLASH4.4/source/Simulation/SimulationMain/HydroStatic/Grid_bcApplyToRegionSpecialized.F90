@@ -8,6 +8,7 @@
 !!
 !!  call Grid_bcApplyToRegionSpecialized(integer(IN)  :: bcType,
 !!                                       integer(IN)  :: gridDataStruct,
+!!                                       integer(IN)  :: level,
 !!                                       integer(IN)  :: guard,
 !!                                       integer(IN)  :: axis,
 !!                                       integer(IN)  :: face,
@@ -15,11 +16,9 @@
 !!                                       integer(IN)  :: regionSize(:),
 !!                                       logical(IN)  :: mask(:),
 !!                                       logical(OUT) :: applied,
-!!                                       integer(IN)  :: blockHandle,
 !!                                       integer(IN)  :: secondDir,
 !!                                       integer(IN)  :: thirdDir,
 !!                                       integer(IN)  :: endPoints(LOW:HIGH,MDIM),
-!!                                       integer(IN)  :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                              OPTIONAL,integer(IN)  :: idest )
 !!                    
 !!  
@@ -64,6 +63,7 @@
 !!    bcType - the type of boundary condition being applied.
 !!    gridDataStruct - the Grid dataStructure, should be given as
 !!                     one of the contants CENTER, FACEX, FACEY, FACEZ.
+!!    level - the 1-based refinement level on which the regionData is defined
 !!    guard -    number of guardcells
 !!    axis  - the dimension along which to apply boundary conditions,
 !!            can take values of IAXIS, JAXIS and KAXIS
@@ -121,21 +121,6 @@
 !!
 !! 2. ADDITIONAL ARGUMENTS
 !!
-!!  blockHandle - Handle for the block for which guardcells are to be filled.
-!!              In grid implementations other than Paramesh 4, this is always
-!!              a local blockID.
-!!
-!!              With Paramesh 4:
-!!              This may be a block actually residing on the local processor,
-!!              or the handle may refer to a block that belong to a remote processor
-!!              but for which cached information is currently available locally.
-!!              The two cases can be distinguished by checking whether 
-!!              (blockHandle .LE. lnblocks): this is true only for blocks that
-!!              reside on the executing processor.
-!!              The block ID is available for passing on to some handlers for 
-!!              boundary conditions that may need it, ignored in the default 
-!!              implementation.
-!!
 !!  secondDir,thirdDir -   Second and third coordinate directions.
 !!                         These are the transverse directions perpendicular to
 !!                         the sweep direction.
@@ -152,10 +137,6 @@
 !!                          KAXIS   |    IAXIS             JAXIS
 !!
 !!  endPoints - starting and endpoints of the region of interest.
-!!              See also NOTE (1) below.
-!!
-!!  blkLimitsGC - the starting and endpoint of the whole block including
-!!                the guard cells, as returned by Grid_getBlkIndexLimits.
 !!              See also NOTE (1) below.
 !!
 !! NOTES
@@ -190,9 +171,9 @@
 !!***
 
 
-subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
+subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
      guard,axis,face,regionData,regionSize,mask,&
-     applied,blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, idest)
+     applied,secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -203,12 +184,11 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
        sim_molarMass, sim_gasconstant
   use Grid_data, ONLY : gr_myPE
 
-  use Grid_interface, ONLY : Grid_applyBCEdge, Grid_applyBCEdgeAllUnkVars
   use Driver_interface, ONLY : Driver_abortFlash
 
   implicit none
 
-  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
+  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct,level
   integer,intent(IN) :: secondDir,thirdDir
   integer,dimension(REGION_DIM),intent(IN) :: regionSize
   real,dimension(regionSize(BC_DIR),&
@@ -216,8 +196,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
        regionSize(THIRD_DIR),&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
-  integer,intent(IN) :: blockHandle
-  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   logical, intent(OUT) :: applied
   integer,intent(IN),OPTIONAL:: idest
 

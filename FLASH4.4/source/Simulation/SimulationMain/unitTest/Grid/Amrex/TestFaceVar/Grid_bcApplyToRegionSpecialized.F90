@@ -4,23 +4,23 @@
 !!  Grid_bcApplyToRegionSpecialized
 !!
 !! SYNOPSIS
-!!  call Grid_bcApplyToRegionSpecialized(integer(IN)          :: bcType, 
-!!                                       integer(IN)          :: gridDataStruct,
-!!                                       integer(IN)          :: guard,
-!!                                       integer(IN)          :: axis,
-!!                                       integer(IN)          :: face,
-!!                                       real(INOUT)          :: regionData(regionSize(BC_DIR),
-!!                                                                          regionSize(SECOND_DIR), 
-!!                                                                          regionSize(THIRD_DIR),
-!!                                                                          regionSize(STRUCTSIZE))
-!!                                       integer(IN)          :: regionSize(REGION_DIM),
-!!                                       logical(IN)          :: mask(STRUCTSIZE),
-!!                                       logical(OUT)         :: applied,
-!!                                       block_metadata_t(IN) :: blockDesc,
-!!                                       integer(IN)          :: secondDir,
-!!                                       integer(IN)          :: thirdDir,
-!!                                       integer(IN)          :: endPoints(LOW:HIGH, MDIM),
-!!                             optional, integer(IN)          :: idest)
+!!  call Grid_bcApplyToRegionSpecialized(integer(IN)  :: bcType, 
+!!                                       integer(IN)  :: gridDataStruct,
+!!                                       integer(IN)  :: level,
+!!                                       integer(IN)  :: guard,
+!!                                       integer(IN)  :: axis,
+!!                                       integer(IN)  :: face,
+!!                                       real(INOUT)  :: regionData(regionSize(BC_DIR),
+!!                                                                  regionSize(SECOND_DIR), 
+!!                                                                  regionSize(THIRD_DIR),
+!!                                                                  regionSize(STRUCTSIZE))
+!!                                       integer(IN)  :: regionSize(REGION_DIM),
+!!                                       logical(IN)  :: mask(STRUCTSIZE),
+!!                                       logical(OUT) :: applied,
+!!                                       integer(IN)  :: secondDir,
+!!                                       integer(IN)  :: thirdDir,
+!!                                       integer(IN)  :: endPoints(LOW:HIGH, MDIM),
+!!                             optional, integer(IN)  :: idest)
 !!
 !! DESCRIPTION
 !!  This is a custom routine for assigning data to the face-centered data that
@@ -43,24 +43,23 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
+subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, level, &
                                            guard, axis, face, &
                                            regionData, regionSize, &
                                            mask, applied, &
-                                           blockDesc, &
                                            secondDir, thirdDir, &
                                            endPoints, idest)
   use Grid_data,        ONLY : gr_globalDomain 
   use Grid_interface,   ONLY : Grid_getDeltas
-  use block_metadata,   ONLY : block_metadata_t
 
   implicit none
 
   integer,                intent(IN)           :: bcType
+  integer,                intent(IN)           :: gridDataStruct
+  integer,                intent(IN)           :: level
+  integer,                intent(IN)           :: guard
   integer,                intent(IN)           :: axis
   integer,                intent(IN)           :: face
-  integer,                intent(IN)           :: guard
-  integer,                intent(IN)           :: gridDataStruct
   integer,                intent(IN)           :: regionSize(REGION_DIM)
   real,                   intent(INOUT)        :: regionData(regionSize(BC_DIR),     &
                                                              regionSize(SECOND_DIR), &
@@ -68,7 +67,6 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
                                                              regionSize(STRUCTSIZE))
   logical,                intent(IN)           :: mask(regionSize(STRUCTSIZE))
   logical,                intent(OUT)          :: applied
-  type(block_metadata_t), intent(IN)           :: blockDesc
   integer,                intent(IN)           :: secondDir,thirdDir
   integer,                intent(IN)           :: endPoints(LOW:HIGH, MDIM)
   integer,                intent(IN), OPTIONAL :: idest
@@ -116,7 +114,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
   write(*,*) "endPoints High:      ", endPoints(HIGH, :)
 #endif
 
-  call Grid_getDeltas(blockDesc%level, deltas)
+  call Grid_getDeltas(level, deltas)
 
   blkBounds(:, :) = 1.0
   x0(:) = gr_globalDomain(LOW, :)

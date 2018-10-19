@@ -8,6 +8,7 @@
 !!
 !!  call Grid_bcApplyToRegionSpecialized(integer(IN)  :: bcType,
 !!                                       integer(IN)  :: gridDataStruct,
+!!                                       integer(IN)  :: level,
 !!                                       integer(IN)  :: guard,
 !!                                       integer(IN)  :: axis,
 !!                                       integer(IN)  :: face,
@@ -15,11 +16,9 @@
 !!                                       integer(IN)  :: regionSize(:),
 !!                                       logical(IN)  :: mask(:),
 !!                                       logical(OUT) :: applied,
-!!                                       integer(IN)  :: blockHandle,
 !!                                       integer(IN)  :: secondDir,
 !!                                       integer(IN)  :: thirdDir,
 !!                                       integer(IN)  :: endPoints(LOW:HIGH,MDIM),
-!!                                       integer(IN)  :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                              OPTIONAL,integer(IN)  :: idest )
 !!                    
 !!  
@@ -64,6 +63,7 @@
 !!    bcType - the type of boundary condition being applied.
 !!    gridDataStruct - the Grid dataStructure, should be given as
 !!                     one of the contants CENTER, FACEX, FACEY, FACEZ.
+!!    level - the 1-based refinement level on which the regionData is defined
 !!    guard -    number of guardcells
 !!    axis  - the dimension along which to apply boundary conditions,
 !!            can take values of IAXIS, JAXIS and KAXIS
@@ -111,8 +111,6 @@
 !!
 !! 2. ADDITIONAL ARGUMENTS
 !!
-!!  blockHandle - the local block number
-!!
 !!  NOTES 
 !!
 !!            This routine is common to all the mesh packages supported.
@@ -127,9 +125,9 @@
 !!***
 
 
-subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
+subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
      guard,axis,face,regionData,regionSize,mask,&
-     applied,blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, idest)
+     applied,secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -144,7 +142,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
 
   implicit none
 
-  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
+  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct,level
   integer,intent(IN) :: secondDir,thirdDir
   integer,dimension(REGION_DIM),intent(IN) :: regionSize
   real,dimension(regionSize(BC_DIR),&
@@ -152,8 +150,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
        regionSize(THIRD_DIR),&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
-  integer,intent(IN) :: blockHandle
-  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   logical, intent(OUT) :: applied
   integer,intent(IN),OPTIONAL:: idest
 

@@ -176,12 +176,12 @@ subroutine gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
 !!$       blockDesc,nextDir(1),nextDir(2),endpointsCtr,blkLimitsGC, idest)
 !!$  end if
   applied = .TRUE.
-  call Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,&
+  call Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,blockDesc%level,&
           guard,axis,face,&
           regionDataC,regionDataFN,regionDataFT1,regionDataFT2,&
           regionSizeCtr,&
           applied,&
-       blockDesc,nextDir(1),nextDir(2),endpointsCtr,rightHanded,idest)
+          nextDir(1),nextDir(2),endpointsCtr,rightHanded,idest)
   if(.not.applied) then
      print*,'gr_bcApplyToOneFace: Unhandled boundary type',bcType, 'axis,regionType=',axis,regionType(axis)
      if (regionType(axis)==LEFT_EDGE) then

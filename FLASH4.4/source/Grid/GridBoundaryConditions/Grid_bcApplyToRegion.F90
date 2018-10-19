@@ -7,6 +7,7 @@
 !!
 !!  call Grid_bcApplyToRegion(integer(IN)           :: bcType,
 !!                            integer(IN)           :: gridDataStruct,
+!!                            integer(IN)           :: level,
 !!                            integer(IN)           :: guard,
 !!                            integer(IN)           :: axis,
 !!                            integer(IN)           :: face,
@@ -14,7 +15,6 @@
 !!                            integer(IN)           :: regionSize(:),
 !!                            logical(IN)           :: mask(:),
 !!                            logical(OUT)          :: applied,
-!!                            block_metadata_t(IN)  :: blockDesc,
 !!                            integer(IN)           :: secondDir,
 !!                            integer(IN)           :: thirdDir,
 !!                            integer(IN)           :: endPoints(LOW:HIGH,MDIM),
@@ -66,7 +66,7 @@
 !!  other grid information, such as cell coordinates, etc.  Currently
 !!  supported simple boundary conditions include "OUTFLOW", "REFLECTING" and
 !!  "DIODE".
-!!  Additional dummy arguments blockDesc, secondDir, thirdDir, and endPoints
+!!  Additional dummy arguments secondDir, thirdDir, and endPoints
 !!  are not needed for these simple kinds of BCs, but can be
 !!  used by alternative implementations for BC types that do need coordinate
 !!  information, etc.
@@ -82,6 +82,7 @@
 !!  gridDataStruct - the Grid dataStructure, should be given as
 !!                   one of the constants CENTER, FACEX, FACEY, FACEZ
 !!                   (or, with some Grid implementations, WORK).
+!!  level - the 1-based refinement level on which the regionData is defined
 !!  guard -    number of guard cells
 !!  axis  - the direction along which to apply boundary conditions,
 !!          can take values of IAXIS, JAXIS and KAXIS
@@ -114,21 +115,6 @@
 !!         guard cells will be left undisturbed.
 !!  applied - is set true if this routine has handled the given bcType, otherwise it is 
 !!            set to false.
-!!
-!!  blockDesc - Derived type that encapsulates metadata that uniquely
-!!              characterizes local block to be operated on
-!!
-!!              With Paramesh 4:
-!!              This may be a block actually residing on the local processor,
-!!              or the handle may refer to a block that belong to a remote processor
-!!              but for which cached information is currently available locally.
-!!              The two cases can be distinguished by checking whether 
-!!              (blockHandle .LE. lnblocks): this is true only for blocks that
-!!              reside on the executing processor.
-!!              The block ID is available for passing on to some handlers for 
-!!              boundary conditions that may need it, ignored in the default 
-!!              implementation.
-!!
 !!  secondDir,thirdDir -   Second and third coordinate directions.
 !!                         These are the transverse directions perpendicular to
 !!                         the sweep direction.  SecondDir and thirdDir give
@@ -204,9 +190,9 @@
 !!
 !!***
 
-subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
+subroutine Grid_bcApplyToRegion(bcType,gridDataStruct, level, &
           guard,axis,face,regionData,regionSize,mask,applied,&
-     blockDesc,secondDir,thirdDir,endPoints,idest)
+          secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -216,11 +202,10 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   use Grid_interface, ONLY : Grid_getGeometry
   use Grid_data, ONLY : gr_dirGeom, &
        gr_smallrho, gr_smallE
-  use block_metadata, ONLY : block_metadata_t
 
   implicit none
   
-  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
+  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct, level
   integer,dimension(REGION_DIM),intent(IN) :: regionSize
   real,dimension(regionSize(BC_DIR),&
        regionSize(SECOND_DIR),&
@@ -228,7 +213,6 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
-  type(block_metadata_t),intent(IN) :: blockDesc
   integer,intent(IN) :: secondDir,thirdDir
   integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest
@@ -238,10 +222,6 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   logical :: isFace
   integer :: sign
   real    :: smallP
-
-  integer :: blkLimitsGC(LOW:HIGH, MDIM)
- 
-  blkLimitsGC = blockDesc%limitsGC
 
   call Grid_getGeometry(geometry)
 

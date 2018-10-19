@@ -75,7 +75,6 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                        Grid_bcApplyToRegionSpecialized
     use gr_amrexInterface,      ONLY : gr_copyFabInteriorToRegion, &
                                        gr_copyGuardcellRegionToFab
-    use block_metadata,         ONLY : block_metadata_t 
 
     implicit none
 
@@ -91,7 +90,6 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     integer                :: gds
     type(amrex_mfiter)     :: mfi
     type(amrex_box)        :: box
-    type(block_metadata_t) :: blockDesc
    
     type(amrex_box) :: goodData
     type(amrex_box) :: nextGoodData
@@ -312,19 +310,6 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              endPts(LOW,  1:NDIM) = bcData%lo(1:NDIM) + 1
              endPts(HIGH, 1:NDIM) = bcData%hi(1:NDIM) + 1
 
-             ! The AMReX team has informed me that it is possible that any given
-             ! box might not be contained in a single block.  There is no clear
-             ! parent-child relationship.
-             !
-             ! Therefore, this object is useless.
-             ! DEV: TODO Remove the blockDesc from the Grid_bcApplyToRegion
-             ! interface.   Pass level instead so that Specialized forms of this
-             ! routine can access the deltas for computing physical coordinates.
-             blockDesc%level = level
-             blockDesc%grid_index = -1
-             blockDesc%limits(:,  :)   = 1
-             blockDesc%limitsGC(:,  :) = 1
-
              ! Create buffer to hold data with indices permuted for use with
              ! Grid_bcApplyToRegion
              regionSize(BC_DIR)     = endPts(HIGH, axis)  - endPts(LOW, axis)  + 1
@@ -349,19 +334,19 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              ! Let simulation do BC fill if so desired
              applied = .FALSE.
              call Grid_bcApplyToRegionSpecialized(gr_domainBC(face, axis), &
-                                                  gds, NGUARD, &
+                                                  gds, level, NGUARD, &
                                                   axis, face, &
                                                   regionData, regionSize, &
-                                                  mask, applied, blockDesc, &
+                                                  mask, applied, &
                                                   axis2, axis3, endPts, 0)
 
              if (.NOT. applied) then
                 ! Have FLASH fill GC in special data buffer
                 call Grid_bcApplyToRegion(gr_domainBC(face, axis), &
-                                          gds, NGUARD, &
+                                          gds, level, NGUARD, &
                                           axis, face, &
                                           regionData, regionSize, &
-                                          mask, applied, blockDesc, &
+                                          mask, applied, &
                                           axis2, axis3, endPts, 0)
              end if
 
