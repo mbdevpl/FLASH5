@@ -230,29 +230,16 @@ module gr_amrexInterface
   end interface
  
   interface
-    subroutine gr_splitFabAtBoundary(face, axis, patch, delta, &
-                                     interior, guardcells, hasGC)
-      implicit none
-      integer, intent(IN)  :: face
-      integer, intent(IN)  :: axis
-      integer, intent(IN)  :: patch(LOW:HIGH, 1:MDIM)
-      real,    intent(IN)  :: delta(1:MDIM)
-      integer, intent(OUT) :: interior(LOW:HIGH, 1:MDIM)
-      integer, intent(OUT) :: guardcells(LOW:HIGH, 1:MDIM)
-      logical, intent(OUT) :: hasGC
-    end subroutine gr_splitFabAtBoundary
-  end interface
-
-  interface
     subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
                                           scomp, ncomp, region)
       use amrex_fort_module, ONLY : wp => amrex_real
+      use amrex_box_module,  ONLY : amrex_box
       implicit none
       real(wp), pointer, contiguous, intent(IN)    :: fab(:, :, :, :)
       integer,                       intent(IN)    :: gds
       integer,                       intent(IN)    :: face
       integer,                       intent(IN)    :: axis
-      integer,                       intent(IN)    :: interior(LOW:HIGH, 1:MDIM)
+      type(amrex_box),               intent(IN)    :: interior
       integer,                       intent(IN)    :: scomp
       integer,                       intent(IN)    :: ncomp
       real(wp), pointer, contiguous, intent(INOUT) :: region(:, :, :, :)
@@ -263,15 +250,16 @@ module gr_amrexInterface
     subroutine gr_copyGuardcellRegionToFab(region, gds, face, axis, guardcells, &
                                            scomp, ncomp, fab)
       use amrex_fort_module, ONLY : wp => amrex_real
+      use amrex_box_module,  ONLY : amrex_box
       implicit none
-      real(wp), intent(IN),    pointer, contiguous :: region(:, :, :, :)
-      integer,  intent(IN)                         :: gds
-      integer,  intent(IN)                         :: face
-      integer,  intent(IN)                         :: axis
-      integer,  intent(IN)                         :: guardcells(LOW:HIGH, 1:MDIM)
+      real(wp), pointer, contiguous, intent(IN)    :: region(:, :, :, :)
+      integer,                       intent(IN)    :: gds
+      integer,                       intent(IN)    :: face
+      integer,                       intent(IN)    :: axis
+      type(amrex_box),               intent(IN)    :: guardcells
       integer,                       intent(IN)    :: scomp
       integer,                       intent(IN)    :: ncomp
-      real(wp), intent(INOUT), pointer, contiguous :: fab(:, :, :, :)
+      real(wp), pointer, contiguous, intent(INOUT) :: fab(:, :, :, :)
     end subroutine gr_copyGuardcellRegionToFab
   end interface
 

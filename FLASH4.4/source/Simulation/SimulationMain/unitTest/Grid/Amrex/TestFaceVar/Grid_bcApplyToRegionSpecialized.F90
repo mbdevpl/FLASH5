@@ -51,10 +51,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
                                            secondDir, thirdDir, &
                                            endPoints, idest)
   use Grid_data,        ONLY : gr_globalDomain 
-  use Grid_interface,   ONLY : Grid_getBlkBC, &
-                               Grid_getSingleCellCoords, &
-                               Grid_getBlkBoundBox, &
-                               Grid_getDeltas
+  use Grid_interface,   ONLY : Grid_getDeltas
   use block_metadata,   ONLY : block_metadata_t
 
   implicit none
@@ -77,6 +74,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
   integer,                intent(IN), OPTIONAL :: idest
 
   integer :: i, j, k, var
+  integer :: i_global, j_global, k_global
   integer :: axis2, axis3
   logical :: isOnBoundary
   logical :: containsBoundary(LOW:HIGH, 1:MDIM)
@@ -114,11 +112,20 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
   end if
   write(*,*) "NGUARD = ", guard
 
-  write(*,*) "Box Low:       ", blockDesc%limits(LOW, :)
-  write(*,*) "Box High:      ", blockDesc%limits(HIGH, :)
+  write(*,*) "endPoints Low:       ", endPoints(LOW, :)
+  write(*,*) "endPoints High:      ", endPoints(HIGH, :)
 #endif
 
-  call Grid_getBlkBoundBox(blockDesc, blkBounds)
+  call Grid_getDeltas(blockDesc%level, deltas)
+
+  blkBounds(:, :) = 1.0
+  x0(:) = gr_globalDomain(LOW, :)
+  associate(lo   => endPoints(LOW,  :), &
+            hi   => endPoints(HIGH, :))
+    blkBounds(LOW,  1:NDIM) = x0(1:NDIM) + (lo(1:NDIM) - 1)*deltas(1:NDIM)
+    blkBounds(HIGH, 1:NDIM) = x0(1:NDIM) + (hi(1:NDIM)    )*deltas(1:NDIM)
+  end associate 
+
   associate(lo => blkBounds(LOW,  :), &
             hi => blkBounds(HIGH, :))
     ! DEV: TODO These should be made inexact
@@ -141,8 +148,6 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
   ! Update data on boundary to see if it is being correctly transferred
   ! back to data structures
   if (isOnBoundary) then
-    call Grid_getSingleCellCoords([1,1,1], blockDesc, CENTER, INTERIOR, x0)
-    call Grid_getDeltas(blockDesc%level, deltas)
 
     ! Set all face-centered values on domain boundary to zero.  Those
     ! coplanar to, but not on the boundary are considered guardcells
@@ -151,30 +156,30 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
     else
       i = regionSize(BC_DIR) - NGUARD
     end if
-
+   
     do     var = 1, regionSize(STRUCTSIZE)
       do     k = 1, regionSize(THIRD_DIR)
         do   j = 1, regionSize(SECOND_DIR)
-          ! Determine location of current face in global index space
           if      (axis == IAXIS) then
-            coord(IAXIS) = x0(IAXIS) + (i - 1.5)*deltas(IAXIS)
-            coord(JAXIS) = x0(JAXIS) + (j - 1.0)*deltas(JAXIS)
-            coord(KAXIS) = x0(KAXIS) + (k - 1.0)*deltas(KAXIS)
             axis2 = JAXIS
             axis3 = KAXIS
           else if (axis == JAXIS) then
-            coord(IAXIS) = x0(IAXIS) + (j - 1.0)*deltas(IAXIS)
-            coord(JAXIS) = x0(JAXIS) + (i - 1.5)*deltas(JAXIS)
-            coord(KAXIS) = x0(KAXIS) + (k - 1.0)*deltas(KAXIS)
             axis2 = IAXIS
             axis3 = KAXIS
           else
-            coord(IAXIS) = x0(IAXIS) + (j - 1.0)*deltas(IAXIS)
-            coord(JAXIS) = x0(JAXIS) + (k - 1.0)*deltas(JAXIS)
-            coord(KAXIS) = x0(KAXIS) + (i - 1.5)*deltas(KAXIS)
             axis2 = IAXIS
             axis3 = JAXIS
           end if
+          
+          ! Determine location of current face in global index space
+          i_global = endPoints(LOW, axis ) + i - 1
+          j_global = endPoints(LOW, axis2) + j - 1
+          k_global = endPoints(LOW, axis3) + k - 1
+
+          ! Get coordinate of face
+          coord(axis ) = x0(axis ) + (i_global - 1.0)*deltas(axis )
+          coord(axis2) = x0(axis2) + (j_global - 0.5)*deltas(axis2)
+          coord(axis3) = x0(axis3) + (k_global - 0.5)*deltas(axis3)
 
           ! By construction, the face is coplanar to boundary.  Check if
           ! it is actually on boundary.
