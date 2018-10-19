@@ -12,7 +12,6 @@
 !!                   real(INOUT),dimension(:) :: dataRow(2*guard),
 !!                   integer(IN)              :: face,
 !!                   integer(IN)              :: gridDataStruct,
-!!                   integer(IN),OPTIONAL     :: blockHandle,
 !!                   real(in),OPTIONAL    :: secondCoord,
 !!                   real(in),OPTIONAL    :: thirdCoord)
 !!  
@@ -69,7 +68,6 @@
 !!                   FACEX  face centered variable on faces normal to IAXIS
 !!                   FACEY  face centered variable on faces normal to JAXIS
 !!                   FACEZ  face centered variable on faces normal to KAXIS
-!!  blockHandle : the identity of the block being processed
 !!  secondCoord,thirdCoord - scalar coordinate values in the coordinate
 !!                         directions perpendicular to the sweep direction.
 !!                         This is not needed for simple boundary condition types
@@ -112,7 +110,7 @@
 #endif
 
 subroutine Grid_applyBCEdge(bcType,bcDir,guard,var,dataRow,face,&
-     gridDataStruct, blockHandle, secondCoord, thirdCoord)
+     gridDataStruct, secondCoord, thirdCoord)
   use Grid_data, ONLY :gr_meshMe
   use Driver_interface, ONLY : Driver_abortFlash
   implicit none
@@ -121,7 +119,6 @@ subroutine Grid_applyBCEdge(bcType,bcDir,guard,var,dataRow,face,&
 
   integer,intent(IN):: bcType,bcDir,guard,var,face,gridDataStruct
   real,dimension(:),intent(INOUT)::dataRow
-  integer,intent(IN),OPTIONAL :: blockHandle
   real,intent(IN),OPTIONAL :: secondCoord,thirdCoord
   integer :: i,j,k, sign
   logical :: isFace

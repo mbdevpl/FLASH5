@@ -84,21 +84,19 @@ Module Grid_interface
 
   interface
      subroutine Grid_applyBCEdge(bcType,bcDir,guard,var,dataRow,face,&
-          gridDataStruct, blockHandle, secondCoord, thirdCoord)
+          gridDataStruct, secondCoord, thirdCoord)
        integer,intent(IN):: bcType,bcDir,guard,var,face,gridDataStruct
        real,dimension(:),intent(INOUT)::dataRow
-       integer,intent(IN),OPTIONAL:: blockHandle
        real,intent(IN),OPTIONAL :: secondCoord,thirdCoord
      end subroutine Grid_applyBCEdge
   end interface
 
   interface
      subroutine Grid_applyBCEdgeAllUnkVars(bcType,bcDir,guard,dataRow,face,&
-          cellCenterSweepCoord, secondCoord,thirdCoord, blockHandle)
+          cellCenterSweepCoord, secondCoord,thirdCoord)
        integer,intent(IN):: bcType,bcDir,guard,face
        real,dimension(2*guard,NUNK_VARS),intent(INOUT)::dataRow
        real,intent(IN):: cellCenterSweepCoord(*), secondCoord,thirdCoord
-       integer,intent(IN),OPTIONAL:: blockHandle
      end subroutine Grid_applyBCEdgeAllUnkVars
   end interface
 
