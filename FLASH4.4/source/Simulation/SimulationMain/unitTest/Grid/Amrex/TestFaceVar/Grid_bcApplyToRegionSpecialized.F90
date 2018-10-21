@@ -47,10 +47,11 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, level, &
                                            guard, axis, face, &
                                            regionData, regionSize, &
                                            mask, applied, &
-                                           secondDir, thirdDir, &
+                                           axis2, axis3, &
                                            endPoints, idest)
   use Grid_data,        ONLY : gr_globalDomain 
   use Grid_interface,   ONLY : Grid_getDeltas
+  use gr_interface,     ONLY : gr_getRegionDataCoordinates
 
   implicit none
 
@@ -67,20 +68,18 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, level, &
                                                              regionSize(STRUCTSIZE))
   logical,                intent(IN)           :: mask(regionSize(STRUCTSIZE))
   logical,                intent(OUT)          :: applied
-  integer,                intent(IN)           :: secondDir,thirdDir
+  integer,                intent(IN)           :: axis2, axis3
   integer,                intent(IN)           :: endPoints(LOW:HIGH, MDIM)
   integer,                intent(IN), OPTIONAL :: idest
 
   integer :: i, j, k, var
-  integer :: i_global, j_global, k_global
-  integer :: axis2, axis3
   logical :: isOnBoundary
   logical :: containsBoundary(LOW:HIGH, 1:MDIM)
 
   real    :: x0(1:MDIM)
   real    :: blkBounds(LOW:HIGH, 1:MDIM)
   real    :: deltas(1:MDIM)
-  real    :: coord(1:MDIM)
+  real, allocatable :: coordinates(:,:,:,:)
 
 #ifdef DEBUG_GRID
   write(*,*) "Specialized BC Handling"
@@ -154,37 +153,26 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, level, &
     else
       i = regionSize(BC_DIR) - NGUARD
     end if
-   
+
+    allocate(coordinates(SIZE(regionData, 1), &
+                         SIZE(regionData, 2), &
+                         SIZE(regionData, 3), &
+                         1:MDIM))
+
+    call gr_getRegionDataCoordinates(level, gridDataStruct, &
+                                     axis, axis2, axis3, &
+                                     regionSize, endPoints, &
+                                     coordinates)
+
     do     var = 1, regionSize(STRUCTSIZE)
       do     k = 1, regionSize(THIRD_DIR)
         do   j = 1, regionSize(SECOND_DIR)
-          if      (axis == IAXIS) then
-            axis2 = JAXIS
-            axis3 = KAXIS
-          else if (axis == JAXIS) then
-            axis2 = IAXIS
-            axis3 = KAXIS
-          else
-            axis2 = IAXIS
-            axis3 = JAXIS
-          end if
-          
-          ! Determine location of current face in global index space
-          i_global = endPoints(LOW, axis ) + i - 1
-          j_global = endPoints(LOW, axis2) + j - 1
-          k_global = endPoints(LOW, axis3) + k - 1
-
-          ! Get coordinate of face
-          coord(axis ) = x0(axis ) + (i_global - 1.0)*deltas(axis )
-          coord(axis2) = x0(axis2) + (j_global - 0.5)*deltas(axis2)
-          coord(axis3) = x0(axis3) + (k_global - 0.5)*deltas(axis3)
-
           ! By construction, the face is coplanar to boundary.  Check if
           ! it is actually on boundary.
-          if (      (gr_globalDomain(LOW,  axis2) <= coord(axis2)) &
-              .AND. (coord(axis2) <= gr_globalDomain(HIGH, axis2)) &
-              .AND. (gr_globalDomain(LOW,  axis3) <= coord(axis3)) &
-              .AND. (coord(axis3) <= gr_globalDomain(HIGH, axis3))) then
+          if (      (gr_globalDomain(LOW,  axis2) <= coordinates(i,j,k,axis2)) &
+              .AND. (coordinates(i,j,k,axis2) <= gr_globalDomain(HIGH, axis2)) &
+              .AND. (gr_globalDomain(LOW,  axis3) <= coordinates(i,j,k,axis3)) &
+              .AND. (coordinates(i,j,k,axis3) <= gr_globalDomain(HIGH, axis3))) then
             regionData(i, j, k, var) = 0.0
           else
             regionData(i, j, k, var) = 1.1 * var
@@ -192,6 +180,8 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, level, &
         end do
       end do
     end do
+
+    deallocate(coordinates)
   end if
 
   ! Write data to points outside of domain and its boundary
