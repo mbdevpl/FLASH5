@@ -99,8 +99,8 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
 #endif
      call hy_shockDetect()
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
 #endif
   endif
