@@ -274,7 +274,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
   end if
 contains
   pure real function ICOORD_left(i)
-    integer,VALUE :: i
+    integer,VALUE,INTENT(IN) :: i
     integer       :: i0
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        ICOORD_left = ICOORD_OB_LEFT(i)
@@ -285,7 +285,7 @@ contains
     end if
   end function ICOORD_left
   pure real function ICOORD_right(i)
-    integer,VALUE :: i
+    integer,VALUE,INTENT(IN) :: i
     integer       :: i1
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        ICOORD_right = ICOORD_OB_RIGHT(i)
@@ -296,7 +296,7 @@ contains
     end if
   end function ICOORD_right
   pure real function JCOORD_left(i)
-    integer,VALUE :: i
+    integer,VALUE,INTENT(IN) :: i
     integer       :: i0
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        JCOORD_left = JCOORD_OB_LEFT(i)
@@ -307,7 +307,7 @@ contains
     end if
   end function JCOORD_left
   pure real function JCOORD_right(i)
-    integer,VALUE :: i
+    integer,VALUE,INTENT(IN) :: i
     integer       :: i1
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        JCOORD_right = JCOORD_OB_RIGHT(i)
@@ -318,7 +318,7 @@ contains
     end if
   end function JCOORD_right
   pure real function KCOORD_left(i)
-    integer,VALUE :: i
+    integer,VALUE,INTENT(IN) :: i
     integer       :: i0
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        KCOORD_left = KCOORD_OB_LEFT(i)
@@ -329,7 +329,7 @@ contains
     end if
   end function KCOORD_left
   pure real function KCOORD_right(i)
-    integer,VALUE :: i
+    integer,VALUE,INTENT(IN) :: i
     integer       :: i1
     if ((beginCount==EXTERIOR .OR. beginCount==INTERIOR) .AND. blockID > 0) then
        KCOORD_right = KCOORD_OB_RIGHT(i)
