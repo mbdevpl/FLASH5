@@ -1,3 +1,0 @@
-REQUIRES ../../turbulent/tfi
-
-PARAMETER fl_fsUseTFI                BOOLEAN      false

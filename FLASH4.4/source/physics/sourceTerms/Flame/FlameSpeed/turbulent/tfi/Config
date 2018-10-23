@@ -1,3 +1,0 @@
-DEFAULT charlette
-EXCLUSIVE kolmogorov damkohler pocheau charlette
-REQUIRES physics/sourceTerms/Turb/TurbMain
