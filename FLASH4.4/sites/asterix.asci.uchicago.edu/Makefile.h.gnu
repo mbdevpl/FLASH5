@@ -3,17 +3,22 @@
 # Set the HDF5/MPI library paths -- these need to be updated for your system
 #----------------------------------------------------------------------------
 ifeq      ($(NDIM), 1)
-AMREX_PATH=${HOME}/Projects/amrex_install/1D
+  AMREX_PATH=${HOME}/Projects/amrex_install/1D
 else ifeq ($(NDIM), 2)
   ifeq ("$(USEOPENMP)","1")
-  AMREX_PATH=${HOME}/amrex/2d.gnu.DEBUG.MPI.OMP
+    AMREX_PATH=${HOME}/amrex/2d.gnu.DEBUG.MPI.OMP
   else
-  AMREX_PATH=${HOME}/amrex/2d.gnu.DEBUG.MPI
+    AMREX_PATH=${HOME}/amrex/2d.gnu.DEBUG.MPI
   endif
 else ifeq ($(NDIM), 3)
-AMREX_PATH=${HOME}/amrex/3d.gnu.DEBUG.MPI
+  ifeq ("$(USEOPENMP)","1")
+    AMREX_PATH=${HOME}/amrex/3d.gnu.DEBUG.MPI.OMP
+  else
+    AMREX_PATH=${HOME}/amrex/3d.gnu.DEBUG.MPI
+  endif
 else
-AMREX_PATH = /home/home/klaus/amrex/2d.gnu.DEBUG.MPI
+# Fallback, one of the cases above should have matched!
+  AMREX_PATH = ${HOME}/amrex/2d.gnu.DEBUG.MPI
 endif
 
 MPI_PATH   = /opt/openmpi-1.8.6_gcc
