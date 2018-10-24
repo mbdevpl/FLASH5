@@ -9,7 +9,8 @@ AMREX_PATH=${HOME}/amrex/2d.gnu.DEBUG.MPI
 else ifeq ($(NDIM), 3)
 AMREX_PATH=${HOME}/amrex/3d.gnu.DEBUG.MPI
 else
-AMREX_PATH = /home/home/klaus/amrex/2d.gnu.DEBUG.MPI
+# Fallback, one of the cases above should have matched!
+AMREX_PATH = ${HOME}/amrex/2d.gnu.DEBUG.MPI
 endif
 
 MPI_PATH   = /opt/openmpi-1.8.6_gcc
