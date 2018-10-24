@@ -27,7 +27,7 @@ subroutine eos_vecDealloc()
        ptotRow, dptRow, dpdRow, etotRow,&
        detRow, dedRow,  deaRow, dezRow, &
        dstRow, dsdRow,  stotRow, &
-       pelRow, neRow, etaRow, cpRow, cvRow, gamcRow
+       pelRow, neRow, etaRow, detatRow, cpRow, cvRow, gamcRow
 
   implicit none
 
@@ -75,6 +75,7 @@ subroutine eos_vecDealloc()
   deallocate(pelRow)
   deallocate(neRow)
   deallocate(etaRow)
+  deallocate(detatRow)
 
 !..coulomb contributions - all UNUSED and REMOVED
 

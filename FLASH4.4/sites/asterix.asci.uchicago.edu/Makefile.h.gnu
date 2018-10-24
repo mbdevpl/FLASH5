@@ -5,7 +5,11 @@
 ifeq      ($(NDIM), 1)
 AMREX_PATH=${HOME}/Projects/amrex_install/1D
 else ifeq ($(NDIM), 2)
-AMREX_PATH=${HOME}/amrex/2d.gnu.DEBUG.MPI
+  ifeq ("$(USEOPENMP)","1")
+  AMREX_PATH=${HOME}/amrex/2d.gnu.DEBUG.MPI.OMP
+  else
+  AMREX_PATH=${HOME}/amrex/2d.gnu.DEBUG.MPI
+  endif
 else ifeq ($(NDIM), 3)
 AMREX_PATH=${HOME}/amrex/3d.gnu.DEBUG.MPI
 else

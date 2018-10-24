@@ -91,7 +91,7 @@ subroutine gr_splitFabAtBoundary(face, axis, patch, delta, &
         ! Scan for boundary
         hasGC = .FALSE.
         do j = lo, hi
-            coord = x0 + (j + 0.5d0)*dx
+            coord = x0 + (j + 0.5)*dx
             if (ABS(coord - gr_globalDomain(face, axis)) < dx) then
                 if (face == LOW) then
                     guardcells(LOW,  axis) = lo

@@ -90,6 +90,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_preinterpolationWork, &
                                           gr_postinterpolationWork, &
+                                          gr_fillPhysicalFaceBC, &
                                           gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           facevarx, facevary, facevarz, &
@@ -161,18 +162,18 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 #if NFACE_VARS > 0
        call amrex_fillpatch(tmp_facevarx, time+1.0, facevarx(lev), &
                                           time,     facevarx(lev), &
-                                          amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                          amrex_geom(lev), gr_fillPhysicalBC, &
                                           time, 1, 1, NFACE_VARS)       
 #if NDIM >= 2
        call amrex_fillpatch(tmp_facevary, time+1.0, facevary(lev), &
                                           time,     facevary(lev), &
-                                          amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                          amrex_geom(lev), gr_fillPhysicalBC, &
                                           time, 1, 1, NFACE_VARS)       
 #endif
 #if NDIM == 3
        call amrex_fillpatch(tmp_facevarz, time+1.0, facevarz(lev), &
                                           time,     facevarz(lev), &
-                                          amrex_geom(lev), gr_fillPhysicalFaceBC, &
+                                          amrex_geom(lev), gr_fillPhysicalBC, &
                                           time, 1, 1, NFACE_VARS)       
 #endif
 #endif
@@ -192,20 +193,20 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 #if NFACE_VARS > 0
        call amrex_fillpatch(tmp_facevarx, time+1.0, facevarx(lev-1), &
                                           time,     facevarx(lev-1), &
-                                          amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                          amrex_geom(lev-1), gr_fillPhysicalBC, &
                                           time+1.0, facevarx(lev  ), &
                                           time,     facevarx(lev  ), &
-                                          amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                          amrex_geom(lev  ), gr_fillPhysicalBC, &
                                           time, 1, 1, NFACE_VARS, &
                                           amrex_ref_ratio(lev-1), gr_interpolator, &
                                           lo_bc_amrex, hi_bc_amrex)       
 #if NDIM >= 2
        call amrex_fillpatch(tmp_facevary, time+1.0, facevary(lev-1), &
                                           time,     facevary(lev-1), &
-                                          amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                          amrex_geom(lev-1), gr_fillPhysicalBC, &
                                           time+1.0, facevary(lev  ), &
                                           time,     facevary(lev  ), &
-                                          amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                          amrex_geom(lev  ), gr_fillPhysicalBC, &
                                           time, 1, 1, NFACE_VARS, &
                                           amrex_ref_ratio(lev-1), gr_interpolator, &
                                           lo_bc_amrex, hi_bc_amrex)       
@@ -213,10 +214,10 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
 #if NDIM == 3
        call amrex_fillpatch(tmp_facevarz, time+1.0, facevarz(lev-1), &
                                           time,     facevarz(lev-1), &
-                                          amrex_geom(lev-1), gr_fillPhysicalFaceBC, &
+                                          amrex_geom(lev-1), gr_fillPhysicalBC, &
                                           time+1.0, facevarz(lev  ), &
                                           time,     facevarz(lev  ), &
-                                          amrex_geom(lev  ), gr_fillPhysicalFaceBC, &
+                                          amrex_geom(lev  ), gr_fillPhysicalBC, &
                                           time, 1, 1, NFACE_VARS, &
                                           amrex_ref_ratio(lev-1), gr_interpolator, &
                                           lo_bc_amrex, hi_bc_amrex)       

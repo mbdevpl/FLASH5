@@ -74,10 +74,8 @@ subroutine Grid_getBlkBoundBox_desc(blockDesc, boundBox)
   type(block_metadata_t), intent(IN)  :: blockDesc
   real,                   intent(OUT) :: boundBox(LOW:HIGH, MDIM)
 
-  integer :: i = 0
-
   ! DEV: FIXME How to manage matching amrex_real to FLASH real
-  boundBox = 1.0d0
+  boundBox = 1.0
   associate(x0   => amrex_problo, &
             dx   => amrex_geom(blockDesc%level - 1)%dx, &
             lo   => blockDesc%limits(LOW,  :), &

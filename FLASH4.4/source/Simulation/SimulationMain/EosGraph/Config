@@ -1,0 +1,27 @@
+# A really simple setup that writes a couple of files,
+# EOSdumpE.dat and EOSdumpP.dat, for graphing the
+# E(T) and p(T) behavior of the Helmholtz Eos implementation.
+# Output is appropriate for gnuplot or any similar plotting
+# utility.
+#
+# This version also produces columns for (in order) ion, electron,
+# and radiation components of internal energy and pressure.
+# It needs 'multiTemp' extensions of the Eos for this.
+#
+# Sample setup line:
+#   ./setup -auto EosGraph +noio +ug -1d
+
+REQUESTS physics/Eos/EosMain/Helmholtz/Ye
+
+VARIABLE dens TYPE: PER_VOLUME 	EOSMAP:  DENS # density
+VARIABLE velx TYPE: PER_MASS   	EOSMAPIN:VELX # x-velocity
+VARIABLE vely TYPE: PER_MASS   	EOSMAPIN:VELY # y-velocity
+VARIABLE velz TYPE: PER_MASS   	EOSMAPIN:VELZ # z-velocity
+VARIABLE pres                  	EOSMAP:  PRES # pressure
+VARIABLE ener TYPE: PER_MASS   	EOSMAP:  ENER # specific total energy (T+U)
+VARIABLE temp                  	EOSMAP:  TEMP # temperature
+VARIABLE eint TYPE: PER_MASS   	EOSMAP:  EINT # specific internal energy (U)
+
+# Needed for Helmholtz Ye:
+MASS_SCALAR YE    EOSMAPIN: YE
+MASS_SCALAR SUMY  EOSMAPIN: SUMY
