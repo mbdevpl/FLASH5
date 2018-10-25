@@ -2,7 +2,7 @@
 #./setup Sedov -makefile=gnu -auto -debug -2d +cylindrical +uhd -noc +Mode1 -objdir=Sedov2Dcyl_unsplit_m1 -parfile=test_amr_cyl_2d.par DoAnalytical=True
 #       Version for testing Hydro with AMR implementations that
 #       are configured to allow for dynamic Grid refinement.
-#./setup Sedov -makefile=gnu -auto -test  -2d +cylindrical +uhd +Mode1 DoAnalytical=True -parfile=test_amr_cyl_2d.par
+#./setup Sedov -makefile=gnu -auto -test  -2d -nxb=16 -nyb=16 +cylindrical +uhd +Mode1 DoAnalytical=True -parfile=test_amr_cyl_2d.par
 #
 
 #	Parameters for initial model
