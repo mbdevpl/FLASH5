@@ -1,9 +1,12 @@
 #	Runtime parameters for the Sedov explosion problem.
-#./setup Sedov -makefile=gnu -auto -debug -2d +cylindrical +uhd -noc +Mode1 -objdir=Sedov2Dcyl_unsplit_m1 -parfile=test_amr_cyl_2d.par DoAnalytical=True
-#       Version for testing Hydro with AMR implementations that
-#       are configured to allow for dynamic Grid refinement.
-#./setup Sedov -makefile=gnu -auto -test  -2d -nxb=16 -nyb=16 +cylindrical +uhd +Mode1 DoAnalytical=True -parfile=test_amr_cyl_2d.par
+#./setup Sedov -makefile=gnu -auto -debug -maxblocks=32 -2d -nxb=64 -nyb=64 +cylindrical +uhd +Mode1 -objdir=Sedov2Dcyl_pseudoug_m1 -parfile=test_pseudoug_cyl_2d.par DoAnalytical=True
+#       Version for testing Hydro with AMR Grid implementations
+#       configured to establish a uniform grid covering the whole
+#       domain at the finest refinement level.
 #
+#./setup Sedov -makefile=gnu -auto -test -maxblocks=32 -2d -nxb=64 -nyb=64 +cylindrical +uhd +Mode1 DoAnalytical=True -parfile=test_pseudoug_cyl_2d.par
+#
+# Run on 8 or more MPI processes.
 
 #	Parameters for initial model
 #		Ambient pressure and density, explosion energy, initial
@@ -103,16 +106,11 @@ plot_var_10 = "enra"
 plot_var_11 = "temp"
 
 #  Adaptive Grid refinement parameters
-lrefine_max       = 5
-lrefine_min     = 1
+lrefine_max       = 3
+lrefine_min     = 3
 #lrefine_min_init     = 1
 refine_var_1      = "dens"
-refine_var_2      = "pres"
-#refine_cutoff_1   = 0.2
-#derefine_cutoff_1 = 0.2
-#sim_forceCenterDerefine   = .TRUE.
-sim_centerRefineLevel     = 1
-sim_derefineRadius     = 0.12
+sim_forceCenterDerefine   = .FALSE.
 
 nblockx                        = 1
 nblocky                        = 2
