@@ -3,7 +3,7 @@
 Adding new simulation "HydroStatic" for demonstrating, and playing around with,
 boundary conditions, esp. hydrostatic ones.  To be used in FLASH tutorial.
 
-As it is, this suimulation unly works with the "Constant" Gravity implementation,
+As it is, this simulation only works with the "Constant" Gravity implementation,
 since it assumes existence of "gconst" and "gdirec" runtime parameters.
 
 Simulation_initBlock just fills the region according to a barometric formula
