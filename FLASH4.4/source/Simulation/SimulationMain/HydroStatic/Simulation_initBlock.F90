@@ -104,6 +104,9 @@ subroutine Simulation_initBlock(blockID)
         do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
            xx = xCoord(i)
 
+           velxZone = 0.0
+           velyZone = 0.0
+           velzZone = 0.0
 
            axis(IAXIS) = i   ! Get the position of the cell in the block
            axis(JAXIS) = j

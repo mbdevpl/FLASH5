@@ -201,7 +201,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
        sim_gravVector, sim_gravDirec, sim_gravConst, &
        sim_xyzRef, sim_densRef, sim_tempRef, &
        sim_molarMass, sim_gasconstant
-  use Grid_data, ONLY : gr_myPE
+  use Grid_data, ONLY : gr_myPE => gr_meshMe
 
   use Grid_interface, ONLY : Grid_applyBCEdge, Grid_applyBCEdgeAllUnkVars
   use Driver_interface, ONLY : Driver_abortFlash
@@ -357,7 +357,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
               end select
 
 ! If we get here, we are implementing a USER BC for cell-centered data.
-! In this specific USER method, we want to basically fill gourd cells the same
+! In this specific USER method, we want to basically fill guard cells the same
 ! way in which cells are initialized in Simulation_initBlock.
 ! Copy code from Simulation_initBlock here, making appropriate changes changes.
 
