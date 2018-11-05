@@ -181,8 +181,9 @@
                          amr_mpi_meshComm,                               & 
                          recvrequest(kk),                              &
                          ierror)
-         Else
-            psurr_blks(:,:,:,:,lb) = surr_blks(:,:,:,:,parent(1,lb))
+          ! Commented out next two lines (Else ...), not needed - KW 2018-11-05
+!!$         Else
+!!$            psurr_blks(:,:,:,:,lb) = surr_blks(:,:,:,:,parent(1,lb))
          End If  ! End If (parent(2,lb) .ne. mype) 
          End If  ! End If (parent(1,lb) > 0)
       End Do  ! End Do lb = 1, lnblocks
@@ -323,6 +324,7 @@
 !-------ADD PARENT'S surrounding blocks to fetch list if the 
 !-------block 'lb' is a leaf and it is at a refinement jump.
         If (parent(1,lb) > 0 .and. nodetype(lb) == 1 .and. & 
+            parent(2,lb) .ne. mype                   .and. &
             any(surr_blks(1,1:3,1:1+2*k2d,1:1+2*k3d,lb) > -20 .and.    & 
                 surr_blks(1,1:3,1:1+2*k2d,1:1+2*k3d,lb) < 0)) Then
 
@@ -330,17 +332,22 @@
         ja = 1; jb = 1+2*k2d
         ia = 1; ib = 3
 #ifdef PM_OPTIMIZE_MORTONBND_FETCHLIST
-        if (nguarda .LE. nzb/2) then
-           koff = mod((which_child(lb)-1)/4,2)
-           ka = 1+koff; kb = 1+k3d+koff
-        end if
-        if (nguarda .LE. nyb/2) then
-           joff = mod((which_child(lb)-1)/2,2)
-           ja = 1+joff; jb = 1+k2d+joff
-        end if
-        if (nguarda .LE. nxb/2) then
-           ioff = mod(which_child(lb)-1,2)
-           ia = 1+ioff; ib = 2+ioff
+        ! Do this optimization only if parent does not touch a domain boundary
+        ! anywhere (otherwise boundary condition can be called with invalid
+        ! input data):
+        if (ALL(psurr_blks(1,1:3,1:1+2*k2d,1:1+2*k3d,lb) > -20)) then
+           if (nguarda .LE. nzb/2) then
+              koff = mod((which_child(lb)-1)/4,2)
+              ka = 1+koff; kb = 1+k3d+koff
+           end if
+           if (nguarda .LE. nyb/2) then
+              joff = mod((which_child(lb)-1)/2,2)
+              ja = 1+joff; jb = 1+k2d+joff
+           end if
+           if (nguarda .LE. nxb/2) then
+              ioff = mod(which_child(lb)-1,2)
+              ia = 1+ioff; ib = 2+ioff
+           end if
         end if
 #endif
 
