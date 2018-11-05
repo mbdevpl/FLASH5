@@ -4,11 +4,12 @@
 !!
 !!  Simulation_initBlock
 !!
-!! 
+!!
 !! SYNOPSIS
 !!
-!!  Simulation_initBlock(integer :: blockId)
-!!                       
+!!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
+!!                            integer(IN)  :: blockDesc  )
+!!
 !!
 !!
 !! DESCRIPTION
@@ -20,19 +21,28 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockId -        The number of the block to initialize
+!!  solnData  -        pointer to solution data
+!!  blockDesc -        describes the block to initialize
 !!
 !!
 !!***
 
-subroutine Simulation_initBlock(blockID)
+!!REORDER(4): solnData
+
+#ifdef DEBUG_ALL
+#define DEBUG_SIMULATION
+#endif
+
+subroutine Simulation_initBlock(solnData,blockDesc)
   ! get the needed unit scope data
   use Grid_interface, ONLY : Grid_getBlkIndexLimits,Grid_getCellCoords,&
                               Grid_putPointData
   use Simulation_data, ONLY : sim_gamma, sim_xyzRef, sim_presRef, &
-       sim_gravVector, sim_gravDirec, sim_gravConst, &
+       sim_gravVector, sim_gravDirec, &
        sim_xyzRef, sim_densRef, sim_tempRef, &
        sim_molarMass, sim_gasconstant
+  use Simulation_data, ONLY : myPE => sim_meshMe
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
 
@@ -40,9 +50,12 @@ subroutine Simulation_initBlock(blockID)
 #include "constants.h"
 #include "Flash.h"
 
+! declare arguments and indicate whether they are input or output
+  real,                   pointer    :: solnData(:,:,:,:)
+  type(block_metadata_t), intent(in) :: blockDesc
 
-! define arguments and indicate whether they are input or output
-  integer, intent(in) :: blockID
+
+  integer  :: blockID
   
 
 
@@ -72,7 +85,11 @@ subroutine Simulation_initBlock(blockID)
   real :: rhoZone, velxZone, velyZone, velzZone, presZone, &
        enerZone, ekinZone, tempZone
 
-!  print*,' PE', myPE,' initializing block no.', blockID
+#define DEBUG_SIMULATION
+  blockID = blockDesc%id
+#ifdef DEBUG_SIMULATION
+  print*,' PE', myPE,' initializing block no.', blockID
+#endif
 
   ! get the integer endpoints of the block in all dimensions
   ! the array blkLimits returns the interior end points
