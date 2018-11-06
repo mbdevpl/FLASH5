@@ -28,6 +28,7 @@ subroutine Simulation_init()
   use Simulation_data, ONLY : sim_gamma, sim_xyzRef, sim_presRef, sim_densRef, sim_tempRef, &
        sim_gravVector, sim_gravDirec, sim_gravConst, &
        sim_molarMass, sim_gasconstant, &
+       sim_meshMe,                     &
        sim_smallX
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
   use PhysicalConstants_interface, ONLY : PhysicalConstants_get
@@ -41,6 +42,8 @@ subroutine Simulation_init()
   
 
   character, save :: simGdirec
+
+  call Driver_getMype(MESH_COMM, sim_meshMe)
 
   ! get the runtime parameters relevant for this problem
 
