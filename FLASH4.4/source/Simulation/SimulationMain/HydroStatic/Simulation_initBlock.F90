@@ -7,8 +7,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
-!!                            integer(IN)  :: blockDesc  )
+!!  call Simulation_initBlock(real,pointer         :: solnData(:,:,:,:),
+!!                            block_metadata_t(IN) :: blockDesc  )
 !!
 !!
 !!

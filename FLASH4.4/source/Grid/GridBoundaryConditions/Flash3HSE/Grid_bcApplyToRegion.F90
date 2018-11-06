@@ -14,7 +14,7 @@
 !!                            integer(IN)  :: regionSize(:),
 !!                            logical(IN)  :: mask(:),
 !!                            logical(OUT) :: applied,
-!!                            integer(IN)  :: blockHandle,
+!!                            block_metadata_t(IN)  :: blockDesc,
 !!                            integer(IN)  :: secondDir,
 !!                            integer(IN)  :: thirdDir,
 !!                            integer(IN)  :: endPoints(LOW:HIGH,MDIM),
@@ -101,21 +101,6 @@
 !!  applied - is set true if this routine has handled the given bcType, otherwise it is 
 !!            set to false.
 !!
-!!  blockHandle - Handle for the block for which guardcells are to be filled.
-!!              In grid implementations other than Paramesh 4, this is always
-!!              a local blockID.
-!!
-!!              With Paramesh 4:
-!!              This may be a block actually residing on the local processor,
-!!              or the handle may refer to a block that belong to a remote processor
-!!              but for which cached information is currently available locally.
-!!              The two cases can be distinguished by checking whether 
-!!              (blockHandle .LE. lnblocks): this is true only for blocks that
-!!              reside on the executing processor.
-!!              The block ID is available for passing on to some handlers for 
-!!              boundary conditions that may need it, ignored in the default 
-!!              implementation.
-!!
 !!  secondDir,thirdDir -   Second and third coordinate directions.
 !!                         These are the transverse directions perpendicular to
 !!                         the sweep direction.
@@ -199,7 +184,7 @@
 
 subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-     blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, idest)
+     blockDesc,secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -210,6 +195,7 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   use Grid_interface, ONLY : Grid_getDeltas
   use gr_bcInterface, ONLY : gr_bcMapBcType, gr_hseStep
   use Grid_data, ONLY : gr_meshMe, gr_geometry, gr_dirGeom
+  use block_metadata, ONLY : block_metadata_t
   use gr_bcHseData, ONLY : gr_bcHseDirection, gr_bcHseGravConst, HSE_FORWARD, HSE_BACKWARD, HSE_SETTEMP
 
   implicit none
@@ -222,9 +208,9 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
-  integer,intent(IN) :: blockHandle
+  type(block_metadata_t),intent(IN) :: blockDesc
   integer,intent(IN) :: secondDir,thirdDir
-  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest
 
   integer :: i,j, k,ivar,je,ke,n,varCount,bcTypeActual
@@ -237,6 +223,12 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   real    :: del(MDIM), deltaBcDir
   real, dimension(EOS_NUM) :: eosData
   real, dimension(NSPECIES) :: massFrac
+
+  integer :: blkLimitsGC(LOW:HIGH, MDIM)
+  integer :: blockHandle
+ 
+  blkLimitsGC = blockDesc%limitsGC
+  blockHandle = blockDesc%id    !Works only with Paramesh!
 
   select case (bcType)
   case(REFLECTING, AXISYMMETRIC, EQTSYMMETRIC, OUTFLOW,DIODE,GRIDBC_MG_EXTRAPOLATE, &
