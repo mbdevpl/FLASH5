@@ -513,7 +513,9 @@ contains
     end function extractBCForDirection
 
     subroutine createBlockMetadata(blockID, gds, blockDesc)
-        use tree,            ONLY : lrefine, lrefine_max
+        use tree,            ONLY : lrefine, lrefine_max, bnd_box
+        use Grid_data,       ONLY:  gr_delta,       &
+                                    gr_globalDomain
         use gr_specificData, ONLY : gr_oneBlock
 
         ! IMPORTANT: This is essentially a copy of the blkMetaData method in
@@ -542,9 +544,14 @@ contains
            blockDesc%level  = lrefine(blockID)
            blockDesc%stride = 2**(lrefine_max - blockDesc%level)
         else                 ! blockID was a handle for a remote block...
-           blockDesc%cid = 0 ! cid better not be used for anything then...
-           blockDesc%level = -999 ! better not be used...
-           blockDesc%stride = -999! better not be used...
+           blockDesc%cid(1:MDIM) = 1
+           blockDesc%cid(1:NDIM) = &
+                ( bnd_box(1,1:NDIM,blockID) - gr_globalDomain(LOW, 1:NDIM)   &
+                                       + gr_delta(1:NDIM,lrefine_max)/2.0 )  &
+                                  / gr_delta(1:NDIM,lrefine_max) + 1
+
+           blockDesc%level  = lrefine(blockID) ! assume this is validly cached...
+           blockDesc%stride = 2**(lrefine_max - blockDesc%level)
         end if
         blockDesc%localLimits   = blkLimits
         blockDesc%localLimitsGC = blkLimitsGC
