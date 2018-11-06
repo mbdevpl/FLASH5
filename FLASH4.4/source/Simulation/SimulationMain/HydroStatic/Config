@@ -18,6 +18,10 @@ REQUESTS physics/Hydro
 #REQUESTS physics/materialProperties/Viscosity/ViscosityMain/Constant
 #REQUESTS physics/materialProperties/Conductivity/ConductivityMain/Constant
 
+D sim_xyzRef reference coordinate value in X, Y, and/or X direction, where initial
+D & density assumes the reference value given by sim_presRef and sim_tempRef
+D & through a formula that also involves eos_singleSpeciesA and the
+D & ideal gas constant
 PARAMETER sim_xyzRef	REAL 0.5
 PARAMETER sim_presRef	REAL 1.0
 PARAMETER sim_tempRef	REAL 300.0
