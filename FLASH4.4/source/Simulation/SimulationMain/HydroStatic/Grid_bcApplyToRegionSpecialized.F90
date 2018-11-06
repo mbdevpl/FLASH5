@@ -179,10 +179,9 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
 #include "Flash.h"
 
   use Simulation_data, ONLY : sim_gamma, sim_smallX, sim_xyzRef, sim_presRef, &
-       sim_gravVector, sim_gravDirec, sim_gravConst, &
+       sim_gravVector, &
        sim_xyzRef, sim_densRef, sim_tempRef, &
        sim_molarMass, sim_gasconstant
-  use Grid_data, ONLY : gr_myPE => gr_meshMe
 
   use Driver_interface, ONLY : Driver_abortFlash
 
@@ -208,15 +207,9 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
   integer :: i1, i2, i3, ia, ib, ja, jb, ka, kb
 
   integer :: i, j, k, ivar, n
-  real,allocatable,dimension(:) :: cellCenterSweepCoord, secondCoord,thirdCoord
-  integer :: istrt, iend, jOffset, kOffset
   real :: xx, yy, zz, gh
-  real, allocatable, dimension(:) :: xCoord
-  real, allocatable, dimension(:) :: yCoord
-  real, allocatable, dimension(:) :: zCoord
+  real, allocatable :: coordinates(:,:,:,:)
   real :: rhoZone, presZone, enerZone, ekinZone, tempZone
-
-  integer :: sizeGC
 
 ! ////////////////////////////////////////////////////////////
 
@@ -254,7 +247,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
 ! This could probably be done in a much nicer way.  - KW
 
 
-  offsets(1:MDIM) = endPoints(LOW,1:MDIM) - blkLimitsGC(LOW,1:MDIM)
+  offsets(1:MDIM) = endPoints(LOW,1:MDIM) - 1
 
 ! Note: in the following,
 ! i,ia,ib - refer to the IAXIS direction
@@ -305,11 +298,8 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
      call gr_bcGetCoords_internal !implemented below
 
      do k = ka,kb
-        zz = zCoord(k)
         do j = ja,jb
-           yy  = yCoord (j)
            do i = ia,ib
-              xx  = xCoord (i)
               select case (axis)
               case(IAXIS)
                  i1 = i - offsets(IAXIS)
@@ -334,6 +324,9 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
               case(KAXIS)
                  i3 = k - offsets(KAXIS)
               end select
+              xx = coordinates(i1,i2,i3,IAXIS)
+              yy = coordinates(i1,i2,i3,JAXIS)
+              zz = coordinates(i1,i2,i3,KAXIS)
 
 ! If we get here, we are implementing a USER BC for cell-centered data.
 ! In this specific USER method, we want to basically fill guard cells the same
@@ -439,30 +432,26 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
 
 contains
   subroutine gr_bcGetCoords_internal
-    integer :: sizesGC(1:MDIM)
+    use gr_interface, ONLY : gr_getRegionDataCoordinates
 
+    allocate(coordinates(SIZE(regionData, 1), &
+                         SIZE(regionData, 2), &
+                         SIZE(regionData, 3), &
+                         1:MDIM))
 
-    sizesGC(1:MDIM) = blkLimitsGC(HIGH,1:MDIM)
+    call gr_getRegionDataCoordinates(level, gridDataStruct, &
+                                     axis, secondDir, thirdDir, &
+                                     regionSize, endPoints, &
+                                     coordinates)
 
-    allocate(zCoord(sizesGC(KAXIS)))
-    if (NDIM == 3) then
-       call gr_extendedGetCellCoords(KAXIS, blockHandle,gr_myPE,CENTER,.true., zCoord, sizesGC(KAXIS))
-    else
-       zCoord = 0.0
+    if (NDIM .NE. 3) then
+       coordinates(:,:,:,KAXIS) = 0.0
     end if
-
-    allocate(yCoord(sizesGC(JAXIS)))
-    call gr_extendedGetCellCoords(JAXIS, blockHandle,gr_myPE,CENTER, .true., yCoord,  sizesGC(JAXIS))
-
-    allocate(xCoord(sizesGC(IAXIS)))
-    call gr_extendedGetCellCoords(IAXIS, blockHandle,gr_myPE,CENTER,.true., xCoord,  sizesGC(IAXIS))
 
   end subroutine gr_bcGetCoords_internal
 
   subroutine deallocateMem_internal
-    if(allocated(xCoord)) deallocate(xCoord)
-    if(allocated(yCoord)) deallocate(yCoord)
-    if(allocated(zCoord)) deallocate(zCoord)
+    if(allocated(coordinates)) deallocate(coordinates)
   end subroutine deallocateMem_internal
 
 end subroutine Grid_bcApplyToRegionSpecialized

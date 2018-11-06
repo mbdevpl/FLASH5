@@ -85,7 +85,6 @@ subroutine Simulation_initBlock(solnData,blockDesc)
   real :: rhoZone, velxZone, velyZone, velzZone, presZone, &
        enerZone, ekinZone, tempZone
 
-#define DEBUG_SIMULATION
   blockID = blockDesc%id
 #ifdef DEBUG_SIMULATION
   print*,' PE', myPE,' initializing block no.', blockID

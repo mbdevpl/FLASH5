@@ -191,6 +191,7 @@ Subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
 
               ! In case 3T is used then the energy updates are already done in hy_unsplitUpdate
               ! and are not needed here.
+              print*,i,j,k,U(VELX_VAR:VELZ_VAR,i,j,k)
               ekin = 0.5*dot_product(U(VELX_VAR:VELZ_VAR,i,j,k),U(VELX_VAR:VELZ_VAR,i,j,k))
               emag = 0.0
 
