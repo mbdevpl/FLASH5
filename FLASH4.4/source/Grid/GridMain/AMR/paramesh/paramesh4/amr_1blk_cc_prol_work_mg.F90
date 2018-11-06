@@ -118,7 +118,7 @@
 !------------------------------------
 
       if (first_call) then
-         !$omp critical (amr_1blk_cc_prol_work_mg)
+         !$omp critical (CritRegAmr_1blk_cc_prol_work_mg)
          first_call = .false.
 
          if (.NOT. allocated(imina)) then
@@ -325,7 +325,7 @@
          end if                 ! end if (ndim
 
          end do                 ! end loop over iorder
-         !$omp end critical (amr_1blk_cc_prol_work_mg)
+         !$omp end critical (CritRegAmr_1blk_cc_prol_work_mg)
 
       end if                    ! end if (first_call
 
