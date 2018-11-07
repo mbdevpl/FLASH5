@@ -189,9 +189,13 @@ Subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
            if (U(BDRY_VAR,i,j,k) .LE. 0.0) then
 #endif
 
+#ifdef DEBUG_UHD
+              if (ANY(abs(U(VELX_VAR:VELZ_VAR,i,j,k))>1.e30)) then
+                 print*,'eFix:i,j,k,U(VELX_VAR:VELZ_VAR,i,j,k):',i,j,k,U(VELX_VAR:VELZ_VAR,i,j,k)
+              end if
+#endif
               ! In case 3T is used then the energy updates are already done in hy_unsplitUpdate
               ! and are not needed here.
-              print*,i,j,k,U(VELX_VAR:VELZ_VAR,i,j,k)
               ekin = 0.5*dot_product(U(VELX_VAR:VELZ_VAR,i,j,k),U(VELX_VAR:VELZ_VAR,i,j,k))
               emag = 0.0
 
