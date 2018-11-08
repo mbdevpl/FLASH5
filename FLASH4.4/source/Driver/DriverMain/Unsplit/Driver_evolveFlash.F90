@@ -224,20 +224,16 @@ subroutine Driver_evolveFlash()
 ! 4. Advance Particles
         call Timers_start("Particles_advance")
         call Particles_advance(dr_dtOld, dr_dt)
-!        call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
         call Timers_stop("Particles_advance")
 #ifdef DEBUG_DRIVER
         print*, 'return from Particles_advance '  ! DEBUG
 #endif
 
-
-
-
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
 #ifdef FLASH_GRID_AMREXTRANSITION
+     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
-#endif
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
+#endif
 
      dr_dtOld = dr_dt
 
