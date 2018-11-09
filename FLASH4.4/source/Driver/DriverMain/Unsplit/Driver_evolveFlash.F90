@@ -221,14 +221,6 @@ subroutine Driver_evolveFlash()
 !  3. Burn/sourceTerm
      call Burn(dr_dt)
 
-! 4. Advance Particles
-        call Timers_start("Particles_advance")
-        call Particles_advance(dr_dtOld, dr_dt)
-        call Timers_stop("Particles_advance")
-#ifdef DEBUG_DRIVER
-        print*, 'return from Particles_advance '  ! DEBUG
-#endif
-
 #ifdef FLASH_GRID_AMREXTRANSITION
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
