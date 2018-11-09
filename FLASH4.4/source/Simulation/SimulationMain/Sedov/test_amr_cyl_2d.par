@@ -82,7 +82,7 @@ memory_stat_freq               = 1000
 
 #tstep_change_factor = 1.1
 nend            = 10000
-tmax            = 0.05
+tmax            = 0.03
 #dr_shortenLastStepBeforeTMax   = .TRUE.
 
 run_comment     = "2D Sedov explosion from tinitial=0.01"
@@ -108,11 +108,11 @@ lrefine_min     = 1
 #lrefine_min_init     = 1
 refine_var_1      = "dens"
 refine_var_2      = "pres"
-#refine_cutoff_1   = 0.2
-#derefine_cutoff_1 = 0.2
+refine_cutoff_1   = 0.1
+derefine_cutoff_1 = 0.1
 #sim_forceCenterDerefine   = .TRUE.
-sim_centerRefineLevel     = 1
-sim_derefineRadius     = 0.12
+#sim_centerRefineLevel     = 1
+#sim_derefineRadius     = 0.12
 
 nblockx                        = 1
 nblocky                        = 2
