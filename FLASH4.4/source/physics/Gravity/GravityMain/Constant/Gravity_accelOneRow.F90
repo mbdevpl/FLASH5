@@ -71,7 +71,8 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
   return
 end subroutine Gravity_accelOneRow_blkid
 
-subroutine Gravity_accelOneRow (pos, sweepDir, block, numCells, grav, &
+
+subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
                                 potentialIndex, extraAccelVars)
 
 !==============================================================================
@@ -87,9 +88,10 @@ subroutine Gravity_accelOneRow (pos, sweepDir, block, numCells, grav, &
 
   integer, dimension(2), intent(IN) :: pos
   integer,INTENT(in) :: sweepDir
-  type(block_metadata_t),intent(IN) :: block
+  type(block_metadata_t),intent(IN) :: blockDesc
   integer,INTENT(in) :: numCells
   real,dimension(numCells),INTENT(inout) :: grav
+  real,    POINTER,   OPTIONAL      :: Uin(:,:,:,:)
   integer,intent(IN),optional :: potentialIndex
   integer,intent(IN),OPTIONAL :: extraAccelVars(MDIM)
 

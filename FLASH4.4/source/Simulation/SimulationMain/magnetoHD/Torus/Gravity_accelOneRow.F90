@@ -33,7 +33,7 @@
 !! 
 !!***
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
+subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
                                 potentialIndex, extraAccelVars)
 
 !=======================================================================
@@ -171,4 +171,4 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
 
   return
 
-end subroutine Gravity_accelOneRow
+end subroutine Gravity_accelOneRow_blkid
