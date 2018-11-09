@@ -77,7 +77,7 @@ Module Grid_data
   integer, save :: gr_meshComm, gr_meshMe, gr_meshNumProcs
   integer, save :: gr_meshAcrossComm, gr_meshAcrossMe, gr_meshAcrossNumProcs
 
-!  logical, save :: gr_useEnergyDeposition
+  logical, save :: gr_useEnergyDeposition
   real, save, dimension(LOW:HIGH,MDIM) :: gr_boxContainingLeafNodes
 
   integer, save :: gr_eosMode
