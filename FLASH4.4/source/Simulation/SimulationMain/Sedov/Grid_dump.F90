@@ -51,7 +51,9 @@ subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
 
   use block_metadata, ONLY : block_metadata_t
 
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
+                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                             Grid_getCellCoords
   use Driver_interface, ONLY : Driver_getNStep, Driver_getSimTime, Driver_getDt
 
   use Simulation_data , ONLY : sim_fileUnitOutNum, sim_fileUnitOutAna
