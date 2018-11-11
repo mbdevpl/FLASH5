@@ -115,21 +115,11 @@ subroutine Gravity_unitTest( fileUnit, perfect)
        factorMax .LE. 1+sim_passTolerance) then
      perfect=.true.
      if (grv_meshMe == MASTER_PE) print*,'Proc',grv_meshMe,potErrorMax,factorMin,factorMax
-     if (grv_meshMe == MASTER_PE) then 
-        print*,'SUCCESS all tests were fine'
-        OPEN(101, file='testResult.dat', status='replace')
-        write (101,'(a)') '1'
-        CLOSE(unit=101)
-    endif
+     if (grv_meshMe == MASTER_PE) print*,'SUCCESS all tests were fine'
   else
      perfect=.false.
-     if (grv_meshMe == MASTER_PE) then 
-        print*,'FAILURE some tests failed',potErrorMax,factorMin,factorMax
-        OPEN(101, file='testResult.dat', status='replace')
-        write (101,'(a)') '0'
-        CLOSE(unit=101)
-    endif
-    
+     if (grv_meshMe == MASTER_PE) print*,'FAILURE some tests failed',potErrorMax,factorMin,factorMax
+     
   end if
   return
 end subroutine Gravity_unitTest

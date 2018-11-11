@@ -8,6 +8,7 @@
 REQUIRES physics/Hydro
 REQUESTS physics/Gravity/GravityMain/Poisson/Multigrid
 REQUIRES physics/Gravity/GravityMain/Poisson/unitTest
+REQUIRES flashUtilities/testing
 
 LINKIF IO_writeIntegralQuantities.F90 IO/IOMain
 LINKIF IO_outputFinal.F90 IO/IOMain

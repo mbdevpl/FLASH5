@@ -55,6 +55,7 @@ subroutine Driver_evolveFlash()
   use Gravity_interface, ONLY :  Gravity_potential, Gravity_unitTest
   !use IO_data, ONLY: io_justCheckpointed 
   use IO_interface, ONLY :IO_output,IO_outputFinal
+  use ut_testDriverMod
 
   implicit none
 
@@ -71,18 +72,7 @@ subroutine Driver_evolveFlash()
   logical,save :: perfect = .true.
   character(len=20) :: fileName
   integer, parameter        :: fileUnit = 2
-  integer,dimension(4) :: prNum
-  integer :: temp,i
-  
-  temp = dr_globalMe
-  do i = 1,4
-     prNum(i)= mod(temp,10)
-     temp = temp/10
-  end do
-  filename = "unitTest_"//char(48+prNum(4))//char(48+prNum(3))//&
-                                 char(48+prNum(2))//char(48+prNum(1))
-  open(fileUnit,file=fileName)
-  write(fileUnit,'("P",I0)') dr_globalMe
+
   ! ------------ end of unitTest setup ---------------------------------------
   
   call Logfile_stamp( 'Entering evolution routine' , '[Driver_evolveFlash]')
@@ -160,21 +150,16 @@ subroutine Driver_evolveFlash()
   end if
 
   ! Gravity unitTest calculations-------------------------------------
+  call start_test_run()
   call Gravity_unitTest(fileUnit,perfect)
-  if (perfect) then
-     write(fileUnit,'("all results conformed with expected values.")')
-  else
-     write(fileUnit,'("Failure in Gravity unitTest at time",G10.4)')dr_simTime
-  end if
-
+  call assertTrue(perfect, "Gravity unit tests failed")
+  call finish_test_run()
 
 !! Eliminted all code beyond here, not needed for unit test -PMR
 !! NO!  We'd actually like to SEE what was calculated. LBR
     !io_justCheckpointed = .false.
      
   ! ------------------------------- Gravity unitTest output
-   close (fileUnit)   ! for Gravity_unitTest
-  ! --------------------------------
 
   call Timers_stop("evolution")
 
