@@ -9,6 +9,7 @@ Particles +=  \
 	Particles_getLocalNum.o \
 	Particles_init.o \
 	Particles_initPositions.o \
+	Particles_initForces.o \
 	Particles_longRangeForce.o \
 	Particles_putLocalNum.o \
 	Particles_shortRangeForce.o \
