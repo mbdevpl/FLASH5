@@ -4,8 +4,14 @@ REQUIRES Grid/GridMain
 REQUIRES flashUtilities/sorting
 #REQUESTS Particles
 
+EXCLUSIVE ParticlesOwned MeshOwned 
 USESETUPVARS Grid
 
+IF Grid in ["Amrex"]
+ REQUIRES Grid/GridParticles/GridParticlesMove/MeshOwned
+ELSE
+ REQUIRES Grid/GridParticles/GridParticlesMove/ParticlesOwned
+ENDIF
 
 D gr_ptRemove  boolean.  This is a switch which determines the action if the number
 D of particles on a processor exceeds the maximum allowed
