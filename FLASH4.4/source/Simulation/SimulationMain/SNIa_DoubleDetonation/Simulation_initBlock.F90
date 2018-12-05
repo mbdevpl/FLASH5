@@ -232,18 +232,6 @@ subroutine Simulation_initBlock(solnData, block)
               end if
            end do
 
-           ! Dump whatever is leftover into Ne22 (or Ne20 if Ne22 is not in the network)
-           xmissing = 1.0 - xsum
-           if ( xmissing > 0.0 ) then
-#ifdef NE22_SPEC
-              if ( NE22_SPEC > 0 ) solnData(NE22_SPEC,i,j,k) = solnData(NE22_SPEC,i,j,k) + xmissing
-#elif NE20_SPEC
-              if ( NE20_SPEC > 0 ) solnData(NE20_SPEC,i,j,k) = solnData(NE20_SPEC,i,j,k) + xmissing
-#elif NSPECIES > 0
-             solnData(SPECIES_BEGIN,i,j,k) = solnData(SPECIES_BEGIN,i,j,k) + xmissing
-#endif
-           end if
-
         end do
      end do
   end do
