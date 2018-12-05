@@ -151,8 +151,8 @@ subroutine bn_xnetFinalize()
 
   end if
 
-  call jacobian_finalize
-  call gpu_finalize
+!  call jacobian_finalize
+!  call gpu_finalize
 
   return
 
