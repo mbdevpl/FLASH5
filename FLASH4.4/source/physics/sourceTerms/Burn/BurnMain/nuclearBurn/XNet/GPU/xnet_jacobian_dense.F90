@@ -64,7 +64,6 @@ Contains
     Use cudaf
     Use nuclear_data, Only: ny
     Use xnet_controls, Only: iheat, nzbatchmx
-    Use xnet_gpu, Only: gpu_init
     Implicit None
 
     ! Input variables
@@ -72,8 +71,6 @@ Contains
 
     ! Local variables
     Integer :: istat, i
-
-    Call gpu_init
 
     ! Calculate array sizes
     If ( iheat > 0 ) Then
@@ -141,7 +138,6 @@ Contains
     ! Free the page-locked and device memory used in the dense solver.
     !-----------------------------------------------------------------------------------------------
     Use cudaf
-    Use xnet_gpu, Only: gpu_finalize
 
     ! Local variables
     Integer :: istat
@@ -164,8 +160,6 @@ Contains
     Deallocate (dydotdy)
 
     !$omp end parallel
-
-    Call gpu_finalize
 
   End Subroutine jacobian_finalize
 
