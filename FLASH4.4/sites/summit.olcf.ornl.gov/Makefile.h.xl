@@ -9,7 +9,7 @@ AMREX_PATH = ${AMREX_DIR}/summit_${NDIM}d_xl
 HDF5_PATH  = ${OLCF_HDF5_ROOT}
 HYPRE_PATH = ${OLCF_HYPRE_ROOT}
 CUDA_PATH  = ${OLCF_CUDA_ROOT}
-MAGMA_PATH = ${HOME}/magma-2.3.0/build/xl
+MAGMA_PATH = ${OLCF_MAGMA_ROOT}
 
 ZLIB_PATH  =
 
@@ -92,13 +92,13 @@ FFLAGS_CUDA  = -I${CUDA_PATH}/include
 FFLAGS_MAGMA = -I${MAGMA_PATH}/include
 FFLAGS_OACC  =
 
-OPT_FLAGS    = -g -O3 -qarch=pwr9 -qtune=pwr9:st -w
-TEST_FLAGS   = -g -O2 -qarch=pwr9 -qtune=pwr9:st -w -qstrict=all
+OPT_FLAGS    = -g -O3 -qarch=pwr9 -qtune=pwr9 -w
+TEST_FLAGS   = -g -O2 -qarch=pwr9 -qtune=pwr9 -w -qstrict=all
 DEBUG_FLAGS  = -g -O0 -qnosmp -qstrict=all \
 	       -qfloat=rngchk -qcheck=all:nounset \
                -qflttrap=enable:invalid:nanq:overflow:zerodivide -qsigtrap=xl__trcedump
 
-FFLAGS_OPT   = -c ${OPT_FLAGS}# -qipa
+FFLAGS_OPT   = -c ${OPT_FLAGS}
 FFLAGS_TEST  = -c ${TEST_FLAGS}
 FFLAGS_DEBUG = -c ${DEBUG_FLAGS} -qstrict=all -qflag=i:w
 
@@ -155,7 +155,7 @@ LIB_OACC  =
 
 LIB_MASS  = -lmass
 
-LIB_OPT   =# -qipa
+LIB_OPT   =
 LIB_DEBUG = -pg
 LIB_TEST  =
 
