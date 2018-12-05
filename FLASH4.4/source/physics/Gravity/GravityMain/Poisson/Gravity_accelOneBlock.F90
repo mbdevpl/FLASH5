@@ -219,7 +219,8 @@ subroutine Gravity_accelOneBlock ( blockDesc, ngcellcomp, gvec, potentialIndex)
   call Grid_getBlkPtr(blockDesc, solnData)
   call Grid_getDeltas(blockDesc%level, delta)
   inv_2delta(1:NDIM) = 0.5/delta(1:NDIM)
-  call Grid_getBlkIndexLimits(blockDesc%Id, blkLimits, blkLimitsGC)
+  blkLimits = blockDesc%limits
+  blkLimitsGC = blockDesc%limitsGC
   call Grid_getGeometry(geom)
 
   sizeI = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
