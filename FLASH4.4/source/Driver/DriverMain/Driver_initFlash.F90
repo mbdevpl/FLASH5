@@ -56,8 +56,7 @@ subroutine Driver_initFlash()
     Gravity_potential
   use Timers_interface, ONLY : Timers_init, Timers_start, Timers_stop
 
-  use Grid_interface, ONLY : Grid_init, Grid_initDomain, &
-    Grid_getListOfBlocks
+  use Grid_interface, ONLY : Grid_init, Grid_initDomain
 
 #include "Flash.h"
   use Multispecies_interface, ONLY : Multispecies_init
@@ -84,8 +83,6 @@ subroutine Driver_initFlash()
 
 #include "constants.h"
 
-  integer :: blockCount
-  integer :: blockList(MAXBLOCKS)
   logical :: updateRefine
 
   dr_elapsedWCTime = 0.0
