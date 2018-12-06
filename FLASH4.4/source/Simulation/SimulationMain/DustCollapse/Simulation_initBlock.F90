@@ -37,16 +37,15 @@
 
 !!REORDER(4): solnData
 
-subroutine Simulation_initBlock(blockID)
+subroutine Simulation_initBlock(solnData, block)
 
   use Simulation_data, ONLY : sim_smalle, sim_smallp, sim_tAmbient,&
                               sim_gamma,  sim_smlrho, &
                               sim_pProf,sim_vProf,sim_rhoProf,sim_rProf,N_prof, &
                               sim_iCtr, sim_jCtr, sim_kCtr
 
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkPtr, &
-    Grid_getDeltas, Grid_releaseBlkPtr, Grid_getBlkBoundBox
-
+  use block_metadata, ONLY : block_metadata_t
+  use Grid_interface, ONLY : Grid_getDeltas, Grid_getBlkBoundBox
 
   implicit none
 
@@ -56,16 +55,13 @@ subroutine Simulation_initBlock(blockID)
   ! compute the maximum length of a vector in each coordinate direction 
   ! (including guardcells)
   
-  integer, intent(in) :: blockID
-  
-  real, pointer, dimension(:,:,:,:) :: solnData
-
-
+  real, dimension(:,:,:,:), pointer :: solnData
+  type(block_metadata_t), intent(in) :: block
   
   real,dimension(MDIM) :: size, coord
   
   integer         i, j, k, n, imax, jmax, kmax, jlo
-  integer         Nint, ii, jj, kk
+  integer         Nint, ii, jj, kk, i0, j0, k0
   real            delx, xx, dely, yy, delz, zz, velocity, distinv
   real            vfrac, xdist, ydist, zdist, dist
   real            Nintinv, sum_rho, sum_p, sum_vx, sum_vy, sum_vz, & 
@@ -79,10 +75,10 @@ subroutine Simulation_initBlock(blockID)
 
 !               Initialize scalar quantities we will need.
 
-  call Grid_getBlkPtr(blockID,solnData,CENTER)
-  call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
-  call Grid_getBlkBoundBox(blockID,bndBox)
-  call Grid_getDeltas(blockID,delta)
+  blkLimits = block%limits
+  blkLimitsGC = block%limitsGC
+  call Grid_getBlkBoundBox(block,bndBox)
+  call Grid_getDeltas(block%level,delta)
 
   imax = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
   jmax = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
@@ -124,6 +120,10 @@ subroutine Simulation_initBlock(blockID)
   do k = 1, kmax
      do j = 1, jmax
         do i = 1, imax
+
+           i0 = i + blkLimitsGC(LOW,IAXIS) - 1
+           j0 = j + blkLimitsGC(LOW,JAXIS) - 1
+           k0 = k + blkLimitsGC(LOW,KAXIS) - 1
            
            sum_rho = 0.
            sum_p   = 0.
@@ -173,19 +173,19 @@ subroutine Simulation_initBlock(blockID)
               enddo
            enddo
            
-           solnData(DENS_VAR,i,j,k) = max(sum_rho * Nintinv**NDIM, & 
+           solnData(DENS_VAR,i0,j0,k0) = max(sum_rho * Nintinv**NDIM, & 
                 &                                        sim_smlrho)
-           solnData(PRES_VAR,i,j,k) = max(sum_p   * Nintinv**NDIM, & 
+           solnData(PRES_VAR,i0,j0,k0) = max(sum_p   * Nintinv**NDIM, & 
                 &                                        sim_smallp)
-           solnData(TEMP_VAR,i,j,k) = Sim_tAmbient
+           solnData(TEMP_VAR,i0,j0,k0) = Sim_tAmbient
            !************************** for constant pressure test
            !        solnData(PRES_VAR,i,j,k) = sim_smallp * 100.
            !        solnData(TEMP_VAR,i,j,k) = solnData(PRES_VAR,i,j,k) /
            !     &              (solnData(DENS_VAR,i,j,k)*sim_gascon)
            !**************************
-           solnData(VELX_VAR,i,j,k) = sum_vx  * Nintinv**NDIM
-           solnData(VELY_VAR,i,j,k) = sum_vy  * Nintinv**NDIM
-           solnData(VELZ_VAR,i,j,k) = sum_vz  * Nintinv**NDIM
+           solnData(VELX_VAR,i0,j0,k0) = sum_vx  * Nintinv**NDIM
+           solnData(VELY_VAR,i0,j0,k0) = sum_vy  * Nintinv**NDIM
+           solnData(VELZ_VAR,i0,j0,k0) = sum_vz  * Nintinv**NDIM
            !************************** for constant velocity gradient/uniform density test
            !             solnData(DENS_VAR,i,j,k) = sim_initDens
            !             solnData(PRES_VAR,i,j,k) = sim_initDens*sim_presFrac
@@ -208,7 +208,10 @@ subroutine Simulation_initBlock(blockID)
      do k = 1, kmax
         do j = 1, jmax
            do i = 1, imax
-              solnData(SPECIES_BEGIN+n-1,i,j,k) = 1.
+              i0 = i + blkLimitsGC(LOW,IAXIS) - 1
+              j0 = j + blkLimitsGC(LOW,JAXIS) - 1
+              k0 = k + blkLimitsGC(LOW,KAXIS) - 1
+              solnData(SPECIES_BEGIN+n-1,i0,j0,k0) = 1.
            enddo
         enddo
      enddo
@@ -220,27 +223,28 @@ subroutine Simulation_initBlock(blockID)
   do k = 1, kmax
      do j = 1, jmax
         do i = 1, imax
+           i0 = i + blkLimitsGC(LOW,IAXIS) - 1
+           j0 = j + blkLimitsGC(LOW,JAXIS) - 1
+           k0 = k + blkLimitsGC(LOW,KAXIS) - 1
            
-           solnData(GAME_VAR,i,j,k) = sim_gamma
-           solnData(GAMC_VAR,i,j,k) = sim_gamma
+           solnData(GAME_VAR,i0,j0,k0) = sim_gamma
+           solnData(GAMC_VAR,i0,j0,k0) = sim_gamma
            
-           ek = 0.5 * (solnData(VELX_VAR,i,j,k)**2 + & 
-                &                    solnData(VELY_VAR,i,j,k)**2 + & 
-                &                    solnData(VELZ_VAR,i,j,k)**2)
-           solnData(EINT_VAR,i,j,k) = solnData(PRES_VAR,i,j,k) / & 
-                &                                    (solnData(GAME_VAR,i,j,k)-1.)
-           solnData(EINT_VAR,i,j,k) = solnData(EINT_VAR,i,j,k) / & 
-                &                                    solnData(DENS_VAR,i,j,k)
-           solnData(EINT_VAR,i,j,k) = max(solnData(EINT_VAR,i,j,k),sim_smalle)
-           solnData(ENER_VAR,i,j,k) = solnData(EINT_VAR,i,j,k) + ek
+           ek = 0.5 * (solnData(VELX_VAR,i0,j0,k0)**2 + & 
+                &                    solnData(VELY_VAR,i0,j0,k0)**2 + & 
+                &                    solnData(VELZ_VAR,i0,j0,k0)**2)
+           solnData(EINT_VAR,i0,j0,k0) = solnData(PRES_VAR,i0,j0,k0) / & 
+                &                                    (solnData(GAME_VAR,i0,j0,k0)-1.)
+           solnData(EINT_VAR,i0,j0,k0) = solnData(EINT_VAR,i0,j0,k0) / & 
+                &                                    solnData(DENS_VAR,i0,j0,k0)
+           solnData(EINT_VAR,i0,j0,k0) = max(solnData(EINT_VAR,i0,j0,k0),sim_smalle)
+           solnData(ENER_VAR,i0,j0,k0) = solnData(EINT_VAR,i0,j0,k0) + ek
            
         enddo
      enddo
   enddo
   
   !===============================================================================
-  
-  call Grid_releaseBlkPtr(blockID,solnData)
 
 end subroutine Simulation_initBlock
 

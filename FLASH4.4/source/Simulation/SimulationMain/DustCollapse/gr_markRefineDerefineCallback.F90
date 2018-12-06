@@ -48,6 +48,8 @@
 !!
 !!***
 
+!!REORDER(4): solnData
+
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
 #endif
@@ -69,10 +71,16 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                       gr_refine_filter, gr_refine_var, &
                                       gr_maxRefine, gr_enforceMaxRefinement, &
                                       gr_minRefine
-   use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-   use gr_interface,           ONLY : gr_estimateBlkError
+   use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
+                                      Grid_getLeafIterator, Grid_releaseLeafIterator
+   use gr_interface,           ONLY : gr_estimateBlkError, gr_getBlkIterator, &
+                                      gr_releaseBlkIterator
+   use gr_iterator,            ONLY : gr_iterator_t
    use gr_physicalMultifabs,   ONLY : unk
    use block_metadata,         ONLY : block_metadata_t
+
+  use Simulation_data, ONLY : sim_initDens, sim_ictr,sim_jctr,&
+       sim_kctr, sim_initRad
 
    implicit none
  
@@ -86,9 +94,12 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    type(amrex_mfiter)      :: mfi                                                             
    type(amrex_box)         :: bx
    type(block_metadata_t)  :: blockDesc
+   type(gr_iterator_t)     :: itor
 
    real(wp),               contiguous, pointer :: solnData(:,:,:,:)
    character(kind=c_char), contiguous, pointer :: tagData(:,:,:,:)
+
+   real(wp) :: maxdens
 
    real :: error
    real :: refineCut, derefineCut, refineFilter
@@ -261,6 +272,57 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
       nullify(tagData)
       call Grid_releaseBlkPtr(blockDesc, solnData)
+   end do
+   call amrex_mfiter_destroy(mfi)
+
+   !------------------------------------------------------------------------------
+   !
+   ! Apply problem-specific refinement criteria.
+   ! Dust collapse problem:  refine center of cloud.  _Don't_ refine blocks
+   ! that are in the "fluff" (max density less than 0.5*starting density of cloud).
+
+   call gr_markInRadius(sim_ictr, sim_jctr, sim_kctr, sim_initRad, lev, tags, tagval)
+
+   call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
+   do while(mfi%next())
+      bx = mfi%fabbox()
+
+      blockDesc%level = lev + 1
+      blockDesc%grid_index = mfi%grid_index()
+      blockDesc%limits(LOW,  :) = 1
+      blockDesc%limits(HIGH, :) = 1
+      blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
+      blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
+      blockDesc%limitsGC(LOW,  :) = 1
+      blockDesc%limitsGC(HIGH, :) = 1
+      blockDesc%limitsGC(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+      blockDesc%limitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+
+      call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+
+      tagData => tag%dataptr(mfi)
+     
+      associate (lo     => blockDesc%limits(LOW,  :), &
+                 hi     => blockDesc%limits(HIGH, :), &
+                 lo_tag => lbound(tagData), &
+                 hi_tag => ubound(tagData))
+
+         maxdens = maxval(solnData(DENS_VAR,:,:,:))
+         if (maxdens < 0.5*sim_initDens) then
+            do k = lo(KAXIS)-K3D, hi(KAXIS)-K3D
+               do j = lo(JAXIS)-K2D, hi(JAXIS)-K2D
+                  do i = lo(IAXIS)-1,   hi(IAXIS)-1
+                     ! Fourth index is 1:1
+                     tagData(i, j, k, 1) = clearval
+                  end do
+               end do
+            end do
+         end if
+
+      end associate
+
+      nullify(tagData)
+      call Grid_releaseBlkPtr(blockDesc,solnData)
    end do
    call amrex_mfiter_destroy(mfi)
 
