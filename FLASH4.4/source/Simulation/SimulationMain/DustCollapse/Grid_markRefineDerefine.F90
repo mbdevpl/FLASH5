@@ -53,7 +53,7 @@ subroutine Grid_markRefineDerefine()
                         gr_lrefineMaxRedDoByTime,&
                         gr_lrefineMaxRedDoByLogR,&
                         gr_lrefineCenterI,gr_lrefineCenterJ,gr_lrefineCenterK,&
-                        gr_blkList, gr_eosModeNow, gr_eosMode, &
+                        gr_eosModeNow, gr_eosMode, &
                         gr_meshMe, gr_meshComm
 
   use tree, ONLY : newchild, refine, derefine, stay, nodetype,&
@@ -70,17 +70,27 @@ subroutine Grid_markRefineDerefine()
   implicit none
 
 #include "constants.h"
+#include "Flash_mpi.h"
 #include "Flash.h"
-
   
   real :: ref_cut,deref_cut,ref_filter
-  integer       :: l,i,iref
+  integer       :: l,i,iref,blkCount,lb,j
   logical,save :: gcMaskArgsLogged = .FALSE.
   integer,save :: eosModeLast = 0
   logical :: doEos=.true.
   integer,parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
   logical,dimension(maskSize) :: gcMask
   real, dimension(MAXBLOCKS) :: err
+  integer, dimension(MAXBLOCKS) :: blkList
+
+  real, dimension(:,:,:,:), pointer :: solnData
+  real :: maxdens(MAXBLOCKS),maxdens_parent(MAXBLOCKS)
+  integer :: nsend,nrecv,ierr
+
+  integer, dimension(MAXBLOCKS) :: reqr
+  integer, dimension(MAXBLOCKS*nchild) :: reqs
+  integer, dimension(MPI_STATUS_SIZE,MAXBLOCKS) :: statr
+  integer, dimension(MPI_STATUS_SIZE,MAXBLOCKS*nchild) :: stats
 
   if(gr_lrefineMaxRedDoByTime) then
      call gr_markDerefineByTime()
@@ -143,10 +153,10 @@ subroutine Grid_markRefineDerefine()
 
   call gr_markInRadius(sim_ictr, sim_jctr, sim_kctr, sim_initRad, lrefine_max)
 
-  call Grid_getListOfBlocks(ACTIVE_BLKS, gr_blkList,blkCount)
+  call Grid_getListOfBlocks(ACTIVE_BLKS, blkList, blkCount)
 
   do i = 1, blkCount
-     lb = gr_blkList(i)
+     lb = blkList(i)
      call Grid_getBlkPtr(lb,solnData,CENTER)
      maxdens(lb) = maxval(solnData(DENS_VAR,:,:,:))
      call Grid_releaseBlkPtr(lb,solnData)
@@ -158,7 +168,7 @@ subroutine Grid_markRefineDerefine()
   maxdens_parent(:) = 0.0
   nrecv = 0
   do i = 1, blkCount
-     lb = gr_blkList(i)
+     lb = blkList(i)
      if (nodetype(lb) == LEAF .AND. lrefine(lb) == lrefine_max) then
         if(parent(1,lb).gt.-1) then
            if (parent(2,lb).ne.gr_meshMe) then
@@ -181,7 +191,7 @@ subroutine Grid_markRefineDerefine()
 
   nsend = 0
   do i = 1, blkCount
-     lb = gr_blkList(i)
+     lb = blkList(i)
      if (nodetype(lb) == PARENT_BLK .AND. lrefine(lb) == lrefine_max-1) then
         do j = 1,nchild
            if(child(1,j,lb).gt.-1) then
@@ -210,7 +220,7 @@ subroutine Grid_markRefineDerefine()
 
 !!  maxdens_parent(:) = 0.0  ! <-- uncomment line for previous behavior
   do i = 1, blkCount
-     lb = gr_blkList(i)
+     lb = blkList(i)
      if (nodetype(lb) == LEAF) then
         if (maxdens(lb) < 0.5*sim_initDens) then
            refine(lb)   = .false.
