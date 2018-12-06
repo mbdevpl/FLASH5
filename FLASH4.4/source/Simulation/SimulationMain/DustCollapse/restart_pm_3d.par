@@ -61,6 +61,7 @@ tmax            = 0.0637
 
 refine_var_1	= "dens"
 refine_var_2	= "none"
+derefine_cutoff_1 = 0.8
 
 mpole_lmax	= 0
 useGravity        = .true.
