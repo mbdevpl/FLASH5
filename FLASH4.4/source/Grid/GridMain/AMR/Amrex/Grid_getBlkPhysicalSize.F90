@@ -71,3 +71,17 @@ subroutine Grid_getBlkPhysicalSize(block, blockSize)
   blockSize(1:NDIM) = (hi(1:NDIM) - lo(1:NDIM) + 1) * dx(1:NDIM)
   end associate
 end subroutine Grid_getBlkPhysicalSize
+
+subroutine Grid_getBlkPhysicalSize_blkId(blockId, blockSize)
+
+#include "Flash.h"
+#include "constants.h"
+   use Driver_interface, ONLY : Driver_abortFlash
+
+   implicit none
+   integer, intent(in) :: blockId
+   real,dimension(MDIM),intent(out) :: blockSize
+
+   call Driver_abortFlash('Grid_getBlkPhysicalSize_blkId: just a stub for this Grid configuration, do not call!')
+
+end subroutine Grid_getBlkPhysicalSize_blkId
