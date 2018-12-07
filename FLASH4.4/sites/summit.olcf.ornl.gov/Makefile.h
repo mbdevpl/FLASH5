@@ -21,7 +21,7 @@ AMREX_PATH = ${AMREX_DIR}/summit_${NDIM}d_${PE_ENV}
 HDF5_PATH  = ${OLCF_HDF5_ROOT}
 HYPRE_PATH = ${OLCF_HYPRE_ROOT}
 CUDA_PATH  = ${OLCF_CUDA_ROOT}
-MAGMA_PATH = ${HOME}/magma-2.3.0/build/${PE_ENV}
+MAGMA_PATH = ${OLCF_MAGMA_ROOT}
 
 ZLIB_PATH  =
 
@@ -151,21 +151,21 @@ else ifdef OLCF_PGI_ROOT
     F77FLAGS     = -r8 -i4 -Mfixed
     f77FLAGS     = ${F77FLAGS}
 
-    FFLAGS_OACC  = -acc -ta=tesla:cc70 -Minfo=accel
+    FFLAGS_OACC  = -acc -ta=tesla:cc70,cuda9.2,ptxinfo -Minfo=accel
 
     # C-specific flags
     OPT_CFLAGS   =
     TEST_CFLAGS  =
     DEBUG_CFLAGS =
 
-    CFLAGS_OACC  = -acc -ta=tesla:cc70 -Minfo=accel
+    CFLAGS_OACC  = -acc -ta=tesla:cc70,cuda9.2,ptxinfo -Minfo=accel
 
     # Linker flags
     LIB_OPT      = -pgc++libs
     LIB_TEST     = -pgc++libs
     LIB_DEBUG    = -pgc++libs
 
-    LIB_OACC     = -acclibs
+    LIB_OACC     = -acc -ta=tesla:cc70,cuda9.2,ptxinfo -acclibs
     LIB_MASS     =
 
 else ifdef OLCF_XL_ROOT
@@ -177,8 +177,8 @@ else ifdef OLCF_XL_ROOT
     # generic flags
     OPENMP       = -qsmp=omp:noauto
 
-    OPT_FLAGS    = -g -O3 -qarch=pwr9 -qtune=pwr9:st -w
-    TEST_FLAGS   = -g -O2 -qarch=pwr9 -qtune=pwr9:st -w -qstrict=all
+    OPT_FLAGS    = -g -O3 -qarch=pwr9 -qtune=pwr9 -w
+    TEST_FLAGS   = -g -O2 -qarch=pwr9 -qtune=pwr9 -w -qstrict=all
     DEBUG_FLAGS  = -g -O0 -qnosmp -qstrict=all \
 	           -qfloat=rngchk -qcheck=all:nounset \
                    -qflttrap=enable:invalid:nanq:overflow:zerodivide -qsigtrap=xl__trcedump
@@ -306,4 +306,12 @@ local_tree_module.mod local_tree.mod local_tree.o : local_tree.F90
 	${FCOMP} ${FFLAGS} -qalias=nostd ${F90FLAGS} ${FDEFINES} $<
 
 endif
+else
+ifdef OLCF_PGI_ROOT
+
+## PGI compiler does not like -O2 or above with this file for some reason
+mpi_amr_prolong.o : mpi_amr_prolong.F90
+	$(ECHO-COMPILING)
+	$(FCOMP) $(patsubst -fast,-O1,$(FFLAGS)) $(F90FLAGS) $(FDEFINES) $< -o $(addsuffix .o,$(basename $@))
+
 endif
