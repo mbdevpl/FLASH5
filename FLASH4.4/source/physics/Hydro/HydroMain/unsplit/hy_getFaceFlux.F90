@@ -163,10 +163,11 @@ subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   logical, save :: hy_useBiermann = .false.
 #endif
 
-  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)) :: xCenter, xLeft, xRight
+  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)) :: xCenter
+  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)+1) :: xFaces
   real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)) :: yCenter
 
-  real :: dPdr, rvol, alpha
+  real :: alpha
   real, allocatable :: xcent(:), ycent(:), zcent(:)
   real :: speed, dy, dz
   integer :: ispu,isph
@@ -271,14 +272,13 @@ subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   if (hy_geometry /= CARTESIAN) then
      call Grid_getCellCoords(IAXIS,block, CENTER,    .true.,xCenter, dataSize(IAXIS))
      call Grid_getCellCoords(JAXIS,block, CENTER,    .true.,yCenter, dataSize(JAXIS))
-     call Grid_getCellCoords(IAXIS,block, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-     call Grid_getCellCoords(IAXIS,block, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+     call Grid_getCellCoords(IAXIS,block, FACES,     .true.,xFaces,  dataSize(IAXIS)+1)
 !!$     call block%getCellCoords(xCenter, IAXIS, CENTER    , INTERIOR)
 !!$     print*,'Here it comes:',xCenter,lbound(xcenter),ubound(xcenter),size(xcenter)
 !!$     print*,xCenter
 !!$     stop
 !!$     call block%getCellCoords(yCenter, JAXIS, CENTER    , INTERIOR)
-!!$     call block%getCellCoords(xLeft  , IAXIS, LEFT_EDGE , INTERIOR)
+!!$     call block%getCellCoords(xFaces , IAXIS, LEFT_EDGE , INTERIOR)
 !!$     call block%getCellCoords(xRight , IAXIS, RIGHT_EDGE, INTERIOR)
   endif
 
@@ -540,11 +540,11 @@ subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                             0.5*(scrchFaceXPtr(HY_N06_FACEXPTR_VAR,i,j,k)**2+&
                             scrchFaceXPtr(HY_N07_FACEXPTR_VAR,i,j,k)**2+&
                             scrchFaceXPtr(HY_N08_FACEXPTR_VAR,i,j,k)**2)
-#endif
-                       weightMinus = xLeft(i); weightPlus = xRight(i)
+#endif`
+                       weightMinus = xFaces(i); weightPlus = xFaces(i+1)
                        weightSum = 2.0*xCenter(i)
                        if (hy_geometry == SPHERICAL) then
-                          weightMinus = xLeft(i) * xLeft(i); weightPlus=xRight(i)*xRight(i)
+                          weightMinus = xFaces(i) * xFaces(i); weightPlus=xFaces(i+1)*xFaces(i+1)
                           weightSum = weightMinus + weightPlus
                        end if
 
