@@ -137,7 +137,7 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
   if((blockID<1).or.(blockID>MAXBLOCKS)) then
      call Driver_abortFlash("Grid_getCellCoords :invalid blockID ")
   end if
-  if(.not.((edge==LEFT_EDGE).or.(edge==RIGHT_EDGE).or.&
+  if(.not.((edge==LEFT_EDGE).or.(edge==RIGHT_EDGE).or.(edge==FACES).or.&
        &(edge==CENTER))) then
      call Driver_abortFlash("Get Coords : invalid edge specification, must be LEFT_EDGE &
           RIGHT_EDGE, or CENTER")
