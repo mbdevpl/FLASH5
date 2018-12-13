@@ -23,7 +23,7 @@
 !!
 !! NOTES
 !!
-!!  This implementation actually does more than just releasing the pointer.
+!!  This implementation actually just nullifies the pointer.
 !!
 !! SEE ALSO
 !!  Grid_getBlkPtr

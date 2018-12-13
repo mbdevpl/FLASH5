@@ -64,7 +64,8 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
 
   integer :: gds
   logical :: validGridDataStruct
-  integer,pointer,dimension(:) :: loUse
+  real,   pointer              :: auxPtr(:,:,:,:)
+  integer,pointer,dimension(:) :: loUse, loGlob
 
 #ifdef DEBUG_GRID
   if(present(gridDataStruct)) then
@@ -100,9 +101,21 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
      if (localFlag) loUse => block%localLimitsGC(LOW, :)
   end if
 
-  if (gds==SCRATCH_CTR) then    !For now, the assumption that
-     !SCRATCH_CTR ist stored without guard cells is hardwired here.
+  if (gds==SCRATCH_CTR) then    !For now, the multifab for
+     ! SCRATCH_CTR is stored without guard cells.
+     ! We use the limits (not limitsGC) component of the
+     ! descriptor to determine the region to point to.
+     ! Note that in the case of tiling (when the descriptor
+     ! describes not a full block but a tile), the region
+     ! pointed to will in general NOT encompass all the
+     ! interior cells of a block, but only the interior
+     ! cells included in the tile (similar to the AMReX
+     ! method tilebox()). ALSO NOTE that in the latter
+     ! case, the region pointed to, and thus in Fortran
+     ! 2008 terminology the pointer, will NOT be
+     ! CONTIGUOUS!
      loUse => block%limits(LOW, :)
+     loGlob => block%limits(LOW, :)
      if (present(localFlag)) then
         if (localFlag) loUse => block%localLimits(LOW, :)
      end if
@@ -129,7 +142,9 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
 #endif
 #endif
     case(SCRATCH_CTR)
-       dataPtr(lo(1):, lo(2):, lo(3):, 1:) => gr_scratchCtr(ilev)%dataptr(igrd)
+       auxPtr                              => gr_scratchCtr(ilev)%dataptr(igrd)
+       dataPtr(lo(1):, lo(2):, lo(3):, 1:) &
+                => auxPtr(loGlob(1)-1:, loGlob(2)-K2D:, loGlob(3)-K3D:, :)
     case DEFAULT
         call Driver_abortFlash("[Grid_getBlkPtr_desc] Unknown grid data structure")
     end select
