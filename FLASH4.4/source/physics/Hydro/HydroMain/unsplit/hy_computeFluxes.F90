@@ -294,11 +294,11 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
      !! ************************************************************************
-     !! Calculate high order Godunov fluxes
-     !! Initialize arrays with zero
-     flx = 0.
-     fly = 0.
-     flz = 0.
+     !! Calculate high order Godunov fluxes by making Riemann solver calls
+!!$     !! Initialize arrays with zero
+!!$     flx = 0.
+!!$     fly = 0.
+!!$     flz = 0.
      call Timers_start("getFaceFlux")
 #ifdef DEBUG_UHD
      print*,'getting face flux'
