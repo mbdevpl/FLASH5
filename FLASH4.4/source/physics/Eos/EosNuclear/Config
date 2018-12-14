@@ -5,6 +5,8 @@ REQUIRES physics/Eos/EosMain
 
 DEFAULT kernel
 
+PPDEFINE FLASH_HAVE_HDF5_MOD
+
 D gamc_variable	 Ratio of specific heats.  Used to compute sound speed.
 VARIABLE gamc  EOSMAP:   GAMC  # sound-speed gamma
 D game_variable	 Energy gamma.  Used to convert between pressure and energy.
