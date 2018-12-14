@@ -227,7 +227,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 #undef Grid_releaseBlkPtr
 #endif
 
-  type(block_metadata_t) :: blockDesc
+  type(block_metadata_t),intent(in) :: blockDesc
   integer, dimension(2), intent(in) :: pos
   integer, intent(IN)               :: sweepDir,numCells
   real, intent(inout)               :: grav(numCells)
