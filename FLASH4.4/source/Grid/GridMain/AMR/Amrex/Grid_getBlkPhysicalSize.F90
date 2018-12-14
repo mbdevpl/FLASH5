@@ -83,6 +83,6 @@ subroutine Grid_getBlkPhysicalSize_blkId(blockId, blockSize)
    real,dimension(MDIM),intent(out) :: blockSize
 
    call Driver_abortFlash('Grid_getBlkPhysicalSize_blkId: just a stub for this Grid configuration, do not call!')
-  blockSize=0.0  ! Silence compiler warning or error
+   blockSize=0.0  ! Silence compiler warning or error
 
 end subroutine Grid_getBlkPhysicalSize_blkId
