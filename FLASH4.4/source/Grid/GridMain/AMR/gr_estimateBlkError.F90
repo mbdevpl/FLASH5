@@ -8,15 +8,18 @@
 !!  call gr_estimateBlkError(real(INOUT) :: error,
 !!                   integer(IN) :: iref,
 !!                   real(IN)    :: refine_filter)
-!!  
+!!
 !!  DESCRIPTION
-!!  
+!!
 !!  For one block, estimate the error associated with the given variable to
 !!  help determine if the block needs refinement or derefinement.
 !!
-!!  ARGUMENTS 
+!!  ARGUMENTS
 !!
-!!    error - indexed by block IDs.
+!!    error - the computed error, a scalar value for the current variable
+!!            (given by iref) and current block.
+!!
+!!    blockDesc - describes the block.
 !!
 !!    iref - index of the refinement variable in data structure "unk"
 !!
@@ -24,12 +27,14 @@
 !!                    don't diverge numerically 
 !! 
 !!  NOTES
-!!  
-!!    See Grid_markRefineDerefine
+!!
+!!    In the case of the PARAMESH Grid implementation, this routine is
+!!    called from gr_estimateError.
 !!
 !!  SEE ALSO
-!!  
+!!
 !!    Grid_markRefineDerefine
+!!    Grid_markRefineDerefineCallback
 !!
 !!***
 
@@ -39,14 +44,15 @@
 
 subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
 
-  use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
-       gr_meshComm, gr_meshMe,gr_domainBC
+  use Grid_data, ONLY: gr_geometry, &
+       gr_meshComm, gr_meshMe
   use Grid_interface, ONLY : Grid_getBlkBC, &
+                             Grid_getCellCoords, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr
 #ifndef FLASH_GRID_ANYAMREX
-  use Grid_interface, ONLY : Grid_getDeltas
-  use gr_specificData, ONLY : gr_oneBlock
   use Grid_data, ONLY: gr_delta
+#else
+  use Grid_interface, ONLY : Grid_getDeltas
 #endif
   use block_metadata, ONLY : block_metadata_t
 
@@ -73,16 +79,13 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
   real num,denom
 
   integer i,j,k
-  integer ierr,grd
+  integer grd
   integer,dimension(MDIM)::bstart,bend 
-  integer nsend,nrecv
 
   integer :: kk
 
   real, pointer :: solnData(:,:,:,:)
-  integer :: idest, iopt, nlayers, icoord
-  logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
-  integer :: blkLevel, blkID
+  integer :: blkLevel
 
 !==============================================================================
 
@@ -109,17 +112,9 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
   !==============================================================================
 
 
-#ifndef FLASH_GRID_ANYAMREX
-#define XCOORD(I) (gr_oneBlock(blkID)%firstAxisCoords(CENTER,I))
-#define YCOORD(I) (gr_oneBlock(blkID)%secondAxisCoords(CENTER,I))
-#else
 #define XCOORD(I) (xCenter(I))
 #define YCOORD(I) (yCenter(I))
-#endif
 
-#ifndef FLASH_GRID_ANYAMREX
-     blkID       = blockDesc%id
-#endif
      blkLevel    = blockDesc%level
      blkLimits   = blockDesc%limits
      blkLimitsGC = blockDesc%limitsGC
@@ -146,15 +141,19 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
              blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 
 
-#ifdef FLASH_GRID_ANYAMREX
-        allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-        allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+        ! Skipping the following allocations and calls in some
+        ! situations where not needed, based on geometry
+        if ((gr_geometry == SPHERICAL) &
+             .OR. (NDIM > 1 .AND. gr_geometry == POLAR) &
+             .OR. (NDIM == 3 .AND. gr_geometry .NE. CARTESIAN)) then
+           allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+           allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
 
-        call Grid_getCellCoords(IAXIS, blockDesc, CENTER, WITH_GC, &
+           call Grid_getCellCoords(IAXIS, blockDesc, CENTER, WITH_GC, &
                                 xCenter, SIZE(xCenter))
-        call Grid_getCellCoords(JAXIS, blockDesc, CENTER, WITH_GC, &
+           call Grid_getCellCoords(JAXIS, blockDesc, CENTER, WITH_GC, &
                                 yCenter, SIZE(yCenter))
-#endif
+        end if
 
         ! Compute first derivatives
         do k = blkLimitsGC(LOW,KAXIS)+K3D*1,blkLimitsGC(HIGH,KAXIS)-K3D*1
