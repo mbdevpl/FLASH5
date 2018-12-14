@@ -68,8 +68,8 @@ subroutine eos_helmholtz(mode, vecLen, eosData, massFrac, mask)
 # include "Flash.h"
   integer, INTENT(in) :: mode, vecLen
   real,INTENT(inout), dimension(EOS_NUM*vecLen) :: eosData 
-  logical, optional, INTENT(in),dimension(EOS_VARS+1:EOS_NUM) :: mask
-  real, optional,target, INTENT(in),dimension(NSPECIES*vecLen)    :: massFrac
+  real, optional, INTENT(in),dimension(NSPECIES*vecLen)    :: massFrac
+  logical, optional,target, INTENT(in),dimension(EOS_VARS+1:EOS_NUM) :: mask
 
   return
 end subroutine eos_helmholtz
