@@ -176,10 +176,12 @@ subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
   real :: t_start
 
 !!$  xflux = 0.
-!!$  if (NDIM < 3) then
-!!$     zflux = 0.
-!!$     if (NDIM < 2) yflux = 0.
-!!$  endif
+# if (NDIM < 3)
+     zflux = 0.      !avoid compiler warning for intent(OUT) dummy
+#    if (NDIM < 2)
+        yflux = 0.   !avoid compiler warning for intent(OUT) dummy
+#    endif
+# endif
 
   kGrav=0
 #ifdef GRAVITY
