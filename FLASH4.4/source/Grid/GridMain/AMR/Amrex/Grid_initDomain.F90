@@ -45,10 +45,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
                                    amrex_max_level
 
-  use Grid_interface,       ONLY : Grid_getLeafIterator, &
-                                   Grid_releaseLeafIterator, &
-                                   Grid_getBlkPtr, &
-                                   Grid_releaseBlkPtr
   use Grid_data,            ONLY : gr_doFluxCorrection
   use gr_physicalMultifabs, ONLY : unk, &
                                    gr_scratchCtr, &
@@ -56,9 +52,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
                                    fluxes, &
                                    flux_registers
   use Driver_interface,     ONLY : Driver_abortFlash
-  use Eos_interface,        ONLY : Eos_wrapped
-  use leaf_iterator,        ONLY : leaf_iterator_t
-  use block_metadata,       ONLY : block_metadata_t
 
   implicit none
 
@@ -66,10 +59,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   logical, intent(INOUT) :: particlesInitialized
 
   real(wp), parameter :: T_INIT = 0.0_wp
-
-  type(leaf_iterator_t)         :: itor
-  type(block_metadata_t)        :: block
-  real(wp), contiguous, pointer :: initData(:,:,:,:)
 
   !!!!!----- ALLOCATE DATA STRUCTURES
   ! multifabs 
