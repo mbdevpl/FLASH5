@@ -59,7 +59,9 @@ module block_1lev_iterator
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: grid_index
+        procedure, public :: local_tile_index
         procedure, public :: tilebox
+        procedure, public :: growntilebox
         procedure, public :: fabbox
         procedure, public :: destroy_iterator
     end type block_1lev_iterator_t
@@ -323,6 +325,26 @@ contains
       idx = this%mfi%grid_index()
     end function grid_index
 
+    !!****m* block_1lev_iterator_t/local_tile_index
+    !!
+    !! NAME
+    !!  local_tile_index
+    !!
+    !! SYNPOSIS
+    !!  idx = itor%local_tile_index()
+    !!
+    !! DESCRIPTION
+    !!  Advance the iterator to the next block managed by process and that meets
+    !!  the iterator constraints given at instantiation.
+    !!
+    !!****
+    function local_tile_index(this) result(idx)
+      class(block_1lev_iterator_t), intent(IN) :: this
+      integer                                  :: idx
+
+      idx = this%mfi%local_tile_index()
+    end function local_tile_index
+
     !!****m* block_1lev_iterator_t/tilebox
     !!
     !! NAME
@@ -349,6 +371,36 @@ contains
 
       bx = this%mfi%tilebox()
     end function tilebox
+
+    !!****m* block_1lev_iterator_t/growntilebox
+    !!
+    !! NAME
+    !!  growntilebox
+    !!
+    !! SYNPOSIS
+    !!  box = itor%growntilebox()
+    !!
+    !! DESCRIPTION
+    !!  Obtain the box with guardcells of the block/tile currently
+    !!  "loaded" into the iterator.  For tiles, the guardcells are those
+    !!  guardcells of the tile's parent block that are adjacent to the
+    !!  tile.  In this sense, each guardcell of the parent block is associated
+    !!  with only one tile.
+    !!
+    !! RETURN VALUE
+    !!  An AMReX box object.  The index space of the box is the index
+    !!  space of the multifab used to construct the underlying MFIter.
+    !!  The spatial indices of the box use AMReX's 0-based scheme.
+    !!
+    !!****
+    function growntilebox(this) result(bx)
+      use amrex_box_module, ONLY : amrex_box
+
+      class(block_1lev_iterator_t), intent(in) :: this
+      type(amrex_box)                          :: bx
+
+      bx = this%mfi%growntilebox()
+    end function growntilebox
 
     !!****m* block_1lev_iterator_t/fabbox
     !!
