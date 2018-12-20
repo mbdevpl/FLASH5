@@ -5,7 +5,7 @@ __all__ = ["LibUnion" ]
 
 ##########################
 
-import string, re, os, UserDict, sys, shutil
+import string, re, os, sys, shutil
 
 import globals
 from globals import * # GVars and SetupError
@@ -13,10 +13,10 @@ from utils import * # Assorted little cute functions
 from libCfg import * # FlashLib class
 from lazyFile import * # for LazyFile class
 
-class LibUnion(UserDict.UserDict):
+class LibUnion(dict):
 
    def __init__(self,libs): # list of lib names
-       UserDict.UserDict.__init__(self)
+       dict.__init__(self)
        self.adjust(libs)
 
    def adjust(self,liblist): # satisfy dependencies and perform checks
@@ -32,7 +32,7 @@ class LibUnion(UserDict.UserDict):
       """Add libraries which those in libs depend on.
       done is a list of names of libraries already processed"""
       tocheck = None
-      for a in libs.keys():
+      for a in list(libs.keys()):
         if a not in done: 
            tocheck = a
            break
@@ -41,8 +41,8 @@ class LibUnion(UserDict.UserDict):
       lib = tocheck
       self[lib] = FlashLib(lib) # get lib Config Info. Handles, internal and external libraries correctly
       newdeps = self[lib]['LIBRARY']
-      for x in newdeps.keys(): # for each dependency update libs with args
-        if not libs.has_key(x): libs[x] = []
+      for x in list(newdeps.keys()): # for each dependency update libs with args
+        if x not in libs: libs[x] = []
         libs[x].append(newdeps[x])
       done.append(tocheck)
       return self.libDepHelper(libs,done) # recursive call to handle the rest
@@ -53,13 +53,13 @@ class LibUnion(UserDict.UserDict):
    # returns all libaries in an order so that all the dependencies of lib comes before the lib itself
    def topoSort(self,libs):
       curr = [] # list of libraries whose dependencies have been satisfied
-      rest = libs.keys() # those whose dependencies need to be satisfied
+      rest = list(libs.keys()) # those whose dependencies need to be satisfied
       while rest: # As long as their is something to do
             success = 0
             for lib in rest:
                 libOK = 1 # have we satisfied all dependencies of "lib"
                 # self[lib][LIBRARY] maps libname to argument for lib
-                for other in self[lib]['LIBRARY'].keys():
+                for other in list(self[lib]['LIBRARY'].keys()):
                     if other not in curr: libOK = 0
                 if libOK == 1:
                    success = 1
@@ -69,13 +69,13 @@ class LibUnion(UserDict.UserDict):
                break
       if rest: # dependency cycle detected
         GVars.out.put("Topological Sort Failed: Cycle Detected",globals.ERROR)
-        GVars.out.put("Suspect Libraries: %s"% string.join(rest,","),globals.ERROR)
+        GVars.out.put("Suspect Libraries: %s"% ",".join(rest),globals.ERROR)
         raise SetupError("Check your library dependencies")
       # Now check if different people depend on the library in a different way
       # if so flag an error
       self.libOrder = []
       for lib in curr:
-          args = filter(None,libs[lib]) # pull out all non-trivial arguments
+          args = [_f for _f in libs[lib] if _f] # pull out all non-trivial arguments
           if not args:
              arg = ""
           else:
@@ -111,7 +111,7 @@ class LibUnion(UserDict.UserDict):
      Raises errors if internal lib exists but is troublesome"""
 
 
-     base = string.lower(lib)
+     base = str.lower(lib)
      libDir = os.path.join(GVars.libDir,base)
      relLibDir = getRelPath(libDir,".")
 
@@ -137,9 +137,9 @@ class LibUnion(UserDict.UserDict):
        # if we are an internal library and need to rebuild
        if libFlags == None: # programming error
           raise SetupError("libinfo for %s returned nothing. Programming error" % base)
-       if libFlags.has_key("INTERNAL"): # pick up default flag info
+       if "INTERNAL" in libFlags: # pick up default flag info
           libFlags = self.intLibFlags(base,subdir=libFlags["INTERNAL"],absLibDir=libDir,relLibDir=relLibDir)
-       if libFlags.has_key("EXTERNAL"): # pick up default flag info for external
+       if "EXTERNAL" in libFlags: # pick up default flag info for external
           libFlags = self.extLibFlags(libFlags["EXTERNAL"],buildFlag)
        if self[lib]["TYPE"]=="INTERNAL" and libFlags.get("REBUILD",None):
           self.makeBinary(libDir,base,makefilename)

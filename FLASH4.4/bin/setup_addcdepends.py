@@ -12,7 +12,7 @@ incpatt = """^\s*[#]\s*include\s+["']?([A-Za-z._0-9]+)['"]?\s+.*"""
 def findINCmatch(name):
     global INCDirs
     global INCcache
-    if INCcache.has_key(name): return INCcache[name]
+    if name in INCcache: return INCcache[name]
     for d in INCDirs:
         dname = os.path.join(d,name)
         if os.path.isfile(dname):
@@ -32,7 +32,7 @@ def depends(filename):
         if m: 
            incs[m.group(1)] = 1
            continue
-    return [findINCmatch(x) for x in incs.keys()]
+    return [findINCmatch(x) for x in list(incs.keys())]
 
 
 ##################
