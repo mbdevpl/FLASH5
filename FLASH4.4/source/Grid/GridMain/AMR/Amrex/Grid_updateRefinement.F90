@@ -112,7 +112,9 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
   type(gr_iterator_t)            :: itor
   type(block_metadata_t)         :: blockDesc
-  real,                  pointer :: solnData(:, :, :, :) => null()
+  real,                  pointer :: solnData(:, :, :, :)
+
+  nullify(solnData)
 
   if (mod(nstep, gr_nrefs) == 0) then
 #ifdef DEBUG_GRID
@@ -161,20 +163,20 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      ! on all levels with leaf blocks.
      ! DEV: TODO Should we restrict GC fill to only refinement variables?
      lev = 0
-     call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
-                                    0.0d0, unk(lev), &
+     call amrex_fillpatch(unk(lev), 1.0, unk(lev), &
+                                    0.0, unk(lev), &
                                     amrex_geom(lev), gr_fillPhysicalBC, &
-                                    0.0d0, UNK_VARS_BEGIN, &
+                                    0.0, UNK_VARS_BEGIN, &
                                     UNK_VARS_BEGIN, NUNK_VARS)
 
      do lev=1, amrex_get_finest_level()
-        call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
-                                       0.0d0, unk(lev-1), &
+        call amrex_fillpatch(unk(lev), 1.0, unk(lev-1), &
+                                       0.0, unk(lev-1), &
                                        amrex_geom(lev-1), gr_fillPhysicalBC, &
-                                       1.0e0, unk(lev  ), &
-                                       0.0d0, unk(lev  ), &
+                                       1.0, unk(lev  ), &
+                                       0.0, unk(lev  ), &
                                        amrex_geom(lev  ), gr_fillPhysicalBC, &
-                                       0.0d0, UNK_VARS_BEGIN, &
+                                       0.0, UNK_VARS_BEGIN, &
                                        UNK_VARS_BEGIN, NUNK_VARS, &
                                        amrex_ref_ratio(lev-1), gr_interpolator, &
                                        lo_bc_amrex, hi_bc_amrex)
