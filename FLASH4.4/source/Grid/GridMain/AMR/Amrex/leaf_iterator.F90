@@ -79,7 +79,7 @@ module leaf_iterator
     !!        1-based level indexing.
     !!****
     type, public :: leaf_iterator_t
-        type(block_1lev_iterator_t), private, pointer :: li(:)
+        type(block_1lev_iterator_t), private, pointer :: li(:) => null()
         integer                 :: first_level   = INVALID_LEVEL
         integer                 :: last_level    = INVALID_LEVEL
         integer                 :: level    = INVALID_LEVEL
@@ -273,6 +273,7 @@ contains
 
          end do
          deallocate(itor%li)
+         nullify(itor%li)
       end if
       itor%isValid = .FALSE.
 

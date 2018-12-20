@@ -68,7 +68,7 @@ module gr_iterator
     !!        1-based level indexing.
     !!****
     type, public :: gr_iterator_t
-        type(block_1lev_iterator_t), private, pointer :: li(:)
+        type(block_1lev_iterator_t), private, pointer :: li(:) => null()
         integer,                     private              :: first_level = INVALID_LEVEL
         integer,                     private              :: last_level  = INVALID_LEVEL
         integer,                     private              :: level       = INVALID_LEVEL
@@ -198,6 +198,7 @@ contains
 
          end do
          deallocate(itor%li)
+         nullify(itor%li)
       end if
       itor%isValid = .FALSE.
     end subroutine destroy_iterator
