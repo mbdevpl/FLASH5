@@ -66,7 +66,9 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
   type(gr_iterator_t)    :: itor
   type(block_metadata_t) :: blockDesc
 
-  real,   pointer :: solnData(:,:,:,:) => null()
+  real,   pointer :: solnData(:,:,:,:)
+
+  nullify(solnData)
 
   if (       (gridDataStruct /= CENTER) .AND. (gridDataStruct /= CENTER_FACES) &
        .AND. (gridDataStruct /= FACES)  .AND. (gridDataStruct /= FACEX) &
