@@ -27,12 +27,16 @@ subroutine Grid_zeroFluxData()
   type(gr_iterator_t)    :: itor
   type(block_metadata_t) :: block
 
-  real, pointer :: fluxDataX(:, :, : , :) => null()
-  real, pointer :: fluxDataY(:, :, : , :) => null()
-  real, pointer :: fluxDataZ(:, :, : , :) => null()
+  real, pointer :: fluxDataX(:, :, : , :)
+  real, pointer :: fluxDataY(:, :, : , :)
+  real, pointer :: fluxDataZ(:, :, : , :)
 
   integer :: level
   integer :: finest_level
+
+  nullify(fluxDataX)
+  nullify(fluxDataY)
+  nullify(fluxDataZ)
 
   if(NFLUXES < 1)   RETURN
  
