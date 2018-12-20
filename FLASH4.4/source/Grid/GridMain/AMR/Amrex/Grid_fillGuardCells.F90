@@ -139,7 +139,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   logical,dimension(NUNK_VARS) :: gcell_on_cc
   integer :: guard, gcEosMode
   integer,dimension(MDIM) :: layers, returnLayers
-  real,pointer :: solnData(:,:,:,:) => null()
+  real,pointer :: solnData(:,:,:,:)
   type(leaf_iterator_t)  :: itor
   type(block_metadata_t) :: blockDesc
 
@@ -172,6 +172,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      call Driver_abortFlash("[Grid_fillGuardcell] invalid data structure")
   end if
 #endif
+
+  nullify(solnData)
 
   ! DEV: TODO Implement this functionality?
   if (       (gridDataStruct /= CENTER) .AND. (gridDataStruct /= CENTER_FACES) &
