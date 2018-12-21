@@ -1,13 +1,13 @@
 module sim_interface
 
     interface
-        subroutine sim_writeDataPoints(initData, block, points, values)
-            use block_metadata, ONLY : block_metadata_t
+        subroutine sim_writeDataPoints(initData, tileDesc, points, values)
+            use flash_tile, ONLY : flash_tile_t
             implicit none
-            real,                   intent(IN), pointer :: initData(:, :, :, :)
-            type(block_metadata_t), intent(IN)          :: block
-            real,                   intent(IN)          :: points(:, :)
-            real,                   intent(IN)          :: values(:)
+            real,               intent(IN), pointer :: initData(:, :, :, :)
+            type(flash_tile_t), intent(IN)          :: tileDesc
+            real,               intent(IN)          :: points(:, :)
+            real,               intent(IN)          :: values(:)
         end subroutine sim_writeDataPoints
     end interface
 

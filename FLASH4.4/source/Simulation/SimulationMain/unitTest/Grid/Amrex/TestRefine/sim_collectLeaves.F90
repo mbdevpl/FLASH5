@@ -1,16 +1,16 @@
 #include "constants.h"
 
 subroutine sim_collectLeaves
-    use Grid_interface,       ONLY : Grid_getLeafIterator, &
-                                     Grid_releaseLeafIterator
+    use Grid_interface,       ONLY : Grid_getTileIterator, &
+                                     Grid_releaseTileIterator
     use gr_amrexInterface,    ONLY : gr_getFinestLevel
-    use leaf_iterator,        ONLY : leaf_iterator_t 
-    use block_metadata,       ONLY : block_metadata_t 
+    use flash_iterator,       ONLY : flash_iterator_t 
+    use flash_tile,           ONLY : flash_tile_t
     use Simulation_data,      ONLY : leaves, &
                                      MIN_REFINE_LEVEL, MAX_REFINE_LEVEL
 
-    type(leaf_iterator_t)  :: itor
-    type(block_metadata_t) :: blockDesc
+    type(flash_iterator_t) :: itor
+    type(flash_tile_t)     :: blockDesc
 
     logical :: gridChanged
     integer :: finest_level
@@ -21,15 +21,15 @@ subroutine sim_collectLeaves
     call gr_getFinestLevel(finest_level)
     do lev = MIN_REFINE_LEVEL, MAX_REFINE_LEVEL
         block_count = 0
-        call Grid_getLeafIterator(itor, level=lev)
-        do while (itor%is_valid())
-            call itor%blkMetaData(blockDesc)
+        call Grid_getTileIterator(itor, LEAF, level=lev, tiling=.FALSE.)
+        do while (itor%isValid())
+            call itor%currentTile(blockDesc)
  
             block_count = block_count + 1
 
             call itor%next()
         end do
-        call Grid_releaseLeafIterator(itor)
+        call Grid_releaseTileIterator(itor)
 
         if (allocated(leaves(lev)%blocks)) then
             deallocate(leaves(lev)%blocks)
@@ -42,11 +42,11 @@ subroutine sim_collectLeaves
 
     ! Populate leaf block data structure
     do lev = MIN_REFINE_LEVEL, finest_level 
-        call Grid_getLeafIterator(itor, level=lev)
+        call Grid_getTileIterator(itor, LEAF, level=lev, tiling=.FALSE.)
 
         j = 1
-        do while (itor%is_valid())
-            call itor%blkMetaData(blockDesc)
+        do while (itor%isValid())
+            call itor%currentTile(blockDesc)
 
             associate(lo => blockDesc%limits(LOW,  :), &
                       hi => blockDesc%limits(HIGH, :))
@@ -57,8 +57,8 @@ subroutine sim_collectLeaves
             j = j + 1
             call itor%next()
         end do
-        
-        call Grid_releaseLeafIterator(itor)
+
+        call Grid_releaseTileIterator(itor)
     end do
 end subroutine sim_collectLeaves
 

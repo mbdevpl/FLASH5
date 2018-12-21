@@ -1,16 +1,16 @@
+#include "constants.h"
+
 subroutine sim_printLeaves(title)
     use gr_amrexInterface, ONLY : gr_getFinestLevel
-    use block_metadata,    ONLY : block_metadata_t
+    use flash_tile,        ONLY : flash_tile_t
     use Simulation_data,   ONLY : leaves, &
                                   MIN_REFINE_LEVEL
 
     implicit none
 
-#include "constants.h"
+    character(*), intent(IN) :: title
 
-    character(*), intent(IN)    :: title
-
-    type(block_metadata_t) :: blockDesc
+    type(flash_tile_t) :: tileDesc
 
     integer :: level, j
     integer :: finest_level
@@ -20,10 +20,10 @@ subroutine sim_printLeaves(title)
     call gr_getFinestLevel(finest_level)
     do level = MIN_REFINE_LEVEL, finest_level 
         if (.NOT. allocated(leaves(level)%blocks))   CYCLE
-        
+
         associate(blks => leaves(level)%blocks)
             write(*,'(A,I2)') "Leaf blocks at level ", level
-            do j = 1, SIZE(leaves(level)%blocks, 1)
+            do j = 1, SIZE(blks, 1)
                 write(*,'(A,I3,A,I3,A,I3,A,I3,A)') "     From (", &
                          blks(j, 1), ", ", &
                          blks(j, 2), ") to (", &

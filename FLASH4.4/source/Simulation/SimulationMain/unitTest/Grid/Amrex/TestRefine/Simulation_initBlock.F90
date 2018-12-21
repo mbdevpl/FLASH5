@@ -29,27 +29,27 @@
 #include "constants.h"
 #include "sim_constants.h"
 
-subroutine Simulation_initBlock(initData, blockDesc)
-    use block_metadata, ONLY : block_metadata_t
+subroutine Simulation_initBlock(initData, tileDesc)
+    use flash_tile,     ONLY : flash_tile_t 
     use sim_interface,  ONLY : sim_writeDataPoints
 
     implicit none
 
-    real,                   intent(IN), pointer :: initData(:, :, :, :)
-    type(block_metadata_t), intent(IN)          :: blockDesc
+    real,                          pointer :: initData(:, :, :, :)
+    type(flash_tile_t), intent(IN)         :: tileDesc
 
     real    :: points(2, 2)
     real    :: values(2)
 
-    initData(:, :, :, :) = 0.0d0
+    initData(:, :, :, :) = 0.0
 
-    points(:, :) = 0.0d0
+    points(:, :) = 0.0
     points(1, :) = [0.16, 0.67]
     points(2, :) = [0.11, 0.38]
-    values(:) = 0.0d0
+    values(:) = 0.0
     values(1) = REFINE_TO_L3
     values(2) = REFINE_TO_L2
 
-    call sim_writeDataPoints(initData, blockDesc, points, values)
+    call sim_writeDataPoints(initData, tileDesc, points, values)
 end subroutine Simulation_initBlock
 

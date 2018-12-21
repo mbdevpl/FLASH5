@@ -35,20 +35,16 @@
 
 subroutine Driver_evolveFlash()
     use amrex_fort_module,     ONLY : amrex_spacedim
-    use amrex_box_module,      ONLY : amrex_box
-    use amrex_multifab_module, ONLY : amrex_mfiter, &
-                                      amrex_mfiter_build, &
-                                      amrex_mfiter_destroy
 
     use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
                                       Grid_getDeltas, &
-                                      Grid_updateRefinement, &
-                                      Grid_getBlkPtr, Grid_releaseBlkPtr
-    use Grid_data,             ONLY : gr_meshMe, gr_lRefineMax, gr_maxRefine
+                                      Grid_getTileIterator, &
+                                      Grid_releaseTileIterator
+    use Grid_data,             ONLY : gr_lRefineMax, gr_maxRefine
     use gr_amrexInterface,     ONLY : gr_getFinestLevel, &
                                       gr_writeData
-    use gr_physicalMultifabs,  ONLY : unk
-    use block_metadata,        ONLY : block_metadata_t
+    use flash_iterator,        ONLY : flash_iterator_t
+    use flash_tile,            ONLY : flash_tile_t
     use sim_interface,         ONLY : sim_advance, &
                                       sim_collectLeaves
     use Simulation_data,       ONLY : leaves, &
@@ -65,17 +61,13 @@ subroutine Driver_evolveFlash()
     real :: points(3, 1:NDIM)
     real :: values(3)
 
-    ! DEV: TODO Get rid of hardcoded max levels here and elsewhere
-    integer :: block_count(4)
-    integer :: block_count_ex(4)
-    integer :: lev, i, j
+    integer :: i, j
 
     type(blocks_t) :: leaves_ex(MIN_REFINE_LEVEL:MAX_REFINE_LEVEL)
 
     real, contiguous, pointer :: solnData(:,:,:,:)
-    type(block_metadata_t)    :: blockDesc
-    type(amrex_mfiter)        :: mfi
-    type(amrex_box)           :: bx
+    type(flash_iterator_t)    :: itor
+    type(flash_tile_t)        :: tileDesc
 
     !!!!! CONFIRM PROPER DIMENSIONALITY
     write(*,*)
@@ -85,6 +77,8 @@ subroutine Driver_evolveFlash()
         write(*,*)
         stop
     end if
+
+    nullify(solnData)
 
     !!!!! POPULATE LEAF BLOCK DATA STRUCTURE AS IN sim_advance
     call sim_collectLeaves
@@ -97,20 +91,20 @@ subroutine Driver_evolveFlash()
     call assertEqual(NYB, 8, "Incorrect initial number of cells/block along Y")
     call assertEqual(NZB, 1, "Incorrect initial number of cells/block along Z")
 
-    domain = 0.0d0
+    domain = 0.0
     call Grid_getDomainBoundBox(domain)
-    call assertEqual(domain(LOW,  IAXIS), 0.0d0, "Incorrect Xi-coord")
-    call assertEqual(domain(LOW,  JAXIS), 0.0d0, "Incorrect Yi-coord")
-    call assertEqual(domain(LOW,  KAXIS), 0.0d0, "Incorrect Zi-coord")
-    call assertEqual(domain(HIGH, IAXIS), 1.0d0, "Incorrect Xf-coord")
-    call assertEqual(domain(HIGH, JAXIS), 1.0d0, "Incorrect Yf-coord")
-    call assertEqual(domain(HIGH, KAXIS), 0.0d0, "Incorrect Zf-coord")
+    call assertEqual(domain(LOW,  IAXIS), 0.0, "Incorrect Xi-coord")
+    call assertEqual(domain(LOW,  JAXIS), 0.0, "Incorrect Yi-coord")
+    call assertEqual(domain(LOW,  KAXIS), 0.0, "Incorrect Zi-coord")
+    call assertEqual(domain(HIGH, IAXIS), 1.0, "Incorrect Xf-coord")
+    call assertEqual(domain(HIGH, JAXIS), 1.0, "Incorrect Yf-coord")
+    call assertEqual(domain(HIGH, KAXIS), 0.0, "Incorrect Zf-coord")
 
-    deltas = 0.0d0
+    deltas = 0.0
     call Grid_getDeltas(1, deltas)
-    call assertEqual(deltas(IAXIS), 0.0625d0, "Invalid dx at coarse level")
+    call assertEqual(deltas(IAXIS), 0.0625, "Invalid dx at coarse level")
     call assertEqual(deltas(JAXIS), deltas(IAXIS), "dy != dx at coarse")
-    call assertEqual(deltas(KAXIS), 0.0d0, "dz != 0 at coarse")
+    call assertEqual(deltas(KAXIS), 0.0, "dz != 0 at coarse")
 
     call assertEqual(4, gr_lRefineMax, "Incorrect max number of levels")
     call assertEqual(gr_maxRefine, gr_lRefineMax, "gr_maxRefine != gr_lRefineMax")
@@ -156,18 +150,18 @@ subroutine Driver_evolveFlash()
     !!!!! CONFIRM INITIAL REFINEMENT
     ! Started with 2x2 block structure and refined according to initial data
     ! using unittests own gr_markRefineDerefine callback with AMReX
-    call gr_writeData(0, 0.0d0)
+    call gr_writeData(0, 0.0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(3, finest_level, "Incorrect finest level after init")
 
     !!!!! STEP 1/2 - CONFIRM DEREFINEMENT GLOBALLY TO LEVEL 1
-    points(:, :) = 0.0d0
-    values(:) = 0.0d0
+    points(:, :) = 0.0
+    values(:) = 0.0
     call sim_advance(1, points, values, &
                      "SETTING ALL DATA TO ZERO AT ALL LEVELS", &
                      "LEAVES AFTER ZEROING ALL DATA & REGRID")
-    call gr_writeData(2, 2.0d0)
+    call gr_writeData(2, 2.0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(1, finest_level, "Incorrect finest level")
@@ -189,14 +183,14 @@ subroutine Driver_evolveFlash()
 
     !!!!! STEP 3/4 - CONFIRM LEVEL 2 ONLY ON LOWER-RIGHT
     ! Single point not in corner cell
-    points(:, :) = 0.0d0
-    values(:) = 0.0d0
-    points(1, :) = [0.9d0, 0.1d0]
+    points(:, :) = 0.0
+    values(:) = 0.0
+    points(1, :) = [0.9, 0.1]
     values(1) = REFINE_TO_L2 
     call sim_advance(3, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 2", &
                      "LEAVES AFTER LEVEL 2 DATA AT SINGLE CELL")
-    call gr_writeData(4, 4.0d0)
+    call gr_writeData(4, 4.0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
@@ -230,7 +224,7 @@ subroutine Driver_evolveFlash()
     call sim_advance(5, points, values, &
                      "SETTING SINGLE CELL ONLY FOR LEVEL 4", &
                      "LEAVES AFTER ONLY GETTING TO L3 AT SINGLE CELL")
-    call gr_writeData(6, 6.0d0)
+    call gr_writeData(6, 6.0)
  
     call gr_getFinestLevel(finest_level)
     call assertEqual(3, finest_level, "Incorrect finest level")
@@ -276,81 +270,65 @@ subroutine Driver_evolveFlash()
     ! During this step, gr_remakeLevelCallback called on level 2
     ! and then gr_makeFineLevelFromCoarseCallback created level 3 from level 2
     ! Confirm that data is correct in multifabs at all levels
-    do lev = 1, finest_level
-        call amrex_mfiter_build(mfi, unk(lev-1), tiling=.FALSE.)
-        do while(mfi%next())
-            bx = mfi%tilebox()
+    call Grid_getTileIterator(itor, ALL_BLKS, tiling=.TRUE.)
+    do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+        call tileDesc%getDataPtr(solnData, CENTER)
 
-            ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
-            ! Level must be 1-based index and limits/limitsGC must be 1-based also
-            ! DEVNOTE: Should we use gr_[ijk]guard here?
-            blockDesc%level = lev
-            blockDesc%grid_index = mfi%grid_index()
-            blockDesc%limits(LOW,  :) = 1
-            blockDesc%limits(HIGH, :) = 1
-            blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
-            blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
-            blockDesc%limitsGC(LOW,  :) = 1
-            blockDesc%limitsGC(HIGH, :) = 1
-            blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
-            blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
+        associate (lo => tileDesc%limits(LOW,  :), &
+                   hi => tileDesc%limits(HIGH, :), &
+                   lev  => tileDesc%level)
 
-            call Grid_getBlkPtr(blockDesc, solnData)
-            
-            associate (lo => blockDesc%limits(LOW,  :), &
-                       hi => blockDesc%limits(HIGH, :), &
-                     loGC => blockDesc%limitsGC(LOW,  :), &
-                     hiGC => blockDesc%limitsGC(HIGH, :))
-
-                do     j = lo(JAXIS), hi(JAXIS)
-                    do i = lo(IAXIS), hi(IAXIS)
-                        if ((lev == 1) .AND. (i == 15) .AND. (j == 2)) then
-                            ! Level one not affected by remake/makeFine
+            do     j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                    if ((lev == 1) .AND. (i == 15) .AND. (j == 2)) then
+                        ! Level one not affected by remake/makeFine
+                        call assertEqual(solnData(i, j, 1, 1), &
+                                         values(1) / 64.0, &
+                                         "Wrong data")
+                    else if ((lev == 2) .AND. (i == 29) .AND. (j == 4)) then
+                        ! Level two data copied into new UNK multifab with remake
+                        call assertEqual(solnData(i, j, 1, 1), &
+                                         values(1) / 16.0, &
+                                         "Wrong data")
+                    else if (lev == 3) then
+                        ! Level three data from level two
+                        if      ((i == 57) .AND. (j == 7)) then
                             call assertEqual(solnData(i, j, 1, 1), &
-                                             values(1) / 64.0d0, &
+                                             values(1) / 16.0, &
                                              "Wrong data")
-                        else if ((lev == 2) .AND. (i == 29) .AND. (j == 4)) then
-                            ! Level two data copied into new UNK multifab with remake
+                        else if ((i == 58) .AND. (j == 7)) then
                             call assertEqual(solnData(i, j, 1, 1), &
-                                             values(1) / 16.0d0, &
+                                             values(1) / 16.0, &
                                              "Wrong data")
-                        else if (lev == 3) then
-                            ! Level three data from level two
-                            if      ((i == 57) .AND. (j == 7)) then
-                                call assertEqual(solnData(i, j, 1, 1), &
-                                                 values(1) / 16.0d0, &
-                                                 "Wrong data")
-                            else if ((i == 58) .AND. (j == 7)) then
-                                call assertEqual(solnData(i, j, 1, 1), &
-                                                 values(1) / 16.0d0, &
-                                                 "Wrong data")
-                            else if ((i == 57) .AND. (j == 8)) then
-                                call assertEqual(solnData(i, j, 1, 1), &
-                                                 values(1) / 16.0d0, &
-                                                 "Wrong data")
-                            else if ((i == 58) .AND. (j == 8)) then
-                                call assertEqual(solnData(i, j, 1, 1), &
-                                                 values(1) / 16.0d0, &
-                                                 "Wrong data")
-                            end if
-                        else
-                            call assertEqual(solnData(i, j, 1, 1), 0.0d0, "Data no zero")
+                        else if ((i == 57) .AND. (j == 8)) then
+                            call assertEqual(solnData(i, j, 1, 1), &
+                                             values(1) / 16.0, &
+                                             "Wrong data")
+                        else if ((i == 58) .AND. (j == 8)) then
+                            call assertEqual(solnData(i, j, 1, 1), &
+                                             values(1) / 16.0, &
+                                             "Wrong data")
                         end if
-                    end do
+                    else
+                        call assertEqual(solnData(i, j, 1, 1), 0.0, "Data no zero")
+                    end if
                 end do
-            end associate
-            
-            call Grid_releaseBlkPtr(blockDesc, solnData)
-        end do
-        call amrex_mfiter_destroy(mfi)
+            end do
+        end associate
+        
+        call tileDesc%releaseDataPtr(solnData, CENTER)
+
+        call itor%next()
     end do
+    call Grid_releaseTileIterator(itor)
 
    !!!!! STEP 7/8 - ADVANCE WITH NO CHANGE TO ACHIEVE LEVEL 4
     call sim_advance(7, points, values, &
                      "NO DATA CHANGE - LET IT REFINE TO LEVEL 4", &
                      "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
-    call gr_writeData(8, 8.0d0)
-    
+    call gr_writeData(8, 8.0)
+
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
@@ -415,8 +393,8 @@ subroutine Driver_evolveFlash()
     call sim_advance(9, points, values, &
                      "NO DATA CHANGE -  STUCK AT REFINEMENT LEVEL 4", &
                      "LEAVES CONSECUTIVE STEPS TO L4 AT SINGLE CELL")
-    call gr_writeData(10, 10.0d0)
-    
+    call gr_writeData(10, 10.0)
+
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
 
@@ -430,16 +408,16 @@ subroutine Driver_evolveFlash()
     deallocate(leaves_ex(2)%blocks, leaves_ex(3)%blocks, leaves_ex(4)%blocks)
 
     !!!!! STEP 11-14 - ADD ONE MORE LEVEL 4 POINT
-    points(:, :) = 0.0d0
-    values(:) = 0.0d0
-    points(1, :) = [0.9d0,  0.1d0]
-    points(2, :) = [0.29d0, 0.58d0]
+    points(:, :) = 0.0
+    values(:) = 0.0
+    points(1, :) = [0.9,  0.1]
+    points(2, :) = [0.29, 0.58]
     values(1) = REFINE_TO_L4 
     values(2) = REFINE_TO_L4
     call sim_advance(11, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
                      "LEAVES AFTER SECOND LEVEL 4 DATA")
-    call gr_writeData(12, 12.0d0)
+    call gr_writeData(12, 12.0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
@@ -447,7 +425,7 @@ subroutine Driver_evolveFlash()
     call sim_advance(13, points, values, &
                      "SETTING SECOND LEVEL 4 CELL", &
                      "LEAVES AFTER SECOND LEVEL 4 DATA")
-    call gr_writeData(14, 14.0d0)
+    call gr_writeData(14, 14.0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(4, finest_level, "Incorrect finest level")
@@ -530,12 +508,12 @@ subroutine Driver_evolveFlash()
     deallocate(leaves_ex(2)%blocks, leaves_ex(3)%blocks, leaves_ex(4)%blocks)
     
     !!!!! STEP 15-16 - DEREFINE TO 2x2 BLOCK STRUCTURE
-    points(:, :) = 0.0d0
-    values(:) = 0.0d0
+    points(:, :) = 0.0
+    values(:) = 0.0
     call sim_advance(15, points, values, &
                      "SETTING ALL DATA TO ZERO AT ALL LEVELS", &
                      "LEAVES AFTER ZEROING ALL DATA & REGRID")
-    call gr_writeData(16, 16.0d0)
+    call gr_writeData(16, 16.0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(1, finest_level, "Incorrect finest level")
@@ -543,15 +521,15 @@ subroutine Driver_evolveFlash()
     !!!!! STEP 17-18 - MARK CELLS ON EITHER SIDE OF BOUNDARY TO CONFIRM
     !!!!!              THAT BOTH BLOCKS REFINE
     !                  (as opposed to single translated block/patch)
-    points(1, :) = [0.49d0,  0.1d0]
-    points(2, :) = [0.51d0,  0.1d0]
+    points(1, :) = [0.49,  0.1]
+    points(2, :) = [0.51,  0.1]
     values(1) = REFINE_TO_L2
     values(2) = REFINE_TO_L2
     call sim_advance(17, points, values, &
                      "CONFIRM OCTREE BEHAVIOR INSTEAD OF SINGLE " // &
                      "EFFICIENT PATCH", &
                      "CORRECT OCTREE-COMPATIBLE LEAVES")
-    call gr_writeData(18, 18.0d0)
+    call gr_writeData(18, 18.0)
     
     call gr_getFinestLevel(finest_level)
     call assertEqual(2, finest_level, "Incorrect finest level")
