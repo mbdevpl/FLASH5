@@ -25,29 +25,26 @@
 !!
 !!***
 
+#include "constants.h"
+#include "Flash.h"
+
 subroutine Simulation_initBlock(initData, block)
     use block_metadata, ONLY : block_metadata_t
-    
+
     implicit none
-    
+
     real,                   intent(IN), pointer :: initData(:, :, :, :)
     type(block_metadata_t), intent(IN)          :: block
 
-#include "constants.h"
-#include "Flash.h"
-  
-    integer :: i = 1
-    integer :: j = 1
-    integer :: k = 1
-    integer :: var = 1
+    integer :: i, j, k, var
 
-    associate(lo => block%limitsGC(LOW,  :), &
-              hi => block%limitsGC(HIGH, :))
-        do         k = lo(KAXIS), hi(KAXIS)
-            do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                    do var=UNK_VARS_BEGIN, UNK_VARS_END
-                        initData(i, j, k, var) = 1.1d0 * var
+    associate(lo => block%limits(LOW,  :), &
+              hi => block%limits(HIGH, :))
+        do           var = UNK_VARS_BEGIN, UNK_VARS_END
+            do         k = lo(KAXIS), hi(KAXIS)
+                do     j = lo(JAXIS), hi(JAXIS)
+                    do i = lo(IAXIS), hi(IAXIS)
+                        initData(i, j, k, var) = 1.1 * var
                     end do
                 end do
             end do
