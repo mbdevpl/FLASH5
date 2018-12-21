@@ -53,8 +53,7 @@
 subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use iso_c_binding
     use amrex_fort_module,         ONLY : wp => amrex_real
-    use amrex_amr_module,          ONLY : amrex_geom, &
-                                          amrex_problo
+    use amrex_amr_module,          ONLY : amrex_geom
     use amrex_amrcore_module,      ONLY : amrex_ref_ratio
     use amrex_boxarray_module,     ONLY : amrex_boxarray
     use amrex_distromap_module,    ONLY : amrex_distromap
@@ -71,12 +70,11 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           gr_fillPhysicalBC, &
                                           gr_preinterpolationWork, &
                                           gr_postinterpolationWork
-    use gr_iterator,               ONLY : gr_iterator_t
-    use block_metadata,            ONLY : block_metadata_t
+    use flash_iterator,            ONLY : flash_iterator_t
+    use flash_tile,                ONLY : flash_tile_t
     use Simulation_interface,      ONLY : Simulation_initBlock
-    use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-    use gr_interface,              ONLY : gr_getBlkIterator, &
-                                          gr_releaseBlkIterator
+    use Grid_interface,            ONLY : Grid_getTileIterator, &
+                                          Grid_releaseTileIterator
     use Grid_data,                 ONLY : gr_eosModeInit, &
                                           gr_doFluxCorrection, &
                                           gr_interpolator, &
@@ -94,14 +92,16 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
 
-    type(gr_iterator_t)           :: itor
-    type(block_metadata_t)        :: block
+    type(flash_iterator_t) :: itor
+    type(flash_tile_t)     :: tileDesc
     real(wp), contiguous, pointer :: initData(:,:,:,:)
 
     integer :: n_blocks
 
     integer :: dir
     logical :: nodal(1:MDIM)
+
+    nullify(initData)
 
     ba = pba
     dm = pdm
@@ -158,45 +158,45 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     ! Write initial data across domain at given level and convert to conserved
     ! form where needed for proper interpolation with GC fill below.
     n_blocks = 0
-    call gr_getBlkIterator(itor, level=lev+1, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetadata(block)
+    call Grid_getTileIterator(itor, ALL_BLKS, level=lev+1, tiling=.FALSE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
  
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.
-        call Grid_getBlkPtr(block, initData, CENTER)
+        call tileDesc%getDataPtr(initData, CENTER)
         initData(:,:,:,:) = 0.0
-        call Grid_releaseBlkPtr(block, initData, CENTER)
+        call tileDesc%releaseDataPtr(initData, CENTER)
 
 #if NFACE_VARS > 0
-        call Grid_getBlkPtr(block, initData, FACEX)
+        call tileDesc%getDataPtr(initData, FACEX)
         initData(:,:,:,:) = 0.0
-        call Grid_releaseBlkPtr(block, initData, FACEX)
+        call tileDesc%releaseDataPtr(initData, FACEX)
 #if NDIM >= 2
-        call Grid_getBlkPtr(block, initData, FACEY)
+        call tileDesc%getDataPtr(initData, FACEY)
         initData(:,:,:,:) = 0.0
-        call Grid_releaseBlkPtr(block, initData, FACEY)
+        call tileDesc%releaseDataPtr(initData, FACEY)
 #endif
 #if NDIM == 3
-        call Grid_getBlkPtr(block, initData, FACEZ)
+        call tileDesc%getDataPtr(initData, FACEZ)
         initData(:,:,:,:) = 0.0
-        call Grid_releaseBlkPtr(block, initData, FACEZ)
+        call tileDesc%releaseDataPtr(initData, FACEZ)
 #endif
 #endif
 
         ! Give simulation the cell-centered data.  If they need to initialize
-        ! face-centered data, they access it explicitly with block/Grid_getBlkPtr
-        call Grid_getBlkPtr(block, initData, CENTER)
-        call Simulation_initBlock(initData, block)
-        call Grid_releaseBlkPtr(block, initData, CENTER)
+        ! face-centered data, they access it explicitly from tileDesc
+        call tileDesc%getDataPtr(initData, CENTER)
+        call Simulation_initBlock(initData, tileDesc)
+        call tileDesc%releaseDataPtr(initData, CENTER)
 
         n_blocks = n_blocks + 1
 
         call itor%next()
     end do
-    call gr_releaseBlkIterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     call Logfile_stamp(lev+1, &
           '[gr_initNewLevelCallback] Initialized data on level')
@@ -235,17 +235,17 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
           '[gr_initNewLevelCallback] GC fill')
 
     ! Run EoS on interiors and GCs in preparation for refinement check
-    call gr_getBlkIterator(itor, level=lev+1, tiling=.FALSE.)
-    do while (itor%is_valid())
-       call itor%blkMetaData(block)
+    call Grid_getTileIterator(itor, ALL_BLKS, level=lev+1, tiling=.TRUE.)
+    do while (itor%isValid())
+       call itor%currentTile(tileDesc)
 
-       call Grid_getBlkPtr(block, initData, CENTER)
-       call Eos_wrapped(gr_eosModeInit, block%limitsGC, initData)
-       call Grid_releaseBlkPtr(block, initData, CENTER)
+       call tileDesc%getDataPtr(initData, CENTER)
+       call Eos_wrapped(gr_eosModeInit, tileDesc%limitsGC, initData)
+       call tileDesc%releaseDataPtr(initData, CENTER)
 
        call itor%next()
     end do
-    call gr_releaseBlkIterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     write(*,'(A,I10,A,I0)') "Created and initialized ", n_blocks, &
                            " blocks on level ", lev + 1

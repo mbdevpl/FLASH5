@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!  Simulation_initBlock(       real :: initData,
-!!                       integer(IN) :: block) 
+!!                       integer(IN) :: tileDesc) 
 !!
 !! DESCRIPTION
 !!  Initializes the cell-centered data to one.  For the purposes of this test, 
@@ -20,18 +20,18 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine Simulation_initBlock(initData, block)
-    use block_metadata, ONLY : block_metadata_t
+subroutine Simulation_initBlock(initData, tileDesc)
+    use flash_tile, ONLY : flash_tile_t 
 
     implicit none
 
-    real,                   pointer    :: initData(:, :, :, :)
-    type(block_metadata_t), intent(IN) :: block
+    real,                          pointer :: initData(:, :, :, :)
+    type(flash_tile_t), intent(IN)         :: tileDesc
 
     integer :: i, j, k, var
 
-    associate(lo => block%limits(LOW,  :), &
-              hi => block%limits(HIGH, :))
+    associate(lo => tileDesc%limits(LOW,  :), &
+              hi => tileDesc%limits(HIGH, :))
         do           var = UNK_VARS_BEGIN, UNK_VARS_END
             do         k = lo(KAXIS), hi(KAXIS)
                 do     j = lo(JAXIS), hi(JAXIS)

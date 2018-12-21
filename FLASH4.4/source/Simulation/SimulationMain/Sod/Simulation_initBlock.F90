@@ -41,7 +41,7 @@
 !!***
 
 !!REORDER(4): solnData
-subroutine Simulation_initBlock(solnData,block)
+subroutine Simulation_initBlock(solnData, tileDesc)
 
 #include "constants.h"
 #include "Flash.h"
@@ -58,34 +58,25 @@ subroutine Simulation_initBlock(solnData,block)
        sim_gammaIon, sim_gammaEle
 #endif
      
-  use Grid_interface, ONLY : Grid_getCellCoords
-!!$  Grid_putPointData,Grid_getBlkCornerID,Grid_getBlkIndexLimits,Grid_getBlkPtr, Grid_releaseBlkPtr
-    
   use Eos_interface, ONLY : Eos, Eos_wrapped
-  use block_metadata, ONLY : block_metadata_t
-
+  use flash_tile, ONLY : flash_tile_t
 
   implicit none
 
-  ! compute the maximum length of a vector in each coordinate direction 
-  ! (including guardcells)
-  
+  logical, parameter :: INCLUDE_GC = .FALSE.
+
   real,dimension(:,:,:,:),pointer :: solnData
-  type(block_metadata_t), intent(in) :: block
+  type(flash_tile_t), intent(in) :: tileDesc
 
   integer :: i, j, k, n
   integer :: iMax, jMax, kMax
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
 
   real :: xx, yy,  zz, xxL, xxR
   
   real :: lPosn0, lPosn
-  
 
   real,allocatable, dimension(:) ::xCenter,xLeft,xRight,yCoord,zCoord
 
-  integer :: sizeX,sizeY,sizeZ
-  
   real :: rhoZone, velxZone, velyZone, velzZone, presZone, & 
        eintZone, enerZone, ekinZone, gameZone, gamcZone
 
@@ -99,51 +90,38 @@ subroutine Simulation_initBlock(solnData,block)
   real :: pionZone, eionZone
   real :: pradZone, eradZone
 #endif
-  
-  logical :: gcell = .true.
 
-  
-  ! dump some output to stdout listing the paramters
-!!$  if (sim_meshMe == MASTER_PE) then
-!!$     
-!!$     
-!!$1    format (1X, 1P, 4(A7, E13.7, :, 1X))
-!!$2    format (1X, 1P, 2(A7, E13.7, 1X), A7, I13)
-!!$     
-!!$  endif
+  associate(lo => tileDesc%limits(LOW,  :), &
+            hi => tileDesc%limits(HIGH, :))
+     allocate(  xLeft(lo(IAXIS):hi(IAXIS)))
+     allocate( xRight(lo(IAXIS):hi(IAXIS)))
+     allocate(xCenter(lo(IAXIS):hi(IAXIS)))
+     allocate( yCoord(lo(JAXIS):hi(JAXIS)))
+     allocate( zCoord(lo(KAXIS):hi(KAXIS)))
+     xLeft = 0.0
+     xRight = 0.0
+     xCenter = 0.0
+     yCoord = 0.0
+     zCoord = 0.0
+  end associate
 
-  blkLimits = block%limits
-  blkLimitsGC = block%limitsGC
-  allocate(xLeft(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
-  allocate(xRight(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
-  allocate(xCenter(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
-  allocate(yCoord(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
-  allocate(zCoord(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS)))
-  xCenter = 0.0
-  xLeft = 0.0
-  xRight = 0.0
-  yCoord = 0.0
-  zCoord = 0.0
+  if (NDIM == 3) then
+    call tileDesc%coordinates(KAXIS, CENTER, INCLUDE_GC, zCoord)
+  end if
+  if (NDIM >= 2) then
+    call tileDesc%coordinates(JAXIS, CENTER, INCLUDE_GC, yCoord)
+  end if
 
-  sizeX = SIZE(xLeft)
-  sizeY = SIZE(yCoord)
-  sizeZ = SIZE(zCoord)
-  
-  if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, block, CENTER, gcell, zCoord, sizeZ)
-  if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, block, CENTER, gcell, yCoord, sizeY)
-
-  call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
-  call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCenter, sizeX)
-  call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xRight, sizeX)
+  call tileDesc%coordinates(IAXIS, LEFT_EDGE, INCLUDE_GC, xLeft)
+  call tileDesc%coordinates(IAXIS, CENTER, INCLUDE_GC, xCenter)
+  call tileDesc%coordinates(IAXIS, RIGHT_EDGE, INCLUDE_GC, xRight)
 
 #ifdef DEBUG_SIMULATION
 98 format('initBlock:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
 99 format('initBlock:',A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
   print 99,"solnData" ,(lbound(solnData ,i),ubound(solnData ,i),i=1,4)
-  print*,'blkLim  :',blkLimits
-  print*,'blkLimGC:',blkLimitsGC
+  print*,'tile limits:',tileDesc%limits
+  print*,'grown tile limits:',tileDesc%limitsGC
 #endif
 !------------------------------------------------------------------------------
 
@@ -152,30 +130,30 @@ subroutine Simulation_initBlock(solnData,block)
 ! Then decide which side of the initial discontinuity it is on and initialize 
 ! the hydro variables appropriately.
 
-  do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
-     
+  associate(lo => tileDesc%limits(LOW,  :), &
+            hi => tileDesc%limits(HIGH, :))
+  do k = lo(KAXIS), hi(KAXIS)
+  
      ! get the coordinates of the cell center in the z-direction
      zz = zCoord(k)
      
      ! Where along the x-axis the shock intersects the xz-plane at the current z.
      lPosn0 = sim_posn - zz*sim_zCos/sim_xCos
      
-     do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
+     do j = lo(JAXIS), hi(JAXIS)
         
         ! get the coordinates of the cell center in the y-direction
         yy = yCoord(j)
-        
+
         ! The position of the shock in the current yz-row.
         lPosn = lPosn0 - yy*sim_yCos/sim_xCos
         
-        do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
            
            ! get the cell center, left, and right positions in x
-           xx  = xCenter(i)
-           
            xxL = xLeft(i)
+           xx  = xCenter(i)
            xxR = xRight(i)
-          
            
            ! initialize cells to the left of the initial shock.
            if (xxR <= lPosn) then
@@ -352,9 +330,8 @@ subroutine Simulation_initBlock(solnData,block)
         enddo
      enddo
   enddo
+  end associate
 
-
-!!$  call Grid_releaseBlkPtr(blockId,solnData)
   deallocate(xLeft)
   deallocate(xRight)
   deallocate(xCenter)

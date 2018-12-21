@@ -40,14 +40,13 @@
 !!  Eos_wrapped
 !!***
 
-subroutine Simulation_initBlock(solnData,blockDesc)
+subroutine Simulation_initBlock(solnData, tileDesc)
+  use flash_tile, ONLY : flash_tile_t
 
-  use block_metadata, ONLY : block_metadata_t
-  
   implicit none
-  
+
   real,dimension(:,:,:,:),pointer :: solnData
-  type(block_metadata_t), intent(in) :: blockDesc
-  
+  type(flash_tile_t), intent(in) :: tileDesc
+
   return
 end subroutine Simulation_initBlock
