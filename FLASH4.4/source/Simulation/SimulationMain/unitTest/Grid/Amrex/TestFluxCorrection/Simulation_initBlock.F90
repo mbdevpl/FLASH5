@@ -30,12 +30,12 @@ subroutine Simulation_initBlock(initData, block)
     integer :: i, j, k, var
 
     ! Initialize data.  The values are not important for this test
-    associate(lo => block%limitsGC(LOW,  :), &
-              hi => block%limitsGC(HIGH, :))
-        do               k = lo(KAXIS), hi(KAXIS)
-            do           j = lo(JAXIS), hi(JAXIS)
-                do       i = lo(IAXIS), hi(IAXIS)
-                    do var = UNK_VARS_BEGIN, UNK_VARS_END
+    associate(lo => block%limits(LOW,  :), &
+              hi => block%limits(HIGH, :))
+        do           var = UNK_VARS_BEGIN, UNK_VARS_END
+            do         k = lo(KAXIS), hi(KAXIS)
+                do     j = lo(JAXIS), hi(JAXIS)
+                    do i = lo(IAXIS), hi(IAXIS)
                         initData(i, j, k, var) = block%level
                     end do
                 end do

@@ -32,30 +32,30 @@
 
 subroutine Driver_evolveFlash()
     use amrex_fort_module,     ONLY : amrex_spacedim
-    use amrex_box_module,      ONLY : amrex_box
-    use amrex_multifab_module, ONLY : amrex_mfiter, &
-                                      amrex_mfiter_build, &
-                                      amrex_mfiter_destroy
 
-    use Grid_interface,        ONLY : Grid_getFluxPtr, Grid_releaseFluxPtr, &
-                                      Grid_addFineToFluxRegister, &
-                                      Grid_conserveFluxes
+    use Grid_interface,        ONLY : Grid_addFineToFluxRegister, &
+                                      Grid_conserveFluxes, &
+                                      Grid_getTileIterator, &
+                                      Grid_releaseTileIterator
     use gr_amrexInterface,     ONLY : gr_getFinestLevel
-    use gr_iterator,           ONLY : gr_iterator_t, &
-                                      build_iterator, destroy_iterator
-    use block_metadata,        ONLY : block_metadata_t
+    use flash_iterator,        ONLY : flash_iterator_t
+    use flash_tile,            ONLY : flash_tile_t 
     use ut_testDriverMod
 
     implicit none
 
-    type(gr_iterator_t)    :: itor
-    type(block_metadata_t) :: block
-    real, pointer          :: fluxDataX(:, :, :, :) => null() 
-    real, pointer          :: fluxDataY(:, :, :, :) => null()
-    real, pointer          :: fluxDataZ(:, :, :, :) => null()
+    type(flash_iterator_t) :: itor
+    type(flash_tile_t)     :: tileDesc
+    real, pointer          :: fluxDataX(:, :, :, :)
+    real, pointer          :: fluxDataY(:, :, :, :)
+    real, pointer          :: fluxDataZ(:, :, :, :)
 
     integer :: finest_level
     integer :: lev, i, j
+
+    nullify(fluxDataX)
+    nullify(fluxDataY)
+    nullify(fluxDataZ)
 
     !!!!! CONFIRM PROPER DIMENSIONALITY
     write(*,*)
@@ -79,62 +79,66 @@ subroutine Driver_evolveFlash()
 
     !!!!! WRITE FLUX DATA TO ALL BLOCKS AT ALL POPULATED LEVELS
     ! Write constant flux to each level that has blocks
-    do lev = 1, finest_level
-        call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
+    call Grid_getTileIterator(itor, ALL_BLKS, tiling=.TRUE.)
 
-        do while (itor%is_valid())
-            call itor%blkMetaData(block)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
 
-            call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-            
-            call assertTrue( associated(fluxDataX), "flux X Ptr should be set")
-            call assertTrue( associated(fluxDataY), "flux Y Ptr should be set")
-            call assertFalse(associated(fluxDataZ), "flux Z Ptr should be NULL")
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+        call tileDesc%getDataPtr(fluxDataZ, FLUXZ)
 
-            call assertEqual(SIZE(fluxDataX, 1), 9, "Incorrect width of X block")
-            call assertEqual(SIZE(fluxDataX, 2), 8, "Incorrect height of X block")
-            call assertEqual(SIZE(fluxDataY, 1), 8, "Incorrect width of Y block")
-            call assertEqual(SIZE(fluxDataY, 2), 9, "Incorrect height of Y block")
+        call assertTrue( associated(fluxDataX), "flux X Ptr should be set")
+        call assertTrue( associated(fluxDataY), "flux Y Ptr should be set")
+        call assertFalse(associated(fluxDataZ), "flux Z Ptr should be NULL")
 
-            fluxDataX(:, :, :, :) =  lev
-            fluxDataY(:, :, :, :) = -lev
+        ! Array size matches size of enclosing block and not that of tile.
+        call assertEqual(SIZE(fluxDataX, 1), 9, "Incorrect width of X block")
+        call assertEqual(SIZE(fluxDataX, 2), 8, "Incorrect height of X block")
+        call assertEqual(SIZE(fluxDataY, 1), 8, "Incorrect width of Y block")
+        call assertEqual(SIZE(fluxDataY, 2), 9, "Incorrect height of Y block")
 
-            call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        fluxDataX(:, :, :, :) =  tileDesc%level
+        fluxDataY(:, :, :, :) = -tileDesc%level
 
-            call itor%next()
-        end do
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
+        call tileDesc%releaseDataPtr(fluxDataZ, FLUXZ)
 
-        call destroy_iterator(itor)
+        call itor%next()
     end do
+
+    call Grid_releaseTileIterator(itor)
 
     ! Confirm proper writing of flux data 
-    do lev = 1, finest_level
-        call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
+    call Grid_getTileIterator(itor, ALL_BLKS, tiling=.TRUE.)
 
-        do while (itor%is_valid())
-            call itor%blkMetaData(block)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
 
-            call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-            
-            associate(lo => block%limits(LOW,  :), &
-                      hi => block%limits(HIGH, :))
-                do     j = lo(JAXIS), hi(JAXIS)
-                    do i = lo(IAXIS), hi(IAXIS)
-                        call assertEqual(DBLE( lev), fluxDataX(i, j, 1, 1), &
-                                         "Incorrect X flux data on level")
-                        call assertEqual(DBLE(-lev), fluxDataY(i, j, 1, 1), &
-                                         "Incorrect Y flux data on level")
-                    end do
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+
+        associate(lo    => tileDesc%limits(LOW,  :), &
+                  hi    => tileDesc%limits(HIGH, :), &
+                  level => tileDesc%level)
+            do     j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                    call assertEqual(DBLE( level), fluxDataX(i, j, 1, 1), &
+                                     "Incorrect X flux data on level")
+                    call assertEqual(DBLE(-level), fluxDataY(i, j, 1, 1), &
+                                     "Incorrect Y flux data on level")
                 end do
-            end associate
+            end do
+        end associate
 
-            call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-            
-            call itor%next()
-        end do
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
         
-        call destroy_iterator(itor)
+        call itor%next()
     end do
+
+    call Grid_releaseTileIterator(itor)
 
     ! Run operations to be tested
     do lev = finest_level, 1, -1
@@ -151,14 +155,15 @@ subroutine Driver_evolveFlash()
 
     ! No change to flux on level 3 (all leaf blocks)
     lev = 3
-    call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
+    call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
 
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
 
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE( lev), fluxDataX(i, j, 1, 1), &
@@ -169,22 +174,24 @@ subroutine Driver_evolveFlash()
             end do
         end associate
 
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
         
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
  
     ! Change to flux on level 2 (fine-coarse boundaries)
     lev = 2
-    call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
+    call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
 
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
 
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             ! Check X-face fluxes
             do     j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)+1
@@ -346,22 +353,24 @@ subroutine Driver_evolveFlash()
             end do
         end associate
 
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
     
     ! No change to flux on level 1 (no leaf blocks)
     lev = 1
-    call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
+    call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
 
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
 
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE( lev), fluxDataX(i, j, 1, 1), &
@@ -372,12 +381,14 @@ subroutine Driver_evolveFlash()
             end do
         end associate
 
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     call finish_test_run
 
 end subroutine Driver_evolveFlash
+
