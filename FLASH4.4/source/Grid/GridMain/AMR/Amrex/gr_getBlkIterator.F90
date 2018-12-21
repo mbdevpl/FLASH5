@@ -61,6 +61,6 @@ subroutine gr_getBlkIterator(itor, nodetype, level, tiling)
     ntype = nodetype 
   end if
 
-  call build_iterator(itor, ntype, level, tiling)
+  call build_iterator(itor, ntype, level, .FALSE.)
 end subroutine gr_getBlkIterator
 

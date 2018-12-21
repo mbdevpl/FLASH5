@@ -13,6 +13,17 @@ PARAMETER nblocky       INTEGER 1
 D nblockz num initial blocks in z dir   
 PARAMETER nblockz       INTEGER 1       
 
+D gr_useTiling Global switch to enable tiling where implemented or to turn
+D &            off all tiling
+PARAMETER gr_useTiling BOOLEAN FALSE
+
+D gr_tileSize[XYZ] Specify the size of each tile along the indicated
+D &                direction.  This is a general use tile size and any
+D &                iterator loop may override these with its own tile size.
+PARAMETER gr_tileSizeX INTEGER NXB [ 1 ... ]
+PARAMETER gr_tileSizeY INTEGER NYB [ 1 ... ]
+PARAMETER gr_tileSizeZ INTEGER NZB [ 1 ... ]
+
 D lrefine_max maximum AMR refinement level
 PARAMETER lrefine_max   INTEGER 1 [ 1 ... ]
 

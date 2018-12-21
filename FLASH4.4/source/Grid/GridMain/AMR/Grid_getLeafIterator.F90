@@ -43,6 +43,6 @@ subroutine Grid_getLeafIterator(itor, level, tiling)
   integer,               intent(IN), optional :: level
   logical,               intent(IN), optional :: tiling
 
-  call build_iterator(itor, level, tiling)
+  call build_iterator(itor, level, .FALSE.)
 end subroutine Grid_getLeafIterator
 

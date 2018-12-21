@@ -1,5 +1,6 @@
 Grid += Grid_init.o Grid_getListOfBlocks.o \
 	Grid_getLeafIterator.o Grid_releaseLeafIterator.o \
+	Grid_getTileIterator.o Grid_releaseTileIterator.o \
 	Grid_ascModule.o Grid_ascGetBlkPtr.o Grid_ascReleaseBlkPtr.o \
 	Grid_genGetBlkPtr.o Grid_genReleaseBlkPtr.o \
 	Grid_copyF4DataToMultiFabs.o \
@@ -81,5 +82,6 @@ Grid += Grid_init.o Grid_getListOfBlocks.o \
 
 Grid += Grid_init.o Grid_coordTransfm.o
 
-Grid += block_metadata.o leaf_iterator.o
+Grid += block_metadata.o leaf_iterator.o \
+	flash_tile.o flash_iterator.o
 

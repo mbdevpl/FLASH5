@@ -1377,7 +1377,27 @@ Module Grid_interface
        type(leaf_iterator_t), intent(INOUT) :: itor
      end subroutine Grid_releaseLeafIterator
   end interface
-  
+
+  interface
+     subroutine Grid_getTileIterator(itor, nodetype, level, tiling, tileSize)
+       use flash_iterator, ONLY : flash_iterator_t
+       implicit none
+       type(flash_iterator_t), intent(OUT)          :: itor
+       integer,                intent(IN)           :: nodetype
+       integer,                intent(IN), optional :: level
+       logical,                intent(IN), optional :: tiling
+       integer,                intent(IN), optional :: tileSize(1:MDIM)
+     end subroutine Grid_getTileIterator
+  end interface
+
+  interface
+     subroutine Grid_releaseTileIterator(itor)
+       use flash_iterator, ONLY : flash_iterator_t
+       implicit none
+       type(flash_iterator_t), intent(INOUT) :: itor
+     end subroutine Grid_releaseTileIterator
+  end interface
+
   interface
      subroutine Grid_zeroFluxData
        implicit none

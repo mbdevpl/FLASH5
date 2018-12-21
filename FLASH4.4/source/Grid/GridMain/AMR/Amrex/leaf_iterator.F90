@@ -157,12 +157,10 @@ contains
         itor%last_level = last
         itor%level = first
 
-!!$        print*,'leaf_iterator_build: about to build 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
-
         do lev=first,last
-!!$           call amrex_mfiter_build(this%li(lev),mfArray(lev),tiling=tiling)
-            itor%li(lev) = block_1lev_iterator_t(LEAF, mfArray(lev),lev,tiling=tiling)
-!!$            call this%li( lev )%first()
+            itor%li(lev) = block_1lev_iterator_t(LEAF, mfArray(lev), lev, &
+                                                 tiling=tiling, &
+                                                 tileSize=[NXB, NYB, NZB])
             v = itor%li( lev )%is_valid()
             if (v .AND. .NOT. itor%isValid) then
                itor%isValid = .TRUE.
@@ -173,9 +171,6 @@ contains
         if (.NOT. itor%isValid) then
            call destroy_iterator(itor)
         end if
-
-!!$        print*,'leaf_iterator_build: done building 1lev iterators for this=',this%isValid,this%level,allocated(this%li)
-!!$        call this%first()
       end subroutine init_iterator_mfa
 
     !!****im* leaf_iterator_t/build_iterator
@@ -234,9 +229,10 @@ contains
         itor%last_level = last
         itor%level = first
 
-
         do lev=first,last
-            itor%li(lev) = block_1lev_iterator_t(LEAF,lev,tiling=tiling)
+            itor%li(lev) = block_1lev_iterator_t(LEAF, lev, &
+                                                 tiling=tiling, &
+                                                 tileSize=[NXB, NYB, NZB])
             v = itor%li( lev )%is_valid()
             if (v .AND. .NOT. itor%isValid) then
                itor%isValid = .TRUE.
