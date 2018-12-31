@@ -101,7 +101,7 @@ def depends(filename):
     reorddata = {"FOUR" : [],"FIVE":[],"FLAGS":{} }
     foundREORD = 0
     if not os.path.isfile(filename): return ([],[],[])
-    for x in file(filename).readlines():
+    for x in open(filename,"r",encoding="utf-8").readlines():
         m = modRE.match(x)
         if m: 
            mods[m.group(1)] = 1
@@ -182,7 +182,7 @@ def main():
        else: 
           pass # Ignore all other options
 
-   ofd = file("Makefile.Depend","w")
+   ofd = open("Makefile.Depend","w")
    ofd.write("\n###Auto generated file###\n")
    ofd.write("###will be clobbered during the next make\n\n")
    ofd.write("\n# Note that MODUPPERCASE is defined by Makefile.h for sites and compilers where this is necessary,\n")

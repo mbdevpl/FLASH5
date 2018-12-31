@@ -27,7 +27,7 @@ def depends(filename):
     """Handle one file"""
     incs = {}
     if not os.path.isfile(filename): return []
-    for x in file(filename).readlines():
+    for x in open(filename,"r",encoding="utf-8").readlines():
         m = incRE.match(x)
         if m: 
            incs[m.group(1)] = 1
@@ -61,7 +61,7 @@ def main():
        else: 
           pass # Ignore all other options
 
-   ofd = file("Makefile.Depend","a")
+   ofd = open("Makefile.Depend","a")
    ofd.write("\n###Automatically appended dependencies of C files on headers###\n")
    for filename in toProcess:
        basename,ext = os.path.splitext(filename)
