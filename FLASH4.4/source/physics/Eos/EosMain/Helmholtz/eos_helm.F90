@@ -155,6 +155,7 @@ subroutine eos_helm(eos_jlo,eos_jhi,mask)
        psi0,dpsi0,ddpsi0,psi1,dpsi1,ddpsi1,psi2, & 
        dpsi2,ddpsi2,din,h5, & 
        xpsi0,xpsi1,h3dpd, & 
+       xdpsi0,xdpsi1, &
        w0t,w1t,w2t,w0mt,w1mt,w2mt, & 
        w0d,w1d,w2d,w0md,w1md,w2md
   real :: h3e, h3x
@@ -270,12 +271,12 @@ subroutine eos_helm(eos_jlo,eos_jhi,mask)
 !!  cubic hermite polynomial statement functions
 !!  psi0 & derivatives
   xpsi0(zFunc)  = zFunc * zFunc * (2.0e0*zFunc - 3.0e0) + 1.0
-!UNUSED  xdpsi0(zFunc) = zFunc * (6.0e0*zFunc - 6.0e0)
+  xdpsi0(zFunc) = zFunc * (6.0e0*zFunc - 6.0e0)
 
 
 !!  psi1 & derivatives
   xpsi1(zFunc)  = zFunc * ( zFunc * (zFunc - 2.0e0) + 1.0e0)
-!UNUSED  xdpsi1(zFunc) = zFunc * (3.0e0*zFunc - 4.0e0) + 1.0e0
+  xdpsi1(zFunc) = zFunc * (3.0e0*zFunc - 4.0e0) + 1.0e0
 
 
 
@@ -594,6 +595,13 @@ subroutine eos_helm(eos_jlo,eos_jhi,mask)
 
      si0md  =  xpsi0(mxd)
      si1md  =  -xpsi1(mxd)*eos_dd(iat)
+
+     !!  derivatives of weight functions
+     dsi0t =   xdpsi0(xt)*eos_dtInv(jat)
+     dsi1t =   xdpsi1(xt)
+
+     dsi0mt = -xdpsi0(mxt)*eos_dtInv(jat)
+     dsi1mt =  xdpsi1(mxt)
 
 
      !!  pressure derivative with density
