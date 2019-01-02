@@ -8,7 +8,6 @@ Grid += Grid_init.o \
 	Grid_getBlkRefineLevel.o \
     Grid_getMaxRefinement.o \
 	Grid_fillGuardCells.o Grid_notifySolnDataUpdate.o \
-	Grid_fillGuardCells_blkid.o \
 	Grid_getBlkPtr.o Grid_getBlkPtr_desc.o Grid_markRefineDerefine.o \
 	Grid_getBlkPhysicalSize.o \
 	Grid_putFluxData.o \
