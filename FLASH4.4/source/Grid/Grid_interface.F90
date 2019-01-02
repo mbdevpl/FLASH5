@@ -266,19 +266,13 @@ Module Grid_interface
   end interface
 
   interface Grid_getBlkPtr
-     subroutine Grid_getBlkPtr(blockId, dataPtr,gridDataStruct,localFlag)
-       integer, intent(in) :: blockId
-       real,dimension(:,:,:,:), pointer :: dataPtr
-       integer,optional, intent(in) :: gridDataStruct
-       logical,optional, intent(in) :: localFlag
-     end subroutine Grid_getBlkPtr
-     subroutine Grid_getBlkPtr_desc(block, dataPtr,gridDataStruct,localFlag)
+     subroutine Grid_getBlkPtr(block, dataPtr,gridDataStruct,localFlag)
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t), intent(in) :: block
        real,dimension(:,:,:,:), pointer :: dataPtr
        integer,optional, intent(in) :: gridDataStruct
        logical,optional, intent(in) :: localFlag
-     end subroutine Grid_getBlkPtr_desc
+     end subroutine Grid_getBlkPtr
   end interface
 
   interface Grid_getBlkRefineLevel

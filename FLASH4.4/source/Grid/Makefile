@@ -1,14 +1,13 @@
 Grid += Grid_init.o \
 	Grid_getLeafIterator.o Grid_releaseLeafIterator.o \
 	Grid_ascModule.o Grid_ascGetBlkPtr.o Grid_ascReleaseBlkPtr.o \
-	Grid_genGetBlkPtr.o Grid_genReleaseBlkPtr.o \
 	Grid_copyF4DataToMultiFabs.o \
 	Grid_conserveFluxes.o \
 	Grid_getLocalNumBlks.o \
 	Grid_getBlkRefineLevel.o \
     Grid_getMaxRefinement.o \
 	Grid_fillGuardCells.o Grid_notifySolnDataUpdate.o \
-	Grid_getBlkPtr.o Grid_getBlkPtr_desc.o Grid_markRefineDerefine.o \
+	Grid_getBlkPtr.o Grid_markRefineDerefine.o \
 	Grid_getBlkPhysicalSize.o \
 	Grid_putFluxData.o \
 	Grid_getFluxPtr.o Grid_releaseFluxPtr.o \
@@ -53,7 +52,7 @@ Grid += Grid_init.o \
 	Grid_pfftGetIndexLimits.o Grid_pfftMapToInput.o Grid_pfftMapFromOutput.o \
 	Grid_getMaxCommonRefinement.o Grid_setFluxHandling.o \
         Grid_setInterpValsGcell.o \
-	Grid_GCPutScratch.o Grid_GCTransferOneBlk.o \
+	Grid_GCTransferOneBlk.o \
 	Grid_getNumVars.o \
 	Grid_advanceDiffusion.o Grid_advanceDiffusionFcB.o Grid_advanceMultiDiffusion.o \
 	Grid_computeVarMean.o Grid_computeVarNorm.o Grid_computeVarDiff.o \
