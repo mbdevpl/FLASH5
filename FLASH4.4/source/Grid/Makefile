@@ -16,7 +16,7 @@ Grid += Grid_init.o \
 	Grid_outsideBoundBox.o \
 	Grid_getBlkBoundBox.o Grid_getBlkBoundBox_desc.o Grid_getDomainBoundBox.o \
 	Grid_updateRefinement.o \
-	Grid_getCellCoords.o Grid_getCellCoords_blkid.o Grid_getDeltas.o \
+	Grid_getCellCoords.o Grid_getDeltas.o \
 	Grid_getBlkIndexLimits.o Grid_getBlkCornerID.o \
 	Grid_getBlkCenterCoords.o Grid_getBlkCenterCoords_desc.o \
 	Grid_getBlkBC.o Grid_getBlkBC_desc.o Grid_getDomainBC.o \
@@ -35,9 +35,7 @@ Grid += Grid_init.o \
 	Grid_getPlaneData.o \
 	Grid_putBlkData.o \
 	Grid_putPointData.o \
-	Grid_putPointData_blkid.o \
 	Grid_putRowData.o \
-	Grid_putRowData_blkid.o \
 	Grid_putPlaneData.o \
 	Grid_moveParticles.o \
 	Grid_computeUserVars.o \

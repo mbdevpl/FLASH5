@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getPlaneData(integer(IN) :: blockID,
+!!  Grid_getPlaneData(type(block_metadata_t)(IN) :: block,
 !!                    integer(IN) :: gridDataStruct,
 !!                    integer(IN) :: structIndex,
 !!                    integer(IN) :: beginCount, 
@@ -33,7 +33,7 @@
 !!  
 !! ARGUMENTS 
 !!
-!!  blockID : the local blockid
+!!  block : block metadata
 !!
 !!
 !!  gridDataStruct : integer value specifying the type of data desired.
