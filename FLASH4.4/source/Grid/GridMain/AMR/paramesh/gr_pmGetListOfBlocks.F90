@@ -1,11 +1,11 @@
-!!****if* source/Grid/GridMain/paramesh/Grid_getListOfBlocks
+!!****if* source/Grid/GridMain/paramesh/gr_pmGetListOfBlocks
 !!
 !! NAME
-!!  Grid_getListOfBlocks
+!!  gr_pmGetListOfBlocks
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getListOfBlocks(integer(IN)          :: blockType,
+!!  gr_pmGetListOfBlocks(integer(IN)          :: blockType,
 !!                       integer(OUT)         :: listofBlocks(MAXBLOCKS), 
 !!                       integer(OUT)         :: count,
 !!                       integer(IN,optional) :: refinementLevel,
@@ -77,17 +77,17 @@
 !!   |13 |14 |15 |16 | 
 !!    --- --- --- ---
 !!    
-!!   call Grid_getListOfBlocks(JBDRY_BLKS, listOfBlocks, count)
+!!   call gr_pmGetListOfBlocks(JBDRY_BLKS, listOfBlocks, count)
 !!      returns count = 8, and listOfBlocks = <1 2 3 4 13 14 15 16>
 !!   
-!!   call Grid_getListOfBlocks(ANY_BDRY_BLKS, listOfBlocks, count)
+!!   call gr_pmGetListOfBlocks(ANY_BDRY_BLKS, listOfBlocks, count)
 !!     returns count = 12 and listOfBlocks = < 1 2 3 4 5 8 9 12 13 14 15 16 >
 !!
 !!
 !!***
 
 
-subroutine Grid_getListOfBlocks(blockType, listOfBlocks,count,refinementLevel,&
+subroutine gr_pmGetListOfBlocks(blockType, listOfBlocks,count,refinementLevel,&
      region_bndBox, includePartialBlocks)
 
   use tree, ONLY : nodetype,lnblocks,neigh,lrefine,bnd_box
@@ -201,7 +201,7 @@ subroutine Grid_getListOfBlocks(blockType, listOfBlocks,count,refinementLevel,&
            end if
         end do
      else
-        call Driver_abortFlash("[Grid_getListofBlocks] with blockType REFINEMENT optional argument refinementlevel must be present")
+        call Driver_abortFlash("[gr_pmGetListofBlocks] with blockType REFINEMENT optional argument refinementlevel must be present")
      end if
 
   case(INREGION)
@@ -238,7 +238,7 @@ subroutine Grid_getListOfBlocks(blockType, listOfBlocks,count,refinementLevel,&
            end if
         end do
      else
-        call Driver_abortFlash("[Grid_getListofBlocks] with blockType INREGION optional argument region_bndBox must be present")
+        call Driver_abortFlash("[gr_pmGetListofBlocks] with blockType INREGION optional argument region_bndBox must be present")
      end if
   case default
      do i = 1,lnblocks
@@ -258,4 +258,4 @@ subroutine Grid_getListOfBlocks(blockType, listOfBlocks,count,refinementLevel,&
 
 
   return
-end subroutine Grid_getListOfBlocks
+end subroutine gr_pmGetListOfBlocks

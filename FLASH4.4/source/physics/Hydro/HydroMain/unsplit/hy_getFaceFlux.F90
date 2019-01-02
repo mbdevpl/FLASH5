@@ -542,7 +542,7 @@ subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
                             0.5*(scrchFaceXPtr(HY_N06_FACEXPTR_VAR,i,j,k)**2+&
                             scrchFaceXPtr(HY_N07_FACEXPTR_VAR,i,j,k)**2+&
                             scrchFaceXPtr(HY_N08_FACEXPTR_VAR,i,j,k)**2)
-#endif`
+#endif
                        weightMinus = xFaces(i); weightPlus = xFaces(i+1)
                        weightSum = 2.0*xCenter(i)
                        if (hy_geometry == SPHERICAL) then

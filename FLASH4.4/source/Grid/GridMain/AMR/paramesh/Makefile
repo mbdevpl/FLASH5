@@ -12,5 +12,5 @@ Grid += gr_updateData.o gr_createDomain.o gr_recreateDomain.o \
 	gr_findWhichChildren.o \
 	gr_unmarkRefineByLogRadius.o gr_markDerefineByLogRadius.o gr_markDerefineByTime.o gr_enforceMaxRefine.o \
 	gr_setMaxRefineByTime.o gr_specificData.o gr_initSpecific.o \
-	gr_parameshInterface.o
+	gr_parameshInterface.o gr_pmGetListOfBlocks.o
 

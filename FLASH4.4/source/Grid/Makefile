@@ -1,4 +1,4 @@
-Grid += Grid_init.o Grid_getListOfBlocks.o \
+Grid += Grid_init.o \
 	Grid_getLeafIterator.o Grid_releaseLeafIterator.o \
 	Grid_ascModule.o Grid_ascGetBlkPtr.o Grid_ascReleaseBlkPtr.o \
 	Grid_genGetBlkPtr.o Grid_genReleaseBlkPtr.o \
