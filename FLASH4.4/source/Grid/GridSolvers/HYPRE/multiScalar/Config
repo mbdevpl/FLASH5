@@ -1,6 +1,0 @@
-USESETUPVARS Grid
-IF Grid=='UG'
-   REQUIRES Grid/GridSolvers/HYPRE/UG
-ELSE
-   REQUIRES Grid/GridSolvers/HYPRE/paramesh
-ENDIF

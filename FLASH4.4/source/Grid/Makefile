@@ -60,8 +60,6 @@ Grid += Grid_init.o \
 	Grid_getNumVars.o \
 	Grid_advanceDiffusion.o Grid_advanceDiffusionFcB.o Grid_advanceMultiDiffusion.o \
 	Grid_computeVarMean.o Grid_computeVarNorm.o Grid_computeVarDiff.o \
-	Grid_dfsvCreateSystem.o Grid_dfsvBeginSystem.o Grid_dfsvAddToSystem.o \
-	Grid_dfsvCompleteSystem.o \
 	Grid_setSolverDbgContextInfo.o \
 	Grid_primitiveToConserve.o \
 	Grid_conserveToPrimitive.o \
