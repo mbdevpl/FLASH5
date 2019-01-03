@@ -261,8 +261,8 @@ Module hy_simpleInterface
        implicit none
        integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
        integer, intent(in),dimension(*)             :: plo
-       real,intent(inout),target,dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: Uin
-       real,pointer,dimension(:,:,:,:) :: Uout
+       real,intent(in),dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: Uin
+       real,intent(out),dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: Uout
        real,dimension(MDIM), INTENT(IN) :: del
        real,    INTENT(IN) :: dt
      end subroutine hy_hllUnsplit
