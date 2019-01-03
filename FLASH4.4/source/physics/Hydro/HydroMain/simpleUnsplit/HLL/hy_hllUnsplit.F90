@@ -95,12 +95,12 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
   implicit none
 
   !! ---- Argument List ----------------------------------
-  integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
-  integer, dimension(*),intent(in)             :: plo
-  real,intent(in),dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: UIN !CAPITALIZATION INTENTIONAL!
-  real,intent(out),dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: UOUT !CAPITALIZATION INTENTIONAL!
-  real,dimension(MDIM), INTENT(IN) :: del
-  real,    INTENT(IN) :: dt
+  integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
+  integer, intent(IN)  :: plo(*)
+  real,    intent(IN)  :: UIN(plo(1):,plo(2):,plo(3):,plo(4):)  !CAPITALIZATION INTENTIONAL!
+  real,    intent(OUT) :: UOUT(plo(1):,plo(2):,plo(3):,plo(4):) !CAPITALIZATION INTENTIONAL!
+  real,    intent(IN)  :: del(1:MDIM)
+  real,    intent(IN)  :: dt
   !! -----------------------------------------------------
 
   integer :: ib, i,j,k,blockID

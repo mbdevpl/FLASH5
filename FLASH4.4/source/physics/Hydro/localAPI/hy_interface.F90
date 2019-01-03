@@ -355,7 +355,29 @@ Module hy_interface
      end subroutine hy_LLF
   end interface
 
+  interface
+     subroutine hy_hllUnsplit(tileLimits, Uin, plo, Uout, del, dt )
+       implicit none
+       integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
+       integer, intent(IN)  :: plo(*)
+       real,    intent(IN)  :: Uin(plo(1):,plo(2):,plo(3):,plo(4):)
+       real,    intent(OUT) :: Uout(plo(1):,plo(2):,plo(3):,plo(4):)
+       real,    intent(IN)  :: del(1:MDIM)
+       real,    intent(IN)  :: dt
+     end subroutine hy_hllUnsplit
+  end interface
 
+  interface
+     subroutine hy_llfUnsplit(tileLimits, Uin, plo, Uout, del, dt )
+       implicit none
+       integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
+       integer, intent(IN)  :: plo(*)
+       real,    intent(IN)  :: Uin(plo(1):,plo(2):,plo(3):,plo(4):)
+       real,    intent(OUT) :: Uout(plo(1):,plo(2):,plo(3):,plo(4):)
+       real,    intent(IN)  :: del(1:MDIM)
+       real,    intent(IN)  :: dt
+     end subroutine hy_llfUnsplit
+  end interface
 
   interface
      subroutine hy_setMinTimeStep(block,i,j,k,delta,speed)
@@ -1024,16 +1046,14 @@ Module hy_interface
        real,dimension(MDIM),intent(IN) :: del
      end subroutine hy_computeFluxes
 
-     subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
-          sweepOrder )
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_advanceBlk(tileDesc, Uin, Uout, timeEndAdv, dt, dtOld,  &
+          sweepOrder)
+       use flash_tile, ONLY : flash_tile_t 
        implicit none
-       type(block_metadata_t) :: blockDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       type(flash_tile_t) :: tileDesc 
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
-       real,dimension(MDIM),intent(IN) :: del
      end subroutine hy_advanceBlk
   end interface
 

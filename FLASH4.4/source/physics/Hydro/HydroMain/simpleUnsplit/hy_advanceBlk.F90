@@ -1,98 +1,52 @@
 !!****if* source/physics/Hydro/HydroMain/simpleUnsplit/hy_advanceBlk
 !!
-!!
 !! NAME
-!!
 !!  hy_advanceBlk
 !!
-!!
-!! SYNOPSIS
-!!
-!!  hy_advanceBlk(integer(IN) :: blockCount, 
-!!        integer(IN) :: blockList(blockCount)
-!!        real(IN)    :: timeEndAdv,
-!!        real(IN)    :: dt,
-!!        real(IN)    :: dtOld,
-!!        integer(IN) :: sweepOrder)
-!!
-!!
 !! DESCRIPTION
-!! 
-!!  Performs physics update in a directionally unsplit fashion.
-!!
-!!  The blockList and blockCount arguments tell this routine on 
-!!  which blocks and on how many to operate.  blockList is an 
-!!  integer array of size blockCount that contains the local 
-!!  block numbers of blocks on which to advance.
-!!
-!!  dt gives the timestep through which this update should advance,
-!!  and timeEndAdv tells the time that this update will reach when
-!!  it finishes.  dtOld gives the previously taken timestep.
-!!
-!! ARGUMENTS
-!!
-!!  blockCount - the number of blocks in blockList
-!!  blockList  - array holding local IDs of blocks on which to advance
-!!  timeEndAdv - end time
-!!  dt         - timestep
-!!  dtOld      - old timestep
-!!  sweepOrder - argument for the unsplit scheme, for unsplit Hydro this
-!!               just a dummy variable to be consistent with the API.
+!!  Refer to stub for detailed documentation.
 !!
 !!***
 
-Subroutine hy_advanceBlk(block, blkLimitsGC, Uin, blkLimits, Uout,  del, timeEndAdv, dt,  dtOld, sweepOrder )
+#include "UHD.h"
 
-  use Hydro_data,       ONLY : hy_useHydro, hy_riemannSolver
-  use Grid_interface, ONLY : Grid_getDeltas,         &
-                             Grid_getListOfBlocks,    &
-                             Grid_getBlkPtr,          &
-                             Grid_getBlkIndexLimits,  &
-                             Grid_releaseBlkPtr
-
-  use hy_simpleInterface, ONLY : hy_hllUnsplit, hy_llfUnsplit
+Subroutine hy_advanceBlk(tileDesc, Uin, Uout, timeEndAdv, dt, dtOld, sweepOrder)
+  use Hydro_data,       ONLY : hy_useHydro, &
+                               hy_riemannSolver, &
+                               hy_eosModeAfter
+  use hy_interface,     ONLY : hy_hllUnsplit, hy_llfUnsplit
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Driver_interface, ONLY : Driver_abortFlash
-  use Eos_interface, ONLY : Eos_wrapped
-  use Hydro_data, ONLY :hy_meshComm
-  use Hydro_data, ONLY :hy_gcMaskSize,       &
-                         hy_gcMask,           &
-                         hy_unsplitEosMode,   &
-                         hy_eosModeAfter
-  use block_metadata, ONLY : block_metadata_t
-                        
+  use Eos_interface,    ONLY : Eos_wrapped
+  use flash_tile,       ONLY : flash_tile_t
 
   implicit none
 
-#include "UHD.h"
+  type(flash_tile_t), intent(IN)         :: tileDesc
+  real,                          pointer :: Uout(:,:,:,:)
+  real,                          pointer :: Uin(:,:,:,:)
+  real,               intent(IN)         :: timeEndAdv
+  real,               intent(IN)         :: dt
+  real,               intent(IN)         :: dtOld
+  integer,            intent(IN)         :: sweeporder
 
-  integer, INTENT(IN) :: sweeporder
-  real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-
-  integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits,blkLimitsGC
-  real, pointer, dimension(:,:,:,:) :: Uout
-  real,dimension(MDIM),intent(IN) :: del
-  real, pointer, dimension(:,:,:,:) :: Uin
-  type(block_metadata_t),intent(IN) :: block
-
+  real :: deltas(1:MDIM)
 
   if (.not. hy_useHydro) return 
 
-!!  call Timers_start("hydro_sUnsplit")
+  call tileDesc%deltas(deltas)
 
-  
   select case (hy_riemannSolver)
   case(HLL)
-     call hy_hllUnsplit(blkLimits, Uin, lbound(Uin), Uout, del, dt)
-  case(LLF)
-     call hy_llfUnsplit(blkLimits, Uin, Uout, del, dt)
+     call hy_hllUnsplit(tileDesc%limits, Uin, lbound(Uin), Uout, deltas, dt)
+  ! DEV: FIXME LLF has not been updated yet
+!  case(LLF)
+!     call hy_llfUnsplit(tileDesc%limits, Uin, Uout, deltas, dt)
   case default
-     call Driver_abortFlash("hy_advanceBlk: what?")
+     call Driver_abortFlash("[hy_advanceBlk]: Unknown Riemann solver")
   end select
-  
-  !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
-  call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout)
 
-
+  call Eos_wrapped(hy_eosModeAfter, tileDesc%limits, Uout)
 
 End Subroutine hy_advanceBlk
+

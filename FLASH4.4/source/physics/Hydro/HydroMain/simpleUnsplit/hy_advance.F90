@@ -1,49 +1,53 @@
+!!****if* source/physics/Hydro/HydroMain/simpleUnsplit/hy_advance
+!!
+!! NAME
+!!  hy_advance
+!!
+!! DESCRIPTION
+!!  Refer to stub for detailed documentation.
+!!
+!!***
+
 #include "Flash.h"
 #include "constants.h"
 
 subroutine hy_advance(simTime, dt, dtOld)
-
-  use Grid_interface,      ONLY : Grid_getDeltas,&
-                                  Grid_getBlkPtr,&
-                                  Grid_releaseBlkPtr,&
-                                  Grid_getLeafIterator, Grid_releaseLeafIterator
-  use Timers_interface,    ONLY : Timers_start, Timers_stop
-  use hy_interface,    ONLY : hy_advanceBlk
-  use leaf_iterator,       ONLY : leaf_iterator_t
-  use block_metadata,      ONLY : block_metadata_t
+  use Grid_interface,   ONLY : Grid_getTileIterator, &
+                               Grid_releaseTileIterator
+  use Timers_interface, ONLY : Timers_start, &
+                               Timers_stop
+  use hy_interface,     ONLY : hy_advanceBlk
+  use flash_iterator,   ONLY : flash_iterator_t
+  use flash_tile,       ONLY : flash_tile_t
 
   implicit none
 
-  real, intent(IN) ::  simTime, dt, dtOld
+  real, intent(IN) :: simTime
+  real, intent(IN) :: dt
+  real, intent(IN) :: dtOld
 
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
-  real,pointer,dimension(:,:,:,:) :: Uout, Uin
-  real,dimension(MDIM) :: del
+  real, pointer :: Uout(:,:,:,:)
+  real, pointer :: Uin(:,:,:,:)
 
-  integer,save :: sweepDummy = SWEEP_ALL
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t)     :: tileDesc
 
-  type(leaf_iterator_t)  :: itor
-  type(block_metadata_t) :: blockDesc
-
-  call Grid_getLeafIterator(itor, tiling=.FALSE.)
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
   call Timers_stop("loop1")
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 
-     blkLimits(:,:)   = blockDesc%limits(:,:)
-     blkLimitsGC(:,:) = blockDesc%limitsGC(:,:)
-     
-     call Grid_getBlkPtr(blockDesc, Uout, localFlag=.FALSE.)
-
-     call Grid_getDeltas(blockDesc%level,del)
+     call tileDesc%getDataPtr(Uout, CENTER)
      Uin => Uout
-     call hy_advanceBlk(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
-     call Grid_releaseBlkPtr(blockDesc, Uout)
+
+     call hy_advanceBlk(tileDesc, Uin, Uout, simTime, dt, dtOld, SWEEP_ALL)
+
+     call tileDesc%releaseDataPtr(Uout, CENTER)
  
      call itor%next()
   end do
   call Timers_stop("loop1")
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
 #ifdef DEBUG_DRIVER
   print*, 'return from Hydro/MHD timestep'  ! DEBUG

@@ -1,10 +1,10 @@
-!!****if* source/physics/Hydro/localAPI/hy_llfUnsplit
+!!****if* source/physics/Hydro/localAPI/hy_hllUnsplit
 !!
 !! NAME
-!!  hy_llfUnsplit
+!!  hy_hllUnsplit
 !!
 !! SYNOPSIS
-!!  call hy_llfUnsplit( integer (IN) :: blockCount,
+!!  call hy_hllUnsplit( integer (IN) :: blockCount,
 !!                      integer (IN) :: blockList(blockCount),
 !!                      real    (IN) :: dt,
 !!                      real    (IN) :: dtOld  )
@@ -48,11 +48,13 @@
 !!
 !!***
 
-!!REORDER(4): U, fl[xyz]
+! Note: the following arrays need to be spelled exactly like this in the code below,
+!       preserving case.
+!!REORDER(4): Uin, Uout, face[XYZ], auxC
 
 #include "constants.h"
 
-Subroutine hy_llfUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
+Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
   implicit none
 
   integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
@@ -63,5 +65,5 @@ Subroutine hy_llfUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
   real,    intent(IN)  :: dt
 
   Uout(:, :, :, :) = 0.0
-End Subroutine hy_llfUnsplit
+End Subroutine hy_hllUnsplit
 
