@@ -1,4 +1,4 @@
-!!****if* source/physics/Hydro/HydroMain/unsplit/Hydro_Unsplit/hy_hllUnsplit
+!!****if* source/physics/Hydro/HydroMain/simpleUnsplit/HLL/hy_hllUnsplit
 !!
 !! NAME
 !!
@@ -63,15 +63,13 @@
 #ifdef DEBUG_ALL
 #define DEBUG_UHD
 #endif
-#define DEBUG_GRID_GCMASK
-
-Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
-
-!!$  use Grid_interface, ONLY : Grid_genGetBlkPtr,         &
-!!$                             Grid_genReleaseBlkPtr
 
 #include "Flash.h"
+#include "constants.h"
+#include "Eos.h"
+#include "UHD.h"
 
+Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
   use Hydro_data, ONLY : hy_fluxCorrect,      &
                          hy_gref,             &
                          hy_useGravity,       &
@@ -91,32 +89,20 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
   use Hydro_data, ONLY : hy_E_upwind
 #endif
 
-  use Driver_interface, ONLY : Driver_abortFlash
-
-!!$  use Eos_interface, ONLY : Eos_wrapped
-
+  use Driver_interface,  ONLY : Driver_abortFlash
   use Logfile_interface, ONLY : Logfile_stampVarMask
 
-!!$  use Timers_interface, ONLY : Timers_start, Timers_stop
-
-
   implicit none
-
-#include "constants.h"
-#include "Eos.h"
-#include "UHD.h"
-
 
   !! ---- Argument List ----------------------------------
   integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
   integer, dimension(*),intent(in)             :: plo
-  real,intent(inout),target,dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: UIN !CAPITALIZATION INTENTIONAL!
-  real,pointer,dimension(:,:,:,:) :: Uout
+  real,intent(in),dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: UIN !CAPITALIZATION INTENTIONAL!
+  real,intent(out),dimension(plo(1):,plo(2):,plo(3):,plo(4):) :: UOUT !CAPITALIZATION INTENTIONAL!
   real,dimension(MDIM), INTENT(IN) :: del
   real,    INTENT(IN) :: dt
   !! -----------------------------------------------------
 
-!!$  integer, dimension(MDIM) :: datasize
   integer :: ib, i,j,k,blockID
   integer :: is,js,ks
   integer :: ix,iy,iz
@@ -127,13 +113,10 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
   integer, dimension(2,MDIM) :: eosRange
   integer :: t, tileID
 
-  real, pointer, dimension(:,:,:,:)   :: faceX, faceY, faceZ, auxC
-
-!!$  real, pointer, dimension(:,:,:,:) :: Uin,Uout
+  real, pointer, dimension(:,:,:,:) :: faceX, faceY, faceZ, auxC
 
   integer :: tileCount
   integer :: tileList(1024)
-
 
   integer,parameter,dimension(HY_VARINUM4) :: &
        outVarList=(/DENS_VAR,&
@@ -142,6 +125,10 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
        GAMC_VAR,GAME_VAR,EINT_VAR,&
        ENER_VAR/)
 
+  nullify(faceX)
+  nullify(faceY)
+  nullify(faceZ)
+  nullify(auxC)
 
   !! End of data declaration ***********************************************
 #ifdef DEBUG_UHD
@@ -173,426 +160,313 @@ Subroutine hy_hllUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
      return
   end if
 
-!!$#ifdef DEBUG_GRID_GCMASK
-!!$  if (.NOT.gcMaskLogged) then
-!!$     call Logfile_stampVarMask(hy_gcMask, .FALSE., '[hy_hllUnsplit]', 'gcNeed')
-!!$  end if
-!!$#endif
-!!$  !! Guardcell filling routine
-!!$  call Grid_fillGuardCells(CENTER,ALLDIR,&
-!!$       maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskLogged)
-!!$
-
   !! ***************************************************************************
   !! There is only one overall loop in this simplified advancement             *
   !! ***************************************************************************
   !! Loop over the blocks
+     
+  dtdx = dt / del(IAXIS)
+  if (NDIM > 1) dtdy = dt / del(JAXIS)
+  if (NDIM > 2) dtdz = dt / del(KAXIS)
 
+  ! Note: Not handling gravity.
 
-!!$  call Grid_startLoopTiling(CENTER,tilingCtx,&
-!!$                  useInPtr=.TRUE.,  useInVarPtrs=.FALSE.,    &
-!!$                  useOutPtr=.TRUE., useOutVarPtrs=.FALSE., outVarList=outVarList, &
-!!$                  nAuxVars=1, nAuxGuard=1, blockList=blockList(1:blockCount))
-!!$  call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEX,&
-!!$                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
-!!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
-!!$  if (NDIM > 1) then
-!!$     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEY,&
-!!$                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
-!!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
-!!$  end if
-!!$  if (NDIM > 2) then
-!!$     call Grid_addToLoopTiling(tilingCtx,SCRATCH_FACEZ,&
-!!$                  useInPtr=.FALSE.,  useInVarPtrs=.FALSE.,    &
-!!$                  useOutPtr=.FALSE., useOutVarPtrs=.FALSE., nAuxVars=5, nAuxGuard=0)
-!!$  end if
+  allocate(auxC(1,tileLimits(LOW,IAXIS)-1  :tileLimits(HIGH,IAXIS)+1  , &
+                  tileLimits(LOW,JAXIS)-K2D:tileLimits(HIGH,JAXIS)+K2D, &
+                  tileLimits(LOW,KAXIS)-K3D:tileLimits(HIGH,KAXIS)+K3D) )
 
-!!$  !$omp parallel if (hy_threadBlockList) &
-!!$  !$omp default(none) &
-!!$  !$omp private(dtdx,dtdy,dtdz,blockID,i,j,k,del,tileLimits,blkLimitsGC,&
-!!$  !$omp faceX,faceY,faceZ,Uin,Uout,auxC,&
-!!$  !$omp c,sl,sr,srsl,vn,is,il,ir,vl,vr,js,jl,jr,ks,kl,kr,invNewDens) &
-!!$  !$omp shared(blockCount,blockList,&
-!!$  !$omp hy_unsplitEosMode,hy_useGravity,hy_gref,hy_fluxCorrect,&
-!!$  !$omp hy_updateHydroFluxes,hy_eosModeAfter,hy_useGravHalfUpdate,&
-!!$  !$omp hy_useGravPotUpdate,hy_geometry,hy_fluxCorVars)
-  
-  !$omp do schedule(static)
-!!ChageForAMRex -- this is the outermost loop that will be replaced by the iterator
-!!$  do ib=1,blockCount
-!!$
-!!$     blockID = blockList(ib)
+  allocate(faceX(5,tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)+1  , &
+                  tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS), &
+                  tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)) )
 
-!!ChageForAMRex -- this information should come from the interator as meta-data
-!!$     call Grid_getDeltas(blockID,del)
-!!$
-     dtdx = dt / del(IAXIS)
-     if (NDIM > 1) dtdy = dt / del(JAXIS)
-     if (NDIM > 2) dtdz = dt / del(KAXIS)
+  if (NDIM > 1) then 
+     allocate(faceY(5,tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)  , &
+                      tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS)+1, &
+                      tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)) )
+  end if
+  if (NDIM > 2) then 
+     allocate(faceZ(5,tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)  , &
+                      tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS), &
+                      tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)+1) )
+  end if
 
-!!ChageForAMRex -- this information should come from the iterator as meta-data
-!!$     call Grid_getBlkIndexLimits(blockID,tileLimits,blkLimitsGC)
+  !! ************************************************************************
+  !! Calculate Riemann (interface) states
+  !  No equivalent really to  call hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del)
 
-!!$     call Grid_getListOfTiles(blockID, tileList,tileCount)
-
-
-
-     !! NO call to Eos for guardcell regions - simplified! --------------------
-     !! End of Eos call for guardcell regions ----------------------------------
-
-        ! Note: Not handling gravity.
-
-!!$     datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
-
-
-!!$        call Grid_getTileVarPtrs(tileID,gridDataStruct=CENTER, &
-!!$             inPtr=Uin, nInGuard=(/1,1,1/), &
-!!$             outPtr=Uout,&
-!!$             outLimits=tileLimits, &
-!!$             dataInit=GRID_DATAINIT_NEGINFINITY,&
-!!$             auxPtr=auxC,tilingContext=tilingCtx)
-
-!!ChageForAMRex -- this explicit getting of pointer should be decided whether it comes in or remains explit fetching
-!!ChageForAMRex -- and the follwing scratch array sizing parameters should also be a part of the metadata
-!!$        call Grid_getBlkPtr(blockID,Uout,CENTER)
-!!$        Uin => Uout
-        allocate(auxC(1,tileLimits(LOW,IAXIS)-1  :tileLimits(HIGH,IAXIS)+1  , &
-                        tileLimits(LOW,JAXIS)-K2D:tileLimits(HIGH,JAXIS)+K2D, &
-                        tileLimits(LOW,KAXIS)-K3D:tileLimits(HIGH,KAXIS)+K3D) )
-!!$        print*,'tile limits for',tileID,':',tileLimits
-
-
-
-!!ChageForAMRex -- If we un-comment the following, then dimensionality is taken care of. We may want
-!!ChageForAMRex -- up to two more of the above allocate statements
-
-        allocate(faceX(5,tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)+1  , &
-                        tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS), &
-                        tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)) )
-
-        if (NDIM > 1) then 
-        allocate(faceY(5,tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)  , &
-                        tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS)+1, &
-                        tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)) )
-
-        end if
-        if (NDIM > 2) then 
-        allocate(faceZ(5,tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)  , &
-                        tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS), &
-                        tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)+1) )
-
-        end if
-
-!!ChageForAMRex -- this just gets more temporary array from a general pool, this could change
-!!$        call Grid_genGetBlkPtr(blockID,faceX,(/1,5,SCRATCH_FACES/), faceY,faceZ)
-
-!!$     print*,'lbound(faceX):', lbound(faceX)
-!!$     print*,'ubound(faceX):', ubound(faceX)
-
-     !! ************************************************************************
-     !! Calculate Riemann (interface) states
-
-     !  No equivalent really to  call hy_uhd_getRiemannState(blockID,blkLimits,blkLimitsGC,dt,del)
-
-!!ChageForAMRex -- calculate sound speed, the loop limits will change to reflect metadata sent by the iterator
-!!ChageForAMRex --  this applies everywhere "tileLimits" or "blkLimits" show up
-        do k = tileLimits(LOW,KAXIS)-K3D,tileLimits(HIGH,KAXIS)+K3D
-           do j = tileLimits(LOW,JAXIS)-K2D,tileLimits(HIGH,JAXIS)+K2D
-              do i = tileLimits(LOW,IAXIS)-1,tileLimits(HIGH,IAXIS)+1
-                 c = sqrt(Uin(GAMC_VAR,i,j,k)*Uin(PRES_VAR,i,j,k)/Uin(DENS_VAR,i,j,k))
-                 auxC(1, i,j,k) = c
-              end do
-           end do
+  !! calculate sound speed
+  do k = tileLimits(LOW,KAXIS)-K3D,tileLimits(HIGH,KAXIS)+K3D
+     do j = tileLimits(LOW,JAXIS)-K2D,tileLimits(HIGH,JAXIS)+K2D
+        do i = tileLimits(LOW,IAXIS)-1,tileLimits(HIGH,IAXIS)+1
+           c = sqrt(Uin(GAMC_VAR,i,j,k)*Uin(PRES_VAR,i,j,k)/Uin(DENS_VAR,i,j,k))
+           auxC(1, i,j,k) = c
         end do
+     end do
+  end do
 
-     !! ************************************************************************
-     !! Calculate Godunov fluxes
+  !! ************************************************************************
+  !! Calculate Godunov fluxes
 
-     !  instead of  call hy_uhd_getFaceFlux(blockID,blkLimits,blkLimitsGC,datasize,del, ...)
+  !  instead of  call hy_uhd_getFaceFlux(blockID,blkLimits,blkLimitsGC,datasize,del, ...)
 
-        do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
-           do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
-              do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)+1
-                 sL = min(Uin(VELX_VAR,i-1,j,k)-auxC(1, i-1,j,k), Uin(VELX_VAR,i,j,k)-auxC(1, i,j,k))
-                 sR = max(Uin(VELX_VAR,i-1,j,k)+auxC(1, i-1,j,k), Uin(VELX_VAR,i,j,k)+auxC(1, i,j,k))
-                 sRsL = sR - sL
-                 if (sL > 0.0) then
-                    vn = Uin(VELX_VAR,i-1,j,k)
-                    is = i-1
-                    iL = i-1; iR=i-1
-                 else if (sR < 0.0) then
-                    vn = Uin(VELX_VAR,i,j,k)
-                    is = i
-                    iL = i; iR=i
-                 else
-                    vn = (Uin(VELX_VAR,i-1,j,k)+Uin(VELX_VAR,i,j,k)) * 0.5
-                    is = i
-                    iL = i-1; iR=i
-                    if (vn>0.0) is = is-1
-                 end if
-                 vL = Uin(VELX_VAR,iL,j,k);  vR = Uin(VELX_VAR,iR,j,k)
-!!ChageForAMRex -- The index names for flux array are explicitly enumerated in uhd.h or some similar file
-!!ChageForAMRex -- the treatment is likely to need change for AMReX
-                 if (iL==iR) then
-                    faceX(HY_DENS_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k)
-                    faceX(HY_XMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k) * Uin(VELX_VAR,is,j,k)
-                    faceX(HY_XMOM_FLUX,i,j,k) = faceX(HY_XMOM_FLUX,i,j,k) &
-                         + Uin(PRES_VAR,is,j,k)
-                    faceX(HY_YMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k) * Uin(VELY_VAR,is,j,k)
-                    faceX(HY_ZMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k) * Uin(VELZ_VAR,is,j,k)
-                    faceX(HY_ENER_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k) * Uin(ENER_VAR,is,j,k)
-                    faceX(HY_ENER_FLUX,i,j,k) = faceX(HY_ENER_FLUX,i,j,k) &
-                         + vn * Uin(PRES_VAR,is,j,k)
-                 else
-                    faceX(HY_DENS_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k) - sL * vR * Uin(DENS_VAR,iR,j,k) &
-                         + sR*sL*(Uin(DENS_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k))) / sRsL
-                    faceX(HY_XMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k)*Uin(VELX_VAR,iL,j,k) &
-                         - sL * vR * Uin(DENS_VAR,iR,j,k)*Uin(VELX_VAR,iR,j,k) &
-                         + sR*sL*(Uin(DENS_VAR,iR,j,k)*Uin(VELX_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k)*Uin(VELX_VAR,iL,j,k)) )/sRsL
-                    faceX(HY_XMOM_FLUX,i,j,k) = faceX(HY_XMOM_FLUX,i,j,k) &
-                         + (sR * Uin(PRES_VAR,iL,j,k) - sL * Uin(PRES_VAR,iR,j,k)) / sRsL
-                    faceX(HY_YMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k)*Uin(VELY_VAR,iL,j,k) &
-                         - sL * vR * Uin(DENS_VAR,iR,j,k)*Uin(VELY_VAR,iR,j,k) &
-                         + sR*sL*(Uin(DENS_VAR,iR,j,k)*Uin(VELY_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k)*Uin(VELY_VAR,iL,j,k)) )/sRsL
-                    faceX(HY_ZMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k)*Uin(VELZ_VAR,iL,j,k) &
-                         - sL * vR * Uin(DENS_VAR,iR,j,k)*Uin(VELZ_VAR,iR,j,k) &
-                         + sR*sL*(Uin(DENS_VAR,iR,j,k)*Uin(VELZ_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k)*Uin(VELZ_VAR,iL,j,k)) )/sRsL
-                    faceX(HY_ENER_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k)*Uin(ENER_VAR,iL,j,k) &
-                         - sL * vR * Uin(DENS_VAR,iR,j,k)*Uin(ENER_VAR,iR,j,k) &
-                         + sR*sL*(Uin(DENS_VAR,iR,j,k)*Uin(ENER_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k)*Uin(ENER_VAR,iL,j,k)))/sRsL
-                    faceX(HY_ENER_FLUX,i,j,k) = faceX(HY_ENER_FLUX,i,j,k) &
-                         + (sR * vL * Uin(PRES_VAR,iL,j,k) - sL * vR * Uin(PRES_VAR,iR,j,k)) / sRsL
-                 end if
-                 faceX(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) = faceX(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) * dtdx
-              end do
-           end do
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)+1
+           sL = min(Uin(VELX_VAR,i-1,j,k)-auxC(1, i-1,j,k), Uin(VELX_VAR,i,j,k)-auxC(1, i,j,k))
+           sR = max(Uin(VELX_VAR,i-1,j,k)+auxC(1, i-1,j,k), Uin(VELX_VAR,i,j,k)+auxC(1, i,j,k))
+           sRsL = sR - sL
+           if (sL > 0.0) then
+              vn = Uin(VELX_VAR,i-1,j,k)
+              is = i-1
+              iL = i-1; iR=i-1
+           else if (sR < 0.0) then
+              vn = Uin(VELX_VAR,i,j,k)
+              is = i
+              iL = i; iR=i
+           else
+              vn = (Uin(VELX_VAR,i-1,j,k)+Uin(VELX_VAR,i,j,k)) * 0.5
+              is = i
+              iL = i-1; iR=i
+              if (vn>0.0) is = is-1
+           end if
+           vL = Uin(VELX_VAR,iL,j,k);  vR = Uin(VELX_VAR,iR,j,k)
+           if (iL==iR) then
+              faceX(HY_DENS_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k)
+              faceX(HY_XMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k) * Uin(VELX_VAR,is,j,k)
+              faceX(HY_XMOM_FLUX,i,j,k) = faceX(HY_XMOM_FLUX,i,j,k) &
+                   + Uin(PRES_VAR,is,j,k)
+              faceX(HY_YMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k) * Uin(VELY_VAR,is,j,k)
+              faceX(HY_ZMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k) * Uin(VELZ_VAR,is,j,k)
+              faceX(HY_ENER_FLUX,i,j,k) = vn * Uin(DENS_VAR,is,j,k) * Uin(ENER_VAR,is,j,k)
+              faceX(HY_ENER_FLUX,i,j,k) = faceX(HY_ENER_FLUX,i,j,k) &
+                   + vn * Uin(PRES_VAR,is,j,k)
+           else
+              faceX(HY_DENS_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k) - sL * vR * Uin(DENS_VAR,iR,j,k) &
+                   + sR*sL*(Uin(DENS_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k))) / sRsL
+              faceX(HY_XMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k)*Uin(VELX_VAR,iL,j,k) &
+                   - sL * vR * Uin(DENS_VAR,iR,j,k)*Uin(VELX_VAR,iR,j,k) &
+                   + sR*sL*(Uin(DENS_VAR,iR,j,k)*Uin(VELX_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k)*Uin(VELX_VAR,iL,j,k)) )/sRsL
+              faceX(HY_XMOM_FLUX,i,j,k) = faceX(HY_XMOM_FLUX,i,j,k) &
+                   + (sR * Uin(PRES_VAR,iL,j,k) - sL * Uin(PRES_VAR,iR,j,k)) / sRsL
+              faceX(HY_YMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k)*Uin(VELY_VAR,iL,j,k) &
+                   - sL * vR * Uin(DENS_VAR,iR,j,k)*Uin(VELY_VAR,iR,j,k) &
+                   + sR*sL*(Uin(DENS_VAR,iR,j,k)*Uin(VELY_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k)*Uin(VELY_VAR,iL,j,k)) )/sRsL
+              faceX(HY_ZMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k)*Uin(VELZ_VAR,iL,j,k) &
+                   - sL * vR * Uin(DENS_VAR,iR,j,k)*Uin(VELZ_VAR,iR,j,k) &
+                   + sR*sL*(Uin(DENS_VAR,iR,j,k)*Uin(VELZ_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k)*Uin(VELZ_VAR,iL,j,k)) )/sRsL
+              faceX(HY_ENER_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,iL,j,k)*Uin(ENER_VAR,iL,j,k) &
+                   - sL * vR * Uin(DENS_VAR,iR,j,k)*Uin(ENER_VAR,iR,j,k) &
+                   + sR*sL*(Uin(DENS_VAR,iR,j,k)*Uin(ENER_VAR,iR,j,k) - Uin(DENS_VAR,iL,j,k)*Uin(ENER_VAR,iL,j,k)))/sRsL
+              faceX(HY_ENER_FLUX,i,j,k) = faceX(HY_ENER_FLUX,i,j,k) &
+                   + (sR * vL * Uin(PRES_VAR,iL,j,k) - sL * vR * Uin(PRES_VAR,iR,j,k)) / sRsL
+           end if
+           faceX(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) = faceX(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) * dtdx
         end do
+     end do
+  end do
 #if NDIM > 1
-        do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
-           do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)+1
-              do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
-                 sL = min(Uin(VELY_VAR,i,j-1,k)-auxC(1, i,j-1,k), Uin(VELY_VAR,i,j,k)-auxC(1, i,j,k))
-                 sR = max(Uin(VELY_VAR,i,j-1,k)+auxC(1, i,j-1,k), Uin(VELY_VAR,i,j,k)+auxC(1, i,j,k))
-                 sRsL = sR - sL
-                 if (sL > 0.0) then
-                    vn = Uin(VELY_VAR,i,j-1,k)
-                    js = j-1
-                    jL = j-1; jR=j-1
-                 else if (sR < 0.0) then
-                    vn = Uin(VELY_VAR,i,j,k)
-                    js = j
-                    jL = j; jR=j
-                 else
-                    vn = (Uin(VELY_VAR,i,j-1,k)+Uin(VELY_VAR,i,j,k)) * 0.5
-                    js = j
-                    jL = j-1; jR=j
-                    if (vn>0.0) js = js-1
-                 end if
-                 vL = Uin(VELY_VAR,i,jL,k);  vR = Uin(VELY_VAR,i,jR,k)
-                 if (jL==jR) then
-                    faceY(HY_DENS_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k)
-                    faceY(HY_XMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k) * Uin(VELX_VAR,i,js,k)
-                    faceY(HY_YMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k) * Uin(VELY_VAR,i,js,k)
-                    faceY(HY_YMOM_FLUX,i,j,k) = faceY(HY_YMOM_FLUX,i,j,k) &
-                         + Uin(PRES_VAR,i,js,k)
-                    faceY(HY_ZMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k) * Uin(VELZ_VAR,i,js,k)
-                    faceY(HY_ENER_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k) * Uin(ENER_VAR,i,js,k)
-                    faceY(HY_ENER_FLUX,i,j,k) = faceY(HY_ENER_FLUX,i,j,k) &
-                         + vn * Uin(PRES_VAR,i,js,k)
-                 else
-                    faceY(HY_DENS_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k) - sL * vR * Uin(DENS_VAR,i,jR,k) &
-                         + sR*sL*(Uin(DENS_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k))) / sRsL
-                    faceY(HY_XMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k)*Uin(VELX_VAR,i,jL,k) &
-                         - sL * vR * Uin(DENS_VAR,i,jR,k)*Uin(VELX_VAR,i,jR,k) &
-                         + sR*sL*(Uin(DENS_VAR,i,jR,k)*Uin(VELX_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k)*Uin(VELX_VAR,i,jL,k)) )/sRsL
-                    faceY(HY_YMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k)*Uin(VELY_VAR,i,jL,k) &
-                         - sL * vR * Uin(DENS_VAR,i,jR,k)*Uin(VELY_VAR,i,jR,k) &
-                         + sR*sL*(Uin(DENS_VAR,i,jR,k)*Uin(VELY_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k)*Uin(VELY_VAR,i,jL,k)) )/sRsL
-                    faceY(HY_YMOM_FLUX,i,j,k) = faceY(HY_YMOM_FLUX,i,j,k) &
-                         + (sR * Uin(PRES_VAR,i,jL,k) - sL * Uin(PRES_VAR,i,jR,k)) / sRsL
-                    faceY(HY_ZMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k)*Uin(VELZ_VAR,i,jL,k) &
-                         - sL * vR * Uin(DENS_VAR,i,jR,k)*Uin(VELZ_VAR,i,jR,k) &
-                         + sR*sL*(Uin(DENS_VAR,i,jR,k)*Uin(VELZ_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k)*Uin(VELZ_VAR,i,jL,k)) )/sRsL
-                    faceY(HY_ENER_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k)*Uin(ENER_VAR,i,jL,k) &
-                         - sL * vR * Uin(DENS_VAR,i,jR,k)*Uin(ENER_VAR,i,jR,k) &
-                         + sR*sL*(Uin(DENS_VAR,i,jR,k)*Uin(ENER_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k)*Uin(ENER_VAR,i,jL,k)))/sRsL
-                    faceY(HY_ENER_FLUX,i,j,k) = faceY(HY_ENER_FLUX,i,j,k) &
-                         + (sR * vL * Uin(PRES_VAR,i,jL,k) - sL * vR * Uin(PRES_VAR,i,jR,k)) / sRsL
-                 end if
-                 faceY(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) = faceY(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) * dtdy
-              end do
-           end do
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)+1
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
+           sL = min(Uin(VELY_VAR,i,j-1,k)-auxC(1, i,j-1,k), Uin(VELY_VAR,i,j,k)-auxC(1, i,j,k))
+           sR = max(Uin(VELY_VAR,i,j-1,k)+auxC(1, i,j-1,k), Uin(VELY_VAR,i,j,k)+auxC(1, i,j,k))
+           sRsL = sR - sL
+           if (sL > 0.0) then
+              vn = Uin(VELY_VAR,i,j-1,k)
+              js = j-1
+              jL = j-1; jR=j-1
+           else if (sR < 0.0) then
+              vn = Uin(VELY_VAR,i,j,k)
+              js = j
+              jL = j; jR=j
+           else
+              vn = (Uin(VELY_VAR,i,j-1,k)+Uin(VELY_VAR,i,j,k)) * 0.5
+              js = j
+              jL = j-1; jR=j
+              if (vn>0.0) js = js-1
+           end if
+           vL = Uin(VELY_VAR,i,jL,k);  vR = Uin(VELY_VAR,i,jR,k)
+           if (jL==jR) then
+              faceY(HY_DENS_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k)
+              faceY(HY_XMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k) * Uin(VELX_VAR,i,js,k)
+              faceY(HY_YMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k) * Uin(VELY_VAR,i,js,k)
+              faceY(HY_YMOM_FLUX,i,j,k) = faceY(HY_YMOM_FLUX,i,j,k) &
+                   + Uin(PRES_VAR,i,js,k)
+              faceY(HY_ZMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k) * Uin(VELZ_VAR,i,js,k)
+              faceY(HY_ENER_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,js,k) * Uin(ENER_VAR,i,js,k)
+              faceY(HY_ENER_FLUX,i,j,k) = faceY(HY_ENER_FLUX,i,j,k) &
+                   + vn * Uin(PRES_VAR,i,js,k)
+           else
+              faceY(HY_DENS_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k) - sL * vR * Uin(DENS_VAR,i,jR,k) &
+                   + sR*sL*(Uin(DENS_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k))) / sRsL
+              faceY(HY_XMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k)*Uin(VELX_VAR,i,jL,k) &
+                   - sL * vR * Uin(DENS_VAR,i,jR,k)*Uin(VELX_VAR,i,jR,k) &
+                   + sR*sL*(Uin(DENS_VAR,i,jR,k)*Uin(VELX_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k)*Uin(VELX_VAR,i,jL,k)) )/sRsL
+              faceY(HY_YMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k)*Uin(VELY_VAR,i,jL,k) &
+                   - sL * vR * Uin(DENS_VAR,i,jR,k)*Uin(VELY_VAR,i,jR,k) &
+                   + sR*sL*(Uin(DENS_VAR,i,jR,k)*Uin(VELY_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k)*Uin(VELY_VAR,i,jL,k)) )/sRsL
+              faceY(HY_YMOM_FLUX,i,j,k) = faceY(HY_YMOM_FLUX,i,j,k) &
+                   + (sR * Uin(PRES_VAR,i,jL,k) - sL * Uin(PRES_VAR,i,jR,k)) / sRsL
+              faceY(HY_ZMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k)*Uin(VELZ_VAR,i,jL,k) &
+                   - sL * vR * Uin(DENS_VAR,i,jR,k)*Uin(VELZ_VAR,i,jR,k) &
+                   + sR*sL*(Uin(DENS_VAR,i,jR,k)*Uin(VELZ_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k)*Uin(VELZ_VAR,i,jL,k)) )/sRsL
+              faceY(HY_ENER_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,jL,k)*Uin(ENER_VAR,i,jL,k) &
+                   - sL * vR * Uin(DENS_VAR,i,jR,k)*Uin(ENER_VAR,i,jR,k) &
+                   + sR*sL*(Uin(DENS_VAR,i,jR,k)*Uin(ENER_VAR,i,jR,k) - Uin(DENS_VAR,i,jL,k)*Uin(ENER_VAR,i,jL,k)))/sRsL
+              faceY(HY_ENER_FLUX,i,j,k) = faceY(HY_ENER_FLUX,i,j,k) &
+                   + (sR * vL * Uin(PRES_VAR,i,jL,k) - sL * vR * Uin(PRES_VAR,i,jR,k)) / sRsL
+           end if
+           faceY(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) = faceY(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) * dtdy
         end do
+     end do
+  end do
 #endif
 #if NDIM > 2
-        do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)+1
-           do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
-              do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
-                 sL = min(Uin(VELZ_VAR,i,j,k-1)-auxC(1, i,j,k-1), Uin(VELZ_VAR,i,j,k)-auxC(1, i,j,k))
-                 sR = max(Uin(VELZ_VAR,i,j,k-1)+auxC(1, i,j,k-1), Uin(VELZ_VAR,i,j,k)+auxC(1, i,j,k))
-                 sRsL = sR - sL
-                 if (sL > 0.0) then
-                    vn = Uin(VELZ_VAR,i,j,k-1)
-                    ks = k-1
-                    kL = k-1; kR = k-1
-                 else if (sR < 0.0) then
-                    vn = Uin(VELZ_VAR,i,j,k)
-                    ks = k
-                    kL = k; kR = k
-                 else
-                    vn = (Uin(VELZ_VAR,i,j,k-1)+Uin(VELZ_VAR,i,j,k)) * 0.5
-                    ks = k
-                    kL = k-1; kR = k
-                    if (vn>0.0) ks = ks-1
-                 end if
-                 vL = Uin(VELZ_VAR,i,j,kL);  vR = Uin(VELZ_VAR,i,j,kR)
-                 if (kL==kR) then
-                    faceZ(HY_DENS_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks)
-                    faceZ(HY_XMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks) * Uin(VELX_VAR,i,j,ks)
-                    faceZ(HY_YMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks) * Uin(VELY_VAR,i,j,ks)
-                    faceZ(HY_ZMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks) * Uin(VELZ_VAR,i,j,ks)
-                    faceZ(HY_ZMOM_FLUX,i,j,k) = faceZ(HY_ZMOM_FLUX,i,j,k) &
-                         + Uin(PRES_VAR,i,j,ks)
-                    faceZ(HY_ENER_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks) * Uin(ENER_VAR,i,j,ks)
-                    faceZ(HY_ENER_FLUX,i,j,k) = faceZ(HY_ENER_FLUX,i,j,k) &
-                         + vn * Uin(PRES_VAR,i,j,ks)
-                 else
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)+1
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
+           sL = min(Uin(VELZ_VAR,i,j,k-1)-auxC(1, i,j,k-1), Uin(VELZ_VAR,i,j,k)-auxC(1, i,j,k))
+           sR = max(Uin(VELZ_VAR,i,j,k-1)+auxC(1, i,j,k-1), Uin(VELZ_VAR,i,j,k)+auxC(1, i,j,k))
+           sRsL = sR - sL
+           if (sL > 0.0) then
+              vn = Uin(VELZ_VAR,i,j,k-1)
+              ks = k-1
+              kL = k-1; kR = k-1
+           else if (sR < 0.0) then
+              vn = Uin(VELZ_VAR,i,j,k)
+              ks = k
+              kL = k; kR = k
+           else
+              vn = (Uin(VELZ_VAR,i,j,k-1)+Uin(VELZ_VAR,i,j,k)) * 0.5
+              ks = k
+              kL = k-1; kR = k
+              if (vn>0.0) ks = ks-1
+           end if
+           vL = Uin(VELZ_VAR,i,j,kL);  vR = Uin(VELZ_VAR,i,j,kR)
+           if (kL==kR) then
+              faceZ(HY_DENS_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks)
+              faceZ(HY_XMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks) * Uin(VELX_VAR,i,j,ks)
+              faceZ(HY_YMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks) * Uin(VELY_VAR,i,j,ks)
+              faceZ(HY_ZMOM_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks) * Uin(VELZ_VAR,i,j,ks)
+              faceZ(HY_ZMOM_FLUX,i,j,k) = faceZ(HY_ZMOM_FLUX,i,j,k) &
+                   + Uin(PRES_VAR,i,j,ks)
+              faceZ(HY_ENER_FLUX,i,j,k) = vn * Uin(DENS_VAR,i,j,ks) * Uin(ENER_VAR,i,j,ks)
+              faceZ(HY_ENER_FLUX,i,j,k) = faceZ(HY_ENER_FLUX,i,j,k) &
+                   + vn * Uin(PRES_VAR,i,j,ks)
+           else
 
-                    faceZ(HY_DENS_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL) - sL * vR * Uin(DENS_VAR,i,j,kR) &
-                         + sR*sL*(Uin(DENS_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL))) / sRsL
-                    faceZ(HY_XMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL)*Uin(VELX_VAR,i,j,kL) &
-                         - sL * vR * Uin(DENS_VAR,i,j,kR)*Uin(VELX_VAR,i,j,kR) &
-                         + sR*sL*(Uin(DENS_VAR,i,j,kR)*Uin(VELX_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL)*Uin(VELX_VAR,i,j,kL)) )/sRsL
-                    faceZ(HY_YMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL)*Uin(VELY_VAR,i,j,kL) &
-                         - sL * vR * Uin(DENS_VAR,i,j,kR)*Uin(VELY_VAR,i,j,kR) &
-                         + sR*sL*(Uin(DENS_VAR,i,j,kR)*Uin(VELY_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL)*Uin(VELY_VAR,i,j,kL)) )/sRsL
-                    faceZ(HY_ZMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL)*Uin(VELZ_VAR,i,j,kL) &
-                         - sL * vR * Uin(DENS_VAR,i,j,kR)*Uin(VELZ_VAR,i,j,kR) &
-                         + sR*sL*(Uin(DENS_VAR,i,j,kR)*Uin(VELZ_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL)*Uin(VELZ_VAR,i,j,kL)) )/sRsL
-                    faceZ(HY_ZMOM_FLUX,i,j,k) = faceZ(HY_ZMOM_FLUX,i,j,k) &
-                         + (sR * Uin(PRES_VAR,i,j,kL) - sL * Uin(PRES_VAR,i,j,kR)) / sRsL
-                    faceZ(HY_ENER_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL)*Uin(ENER_VAR,i,j,kL) &
-                         - sL * vR * Uin(DENS_VAR,i,j,kR)*Uin(ENER_VAR,i,j,kR) &
-                         + sR*sL*(Uin(DENS_VAR,i,j,kR)*Uin(ENER_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL)*Uin(ENER_VAR,i,j,kL)))/sRsL
-                    faceZ(HY_ENER_FLUX,i,j,k) = faceZ(HY_ENER_FLUX,i,j,k) &
-                         + (sR * vL * Uin(PRES_VAR,i,j,kL) - sL * vR * Uin(PRES_VAR,i,j,kR)) / sRsL
-                 end if
-                 faceZ(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) = faceZ(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) * dtdz
-              end do
-           end do
+              faceZ(HY_DENS_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL) - sL * vR * Uin(DENS_VAR,i,j,kR) &
+                   + sR*sL*(Uin(DENS_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL))) / sRsL
+              faceZ(HY_XMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL)*Uin(VELX_VAR,i,j,kL) &
+                   - sL * vR * Uin(DENS_VAR,i,j,kR)*Uin(VELX_VAR,i,j,kR) &
+                   + sR*sL*(Uin(DENS_VAR,i,j,kR)*Uin(VELX_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL)*Uin(VELX_VAR,i,j,kL)) )/sRsL
+              faceZ(HY_YMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL)*Uin(VELY_VAR,i,j,kL) &
+                   - sL * vR * Uin(DENS_VAR,i,j,kR)*Uin(VELY_VAR,i,j,kR) &
+                   + sR*sL*(Uin(DENS_VAR,i,j,kR)*Uin(VELY_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL)*Uin(VELY_VAR,i,j,kL)) )/sRsL
+              faceZ(HY_ZMOM_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL)*Uin(VELZ_VAR,i,j,kL) &
+                   - sL * vR * Uin(DENS_VAR,i,j,kR)*Uin(VELZ_VAR,i,j,kR) &
+                   + sR*sL*(Uin(DENS_VAR,i,j,kR)*Uin(VELZ_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL)*Uin(VELZ_VAR,i,j,kL)) )/sRsL
+              faceZ(HY_ZMOM_FLUX,i,j,k) = faceZ(HY_ZMOM_FLUX,i,j,k) &
+                   + (sR * Uin(PRES_VAR,i,j,kL) - sL * Uin(PRES_VAR,i,j,kR)) / sRsL
+              faceZ(HY_ENER_FLUX,i,j,k) = (  sR * vL * Uin(DENS_VAR,i,j,kL)*Uin(ENER_VAR,i,j,kL) &
+                   - sL * vR * Uin(DENS_VAR,i,j,kR)*Uin(ENER_VAR,i,j,kR) &
+                   + sR*sL*(Uin(DENS_VAR,i,j,kR)*Uin(ENER_VAR,i,j,kR) - Uin(DENS_VAR,i,j,kL)*Uin(ENER_VAR,i,j,kL)))/sRsL
+              faceZ(HY_ENER_FLUX,i,j,k) = faceZ(HY_ENER_FLUX,i,j,k) &
+                   + (sR * vL * Uin(PRES_VAR,i,j,kL) - sL * vR * Uin(PRES_VAR,i,j,kR)) / sRsL
+           end if
+           faceZ(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) = faceZ(HY_DENS_FLUX:HY_ENER_FLUX,i,j,k) * dtdz
         end do
+     end do
+  end do
 #endif
 
-        deallocate(auxC)
+  deallocate(auxC)
 
-!!ChageForAMRex -- flux calculation is done
+  !! ************************************************************************
+  !! Unsplit update for conservative variables from n to n+1 time step
+  !  instead of  call hy_hllUnsplitUpdate(blockID,dt,dtOld,del,datasize,blkLimits, ...)
+  !! this section starts the update
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
+           Uout(VELX_VAR,i,j,k) = Uin(VELX_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
+           Uout(VELY_VAR,i,j,k) = Uin(VELY_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
+           Uout(VELZ_VAR,i,j,k) = Uin(VELZ_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
+           Uout(ENER_VAR,i,j,k) = Uin(ENER_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
+           Uout(DENS_VAR,i,j,k) = Uin(DENS_VAR,i,j,k) + faceX(HY_DENS_FLUX,i,j,k) - faceX(HY_DENS_FLUX,i+1,j,k)
+           if (NDIM > 1) Uout(DENS_VAR,i,j,k) = Uout(DENS_VAR,i,j,k) + faceY(HY_DENS_FLUX,i,j,k) - faceY(HY_DENS_FLUX,i,j+1,k)
+           if (NDIM > 2) Uout(DENS_VAR,i,j,k) = Uout(DENS_VAR,i,j,k) + faceZ(HY_DENS_FLUX,i,j,k) - faceZ(HY_DENS_FLUX,i,j,k+1)
 
-
-     !! ************************************************************************
-     !! Unsplit update for conservative variables from n to n+1 time step
-
-     !  instead of  call hy_hllUnsplitUpdate(blockID,dt,dtOld,del,datasize,blkLimits, ...)
-!!ChageForAMRex -- this section starts the update
-        do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
-           do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
-              do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
-                 Uout(VELX_VAR,i,j,k) = Uin(VELX_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
-                 Uout(VELY_VAR,i,j,k) = Uin(VELY_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
-                 Uout(VELZ_VAR,i,j,k) = Uin(VELZ_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
-                 Uout(ENER_VAR,i,j,k) = Uin(ENER_VAR,i,j,k) * Uin(DENS_VAR,i,j,k)
-                 Uout(DENS_VAR,i,j,k) = Uin(DENS_VAR,i,j,k) + faceX(HY_DENS_FLUX,i,j,k) - faceX(HY_DENS_FLUX,i+1,j,k)
-                 if (NDIM > 1) Uout(DENS_VAR,i,j,k) = Uout(DENS_VAR,i,j,k) + faceY(HY_DENS_FLUX,i,j,k) - faceY(HY_DENS_FLUX,i,j+1,k)
-                 if (NDIM > 2) Uout(DENS_VAR,i,j,k) = Uout(DENS_VAR,i,j,k) + faceZ(HY_DENS_FLUX,i,j,k) - faceZ(HY_DENS_FLUX,i,j,k+1)
-
-              end do
-           end do
         end do
-        do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
-           do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
-              do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
-                 Uout(VELX_VAR,i,j,k) = Uout(VELX_VAR,i,j,k) + faceX(HY_XMOM_FLUX,i,j,k) - faceX(HY_XMOM_FLUX,i+1,j,k)
-                 Uout(VELY_VAR,i,j,k) = Uout(VELY_VAR,i,j,k) + faceX(HY_YMOM_FLUX,i,j,k) - faceX(HY_YMOM_FLUX,i+1,j,k)
-                 Uout(VELZ_VAR,i,j,k) = Uout(VELZ_VAR,i,j,k) + faceX(HY_ZMOM_FLUX,i,j,k) - faceX(HY_ZMOM_FLUX,i+1,j,k)
-                 Uout(ENER_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) + faceX(HY_ENER_FLUX,i,j,k) - faceX(HY_ENER_FLUX,i+1,j,k)
-              end do
-           end do
+     end do
+  end do
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
+           Uout(VELX_VAR,i,j,k) = Uout(VELX_VAR,i,j,k) + faceX(HY_XMOM_FLUX,i,j,k) - faceX(HY_XMOM_FLUX,i+1,j,k)
+           Uout(VELY_VAR,i,j,k) = Uout(VELY_VAR,i,j,k) + faceX(HY_YMOM_FLUX,i,j,k) - faceX(HY_YMOM_FLUX,i+1,j,k)
+           Uout(VELZ_VAR,i,j,k) = Uout(VELZ_VAR,i,j,k) + faceX(HY_ZMOM_FLUX,i,j,k) - faceX(HY_ZMOM_FLUX,i+1,j,k)
+           Uout(ENER_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) + faceX(HY_ENER_FLUX,i,j,k) - faceX(HY_ENER_FLUX,i+1,j,k)
         end do
+     end do
+  end do
 #if NDIM > 1
-        do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
-           do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
-              do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
-                 Uout(VELX_VAR,i,j,k) = Uout(VELX_VAR,i,j,k) + faceY(HY_XMOM_FLUX,i,j,k) - faceY(HY_XMOM_FLUX,i,j+1,k)
-                 Uout(VELY_VAR,i,j,k) = Uout(VELY_VAR,i,j,k) + faceY(HY_YMOM_FLUX,i,j,k) - faceY(HY_YMOM_FLUX,i,j+1,k)
-                 Uout(VELZ_VAR,i,j,k) = Uout(VELZ_VAR,i,j,k) + faceY(HY_ZMOM_FLUX,i,j,k) - faceY(HY_ZMOM_FLUX,i,j+1,k)
-                 Uout(ENER_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) + faceY(HY_ENER_FLUX,i,j,k) - faceY(HY_ENER_FLUX,i,j+1,k)
-              end do
-           end do
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
+           Uout(VELX_VAR,i,j,k) = Uout(VELX_VAR,i,j,k) + faceY(HY_XMOM_FLUX,i,j,k) - faceY(HY_XMOM_FLUX,i,j+1,k)
+           Uout(VELY_VAR,i,j,k) = Uout(VELY_VAR,i,j,k) + faceY(HY_YMOM_FLUX,i,j,k) - faceY(HY_YMOM_FLUX,i,j+1,k)
+           Uout(VELZ_VAR,i,j,k) = Uout(VELZ_VAR,i,j,k) + faceY(HY_ZMOM_FLUX,i,j,k) - faceY(HY_ZMOM_FLUX,i,j+1,k)
+           Uout(ENER_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) + faceY(HY_ENER_FLUX,i,j,k) - faceY(HY_ENER_FLUX,i,j+1,k)
         end do
+     end do
+  end do
 #endif
 #if NDIM > 2
-        do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
-           do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
-              do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
-                 Uout(VELX_VAR,i,j,k) = Uout(VELX_VAR,i,j,k) + faceZ(HY_XMOM_FLUX,i,j,k) - faceZ(HY_XMOM_FLUX,i,j,k+1)
-                 Uout(VELY_VAR,i,j,k) = Uout(VELY_VAR,i,j,k) + faceZ(HY_YMOM_FLUX,i,j,k) - faceZ(HY_YMOM_FLUX,i,j,k+1)
-                 Uout(VELZ_VAR,i,j,k) = Uout(VELZ_VAR,i,j,k) + faceZ(HY_ZMOM_FLUX,i,j,k) - faceZ(HY_ZMOM_FLUX,i,j,k+1)
-                 Uout(ENER_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) + faceZ(HY_ENER_FLUX,i,j,k) - faceZ(HY_ENER_FLUX,i,j,k+1)
-              end do
-           end do
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
+           Uout(VELX_VAR,i,j,k) = Uout(VELX_VAR,i,j,k) + faceZ(HY_XMOM_FLUX,i,j,k) - faceZ(HY_XMOM_FLUX,i,j,k+1)
+           Uout(VELY_VAR,i,j,k) = Uout(VELY_VAR,i,j,k) + faceZ(HY_YMOM_FLUX,i,j,k) - faceZ(HY_YMOM_FLUX,i,j,k+1)
+           Uout(VELZ_VAR,i,j,k) = Uout(VELZ_VAR,i,j,k) + faceZ(HY_ZMOM_FLUX,i,j,k) - faceZ(HY_ZMOM_FLUX,i,j,k+1)
+           Uout(ENER_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) + faceZ(HY_ENER_FLUX,i,j,k) - faceZ(HY_ENER_FLUX,i,j,k+1)
         end do
+     end do
+  end do
 #endif
-        do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
-           do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
-              do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
-                 invNewDens = 1.0 / Uout(DENS_VAR,i,j,k)
-                 Uout(VELX_VAR,i,j,k) = Uout(VELX_VAR,i,j,k) * invNewDens
-                 Uout(VELY_VAR,i,j,k) = Uout(VELY_VAR,i,j,k) * invNewDens
-                 Uout(VELZ_VAR,i,j,k) = Uout(VELZ_VAR,i,j,k) * invNewDens
-                 Uout(ENER_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) * invNewDens
-              end do
-           end do
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
+           invNewDens = 1.0 / Uout(DENS_VAR,i,j,k)
+           Uout(VELX_VAR,i,j,k) = Uout(VELX_VAR,i,j,k) * invNewDens
+           Uout(VELY_VAR,i,j,k) = Uout(VELY_VAR,i,j,k) * invNewDens
+           Uout(VELZ_VAR,i,j,k) = Uout(VELZ_VAR,i,j,k) * invNewDens
+           Uout(ENER_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) * invNewDens
         end do
+     end do
+  end do
 
-
-     !! Correct energy if necessary
-     !  instead of  call hy_uhd_energyFix(blockID,blkLimits,dt,del,hy_unsplitEosMode)
+  !! Correct energy if necessary
+  !  instead of  call hy_uhd_energyFix(blockID,blkLimits,dt,del,hy_unsplitEosMode)
 
 #ifdef EINT_VAR
-        do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
-           do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
-              do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
-                 invNewDens = 1.0 / Uout(DENS_VAR,i,j,k)
-                 Uout(EINT_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) &
-                      - 0.5 * dot_product(Uout(VELX_VAR:VELZ_VAR,i,j,k),Uout(VELX_VAR:VELZ_VAR,i,j,k))
-              end do
-           end do
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
+           invNewDens = 1.0 / Uout(DENS_VAR,i,j,k)
+           Uout(EINT_VAR,i,j,k) = Uout(ENER_VAR,i,j,k) &
+                - 0.5 * dot_product(Uout(VELX_VAR:VELZ_VAR,i,j,k),Uout(VELX_VAR:VELZ_VAR,i,j,k))
         end do
+     end do
+  end do
 #endif
-
      
-        deallocate(faceX)
-        if (NDIM > 1) then 
-           deallocate(faceY)
-        end if
-        if (NDIM > 2) then 
-           deallocate(faceZ)
-        end if
-!!$        call Grid_genReleaseBlkPtr(blockID,faceX,(/1,5,SCRATCH_FACES/), faceY,faceZ)
-
-        !! Call to Eos - note this is a variant where we pass a buffer not a blockID.
-!!$        call Eos_wrapped(hy_eosModeAfter, tileLimits, Uout)
-
-!!$        call Grid_releaseTileVarPtrs(tileID,gridDataStruct=CENTER, &
-!!$             inPtr=Uin, &
-!!$             outPtr=Uout,&
-!!$             tilingContext=tilingCtx)
-
-
-!!$  !$omp end do
-!!$  
-!!$  !$omp end parallel
-!!$  !! End of leaf block do-loop - no flux conserve call
-
-
+  deallocate(faceX)
+  if (NDIM > 1) then 
+     deallocate(faceY)
+  end if
+  if (NDIM > 2) then 
+     deallocate(faceZ)
+  end if
 
 End Subroutine hy_hllUnsplit
