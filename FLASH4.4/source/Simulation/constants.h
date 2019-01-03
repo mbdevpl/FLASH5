@@ -207,6 +207,17 @@ MASTER_PE is the designated master processor in a run.
 #define YZPLANE 77
 
 #if 0
+  These constants are used to specify if an operation should be with 
+  respect to the interior of a tile, the grown tile (interior + GC of
+  enclosing block associated with tile), or the tile and the halo around
+  the tile consisting of NGUARD layers
+#endif
+
+#define TILE          1
+#define GROWN_TILE    2
+#define TILE_AND_HALO 3
+
+#if 0
   Some more constant expressions for use in get/put data functions and other
   functions that may support several indexing conventions.
   GLOBALIDX1 - Cells at a given refinement level are identified by global

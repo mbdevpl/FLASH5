@@ -87,7 +87,7 @@ module flash_tile
         procedure, public :: boundBox
         procedure, public :: coordinates
 !        procedure, public :: faceAreas
-!        procedure, public :: cellVolumes
+        procedure, public :: cellVolumes
 !        procedure, public :: physicalSize
 !        procedure, public :: onDomainBoundary
 !        procedure, public :: outsideDomain
@@ -129,7 +129,7 @@ contains
         end associate
     end subroutine boundBox 
 
-    subroutine coordinates(this, axis, edge, guardcell, coords)
+    subroutine coordinates(this, axis, edge, region, coords)
         use amrex_amrcore_module,  ONLY : amrex_geom
         use amrex_geometry_module, ONLY : amrex_problo
 
@@ -138,56 +138,148 @@ contains
         class(flash_tile_t), intent(IN)  :: this
         integer,             intent(IN)  :: axis
         integer,             intent(IN)  :: edge
-        logical,             intent(IN)  :: guardcell
+        integer,             intent(IN)  :: region 
         real,                intent(OUT) :: coords(:)
 
         real    :: shift
+        integer :: nCells
+        integer :: lo
         integer :: i
 
-#ifdef DEBUG_GRID
-        integer :: width
-
-        if((axis/=IAXIS) .and. (axis/=JAXIS) .and. (axis/=KAXIS)) then
+        if((axis /= IAXIS) .AND. (axis /= JAXIS) .AND. (axis /= KAXIS)) then
            call Driver_abortFlash("Get Coords : invalid axis, must be IAXIS, JAXIS or KAXIS ")
         end if
 
-        width = this%limits(HIGH, axis) - this%limits(LOW, axis) + 1
-        if (guardcell) then
-            width = width + 2*NGUARD
-        end if
-        if (axis == FACES) then
-            width = width + 1
-        end if
-
-        if (SIZE(coords) /= width) then
-           call Driver_abortFlash("Get Coords: coordinates array is wrong size")
-        end if
-#endif
-
-        if     ((edge == LEFT_EDGE) .OR. (edge == FACES))  then
-            shift = 1.0
-        else if (edge == CENTER) then
-            shift = 0.5
-        else if (edge == RIGHT_EDGE) then
-            shift = 0.0
-#ifdef DEBUG_GRID
+        if (region      == TILE) then
+           lo = this%limits(LOW, axis)
+           nCells = this%limits(HIGH, axis) - this%limits(LOW, axis) + 1
+        else if (region == GROWN_TILE) then
+           lo = this%limitsGC(LOW, axis)
+           nCells = this%limitsGC(HIGH, axis) - this%limitsGC(LOW, axis) + 1
+        else if (region == TILE_AND_HALO) then
+           lo = this%limits(LOW, axis) - NGUARD
+           nCells = this%limits(HIGH, axis) - this%limits(LOW, axis) + 1
+           if (axis <= NDIM) then
+              nCells = nCells + 2*NGUARD
+           end if
         else
-            call Driver_abortFlash('[Grid_getCellCoods] invalid edge')
-#endif
+          coords(:) = 0.0
+          call Driver_abortFlash("[coordinates] Unknown region")
         end if
 
-        if (guardcell) then
-            shift = shift - NGUARD
+        if      (edge == FACES)  then
+            shift = 2.0
+            nCells = nCells + 1
+        else if (edge == LEFT_EDGE) then
+            shift = 2.0
+        else if (edge == CENTER) then
+            shift = 1.5
+        else if (edge == RIGHT_EDGE) then
+            shift = 1.0
+        else
+            call Driver_abortFlash('[coordinates] Invalid edge')
         end if
 
-        associate (x0   => amrex_problo(axis), &
-                   x_lo => this%limits(LOW, axis) - 1, &
-                   dx   => amrex_geom(this%level - 1)%dx(axis))
-            do i = 1, SIZE(coords)
-                coords(i) = x0 + (x_lo + i - shift) * dx
+        associate (x0 => amrex_problo(axis), &
+                   dx => amrex_geom(this%level - 1)%dx(axis))
+            do i = 1, nCells
+                coords(i) = x0 + (lo + i - shift) * dx
             end do
         end associate
     end subroutine coordinates
+
+    subroutine cellVolumes(this, region, volumes)
+      use amrex_amrcore_module,  ONLY : amrex_geom
+
+      use Driver_interface, ONLY : Driver_abortFlash
+      use Grid_data,        ONLY : gr_geometry
+
+      class(flash_tile_t), intent(IN)  :: this
+      integer,             intent(IN)  :: region
+      real,                intent(OUT) :: volumes(:, :, :)
+
+      real    :: del(1:MDIM)
+      integer :: tileSize
+
+      integer :: lo(1:MDIM)
+      integer :: hi(1:MDIM)
+
+      integer           :: xCoordSize
+      real, allocatable :: centerCoords(:)
+
+      integer :: i, j, k
+
+      del = amrex_geom(this%level - 1)%dx
+
+      if (.NOT. ((gr_geometry == CARTESIAN                  ) .OR. &
+                 (gr_geometry == CYLINDRICAL .AND. NDIM == 2))  ) then
+        volumes(:, :, :) = 0.0
+        call Driver_abortFlash("[cellVolumes] Not tested yet")
+      end if
+
+      if (region      == TILE) then
+         lo(:) = this%limits(LOW,  :)
+         hi(:) = this%limits(HIGH, :)
+      else if (region == GROWN_TILE) then
+         lo(:) = this%limitsGC(LOW,  :)
+         hi(:) = this%limitsGC(HIGH, :)
+      else if (region == TILE_AND_HALO) then
+         lo(1:MDIM) = 1
+         hi(1:MDIM) = 1
+         lo(1:NDIM) = this%limits(LOW,  1:NDIM) - NGUARD
+         hi(1:NDIM) = this%limits(HIGH, 1:NDIM) + NGUARD
+      else
+        volumes(:, :, :) = 0.0
+        call Driver_abortFlash("[cellVolumes] Unknown region")
+      end if
+
+      select case (gr_geometry)
+
+      case (CARTESIAN)
+         associate(dx => del(IAXIS), &
+                   dy => del(JAXIS), &
+                   dz => del(KAXIS))
+            do       k = lo(KAXIS), hi(KAXIS)
+               do    j = lo(JAXIS), hi(JAXIS)
+                  do i = lo(IAXIS), hi(IAXIS)
+#if   NDIM == 1
+                     volumes(i, j, k) = dx
+#elif NDIM == 2
+                     volumes(i, j, k) = dx * dy
+#elif NDIM == 3
+                     volumes(i, j, k) = dx * dy * dz
+#endif
+                  end do
+               end do
+            end do
+         end associate
+      case (CYLINDRICAL)
+         xCoordSize = hi(IAXIS) - lo(IAXIS) + 1
+         allocate(centerCoords(1:xCoordSize))
+         call this%coordinates(IAXIS, CENTER, region, centerCoords)
+
+         associate(dr   => del(IAXIS), &
+                   dz   => del(JAXIS), &
+                   dPhi => del(KAXIS), &
+                   r    => ABS(centerCoords(:)))
+            do       k = 1, hi(KAXIS) - lo(KAXIS) + 1
+               do    j = 1, hi(JAXIS) - lo(JAXIS) + 1
+                  do i = 1, hi(IAXIS) - lo(IAXIS) + 1
+#if   NDIM == 1
+                     volumes(i, j, k) = 2.*PI * r(i) * dr
+#elif NDIM == 2
+                     volumes(i, j, k) = 2.*PI * r(i) * dr * dz
+#elif NDIM == 3
+                     volumes(i, j, k) = r(i) * dr * dz * dPhi
+#endif
+                  end do
+               end do
+            end do
+         end associate
+
+         deallocate(centerCoords)
+      end select
+    end subroutine cellVolumes
 
     function enclosingBlock(this)
         use amrex_fort_module,    ONLY : wp => amrex_real

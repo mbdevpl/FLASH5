@@ -97,14 +97,15 @@ subroutine Driver_evolveFlash()
     real                   :: boundBox(LOW:HIGH, 1:MDIM)
     real                   :: c_lo(1:MDIM)
     real                   :: c_hi(1:MDIM)
-    real                   :: c_gc(1:MDIM)
-    real                   :: c_itr(1:MDIM)
-    real                   :: x_coords(4)
-    real                   :: y_coords(4)
-    real                   :: x_coords_gc(8)
-    real                   :: y_coords_gc(8)
     real                   :: volume
     real                   :: r
+ 
+    real, allocatable :: x_coords(:)
+    real, allocatable :: y_coords(:)
+    real, allocatable :: z_coords(:)
+    real, allocatable :: volumes(:, :, :)
+    
+    integer :: offset(1:MDIM)
 
     integer :: rank
     integer :: ilev
@@ -270,113 +271,248 @@ subroutine Driver_evolveFlash()
 
     !!!!! CONFIRM CELL COORDINATE ACCESSORS
     ! Find coordinates of lo/hi
-!    block%level = 1
-!    block%limits(LOW,  :) = [1, 1, 1]
-!    call Grid_getSingleCellCoords([1, 1, 1], block, LEFT_EDGE, INTERIOR, c_lo)
-!    block%limits(LOW,  :) = [57, 61, 2]
-!    call Grid_getSingleCellCoords([8, 4, 1], block, RIGHT_EDGE, INTERIOR, c_hi)
-!    ! Find coordinates of cell as a guard cell of one block ...
-!    block%limits(LOW,  :) = [57, 61, 2]
-!    call Grid_getSingleCellCoords([1, 1, 1], block, CENTER, EXTERIOR, c_gc)
-!    ! and as an interior cell of its neighboring block
-!    block%limits(LOW,  :) = [49, 57, 2]
-!    call Grid_getSingleCellCoords([7, 3, 1], block, CENTER, INTERIOR, c_itr)
-!
-!    call assertEqual(c_gc(IAXIS), c_itr(IAXIS), "Invalid cell X-coordinate")
-!    call assertEqual(c_gc(JAXIS), c_itr(JAXIS), "Invalid cell Y-coordinate")
-!    call assertEqual(c_gc(KAXIS), c_itr(KAXIS), "Invalid cell Z-coordinate")
-!
-!    call assertEqual(c_lo(IAXIS), XMIN_EX, "Invalid cell X-coordinate")
-!    call assertEqual(c_lo(JAXIS), YMIN_EX, "Invalid cell Y-coordinate")
-!    call assertEqual(c_lo(KAXIS), 0.0,   "Invalid cell Z-coordinate")
-!    
-!    call assertEqual(c_hi(IAXIS), XMAX_EX, "Invalid cell X-coordinate")
-!    call assertEqual(c_hi(JAXIS), YMAX_EX, "Invalid cell Y-coordinate")
-!    call assertEqual(c_hi(KAXIS), 0.0,   "Invalid cell Z-coordinate")
-!
-!    call assertEqual(c_gc(IAXIS), XMAX_EX - 9.5*XDELTA_EX, "Invalid cell X-coordinate")
-!    call assertEqual(c_gc(JAXIS), YMAX_EX - 5.5*YDELTA_EX, "Invalid cell Y-coordinate")
-!    call assertEqual(c_gc(KAXIS), 0.0,      "Invalid cell Z-coordinate")
-!
-!    ! Check cell coordinates by block starting at lower corner
-!    block%limits(LOW, :) = [1, 1, 1]
-!    call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, .FALSE., &
-!                            x_coords, SIZE(x_coords))
-!    call Grid_getCellCoords(JAXIS, block, LEFT_EDGE, .FALSE., &
-!                            y_coords, SIZE(y_coords))
-!    do j = 1, SIZE(x_coords)
-!        call assertEqual(x_coords(j), XMIN_EX + (j-1)*XDELTA_EX, "Bad X-coordinate")
-!        call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
-!    end do
-!
-!    ! Check cell coordinates by block starting at upper corner
-!    block%limits(LOW, :) = [61, 61, 1]
-!    call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, .FALSE., &
-!                            x_coords, SIZE(x_coords))
-!    call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, .FALSE., &
-!                            y_coords, SIZE(y_coords))
-!    do j = 1, SIZE(x_coords)
-!        call assertEqual(x_coords(j), XMAX_EX - (4-j)*XDELTA_EX, "Bad X-coordinate")
-!        call assertEqual(y_coords(j), YMAX_EX - (4-j)*YDELTA_EX, "Bad Y-coordinate")
-!    end do
-!
-!    block%limits(LOW, :) = [61, 61, 1]
-!    call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, .TRUE., &
-!                            x_coords_gc, SIZE(x_coords_gc))
-!    call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, .TRUE., &
-!                            y_coords_gc, SIZE(y_coords_gc))
-!    do j = 1, SIZE(x_coords_gc)
-!        call assertEqual(x_coords_gc(j), XMAX_EX - (4-j+NGUARD)*XDELTA_EX, "Bad X-coordinate")
-!        call assertEqual(y_coords_gc(j), YMAX_EX - (4-j+NGUARD)*YDELTA_EX, "Bad Y-coordinate")
-!    end do
-! 
-!    !!!!! CELL VOLUMES
-!    associate(dr => XDELTA_EX, &
-!              dz => YDELTA_EX)
-!        ! Cell volume should depend on r
-!        block%level = 1
-!        block%limits(LOW,  :) = [  1,   1, 1]
-!        block%limits(HIGH, :) = [NXB, NYB, 1]
-!        call Grid_getSingleCellVol(block, [1, 1, 1], volume, INTERIOR)
-!        r = 0.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!        call Grid_getSingleCellVol(block, [2, 1, 1], volume, INTERIOR)
-!        r = 1.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!        call Grid_getSingleCellVol(block, [3, 1, 1], volume, INTERIOR)
-!        r = 2.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!        call Grid_getSingleCellVol(block, [4, 1, 1], volume, INTERIOR)
-!        r = 3.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!
-!        ! Moving through cells along z should not change volume
-!        call Grid_getSingleCellVol(block, [1, 2, 1], volume, INTERIOR)
-!        r = 0.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!        call Grid_getSingleCellVol(block, [4, 2, 1], volume, INTERIOR)
-!        r = 3.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!    
-!        ! Look at guardcells at negative radius
-!        block%level = 1
-!        block%limits(LOW,  :) = [  1,   1, 1]
-!        block%limits(HIGH, :) = [NXB, NYB, 1]
-!        call Grid_getSingleCellVol(block, [2, 1, 1], volume, EXTERIOR)
-!        r = 0.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!        call Grid_getSingleCellVol(block, [1, 1, 1], volume, EXTERIOR)
-!        r = 1.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!       
-!        ! No change along z
-!        call Grid_getSingleCellVol(block, [2, 2, 1], volume, EXTERIOR)
-!        r = 0.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!        call Grid_getSingleCellVol(block, [1, 2, 1], volume, EXTERIOR)
-!        r = 1.5*dr
-!        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
-!    end associate
+    call Grid_getSingleCellCoords([1, 1, 1], 1, LEFT_EDGE, c_lo)
+    call Grid_getSingleCellCoords([NXCELL_EX, NYCELL_EX, NZCELL_EX], 1, RIGHT_EDGE, c_hi)
+
+    call assertEqual(c_lo(IAXIS), XMIN_EX, "Invalid cell X-coordinate")
+    call assertEqual(c_lo(JAXIS), YMIN_EX, "Invalid cell Y-coordinate")
+    call assertEqual(c_lo(KAXIS), 0.0,   "Invalid cell Z-coordinate")
+    
+    call assertEqual(c_hi(IAXIS), XMAX_EX, "Invalid cell X-coordinate")
+    call assertEqual(c_hi(JAXIS), YMAX_EX, "Invalid cell Y-coordinate")
+    call assertEqual(c_hi(KAXIS), 0.0,   "Invalid cell Z-coordinate")
+    
+    call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+    do while (itor%isValid())
+       call itor%currentTile(tileDesc)
+
+       associate(lo => tileDesc%limits(LOW,  :), &
+                 hi => tileDesc%limits(HIGH, :))
+          allocate(x_coords(lo(IAXIS):hi(IAXIS)))
+          allocate(y_coords(lo(JAXIS):hi(JAXIS)))
+          allocate(z_coords(lo(KAXIS):hi(KAXIS)))
+
+          call tileDesc%coordinates(IAXIS, LEFT_EDGE, TILE, x_coords)
+          call tileDesc%coordinates(JAXIS, LEFT_EDGE, TILE, y_coords)
+          call tileDesc%coordinates(KAXIS, LEFT_EDGE, TILE, z_coords)
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                     call assertEqual(x_coords(i), XMIN_EX + (i-1)*XDELTA_EX, "Bad X-coordinate")
+                     call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
+                     call assertEqual(z_coords(k), 0.0,                       "Bad Z-coordinate")
+                     
+                     call Grid_getSingleCellCoords([i, j, k], tileDesc%level, LEFT_EDGE, c_lo)
+                     call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
+                     call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
+                     call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
+                end do
+             end do
+          end do
+
+          call tileDesc%coordinates(IAXIS, CENTER, TILE, x_coords)
+          call tileDesc%coordinates(JAXIS, CENTER, TILE, y_coords)
+          call tileDesc%coordinates(KAXIS, CENTER, TILE, z_coords)
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                     call assertEqual(x_coords(i), XMIN_EX + (i-0.5)*XDELTA_EX, "Bad X-coordinate")
+                     call assertEqual(y_coords(j), YMIN_EX + (j-0.5)*YDELTA_EX, "Bad Y-coordinate")
+                     call assertEqual(z_coords(k), 0.0,                         "Bad Z-coordinate")
+                     
+                     call Grid_getSingleCellCoords([i, j, k], tileDesc%level, CENTER, c_lo)
+                     call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
+                     call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
+                     call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
+                end do
+             end do
+          end do
+
+          call tileDesc%coordinates(IAXIS, RIGHT_EDGE, TILE, x_coords)
+          call tileDesc%coordinates(JAXIS, RIGHT_EDGE, TILE, y_coords)
+          call tileDesc%coordinates(KAXIS, RIGHT_EDGE, TILE, z_coords)
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                     call assertEqual(x_coords(i), XMIN_EX + i*XDELTA_EX, "Bad X-coordinate")
+                     call assertEqual(y_coords(j), YMIN_EX + j*YDELTA_EX, "Bad Y-coordinate")
+                     call assertEqual(z_coords(k), 0.0,                   "Bad Z-coordinate")
+                     
+                     call Grid_getSingleCellCoords([i, j, k], tileDesc%level, RIGHT_EDGE, c_lo)
+                     call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
+                     call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
+                     call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
+                end do
+             end do
+          end do
+
+          deallocate(x_coords)
+          deallocate(y_coords)
+          deallocate(z_coords)
+       end associate
+
+       call itor%next()
+    end do
+    call Grid_releaseTileIterator(itor)
+
+    ! CONFIRM THAT WE CAN GET COORDINATES OF GROWN TILE
+    call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+    do while (itor%isValid())
+       call itor%currentTile(tileDesc)
+
+       associate(lo => tileDesc%limitsGC(LOW,  :), &
+                 hi => tileDesc%limitsGC(HIGH, :))
+          allocate(x_coords(lo(IAXIS):hi(IAXIS)))
+          allocate(y_coords(lo(JAXIS):hi(JAXIS)))
+          allocate(z_coords(lo(KAXIS):hi(KAXIS)))
+          call tileDesc%coordinates(IAXIS, LEFT_EDGE, GROWN_TILE, x_coords)
+          call tileDesc%coordinates(JAXIS, LEFT_EDGE, GROWN_TILE, y_coords)
+          call tileDesc%coordinates(KAXIS, LEFT_EDGE, GROWN_TILE, z_coords)
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                     call assertEqual(x_coords(i), XMIN_EX + (i-1)*XDELTA_EX, "Bad X-coordinate")
+                     call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
+                     call assertEqual(z_coords(k), 0.0,                       "Bad Z-coordinate")
+                end do
+             end do
+          end do
+
+          deallocate(x_coords)
+          deallocate(y_coords)
+          deallocate(z_coords)
+       end associate
+
+       call itor%next()
+    end do
+    call Grid_releaseTileIterator(itor)
+
+    ! CONFIRM THAT WE CAN GET COORDINATES OF TILE AND ITS HALO
+    call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+    do while (itor%isValid())
+       call itor%currentTile(tileDesc)
+
+       offset(:) = 0
+       offset(1:NDIM) = NGUARD
+       associate(lo => tileDesc%limits(LOW,  :) - offset, &
+                 hi => tileDesc%limits(HIGH, :) + offset)
+          allocate(x_coords(lo(IAXIS):hi(IAXIS)))
+          allocate(y_coords(lo(JAXIS):hi(JAXIS)))
+          allocate(z_coords(lo(KAXIS):hi(KAXIS)))
+          call tileDesc%coordinates(IAXIS, LEFT_EDGE, TILE_AND_HALO, x_coords)
+          call tileDesc%coordinates(JAXIS, LEFT_EDGE, TILE_AND_HALO, y_coords)
+          call tileDesc%coordinates(KAXIS, LEFT_EDGE, TILE_AND_HALO, z_coords)
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                     call assertEqual(x_coords(i), XMIN_EX + (i-1)*XDELTA_EX, "Bad X-coordinate")
+                     call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
+                     call assertEqual(z_coords(k), 0.0,                       "Bad Z-coordinate")
+                end do
+             end do
+          end do
+
+          deallocate(x_coords)
+          deallocate(y_coords)
+          deallocate(z_coords)
+       end associate
+
+       call itor%next()
+    end do
+    call Grid_releaseTileIterator(itor)
+
+    !!!!! CELL VOLUMES
+    associate(dr => XDELTA_EX, &
+              dz => YDELTA_EX)
+        ! Cell volume should depend on r
+        call Grid_getSingleCellVol([1, 1, 1], 1, volume)
+        r = 0.5*dr
+        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
+        call Grid_getSingleCellVol([2, 1, 1], 1, volume)
+        r = 1.5*dr
+        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
+        call Grid_getSingleCellVol([3, 1, 1], 1, volume)
+        r = 2.5*dr
+        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
+        call Grid_getSingleCellVol([4, 1, 1], 1, volume)
+        r = 3.5*dr
+        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
+
+        ! Moving through cells along z should not change volume
+        call Grid_getSingleCellVol([1, 2, 1], 1, volume)
+        r = 0.5*dr
+        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
+        call Grid_getSingleCellVol([4, 2, 1], 1, volume)
+        r = 3.5*dr
+        call assertEqual(volume, 2.0*PI*r*dr*dz, "Invalid cell volume")
+    end associate
+
+    call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+    do while (itor%isValid())
+       call itor%currentTile(tileDesc)
+
+       associate(lo => tileDesc%limits(LOW,  :), &
+                 hi => tileDesc%limits(HIGH, :))
+          allocate(volumes(lo(IAXIS):hi(IAXIS), &
+                           lo(JAXIS):hi(JAXIS), &
+                           lo(KAXIS):hi(KAXIS)))
+
+          call tileDesc%cellVolumes(TILE, volumes)
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                     call Grid_getSingleCellVol([i, j, k], tileDesc%level, volume)
+                     call assertEqual(volumes(i, j, k), volume, "Bad volume")
+                end do
+             end do
+          end do
+
+          deallocate(volumes)
+       end associate
+
+       associate(lo => tileDesc%limitsGC(LOW,  :), &
+                 hi => tileDesc%limitsGC(HIGH, :))
+          allocate(volumes(lo(IAXIS):hi(IAXIS), &
+                           lo(JAXIS):hi(JAXIS), &
+                           lo(KAXIS):hi(KAXIS)))
+
+          call tileDesc%cellVolumes(GROWN_TILE, volumes)
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                     call Grid_getSingleCellVol([i, j, k], tileDesc%level, volume)
+                     call assertEqual(volumes(i, j, k), volume, "Bad volume")
+                end do
+             end do
+          end do
+
+          deallocate(volumes)
+       end associate
+
+       offset(:) = 0
+       offset(1:NDIM) = NGUARD
+       associate(lo => tileDesc%limits(LOW,  :) - offset, &
+                 hi => tileDesc%limits(HIGH, :) + offset)
+          allocate(volumes(lo(IAXIS):hi(IAXIS), &
+                           lo(JAXIS):hi(JAXIS), &
+                           lo(KAXIS):hi(KAXIS)))
+
+          call tileDesc%cellVolumes(TILE_AND_HALO, volumes)
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                     call Grid_getSingleCellVol([i, j, k], tileDesc%level, volume)
+                     call assertEqual(volumes(i, j, k), volume, "Bad volume")
+                end do
+             end do
+          end do
+
+          deallocate(volumes)
+       end associate
+
+       call itor%next()
+    end do
+    call Grid_releaseTileIterator(itor)
 
     !!!!! TODO: Check face areas?
 

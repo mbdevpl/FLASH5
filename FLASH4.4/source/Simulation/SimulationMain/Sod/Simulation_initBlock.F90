@@ -63,8 +63,6 @@ subroutine Simulation_initBlock(solnData, tileDesc)
 
   implicit none
 
-  logical, parameter :: INCLUDE_GC = .FALSE.
-
   real,dimension(:,:,:,:),pointer :: solnData
   type(flash_tile_t), intent(in) :: tileDesc
 
@@ -106,15 +104,15 @@ subroutine Simulation_initBlock(solnData, tileDesc)
   end associate
 
   if (NDIM == 3) then
-    call tileDesc%coordinates(KAXIS, CENTER, INCLUDE_GC, zCoord)
+    call tileDesc%coordinates(KAXIS, CENTER, TILE, zCoord)
   end if
   if (NDIM >= 2) then
-    call tileDesc%coordinates(JAXIS, CENTER, INCLUDE_GC, yCoord)
+    call tileDesc%coordinates(JAXIS, CENTER, TILE, yCoord)
   end if
 
-  call tileDesc%coordinates(IAXIS, LEFT_EDGE, INCLUDE_GC, xLeft)
-  call tileDesc%coordinates(IAXIS, CENTER, INCLUDE_GC, xCenter)
-  call tileDesc%coordinates(IAXIS, RIGHT_EDGE, INCLUDE_GC, xRight)
+  call tileDesc%coordinates(IAXIS, LEFT_EDGE, TILE, xLeft)
+  call tileDesc%coordinates(IAXIS, CENTER, TILE, xCenter)
+  call tileDesc%coordinates(IAXIS, RIGHT_EDGE, TILE, xRight)
 
 #ifdef DEBUG_SIMULATION
 98 format('initBlock:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')

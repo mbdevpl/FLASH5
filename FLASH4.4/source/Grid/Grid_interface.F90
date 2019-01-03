@@ -482,9 +482,9 @@ Module Grid_interface
        integer, intent(in) :: beginCount
        real, dimension(MDIM), intent(out) :: coords
      end subroutine Grid_getSingleCellCoords
-     subroutine Grid_getSingleCellCoords_Itor(ind, block,edge, beginCount,coords)
+     subroutine Grid_getSingleCellCoords_Itor(ind, blockDesc, edge, beginCount,coords)
        use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: block
+       type(block_metadata_t), intent(in) :: blockDesc
        integer,dimension(MDIM), intent(in) :: ind
        integer, intent(in) :: edge
        integer, intent(in) :: beginCount
@@ -505,13 +505,18 @@ Module Grid_interface
        integer, intent(in) :: point(MDIM)
        real, intent(out)   :: cellvolume
      end subroutine Grid_getSingleCellVol
-     subroutine Grid_getSingleCellVol_Itor(block, point, cellvolume, indexing)
+     subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
        use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: block
-       integer, intent(in) :: point(MDIM)
-       real, intent(out)   :: cellvolume
-       integer, intent(in),OPTIONAL :: indexing
+       type(block_metadata_t), intent(in)           :: blockDesc
+       integer,                intent(in)           :: point(MDIM)
+       real,                   intent(out)          :: cellvolume
+       integer,                intent(in), OPTIONAL :: indexing
      end subroutine Grid_getSingleCellVol_Itor
+     subroutine Grid_getSingleCellVol_lev(point, level, cellvolume)
+       integer, intent(in)  :: point(1:MDIM)
+       integer, intent(in)  :: level
+       real,    intent(out) :: cellvolume
+     end subroutine Grid_getSingleCellVol_lev
   end interface Grid_getSingleCellVol
 
   interface

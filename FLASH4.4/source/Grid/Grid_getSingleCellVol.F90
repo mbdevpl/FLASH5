@@ -69,7 +69,6 @@ subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
   real, intent(out)   :: cellvolume
 
   cellvolume = 0.0
-  return
 end subroutine Grid_getSingleCellVol
 
 subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
@@ -81,5 +80,13 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
   integer, intent(in),OPTIONAL :: indexing
 
   cellvolume = 0.0
-  return
 end subroutine Grid_getSingleCellVol_Itor
+     
+subroutine Grid_getSingleCellVol_lev(point, level, cellvolume)
+  integer, intent(in)  :: point(1:MDIM)
+  integer, intent(in)  :: level
+  real,    intent(out) :: cellvolume
+  
+  cellvolume = 0.0
+end subroutine Grid_getSingleCellVol_lev
+

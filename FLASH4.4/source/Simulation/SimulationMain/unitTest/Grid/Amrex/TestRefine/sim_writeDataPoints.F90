@@ -24,8 +24,8 @@ subroutine sim_writeDataPoints(initData, tileDesc, points, values)
  
     call tileDesc%deltas(deltas)
     call tileDesc%boundBox(bbox)
-    call tileDesc%coordinates(IAXIS, CENTER, .FALSE., xcoords)
-    call tileDesc%coordinates(JAXIS, CENTER, .FALSE., ycoords)
+    call tileDesc%coordinates(IAXIS, CENTER, TILE, xcoords)
+    call tileDesc%coordinates(JAXIS, CENTER, TILE, ycoords)
 
     do p = 1, SIZE(points, 1)
         associate(pt   => points(p, :), &

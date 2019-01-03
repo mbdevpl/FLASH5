@@ -1,5 +1,6 @@
 # Makefile for [source/Grid/GridMain]
 Grid +=  Grid_getSingleCellVol.o \
+	Grid_getSingleCellVol_lev.o \
 	gr_checkDataType.o  gr_initGeometry.o gr_getCellVol.o gr_getCellFaceArea.o \
 	Grid_renormAbundance.o Grid_limitAbundance.o Grid_renormMassScalars.o \
 	gr_extendedGetDeltas.o gr_setDataStructInfo.o gr_findBlock.o gr_findMean.o \
