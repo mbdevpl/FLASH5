@@ -61,16 +61,16 @@ def findMODmatch(name):
     global filelist
     global MODcache
     global MODlist
-    if MODlist.has_key(name.lower()):
+    if name.lower() in MODlist:
         MODcache[name] = MODlist[name.lower()] 
-    if MODcache.has_key(name): return MODcache[name]
+    if name in MODcache: return MODcache[name]
     obj = re.compile(name+"\.[fF](90)?$",re.I)
     for x in filelist:
         m = obj.match(x)
         if m:
            MODcache[name],junk = os.path.splitext(x)
            MODcache[name] = MODcache[name] + ".o"
-    if not MODcache.has_key(name): MODcache[name] = ""
+    if name not in MODcache: MODcache[name] = ""
     return MODcache[name]
 
 # searches for file "name" in a specified list of directories 
@@ -78,7 +78,7 @@ def findMODmatch(name):
 def findINCmatch(name):
     global INCDirs
     global INCcache
-    if INCcache.has_key(name): return INCcache[name]
+    if name in INCcache: return INCcache[name]
     for d in INCDirs:
         dname = os.path.join(d,name)
         if os.path.isfile(dname):
@@ -101,7 +101,7 @@ def depends(filename):
     reorddata = {"FOUR" : [],"FIVE":[],"FLAGS":{} }
     foundREORD = 0
     if not os.path.isfile(filename): return ([],[],[])
-    for x in file(filename).readlines():
+    for x in open(filename,"r",encoding="utf-8").readlines():
         m = modRE.match(x)
         if m: 
            mods[m.group(1)] = 1
@@ -130,7 +130,7 @@ def depends(filename):
                     REORDlist.append(filename)
                 foundREORD = 1
                 continue
-    return ( mods.keys(), [findINCmatch(x) for x in incs.keys()], heremodules )
+    return ( list(mods.keys()), [findINCmatch(x) for x in list(incs.keys())], heremodules )
 
 
 ##################
@@ -182,7 +182,7 @@ def main():
        else: 
           pass # Ignore all other options
 
-   ofd = file("Makefile.Depend","w")
+   ofd = open("Makefile.Depend","w")
    ofd.write("\n###Auto generated file###\n")
    ofd.write("###will be clobbered during the next make\n\n")
    ofd.write("\n# Note that MODUPPERCASE is defined by Makefile.h for sites and compilers where this is necessary,\n")
@@ -212,16 +212,16 @@ def main():
           uheremod = " ".join([x.upper()+".mod" for x in modsDefinedHere])
           if modsDefinedHere:
               firstModDefinedHere = modsDefinedHere[0]
-              if (MODlistObj.has_key(firstModDefinedHere)
+              if (firstModDefinedHere in MODlistObj
                   and (MODlistObj[firstModDefinedHere] != firstModDefinedHere+".o")):           # in this case actual writing is deferred to module loop below
                   ofd.write("\nifdef MODUPPERCASE\n%s %s: %s\nelse\n%s %s: %s\nendif\n\n" 
                             % (MODlistObj[firstModDefinedHere], " ".join([x.upper()+".mod" for x in MODlistAllHere[firstModDefinedHere] if x not in modsDefinedHere]), MODlistudeps[firstModDefinedHere],
                                MODlistObj[firstModDefinedHere], " ".join([x.lower()+".mod" for x in MODlistAllHere[firstModDefinedHere] if x not in modsDefinedHere]), MODlistldeps[firstModDefinedHere]))
                   modsDefinedThere = MODlistAllHere[firstModDefinedHere]
                   for m in modsDefinedThere:
-                      if MODlistAllHere.has_key(m): del MODlistAllHere[m]
-                      if MODlistObj.has_key(m): del MODlistObj[m]
-              if (not MODlistObj.has_key(firstModDefinedHere)) or (basename.lower() == firstModDefinedHere):           # in this case actual writing is deferred to module loop below
+                      if m in MODlistAllHere: del MODlistAllHere[m]
+                      if m in MODlistObj: del MODlistObj[m]
+              if (firstModDefinedHere not in MODlistObj) or (basename.lower() == firstModDefinedHere):           # in this case actual writing is deferred to module loop below
                   for m in modsDefinedHere:
                       MODlistObj[m] = basename + ".o"
                       MODlistldeps[m] = "%(lmodpart)s %(incpart)s" % locals()
@@ -242,10 +242,10 @@ def main():
 
    ofd.write("\n\n### Dependencies of modules\n")
    flash_modules = []
-   for (m,obj) in MODlist.items():
-       if not MODlistDone.has_key(m):
-           if MODlistAllHere.has_key(m):
-               if MODUsed.has_key(m): flash_modules.append(MODlistObj[m])
+   for (m,obj) in list(MODlist.items()):
+       if m not in MODlistDone:
+           if m in MODlistAllHere:
+               if m in MODUsed: flash_modules.append(MODlistObj[m])
                basename,junk = os.path.splitext(MODlistObj[m])
                allDifferent = 1
                for x in MODlistAllHere[m]:
@@ -291,7 +291,7 @@ def main():
                for mdh in MODlistAllHere[m]:
                    MODlistDone[mdh] = 1
            else:
-               if MODUsed.has_key(m): flash_modules.append(obj)
+               if m in MODUsed: flash_modules.append(obj)
                ofd.write("\nifdef MODUPPERCASE\n")
                ofd.write("%s.mod : %s\n" % (m.upper(),obj))
                ofd.write("else\n")

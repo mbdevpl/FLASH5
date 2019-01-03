@@ -5,13 +5,13 @@ __all__ = [ "FlashLib"]
 
 ##############################
 
-import string, re, UserDict, types, os
+import string, re, types, os
 
 import globals
 from globals import * # GVars and SetupError
 from utils import *
 
-class FlashLib(UserDict.UserDict):
+class FlashLib(dict):
     """Encapsulates library information as expressed in Config files.
     Data is accessed through dictionary methods, ex:
   
@@ -24,7 +24,7 @@ class FlashLib(UserDict.UserDict):
     """
 
     def __init__(self, pathName, ignoreConfig=0):
-        UserDict.UserDict.__init__(self)
+        dict.__init__(self)
 
         self.COMMENT = '#'
         self.QUOTE   = '"'
@@ -63,7 +63,7 @@ class FlashLib(UserDict.UserDict):
 
     def __cmp__(self, other):
         """Alphabetical comparison on unit names (like 'source/io/amr')"""
-        if type(other)==types.StringType:
+        if isinstance(other,str):
             return cmp(self.name, other)
         else:
             return cmp(self.name, other.name)
@@ -87,21 +87,21 @@ class FlashLib(UserDict.UserDict):
             if rawline and rawline[-1]=='\n': rawline = rawline[:-1]
 
             line=stripComments(line, self.COMMENT,self.QUOTE)
-            line=string.strip(line)
+            line=str.strip(line)
             if not line: continue
 
-            pkeyword = "parse%s" % string.split(line)[0]
+            pkeyword = "parse%s" % str.split(line)[0]
             if pkeyword not in self.parsers:
                 raise SetupError('Unknown keyword: file %s, line '\
                                  '%d\n%s'%(self.filename, lineno, rawline))
             try:
                 getattr(self,pkeyword)(line)
-            except SetupError, msg:
+            except SetupError as msg:
                 raise SetupError('Bad syntax: file %s, line %d:\n%s\n\n%s' % \
                                  (os.path.join("lib",self.filename), lineno, rawline, str(msg)))
 
     def initParser(self, keyword, initvalue, regexp=None):
-        if self.has_key(keyword): return
+        if keyword in self: return
         self[keyword]=initvalue
         if regexp:
             self.regexps[keyword]=re.compile(regexp)
@@ -110,7 +110,7 @@ class FlashLib(UserDict.UserDict):
         self.initParser('LIBRARY', {}, 'LIBRARY\s+(\S+)\s*(.*)$')
         libmatch = self.match('LIBRARY',line)
         libname = libmatch.group(1).lower()
-        libargs = string.join(libmatch.group(2).split()) # trims and removes multiple spaces
+        libargs = " ".join(libmatch.group(2).split()) # trims and removes multiple spaces
         self['LIBRARY'][libname] = libargs
 
     def parseTYPE(self,line):

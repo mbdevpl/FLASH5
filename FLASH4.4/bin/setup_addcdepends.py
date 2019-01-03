@@ -12,7 +12,7 @@ incpatt = """^\s*[#]\s*include\s+["']?([A-Za-z._0-9]+)['"]?\s+.*"""
 def findINCmatch(name):
     global INCDirs
     global INCcache
-    if INCcache.has_key(name): return INCcache[name]
+    if name in INCcache: return INCcache[name]
     for d in INCDirs:
         dname = os.path.join(d,name)
         if os.path.isfile(dname):
@@ -27,12 +27,12 @@ def depends(filename):
     """Handle one file"""
     incs = {}
     if not os.path.isfile(filename): return []
-    for x in file(filename).readlines():
+    for x in open(filename,"r",encoding="utf-8").readlines():
         m = incRE.match(x)
         if m: 
            incs[m.group(1)] = 1
            continue
-    return [findINCmatch(x) for x in incs.keys()]
+    return [findINCmatch(x) for x in list(incs.keys())]
 
 
 ##################
@@ -61,7 +61,7 @@ def main():
        else: 
           pass # Ignore all other options
 
-   ofd = file("Makefile.Depend","a")
+   ofd = open("Makefile.Depend","a")
    ofd.write("\n###Automatically appended dependencies of C files on headers###\n")
    for filename in toProcess:
        basename,ext = os.path.splitext(filename)
