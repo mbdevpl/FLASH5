@@ -3,7 +3,7 @@
 """This program parses all the .c files in the current directory and finds the header files
 each file depends on. Having done that, it appends those dependencies to Makefile.Depends."""
 
-import re, os, os.path, string, sys
+import re, os, os.path, string, sys, io
 
 incpatt = """^\s*[#]\s*include\s+["']?([A-Za-z._0-9]+)['"]?\s+.*"""
 
@@ -27,7 +27,7 @@ def depends(filename):
     """Handle one file"""
     incs = {}
     if not os.path.isfile(filename): return []
-    for x in open(filename,"r",encoding="utf-8").readlines():
+    for x in io.open(filename,"r",encoding="utf-8").readlines():
         m = incRE.match(x)
         if m: 
            incs[m.group(1)] = 1

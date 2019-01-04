@@ -3,7 +3,7 @@
 """This program parses all the .F90 files in the current directory and finds the modules 
 each file depends on. Having done that, it generates a makefile listing those dependencies"""
 
-import re, os, os.path, string, sys
+import re, os, os.path, string, sys, io
 
 
 usemodpatt = "^\s*use\s+([A-Za-z_0-9]+)[,]?.*"
@@ -101,7 +101,7 @@ def depends(filename):
     reorddata = {"FOUR" : [],"FIVE":[],"FLAGS":{} }
     foundREORD = 0
     if not os.path.isfile(filename): return ([],[],[])
-    for x in open(filename,"r",encoding="utf-8").readlines():
+    for x in io.open(filename,"r",encoding="utf-8").readlines():
         m = modRE.match(x)
         if m: 
            mods[m.group(1)] = 1
