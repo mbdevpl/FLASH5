@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/Grid_getSingleCellVol
+!!****if* source/Grid/GridMain/AMR/paramesh/Grid_getSingleCellVol
 !!
 !! NAME
 !!  Grid_getSingleCellVol
@@ -209,7 +209,8 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
      end if
 
   case (CYLINDRICAL)
-     call Grid_getSingleCellCoords(point, blockDesc, CENTER, beginCount, centerCoords)
+!     if (blockID<1) call Driver_abortFlash("Grid_getSingleCellVol: got blockDesc without valid id")
+     call Grid_getSingleCellCoords(point, level, CENTER, centerCoords)
 
      if(NDIM == 1) then
         cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS)
