@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import sys, re, getopt, os
 
 ################ Global variables
@@ -30,7 +31,7 @@ def getREORDdict(filename):
     """Handle one file"""
     reorddata = {"TWO":[], "THREE":[], "FOUR" : [],"FIVE":[],"FLAGS":{} }
     if not os.path.isfile(filename): return reorddata
-    for x in file(filename).readlines():
+    for x in open(filename).readlines():
         m = reordRE.match(x)
         if m:
             if m.group("num") == "2":
