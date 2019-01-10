@@ -1,11 +1,11 @@
-!!****if* source/Grid/GridMain/paramesh/paramesh4/Grid_getBlkBC_desc
+!!****if* source/Grid/GridMain/paramesh/paramesh4/Grid_getBlkBC
 !!
 !! NAME
-!!  Grid_getBlkBC_desc
+!!  Grid_getBlkBC
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_getBlkBC_desc(integer(IN)  :: blockDesc,
+!!  call Grid_getBlkBC(integer(IN)  :: blockDesc,
 !!                integer(OUT) :: faces(2,MDIM),
 !!       optional,integer(OUT) :: onBoundary(2,MDIM))
 !!                    
@@ -49,7 +49,7 @@
 !!***
 
 
-subroutine Grid_getBlkBC_desc(blockDesc, faces, onBoundary)
+subroutine Grid_getBlkBC(blockDesc, faces, onBoundary)
 
   use tree, ONLY : neigh,bnd_box
   use Grid_data,ONLY : gr_domainBC,gr_globalDomain,gr_minCellSizes
@@ -115,7 +115,7 @@ contains
     nearlySame = (abs(x-y).LE. 0.01 * del)
   end function nearlySame
 
-end subroutine Grid_getBlkBC_desc
+end subroutine Grid_getBlkBC
 
 
 

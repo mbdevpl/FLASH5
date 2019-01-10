@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkPhysicalSize(integer(IN)  :: blockId,
+!!  Grid_getBlkPhysicalSize(type(block_metadta_t)(IN) :: block,
 !!                          real(OUT) :: blockSize(MDIM))
 !!  
 !! DESCRIPTION 
@@ -55,16 +55,16 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkPhysicalSize(blockId, blockSize)
+subroutine Grid_getBlkPhysicalSize(block, blockSize)
 
   use Grid_data, ONLY :gr_iCoords,gr_jCoords,gr_kCoords
   use Grid_data, ONLY: gr_ilo,gr_ihi,gr_jlo,gr_jhi,gr_klo,gr_khi
-
+ use block_metadata, ONLY : block_metadata_t
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
-  integer,intent(in) :: blockId
+  type(block_metadata_t), intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockSize
 
   blockSize=0.0

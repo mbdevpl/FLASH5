@@ -9,11 +9,9 @@ subroutine Hydro_prepareBuffers
 #include "UHD.h"
 
 #ifndef FLASH_GRID_ANYAMREX
-
+#ifndef FLASH_GRID_UG
   integer :: blockList(MAXBLOCKS)
   integer :: blockCount
-
-
 
 
   ! Independently of whether hy_fullRiemannStateArrays is set:
@@ -46,5 +44,6 @@ subroutine Hydro_prepareBuffers
   end if
 
 #endif
-
+#endif
+  
 end subroutine Hydro_prepareBuffers

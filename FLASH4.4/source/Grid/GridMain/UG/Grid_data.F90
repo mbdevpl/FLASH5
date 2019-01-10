@@ -113,7 +113,7 @@ Module Grid_data
   integer, save, dimension(MDIM) :: gr_bndOrder
   logical, save :: gr_allPeriodic
   integer, save, dimension(1)::gr_blkList
-  integer, save, dimension(2,MDIM) :: gr_domainBC, gr_blkBC
+  integer, save, dimension(LOW:HIGH,MDIM) :: gr_domainBC, gr_blkBC
   real ,save :: gr_imin,gr_imax,gr_jmin,gr_jmax,gr_kmin,gr_kmax
 
   integer ,save :: gr_iGridSize,gr_jGridSize,gr_kGridSize
@@ -131,13 +131,14 @@ Module Grid_data
   !mostly not used, but convienent for debugging with Grid_dump tool
   integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars 
  
-  real, save, dimension(MDIM) :: gr_delta
+  real, save, dimension(MDIM,1) :: gr_delta
   real, save, dimension(LOW:HIGH,MDIM) :: gr_globalDomain
 
   integer, save :: gr_iguard,gr_jguard,gr_kguard
   integer, save :: gr_iloGc,gr_ihiGc,gr_jloGc,gr_jhiGc,gr_kloGc,gr_khiGc
   integer, save :: gr_ilo,gr_ihi,gr_jlo,gr_jhi,gr_klo,gr_khi
   real, save,target, allocatable, dimension(:,:,:) ::  gr_iCoords,gr_jCoords,gr_kCoords
+  integer, save:: gr_lrefineMax=1, gr_maxRefine=1
 
   logical, save :: gr_compute_grid_size !used in reordered UG
   real, save :: gr_minCellSize

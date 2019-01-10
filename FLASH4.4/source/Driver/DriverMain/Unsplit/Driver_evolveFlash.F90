@@ -28,7 +28,7 @@
 !!
 !!***
 
-!#define DEBUG_DRIVER
+!!#define DEBUG_DRIVER
 #ifdef DEBUG_ALL
 #define DEBUG_DRIVER
 #endif
@@ -216,11 +216,18 @@ subroutine Driver_evolveFlash()
 !!$     call Grid_fillGuardCells(CENTER,ALLDIR)
 
      call Hydro(dr_simTime, dr_dt, dr_dtOld)
+#ifdef DEBUG_DRIVER
+     print*,'returned from hydro myPE=',dr_globalMe
+#endif
 
 !!!!!! Stuff from here has been MOVED TO Hydro !!!!!!
 
      call Burn(dr_dt)
 
+#ifdef DEBUG_DRIVER
+     print*,'returned from burn myPE=',dr_globalMe
+#endif
+     
 #ifdef FLASH_GRID_AMREXTRANSITION
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
@@ -250,6 +257,9 @@ subroutine Driver_evolveFlash()
 !!$     call gr_writeData(dr_nstep, dr_simTime)
 #endif
      call Timers_stop("IO_output")
+#ifdef DEBUG_DRIVER
+     print*,'done IO =',dr_globalMe
+#endif
      
      
      call Timers_start("Grid_updateRefinement")
@@ -257,6 +267,9 @@ subroutine Driver_evolveFlash()
      call Timers_stop("Grid_updateRefinement")
      
      if (gridChanged) dr_simGeneration = dr_simGeneration + 1
+#ifdef DEBUG_DRIVER
+     print*,'called and completed update refinement myPE=',dr_globalMe
+#endif
      
      ! backup needed old
      if (.not. useSTS_local) dr_dtOld = dr_dt

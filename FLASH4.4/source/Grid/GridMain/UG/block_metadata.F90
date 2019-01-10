@@ -44,7 +44,6 @@ module block_metadata
         integer :: nptsEff
         integer :: offsetEff
         integer :: i, first
-
         if (present(edge)) then
            edgeEff = edge
         else

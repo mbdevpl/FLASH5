@@ -27,7 +27,6 @@ Grid += Grid_init.o \
 	Grid_restrictAllLevels.o Grid_restrictByLevels.o \
 	Grid_getGlobalIndexLimits.o \
 	Grid_getBlkType.o \
-	Grid_getBlkNeighLevels.o \
 	Grid_getBlkData.o \
 	Grid_getPointData.o \
 	Grid_getRowData.o \

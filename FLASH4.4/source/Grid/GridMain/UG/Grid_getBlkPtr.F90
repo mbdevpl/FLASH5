@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkPtr(integer(IN)            :: blockID,
+!!  Grid_getBlkPtr(type(block_metadta_t)(IN) :: block,
 !!                 real(pointer)(:,:,:,:) :: dataPtr,
 !!                 integer(IN),optional   :: gridDataStruct)
 !!  
@@ -23,7 +23,7 @@
 !!
 !! ARGUMENTS 
 !!
-!!  blockID : the local blockid
+!!   block - block metadata
 !!
 !!  dataPtr : Pointer to the data block
 !!
@@ -58,32 +58,25 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct)
+subroutine Grid_getBlkPtr(block,dataPtr, gridDataStruct)
 
 #include "constants.h"
 #include "Flash.h"
 
   use physicaldata, ONLY : unk, facevarx, facevary, facevarz
   use Driver_interface, ONLY : Driver_abortFlash
-  use gr_specificData, ONLY : scratch,scratch_ctr,&
-       scratch_facevarx,scratch_facevary,scratch_facevarz
+!!$  use gr_specificData, ONLY : scratch,scratch_ctr,&
+!!$       scratch_facevarx,scratch_facevary,scratch_facevarz
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
-  integer, intent(in) :: blockID
+  type(block_metadata_t), intent(in) :: block
   real, dimension(:,:,:,:), pointer :: dataPtr
   integer, optional,intent(in) :: gridDataStruct
   
   integer :: gds, blkPtrRefCount, lastBlkPtrGotten
   logical :: validGridDataStruct
 
-#ifdef FL_NON_PERMANENT_GUARDCELLS
-  integer :: idest, iopt, nlayers, icoord
-  logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
-  logical,dimension(NUNK_VARS) :: save_ccMask
-#if NFACE_VARS >0
-  logical, dimension(3,NFACE_VARS) :: save_fcMask
-#endif
-#endif
 
 #ifdef DEBUG_GRID
   if(present(gridDataStruct)) then
@@ -117,106 +110,16 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct)
      gds = CENTER
   end if
 
-#ifdef FL_NON_PERMANENT_GUARDCELLS
-  if (gds .eq. CENTER .or. gds .eq. FACEX .or. gds .eq. FACEY .or. gds .eq. FACEZ) then
-     idest = 1
-     iopt = 1
-     nlayers = NGUARD
-     if (gds .eq. FACEX .or. gds .eq. FACEY .or. gds .eq. FACEZ) then
-        blkPtrRefCount = gr_blkPtrRefCount_fc
-        lastBlkPtrGotten = gr_lastBlkPtrGotten_fc
-#if NFACE_VARS>0
-        save_fcMask=gcell_on_fc
-        gcell_on_fc=gr_fcMask
-#endif
-        lcc = .false.
-        lfc = .true.
-     else
-        blkPtrRefCount = gr_blkPtrRefCount
-        lastBlkPtrGotten = gr_lastBlkPtrGotten
-        save_ccMask=gcell_on_cc
-        gcell_on_cc=gr_ccMask
-        lcc = .true.
-        lfc = .false.
-     end if
-     lec = .false.
-     lnc = .false.
-     l_srl_only = .false.
-     icoord = 0
-     ldiag = .true.
-
-     if (blkPtrRefCount .ne. 0 ) then 
-        if (blockId .ne. lastBlkPtrGotten) then
-           call Driver_abortFlash("Grid_getBlkPtr: you can't get another pointer while one's in use, " // &
-                "unless it's to the block that's in use")
-        end if
-     else
-        blkPtrRefCount = 0
-        lastBlkPtrGotten = blockId
-
-        call amr_1blk_guardcell(gr_meshMe,iopt,nlayers,blockId,gr_meshMe, &
-             lcc,lfc,lec,lnc, &
-             l_srl_only,icoord,ldiag)
-     end if
-
-     blkPtrRefCount = blkPtrRefCount + 1
-     if(gds==CENTER) then
-        gcell_on_cc=save_ccMask
-     else
-#if NFACE_VARS>0
-        gcell_on_fc=save_fcMask
-#endif
-     end if
-  end if
-#endif 
-  !  end of #ifdef FL_NON_PERMANENT_GUARDCELLS
-
-     select case (gds)
-#ifndef FL_NON_PERMANENT_GUARDCELLS
-     case(CENTER)
-        dataPtr => unk(:,:,:,:,blockid)
-     case(FACEX)
-        dataPtr => facevarx(:,:,:,:,blockid)
-     case(FACEY)
-        dataPtr => facevary(:,:,:,:,blockid)
-     case(FACEZ)
-        dataPtr => facevarz(:,:,:,:,blockid)
-#else
-        !  #ifndef FL_NON_PERMANENT_GUARDCELLS ...
-     case(CENTER)
-        dataPtr => unk1(:,:,:,:,idest)
-     case(FACEX)
-        dataPtr => facevarx1(:,:,:,:,idest)
-     case(FACEY)
-        dataPtr => facevary1(:,:,:,:,idest)
-     case(FACEZ)
-        dataPtr => facevarz1(:,:,:,:,idest)
-#endif
-  !  end of #ifdef FL_NON_PERMANENT_GUARDCELLS
-     case(SCRATCH)
-        dataPtr => scratch(:,:,:,:,blockid)
-     case(SCRATCH_CTR)
-        dataPtr => scratch_ctr(:,:,:,:,blockid)           
-     case(SCRATCH_FACEX)
-        dataPtr => scratch_facevarx(:,:,:,:,blockid)           
-     case(SCRATCH_FACEY)
-        dataPtr => scratch_facevary(:,:,:,:,blockid)           
-     case(SCRATCH_FACEZ)
-        dataPtr => scratch_facevarz(:,:,:,:,blockid)           
-     case DEFAULT
-        print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
-     end select
-
-#ifdef FL_NON_PERMANENT_GUARDCELLS
-  if (gds .eq. FACEX .or. gds .eq. FACEY .or. gds .eq. FACEZ) then
-     gr_blkPtrRefCount_fc = blkPtrRefCount
-     gr_lastBlkPtrGotten_fc = lastBlkPtrGotten
-  else if (gds .eq. CENTER) then
-     gr_blkPtrRefCount = blkPtrRefCount
-     gr_lastBlkPtrGotten = lastBlkPtrGotten
-  end if
-#endif
-
+  select case (gds)
+  case(CENTER)
+     dataPtr => unk(:,:,:,:,1)
+  case(FACEX)
+     dataPtr => facevarx(:,:,:,:,1)
+  case(FACEY)
+     dataPtr => facevary(:,:,:,:,1)
+  case(FACEZ)
+     dataPtr => facevarz(:,:,:,:,1)
+  end select
   return
 end subroutine Grid_getBlkPtr
 

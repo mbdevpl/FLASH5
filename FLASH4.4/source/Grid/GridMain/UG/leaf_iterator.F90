@@ -178,7 +178,7 @@ contains
     subroutine blkMetaData(this, mData)
         use block_metadata,             ONLY : block_metadata_t
         use Grid_getBlkIndexLimits_mod, ONLY : Grid_getBlkIndexLimits
-        use Grid_data, ONLY : 
+        use Grid_data, ONLY : gr_blkCornerID
 
         class(leaf_iterator_t), intent(IN)  :: this
         type(block_metadata_t),  intent(OUT) :: mData

@@ -52,12 +52,12 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
 #include "constants.h"
 
   use physicaldata, ONLY : unk
-  use Grid_interface, ONLY : Grid_getBlkData, Grid_getLeafIterator
+  use Grid_interface, ONLY : Grid_getBlkData, Grid_getLeafIterator, Grid_releaseLeafIterator
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_data, ONLY : gr_meshComm
   use block_metadata, ONLY : block_metadata_t
-  use leaf_iterator, ONLY : itor
+  use leaf_iterator, ONLY : leaf_iterator_t
 
   implicit none
 
@@ -74,7 +74,7 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
   integer, dimension(LOW:HIGH,MDIM)   ::  blkLimits
   real, allocatable :: cellVolumes(:,:,:)
   type(block_metadata_t) :: block
-
+  type(leaf_iterator_t) :: itor
 !===============================================================================
 
   call Timers_start("Grid_computeVarNorm")
@@ -120,7 +120,7 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
      endif
      lsum = lsum + bsum
   endif
-
+  call Grid_releaseLeafIterator(itor)
   deallocate(cellVolumes)
   
   call mpi_allreduce ( lsum, sum, 1, FLASH_REAL, & 

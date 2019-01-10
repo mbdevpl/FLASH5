@@ -32,7 +32,8 @@ subroutine gr_findBlock(blkList,blkCount,pos,blockID)
 #include "constants.h"
 #include "Flash.h"
 
-  use Grid_interface, ONLY : Grid_getBlkBoundBox, Grid_outsideBoundBox
+  use Grid_interface, ONLY : Grid_outsideBoundBox
+  use tree, ONLY : bnd_box
   implicit none
 
   integer,intent(IN) :: blkCount
@@ -53,7 +54,8 @@ subroutine gr_findBlock(blkList,blkCount,pos,blockID)
   do while((.not.found).and.(j<blkCount))
      j=j+1
      blockID=blkList(j)
-     call Grid_getBlkBoundBox(blockID,bndBox)
+!!$     call Grid_getBlkBoundBox(blockID,bndBox)
+     bndBox(:,:)=bnd_box(:,:,blockID)
      call Grid_outsideBoundBox(pos,bndBox,outside,Negh)
      found=.not.outSide
   end do

@@ -188,48 +188,37 @@ Module Grid_interface
   end interface
 
   interface Grid_getBlkBC
-     subroutine Grid_getBlkBC(blockID, faces, onBoundary)
-       integer, intent(in) :: blockID
-       integer, dimension(2,MDIM),intent(out):: faces
-       integer, optional, dimension(2,MDIM), intent(out) :: onBoundary
-     end subroutine Grid_getBlkBC
-     subroutine Grid_getBlkBC_desc(blockDesc, faces, onBoundary)
+     subroutine Grid_getBlkBC(blockDesc, faces, onBoundary)
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t),target, intent(in) :: blockDesc
        integer, dimension(2,MDIM),intent(out):: faces
        integer, optional, dimension(2,MDIM), intent(out) :: onBoundary
-     end subroutine Grid_getBlkBC_desc
+     end subroutine Grid_getBlkBC
   end interface
 
   interface Grid_getBlkBoundBox
-     subroutine Grid_getBlkBoundBox(blockId,boundBox)
-       integer, intent(in) :: blockId
-       real, dimension(2, MDIM), intent(out) :: boundBox
-     end subroutine Grid_getBlkBoundBox
-     subroutine Grid_getBlkBoundBox_desc(blockDesc,boundBox)
+     subroutine Grid_getBlkBoundBox(blockDesc,boundBox)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(in) :: blockDesc
        real, dimension(2, MDIM), intent(out) :: boundBox
-     end subroutine Grid_getBlkBoundBox_desc
+     end subroutine Grid_getBlkBoundBox
   end interface
 
   interface Grid_getBlkCenterCoords
-     subroutine Grid_getBlkCenterCoords(blockId, blockCenter)
-       integer,intent(in) :: blockId
-       real,dimension(MDIM),intent(out) :: blockCenter
-     end subroutine Grid_getBlkCenterCoords
-     subroutine Grid_getBlkCenterCoords_desc(blockDesc,blockCenter)
+     subroutine Grid_getBlkCenterCoords(blockDesc,blockCenter)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(in) :: blockDesc
        real, dimension(MDIM), intent(out) :: blockCenter
-     end subroutine Grid_getBlkCenterCoords_desc
+     end subroutine Grid_getBlkCenterCoords
   end interface
 
   interface Grid_getBlkCornerID
-     subroutine Grid_getBlkCornerID(blockId, cornerID, stride,cornerIDHigh,inRegion)
-       integer,intent(IN)  :: blockId
+     subroutine Grid_getBlkCornerID(block, cornerID, stride,cornerIDHigh,inRegion)
+       use block_metadata, ONLY : block_metadata_t
+       implicit none
+       type(block_metadata_t), intent(in) :: block
        integer,dimension(MDIM), intent(OUT) :: cornerID, stride
        integer,dimension(MDIM),optional,intent(OUT) :: cornerIDHigh
        logical, optional, intent(IN) :: inRegion
