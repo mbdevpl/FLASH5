@@ -41,7 +41,20 @@ subroutine Simulation_initBlock(initData, tileDesc)
     real    :: points(2, 2)
     real    :: values(2)
 
-    initData(:, :, :, :) = 0.0
+    integer :: i, j, k, var
+
+    associate(lo => tileDesc%limits(LOW,  :), &
+              hi => tileDesc%limits(HIGH, :))
+        do           var = UNK_VARS_BEGIN, UNK_VARS_END
+            do         k = lo(KAXIS), hi(KAXIS)
+                do     j = lo(JAXIS), hi(JAXIS)
+                    do i = lo(IAXIS), hi(IAXIS)
+                        initData(i, j, k, var) = 0.0
+                    end do
+                end do
+            end do
+        end do
+    end associate
 
     points(:, :) = 0.0
     points(1, :) = [0.16, 0.67]

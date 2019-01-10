@@ -51,7 +51,7 @@ subroutine Driver_evolveFlash()
     real, pointer          :: fluxDataZ(:, :, :, :)
 
     integer :: finest_level
-    integer :: lev, i, j
+    integer :: lev, i, j, k, var
 
     nullify(fluxDataX)
     nullify(fluxDataY)
@@ -98,8 +98,27 @@ subroutine Driver_evolveFlash()
         call assertEqual(SIZE(fluxDataY, 1), 8, "Incorrect width of Y block")
         call assertEqual(SIZE(fluxDataY, 2), 9, "Incorrect height of Y block")
 
-        fluxDataX(:, :, :, :) =  tileDesc%level
-        fluxDataY(:, :, :, :) = -tileDesc%level
+        associate(lo => tileDesc%limits(LOW,  :), & 
+                  hi => tileDesc%limits(HIGH, :))
+            do           var = 1, NFLUXES
+                do         k = lo(KAXIS), hi(KAXIS)
+                    do     j = lo(JAXIS), hi(JAXIS) 
+                        do i = lo(IAXIS), hi(IAXIS)+1
+                            fluxDataX(i, j, k, var) =  tileDesc%level
+                        end do
+                    end do
+                end do
+            end do
+            do           var = 1, NFLUXES
+                do         k = lo(KAXIS), hi(KAXIS)
+                    do     j = lo(JAXIS), hi(JAXIS)+1 
+                        do i = lo(IAXIS), hi(IAXIS)
+                            fluxDataY(i, j, k, var) = -tileDesc%level
+                        end do
+                    end do
+                end do
+            end do
+        end associate 
 
         call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
         call tileDesc%releaseDataPtr(fluxDataY, FLUXY)

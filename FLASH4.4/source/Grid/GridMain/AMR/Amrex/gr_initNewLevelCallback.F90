@@ -188,7 +188,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
             do           var = 1, NFACE_VARS
                 do         k = lo(KAXIS), hi(KAXIS)
                     do     j = lo(JAXIS), hi(JAXIS)
-                        do i = lo(IAXIS), hi(IAXIS)
+                        do i = lo(IAXIS), hi(IAXIS)+1
                             initData(i, j, k, var) = 0.0
                         end do
                     end do
@@ -199,7 +199,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
             call tileDesc%getDataPtr(initData, FACEY)
             do           var = 1, NFACE_VARS
                 do         k = lo(KAXIS), hi(KAXIS)
-                    do     j = lo(JAXIS), hi(JAXIS)
+                    do     j = lo(JAXIS), hi(JAXIS)+1
                         do i = lo(IAXIS), hi(IAXIS)
                             initData(i, j, k, var) = 0.0
                         end do
@@ -211,7 +211,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
 #if NDIM == 3
             call tileDesc%getDataPtr(initData, FACEZ)
             do           var = 1, NFACE_VARS
-                do         k = lo(KAXIS), hi(KAXIS)
+                do         k = lo(KAXIS), hi(KAXIS)+1
                     do     j = lo(JAXIS), hi(JAXIS)
                         do i = lo(IAXIS), hi(IAXIS)
                             initData(i, j, k, var) = 0.0

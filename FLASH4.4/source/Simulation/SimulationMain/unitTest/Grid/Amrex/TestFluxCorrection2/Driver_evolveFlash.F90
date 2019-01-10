@@ -108,9 +108,13 @@ subroutine Driver_evolveFlash()
         associate(lo => tileDesc%limits(LOW,  :), &
                   hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level")
                 end do
@@ -176,9 +180,13 @@ subroutine Driver_evolveFlash()
         associate(lo => tileDesc%limits(LOW,  :), &
                   hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level 1")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level 1")
                 end do
@@ -276,9 +284,13 @@ subroutine Driver_evolveFlash()
         associate(lo => tileDesc%limits(LOW,  :), &
                   hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level 3")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level 3")
                 end do
@@ -347,9 +359,13 @@ subroutine Driver_evolveFlash()
         associate(lo => tileDesc%limits(LOW,  :), &
                   hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level 1")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level 1")
                 end do
@@ -456,9 +472,13 @@ subroutine Driver_evolveFlash()
         associate(lo => tileDesc%limits(LOW,  :), &
                   hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level 1")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level 1")
                 end do
@@ -481,8 +501,20 @@ subroutine Driver_evolveFlash()
 
             call tileDesc%getDataPtr(fluxDataX, FLUXX)
             call tileDesc%getDataPtr(fluxDataY, FLUXY)
-            fluxDataX(:, :, :, :) =  lev
-            fluxDataY(:, :, :, :) = -lev
+            associate(lo => tileDesc%limits(LOW,  :), &
+                      hi => tileDesc%limits(HIGH, :))
+                do     j = lo(JAXIS), hi(JAXIS) 
+                    do i = lo(IAXIS), hi(IAXIS)+1
+                        fluxDataX(i, j, 1, 1) =  lev
+                    end do
+                end do
+                do     j = lo(JAXIS), hi(JAXIS)+1 
+                    do i = lo(IAXIS), hi(IAXIS)
+                        fluxDataY(i, j, 1, 1) = -lev
+                    end do
+                end do
+            end associate
+
             call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
             call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
@@ -520,9 +552,13 @@ subroutine Driver_evolveFlash()
         associate(lo => tileDesc%limits(LOW,  :), &
                   hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level")
                 end do
