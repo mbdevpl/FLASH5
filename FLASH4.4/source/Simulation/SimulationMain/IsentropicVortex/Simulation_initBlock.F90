@@ -4,7 +4,8 @@
 !!    Simulation_initBlock
 !!
 !!  SYNOPSIS
-!!    call Simulation_initBlock( integer(IN) :: blockID,
+!!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
+!!                            integer(IN)  :: blockDesc  )
 !!                               
 !!
 !!  DESCRIPTION
@@ -27,7 +28,8 @@
 !!     rho e = (rho^gamma)/(gamma-1) + rho (u^2 + v^2)/2
 !!    
 !!  ARGUMENTS
-!!    blockID   --    The number of the block to initialize.
+!!  solnData  -        pointer to solution data
+!!  blockDesc -        describes the block to initialize
 !!
 !!  PARAMETERS
 !!    rho_ambient       \
@@ -49,15 +51,12 @@
 !!   physical_constants: get_constant_from_db
 !!   multifluid_database
 !!   runtime_parameters
-!!   dBase: nxb, nyb, nzb, nguard, ionmax, k2d, k3d, ndim,
-!!    iHi_gc, jHi_gc, kHi_gc, dBasePropertyInteger, dBaseKeyNumber,
-!!    dBaseSpecies, dBaseGetCoords, dBasePutData
 !! 
 !!  NOTES
 !!    Reference:  Yee, Vinokur & Djomehri, J. Comp. Phys 162 
 !!
 !!***
-subroutine Simulation_initBlock(blockId)
+subroutine Simulation_initBlock(solnData,blockDesc)
 
   use Simulation_data, ONLY : sim_gamma, sim_uAmbient, sim_vAmbient,&
        sim_vortexStrength, sim_xctrTrue, sim_yctrTrue, sim_nxSubint, &
@@ -66,16 +65,17 @@ subroutine Simulation_initBlock(blockId)
        sim_tStarAmbient, sim_rbar, sim_constAmbient, sim_smlrho, sim_smallx,&
        sim_eosData, sim_eosMassFr
 
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
-    Grid_getCellCoords, Grid_putRowData, Grid_getRowData
+  use Grid_interface, ONLY :Grid_getCellCoords
   use Eos_interface, ONLY : Eos_wrapped, Eos
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 #include "constants.h"
 #include "Flash.h"
 #include "Eos.h"
 
-  integer, intent(IN) :: blockID
+  real,                   pointer    :: solnData(:,:,:,:)
+  type(block_metadata_t), intent(in) :: blockDesc
 
   real :: xctr_closest, yctr_closest
   real :: temp_coeff, temp_exp, gm1i, rbari
@@ -85,79 +85,69 @@ subroutine Simulation_initBlock(blockId)
   real :: rhou, rhov, rhow, rhoe
   real :: rho_loc, u_loc, v_loc, w_loc, t_loc, p_loc, e_loc, gamma_loc
 
-! Needed for eos call.
-  real :: abar, zbar, dpt, dpd, det, ded, c_v, c_p, pel, xxne, eta
-
   integer :: i, j, k, n
   integer :: ii, jj
   real :: entropy, dst, dsd
-  integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC,eosRange
-  integer,dimension(MDIM) :: startingPos
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC,eosRange
   integer :: sizeX,sizeY,sizeZ,vecLen=1
-  logical :: gcell=.false.
+  logical :: gcell=.true.
 
   real,allocatable,dimension(:)::xCenter,xLeft,xRight
   real,allocatable,dimension(:)::yCenter,yLeft,yRight
   real,allocatable,dimension(:)::zCenter,zLeft,zRight
-  real,allocatable,dimension(:)::rho, p, t, e, u, v, w, etot, game, gamc
+  real::rho, p, t, e, u, v, w, etot, game, gamc
 #if NSPECIES > 0
-  real,allocatable,dimension(:,:)::xn
+  real,allocatable,dimension(:)::xn
 #endif
 
-  call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
-  sizeX=blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1  ! These are INTERIOR sizes
-  sizeY=blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1
-  sizeZ=blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1
+  blkLimitsGC(:,:) = blockDesc%limitsGC
+  blkLimits(:,:) = blockDesc%limits
 
-  allocate(xCenter(sizeX))
-  allocate(xRight(sizeX))
-  allocate(xLeft(sizeX))
-  allocate(yCenter(sizeY))
-  allocate(yRight(sizeY))
-  allocate(yLeft(sizeY))
-  allocate(zCenter(sizeZ))
-  allocate(zRight(sizeZ))
-  allocate(zLeft(sizeZ))
-  allocate(rho(sizeX))
-  allocate(p(sizeX))
-  allocate(t(sizeX))
-  allocate(e(sizeX))
-  allocate(u(sizeX))
-  allocate(v(sizeX))
-  allocate(w(sizeX))
-  allocate(etot(sizeX))
-  allocate(game(sizeX))
-  allocate(gamc(sizeX))
+
+  allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+  allocate(xRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+  allocate(xLeft(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+  allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+  allocate(yRight(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+  allocate(yLeft(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+  allocate(zCenter(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+  allocate(zRight(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+  allocate(zLeft(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+
+  sizeX=SIZE(xCenter)
+  sizeY=SIZE(yCenter)
+  sizeZ=SIZE(zCenter)
+
 #if NSPECIES > 0
-  allocate(xn(sizeX,NSPECIES))
+  allocate(xn(NSPECIES))
 
 !   Assume a single species.
-    xn(:,:) = sim_smallx
-    xn(:,1) = 1.
+    xn(:) = sim_smallx
+    xn(1) = 1.
 #endif
 
   if (NDIM > 2) then
-     call Grid_getCellCoords (KAXIS, blockId, CENTER, gcell, zCenter, sizeZ)
-     call Grid_getCellCoords (KAXIS, blockId, LEFT_EDGE, gcell, zLeft, sizeZ)
-     call Grid_getCellCoords (KAXIS, blockId, RIGHT_EDGE, gcell, zRight, sizeZ)
+     call Grid_getCellCoords (KAXIS, blockDesc, CENTER, gcell, zCenter, sizeZ)
+     call Grid_getCellCoords (KAXIS, blockDesc, LEFT_EDGE, gcell, zLeft, sizeZ)
+     call Grid_getCellCoords (KAXIS, blockDesc, RIGHT_EDGE, gcell, zRight, sizeZ)
   end if
   if(NDIM>1) then
-     call Grid_getCellCoords (JAXIS, blockId, CENTER, gcell, yCenter, sizeY)
-     call Grid_getCellCoords (JAXIS, blockId, LEFT_EDGE, gcell, yLeft, sizeY)
-     call Grid_getCellCoords (JAXIS, blockId, RIGHT_EDGE, gcell, yRight, sizeY)
+     call Grid_getCellCoords (JAXIS, blockDesc, CENTER, gcell, yCenter, sizeY)
+     call Grid_getCellCoords (JAXIS, blockDesc, LEFT_EDGE, gcell, yLeft, sizeY)
+     call Grid_getCellCoords (JAXIS, blockDesc, RIGHT_EDGE, gcell, yRight, sizeY)
   end if
-  call Grid_getCellCoords (IAXIS, blockId, CENTER, gcell, xCenter, sizeX)
-  call Grid_getCellCoords (IAXIS, blockId, LEFT_EDGE, gcell, xLeft, sizeX)
-  call Grid_getCellCoords (IAXIS, blockId, RIGHT_EDGE, gcell, xRight, sizeX)
+  call Grid_getCellCoords (IAXIS, blockDesc, CENTER, gcell, xCenter, sizeX)
+  call Grid_getCellCoords (IAXIS, blockDesc, LEFT_EDGE, gcell, xLeft, sizeX)
+  call Grid_getCellCoords (IAXIS, blockDesc, RIGHT_EDGE, gcell, xRight, sizeX)
 ! Initialize the flowfield.
 
   temp_coeff = sim_vortexStrength/(2.0*PI)
   gm1i = 1.0/(sim_gamma-1.0)
   rbari = 1.0/sim_rbar
 
-  do k = 1,sizeZ
-     do j = 1,sizeY
-        do i = 1,sizeX
+  do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
+     do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
+        do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
            
            !     these are cell sizes and cell subinterval sizes.
            dx_loc = (xRight(i) - xLeft(i))/sim_nxSubint
@@ -256,64 +246,39 @@ subroutine Simulation_initBlock(blockId)
            enddo ! jj-loop
 
            deni = 1.0/float(sim_nxSubint*sim_nySubint)
-           rho(i) = rho_sum *deni
+           rho = rho_sum *deni
            rhou   = rhou_sum*deni
            rhov   = rhov_sum*deni
            rhow   = rhow_sum*deni
            rhoe   = rhoe_sum*deni
            
-           u(i)    = rhou/rho(i)
-           v(i)    = rhov/rho(i)
-           w(i)    = rhow/rho(i)
-           etot(i) = rhoe/rho(i)
-           e(i)    = etot(i) - 0.5*(u(i)**2 + v(i)**2 + w(i)**2)
-           
+           u    = rhou/rho
+           v    = rhov/rho
+           w    = rhow/rho
+           etot = rhoe/rho
+           e    = etot - 0.5*(u**2 + v**2 + w**2)
+           sim_eosData(EOS_DENS)=rho
+           sim_eosData(EOS_EINT)=e
+           call Eos(MODE_DENS_EI,vecLen,sim_eosData,sim_eosMassFr)
+           p=sim_eosData(EOS_PRES)
+           game=p/(rho*e) +1.0
+           solndata(DENS_VAR,i,j,k)=rho
+           solndata(VELX_VAR,i,j,k)=u
+           solndata(VELY_VAR,i,j,k)=v
+           solndata(VELZ_VAR,i,j,k)=w
+           solndata(ENER_VAR,i,j,k)=etot
+           solndata(EINT_VAR,i,j,k)=e
+           solndata(PRES_VAR,i,j,k)=p
+           solndata(GAME_VAR,i,j,k)=game
         enddo  ! i-loop
 
        !this routine initializes a row at a time...
-        startingPos(IAXIS) = 1
-        startingPos(JAXIS) = j
-        startingPos(KAXIS) = k
 #if NSPECIES > 0
         do n=0,NSPECIES-1
-           call Grid_putRowData(blockID,CENTER,SPECIES_BEGIN+n,INTERIOR,IAXIS,&
-                                startingPos,xn(:,n+1),sizeX)
+           solndata(SPECIES_BEGIN+n,i,j,k)=xn(n+1)
         end do
 #endif
  
-        call Grid_putRowData(blockId, CENTER, DENS_VAR, INTERIOR, &
-                             IAXIS, startingPos, rho, sizeX)
-        call Grid_putRowData(blockId, CENTER, VELX_VAR, INTERIOR, &
-                             IAXIS, startingPos, u, sizeX)
-        call Grid_putRowData(blockId, CENTER, VELY_VAR, INTERIOR, &
-                             IAXIS, startingPos, v, sizeX)
-        call Grid_putRowData(blockId, CENTER, VELZ_VAR, INTERIOR, &
-                             IAXIS, startingPos, w, sizeX)
-        call Grid_putRowData(blockId, CENTER, ENER_VAR, INTERIOR, &
-                             IAXIS, startingPos, etot, sizeX)
-        call Grid_putRowData(blockID,CENTER,EINT_VAR,INTERIOR,&
-                             IAXIS, startingPos, e, sizeX)
-
-!   Get p, t from rho, e
-!   Since these are INTERIOR calls, the range should not include the guard cells
-!   With INTERIOR usage, the index 1 == the INTERIOR edge.  However, Eos_wrapped
-!   can't really work with the INTERIOR mode, it has to collect ALL the data and
-!   must be indexed with EXTERIOR mode.
-!   So we need to offset j,k by the guard cell index.
-        eosRange(LOW,IAXIS)=blkLimits(LOW,IAXIS)
-        eosRange(HIGH,IAXIS)=blkLimits(HIGH,IAXIS)
-        eosRange(:,JAXIS) = blkLimits(LOW,JAXIS) + j-1
-        eosRange(:,KAXIS) = blkLimits(LOW,KAXIS) + k-1
-        call Eos_wrapped(MODE_DENS_EI,eosRange,blockID)
-
-        call Grid_getRowData(blockID,CENTER,PRES_VAR,INTERIOR,&
-                             IAXIS, startingPos, p, sizeX)
-        game = p/(rho*e) + 1.0
-        
-        call Grid_putRowData(blockId, CENTER, GAME_VAR, INTERIOR, &
-                             IAXIS, startingPos, game, sizeX)
-
-
      enddo  ! j-loop
   enddo  ! k-loop
   
@@ -326,16 +291,6 @@ subroutine Simulation_initBlock(blockId)
   deallocate(zCenter)
   deallocate(zRight)
   deallocate(zLeft)
-  deallocate(rho)
-  deallocate(p)
-  deallocate(t)
-  deallocate(e)
-  deallocate(u)
-  deallocate(v)
-  deallocate(w)
-  deallocate(etot)
-  deallocate(game)
-  deallocate(gamc)
 #if NSPECIES > 0
   deallocate(xn)
 #endif
