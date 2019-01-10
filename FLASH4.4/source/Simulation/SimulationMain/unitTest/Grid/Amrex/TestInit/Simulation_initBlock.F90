@@ -42,6 +42,7 @@ subroutine Simulation_initBlock(initData, tileDesc)
 
     nullify(faceData)
 
+
     associate(lo => tileDesc%limits(LOW,  :), &
               hi => tileDesc%limits(HIGH, :))
         do           var = UNK_VARS_BEGIN, UNK_VARS_END
@@ -60,7 +61,7 @@ subroutine Simulation_initBlock(initData, tileDesc)
             do         k = lo(KAXIS), hi(KAXIS)
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)+1
-                        faceData(i, j, k, var) = 1.3*i*i
+                        faceData(i, j, k, var) = 1.3*i*i * var
                     end do
                 end do
             end do
@@ -72,7 +73,7 @@ subroutine Simulation_initBlock(initData, tileDesc)
             do         k = lo(KAXIS), hi(KAXIS)
                 do     j = lo(JAXIS), hi(JAXIS)+1
                     do i = lo(IAXIS), hi(IAXIS)
-                        faceData(i, j, k, var) = i*i + 1.2**j*j
+                        faceData(i, j, k, var) = (i*i + 1.2*j*j) * var
                     end do
                 end do
             end do
@@ -85,7 +86,7 @@ subroutine Simulation_initBlock(initData, tileDesc)
         do         k = lo(KAXIS), hi(KAXIS)+1
             do     j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
-                        faceData(i, j, k, var) = i*i + j*j + 1.1*k*k
+                        faceData(i, j, k, var) = (i*i + j*j + 1.1*k*k) * var
                     end do
                 end do
             end do

@@ -101,6 +101,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     integer :: dir
     logical :: nodal(1:MDIM)
 
+    integer :: i, j, k, var
+
     nullify(initData)
 
     ba = pba
@@ -158,33 +160,69 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     ! Write initial data across domain at given level and convert to conserved
     ! form where needed for proper interpolation with GC fill below.
     n_blocks = 0
-    call Grid_getTileIterator(itor, ALL_BLKS, level=lev+1, tiling=.FALSE.)
+    call Grid_getTileIterator(itor, ALL_BLKS, level=lev+1, tiling=.TRUE.)
     do while (itor%isValid())
         call itor%currentTile(tileDesc)
- 
+
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
         !  the total vs. internal energies can cause problems in the eos call that 
-        !  follows.
-        call tileDesc%getDataPtr(initData, CENTER)
-        initData(:,:,:,:) = 0.0
-        call tileDesc%releaseDataPtr(initData, CENTER)
+        !  follows.  This includes zeroing the data in the grown tile's
+        !  guardcells.
+        associate(lo => tileDesc%limitsGC(LOW,  :), &
+                  hi => tileDesc%limitsGC(HIGH, :))
+            call tileDesc%getDataPtr(initData, CENTER)
+            do           var = UNK_VARS_BEGIN, UNK_VARS_END
+                do         k = lo(KAXIS), hi(KAXIS)
+                    do     j = lo(JAXIS), hi(JAXIS)
+                        do i = lo(IAXIS), hi(IAXIS)
+                            initData(i, j, k, var) = 0.0
+                        end do
+                    end do
+                end do
+            end do
+            call tileDesc%releaseDataPtr(initData, CENTER)
 
 #if NFACE_VARS > 0
-        call tileDesc%getDataPtr(initData, FACEX)
-        initData(:,:,:,:) = 0.0
-        call tileDesc%releaseDataPtr(initData, FACEX)
+            call tileDesc%getDataPtr(initData, FACEX)
+            do           var = 1, NFACE_VARS
+                do         k = lo(KAXIS), hi(KAXIS)
+                    do     j = lo(JAXIS), hi(JAXIS)
+                        do i = lo(IAXIS), hi(IAXIS)
+                            initData(i, j, k, var) = 0.0
+                        end do
+                    end do
+                end do
+            end do
+            call tileDesc%releaseDataPtr(initData, FACEX)
 #if NDIM >= 2
-        call tileDesc%getDataPtr(initData, FACEY)
-        initData(:,:,:,:) = 0.0
-        call tileDesc%releaseDataPtr(initData, FACEY)
+            call tileDesc%getDataPtr(initData, FACEY)
+            do           var = 1, NFACE_VARS
+                do         k = lo(KAXIS), hi(KAXIS)
+                    do     j = lo(JAXIS), hi(JAXIS)
+                        do i = lo(IAXIS), hi(IAXIS)
+                            initData(i, j, k, var) = 0.0
+                        end do
+                    end do
+                end do
+            end do
+            call tileDesc%releaseDataPtr(initData, FACEY)
 #endif
 #if NDIM == 3
-        call tileDesc%getDataPtr(initData, FACEZ)
-        initData(:,:,:,:) = 0.0
-        call tileDesc%releaseDataPtr(initData, FACEZ)
+            call tileDesc%getDataPtr(initData, FACEZ)
+            do           var = 1, NFACE_VARS
+                do         k = lo(KAXIS), hi(KAXIS)
+                    do     j = lo(JAXIS), hi(JAXIS)
+                        do i = lo(IAXIS), hi(IAXIS)
+                            initData(i, j, k, var) = 0.0
+                        end do
+                    end do
+                end do
+            end do
+            call tileDesc%releaseDataPtr(initData, FACEZ)
 #endif
 #endif
+        end associate
 
         ! Give simulation the cell-centered data.  If they need to initialize
         ! face-centered data, they access it explicitly from tileDesc

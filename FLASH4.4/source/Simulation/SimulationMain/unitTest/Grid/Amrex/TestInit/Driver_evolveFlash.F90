@@ -413,7 +413,7 @@ subroutine Driver_evolveFlash()
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)+1
                         call assertEqual(solnData(i, j, k, var), &
-                                         1.3*i*i, &
+                                         (1.3*i*i) * var, &
                                          "Incorrect initial condition")
                     end do
                 end do
@@ -427,7 +427,7 @@ subroutine Driver_evolveFlash()
                 do     j = lo(JAXIS), hi(JAXIS)+1
                     do i = lo(IAXIS), hi(IAXIS)
                         call assertEqual(solnData(i, j, k, var), &
-                                         i*i+1.2**j*j, &
+                                         (i*i+1.2*j*j) * var, &
                                          "Incorrect initial condition")
                     end do
                 end do
@@ -442,7 +442,7 @@ subroutine Driver_evolveFlash()
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)
                         call assertEqual(solnData(i, j, k, var), &
-                                         i*i+j*j+1.1*k*k, &
+                                         (i*i+j*j+1.1*k*k) * var, &
                                          "Incorrect initial condition")
                     end do
                 end do
