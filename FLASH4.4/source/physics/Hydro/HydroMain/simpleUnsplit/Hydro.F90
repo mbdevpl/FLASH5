@@ -111,7 +111,7 @@ subroutine Hydro(simTime, dt, dtOld)
                                  flX, flY, flZ, lbound(flX), &
                                  deltas, dt)
      case default
-        call Driver_abortFlash("[hy_advance]: Unknown Riemann solver")
+        call Driver_abortFlash("[Hydro]: Unknown Riemann solver")
      end select
 
      call tileDesc%releaseDataPtr(Uin, CENTER)
@@ -145,7 +145,7 @@ subroutine Hydro(simTime, dt, dtOld)
                                   flX, flY, flZ, lbound(flX), &
                                   deltas, dt)
      case default
-        call Driver_abortFlash("[hy_advance]: Unknown Riemann solver")
+        call Driver_abortFlash("[Hydro]: Unknown Riemann solver")
      end select
 
      call Eos_wrapped(hy_eosModeAfter, tileDesc%limits, Uout)
