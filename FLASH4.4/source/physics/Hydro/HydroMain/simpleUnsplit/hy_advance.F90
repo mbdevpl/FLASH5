@@ -8,23 +8,21 @@
 !!
 !!***
 
-#include "Flash.h"
-#include "constants.h"
+#include "UHD.h"
 
 subroutine hy_advance(simTime, dt, dtOld)
   use Grid_interface,   ONLY : Grid_getTileIterator, &
-                               Grid_releaseTileIterator, &
-                               Grid_getMaxRefinement
+                               Grid_releaseTileIterator
   use Timers_interface, ONLY : Timers_start, &
                                Timers_stop
-  use hy_interface,     ONLY : hy_advanceBlk
+  use Hydro_data,       ONLY : hy_useHydro, &
+                               hy_riemannSolver, &
+                               hy_eosModeAfter
+  use hy_interface,     ONLY : hy_hllComputeFluxes, &
+                               hy_hllUpdateSolution
+  use Eos_interface,    ONLY : Eos_wrapped
   use flash_iterator,   ONLY : flash_iterator_t
   use flash_tile,       ONLY : flash_tile_t
-
-  use gr_physicalMultifabs,  ONLY : unk
-  use amrex_multifab_module, ONLY : amrex_multifab, &
-                                    amrex_multifab_build, &
-                                    amrex_multifab_destroy
 
   implicit none
 
@@ -32,49 +30,88 @@ subroutine hy_advance(simTime, dt, dtOld)
   real, intent(IN) :: dt
   real, intent(IN) :: dtOld
  
-  type(amrex_multifab) :: tmp
-
   real, pointer :: Uout(:,:,:,:)
   real, pointer :: Uin(:,:,:,:)
+  real, pointer :: flX(:,:,:,:)
+  real, pointer :: flY(:,:,:,:)
+  real, pointer :: flZ(:,:,:,:)
 
   type(flash_iterator_t) :: itor
   type(flash_tile_t)     :: tileDesc
 
-  integer :: level
-  integer :: finest_level
+  real    :: deltas(1:MDIM)
 
   nullify(Uin)
   nullify(Uout)
+  nullify(flX)
+  nullify(flY)
+  nullify(flZ)
 
-  call Timers_stop("loop1")
-  call Grid_getMaxRefinement(finest_level, mode=3)
-  do level = 1, finest_level
-     call amrex_multifab_build(tmp, &
-                               unk(level-1)%ba, &
-                               unk(level-1)%dm, &
-                               NUNK_VARS, NGUARD)
+  if (.not. hy_useHydro) return 
 
-     call Grid_getTileIterator(itor, LEAF, level=level, tiling=.TRUE.)
-     do while(itor%isValid())
-        call itor%currentTile(tileDesc)
+  call Timers_start("loop1")
+  call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 
-        call tileDesc%getDataPtr(Uin, CENTER)
-        associate(lo => lbound(Uin))
-           Uout(lo(1):, lo(2):, lo(3):, lo(4):) => tmp%dataPtr(tileDesc%grid_index)
-        end associate
+     call tileDesc%deltas(deltas)
+     call tileDesc%getDataPtr(flX, FLUXX)
+     call tileDesc%getDataPtr(flY, FLUXY)
+     call tileDesc%getDataPtr(flZ, FLUXZ)
+     call tileDesc%getDataPtr(Uin, CENTER)
 
-        call hy_advanceBlk(tileDesc, Uin, Uout, simTime, dt, dtOld, SWEEP_ALL)
+     select case (hy_riemannSolver)
+     case(HLL)
+        call hy_hllComputeFluxes(tileDesc%limits, &
+                                 Uin, lbound(Uin), &
+                                 flX, flY, flZ, lbound(flX), &
+                                 deltas, dt)
+     case default
+        call Driver_abortFlash("[hy_advance]: Unknown Riemann solver")
+     end select
 
-        call tileDesc%releaseDataPtr(Uin, CENTER)
-        nullify(Uout)
+     call tileDesc%releaseDataPtr(Uin, CENTER)
+     call tileDesc%releaseDataPtr(flX, FLUXX)
+     call tileDesc%releaseDataPtr(flY, FLUXY)
+     call tileDesc%releaseDataPtr(flZ, FLUXZ)
 
-        call itor%next()
-     end do
-     call Grid_releaseTileIterator(itor)
-
-     call unk(level-1)%copy(tmp, UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, 0)
-     call amrex_multifab_destroy(tmp)
+     call itor%next()
   end do
+  call Grid_releaseTileIterator(itor)
+
+  call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+
+     call tileDesc%deltas(deltas)
+
+     call tileDesc%getDataPtr(flX, FLUXX)
+     call tileDesc%getDataPtr(flY, FLUXY)
+     call tileDesc%getDataPtr(flZ, FLUXZ)
+     call tileDesc%getDataPtr(Uin, CENTER)
+     Uout => Uin
+
+     select case (hy_riemannSolver)
+     case(HLL)
+        call hy_hllUpdateSolution(tileDesc%limits, &
+                                  Uin, lbound(Uin), Uout, &
+                                  flX, flY, flZ, lbound(flX), &
+                                  deltas, dt)
+     case default
+        call Driver_abortFlash("[hy_advance]: Unknown Riemann solver")
+     end select
+
+     call Eos_wrapped(hy_eosModeAfter, tileDesc%limits, Uout)
+
+     call tileDesc%releaseDataPtr(Uin, CENTER)
+     call tileDesc%releaseDataPtr(flX, FLUXX)
+     call tileDesc%releaseDataPtr(flY, FLUXY)
+     call tileDesc%releaseDataPtr(flZ, FLUXZ)
+     nullify(Uout)
+
+     call itor%next()
+  end do
+  call Grid_releaseTileIterator(itor)
   call Timers_stop("loop1")
 
 #ifdef DEBUG_DRIVER

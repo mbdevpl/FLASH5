@@ -26,6 +26,37 @@ Module hy_interface
 #include "UHD.h"
 
   interface
+     subroutine hy_hllComputeFluxes ( tileLimits, Uin, plo, flX, flY, flZ, loFl, del, dt )
+       implicit none
+       integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
+       integer, intent(IN)  :: plo(*)
+       real,    intent(IN)  :: Uin(plo(1):,plo(2):,plo(3):,plo(4):)
+       integer, intent(IN)  :: loFl(*)
+       real,    intent(OUT) :: flX(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(OUT) :: flY(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(OUT) :: flZ(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(IN)  :: del(1:MDIM)
+       real,    intent(IN)  :: dt
+     end subroutine hy_hllComputeFluxes
+  end interface
+
+  interface
+     subroutine hy_hllUpdateSolution( tileLimits, Uin, plo, Uout, flX, flY, flZ, loFl, del, dt )
+       implicit none
+       integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
+       integer, intent(IN)  :: plo(*)
+       real,    intent(IN)  :: Uin(plo(1):,plo(2):,plo(3):,plo(4):)
+       real,    intent(OUT) :: Uout(plo(1):,plo(2):,plo(3):,plo(4):)
+       integer, intent(IN)  :: loFl(*)
+       real,    intent(IN)  :: flX(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(IN)  :: flY(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(IN)  :: flZ(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(IN)  :: del(1:MDIM)
+       real,    intent(IN)  :: dt
+     end subroutine hy_hllUpdateSolution
+  end interface
+
+  interface
      subroutine hy_avgState(sweepDir,VL,VR,Vavg)
        implicit none
        integer, intent(IN) :: sweepDir
@@ -353,30 +384,6 @@ Module hy_interface
        real, intent(OUT) :: speed
        integer, intent(OUT) :: ierr
      end subroutine hy_LLF
-  end interface
-
-  interface
-     subroutine hy_hllUnsplit(tileLimits, Uin, plo, Uout, del, dt )
-       implicit none
-       integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
-       integer, intent(IN)  :: plo(*)
-       real,    intent(IN)  :: Uin(plo(1):,plo(2):,plo(3):,plo(4):)
-       real,    intent(OUT) :: Uout(plo(1):,plo(2):,plo(3):,plo(4):)
-       real,    intent(IN)  :: del(1:MDIM)
-       real,    intent(IN)  :: dt
-     end subroutine hy_hllUnsplit
-  end interface
-
-  interface
-     subroutine hy_llfUnsplit(tileLimits, Uin, plo, Uout, del, dt )
-       implicit none
-       integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
-       integer, intent(IN)  :: plo(*)
-       real,    intent(IN)  :: Uin(plo(1):,plo(2):,plo(3):,plo(4):)
-       real,    intent(OUT) :: Uout(plo(1):,plo(2):,plo(3):,plo(4):)
-       real,    intent(IN)  :: del(1:MDIM)
-       real,    intent(IN)  :: dt
-     end subroutine hy_llfUnsplit
   end interface
 
   interface
@@ -1045,16 +1052,6 @@ Module hy_interface
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
      end subroutine hy_computeFluxes
-
-     subroutine hy_advanceBlk(tileDesc, Uin, Uout, timeEndAdv, dt, dtOld,  &
-          sweepOrder)
-       use flash_tile, ONLY : flash_tile_t 
-       implicit none
-       type(flash_tile_t) :: tileDesc 
-       real, pointer, dimension(:,:,:,:) :: Uout,Uin
-       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-       integer, INTENT(IN) :: sweepOrder
-     end subroutine hy_advanceBlk
   end interface
 
     interface

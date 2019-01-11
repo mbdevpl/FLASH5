@@ -1,0 +1,10 @@
+# DEV: Figure out how to add these in properly.
+# To be done at the same time that UHD.h is updated.
+FLUX HY_DENS
+FLUX HY_XMOM
+FLUX HY_YMOM
+FLUX HY_ZMOM
+FLUX HY_ENER
+#FLUX HY_P
+#FLUX HY_EINT
+#FLUX HY_VOLU

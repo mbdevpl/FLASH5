@@ -1,6 +1,3 @@
-#include "Flash.h"
-#include "constants.h"
-
 subroutine hy_advance(simTime, dt, dtOld)
   implicit none
 
