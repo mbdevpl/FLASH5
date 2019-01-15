@@ -56,7 +56,7 @@ class LazyFile:
          return None
        ctr = 0
        try:
-         for x in myfile.xreadlines():
+         for x in myfile:
            if x != self.contents[ctr]:
               myflie.close()
               return None

@@ -135,7 +135,7 @@ class IndentedOutput:
 
     def put(self, text, level=WARN): 
         if level < self.debuglevel: return # info not important
-        for line in map(string.strip, string.split(text, '\n')):
+        for line in map(str.strip, str.split(text, '\n')):
             nsp = self.indent*self.numSpaces
             ans = self.__pretty(line,self.WRAP-nsp)
             if not ans: # printing an empty string
@@ -176,7 +176,7 @@ class SetupVarsClass:
     # set key to value, value may be a quoted string
     def set(self,key,value):
         if not value: value = ""
-        if type(value) != types.StringType: # direct store
+        if not isinstance(value,str): # direct store
            self.vars[key]=value
            return
         # we have a string which may require type change
@@ -196,7 +196,7 @@ class SetupVarsClass:
 
     # file is a file object opened for writing
     def printvars(self,file,ignoreprefix="with"):
-        vi = self.vars.items()
+        vi = list(self.vars.items())
         vi.sort()
         for (k,v) in vi:
            if ignoreprefix and k.startswith(ignoreprefix): continue
@@ -251,7 +251,7 @@ class GVarsClass:
     particlesUnitIncluded = False
     nonexistent = "NONEXISTENT"
     eosStaticList = ['PRES','DENS','EINT','TEMP','GAMC','GAME','ENER','VELX','VELY','VELZ','SUMY','YE','ENTR','PRES1','PRES2','PRES3','EINT1','EINT2','EINT3','TEMP1','TEMP2','TEMP3','E1','E2','E3','SELE','SRAD']
-    strEos = ''.join(map(lambda x:x.lower()+'|'+x.upper()+'|',eosStaticList))[:-1]
+    strEos = ''.join([x.lower()+'|'+x.upper()+'|' for x in eosStaticList])[:-1]
 
     def init(self,flashHomeDir):
         self.flashHomeDir = flashHomeDir

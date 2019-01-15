@@ -11,11 +11,11 @@ from globals import *   # GVars, opts and SetupError
 from lazyFile import *  # for LazyFile class
 
 
-import string, re, sys, UserDict, os.path
+import string, re, sys, os.path
 
 ###############################################################
 
-class RPInfo(UserDict.UserDict):
+class RPInfo(dict):
    # Class which keeps track of run time parameters and related info
    # To each runtime parameter we keep track of the following info
    #
@@ -37,7 +37,7 @@ class RPInfo(UserDict.UserDict):
    # If it is a warning then RP not added to database
 
    def __init__(self,warn=1):
-       UserDict.UserDict.__init__(self)
+       dict.__init__(self)
        self.typemap = {'REAL': 'real',
                        'INTEGER': 'integer',
                        'STRING':  'character(len=MAX_STRING_LENGTH)',
@@ -72,7 +72,7 @@ class RPInfo(UserDict.UserDict):
           
           rangespec = rangespec.strip()
           if not rangespec: continue
-          if (self.rangeToregexp.search(rangespec) >= 0) and (typ in ["REAL","INTEGER"]): # contains "to" as a substring
+          if (self.rangeToregexp.search(rangespec)) and (typ in ["REAL","INTEGER"]): # contains "to" as a substring
              spec = {"min":None,"max":None}
              m = self.numregexp.match(rangespec)
              spec.update(m.groupdict())
@@ -95,7 +95,7 @@ class RPInfo(UserDict.UserDict):
 
    def addRP(self,name,type="",value="",const=None,location="",comment="",range=None):
        if self.warn:
-          if self.locations.has_key(name):
+          if name in self.locations:
              loc2 = self.locations[name][0]
              val2 = self[(loc2,name)]["VALUE"]
              typ2 = self[(loc2,name)]["TYPE"]
@@ -144,13 +144,13 @@ class RPInfo(UserDict.UserDict):
              GVars.out.pop()
              if quit: return
        if not self.warn:
-          if self.has_key((location,name)): # same combo of both is there
+          if (location,name) in self: # same combo of both is there
              GVars.out.push()
              GVars.out.put('\nWARNING: Parameter %s is defined in %s multiple times. Ignoring new instance\n'
                            % (name,location),globals.WARN)
              GVars.out.pop()
              return
-       if not self.typemap.has_key(type):
+       if type not in self.typemap:
           raise SetupError("Invalid type %s for parameter %s" % (type,name))
        ans = { "TYPE":type, 
                "VALUE":value, 
@@ -158,7 +158,7 @@ class RPInfo(UserDict.UserDict):
                "RANGE": self.parseRange(range,type,name),
                "COMMENT":comment}
        self[(location,name)] = ans
-       if not self.locations.has_key(name): self.locations[name] = []
+       if name not in self.locations: self.locations[name] = []
        self.locations[name].append(location)
 
    # Takes a range object and returns a string describing the range object
@@ -183,7 +183,7 @@ class RPInfo(UserDict.UserDict):
        if not fname:
           fname = os.path.join(GVars.flashHomeDir,GVars.objectDir,globals.SetupParamsFilename)
        out = globals.IndentedOutput(4, open(fname, 'w'))
-       rplist = [ (loc,name,a) for ((loc,name),a) in self.items() ]
+       rplist = [ (loc,name,a) for ((loc,name),a) in list(self.items()) ]
        rplist.sort()
        currunit = None
        out.push()
@@ -217,13 +217,12 @@ class RPInfo(UserDict.UserDict):
        
    def writeDuplications(self,fname):
        out = globals.IndentedOutput(4, open(fname,"w"))
-       names = self.locations.keys()
+       names = list(self.locations.keys())
        # for each name find the number of locations where its type is not DOC
        # if this number > 1, then consider it duplicated
-       names = filter(lambda x: len(
-                          filter(lambda y: self[(y,x)]["TYPE"] != "DOC", 
-                                 self.locations[x])
-                          ) > 1,names) # only multiply defined ones
+       names = [x for x in names if len(
+                          [y for y in self.locations[x] if self[(y,x)]["TYPE"] != "DOC"]
+                          ) > 1] # only multiply defined ones
        names.sort()
        for name in names:
            out.put(name + " defined in the following locations")
@@ -239,7 +238,7 @@ class RPInfo(UserDict.UserDict):
        # find names with no comments
        # names = all names with one definition
        badnames = []
-       for (x,y) in self.locations.items():
+       for (x,y) in list(self.locations.items()):
            for loc in y:
                if not self[(loc,x)].get("COMMENT",None): badnames.append((x,loc))
        # badnames = all names where no COMMENT
@@ -326,7 +325,7 @@ class RPInfo(UserDict.UserDict):
        fname = os.path.join(GVars.flashHomeDir,GVars.objectDir,globals.RPDefaultParFilename)
        f = LazyFile(fname)
        f.write('## '+"\n## ".join(header)+"\n\n")
-       locitems = self.locations.items()
+       locitems = list(self.locations.items())
        locitems.sort()
        for (rpname,rplocations) in locitems:
            if len(rplocations) != 1:
@@ -400,7 +399,7 @@ class RPInfo(UserDict.UserDict):
 
        f.write(header)
 
-       locationslist = self.locations.items()
+       locationslist = list(self.locations.items())
        locationslist.sort()
        
        for (rpname,rplocations) in locationslist:

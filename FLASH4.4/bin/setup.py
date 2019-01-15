@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, string, re, time, shutil, UserDict, types, glob, socket, math
+import os, sys, string, re, time, shutil, types, glob, socket, math
 
 import parseCmd, lazyFile
 import globals
@@ -14,10 +14,10 @@ from unitUtils import * # for UnitList class
 ########################### START SCRIPT ################################
 def main():
     sys.setcheckinterval(10000) # this is not threaded application
- 
+
     parseCmd.init()
     # setup.py is FLASH_HOME/bin/setup.py
-    # FLASH_HOME is the parent of directory having setup.py 
+    # FLASH_HOME is the parent of directory having setup.py
     flashHome = os.path.dirname(
                    os.path.dirname(os.path.abspath(sys.argv[0])))
     # Initialize other related directory names
@@ -32,18 +32,18 @@ def main():
     os.chdir(GVars.simulationsDir)
     if not os.path.isdir(GVars.simulationName): # Needs to be cleaned up?
        # Find directories matching simulatation name (case insensitive)
-       simnames = dirGlob(GVars.simulationName+"*") 
+       simnames = dirGlob(GVars.simulationName+"*")
 
        if len(simnames) == 1: # only one possible name
           GVars.simulationName = simnames[0]
        else:
           if not simnames: # no match
              raise SetupError("Unit %s not found" % GVars.simulationName)
-          else: 
+          else:
              GVars.out.put("Potential completions : %s"%', '.join(simnames),globals.ERROR)
              raise SetupError("Unit %s is ambiguous" % GVars.simulationName)
 
-    ############ Proceed with other stuff ###################	 
+    ############ Proceed with other stuff ###################
     os.chdir(GVars.flashHomeDir)
 
     machDir = determineMachine()
@@ -63,10 +63,10 @@ def main():
 
     if GVars.auto:
         # generate and write an automatic "Units" file
-	unitList.generateUnitsfile()
+        unitList.generateUnitsfile()
 
     # read units file, satisfy requirement and all the good stuf
-    unitList.populate() 
+    unitList.populate()
 
     # adjust values of command line options based on units used
     # this is the only place the setup script uses its knowledge
@@ -77,23 +77,23 @@ def main():
     # create the object which does stuff relating to linking files
     linkList = LinkFileList(objdir)
 
-    # Combine info from all Config files 
-    configInfo = unitList.getConfigInfo() 
+    # Combine info from all Config files
+    configInfo = unitList.getConfigInfo()
     # get Runtime Paramas info
     rpInfo = unitList.getRPInfo(configInfo['max_plot_vars'])
     # get info regarding all variables
     varInfo = unitList.getVarInfo()
 
     # Add library options to configInfo
-    for key in GVars.withLibraries.keys():
-        if not configInfo['LIBRARY'].has_key(key): configInfo['LIBRARY'][key] = []
+    for key in list(GVars.withLibraries.keys()):
+        if key not in configInfo['LIBRARY']: configInfo['LIBRARY'][key] = []
         configInfo['LIBRARY'][key].append(GVars.withLibraries[key])
 
     ######### Now handle libraries depending on other libraries ##########
     configInfo['libConfigInfo'] = LibUnion(configInfo['LIBRARY'])
     # ConfigInfo['libConfigInfo'] is a dictionary mapping libraries to their config information
     # also CLASS.libOrder is a list of pairs (libname, args)
-    # This order is important due to linker invocation order 
+    # This order is important due to linker invocation order
 
     configInfo['libConfigInfo'].writeLibraries() # write out lib data to setup_libraries
 
@@ -105,12 +105,12 @@ def main():
     # remove the SuccessFile
     try:
        os.unlink(globals.SuccessFilename)
-    except OSError: 
+    except OSError:
        pass
 
     rpInfo.writeCode(configInfo) # write Fortran code for RP support
 
-    
+
     # find files which should not be linked
     linkList.getDontLinkList(unitList.getList(),configInfo['LINKIF'])
 
@@ -125,11 +125,11 @@ def main():
     tmp_makefilePathSites= os.path.join(machDir, "Makefile.h"+GVars.makefileext)
 
     if os.path.isfile(tmp_makefilePathRoot):
-    	linkList.addLink(tmp_makefilePathRoot, "Makefile.h")
-        print "Using Makefile.h: " + tmp_makefilePathRoot	
+        linkList.addLink(tmp_makefilePathRoot, "Makefile.h")
+        print("Using Makefile.h: " + tmp_makefilePathRoot)
     else:
-	linkList.addLink(tmp_makefilePathSites,"Makefile.h") 
-	print "Using Makefile.h: " + tmp_makefilePathSites
+        linkList.addLink(tmp_makefilePathSites,"Makefile.h")
+        print("Using Makefile.h: " + tmp_makefilePathSites)
 
     # functions in the simulations dir override earlier instances
     linkList.linkFiles(GVars.simulationsDir)
@@ -148,7 +148,7 @@ def main():
         shutil.copy(os.path.join(GVars.simulationsDir, GVars.simulationName, 'flash.par'), '.')
 
     test_src = os.path.join(GVars.flashHomeDir, 'tools', 'scripts', 'testing',
-                            'precision_test', 'precision_test.F90')    
+                            'precision_test', 'precision_test.F90')
     if os.path.isfile(test_src):
         shutil.copy(test_src, '.')
 
@@ -180,12 +180,12 @@ def main():
     GVars.out.put('generating Makefile',globals.IMPINFO)
 
     generateMakefile(configInfo, machDir)
-    
+
 #    generateDbaseDefines(configInfo, opts)
 
     generateFlashDefines(configInfo)  # writes the Flash.h file
     writeSimulationFiles(configInfo)
-   
+
     # Copy/link datafiles to object directory
     if GVars.portable:
       func = lambda real,link : shutil.copy2(real,link)
@@ -225,13 +225,13 @@ def main():
             except:
                os.remove(bname)
                func(file,bname)
-    if datafiles: 
+    if datafiles:
        GVars.out.put('Copying data files: %d copied' % len(datafiles),globals.IMPINFO)
     # write "setup_datafiles" into object directory, even if empty
     open(os.path.join(GVars.flashHomeDir,GVars.objectDir,globals.SetupDatafilesFilename), 'w').write("\n".join(datafiles))
-    if (GVars.setupVars.get("ParameshLibraryMode") or 
+    if (GVars.setupVars.get("ParameshLibraryMode") or
         ((not GVars.setupVars.get("Grid") or (GVars.setupVars.get("Grid").upper()=="PM4DEV")) and
-         (configInfo['PPDEFINES'].has_key('USE_AMR_RUNTIME_PARAMETERS_FILE') or
+         ('USE_AMR_RUNTIME_PARAMETERS_FILE' in configInfo['PPDEFINES'] or
           ('-DUSE_AMR_RUNTIME_PARAMETERS_FILE' in GVars.definesNames)) )):
         generatePm3RPDefines(configInfo)
     if GVars.parfile:
@@ -247,7 +247,7 @@ def main():
     # if no flash.par copy default.par over
     if not os.path.isfile('flash.par'):
        shutil.copy(globals.RPDefaultParFilename, 'flash.par')
-   
+
     # create the successfile
     ofd = open(globals.SuccessFilename,"w")
     ofd.write("SUCCESS\n")
@@ -260,19 +260,19 @@ def main():
 if __name__=='__main__':
     try:
         main()
-    except SetupError, inst:
-        if inst.args: print inst.args[0]
+    except SetupError as inst:
+        if inst.args: print(inst.args[0])
         sys.exit(1)
     except KeyboardInterrupt:
-        print '\nuser abort'
+        print('\nuser abort')
         sys.exit(2)
-    except Exception, e:
+    except Exception as e:
         if hasattr(e, 'dumbuser'):
-            print '\nUser Error!!!\n%s' % e.message
+            print('\nUser Error!!!\n%s' % e.message)
         else:
-            print '\nA setup internal error has occured, if possible please email the following\ndebugging info to flash-bugs@flash.uchicago.edu'
-            print 'Arguments:', sys.argv
-            print 'Python Version: %d.%d.%d' % sys.version_info[:3]
-            print 'Platform Details: %s' % sys.platform
+            print('\nA setup internal error has occured, if possible please email the following\ndebugging info to flash-bugs@flash.uchicago.edu')
+            print('Arguments:', sys.argv)
+            print('Python Version: %d.%d.%d' % sys.version_info[:3])
+            print('Platform Details: %s' % sys.platform)
             raise e
 
