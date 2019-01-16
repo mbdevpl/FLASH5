@@ -10,11 +10,11 @@ from globals import *
 import globals
 from lazyFile import * # for LazyFile class
 
-import string, re, os.path, UserDict
+import string, re, os.path
 
 ###############################################################
 
-class Template(UserDict.UserDict):
+class Template(dict):
 # generates file filename using template as the template
 # Lines starting with comment in the template are suppressed
 # other lines are % substituted against the given
@@ -22,18 +22,18 @@ class Template(UserDict.UserDict):
 # returns if generatedFile is same as existing file
 
   def __init__(self,template,comment="##"):
-      UserDict.UserDict.__init__(self)
+      dict.__init__(self)
       if not os.path.isfile(template):
          raise SetupError("Template file %s not found" % template)
       self.template = os.path.abspath(template)
       self.comment = comment
       self.check = None # Dont perform checks on what is being accessed
-      self.__getitem = UserDict.UserDict.__getitem__
-      self.__setitem = UserDict.UserDict.__setitem__
+      self.__getitem = dict.__getitem__
+      self.__setitem = dict.__setitem__
 
   def __setitem__(self,key,value):
-      UserDict.UserDict.__setitem__(self,key,value)
-      if type(value) in [type([]),type(()),type({})]:
+      dict.__setitem__(self,key,value)
+      if isinstance(value,(list,tuple,dict)):
          self.__setitem(self,"COUNT_"+key,len(value))
          try:
            maxlen = max([len(str(x)) for x in value])
@@ -42,7 +42,7 @@ class Template(UserDict.UserDict):
          self.__setitem(self,"MAXLEN_"+key, maxlen)
 
   def update(self,dict):
-      for (k,v) in dict.items(): self[k] = v
+      for (k,v) in list(dict.items()): self[k] = v
 
   # Fancy printing of list entries
   def __getitem__(self,key):
@@ -66,11 +66,11 @@ class Template(UserDict.UserDict):
   # Check if value is a simple datatype
   def __checksimple(self,key):
       if not self.check: return 
-      if not self.has_key(key):
+      if key not in self:
          raise SetupError("Variable %s unknown in template %s" 
                     % (key,self.template),globals.IMPINFO)
       tkey = type(self.__getitem(self,key))
-      if tkey in [type(0),type(""),type(None)]: return
+      if isinstance(self.__getitem(self,key),(int,str,type(None))): return
       GVars.out.put("WARNING: In template %s you are using the variable '%s' as a simple variable" 
                     % (self.template,key),globals.IMPINFO)
       GVars.out.push()
@@ -94,10 +94,10 @@ class Template(UserDict.UserDict):
       if not mobj:
          raise SetupError("Bad template syntax (%s) in %s" % (key,self.template))
       info.update(mobj.groupdict())
-      if not self.has_key(info["var"]):
+      if info["var"] not in self:
          raise SetupError("Unknown variable %s while expanding template %s" % (info["var"],self.templte))
       vals = self.__getitem(self,info["var"])
-      if type(vals) not in [type([]),type(())]:
+      if not isinstance(vals,(list,tuple)):
          raise SetupError("Variable %s has type %s in template %s -- not a sequence type" 
                           % (info["var"],type(vals),self.template))
       # Handle trivial case - empty sequence
@@ -132,7 +132,7 @@ class Template(UserDict.UserDict):
              ans.append(info["out"])
           else: ans.append(info["in"])
       # we have an extra separator at the end
-      return string.join(ans[:-1],"")
+      return "".join(ans[:-1])
       
   def generate(self,filename):
 
