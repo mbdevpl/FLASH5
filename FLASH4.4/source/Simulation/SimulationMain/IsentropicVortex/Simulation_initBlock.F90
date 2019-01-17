@@ -270,15 +270,14 @@ subroutine Simulation_initBlock(solnData,blockDesc)
            solndata(EINT_VAR,i,j,k)=e
            solndata(PRES_VAR,i,j,k)=p
            solndata(GAME_VAR,i,j,k)=game
-        enddo  ! i-loop
 
-       !this routine initializes a row at a time...
 #if NSPECIES > 0
-        do n=0,NSPECIES-1
-           solndata(SPECIES_BEGIN+n,i,j,k)=xn(n+1)
-        end do
+           do n=0,NSPECIES-1
+              solndata(SPECIES_BEGIN+n,i,j,k)=xn(n+1)
+           end do
 #endif
- 
+
+        enddo  ! i-loop
      enddo  ! j-loop
   enddo  ! k-loop
   
