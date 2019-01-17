@@ -115,15 +115,13 @@ subroutine Grid_getBlkPtr(block,dataPtr, gridDataStruct)
   case(CENTER)
      dataPtr(1:, gr_iloGc:, gr_jloGc:, gr_kloGc:) => unk(:,:,:,:,1)
   case(FACEX)
-     dataPtr => facevarx(:,:,:,:,1)
+     dataPtr => facevarx(1:,gr_iloGc:,gr_jloGc:,gr_kloGc:,1)
   case(FACEY)
-     dataPtr => facevary(:,:,:,:,1)
+     dataPtr => facevary(1:,gr_iloGc:,gr_jloGc:,gr_kloGc:,1)
   case(FACEZ)
-     dataPtr => facevarz(:,:,:,:,1)
+     dataPtr => facevarz(1:,gr_iloGc:,gr_jloGc:,gr_kloGc:,1)
   end select
 
-  write(*,*) "lbound(dataPtr) = ", lbound(dataPtr)
-  write(*,*) "ubound(dataPtr) = ", ubound(dataPtr)
   return
 end subroutine Grid_getBlkPtr
 

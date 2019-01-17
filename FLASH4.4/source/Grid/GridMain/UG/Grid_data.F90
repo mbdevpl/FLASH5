@@ -158,4 +158,6 @@ Module Grid_data
 
   logical, save :: gr_bcEnableApplyMixedGds
 
+  real,save,target,allocatable,dimension(:,:,:,:) :: gr_flxx, gr_flxy, gr_flxz
+  
 end Module Grid_data

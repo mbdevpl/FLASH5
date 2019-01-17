@@ -57,7 +57,7 @@ subroutine gr_createDomain()
        gr_iCoords, gr_jCoords, gr_kCoords, gr_domainBC, gr_iLoGC, &
        gr_jLoGC, gr_kLoGC, gr_iHiGC, gr_jHiGC, gr_kHiGC,&
        gr_ilo,gr_ihi,gr_jlo,gr_jhi,gr_klo,gr_khi,&
-       gr_iguard,gr_jguard,gr_kguard
+       gr_iguard,gr_jguard,gr_kguard, gr_flxx, gr_flxy, gr_flxz
 
   
   implicit none
@@ -134,6 +134,15 @@ subroutine gr_createDomain()
        gr_iLoGc:gr_iHiGc, gr_jLoGc:gr_jHiGc,&
        gr_kLoGc:gr_kHiGc,1))
   
+  allocate(gr_flxx(NFLUXES,gr_ilo:gr_ihi+1,  &
+                           gr_jlo:gr_jhi,  &
+                           gr_klo:gr_khi))
+  allocate(gr_flxy(NFLUXES,gr_ilo:gr_ihi,  &
+                           gr_jlo:gr_jhi+K2D,  &
+                           gr_klo:gr_khi))
+  allocate(gr_flxz(NFLUXES,gr_ilo:gr_ihi,  &
+                        gr_jlo:gr_jhi,  &
+                        gr_klo:gr_khi+K3D))
   
 #if(NFACE_VARS>0)
   

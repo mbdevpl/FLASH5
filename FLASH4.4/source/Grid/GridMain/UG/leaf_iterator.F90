@@ -190,11 +190,6 @@ contains
             mData%localLimits(HIGH, :) = hi(:) - cid(:) + 1
             mData%localLimitsGC(LOW,  :) = loGC(:) - cid(:) + 1
             mData%localLimitsGC(HIGH, :) = hiGC(:) - cid(:) + 1
-            write(*,*) "----------------------------------------"
-            write(*,*) "Low = ", lo
-            write(*,*) "Hi = ", hi
-            write(*,*) "LowGc = ", loGc
-            write(*,*) "HiGc = ", hiGc
         end associate
     end subroutine blkMetaData
 
