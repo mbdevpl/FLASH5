@@ -94,6 +94,8 @@ subroutine io_writeData(fileID)
   use IO_interface, ONLY : IO_setScalar
   use io_typeInterface, ONLY : io_xfer_tree_data
 
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
   
 #include "Flash_mpi.h"
@@ -102,6 +104,8 @@ subroutine io_writeData(fileID)
 #include "io_flash.h"
 
   integer(io_fileID_t), INTENT(in) :: fileID
+
+  type(block_metadata_t) :: blockDesc
 
   type (tree_data_t) :: tree_data
 
@@ -195,7 +199,7 @@ subroutine io_writeData(fileID)
     allocate(unkt(1, localnxb, localnyb, localnzb, 1))
   end if
 
-  call Grid_getBlkCornerID(1, cornerID, stride)
+  call Grid_getBlkCornerID(blockDesc, cornerID, stride)
 
   nxbOffset = cornerID(IAXIS) -1
   nybOffset = (cornerID(JAXIS) -1) * K2D

@@ -5,6 +5,7 @@
 !!****
 
 !! defines IMPURE_ELEMENTAL:
+#include "constants.h"
 #include "FortranLangFeatures.fh"
 
 module leaf_iterator
@@ -13,14 +14,9 @@ module leaf_iterator
 
     implicit none
 
-#define CONTIGUOUS_POINTER pointer
-#include "constants.h"
     private
 
     public :: build_iterator, destroy_iterator
-
-    integer,parameter :: ndims=N_DIM
-    integer,parameter :: amrex_real=kind(1.0)
 
     !!****ic* leaf_iterator/leaf_iterator_t
     !!
@@ -38,7 +34,6 @@ module leaf_iterator
         ! -1 = global convention for a refinement level: leftmost guard cell = 1
         ! -2 = global convention for a refinement level: leftmost inner cell = 1
     contains
-        procedure, public :: first
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: blkMetaData
@@ -78,9 +73,15 @@ contains
         integer,               intent(IN), optional :: level
         logical,               intent(IN), optional :: tiling
 
+        itor%cur = 1
         itor%lev = 1
 
-        call itor%first()
+        if (present(level)) then
+            if (level /= 1) then
+                itor%cur = 2
+            end if
+        end if
+
     end subroutine build_iterator
 
     !!****im* leaf_iterator_t/destroy_iterator
@@ -98,29 +99,9 @@ contains
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
         type(leaf_iterator_t), intent(INOUT) :: itor
 
-        call itor%first()
+        RETURN 
     end subroutine destroy_iterator
 
-    !!****m* leaf_iterator_t/first
-    !!
-    !! NAME
-    !!  first
-    !!
-    !! SYNPOSIS
-    !!  call itor%first() 
-    !!
-    !! DESCRIPTION
-    !!  Reset iterator to the initial block managed by process
-    !!
-    !!****
-    subroutine first(this)
-        class(leaf_iterator_t), intent(INOUT) :: this
-
-        ! Search for the first valid block
-        this%cur = 0
-        call this%next()
-    end subroutine first
- 
     !!****m* leaf_iterator_t/is_valid
     !!
     !! NAME
@@ -140,7 +121,7 @@ contains
 
         class(leaf_iterator_t), intent(IN) :: this
 
-        is_valid = (this%cur <= 1)
+        is_valid = (this%cur == 1)
     end function is_valid
 
     !!****m* leaf_iterator_t/next
@@ -176,22 +157,20 @@ contains
     !!
     !!****
     subroutine blkMetaData(this, mData)
-        use block_metadata,             ONLY : block_metadata_t
-        use Grid_getBlkIndexLimits_mod, ONLY : Grid_getBlkIndexLimits
-        use Grid_data, ONLY : gr_blkCornerID
+        use block_metadata, ONLY : block_metadata_t
+        use Grid_data,      ONLY : gr_blkCornerID, &
+                                   gr_ilo, gr_ihi, &
+                                   gr_jlo, gr_jhi, &
+                                   gr_klo, gr_khi, &
+                                   gr_iloGc, gr_ihiGc, &
+                                   gr_jloGc, gr_jhiGc, &
+                                   gr_kloGc, gr_khiGc
 
         class(leaf_iterator_t), intent(IN)  :: this
-        type(block_metadata_t),  intent(OUT) :: mData
+        type(block_metadata_t), intent(OUT) :: mData
 
-        integer, dimension(MDIM)           :: cornerID
-        integer, dimension(LOW:HIGH, MDIM) :: blkLim, blkLimGC
-        
         mData%id = this%cur 
-        mData%level = 1
-
-        ! DEVNOTE: For this to work, all metadata must be determined here
-        ! without using any of the Grid_get* subroutines that take
-        ! blockId as an argument
+        mData%level = this%lev
         mData%cid = gr_blkCornerID
         mData%stride = 1
 
@@ -201,14 +180,22 @@ contains
                   hiGC  => mData%limitsGC(HIGH, :), &
                   blkId => mData%id, &
                   cid   => mData%cid)
-            call Grid_getBlkIndexLimits(1, blkLim, blkLimGC)
-            mdata%localLimits   = blkLim
-            mdata%localLimitsGC = blkLimGC
-            lo(:) = blkLim(LOW, :)
-            hi(:) = blkLim(HIGH, :)
-            loGC(:) = blkLimGC(LOW, :)
-            hiGC(:) = blkLimGC(HIGH, :)
+            lo(1:MDIM)   = [gr_ilo,   gr_jlo,   gr_klo]
+            hi(1:MDIM)   = [gr_ihi,   gr_jhi,   gr_khi]
+            loGC(1:MDIM) = [gr_iloGc, gr_jloGc, gr_kloGc]
+            hiGC(1:MDIM) = [gr_ihiGc, gr_jhiGc, gr_khiGc]
+            ! DEV: TODO These should be removed once we extract these
+            ! from the physics units
+            mData%localLimits(LOW,  :) = lo(:) - cid(:) + 1
+            mData%localLimits(HIGH, :) = hi(:) - cid(:) + 1
+            mData%localLimitsGC(LOW,  :) = loGC(:) - cid(:) + 1
+            mData%localLimitsGC(HIGH, :) = hiGC(:) - cid(:) + 1
+            write(*,*) "----------------------------------------"
+            write(*,*) "Low = ", lo
+            write(*,*) "Hi = ", hi
+            write(*,*) "LowGc = ", loGc
+            write(*,*) "HiGc = ", hiGc
         end associate
     end subroutine blkMetaData
-    
+
 end module leaf_iterator

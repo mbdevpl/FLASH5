@@ -63,6 +63,7 @@ subroutine Grid_getBlkPtr(block,dataPtr, gridDataStruct)
 #include "constants.h"
 #include "Flash.h"
 
+  use Grid_data, ONLY : gr_iloGc, gr_jloGc, gr_kloGc
   use physicaldata, ONLY : unk, facevarx, facevary, facevarz
   use Driver_interface, ONLY : Driver_abortFlash
 !!$  use gr_specificData, ONLY : scratch,scratch_ctr,&
@@ -112,7 +113,7 @@ subroutine Grid_getBlkPtr(block,dataPtr, gridDataStruct)
 
   select case (gds)
   case(CENTER)
-     dataPtr => unk(:,:,:,:,1)
+     dataPtr(1:, gr_iloGc:, gr_jloGc:, gr_kloGc:) => unk(:,:,:,:,1)
   case(FACEX)
      dataPtr => facevarx(:,:,:,:,1)
   case(FACEY)
@@ -120,6 +121,9 @@ subroutine Grid_getBlkPtr(block,dataPtr, gridDataStruct)
   case(FACEZ)
      dataPtr => facevarz(:,:,:,:,1)
   end select
+
+  write(*,*) "lbound(dataPtr) = ", lbound(dataPtr)
+  write(*,*) "ubound(dataPtr) = ", ubound(dataPtr)
   return
 end subroutine Grid_getBlkPtr
 
