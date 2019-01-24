@@ -332,6 +332,14 @@ Module Grid_interface
        logical, intent(in) :: guardcell
        real,intent(out), dimension(size) :: coordinates
      end subroutine Grid_getCellCoords
+     subroutine Grid_getCellCoords_tile(axis, tileDesc, edge, guardcell, coordinates, size)
+       use flash_tile, ONLY : flash_tile_t 
+       integer, intent(in) :: axis, edge
+       type(flash_tile_t), intent(in) :: tileDesc
+       integer, intent(in) :: size
+       logical, intent(in) :: guardcell
+       real,intent(out), dimension(size) :: coordinates
+     end subroutine Grid_getCellCoords_tile
   end interface
 
   interface Grid_getDeltas

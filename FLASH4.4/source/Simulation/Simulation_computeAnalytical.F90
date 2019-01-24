@@ -34,15 +34,15 @@
 !!
 !!***
 
-subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
+subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
 
-  use block_metadata,   ONLY : block_metadata_t
+  use flash_tile, ONLY : flash_tile_t
   implicit none
 
 #include "FortranLangFeatures.fh"
   
   real,dimension(:,:,:,:),POINTER_INTENT_IN :: solnData
-  type(block_metadata_t), intent(in) :: blockDesc
+  type(flash_tile_t), intent(in) :: tileDesc
   real,    intent(in) :: tcurr
 
 end subroutine Simulation_computeAnalytical

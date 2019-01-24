@@ -99,6 +99,9 @@
 #define DEBUG_GRID
 #endif
 
+#include "constants.h"
+#include "Flash.h"
+
 subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
   use amrex_amrcore_module,  ONLY : amrex_geom
   use amrex_geometry_module, ONLY : amrex_problo
@@ -106,9 +109,6 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
   use Driver_interface,      ONLY : Driver_abortFlash
   use Grid_interface,        ONLY : Grid_getGeometry
   use block_metadata,        ONLY : block_metadata_t
-
-#include "constants.h"
-#include "Flash.h"
 
   implicit none
 
@@ -169,4 +169,72 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
   end associate
 
 end subroutine Grid_getCellCoords
+
+subroutine Grid_getCellCoords_tile(axis, tileDesc, edge, guardcell, coordinates, size)
+  use amrex_amrcore_module,  ONLY : amrex_geom
+  use amrex_geometry_module, ONLY : amrex_problo
+
+  use Driver_interface,      ONLY : Driver_abortFlash
+  use Grid_interface,        ONLY : Grid_getGeometry
+  use flash_tile,            ONLY : flash_tile_t
+
+  implicit none
+
+  integer,            intent(in)  :: axis
+  type(flash_tile_t), intent(in)  :: tileDesc
+  integer,            intent(in)  :: edge
+  logical,            intent(in)  :: guardcell
+  integer,            intent(in)  :: size
+  real,               intent(out) :: coordinates(size)
+
+  real    :: shift
+  real    :: x
+  integer :: i
+
+  integer :: geometry
+
+#ifdef DEBUG_GRID
+  print*,' get coordinates', axis, edge, guardcell, size
+  ! DEV: TODO Implement for AMReX
+!  if((blockID<1).or.(blockID>MAXBLOCKS)) then
+!     call Driver_abortFlash("Grid_getCellCoords :invalid blockID ")
+!  end if
+
+  if((axis/=IAXIS) .and. (axis/=JAXIS) .and. (axis/=KAXIS)) then
+     call Driver_abortFlash("Get Coords : invalid axis, must be IAXIS, JAXIS or KAXIS ")
+  end if
+#endif
+
+  associate (x0   => amrex_problo(axis), &
+             x_lo => tileDesc%limits(LOW, axis), &
+             dx   => amrex_geom(tileDesc%level - 1)%dx(axis))
+    ! x_lo is 1-based cell-index of lower-left cell in block 
+
+    if      (edge == LEFT_EDGE) then
+      shift = 0.0
+    else if (edge == CENTER) then
+      shift = 0.5
+    else if (edge == RIGHT_EDGE) then
+      shift = 1.0
+    else if (edge == FACES) then
+      shift = 0.0
+    else
+      call Driver_abortFlash('[Grid_getCellCoods] invalid edge')
+    end if
+
+    ! First index should be given in 1-based global indices adjusted according
+    ! to edge.  However, make 0-based to simplify calculation in loop.
+    x = x_lo + shift - 1.0
+    if (guardcell) then
+      x = x - NGUARD
+    end if
+
+    coordinates(:) = 0.0
+    do i = 1, size
+        coordinates(i) = x0 + x*dx
+        x = x + 1.0
+    end do
+  end associate
+
+end subroutine Grid_getCellCoords_tile
 

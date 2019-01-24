@@ -29,15 +29,13 @@ subroutine Grid_computeUserVars()
   use Simulation_interface, ONLY: Simulation_computeAnalytical
   use Driver_data,         ONLY : dr_simGeneration
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getLeafIterator, &
-    Grid_releaseLeafIterator, &
-    Grid_getBlkData, &
-    Grid_getBlkPtr, &
-    Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+    Grid_releaseTileIterator, &
+    Grid_getBlkData
   use Driver_interface, ONLY: Driver_getSimTime
 !  use Grid_data, ONLY : gr_meshMe
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use flash_iterator, ONLY : flash_iterator_t
+  use flash_tile, ONLY : flash_tile_t 
   implicit none
 
 #include "Flash.h"
@@ -45,10 +43,10 @@ subroutine Grid_computeUserVars()
 
   real    :: tnew
   integer :: simGen
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t) :: tileDesc
 
-  integer,dimension(2,MDIM) :: bl,blkLimitsGC
+  integer,dimension(2,MDIM) :: bl
   integer,dimension(  MDIM) :: bsize
   real, pointer, dimension(:,:,:,:) :: solnData
   real,allocatable :: cellVol(:,:,:)
@@ -56,24 +54,22 @@ subroutine Grid_computeUserVars()
   call Timers_start("computeUserVars")
   call Driver_getSimTime(tnew, simGen)
 
-  call Grid_getLeafIterator(itor)
-  do while (itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while (itor%isValid())
+     call itor%currentTile(tileDesc)
 
-     call Grid_getBlkPtr(blockDesc,solnData)
-     call Simulation_computeAnalytical(solnData, blockDesc, tnew)
+     call tileDesc%getDataPtr(solnData, CENTER)
+     call Simulation_computeAnalytical(solnData, tileDesc, tnew)
 
 #if defined(DEND_VAR) || defined(PRSD_VAR) || defined(VLRD_VAR)
-     bl          = blockDesc%limits
-     blkLimitsGC = blockDesc%limitsGC
-
+     bl = tileDesc%limits
 
 #if defined(DENC_VAR) || defined(PRSC_VAR) || defined(VLRC_VAR)
      bsize(:) = bl(HIGH,:) - bl(LOW,:) + 1
      allocate( cellVol(bl(LOW,IAXIS):bl(HIGH,IAXIS), &
                        bl(LOW,JAXIS):bl(HIGH,JAXIS), &
                        bl(LOW,KAXIS):bl(HIGH,KAXIS)) )
-     call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, EXTERIOR, &
+     call Grid_getBlkData(tileDesc, CELL_VOLUME, 0, EXTERIOR, &
             (/bl(LOW,IAXIS),bl(LOW,JAXIS),bl(LOW,KAXIS)/), &
             cellVol   (bl(LOW,IAXIS):bl(HIGH,IAXIS), &
                        bl(LOW,JAXIS):bl(HIGH,JAXIS), &
@@ -120,13 +116,14 @@ subroutine Grid_computeUserVars()
 #endif
 
 #endif
-     call Grid_releaseBlkPtr(blockDesc,solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   dr_simGeneration = simGen + 1
   sim_analyticGen  = dr_simGeneration
   call Timers_stop("computeUserVars")
 
 end subroutine Grid_computeUserVars
+

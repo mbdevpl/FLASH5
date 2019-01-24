@@ -8,7 +8,7 @@
 !! SYNOPSIS
 !!
 !!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
-!!                            integer(IN)  :: blockDesc  )
+!!                            integer(IN)  :: tileDesc  )
 !!
 !!
 !!
@@ -27,7 +27,7 @@
 !! ARGUMENTS
 !!
 !!  solnData  -        pointer to solution data
-!!  blockDesc -        describes the block to initialize
+!!  tileDesc -        describes the block to initialize
 !!
 !!
 !! PARAMETERS
@@ -48,7 +48,7 @@
 !!REORDER(4): solnData
 
 
-subroutine Simulation_initBlock(solnData,blockDesc)
+subroutine Simulation_initBlock(solnData,tileDesc)
 
   use Simulation_interface, ONLY: Simulation_computeAnalytical
   use Simulation_data, ONLY: sim_xMax, sim_xMin, sim_yMax, sim_yMin, sim_zMax, sim_zMin, &
@@ -61,7 +61,7 @@ subroutine Simulation_initBlock(solnData,blockDesc)
      sim_threadBlockList, sim_threadWithinBlock
   use Grid_interface, ONLY : Grid_getCellCoords, Grid_getSingleCellVol, &
                              Grid_subcellGeometry
-  use block_metadata, ONLY : block_metadata_t
+  use flash_tile, ONLY : flash_tile_t 
   use ut_interpolationInterface
  
   implicit none
@@ -69,10 +69,8 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 #include "constants.h"
 #include "Flash.h"
   
-  real,                   pointer    :: solnData(:,:,:,:)
-  type(block_metadata_t), intent(in) :: blockDesc
-
-  
+  real,               pointer    :: solnData(:,:,:,:)
+  type(flash_tile_t), intent(in) :: tileDesc
   
   integer,parameter :: op = 2
   integer  ::  i, j, k, n, jLo, jHi
@@ -88,7 +86,8 @@ subroutine Simulation_initBlock(solnData,blockDesc)
   real     ::  vSub, rhoSub, pSub, errIgnored
 
   real,allocatable,dimension(:) :: xCoord,yCoord,zCoord
-  integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
+  integer,dimension(LOW:HIGH,MDIM) :: tileLimits
+  integer,dimension(LOW:HIGH,MDIM) :: grownTileLimits
   integer :: sizeX,sizeY,sizeZ
   integer,dimension(MDIM) :: axis
 
@@ -144,19 +143,19 @@ subroutine Simulation_initBlock(solnData,blockDesc)
   end if                        !useProfileFromFile
 
   ! get the coordinate information for the current block
-  blkLimits = blockDesc%limits
-  blkLimitsGC = blockDesc%limitsGC
+  tileLimits = tileDesc%limits
+  grownTileLimits = tileDesc%limitsGC
 
   if (sim_tinitial > 0.0) then
 
-     call Simulation_computeAnalytical(solnData,blockDesc,sim_tinitial)
+     call Simulation_computeAnalytical(solnData,tileDesc,sim_tinitial)
 
      !There is no parallel region in Grid_initDomain and so we use the
      !same thread within block code for both multithreading strategies.
 
      !$omp parallel if (sim_threadBlockList .or. sim_threadWithinBlock) &
      !$omp default(none) &
-     !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,blockDesc,&
+     !$omp shared(grownTileLimits,xCoord,yCoord,zCoord,tileDesc,&
      !$omp sim_inSubzones,sim_nSubZones,sim_rProf,sim_minRhoInit,sim_smallRho,sim_smallP,&
      !$omp sim_smallX,sim_pProf,sim_rhoProf,sim_vProf,sim_gamma,sim_inszd,&
      !$omp sim_smallT,&
@@ -169,17 +168,17 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 #if NDIM == 3
      !$omp do schedule(static)
 #endif
-     do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
+     do k = grownTileLimits(LOW,KAXIS), grownTileLimits(HIGH,KAXIS)
 
 #if NDIM == 2
         !$omp do schedule(static)
 #endif
-        do j = blkLimitsGC(LOW, JAXIS), blkLimitsGC(HIGH, JAXIS)
+        do j = grownTileLimits(LOW, JAXIS), grownTileLimits(HIGH, JAXIS)
 
 #if NDIM == 1
            !$omp do schedule(static)
 #endif
-           do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH, IAXIS)
+           do i = grownTileLimits(LOW,IAXIS), grownTileLimits(HIGH, IAXIS)
               if (NSPECIES > 0) then
                  solnData(SPECIES_BEGIN,i,j,k)=1.0-(NSPECIES-1)*sim_smallX
                  solnData(SPECIES_BEGIN+1:SPECIES_END,i,j,k)=sim_smallX
@@ -222,18 +221,18 @@ subroutine Simulation_initBlock(solnData,blockDesc)
   end if
 
 
-  allocate(xCoord(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS))); xCoord = 0.0
-  allocate(yCoord(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS))); yCoord = 0.0
-  allocate(zCoord(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS))); zCoord = 0.0
+  allocate(xCoord(grownTileLimits(LOW, IAXIS):grownTileLimits(HIGH, IAXIS))); xCoord = 0.0
+  allocate(yCoord(grownTileLimits(LOW, JAXIS):grownTileLimits(HIGH, JAXIS))); yCoord = 0.0
+  allocate(zCoord(grownTileLimits(LOW, KAXIS):grownTileLimits(HIGH, KAXIS))); zCoord = 0.0
   sizeX = SIZE(xCoord)
   sizeY = SIZE(yCoord)
   sizeZ = SIZE(zCoord)
 
   if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, blockDesc, CENTER, gcell, zCoord, sizeZ)
+                      (KAXIS, tileDesc, CENTER, gcell, zCoord, sizeZ)
   if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, blockDesc, CENTER,gcell, yCoord, sizeY)
-  call Grid_getCellCoords(IAXIS, blockDesc, CENTER, gcell, xCoord, sizeX)
+                      (JAXIS, tileDesc, CENTER,gcell, yCoord, sizeY)
+  call Grid_getCellCoords(IAXIS, tileDesc, CENTER, gcell, xCoord, sizeX)
   !
   !     For each cell
   !  
@@ -243,7 +242,7 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 
   !$omp parallel if (sim_threadBlockList .or. sim_threadWithinBlock) &
   !$omp default(none) &
-  !$omp shared(blkLimitsGC,xCoord,yCoord,zCoord,blockDesc,&
+  !$omp shared(grownTileLimits,xCoord,yCoord,zCoord,tileDesc,&
   !$omp sim_inSubzones,sim_nSubZones,sim_rProf,sim_minRhoInit,sim_smallRho,sim_smallP,&
   !$omp sim_smallX,sim_pProf,sim_rhoProf,sim_vProf,sim_gamma,sim_inszd,&
   !$omp rProf,pProf,rhoProf,vProf,&
@@ -260,11 +259,11 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 #if NDIM == 3
   !$omp do schedule(static)
 #endif
-  do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
+  do k = grownTileLimits(LOW,KAXIS), grownTileLimits(HIGH,KAXIS)
      ! Find a real difference between z's if problem is >= 3D
      if (NDIM > 2) then
-        if (k .eq. blkLimitsGC(LOW,KAXIS)) then
-           dzz = zCoord(blkLimitsGC(LOW,KAXIS)+1) - zCoord(blkLimitsGC(LOW,KAXIS))
+        if (k .eq. grownTileLimits(LOW,KAXIS)) then
+           dzz = zCoord(grownTileLimits(LOW,KAXIS)+1) - zCoord(grownTileLimits(LOW,KAXIS))
         else
            dzz = zCoord(k) - zCoord(k-1) 
         endif
@@ -277,11 +276,11 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 #if NDIM == 2
      !$omp do schedule(static)
 #endif
-     do j = blkLimitsGC(LOW, JAXIS), blkLimitsGC(HIGH, JAXIS)
+     do j = grownTileLimits(LOW, JAXIS), grownTileLimits(HIGH, JAXIS)
         ! Find a real difference between y's if problem is >= 2D
         if (NDIM > 1) then
-           if (j .eq. blkLimitsGC(LOW,JAXIS)) then
-              dyy = yCoord(blkLimitsGC(LOW,JAXIS)+1) - yCoord(blkLimitsGC(LOW,JAXIS))
+           if (j .eq. grownTileLimits(LOW,JAXIS)) then
+              dyy = yCoord(grownTileLimits(LOW,JAXIS)+1) - yCoord(grownTileLimits(LOW,JAXIS))
            else
               dyy = yCoord(j) - yCoord(j-1) 
            endif
@@ -294,15 +293,16 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 #if NDIM == 1
         !$omp do schedule(static)
 #endif
-        do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH, IAXIS)
+        do i = grownTileLimits(LOW,IAXIS), grownTileLimits(HIGH, IAXIS)
            xx = xCoord(i)
-           if (i .eq. blkLimitsGC(LOW,IAXIS)) then
-              dxx = xCoord(blkLimitsGC(LOW,IAXIS)+1) - xCoord(blkLimitsGC(LOW,IAXIS))
+           if (i .eq. grownTileLimits(LOW,IAXIS)) then
+              dxx = xCoord(grownTileLimits(LOW,IAXIS)+1) - xCoord(grownTileLimits(LOW,IAXIS))
            else
               dxx = xCoord(i) - xCoord(i-1) 
            endif
-           
-           call Grid_getSingleCellVol(blockDesc, (/i,j,k/), dvc, DEFAULTIDX)
+          
+           ! DEV: TODO: Convert to version that doesn't need a tile descriptor
+           call Grid_getSingleCellVol((/i,j,k/), tileDesc%level, dvc)
            call Grid_subcellGeometry(sim_nSubZones,1+(sim_nSubZones-1)*K2D,1+(sim_nSubZones-1)*K3D, &
                 dvc, dvSub, xCoord(i)-0.5*dxx, xCoord(i)+0.5*dxx)
 
