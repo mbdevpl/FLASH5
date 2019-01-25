@@ -71,15 +71,15 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
   return
 end subroutine Gravity_accelOneRow_blkid
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
+subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
                                 potentialIndex, extraAccelVars)
 
-  use block_metadata, ONLY : block_metadata_t
+  use flash_tile, ONLY : flash_tile_t
 !===============================================================================
 
   implicit none
 
-       type(block_metadata_t),intent(in) :: blockDesc
+       type(flash_tile_t),intent(in) :: tileDesc
   integer, intent(IN) :: sweepDir,numCells
   integer, dimension(2),INTENT(in) ::pos
   real, dimension(numCells),INTENT(inout) :: grav

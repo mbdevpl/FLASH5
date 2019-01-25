@@ -59,10 +59,6 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
 
   call Timers_start("Head")
 
-#ifdef FLASH_GRID_PARAMESH2
-  call Driver_abortFlash("The unsplit Hydro solver only works with PARAMESH 3 or 4!")
-#endif
-
 #ifdef FLASH_GRID_UG
   hy_fluxCorrect = .false.
   maxLev = 1

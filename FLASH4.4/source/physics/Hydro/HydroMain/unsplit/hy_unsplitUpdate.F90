@@ -72,11 +72,11 @@
 #include "Eos.h"
 #include "UHD.h"
 
-  Subroutine hy_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
+  Subroutine hy_unsplitUpdate(tileDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
                                   blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                   scrch_Ptr)
 
-    use block_metadata,   ONLY : block_metadata_t
+    use flash_tile,           ONLY : flash_tile_t
     use Hydro_data,           ONLY : hy_smalldens,hy_order,hy_irenorm,hy_numXN, &
                                      hy_meshMe, &
                                      hy_geometry, hy_gcMaskSize, &
@@ -100,8 +100,7 @@
   use hy_interface,       ONLY : hy_getCurrents
 #endif
 #endif
-    use Grid_interface,       ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                                     Grid_getCellCoords, Grid_getBlkData,&
+    use Grid_interface,       ONLY : Grid_getCellCoords, Grid_getBlkData,&
                                      Grid_renormAbundance, Grid_limitAbundance
 #ifdef FLASH_UHD_3T
 #ifdef FLASH_USM_MHD
@@ -112,7 +111,7 @@
     implicit none
 
     !! ---- Arguments ---------------------------------
-    type(block_metadata_t), intent(IN) :: blockDesc
+    type(flash_tile_t), intent(IN) :: tileDesc
     integer,intent(IN) :: rangeSwitch
     real, intent(IN)   :: dt
     real, intent(IN)   :: del(MDIM)
@@ -265,33 +264,35 @@
 !!$    ! Get block pointers
 !!$    call Grid_getBlkPtr(block,U,CENTER)
 
-    if (hy_geometry /= CARTESIAN) then
-       faceAreas = 0.
-       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize+1, jsize, ksize/) )
-#if NDIM > 1
-       if (hy_geometry == SPHERICAL) then
-          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize+1, ksize/) )
-       end if
-#endif
-
-       cellVolumes = 0.
-       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize, ksize/) )
-    endif
+    ! DEV: FIXME Add these back in and see if they can be replaced with
+    !            faceAreas and cellVolumes calls
+!    if (hy_geometry /= CARTESIAN) then
+!       faceAreas = 0.
+!       call Grid_getBlkData(tileDesc, CELL_FACEAREA, ILO_FACE, GLOBALIDX1, &
+!            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
+!            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
+!            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!            (/isize+1, jsize, ksize/) )
+!#if NDIM > 1
+!       if (hy_geometry == SPHERICAL) then
+!          call Grid_getBlkData(tileDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
+!            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
+!            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!            (/isize, jsize+1, ksize/) )
+!       end if
+!#endif
+!
+!       cellVolumes = 0.
+!       call Grid_getBlkData(tileDesc, CELL_VOLUME, 0, GLOBALIDX1, &
+!            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!            (/isize, jsize, ksize/) )
+!    endif
 
     
 !!$#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
@@ -313,17 +314,17 @@
 #endif
 
 #ifdef DEBUG_HYDRO_POSITIVITY
-    call    Grid_getCellCoords(IAXIS,blockDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+    call    Grid_getCellCoords(IAXIS,tileDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
 #else
     if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,blockDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,tileDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
     end if
 #endif
     if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,blockDesc, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,blockDesc, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,tileDesc, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,tileDesc, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          call Grid_getCellCoords(JAXIS,blockDesc, CENTER,.false.,yCenter, size(yCenter))
+          call Grid_getCellCoords(JAXIS,tileDesc, CENTER,.false.,yCenter, size(yCenter))
        end if
     endif
 !!$
@@ -628,7 +629,7 @@
                    speciesArr => Uin(SPECIES_BEGIN:SPECIES_END,i,j,k)
                    call MagneticResistivity(Uin(TEMP_VAR,i,j,k),Uin(DENS_VAR,i,j,k),&
                         speciesArr,res_eta(i,j,k))
-                   call hy_addOhmicHeating(blockDesc,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
+                   call hy_addOhmicHeating(tileDesc,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
                    Qohm = Qohm*Uin(DENS_VAR,i,j,k)
                 endif
 #endif
@@ -667,7 +668,7 @@
 
                    ! correct the energy fluxes with current terms
                    !! Note: hy_getCurrent sets Jp and Jm for many cells, unless called with mode_switch=4.
-                   call hy_getCurrents(blockDesc, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
+                   call hy_getCurrents(tileDesc, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
                                            scrch_Ptr,&
                                            i, j, k)
                    Sphys(HY_ENER) = ( Jp(1,i,j,k) - Jm(1,i,j,k) ) / dx
@@ -914,7 +915,7 @@
 #if (NSPECIES+NMASS_SCALARS) > 0
   ! Renormalize or limit abundances
     if (hy_irenorm == 1) then
-       call Grid_renormAbundance(blockDesc,blkLimits,Uout)
+       call Grid_renormAbundance(tileDesc,Uout)
     else
        call Grid_limitAbundance(blkLimits,Uout)
     endif
@@ -966,33 +967,35 @@
 !!$    ! Get block pointers
 !!$    call Grid_getBlkPtr(blockDesc,U,CENTER)
 !!$
-    if (hy_geometry /= CARTESIAN) then
-       faceAreas = 0.
-       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize+1, jsize, ksize/) )
-#if NDIM > 1
-       if (hy_geometry == SPHERICAL) then
-          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize+1, ksize/) )
-       end if
-#endif
-
-       cellVolumes = 0.
-       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize, ksize/) )
-    endif
+    ! DEV: FIXME Include this again and see if we can use faceAreas and
+    !            cellVolumes instead
+!    if (hy_geometry /= CARTESIAN) then
+!       faceAreas = 0.
+!       call Grid_getBlkData(tileDesc, CELL_FACEAREA, ILO_FACE, GLOBALIDX1, &
+!            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
+!            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
+!            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!            (/isize+1, jsize, ksize/) )
+!#if NDIM > 1
+!       if (hy_geometry == SPHERICAL) then
+!          call Grid_getBlkData(tileDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
+!            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
+!            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!            (/isize, jsize+1, ksize/) )
+!       end if
+!#endif
+!
+!       cellVolumes = 0.
+!       call Grid_getBlkData(tileDesc, CELL_VOLUME, 0, GLOBALIDX1, &
+!            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+!            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+!            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!            (/isize, jsize, ksize/) )
+!    endif
 
     
 
@@ -1008,11 +1011,11 @@
     end if
 
     if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,blockDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,blockDesc, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,blockDesc, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,tileDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,tileDesc, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS,tileDesc, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          call Grid_getCellCoords(JAXIS,blockDesc, CENTER,.false.,yCenter, size(yCenter))
+          call Grid_getCellCoords(JAXIS,tileDesc, CENTER,.false.,yCenter, size(yCenter))
        end if
     endif
 

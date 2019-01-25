@@ -103,12 +103,12 @@
 
 !!REORDER(4): scrchFace[XYZ]Ptr
 
-Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
+Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
 
-  use Eos_interface, ONLY : Eos_wrapped
+  use Eos_interface,    ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use block_metadata,   ONLY : block_metadata_t
-  use hy_interface, ONLY : hy_getRiemannState,  &
+  use flash_tile,       ONLY : flash_tile_t
+  use hy_interface,     ONLY : hy_getRiemannState,  &
                                hy_getFaceFlux,      &
                                hy_unsplitUpdate,    &
                                hy_unitConvert,      &
@@ -136,7 +136,6 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
                          hy_fullRiemannStateArrays,    &
                          hy_fullSpecMsFluxHandling
 
-  use Grid_interface, ONLY : Grid_putFluxData, Grid_getFluxPtr, Grid_releaseFluxPtr
   implicit none
 
 #include "constants.h"
@@ -153,7 +152,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
   integer,dimension(LOW:HIGH,MDIM),intent(IN) ::blkLimits,blkLimitsGC
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
   integer :: loFl(MDIM+1)
-  type(block_metadata_t), intent(IN) :: blockDesc
+  type(flash_tile_t), intent(IN) :: tileDesc
 
   integer, dimension(MDIM) :: datasize
 
@@ -226,7 +225,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 
      datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
-     call hy_memGetBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
+     call hy_memGetBlkPtr(tileDesc,scrch_Ptr,SCRATCH_CTR)
 
 !!$     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
 !!$     allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
@@ -252,7 +251,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_putGravity(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+        call hy_putGravity(tileDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
@@ -280,7 +279,9 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 #endif
      allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
-     call Grid_getFluxPtr(blockDesc,flx,fly,flz)
+     call tileDesc%getDataPtr(flx, FLUXX)
+     call tileDesc%getDataPtr(fly, FLUXY)
+     call tileDesc%getDataPtr(flz, FLUXZ)
      loFl = lbound(flx)
 
 !!$     if(hy_fluxCorrectPerLevel) then
@@ -298,7 +299,7 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
      print*,'and now update'
 #endif
      
-     call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
+     call hy_unsplitUpdate(tileDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
           blkLimitsGC,loFl,flx,fly,flz,gravX,gravY,gravZ,&
           scrch_Ptr)
      
@@ -319,12 +320,12 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 !!$#ifndef FLASH_GRID_UG
 !!$     endif
 !!$#endif
-     call hy_memReleaseBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
+     call hy_memReleaseBlkPtr(tileDesc,scrch_Ptr,SCRATCH_CTR)
 
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
 #ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
         !! Correct energy if necessary
-     call hy_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
+     call hy_energyFix(tileDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
      
 #ifdef DEBUG_UHD
      print*,'_unsplit Aft "call energyFix": associated(Uin ) is',associated(Uin )
@@ -377,7 +378,9 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 !!$     if (hy_fluxCorrect) then
 !!$        call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
 !!$     end if
-     call Grid_releaseFluxPtr(blockDesc,flx,fly,flz)
+     call tileDesc%releaseDataPtr(flx, FLUXX)
+     call tileDesc%releaseDataPtr(fly, FLUXY)
+     call tileDesc%releaseDataPtr(flz, FLUXZ)
      
      deallocate(gravX)
      deallocate(gravY)

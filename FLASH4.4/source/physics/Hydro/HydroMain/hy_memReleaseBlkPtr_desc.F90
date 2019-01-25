@@ -29,14 +29,14 @@
 !!  Grid_getBlkPtr
 !!***
 
-subroutine hy_memReleaseBlkPtr_desc(blockDesc, dataPtr, gridDataStruct)
-  use block_metadata,   ONLY : block_metadata_t
+subroutine hy_memReleaseBlkPtr_desc(tileDesc, dataPtr, gridDataStruct)
+  use flash_tile, ONLY : flash_tile_t
 
 #include "FortranLangFeatures.fh"
 
   implicit none
 
-  type(block_metadata_t), intent(IN) :: blockDesc
+  type(flash_tile_t), intent(IN) :: tileDesc
   real, POINTER_INTENT_OUT :: dataPtr(:,:,:,:)
   integer,optional, intent(in) :: gridDataStruct
 

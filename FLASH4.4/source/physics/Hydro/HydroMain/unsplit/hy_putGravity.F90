@@ -34,12 +34,12 @@
 !!
 !!*** 
 
-Subroutine hy_putGravity(blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
+Subroutine hy_putGravity(tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
 
   use Gravity_interface, ONLY : Gravity_accelOneRow
 
-  use Hydro_data, ONLY: hy_gpotVar, hy_extraAccelVars
-  use block_metadata,   ONLY : block_metadata_t
+  use Hydro_data,        ONLY : hy_gpotVar, hy_extraAccelVars
+  use flash_tile,        ONLY : flash_tile_t
   
   implicit none
 
@@ -48,7 +48,7 @@ Subroutine hy_putGravity(blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,
 #include "UHD.h"
 
   !! ---- Argument List ----------------------------------
-  type(block_metadata_t), intent(IN)   :: blockDesc
+  type(flash_tile_t), intent(IN)   :: tileDesc
   integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blGC
   real,dimension(:,:,:,:),pointer :: Uin
   integer, dimension(MDIM), intent(IN) :: dataSize
@@ -83,23 +83,23 @@ Subroutine hy_putGravity(blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,
               potVar = hy_gpotVar
            end if
            if (hy_extraAccelVars(1)>0) then
-              call Gravity_accelOneRow(gravPos,DIR_X,blockDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,potVar,&
+              call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,potVar,&
                                        extraAccelVars=hy_extraAccelVars)
            else
-              call Gravity_accelOneRow(gravPos,DIR_X,blockDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,potVar)
+              call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,potVar)
            end if
         else if (present(potentialIndex)) then
-           call Gravity_accelOneRow(gravPos,DIR_X,blockDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,potentialIndex)
+           call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,potentialIndex)
         else
 #if defined(GPOT_VAR) && defined(FLASH_GRAVITY_TIMEDEP)
         ! Gravity implementation defines FLASH_GRAVITY_TIMEDEP -> time-dependent gravity field
         ! gravity at time step n
-           call Gravity_accelOneRow(gravPos,DIR_X,blockDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,GPOT_VAR)
+           call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,GPOT_VAR)
 #else
         ! FLASH_GRAVITY_TIMEDEP not defined -> assume time-independent gravity field.
         ! Also if GPOT_VAR is defined -> use current accel without time
         ! interpolation, i.e., handle like time-independent gravity field - KW
-           call Gravity_accelOneRow(gravPos,DIR_X,blockDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin)
+           call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin)
 #endif
         endif
      enddo
@@ -118,19 +118,19 @@ Subroutine hy_putGravity(blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,
                  potVar = hy_gpotVar
               end if
               if (hy_extraAccelVars(2)>0) then
-                 call Gravity_accelOneRow(gravPos,DIR_Y,blockDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,potVar,&
+                 call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,potVar,&
                                           extraAccelVars=hy_extraAccelVars)
               else
-                 call Gravity_accelOneRow(gravPos,DIR_Y,blockDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,potVar)
+                 call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,potVar)
               end if
            else if (present(potentialIndex)) then
-              call Gravity_accelOneRow(gravPos,DIR_Y,blockDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,potentialIndex)
+              call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,potentialIndex)
            else
 #if defined(GPOT_VAR) && defined(FLASH_GRAVITY_TIMEDEP)
            ! gravity at time step n
-              call Gravity_accelOneRow(gravPos,DIR_Y,blockDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,GPOT_VAR)
+              call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,GPOT_VAR)
 #else
-              call Gravity_accelOneRow(gravPos,DIR_Y,blockDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin)
+              call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin)
 #endif
            end if
         enddo
@@ -149,19 +149,19 @@ Subroutine hy_putGravity(blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,
                     potVar = hy_gpotVar
                  end if
                  if (hy_extraAccelVars(3)>0) then
-                    call Gravity_accelOneRow(gravPos,DIR_Z,blockDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,potVar,&
+                    call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,potVar,&
                                              extraAccelVars=hy_extraAccelVars)
                  else
-                    call Gravity_accelOneRow(gravPos,DIR_Z,blockDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,potVar)
+                    call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,potVar)
                  end if
               else if (present(potentialIndex)) then
-                 call Gravity_accelOneRow(gravPos,DIR_Z,blockDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,potentialIndex)
+                 call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,potentialIndex)
               else
 #if defined(GPOT_VAR) && defined(FLASH_GRAVITY_TIMEDEP)
               ! gravity at time step n
-                 call Gravity_accelOneRow(gravPos,DIR_Z,blockDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,GPOT_VAR)
+                 call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,GPOT_VAR)
 #else
-                 call Gravity_accelOneRow(gravPos,DIR_Z,blockDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin)
+                 call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin)
 #endif
               end if
            enddo

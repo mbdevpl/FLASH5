@@ -3,17 +3,13 @@
 
 subroutine hy_gravityStep(simTime, dt, dtOld)
 
-  use Grid_interface,      ONLY : Grid_getDeltas,&
-                                  Grid_getBlkPtr,&
-                                  Grid_releaseBlkPtr,&
-                                  Grid_getLeafIterator, Grid_releaseLeafIterator,&
-                                  Grid_getMaxRefinement
+  use Grid_interface,      ONLY : Grid_getTileIterator, &
+                                  Grid_releaseTileIterator
   use Timers_interface,    ONLY : Timers_start, Timers_stop
 
-  use hy_interface,     ONLY : hy_gravityStepBlk
-  use leaf_iterator,       ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
-
+  use hy_interface,        ONLY : hy_gravityStepBlk
+  use flash_iterator,      ONLY : flash_iterator_t
+  use flash_tile,          ONLY : flash_tile_t
 
   implicit none
 
@@ -23,40 +19,30 @@ subroutine hy_gravityStep(simTime, dt, dtOld)
   real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
-  integer:: level, maxLev
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t)     :: tileDesc
 
-  type(leaf_iterator_t)  :: itor
-  type(block_metadata_t) :: blockDesc
-
-  call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
-
-  do level=1,maxLev
 #ifdef DEBUG_DRIVER
-        print*,' ***************   HYDRO LEVEL', level,'  **********************'
+  print*,' ***************   HYDRO LEVEL', level,'  **********************'
 #endif
 
-        call Grid_getLeafIterator(itor, level=level)
-        call Timers_stop("loop5")
-        do while(itor%is_valid())
-           call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  call Timers_stop("loop5")
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 
-           blkLimits(:,:)   = blockDesc%limits
-           blkLimitsGC(:,:) = blockDesc%limitsGC
-           
-           call Grid_getBlkPtr(blockDesc, Uout)
-
-           call Grid_getDeltas(level,del)
-           Uin => Uout
-           call hy_gravityStepBlk(blockDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld)
-           call Grid_releaseBlkPtr(blockDesc, Uout)
-           nullify(Uout)
-!!$           call IO_writecheckpoint;stop
-           call itor%next()
-        end do
-        call Timers_stop("loop5")
-        call Grid_releaseLeafIterator(itor)
-
-     end do
-
-
+     blkLimits(:,:)   = tileDesc%limits
+     blkLimitsGC(:,:) = tileDesc%limitsGC
+     
+     call tileDesc%getDataPtr(Uout, CENTER)
+     call tileDesc%deltas(del)
+     Uin => Uout
+     call hy_gravityStepBlk(tileDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld)
+     call tileDesc%releaseDataPtr(Uout, CENTER)
+     nullify(Uout)
+!!      call IO_writecheckpoint;stop
+     call itor%next()
+  end do
+  call Timers_stop("loop5")
+  call Grid_releaseTileIterator(itor)
 end subroutine hy_gravityStep

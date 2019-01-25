@@ -33,10 +33,10 @@ Module hy_memInterface
        real, pointer :: data5Ptr(:,:,:,:,:)
        integer,optional, intent(in) :: gridDataStruct
      end subroutine hy_memGetBlk5Ptr
-     subroutine hy_memGetBlkPtr_desc(blockDesc,dataPtr, gridDataStruct)
-       use block_metadata,   ONLY : block_metadata_t
+     subroutine hy_memGetBlkPtr_desc(tileDesc,dataPtr, gridDataStruct)
+       use flash_tile, ONLY : flash_tile_t 
        implicit none
-       type(block_metadata_t), intent(IN) :: blockDesc
+       type(flash_tile_t), intent(IN) :: tileDesc
        real, POINTER_INTENT_OUT :: dataPtr(:,:,:,:)
        integer,optional, intent(in) :: gridDataStruct
      end subroutine hy_memGetBlkPtr_desc
@@ -55,10 +55,10 @@ Module hy_memInterface
        real, POINTER_INTENT_OUT :: data5Ptr(:,:,:,:,:)
        integer,optional, intent(in) :: gridDataStruct
      end subroutine hy_memReleaseBlk5Ptr
-     subroutine hy_memReleaseBlkPtr_desc(blockDesc, dataPtr, gridDataStruct)
-       use block_metadata,   ONLY : block_metadata_t
+     subroutine hy_memReleaseBlkPtr_desc(tileDesc, dataPtr, gridDataStruct)
+       use flash_tile, ONLY : flash_tile_t 
        implicit none
-       type(block_metadata_t), intent(IN) :: blockDesc
+       type(flash_tile_t), intent(IN) :: tileDesc
        real, POINTER_INTENT_OUT :: dataPtr(:,:,:,:)
        integer,optional, intent(in) :: gridDataStruct
      end subroutine hy_memReleaseBlkPtr_desc

@@ -62,7 +62,7 @@
 #include "constants.h"
 #include "UHD.h"
 
-Subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
+Subroutine hy_energyFix(tileDesc,U,blkLimits,dt,dtOld,del,eosMode)
 
   use Hydro_data,     ONLY : hy_eswitch, hy_irenorm, hy_geometry,&
                              hy_dtmin, hy_dtminloc, hy_dtminValid, hy_dtminCfl, hy_meshMe, &
@@ -71,9 +71,8 @@ Subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
 #ifdef FLASH_USM_MHD
   use Hydro_data,     ONLY : hy_killdivb, hy_energyFixSwitch
 #endif
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr,&
-                             Grid_getCellCoords
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use flash_tile,     ONLY : flash_tile_t
 
   implicit none
 
@@ -82,7 +81,7 @@ Subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
   real, intent(IN) :: dt,dtOld
   real, dimension(MDIM), intent(IN) :: del
   integer, intent(IN) :: eosMode
-  type(block_metadata_t), intent(IN)   :: block
+  type(flash_tile_t), intent(IN)   :: tileDesc
   real, pointer, dimension(:,:,:,:) :: U
   
   !! -----------------------------------------------------
@@ -117,10 +116,12 @@ Subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
 #ifdef FLASH_USM_MHD /* For MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1
-  call Grid_getBlkPtr(block,E,SCRATCH)
-  call Grid_getBlkPtr(block,Bx,FACEX)
-  call Grid_getBlkPtr(block,By,FACEY)
-  if (NDIM == 3) call Grid_getBlkPtr(block,Bz,FACEZ)
+  call tileDesc%getDataPtr(E, SCRATCH)
+  call tileDesc%getDataPtr(Bx, FACEX)
+  call tileDesc%getDataPtr(By, FACEY)
+  if (NDIM == 3) then
+     call tileDesc%getDataPtr(Bz, FACEZ)
+  end if
 #endif
 #endif
 #endif /* For MHD */
@@ -134,9 +135,9 @@ Subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
      allocate(xCtr(blkLimits(LOW,IAXIS):blkLimits(HIGH, IAXIS)))
      allocate(yCtr(blkLimits(LOW,JAXIS):blkLimits(HIGH, JAXIS)))
      call Grid_getCellCoords&
-          (IAXIS,block, CENTER,.false.,xCtr, blkLimits(HIGH, IAXIS)-blkLimits(LOW,IAXIS)+1)
+          (IAXIS,tileDesc, CENTER,.false.,xCtr, blkLimits(HIGH, IAXIS)-blkLimits(LOW,IAXIS)+1)
      call Grid_getCellCoords&
-          (JAXIS,block, CENTER,.false.,yCtr, blkLimits(HIGH, JAXIS)-blkLimits(LOW,JAXIS)+1)
+          (JAXIS,tileDesc, CENTER,.false.,yCtr, blkLimits(HIGH, JAXIS)-blkLimits(LOW,JAXIS)+1)
   endif
 
 
@@ -439,10 +440,12 @@ Subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
 #ifdef FLASH_USM_MHD /* For MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1
-  call Grid_releaseBlkPtr(block,E,SCRATCH)
-  call Grid_releaseBlkPtr(block,Bx,FACEX)
-  call Grid_releaseBlkPtr(block,By,FACEY)
-  if (NDIM == 3) call Grid_releaseBlkPtr(block,Bz,FACEZ)
+  call tileDesc%releaseBlkPtr(E, SCRATCH)
+  call tileDesc%releaseBlkPtr(Bx, FACEX)
+  call tileDesc%releaseBlkPtr(By, FACEY)
+  if (NDIM == 3) then
+     call tileDesc%releaseBlkPtr(Bz, FACEZ)
+  end if
 #endif
 #endif
 #endif /* For MHD */

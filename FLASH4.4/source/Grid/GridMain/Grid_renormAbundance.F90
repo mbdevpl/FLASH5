@@ -45,30 +45,25 @@
 !!
 !!***
 
-! solnData depends on the ordering on unk
 !!REORDER(4): solnData
-
 
 #ifdef DEBUG
 #define DEBUG_MS
 #endif
 
-subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
-
-
-  use Grid_data, ONLY : gr_smallx
-  use Grid_interface, ONLY : Grid_getSingleCellCoords
-  use Driver_interface, ONLY : Driver_abortFlash
-  use block_metadata,   ONLY : block_metadata_t
-
-  implicit none
-
 #include "constants.h"
 #include "Flash.h"
 
-  type(block_metadata_t), intent(IN) :: blockDesc
-  integer, intent(in), dimension(2,MDIM)::blkLimits
-  real,pointer :: solnData(:,:,:,:)
+subroutine Grid_renormAbundance(tileDesc, solnData)
+  use Grid_data,        ONLY : gr_smallx
+  use Grid_interface,   ONLY : Grid_getSingleCellCoords
+  use Driver_interface, ONLY : Driver_abortFlash
+  use flash_tile,       ONLY : flash_tile_t
+
+  implicit none
+
+  type(flash_tile_t), intent(IN)         :: tileDesc
+  real,                          pointer :: solnData(:,:,:,:)
 
   integer :: i, j, k, n
   
@@ -79,61 +74,50 @@ subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
   real,dimension(MDIM)::pntCoord
   character(len=120)::log_message
 
-  integer :: blockId
+  associate(lo => tileDesc%limits(LOW,  :), &
+            hi => tileDesc%limits(HIGH, :))
+     do       k = lo(KAXIS), hi(KAXIS)
+        do    j = lo(JAXIS), hi(JAXIS)
+           do i = lo(IAXIS), hi(IAXIS)
+              sum = 0.e0
 
-#ifndef FLASH_GRID_AMREX
-  blockId = blockDesc%id
-#endif
+              ! loop over all of the abundances in 
+              !the current zone and retrict them to
+              ! fall between smallx and 1.  Then 
+              !compute the sum of the abundances
 
-  do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
-     do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
-        do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
-               
-           sum = 0.e0
+              do n = SPECIES_BEGIN,SPECIES_END
 
-           ! loop over all of the abundances in 
-           !the current zone and retrict them to
-           ! fall between smallx and 1.  Then 
-           !compute the sum of the abundances
-
-           do n = SPECIES_BEGIN,SPECIES_END
-
-              solnData(n,i,j,k) = & 
-                   max(gr_smallx, &
-                   min(1.e0,solnData(n,i,j,k)))
-              sum = sum + solnData(n,i,j,k)
-              
-           enddo
+                 solnData(n,i,j,k) = & 
+                      max(gr_smallx, &
+                      min(1.e0,solnData(n,i,j,k)))
+                 sum = sum + solnData(n,i,j,k)
+                 
+              enddo
 
 ! if the conservation is really messed up, give an error
-           error = abs(sum - 1.e0)
-!           if (error .GT. abundErr) then
-           if (error >= 0.10) then
-              point(IAXIS)=i; point(JAXIS)=j; point(KAXIS)=k
-              print*,'get grid single cell coords',point
+              error = abs(sum - 1.e0)
+!              if (error .GT. abundErr) then
+              if (error >= 0.10) then
+                 point(IAXIS)=i; point(JAXIS)=j; point(KAXIS)=k
+                 print*,'get grid single cell coords',point
+                 call Grid_getSingleCellCoords(point, tileDesc%level, CENTER, pntCoord)
 #ifdef FLASH_GRID_AMREX
-              call Grid_getSingleCellCoords_lev(point,blockDesc%level,CENTER, pntCoord)
-              print *, 'Error: non-conservation in block at level ', &
-                        blockDesc%level, &
-                        " / grid_index = ", blockDesc%grid_index
+                 print *, 'Error: non-conservation in block at level ', &
+                           tileDesc%level, &
+                           " / grid_index = ", tileDesc%grid_index
 #else
-              if (blockId > 0) then !seems valid, must be in a transitional mode...
-                 call Grid_getSingleCellCoords&
-                      (point,blockId,CENTER, EXTERIOR, pntCoord)
-              else
-                 call Grid_getSingleCellCoords_lev(point,blockDesc%level,CENTER, pntCoord)
-              end if
-              print *, 'Error: non-conservation in block ', blockId
+                 print *, 'Error: non-conservation in block ', tileDesc%id
 #endif
-              print *, 'Abundance non-conservation by ', error
-              
-              print *, 'x = ', pntCoord(IAXIS)
-              print *, 'y = ', pntCoord(JAXIS)
-              print *, 'z = ', pntCoord(KAXIS)
+                 print *, 'Abundance non-conservation by ', error
+                  
+                 print *, 'x = ', pntCoord(IAXIS)
+                 print *, 'y = ', pntCoord(JAXIS)
+                 print *, 'z = ', pntCoord(KAXIS)
 #ifdef DENS_VAR
-              print *, 'density = ', solnData(DENS_VAR,i,j,k)
+                 print *, 'density = ', solnData(DENS_VAR,i,j,k)
 #endif
-              print *, 'xnuc = ', solnData(SPECIES_BEGIN:&
+                 print *, 'xnuc = ', solnData(SPECIES_BEGIN:&
                    SPECIES_END,i,j,k)
 
 !!$              write(log_message, &
@@ -141,26 +125,27 @@ subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
 !!$                   '!! non-cons. by ', error, ' at ', pntCoord 
 !!$              call Logfile_stamp(log_message)
 
-! bail if the error is exceptionally large -- something is seriously wrong
-              if (error > .10) then
-                 call Driver_abortFlash('Error too high in abundances')
+                 ! bail if the error is exceptionally large -- something is seriously wrong
+                 if (error > .10) then
+                    call Driver_abortFlash('Error too high in abundances')
+                 endif
+                 
               endif
               
-           endif
-           
-           ! compute the inverse of the sum and multiply all of the abundances by
-           ! this value to get the abundances summing to 1 once again
-           suminv = 1.e0 / sum
-           
-           do n = SPECIES_BEGIN, SPECIES_END
-              solnData(n,i,j,k) =  & 
-                   max(gr_smallx, min(1.e0,suminv*&
-                   solnData(n,i,j,k)))
+              ! compute the inverse of the sum and multiply all of the abundances by
+              ! this value to get the abundances summing to 1 once again
+              suminv = 1.e0 / sum
+              
+              do n = SPECIES_BEGIN, SPECIES_END
+                 solnData(n,i,j,k) =  & 
+                      max(gr_smallx, min(1.e0,suminv*&
+                      solnData(n,i,j,k)))
+              enddo
+                  
            enddo
-               
         enddo
      enddo
-  enddo
+  end associate
   
 !==============================================================================
   return

@@ -51,43 +51,37 @@
 #define DEBUG_GRID
 #endif
 
-subroutine hy_memGetBlkPtr_desc(blockDesc,dataPtr, gridDataStruct)
+subroutine hy_memGetBlkPtr_desc(tileDesc,dataPtr, gridDataStruct)
 
 #include "constants.h"
 #include "Flash.h"
 #include "FortranLangFeatures.fh"
 
   use hy_memInterface, ONLY : hy_memGetBlkPtr
-  use block_metadata,   ONLY : block_metadata_t
+  use flash_tile,      ONLY : flash_tile_t
   implicit none
 
-  type(block_metadata_t), intent(IN) :: blockDesc
+  type(flash_tile_t), intent(IN) :: tileDesc
   real, POINTER_INTENT_OUT :: dataPtr(:,:,:,:)
   integer, optional,intent(in) :: gridDataStruct
 
   real, dimension(:,:,:,:), pointer :: medPtr
   integer,dimension(MDIM+1) :: lo
-  integer :: blockID
 #ifdef INDEXREORDER
   integer, parameter :: iX = 1
 #else
   integer, parameter :: iX = 2
 #endif
 
-
-  blockID = blockDesc%id
-
-  call hy_memGetBlkPtr(blockID,medPtr,gridDataStruct)
+  call hy_memGetBlkPtr(tileDesc%id, medPtr, gridDataStruct)
 
   lo = lbound(medPtr)
-  lo(iX:ix+MDIM-1) = lo(iX:ix+MDIM-1) + blockDesc%limitsGC(LOW,:) &
-                                       -blockDesc%localLimitsGC(LOW,:)
+  lo(iX:ix+MDIM-1) = lo(iX:ix+MDIM-1) + tileDesc%limitsGC(LOW,:) - 1
 
   dataPtr(lo(1):,lo(2):,lo(3):,lo(4):) => medPtr
 
   return
 end subroutine hy_memGetBlkPtr_desc
-
 
 subroutine hy_memGetBlk5Ptr_desc(blockDesc,data5Ptr, gridDataStruct)
 
