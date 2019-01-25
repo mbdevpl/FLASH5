@@ -5,7 +5,7 @@
 
 MPI_PATH   = /sw
 HDF4_PATH  =
-HDF5_PATH  = /sw
+HDF5_PATH  = /sw/opt/hdf5.v1.10
 HYPRE_PATH = /Users/weide/flashdeps/hypre-2.7.0b
 
 ZLIB_PATH  =
