@@ -51,6 +51,8 @@ subroutine Grid_computeUserVars()
   real, pointer, dimension(:,:,:,:) :: solnData
   real,allocatable :: cellVol(:,:,:)
 
+  nullify(solnData)
+
   call Timers_start("computeUserVars")
   call Driver_getSimTime(tnew, simGen)
 

@@ -107,14 +107,14 @@
 #define DEBUG_GRID
 #endif
 
+#include "constants.h"
+#include "Flash.h"
+
 subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
 
   use Grid_data, ONLY : gr_globalDomain,gr_delta, gr_maxRefine
   use Driver_interface, ONLY : Driver_abortFlash
   use block_metadata, ONLY : block_metadata_t
-
-#include "constants.h"
-#include "Flash.h"
 
   implicit none
 
@@ -169,6 +169,66 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
   end if
   return
 end subroutine Grid_getCellCoords
+
+subroutine Grid_getCellCoords_tile(axis, tileDesc, edge, guardcell, coordinates, size)
+
+  use Grid_data, ONLY : gr_globalDomain,gr_delta, gr_maxRefine
+  use Driver_interface, ONLY : Driver_abortFlash
+  use flash_tile, ONLY : flash_tile_t
+
+  implicit none
+
+  integer, intent(in) :: axis, edge
+  type(flash_tile_t) :: tileDesc
+  integer, intent(in) :: size
+  logical, intent(in) :: guardcell
+  real,intent(out), dimension(size) :: coordinates
+
+  integer, dimension(MDIM)::cid,stride
+  integer::first,i
+
+  cid    = tileDesc%cid
+  stride = tileDesc%stride
+  ! Do some error checking here
+  
+
+#ifdef DEBUG_GRID
+  print*,' get coordinates', axis, blockID, edge, guardcell,size
+  if((blockID<1).or.(blockID>MAXBLOCKS)) then
+     call Driver_abortFlash("Grid_getCellCoords :invalid blockID ")
+  end if
+  if(.not.((edge==LEFT_EDGE).or.(edge==RIGHT_EDGE).or.(edge==FACES).or.&
+       &(edge==CENTER))) then
+     call Driver_abortFlash("Get Coords : invalid edge specification, must be LEFT_EDGE &
+          RIGHT_EDGE, or CENTER")
+  end if
+
+!!!  This can be refined further to make it geometry specific
+
+  if(.not.((axis==IAXIS).or.(axis==JAXIS).or.(axis==KAXIS))) then
+     call Driver_abortFlash("Get Coords : invalid axis, must be IAXIS, JAXIS or KAXIS ")
+  end if
+  
+#endif
+
+
+  first=cid(axis)-1
+  if(guardcell) first=first-stride(axis)*NGUARD
+  if((edge==CENTER).and.(stride(axis)==1))then
+     do i = 1,size
+        coordinates(i)= gr_globalDomain(LOW,axis) + (first+0.5)*gr_delta(axis,gr_maxRefine)
+        first=first+stride(axis)
+     end do
+  else
+     if(edge==RIGHT_EDGE)first=first+stride(axis)
+     if((edge==CENTER).and.(stride(axis)>1))first=first+stride(axis)/2
+     do i = 1,size
+        coordinates(i)= gr_globalDomain(LOW,axis) + first*gr_delta(axis,gr_maxRefine)
+        first=first+stride(axis)
+     end do
+  end if
+  return
+end subroutine Grid_getCellCoords_tile
 
 
 

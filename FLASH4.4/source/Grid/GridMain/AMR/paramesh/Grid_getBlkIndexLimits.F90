@@ -100,6 +100,9 @@
 !!
 !!
 !!***
+
+! DEV: FIXME This no longer needs to be a module.  Revert to normal 
+! implementation once all gr_iterator code is removed.
 module Grid_getBlkIndexLimits_mod
 contains
 subroutine Grid_getBlkIndexLimits(blockId, blkLimits, blkLimitsGC,gridDataStruct)
