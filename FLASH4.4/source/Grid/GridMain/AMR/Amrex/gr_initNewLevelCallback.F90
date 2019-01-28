@@ -169,8 +169,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.  This includes zeroing the data in the grown tile's
         !  guardcells.
-        associate(lo => tileDesc%limitsGC(LOW,  :), &
-                  hi => tileDesc%limitsGC(HIGH, :))
+        associate(lo => tileDesc%grownLimits(LOW,  :), &
+                  hi => tileDesc%grownLimits(HIGH, :))
             call tileDesc%getDataPtr(initData, CENTER)
             do           var = UNK_VARS_BEGIN, UNK_VARS_END
                 do         k = lo(KAXIS), hi(KAXIS)
@@ -278,7 +278,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
        call itor%currentTile(tileDesc)
 
        call tileDesc%getDataPtr(initData, CENTER)
-       call Eos_wrapped(gr_eosModeInit, tileDesc%limitsGC, initData)
+       call Eos_wrapped(gr_eosModeInit, tileDesc%grownLimits, initData)
        call tileDesc%releaseDataPtr(initData, CENTER)
 
        call itor%next()

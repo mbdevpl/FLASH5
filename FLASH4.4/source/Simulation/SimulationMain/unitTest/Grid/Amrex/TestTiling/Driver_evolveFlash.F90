@@ -79,8 +79,8 @@ subroutine Driver_evolveFlash()
 
         associate(lo      => tileDesc%limits(LOW,  :), &
                   hi      => tileDesc%limits(HIGH, :), &
-                  loGC    => tileDesc%limitsGC(LOW,  :), &
-                  hiGC    => tileDesc%limitsGC(HIGH, :), &
+                  loGC    => tileDesc%grownLimits(LOW,  :), &
+                  hiGC    => tileDesc%grownLimits(HIGH, :), &
                   blkloGC => tileDesc%blkLimitsGC(LOW,  :), &
                   blkhiGC => tileDesc%blkLimitsGC(HIGH, :))
             ! Confirm that the tile we are given has the size of a block
@@ -89,7 +89,7 @@ subroutine Driver_evolveFlash()
             call assertEqual(NYB, hi(JAXIS) - lo(JAXIS) + 1, "Invalid tile y-length")
             call assertEqual(NZB, hi(KAXIS) - lo(KAXIS) + 1, "Invalid tile z-length")
 
-            ! Confirm that limitsGC has the size of the block interior + GC halo 
+            ! Confirm that grownLimits has the size of the block interior + GC halo 
             call assertEqual(NXB+K1D*2*NGUARD, hiGC(IAXIS) - loGC(IAXIS) + 1, &
                              "Invalid tileGC x-length")
             call assertEqual(NYB+K2D*2*NGUARD, hiGC(JAXIS) - loGC(JAXIS) + 1, &
@@ -100,9 +100,9 @@ subroutine Driver_evolveFlash()
             ! When the tile is a block, then the grown tile is the
             ! interior + GC halo
             call assertTrue(ALL(loGC == blkLoGC), &
-                            "blkLimitsGC low != limitsGC low for block")
+                            "blkLimitsGC low != grownLimits low for block")
             call assertTrue(ALL(hiGC == blkHiGC), &
-                            "blkLimitsGC high != limitsGC high for block")
+                            "blkLimitsGC high != grownLimits high for block")
         end associate
 
         ! Confirm that when the tile is a block that the enclosing block is the
@@ -117,18 +117,18 @@ subroutine Driver_evolveFlash()
  
         associate(lo      => encBlk%limits(LOW,  :), &
                   hi      => encBlk%limits(HIGH, :), &
-                  loGC    => encBlk%limitsGC(LOW,  :), &
-                  hiGC    => encBlk%limitsGC(HIGH, :), &
+                  loGC    => encBlk%grownLimits(LOW,  :), &
+                  hiGC    => encBlk%grownLimits(HIGH, :), &
                   blkloGC => encBlk%blkLimitsGC(LOW,  :), &
                   blkhiGC => encBlk%blkLimitsGC(HIGH, :))
             call assertTrue(ALL(lo == tileDesc%limits(LOW,  :)), &
                             "Bad enclosed block limits LOW")
             call assertTrue(ALL(hi == tileDesc%limits(HIGH, :)), &
                             "Bad enclosed block limits HIGH")
-            call assertTrue(ALL(loGC == tileDesc%limitsGC(LOW,  :)), &
-                            "Bad enclosed block limitsGC LOW")
-            call assertTrue(ALL(hiGC == tileDesc%limitsGC(HIGH, :)), &
-                            "Bad enclosed block limitsGC HIGH")
+            call assertTrue(ALL(loGC == tileDesc%grownLimits(LOW,  :)), &
+                            "Bad enclosed block grownLimits LOW")
+            call assertTrue(ALL(hiGC == tileDesc%grownLimits(HIGH, :)), &
+                            "Bad enclosed block grownLimits HIGH")
             call assertTrue(ALL(blkloGC == tileDesc%blkLimitsGC(LOW,  :)), &
                             "Bad enclosed block blkLimitsGC LOW")
             call assertTrue(ALL(blkhiGC == tileDesc%blkLimitsGC(HIGH, :)), &
@@ -174,8 +174,8 @@ subroutine Driver_evolveFlash()
 
         associate(lo      => tileDesc%limits(LOW,  :), &
                   hi      => tileDesc%limits(HIGH, :), &
-                  loGC    => tileDesc%limitsGC(LOW,  :), &
-                  hiGC    => tileDesc%limitsGC(HIGH, :), &
+                  loGC    => tileDesc%grownLimits(LOW,  :), &
+                  hiGC    => tileDesc%grownLimits(HIGH, :), &
                   blkloGC => tileDesc%blkLimitsGC(LOW,  :), &
                   blkhiGC => tileDesc%blkLimitsGC(HIGH, :))
             ! Confirm appropriate size of tile (the interior)
@@ -232,8 +232,8 @@ subroutine Driver_evolveFlash()
 
         associate(lo      => encBlk%limits(LOW,  :), &
                   hi      => encBlk%limits(HIGH, :), &
-                  loGC    => encBlk%limitsGC(LOW,  :), &
-                  hiGC    => encBlk%limitsGC(HIGH, :), &
+                  loGC    => encBlk%grownLimits(LOW,  :), &
+                  hiGC    => encBlk%grownLimits(HIGH, :), &
                   blkloGC => encBlk%blkLimitsGC(LOW,  :), &
                   blkhiGC => encBlk%blkLimitsGC(HIGH, :))
             call assertEqual(NXB, hi(IAXIS) - lo(IAXIS) + 1, &
@@ -250,17 +250,17 @@ subroutine Driver_evolveFlash()
             call assertEqual(NZB+K3D*2*NGUARD, hiGC(KAXIS) - loGC(KAXIS) + 1, &
                              "Enclosing block has wrong Z length")
 
-            ! If it is a block, then blkLimitsGC = limitsGC
-            call assertTrue(ALL(encBlk%blkLimitsGC(LOW,  :) == encBlk%limitsGC(LOW, :)), &
-                            "enclosing blocks blkLimitsGC low != limitsGC low")
-            call assertTrue(ALL(encBlk%blkLimitsGC(HIGH, :) == encBlk%limitsGC(HIGH, :)), &
-                            "enclosing blocks blkLimitsGC high != limitsGC high")
+            ! If it is a block, then blkLimitsGC = grownLimits
+            call assertTrue(ALL(encBlk%blkLimitsGC(LOW,  :) == encBlk%grownLimits(LOW, :)), &
+                            "enclosing blocks blkLimitsGC low != grownLimits low")
+            call assertTrue(ALL(encBlk%blkLimitsGC(HIGH, :) == encBlk%grownLimits(HIGH, :)), &
+                            "enclosing blocks blkLimitsGC high != grownLimits high")
 
-            ! The blkLimitsGC of the block should be limitsGC of enclosing block
-            call assertTrue(ALL(tileDesc%blkLimitsGC(LOW,  :) == encBlk%limitsGC(LOW, :)), &
-                            "tile blkLimitsGC low != enc block limitsGC low")
-            call assertTrue(ALL(tileDesc%blkLimitsGC(HIGH, :) == encBlk%limitsGC(HIGH, :)), &
-                            "tile blkLimitsGC high != enc block limitsGC high")
+            ! The blkLimitsGC of the block should be grownLimits of enclosing block
+            call assertTrue(ALL(tileDesc%blkLimitsGC(LOW,  :) == encBlk%grownLimits(LOW, :)), &
+                            "tile blkLimitsGC low != enc block grownLimits low")
+            call assertTrue(ALL(tileDesc%blkLimitsGC(HIGH, :) == encBlk%grownLimits(HIGH, :)), &
+                            "tile blkLimitsGC high != enc block grownLimits high")
         end associate
 
         ! Confirm that the UNK data pointer is for the FAB of the enclosing

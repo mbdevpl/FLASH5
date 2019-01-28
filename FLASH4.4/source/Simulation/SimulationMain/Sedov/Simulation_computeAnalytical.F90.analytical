@@ -136,7 +136,7 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
   ! get the coordinate information for the current block
 
   tileLimits =   tileDesc % limits
-  grownTileLimits = tileDesc % limitsGC
+  grownTileLimits = tileDesc % grownLimits 
   allocate(xCoord(grownTileLimits(LOW, IAXIS):grownTileLimits(HIGH, IAXIS))); xCoord = 0.0
   allocate(yCoord(grownTileLimits(LOW, JAXIS):grownTileLimits(HIGH, JAXIS))); yCoord = 0.0
   allocate(zCoord(grownTileLimits(LOW, KAXIS):grownTileLimits(HIGH, KAXIS))); zCoord = 0.0

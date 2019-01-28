@@ -48,15 +48,15 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       tileDesc%limits(HIGH, :) = 1
       tileDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
       tileDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
-      tileDesc%limitsGC(LOW,  :) = 1
-      tileDesc%limitsGC(HIGH, :) = 1
-      tileDesc%limitsGC(LOW,  1:NDIM) = tileDesc%limits(LOW,  1:NDIM) - NGUARD
-      tileDesc%limitsGC(HIGH, 1:NDIM) = tileDesc%limits(HIGH, 1:NDIM) + NGUARD
+      tileDesc%grownLimits(LOW,  :) = 1
+      tileDesc%grownLimits(HIGH, :) = 1
+      tileDesc%grownLimits(LOW,  1:NDIM) = tileDesc%limits(LOW,  1:NDIM) - NGUARD
+      tileDesc%grownLimits(HIGH, 1:NDIM) = tileDesc%limits(HIGH, 1:NDIM) + NGUARD
  
-      associate (lo => tileDesc%limits(LOW,  :), &
-                 hi => tileDesc%limits(HIGH, :), &
-                 loGC => tileDesc%limitsGC(LOW,  :), &
-                 hiGC => tileDesc%limitsGC(HIGH, :))
+      associate (lo   => tileDesc%limits(LOW,  :), &
+                 hi   => tileDesc%limits(HIGH, :), &
+                 loGC => tileDesc%grownLimits(LOW,  :), &
+                 hiGC => tileDesc%grownLimits(HIGH, :))
         ! tagData is one cell larger on all borders than interior and 0-based
         ! Shift to 1-based here
         off = lo

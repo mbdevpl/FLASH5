@@ -144,7 +144,7 @@ subroutine Simulation_initBlock(solnData,tileDesc)
 
   ! get the coordinate information for the current block
   tileLimits = tileDesc%limits
-  grownTileLimits = tileDesc%limitsGC
+  grownTileLimits = tileDesc%grownLimits
 
   if (sim_tinitial > 0.0) then
 

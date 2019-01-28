@@ -32,8 +32,8 @@ subroutine hy_gravityStep(simTime, dt, dtOld)
      call itor%currentTile(tileDesc)
 
      blkLimits(:,:)   = tileDesc%limits
-     blkLimitsGC(:,:) = tileDesc%limitsGC
-     
+     blkLimitsGC(:,:) = tileDesc%blkLimitsGC
+
      call tileDesc%getDataPtr(Uout, CENTER)
      call tileDesc%deltas(del)
      Uin => Uout

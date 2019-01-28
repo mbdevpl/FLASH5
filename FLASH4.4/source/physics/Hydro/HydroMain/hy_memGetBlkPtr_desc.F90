@@ -75,8 +75,9 @@ subroutine hy_memGetBlkPtr_desc(tileDesc,dataPtr, gridDataStruct)
 
   call hy_memGetBlkPtr(tileDesc%id, medPtr, gridDataStruct)
 
+  ! DEV: How to set this if we eventually have tiling with Paramesh?
   lo = lbound(medPtr)
-  lo(iX:ix+MDIM-1) = lo(iX:ix+MDIM-1) + tileDesc%limitsGC(LOW,:) - 1
+  lo(iX:ix+MDIM-1) = lo(iX:ix+MDIM-1) + tileDesc%grownLimits(LOW,:) - 1
 
   dataPtr(lo(1):,lo(2):,lo(3):,lo(4):) => medPtr
 

@@ -20,9 +20,7 @@ module flash_tile
         integer :: stride(MDIM)
         integer :: level
         integer :: limits(LOW:HIGH, MDIM)
-        integer :: limitsGC(LOW:HIGH, MDIM)
-!       DEV: TODO: Replace limitsGC with grownLimits here and for AMReX
-!        integer :: grownLimits(LOW:HIGH, MDIM)
+        integer :: grownLimits(LOW:HIGH, MDIM)
         integer :: blkLimitsGC(LOW:HIGH, MDIM)
     contains
         procedure, public :: deltas
@@ -152,8 +150,10 @@ contains
            call Driver_abortFlash("[getDataPtr] Given data pointer must be NULL")
        end if
 
+       ! Note that loFl is presently set under the assumption that tiling
+       ! is *not* implemented with Paramesh
        associate(blockID => this%id, &
-                 lo      => this%limitsGC(LOW, :), &
+                 lo      => this%blkLimitsGC(LOW, :), &
                  loFl    => this%limits(LOW, :))
           select case (gridDataStruct)
           case(CENTER)

@@ -245,7 +245,7 @@ subroutine Driver_evolveFlash()
 
         ! Check guard cells along all directions
         blkLimits   = tileDesc%limits
-        blkLimitsGC = tileDesc%limitsGC
+        blkLimitsGC = tileDesc%blkLimitsGC
         blkGC(LOW, :) = blkLimits(LOW, :) - blkLimitsGC(LOW, :)
         blkGC(HIGH, :) = blkLimitsGC(HIGH, :) - blkLimits(HIGH, :)
 #if NDIM == 1
@@ -594,8 +594,8 @@ subroutine Driver_evolveFlash()
     do while (itor%isValid())
        call itor%currentTile(tileDesc)
 
-       associate(lo => tileDesc%limitsGC(LOW,  :), &
-                 hi => tileDesc%limitsGC(HIGH, :))
+       associate(lo => tileDesc%grownLimits(LOW,  :), &
+                 hi => tileDesc%grownLimits(HIGH, :))
           allocate(x_coords(lo(IAXIS):hi(IAXIS)+1))
           allocate(y_coords(lo(JAXIS):hi(JAXIS)  ))
           allocate(z_coords(lo(KAXIS):hi(KAXIS)  ))
@@ -636,8 +636,8 @@ subroutine Driver_evolveFlash()
     do while (itor%isValid())
        call itor%currentTile(tileDesc)
 
-       associate(lo => tileDesc%limitsGC(LOW,  :), &
-                 hi => tileDesc%limitsGC(HIGH, :))
+       associate(lo => tileDesc%grownLimits(LOW,  :), &
+                 hi => tileDesc%grownLimits(HIGH, :))
           allocate(x_coords(lo(IAXIS):hi(IAXIS)))
           allocate(y_coords(lo(JAXIS):hi(JAXIS)))
           allocate(z_coords(lo(KAXIS):hi(KAXIS)))

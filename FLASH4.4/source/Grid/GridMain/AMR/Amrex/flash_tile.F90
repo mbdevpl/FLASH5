@@ -80,7 +80,7 @@ module flash_tile
         integer, public :: grid_index
         integer, public :: tile_index
         integer, public :: limits(LOW:HIGH, MDIM)
-        integer, public :: limitsGC(LOW:HIGH, MDIM)
+        integer, public :: grownLimits(LOW:HIGH, MDIM)
         integer, public :: blkLimitsGC(LOW:HIGH, MDIM)
     contains
         procedure, public :: deltas
@@ -154,8 +154,8 @@ contains
            lo = this%limits(LOW, axis)
            nCells = this%limits(HIGH, axis) - this%limits(LOW, axis) + 1
         else if (region == GROWN_TILE) then
-           lo = this%limitsGC(LOW, axis)
-           nCells = this%limitsGC(HIGH, axis) - this%limitsGC(LOW, axis) + 1
+           lo = this%grownLimits(LOW, axis)
+           nCells = this%grownLimits(HIGH, axis) - this%grownLimits(LOW, axis) + 1
         else if (region == TILE_AND_HALO) then
            lo = this%limits(LOW, axis) - NGUARD
            nCells = this%limits(HIGH, axis) - this%limits(LOW, axis) + 1
@@ -221,8 +221,8 @@ contains
          lo(:) = this%limits(LOW,  :)
          hi(:) = this%limits(HIGH, :)
       else if (region == GROWN_TILE) then
-         lo(:) = this%limitsGC(LOW,  :)
-         hi(:) = this%limitsGC(HIGH, :)
+         lo(:) = this%grownLimits(LOW,  :)
+         hi(:) = this%grownLimits(HIGH, :)
       else if (region == TILE_AND_HALO) then
          lo(1:MDIM) = 1
          hi(1:MDIM) = 1
@@ -309,9 +309,9 @@ contains
             enclosingBlock%limits(HIGH, 1:NDIM) = parent_box%hi(1:NDIM) + 1
 
             call parent_box%grow(NGUARD)
-            enclosingBlock%limitsGC(:, :) = 1
-            enclosingBlock%limitsGC(LOW,  1:NDIM) = parent_box%lo(1:NDIM) + 1
-            enclosingBlock%limitsGC(HIGH, 1:NDIM) = parent_box%hi(1:NDIM) + 1
+            enclosingBlock%grownLimits(:, :) = 1
+            enclosingBlock%grownLimits(LOW,  1:NDIM) = parent_box%lo(1:NDIM) + 1
+            enclosingBlock%grownLimits(HIGH, 1:NDIM) = parent_box%hi(1:NDIM) + 1
 
             enclosingBlock%blkLimitsGC(:, :) = 1
             enclosingBlock%blkLimitsGC(LOW,  1:NDIM) = parent_box%lo(1:NDIM) + 1

@@ -179,7 +179,7 @@ subroutine Driver_evolveFlash()
 
         ! Check guard cells along all directions
         blkLimits   = tileDesc%limits
-        blkLimitsGC = tileDesc%limitsGC
+        blkLimitsGC = tileDesc%blkLimitsGC
         blkGC(LOW, :) = blkLimits(LOW, :) - blkLimitsGC(LOW, :)
         blkGC(HIGH, :) = blkLimitsGC(HIGH, :) - blkLimits(HIGH, :)
         call assertEqual(blkGC(LOW,  IAXIS), NGUARD, &
@@ -360,8 +360,8 @@ subroutine Driver_evolveFlash()
     do while (itor%isValid())
        call itor%currentTile(tileDesc)
 
-       associate(lo => tileDesc%limitsGC(LOW,  :), &
-                 hi => tileDesc%limitsGC(HIGH, :))
+       associate(lo => tileDesc%grownLimits(LOW,  :), &
+                 hi => tileDesc%grownLimits(HIGH, :))
           allocate(x_coords(lo(IAXIS):hi(IAXIS)))
           allocate(y_coords(lo(JAXIS):hi(JAXIS)))
           allocate(z_coords(lo(KAXIS):hi(KAXIS)))
@@ -470,8 +470,8 @@ subroutine Driver_evolveFlash()
           deallocate(volumes)
        end associate
 
-       associate(lo => tileDesc%limitsGC(LOW,  :), &
-                 hi => tileDesc%limitsGC(HIGH, :))
+       associate(lo => tileDesc%grownLimits(LOW,  :), &
+                 hi => tileDesc%grownLimits(HIGH, :))
           allocate(volumes(lo(IAXIS):hi(IAXIS), &
                            lo(JAXIS):hi(JAXIS), &
                            lo(KAXIS):hi(KAXIS)))

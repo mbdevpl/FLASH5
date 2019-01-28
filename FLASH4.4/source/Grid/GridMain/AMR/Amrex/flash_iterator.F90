@@ -284,9 +284,9 @@ contains
         tileDesc%limits(HIGH, 1:NDIM) = box%hi(1:NDIM) + 1
 
         box = this%li( this%level )%growntilebox()
-        tileDesc%limitsGC(:, :) = 1
-        tileDesc%limitsGC(LOW,  1:NDIM) = box%lo(1:NDIM) + 1
-        tileDesc%limitsGC(HIGH, 1:NDIM) = box%hi(1:NDIM) + 1
+        tileDesc%grownLimits(:, :) = 1
+        tileDesc%grownLimits(LOW,  1:NDIM) = box%lo(1:NDIM) + 1
+        tileDesc%grownLimits(HIGH, 1:NDIM) = box%hi(1:NDIM) + 1
 
         box = this%li( this%level )%fabbox()
         tileDesc%blkLimitsGC(:, :) = 1

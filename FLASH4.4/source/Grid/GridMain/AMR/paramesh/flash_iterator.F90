@@ -186,8 +186,8 @@ contains
 
         associate(lo      => tileDesc%limits(LOW, :), &
                   hi      => tileDesc%limits(HIGH, :), &
-                  loGrown => tileDesc%limitsGC(LOW, :), &
-                  hiGrown => tileDesc%limitsGC(HIGH, :), &
+                  loGrown => tileDesc%grownLimits(LOW, :), &
+                  hiGrown => tileDesc%grownLimits(HIGH, :), &
                   loBlkGC => tileDesc%blkLimitsGC(LOW, :), &
                   hiBlkGC => tileDesc%blkLimitsGC(HIGH, :), &
                   blkId   => tileDesc%id, &

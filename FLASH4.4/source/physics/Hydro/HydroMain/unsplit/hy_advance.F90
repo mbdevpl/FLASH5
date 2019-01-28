@@ -46,7 +46,7 @@ subroutine hy_advance(simTime, dt, dtOld)
 
         level            = tileDesc%level
         blkLimits(:,:)   = tileDesc%limits
-        blkLimitsGC(:,:) = tileDesc%limitsGC
+        blkLimitsGC(:,:) = tileDesc%blkLimitsGC
 
         call tileDesc%getDataPtr(Uin, CENTER)
         call tileDesc%deltas(del)
@@ -78,7 +78,7 @@ subroutine hy_advance(simTime, dt, dtOld)
 
         level            = tileDesc%level
         blkLimits(:,:)   = tileDesc%limits
-        blkLimitsGC(:,:) = tileDesc%limitsGC
+        blkLimitsGC(:,:) = tileDesc%blkLimitsGC
 
         call tileDesc%getDataPtr(Uin, CENTER)
 
@@ -114,7 +114,7 @@ subroutine hy_advance(simTime, dt, dtOld)
            CYCLE
         end if
         blkLimits(:,:)   = tileDesc%limits
-        blkLimitsGC(:,:) = tileDesc%limitsGC
+        blkLimitsGC(:,:) = tileDesc%blkLimitsGC
 
         call tileDesc%getDataPtr(Uout, CENTER)
 
@@ -151,7 +151,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         call itor%currentTile(tileDesc)
         
         blkLimits(:,:)   = tileDesc%limits
-        blkLimitsGC(:,:) = tileDesc%limitsGC
+        blkLimitsGC(:,:) = tileDesc%blkLimitsGC
         
         call tileDesc%getDataPtr(Uin, CENTER)
         
@@ -186,7 +186,7 @@ subroutine hy_advance(simTime, dt, dtOld)
         call itor%currentTile(tileDesc)
         
         blkLimits(:,:)   = tileDesc%limits
-        blkLimitsGC(:,:) = tileDesc%limitsGC
+        blkLimitsGC(:,:) = tileDesc%blkLimitsGC
         
         call tileDesc%getDataPtr(Uout, CENTER)
  
