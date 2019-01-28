@@ -132,7 +132,6 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
   real, pointer, dimension(:,:,:,:)   :: fly
   real, pointer, dimension(:,:,:,:)   :: flz
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
-  real, allocatable :: faceAreas(:,:,:)
   real, target, dimension(0,0,0,0)   :: empty4
 
   real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr
@@ -297,7 +296,6 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
      loFl = lbound(flx)
      if (.NOT. associated(fly)) fly => empty4
      if (.NOT. associated(flz)) flz => empty4
-     allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
@@ -371,7 +369,6 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
      deallocate(gravX)
      deallocate(gravY)
      deallocate(gravZ)
-     deallocate(faceAreas)
      
      deallocate(scrchFaceXPtr)
      deallocate(scrchFaceYPtr)

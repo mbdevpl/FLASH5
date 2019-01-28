@@ -106,8 +106,6 @@ Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
 
   use Timers_interface,  ONLY : Timers_start, Timers_stop
 
-  use Grid_interface,    ONLY : Grid_getCellCoords
-
   !! Use short nicknames for the reconstruction subroutines.
   !! Some compilers (e.g., Absoft) can be confused with similar subroutine names.
   use hy_interface,  ONLY : hy_checkRHjumpCond,&
@@ -451,12 +449,14 @@ Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
      jSizeGC = hiGC(JAXIS)-loGC(JAXIS)+1
      if (NDIM == 3) &
      kSizeGC = hiGC(KAXIS)-loGC(KAXIS)+1
-    
-     call Grid_getCellCoords(IAXIS,tileDesc, CENTER, .true.,xCenter,iSizeGC)
-    if (NDIM > 1) &
-     call Grid_getCellCoords(JAXIS,tileDesc, CENTER, .true.,yCenter,jSizeGC)
-     if (NDIM == 3) &
-     call Grid_getCellCoords(KAXIS,tileDesc, CENTER, .true.,zCenter,kSizeGC)
+   
+     call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xCenter)
+     if (NDIM > 1) then
+        call tileDesc%coordinates(JAXIS, CENTER, TILE_AND_HALO, yCenter)
+     end if
+     if (NDIM == 3) then
+        call tileDesc%coordinates(KAXIS, CENTER, TILE_AND_HALO, zCenter)
+     end if
 
      x1 => xCenter(ix-radius:ix+radius)
      if (NDIM > 1) &

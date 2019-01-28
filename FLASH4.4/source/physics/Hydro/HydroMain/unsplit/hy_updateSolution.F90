@@ -156,19 +156,18 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
   integer, dimension(MDIM) :: datasize
 
-  real, pointer, dimension(:,:,:,:)   :: flx !=> null()
-  real, pointer, dimension(:,:,:,:)   :: fly !=> null()
-  real, pointer, dimension(:,:,:,:)   :: flz !=> null()
-  real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
-  real, allocatable :: faceAreas(:,:,:)
+  real, pointer, dimension(:,:,:,:)   :: flx
+  real, pointer, dimension(:,:,:,:)   :: fly
+  real, pointer, dimension(:,:,:,:)   :: flz
+  real, allocatable, dimension(:,:,:) :: gravX, gravY, gravZ
 
-  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrch_Ptr     !=> null()
-  real, pointer, dimension(:,:,:,:,:) :: hy_SpcR     => null()
-  real, pointer, dimension(:,:,:,:,:) :: hy_SpcL     => null()
-  real, pointer, dimension(:,:,:,:,:) :: hy_SpcSig   => null()
+  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr
+  real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr
+  real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr
+  real, pointer, dimension(:,:,:,:) :: scrch_Ptr
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcR
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcL
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcSig
 
   integer :: updateMode ! could be set to one of UPDATE_ALL, UPDATE_INTERIOR, UPDATE_BOUND
 
@@ -176,10 +175,16 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
   call Timers_start("update solution body")
 
-  flx => null()
-  fly => null()
-  flz => null()
+  scrchFaceXPtr => null()
+  scrchFaceYPtr => null()
+  scrchFaceZPtr => null()
   scrch_Ptr     => null()
+  flx           => null() 
+  fly           => null()
+  flz           => null()
+  hy_SpcR       => null() 
+  hy_SpcL       => null()
+  hy_SpcSig     => null()
 
   loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
   loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
@@ -277,7 +282,6 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
         print*,'_unsplit bef "call getRiemannState": lbound(Uin ):',lbound(Uin )
         print*,'_unsplit bef "call getRiemannState": ubound(Uin ):',ubound(Uin )
 #endif
-     allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
      call tileDesc%getDataPtr(flx, FLUXX)
      call tileDesc%getDataPtr(fly, FLUXY)
@@ -350,34 +354,6 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      !#endif
 #endif /* ifndef GRAVITY */
      
-!!$     if (blockMustStoreFluxes(blockID)) then
-        !! if Flux correction is used.
-        !! Flux conservation calls on AMR:
-        !! Correct fluxes at each block boundary where coarse and fine
-        !! blocks are neighboring each other.
-        
-!!$        if (hy_geometry /= CARTESIAN) then
-!!$           ! we are using consv_fluxes and need to divide by face areas
-!!$           call Grid_getBlkData(blockID,CELL_FACEAREA,ILO_FACE, EXTERIOR, &
-!!$                                (/1,1,1/), faceAreas, datasize)
-!!$
-!!$           call Grid_putFluxData(blockID,IAXIS,flx,datasize,hy_fluxCorVars,faceAreas)
-!!$
-!!$           if (NDIM > 1) then
-!!$              call Grid_getBlkData(blockID,CELL_FACEAREA,JLO_FACE, EXTERIOR, &
-!!$                                   (/1,1,1/), faceAreas, datasize)
-!!$              call Grid_putFluxData(blockID,JAXIS,fly,datasize,hy_fluxCorVars,faceAreas)
-!!$              if (NDIM > 2) then
-!!$                 call Grid_getBlkData(blockID,CELL_FACEAREA,KLO_FACE, EXTERIOR, &
-!!$                                      (/1,1,1/), faceAreas, datasize)
-!!$                 call Grid_putFluxData(blockID,KAXIS,flz,datasize,hy_fluxCorVars,faceAreas)
-!!$              endif
-!!$           endif
-!!$        else ! Cartesian geometry
-
-!!$     if (hy_fluxCorrect) then
-!!$        call Grid_putFluxData(blockDesc,flx,fly,flz,datasize)
-!!$     end if
      call tileDesc%releaseDataPtr(flx, FLUXX)
      call tileDesc%releaseDataPtr(fly, FLUXY)
      call tileDesc%releaseDataPtr(flz, FLUXZ)
@@ -385,7 +361,6 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      deallocate(gravX)
      deallocate(gravY)
      deallocate(gravZ)
-     deallocate(faceAreas)
      
   call Timers_stop("update solution body")
 

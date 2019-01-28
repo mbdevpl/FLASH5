@@ -84,7 +84,6 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,datasize,del,&
                                             hy_MarquinaModified,&
                                             hy_setMinTimeStep
 
-  use Grid_interface,                ONLY : Grid_getCellCoords
   use Conductivity_interface,        ONLY : Conductivity
   use Viscosity_interface,           ONLY : Viscosity
   use Timers_interface,              ONLY : Timers_start, Timers_stop
@@ -270,16 +269,9 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,datasize,del,&
   endif
 
   if (hy_geometry /= CARTESIAN) then
-     call Grid_getCellCoords(IAXIS,tileDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
-     call Grid_getCellCoords(JAXIS,tileDesc, CENTER,    .true.,yCenter, dataSize(JAXIS))
-     call Grid_getCellCoords(IAXIS,tileDesc, FACES,     .true.,xFaces,  dataSize(IAXIS)+1)
-!!$     call block%getCellCoords(xCenter, IAXIS, CENTER    , INTERIOR)
-!!$     print*,'Here it comes:',xCenter,lbound(xcenter),ubound(xcenter),size(xcenter)
-!!$     print*,xCenter
-!!$     stop
-!!$     call block%getCellCoords(yCenter, JAXIS, CENTER    , INTERIOR)
-!!$     call block%getCellCoords(xFaces , IAXIS, LEFT_EDGE , INTERIOR)
-!!$     call block%getCellCoords(xRight , IAXIS, RIGHT_EDGE, INTERIOR)
+     call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xCenter)
+     call tileDesc%coordinates(JAXIS, CENTER, TILE_AND_HALO, yCenter)
+     call tileDesc%coordinates(IAXIS, FACES,  TILE_AND_HALO, xFaces)
   endif
 
   !! Compute intercell fluxes using the updated left & right states
@@ -1142,7 +1134,6 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,datasize,del,&
 contains
 
   subroutine do_error(solver, VL, VR, i,j,k, dir)
-    use Grid_interface, ONLY: Grid_getCellCoords
     use Driver_interface, ONLY: Driver_abortFlash
     implicit none
     
@@ -1177,12 +1168,9 @@ contains
     allocate(ycent(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
     allocate(zcent(blkLimitsGC(HIGH, KAXIS):blkLimitsGC(HIGH, KAXIS)))
 
-!!$    call block%getCellCoords(xcent, IAXIS, CENTER    , INTERIOR)
-!!$    call block%getCellCoords(ycent, JAXIS, CENTER    , INTERIOR)
-!!$    call block%getCellCoords(zcent, KAXIS, CENTER    , INTERIOR)
-    call Grid_getCellCoords(IAXIS, tileDesc, CENTER, .true., xcent, blkLimitsGC(HIGH, IAXIS)) 
-    call Grid_getCellCoords(JAXIS, tileDesc, CENTER, .true., ycent, blkLimitsGC(HIGH, JAXIS))
-    call Grid_getCellCoords(KAXIS, tileDesc, CENTER, .true., zcent, blkLimitsGC(HIGH, KAXIS))
+    call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xcent)
+    call tileDesc%coordinates(JAXIS, CENTER, TILE_AND_HALO, ycent)
+    call tileDesc%coordinates(KAXIS, CENTER, TILE_AND_HALO, zcent)
 
     print *, "NEIGBORING CELLS:"
 

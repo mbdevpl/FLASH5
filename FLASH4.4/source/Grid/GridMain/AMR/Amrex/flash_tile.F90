@@ -86,7 +86,7 @@ module flash_tile
         procedure, public :: deltas
         procedure, public :: boundBox
         procedure, public :: coordinates
-!        procedure, public :: faceAreas
+        procedure, public :: faceAreas
         procedure, public :: cellVolumes
 !        procedure, public :: physicalSize
 !        procedure, public :: onDomainBoundary
@@ -188,6 +188,158 @@ contains
         end associate
     end subroutine coordinates
 
+    subroutine faceAreas(this, axis, region, areas)
+      use amrex_amrcore_module,  ONLY : amrex_geom
+
+      use Driver_interface, ONLY : Driver_abortFlash
+      use Grid_data,        ONLY : gr_geometry
+
+      class(flash_tile_t), intent(IN)  :: this
+      integer,             intent(IN)  :: axis
+      integer,             intent(IN)  :: region
+      real,                intent(OUT) :: areas(:, :, :)
+
+      real    :: del(1:MDIM)
+      integer :: tileSize
+
+      integer :: lo(1:MDIM)
+      integer :: hi(1:MDIM)
+
+      integer           :: nCells
+      real, allocatable :: faceCoords(:)
+
+      integer :: i, j, k
+
+      real :: area
+      
+      if (.NOT. ((gr_geometry == CARTESIAN                  ) .OR. &
+                 (gr_geometry == CYLINDRICAL .AND. NDIM == 2))  ) then
+        areas(:, :, :) = 0.0
+        call Driver_abortFlash("[faceAreas] Not tested yet")
+      end if
+
+      if (region      == TILE) then
+         lo(:) = this%limits(LOW,  :)
+         hi(:) = this%limits(HIGH, :)
+      else if (region == GROWN_TILE) then
+         lo(:) = this%grownLimits(LOW,  :)
+         hi(:) = this%grownLimits(HIGH, :)
+      else if (region == TILE_AND_HALO) then
+         lo(1:MDIM) = 1
+         hi(1:MDIM) = 1
+         lo(1:NDIM) = this%limits(LOW,  1:NDIM) - NGUARD
+         hi(1:NDIM) = this%limits(HIGH, 1:NDIM) + NGUARD
+      else
+        areas(:, :, :) = 0.0
+        call Driver_abortFlash("[faceAreas] Unknown region")
+      end if
+
+      del = amrex_geom(this%level - 1)%dx
+
+      select case (gr_geometry)
+      case (CARTESIAN)
+         associate(dx => del(IAXIS), &
+                   dy => del(JAXIS), &
+                   dz => del(KAXIS))
+#if   NDIM == 1
+            area = 1.0
+#elif NDIM == 2
+            if      (axis == IAXIS) then
+               area = dy
+            else if (axis == JAXIS) then
+               area = dx
+            else
+               call Driver_abortFlash("[faceAreas] Invalid axis for 2D")
+            end if
+#elif NDIM == 3
+            if      (axis == IAXIS) then
+               area = dy * dz
+            else if (axis == JAXIS) then
+               area = dx * dz
+            else if (axis == KAXIS) then
+               area = dx * dy
+            else
+               call Driver_abortFlash("[faceAreas] Invalid axis")
+            end if
+#endif
+
+            do       k = lo(KAXIS), hi(KAXIS)
+               do    j = lo(JAXIS), hi(JAXIS)
+                  do i = lo(IAXIS), hi(IAXIS)
+                     areas(i, j, k) = area
+                  end do
+               end do
+            end do
+         end associate
+      case (CYLINDRICAL)
+         if      (axis == IAXIS) then
+            nCells = hi(IAXIS) - lo(IAXIS) + 1
+            allocate(faceCoords(1:nCells+1))
+            call this%coordinates(axis, FACES, region, faceCoords)
+
+            associate(dz   => del(JAXIS), &
+                      dPhi => del(KAXIS), &
+                      r    => ABS(faceCoords(:)))
+               do       k = 1, hi(KAXIS) - lo(KAXIS) + 1
+                  do    j = 1, hi(JAXIS) - lo(JAXIS) + 1
+                     do i = 1, hi(IAXIS) - lo(IAXIS) + 2
+#if   NDIM == 1
+                        areas(i, j, k) = 2.0 * PI * r(i)
+#elif NDIM == 2
+                        areas(i, j, k) = 2.0 * PI * r(i) * dz
+#elif NDIM == 3
+                        areas(i, j, k) = r(i) * dz * dPhi
+#endif
+                     end do
+                  end do
+               end do
+            end associate
+            deallocate(faceCoords)
+         else if (axis == JAXIS) then
+            nCells = hi(IAXIS) - lo(IAXIS) + 1
+            allocate(faceCoords(1:nCells+1))
+            call this%coordinates(axis, FACES, region, faceCoords)
+
+            associate(dPhi => del(KAXIS), &
+                      r    => ABS(faceCoords(:)))
+               do       k = 1, hi(KAXIS) - lo(KAXIS) + 1
+                  do    j = 1, hi(JAXIS) - lo(JAXIS) + 2
+                     do i = 1, hi(IAXIS) - lo(IAXIS) + 1
+                        ! DEV: TODO These can be done more simply using
+                        ! the radii of the cell centers (see cell volumes)
+#if   NDIM == 1
+                        areas(i, j, k) = PI * (r(i+1)**2 - r(i)**2)
+#elif NDIM == 2
+                        areas(i, j, k) = PI * (r(i+1)**2 - r(i)**2)
+#elif NDIM == 3
+                        areas(i, j, k) = 0.5 * (r(i+1)**2 - r(i)**2) * dPhi
+#endif
+                     end do
+                  end do
+               end do
+            end associate
+            deallocate(faceCoords)
+         else if (axis == KAXIS) then
+            associate(dr   => del(IAXIS), &
+                      dz   => del(JAXIS))
+               do       k = 1, hi(KAXIS) - lo(KAXIS) + 2
+                  do    j = 1, hi(JAXIS) - lo(JAXIS) + 1
+                     do i = 1, hi(IAXIS) - lo(IAXIS) + 1
+#if   NDIM == 1
+                        areas(i, j, k) = dr
+#elif NDIM == 2
+                        areas(i, j, k) = dr * dz
+#elif NDIM == 3
+                        areas(i, j, k) = dr * dz
+#endif
+                     end do
+                  end do
+               end do
+            end associate
+         end if
+      end select
+    end subroutine faceAreas
+
     subroutine cellVolumes(this, region, volumes)
       use amrex_amrcore_module,  ONLY : amrex_geom
 
@@ -234,7 +386,6 @@ contains
       end if
 
       select case (gr_geometry)
-
       case (CARTESIAN)
          associate(dx => del(IAXIS), &
                    dy => del(JAXIS), &

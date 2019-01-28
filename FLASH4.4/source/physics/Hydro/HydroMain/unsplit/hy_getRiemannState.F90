@@ -104,7 +104,6 @@ Subroutine hy_getRiemannState(tileDesc,U,blkLimits,loGC,hiGC,dt,del,&
                                    hy_eigenValue,         &
                                    hy_eigenVector,        &
                                    hy_upwindTransverseFlux
-  use Grid_interface,   ONLY : Grid_getCellCoords
   use flash_tile,       ONLY : flash_tile_t 
 
   implicit none
@@ -291,10 +290,10 @@ Subroutine hy_getRiemannState(tileDesc,U,blkLimits,loGC,hiGC,dt,del,&
      dataSize(1:MDIM)=hiGC(1:MDIM)-loGC(1:MDIM)+1
      if (hy_geometry /= CARTESIAN) then
         ! Grab cell x-coords for this block  
-        call Grid_getCellCoords(IAXIS,tileDesc, CENTER,.true.,xCenter,dataSize(IAXIS))
+        call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xCenter)
 #if NDIM > 1
         if (hy_geometry == SPHERICAL) &
-             call Grid_getCellCoords(JAXIS,tileDesc, CENTER,.true.,yCenter, dataSize(JAXIS))
+             call tileDesc%coordinates(JAXIS, CENTER, TILE_AND_HALO, yCenter)
 #endif
      endif
 
