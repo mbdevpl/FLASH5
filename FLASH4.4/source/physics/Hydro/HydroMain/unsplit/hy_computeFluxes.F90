@@ -76,7 +76,7 @@
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
 Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
-
+  use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use flash_tile,   ONLY : flash_tile_t 
@@ -169,6 +169,8 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 
 #if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)||defined(CFL_VAR)
      if (hy_updateHydroFluxes) then
+        ! Set with explicit loop nests over a tile-based region
+        call Driver_abortFlash("Update this to work with tiles")
 #ifdef GPRO_VAR
         ! A tagging variable for Gaussian Process (GP) method.
         Uin(GPRO_VAR,:,:,:) = 0.
@@ -301,10 +303,6 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 
      !! ************************************************************************
      !! Calculate high order Godunov fluxes by making Riemann solver calls
-!!$     !! Initialize arrays with zero
-!!$     flx = 0.
-!!$     fly = 0.
-!!$     flz = 0.
      call Timers_start("getFaceFlux")
 #ifdef DEBUG_UHD
      print*,'getting face flux'

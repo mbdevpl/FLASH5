@@ -63,7 +63,7 @@
 #include "UHD.h"
 
 Subroutine hy_energyFix(tileDesc,U,blkLimits,dt,dtOld,del,eosMode)
-
+  use Driver_interface, ONLY : Driver_abortFlash
   use Hydro_data,     ONLY : hy_eswitch, hy_irenorm, hy_geometry,&
                              hy_dtmin, hy_dtminloc, hy_dtminValid, hy_dtminCfl, hy_meshMe, &
                              hy_useAuxEintEqn, hy_smallE,     &
@@ -427,6 +427,8 @@ Subroutine hy_energyFix(tileDesc,U,blkLimits,dt,dtOld,del,eosMode)
 
 
   if (eosMode==MODE_DENS_PRES) then
+     ! Set with explicit loop nest of tile-based region
+     call Driver_abortFlash("Update to work with tiling")
      U(PRES_VAR,:,:,:) = U(EINT_VAR,:,:,:)*U(DENS_VAR,:,:,:)*(U(GAME_VAR,:,:,:)-1.)
   endif
 

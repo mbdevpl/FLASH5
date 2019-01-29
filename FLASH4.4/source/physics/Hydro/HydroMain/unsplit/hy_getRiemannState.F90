@@ -269,9 +269,6 @@ Subroutine hy_getRiemannState(tileDesc,U,blkLimits,loGC,hiGC,dt,del,&
 !!$  sGeo_magz=0.
 !!$  sGeo_magp=0.
 
-  !! Get block pointer to UNK data
-!!  call Grid_getBlkPtr(blockID,U,CENTER)
-
 
 !!$  ! MHD only-------------------------------------------------------------------------------
 !!$#if defined(FLASH_USM_MHD) && (NFACE_VARS > 0) && (NDIM > 1)

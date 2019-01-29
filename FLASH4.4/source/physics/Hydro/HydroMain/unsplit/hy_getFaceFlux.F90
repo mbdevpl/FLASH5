@@ -174,12 +174,6 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,datasize,del,&
 
   nullify(U)
 
-!!$  xflux = 0.
-!!$  if (NDIM < 3) then
-!!$     zflux = 0.
-!!$     if (NDIM < 2) yflux = 0.
-!!$  endif
-
   kGrav=0
 #ifdef GRAVITY
   kGrav=1

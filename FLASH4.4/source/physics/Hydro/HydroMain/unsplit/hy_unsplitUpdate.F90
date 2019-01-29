@@ -100,6 +100,7 @@
   use hy_interface,       ONLY : hy_getCurrents
 #endif
 #endif
+    use Driver_interface,     ONLY : Driver_abortFlash
     use Grid_interface,       ONLY : Grid_getCellCoords, &
                                      Grid_renormAbundance, &
                                      Grid_limitAbundance
@@ -288,6 +289,9 @@
 
 
 #if (NSPECIES+NMASS_SCALARS) > 0
+    ! Use do loop nest to only set the portion of the tile
+    ! that we are working on.
+    call Driver_abortFlash("Update this to work with tiles")
     do ispu =  SPECIES_BEGIN, MASS_SCALARS_END !SPECIES_END
        isph= ispu-NPROP_VARS
        SpOld(isph,:,:,:) = Uin(ispu,:,:,:)
@@ -300,6 +304,7 @@
 
 #ifdef DEBUG_HYDRO_POSITIVITY
     ! DEV: TODO convert this to tileDesc%coordinates once it can be tested
+    call Driver_abortFlash("Update this to use coordinates")
     call    Grid_getCellCoords(IAXIS,tileDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
 #else
     if (hy_geometry /= CARTESIAN) then
@@ -311,6 +316,7 @@
        call tileDesc%coordinates(IAXIS, RIGHT_EDGE, TILE_AND_HALO, xRight)
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
           ! DEV: TODO convert this to tileDesc%coordinates once it can be tested
+          call Driver_abortFlash("Update this to use coordinates")
           call Grid_getCellCoords(JAXIS,tileDesc, CENTER,.false.,yCenter, size(yCenter))
        end if
     endif
@@ -894,6 +900,8 @@
 
     !! ---------------------------------------------------------------
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
+    ! Set with explicit do loops over appropriate tile-based region
+    call Driver_abortFlash("Update this to work with tiles")
     if (hy_forceHydroLimit) then
        Uout(MAGX_VAR:MAGZ_VAR,:,:,:) = 0.
     endif
@@ -972,6 +980,8 @@
     
 
     if (.NOT. hy_fullSpecMsFluxHandling) then
+       ! Set these with explicit loop nests over a tile-based region
+       call Driver_abortFlash("Update these to work with tiles")
        do ispu =  SPECIES_BEGIN, MASS_SCALARS_END
           isph= ispu-NPROP_VARS
           SpOld(isph,:,:,:) = Uout(ispu,:,:,:)
