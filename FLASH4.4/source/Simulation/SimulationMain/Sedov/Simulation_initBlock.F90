@@ -59,7 +59,7 @@ subroutine Simulation_initBlock(solnData,tileDesc)
      &  sim_smallT, &
      &  sim_nSubZones, sim_xCenter, sim_yCenter, sim_zCenter, sim_inSubzones, sim_inszd, &
      sim_threadBlockList, sim_threadWithinBlock
-  use Grid_interface, ONLY : Grid_getCellCoords, Grid_getSingleCellVol, &
+  use Grid_interface, ONLY : Grid_getSingleCellVol, &
                              Grid_subcellGeometry
   use flash_tile, ONLY : flash_tile_t 
   use ut_interpolationInterface
@@ -88,14 +88,11 @@ subroutine Simulation_initBlock(solnData,tileDesc)
   real,allocatable,dimension(:) :: xCoord,yCoord,zCoord
   integer,dimension(LOW:HIGH,MDIM) :: tileLimits
   integer,dimension(LOW:HIGH,MDIM) :: grownTileLimits
-  integer :: sizeX,sizeY,sizeZ
   integer,dimension(MDIM) :: axis
 
 !!$  real     :: dvSub(0:sim_nSubZones-1,0:(sim_nSubZones-1)*K2D)
   real,allocatable :: dvSub(:,:)
   real     :: dvc, quotinv
-
-  logical :: gcell = .true.
 
   if (sim_useProfileFromFile) then
      ! lazy initialization - should already have been done from Simulation_init
@@ -224,15 +221,14 @@ subroutine Simulation_initBlock(solnData,tileDesc)
   allocate(xCoord(grownTileLimits(LOW, IAXIS):grownTileLimits(HIGH, IAXIS))); xCoord = 0.0
   allocate(yCoord(grownTileLimits(LOW, JAXIS):grownTileLimits(HIGH, JAXIS))); yCoord = 0.0
   allocate(zCoord(grownTileLimits(LOW, KAXIS):grownTileLimits(HIGH, KAXIS))); zCoord = 0.0
-  sizeX = SIZE(xCoord)
-  sizeY = SIZE(yCoord)
-  sizeZ = SIZE(zCoord)
 
-  if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, tileDesc, CENTER, gcell, zCoord, sizeZ)
-  if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, tileDesc, CENTER,gcell, yCoord, sizeY)
-  call Grid_getCellCoords(IAXIS, tileDesc, CENTER, gcell, xCoord, sizeX)
+  call tileDesc%coordinates(IAXIS, CENTER, GROWN_TILE, xCoord)
+  if (NDIM >= 2) then 
+     call tileDesc%coordinates(JAXIS, CENTER, GROWN_TILE, yCoord)
+  end if
+  if (NDIM == 3) then
+     call tileDesc%coordinates(KAXIS, CENTER, GROWN_TILE, zCoord)
+  end if
   !
   !     For each cell
   !  
@@ -301,7 +297,6 @@ subroutine Simulation_initBlock(solnData,tileDesc)
               dxx = xCoord(i) - xCoord(i-1) 
            endif
           
-           ! DEV: TODO: Convert to version that doesn't need a tile descriptor
            call Grid_getSingleCellVol((/i,j,k/), tileDesc%level, dvc)
            call Grid_subcellGeometry(sim_nSubZones,1+(sim_nSubZones-1)*K2D,1+(sim_nSubZones-1)*K3D, &
                 dvc, dvSub, xCoord(i)-0.5*dxx, xCoord(i)+0.5*dxx)

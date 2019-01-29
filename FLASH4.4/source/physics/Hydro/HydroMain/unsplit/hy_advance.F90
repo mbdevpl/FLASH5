@@ -8,6 +8,7 @@ subroutine hy_advance(simTime, dt, dtOld)
                                   Grid_getTileIterator, &
                                   Grid_releaseTileIterator, &
                                   Grid_getMaxRefinement, Grid_conserveFluxes, Grid_putFluxData
+  use Grid_data,           ONLY : gr_enableTiling
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use hy_interface,        ONLY : hy_computeFluxes, hy_updateSolution
   use hy_memInterface,     ONLY : hy_memAllocScratch,      &
@@ -30,6 +31,8 @@ subroutine hy_advance(simTime, dt, dtOld)
   
   type(flash_iterator_t)  :: itor
   type(flash_tile_t)      :: tileDesc
+
+  logical :: useTiling
 
   nullify(Uin)
   nullify(Uout)
@@ -135,34 +138,35 @@ subroutine hy_advance(simTime, dt, dtOld)
 
   ! ***** THIRD VARIANT: FOR hy_fluxCorrectPerLevel==.TRUE. *****
 
+  useTiling = gr_enableTiling
   do level= maxLev,1,-1
 #ifdef DEBUG_DRIVER
      print*,' ***************   HYDRO LEVEL', level,'  **********************'
 #endif
-     !! if(hy_fluxCorrectPerLevel) then
-     !! if(level !=maxLev) then
-     !!   do a synchronization step here
-     !!        if(hy_fluxCorrectPerLevel)call Grid_conserveFluxes(ALLDIR,level)
-     
+
      call Timers_start("compute fluxes")
      call Grid_getDeltas(level, del)
-     call Grid_getTileIterator(itor, LEAF, level=level, tiling=.FALSE.)
+     call Grid_getTileIterator(itor, LEAF, level=level, tiling=useTiling)
      do while(itor%isValid())
         call itor%currentTile(tileDesc)
-        
-        blkLimits(:,:)   = tileDesc%limits
-        blkLimitsGC(:,:) = tileDesc%blkLimitsGC
-        
+
         call tileDesc%getDataPtr(Uin, CENTER)
-        
-        if (level==maxLev) then
-           Uout => Uin             ! hy_computeFluxes will ALSO update the solution through the Uout pointer!
+        if ((level==maxLev) .AND. (.NOT. useTiling)) then
+           ! hy_computeFluxes will ALSO update the solution through the Uout pointer! 
+           ! This is not compatible with tiling/stencil-based computations as
+           ! the values computed in the interior of some tiles will use values
+           ! already computed for this time step as opposed to from the last step
+           Uout => Uin
         else
-           nullify(Uout)           ! Uout is not needed yet.
+            ! Otherwise, no need to store solutions yet
+           nullify(Uout)
         end if
-        call hy_computeFluxes(tileDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+        call hy_computeFluxes(tileDesc, tileDesc%grownLimits, &
+                              Uin, tileDesc%limits, Uout, &
+                              del, simTime, dt, dtOld, sweepDummy)
         call tileDesc%releaseDataPtr(Uin, CENTER)
         nullify(Uout)
+
         call itor%next()
      end do
      call Timers_stop("compute fluxes")
@@ -170,7 +174,9 @@ subroutine hy_advance(simTime, dt, dtOld)
 
      if (hy_fluxCorrect .AND. (level > 1))  call Grid_putFluxData(level)
 
-     if (level==maxLev) then
+     if ((level==maxLev) .AND. (.NOT. useTiling)) then
+        ! We already have the updated solution in this special, optimized case
+        ! and there is no need to do flux correction.
         CYCLE
      end if
 
@@ -185,15 +191,14 @@ subroutine hy_advance(simTime, dt, dtOld)
      do while(itor%isValid())
         call itor%currentTile(tileDesc)
 
-        blkLimits(:,:)   = tileDesc%limits
-        blkLimitsGC(:,:) = tileDesc%blkLimitsGC
-        
         call tileDesc%getDataPtr(Uout, CENTER)
- 
         Uin => Uout
-        call hy_updateSolution(tileDesc,blkLimitsGC,Uin, blkLimits, Uout, del,simTime, dt, dtOld,  sweepDummy)
+        call hy_updateSolution(tileDesc, tileDesc%grownLimits, &
+                               Uin, tileDesc%limits, Uout, &
+                               del, simTime, dt, dtOld, sweepDummy)
         call tileDesc%releaseDataPtr(Uout, CENTER)
         nullify(Uin)
+
         call itor%next()
      end do
      call Timers_stop("update solution")
