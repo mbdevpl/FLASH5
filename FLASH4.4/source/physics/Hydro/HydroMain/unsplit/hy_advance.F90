@@ -180,11 +180,11 @@ subroutine hy_advance(simTime, dt, dtOld)
         call Timers_stop("conserveFluxes")
      end if
 
-     call Grid_getTileIterator(itor, LEAF, level=level, tiling=.FALSE.)
+     call Grid_getTileIterator(itor, LEAF, level=level, tiling=.TRUE.)
      call Timers_start("update solution")
      do while(itor%isValid())
         call itor%currentTile(tileDesc)
-        
+
         blkLimits(:,:)   = tileDesc%limits
         blkLimitsGC(:,:) = tileDesc%blkLimitsGC
         

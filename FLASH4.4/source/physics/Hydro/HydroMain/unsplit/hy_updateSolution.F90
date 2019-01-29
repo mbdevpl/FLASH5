@@ -104,7 +104,7 @@
 !!REORDER(4): scrchFace[XYZ]Ptr
 
 Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
-
+  use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface,    ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use flash_tile,       ONLY : flash_tile_t
@@ -171,7 +171,7 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
   integer :: updateMode ! could be set to one of UPDATE_ALL, UPDATE_INTERIOR, UPDATE_BOUND
 
-
+  integer :: halo(LOW:HIGH, 1:MDIM)
 
   call Timers_start("update solution body")
 
@@ -186,10 +186,16 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   hy_SpcL       => null()
   hy_SpcSig     => null()
 
-  loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
-  loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
-  lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
-  
+  ! Temporarily assume that all internal arrays created here and in routines
+  ! called here will need data for the tile interior as well as for NGUARD
+  ! layers of GCs around the interior
+  halo(:, :) = tileDesc%limits(:, :)
+  halo(LOW,  1:NDIM) = halo(LOW,  1:NDIM) - NGUARD
+  halo(HIGH, 1:NDIM) = halo(HIGH, 1:NDIM) + NGUARD
+  loxGC = halo(LOW,IAXIS); hixGC = halo(HIGH,IAXIS)
+  loyGC = halo(LOW,JAXIS); hiyGC = halo(HIGH,JAXIS)
+  lozGC = halo(LOW,KAXIS); hizGC = halo(HIGH,KAXIS)
+
 #if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)||defined(CFL_VAR)
      if (hy_updateHydroFluxes) then
 !!$#ifdef GPRO_VAR
@@ -256,6 +262,7 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
+        call Driver_abortFlash("Not using Gravity yet!")
         call hy_putGravity(tileDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
@@ -302,12 +309,14 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 #ifdef DEBUG_UHD
      print*,'and now update'
 #endif
-     
-     call hy_unsplitUpdate(tileDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
-          blkLimitsGC,loFl,flx,fly,flz,gravX,gravY,gravZ,&
-          scrch_Ptr)
-     
-     
+
+     call hy_unsplitUpdate(tileDesc, Uin, Uout, updateMode, &
+                           dt, del, datasize, &
+                           tileDesc%limits, halo, &
+                           loFl, flx, fly, flz, &
+                           gravX, gravY, gravZ, &
+                           scrch_Ptr)
+
 !#define DEBUG_UHD
 #ifdef DEBUG_UHD
      print*,'done update'
@@ -329,7 +338,8 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 !!$     if (.not. blockNeedsFluxCorrect(blockID)) then
 #ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
         !! Correct energy if necessary
-     call hy_energyFix(tileDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
+     call hy_energyFix(tileDesc, Uout, tileDesc%limits, dt, dtOld, &
+                       del, hy_unsplitEosMode)
      
 #ifdef DEBUG_UHD
      print*,'_unsplit Aft "call energyFix": associated(Uin ) is',associated(Uin )
@@ -337,7 +347,8 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 #endif
      if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
         !! Convert unit
-        call hy_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
+        call Driver_abortFlash("Confirm that grownLimits is correct")
+        call hy_unitConvert(Uout, tileDesc%grownLimits, BWDCONVERT)
      endif
      
      !#ifndef FLASH_EOS_GAMMA
@@ -350,7 +361,7 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      print*,'_unsplit bef Eos_wrapped: lbound(Uout):',lbound(Uout)
      print*,'_unsplit bef Eos_wrapped: ubound(Uout):',ubound(Uout)
 #endif
-     call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
+     call Eos_wrapped(hy_eosModeAfter, tileDesc%limits, Uout,CENTER)
      !#endif
 #endif /* ifndef GRAVITY */
      

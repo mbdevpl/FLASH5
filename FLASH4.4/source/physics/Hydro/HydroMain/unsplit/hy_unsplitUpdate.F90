@@ -139,6 +139,7 @@
     real    :: IntEner,tempPres
 
 #if (NSPECIES+NMASS_SCALARS) > 0
+    call Driver_abortFlash("Check if these sizes are adequate for tiling")
     real, dimension(hy_numXN,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: SpOld
     real, dimension(6,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: Uold
 #else
@@ -148,7 +149,6 @@
   real, dimension(1,1,1,1) :: UOld
 #endif
 
-    integer :: iSize, jSize, kSize
     real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS)) :: xCenter, xLeft, xRight
 #if NDIM == 3
     real, dimension(blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)) :: yCenter
@@ -210,10 +210,6 @@
 
 
     hdt = 0.5*dt
-
-    iSize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1
-    jSize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1
-    kSize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1
 
     if (rangeSwitch==UPDATE_SPECMS_INTERIOR) then
        call unsplitUpdateSpecMs
