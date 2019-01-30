@@ -9,7 +9,6 @@
 !!  hy_getFaceFlux( integer(IN) :: blockID,
 !!                      integer(IN) :: blkLimits(2,MDIM),
 !!                      integer(IN) :: blkLimitsGC(2,MDIM), 
-!!                      integer(IN) :: datasize(MDIM),
 !!                      real(IN)    :: del(MDIM),
 !!                      integer(IN) :: loFl(:),
 !!                      real(OUT)   :: xflux(:,:,:,:),
@@ -29,7 +28,6 @@
 !!                      of block without the guard cells
 !!  blkLimitsGC       - an array that holds the lower and upper indices of the section
 !!                      of block with the guard cells
-!!  datasize          - data size for boundary extrapolated data, boundary data
 !!  del               - grid deltas
 !!  loFl              - lower bounds of xflux,yflux,zflux array indices
 !!  xflux,yflux,zflux - face fluxes at each {x,y,z} direction
@@ -52,7 +50,7 @@
 !#define COMPUTE_DT_FLUX
 
 #include "Flash.h"
-subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,datasize,del,&
+subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
                                 loFl, xflux,yflux,zflux,&
                                 scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                 hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
@@ -112,7 +110,6 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,datasize,del,&
   !! Arguments type declaration ------------------------------
   type(flash_tile_t), intent(IN)  :: tileDesc
   integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
-  integer, dimension(MDIM), intent(IN)         :: datasize
   real,    dimension(MDIM), intent(IN)         :: del
 
   integer, dimension(MDIM+1),intent(IN)        :: loFl

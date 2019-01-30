@@ -104,14 +104,7 @@ Module hy_interface
   end interface
 
   interface
-     subroutine hy_advance(simTime, dt, dtOld)
-       implicit none
-       real, intent(IN) ::  simTime, dt, dtOld
-     end subroutine hy_advance
-  end interface
-
-  interface
-     subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,datasize,del,&
+     subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
                                      loFl, xflux,yflux,zflux,&
                                      scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                      hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
@@ -119,7 +112,6 @@ Module hy_interface
        implicit none
        type(flash_tile_t), intent(IN)  :: tileDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
-       integer, dimension(MDIM), intent(IN)         :: datasize
        real,    dimension(MDIM), intent(IN)         :: del
        integer, dimension(MDIM+1),intent(IN)        :: loFl
        real, intent(OUT) :: XFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZED TO PREVENT INDEX REORDERING!
@@ -475,7 +467,7 @@ Module hy_interface
 
 
   interface
-     subroutine hy_unsplitUpdate(tileDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&    
+     subroutine hy_unsplitUpdate(tileDesc,Uin,Uout,rangeSwitch,dt,del,blkLimits,&    
                                      blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                      scrch_Ptr)
        use flash_tile, ONLY : flash_tile_t
@@ -485,7 +477,6 @@ Module hy_interface
        integer,intent(IN) :: rangeSwitch
        real, intent(IN)   :: dt
        real, intent(IN)   :: del(MDIM)
-       integer,dimension(MDIM),intent(IN) :: dataSize
        integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
        integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
        integer, dimension(MDIM+1),intent(IN)        :: loFl
@@ -1041,12 +1032,11 @@ Module hy_interface
 !endif #ifdef FLASH_USM_MHD
 
   interface
-     subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+     subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use flash_tile, ONLY : flash_tile_t
        implicit none
        type(flash_tile_t) :: tileDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
@@ -1055,12 +1045,11 @@ Module hy_interface
   end interface
 
     interface
-     subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+     subroutine hy_updateSolution(tileDesc, Uin, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
        use flash_tile, ONLY : flash_tile_t
        implicit none
        type(flash_tile_t) :: tileDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder

@@ -9,9 +9,7 @@
 !! SYNOPSIS
 !!
 !!  call hy_computeFluxes(block_metadata_t(IN) :: blockDesc,
-!!                        integer(IN)          :: blkLimitsGC(LOW:HIGH,MDIM),
 !!       real,POINTER(in),dimension(:,:,:,:)   :: Uin,
-!!                        integer(IN)          :: blkLimits(LOW:HIGH,MDIM),
 !!       real,POINTER(in),dimension(:,:,:,:)   :: Uout,
 !!                        real(IN)             :: del(MDM),
 !!                        real(IN)             :: timeEndAdv,
@@ -75,7 +73,7 @@
 
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
-Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
+Subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
   use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -121,12 +119,9 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
   real, pointer, dimension(:,:,:,:) :: Uin
 
   real,dimension(MDIM),intent(IN) :: del
-  integer,dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits,blkLimitsGC
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
   integer :: loFl(MDIM+1)
   type(flash_tile_t), intent(IN) :: tileDesc
-
-  integer, dimension(MDIM) :: datasize
 
   real, pointer, dimension(:,:,:,:)   :: flx
   real, pointer, dimension(:,:,:,:)   :: fly
@@ -216,8 +211,6 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
         call hy_unitConvert(Uin, tileDesc%grownLimits, FWDCONVERT)
      endif
 
-     datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
-
      if (updateMode == UPDATE_ALL) then
         allocate(scrch_Ptr    (2,            loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      else
@@ -230,9 +223,21 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 
 #if (NSPECIES+NMASS_SCALARS) > 0
      if (hy_fullSpecMsFluxHandling) then
-        allocate(  hy_SpcR(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
-        allocate(  hy_SpcL(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
-        allocate(hy_SpcSig(HY_NSPEC,blkLimits(LOW,IAXIS)-2:blkLimits(HIGH,IAXIS)+2, loyGC:hiyGC, lozGC:hizGC,NDIM))
+        allocate(  hy_SpcR(HY_NSPEC, &
+                           loxGC:hixGC, &
+                           loyGC:hiyGC, &
+                           lozGC:hizGC, &
+                           NDIM))
+        allocate(  hy_SpcL(HY_NSPEC, &
+                           loxGC:hixGC, &
+                           loyGC:hiyGC, &
+                           lozGC:hizGC, &
+                           NDIM))
+        allocate(hy_SpcSig(HY_NSPEC, &
+                           tileDesc%limits(LOW,IAXIS)-2:tileDesc%limits(HIGH,IAXIS)+2, &
+                           loyGC:hiyGC, &
+                           lozGC:hizGC, &
+                           NDIM))
      end if
 #endif
 
@@ -249,7 +254,7 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
      gravZ = 0.
      if (hy_useGravity) then
         call Driver_abortFlash("Not using Gravity yet!")
-        call hy_putGravity(tileDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+!        call hy_putGravity(tileDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
@@ -319,8 +324,7 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
 #ifdef DEBUG_UHD
      print*,'getting face flux'
 #endif
-     call hy_getFaceFlux(tileDesc, tileDesc%limits, halo, &
-                         datasize, del, &
+     call hy_getFaceFlux(tileDesc, tileDesc%limits, halo, del, &
                          loFl, flx, fly, flz, &
                          scrchFaceXPtr, scrchFaceYPtr, scrchFaceZPtr, &
                          scrch_Ptr, hy_SpcR, hy_SpcL)
@@ -336,7 +340,7 @@ Subroutine hy_computeFluxes(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,tim
         print*,'and now update'
 #endif
         call hy_unsplitUpdate(tileDesc, Uin, Uout, updateMode, &
-                              dt, del, datasize, &
+                              dt, del, &
                               tileDesc%limits, halo, &
                               loFl, flx, fly, flz, &
                               gravX, gravY, gravZ, &

@@ -44,8 +44,6 @@ yr_boundary_type = "periodic"
 zl_boundary_type = "periodic"
 zr_boundary_type = "periodic"
 
-flux_correct = .FALSE.
-
 #	Simulation time, I/O  parameters
 cfl		 = 0.45
 basenm   = "sedov_"

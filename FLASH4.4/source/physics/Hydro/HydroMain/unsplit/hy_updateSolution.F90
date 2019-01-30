@@ -9,9 +9,7 @@
 !! SYNOPSIS
 !!
 !!  call hy_updateSolution(block_metadata_t(IN) :: blockDesc,
-!!                        integer(IN)          :: blkLimitsGC(LOW:HIGH,MDIM),
 !!       real,POINTER(in),dimension(:,:,:,:)   :: Uin,
-!!                        integer(IN)          :: blkLimits(LOW:HIGH,MDIM),
 !!       real,POINTER(in),dimension(:,:,:,:)   :: Uout,
 !!                        real(IN)             :: del(MDM),
 !!        real(IN)    :: timeEndAdv,
@@ -103,7 +101,7 @@
 
 !!REORDER(4): scrchFace[XYZ]Ptr
 
-Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
+Subroutine hy_updateSolution(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
   use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface,    ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -149,12 +147,9 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   real, pointer, dimension(:,:,:,:) :: Uin
 
   real,dimension(MDIM),intent(IN) :: del
-  integer,dimension(LOW:HIGH,MDIM),intent(IN) ::blkLimits,blkLimitsGC
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
   integer :: loFl(MDIM+1)
   type(flash_tile_t), intent(IN) :: tileDesc
-
-  integer, dimension(MDIM) :: datasize
 
   real, pointer, dimension(:,:,:,:)   :: flx
   real, pointer, dimension(:,:,:,:)   :: fly
@@ -234,8 +229,6 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 !!$        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
 !!$     endif
 
-     datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
-
      call hy_memGetBlkPtr(tileDesc,scrch_Ptr,SCRATCH_CTR)
 
 !!$     allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
@@ -263,7 +256,7 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      gravZ = 0.
      if (hy_useGravity) then
         call Driver_abortFlash("Not using Gravity yet!")
-        call hy_putGravity(tileDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+!        call hy_putGravity(tileDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
@@ -311,7 +304,7 @@ Subroutine hy_updateSolution(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 #endif
 
      call hy_unsplitUpdate(tileDesc, Uin, Uout, updateMode, &
-                           dt, del, datasize, &
+                           dt, del, &
                            tileDesc%limits, halo, &
                            loFl, flx, fly, flz, &
                            gravX, gravY, gravZ, &

@@ -10,7 +10,6 @@
 !!                        integer(IN) :: rangeSwitch,
 !!                        real(IN)    :: dt,
 !!                        real(IN)    :: del(MDM),
-!!                        integer(IN) :: dataSize(MDIM),
 !!                        integer(IN) :: blkLimits(2,MDIM),
 !!                        integer(IN) :: blkLimitsGC(2,MDIM),
 !!                        real(IN)    :: xflux(:,:,:,:), 
@@ -43,7 +42,6 @@
 !!                  are guard cells! Guard cells should not be modified by this routine.
 !!   dt           - timestep
 !!   del          - coordinate spacings in {X,Y,Z} directions
-!!   dataSize     - size of the current block
 !!   blkLimits    - an array that holds the lower and upper indices of the section
 !!                  of block without the guard cells
 !!   blkLimitsGC    - an array that holds the lower and upper indices of the section
@@ -72,7 +70,7 @@
 #include "Eos.h"
 #include "UHD.h"
 
-  Subroutine hy_unsplitUpdate(tileDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
+  Subroutine hy_unsplitUpdate(tileDesc,Uin,Uout,rangeSwitch,dt,del,blkLimits,&
                                   blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                   scrch_Ptr)
 
@@ -117,7 +115,6 @@
     integer,intent(IN) :: rangeSwitch
     real, intent(IN)   :: dt
     real, intent(IN)   :: del(MDIM)
-    integer,dimension(MDIM),intent(IN) :: dataSize
     integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
     integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
     integer, dimension(MDIM+1),intent(IN)        :: loFl
@@ -301,7 +298,7 @@
 #ifdef DEBUG_HYDRO_POSITIVITY
     ! DEV: TODO convert this to tileDesc%coordinates once it can be tested
     call Driver_abortFlash("Update this to use coordinates")
-    call    Grid_getCellCoords(IAXIS,tileDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+!    call    Grid_getCellCoords(IAXIS,tileDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
 #else
     if (hy_geometry /= CARTESIAN) then
        call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xCenter)
