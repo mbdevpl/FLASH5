@@ -102,6 +102,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
                    blockDesc,idest)
            end do
         end if
+        call itor%next()
      end do
      call Grid_releaseLeafIterator(itor)
   end do
