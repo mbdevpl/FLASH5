@@ -238,6 +238,7 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
         if(gr_meshMe == MASTER_PE)print*,'warning: trying to fill face along Y for 1D problem'
      end if
   case(FACEZ)
+
      if(NDIM>2) then
         beginDataType=FACEZ_DATATYPE
         endDataType=FACEZ_DATATYPE
@@ -246,34 +247,41 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
      end if
   end select
   
-  guard(:)=blkLimits(LOW,:)-blkLimitsGC(LOW,:) 
   call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
-     blkLimits(:,:)=blockDesc%limits
-     blkLimitsGC(:,:)=blockDesc%limitsGC
-     recvLeft(:,:)=1
-     sendLeft(:,:)=1
-     recvRight(:,:)=1
-     sendRight(:,:)=1
-     !! do a default initialization of all starting points
-     !! and then adjust individual ones as needed
-     !! index of interior cell which will be first GC in block to right
-     !! since the first index in the data strucutures in the variables,
-     !! The "x" entry in the data structure corresponds to IAXIS+1
-     do j = 1,NDIM
-        sendRight(j,j+1) = blkLimits(HIGH,j)-guard(j)+1
+  do i = beginDataType,endDataType
+     do while(itor%is_valid())
+        call itor%blkMetaData(blockDesc)
+        blkLimits(:,:)=blockDesc%limits
+        blkLimitsGC(:,:)=blockDesc%limitsGC
+        guard(:)=blkLimits(LOW,:)-blkLimitsGC(LOW,:) 
+        recvLeft(:,1)=1
+        sendLeft(:,1)=1
+        recvRight(:,1)=1
+        sendRight(:,1)=1
+        do k=1,MDIM
+           recvLeft(:,k+1)=blkLimitsGC(LOW,k)
+           sendLeft(:,k+1)=blkLimitsGC(LOW,k)
+           recvRight(:,k+1)=blkLimitsGC(LOW,k)
+           sendRight(:,k+1)=blkLimitsGC(LOW,k)
+        end do
+        !! do a default initialization of all starting points
+        !! and then adjust individual ones as needed
+        !! index of interior cell which will be first GC in block to right
+        !! since the first index in the data strucutures in the variables,
+        !! The "x" entry in the data structure corresponds to IAXIS+1
         
-        !index of first interior cell to be sent to be GC on block to left
-        sendLeft(j, j+1) = blkLimits(LOW,j)
-        
-        recvLeft(j, j+1) = blkLimits(HIGH,j)+1 !recv index of GC
-        recvRight(j,j+1) = blkLimitsGC(LOW,j)
-        call gr_shiftData(gr_axisComm(j), gr_exch(i,j), &
-             sendRight(j,:), sendLeft(j,:), &
-             recvRight(j,:),recvLeft(j,:),gr_gridDataStruct(i))
+        do j = 1,NDIM
+           sendRight(j,j+1) = blkLimits(HIGH,j) - guard(j) + 1
+           !index of first interior cell to be sent to be GC on block to left
+           sendLeft(j, j+1) = blkLimits(LOW,j) 
+           recvLeft(j, j+1) = blkLimits(HIGH,j)+1 !recv index of GC
+           
+           call gr_shiftData(gr_axisComm(j), gr_exch(i,j), &
+                sendRight(j,:), sendLeft(j,:), &
+                recvRight(j,:),recvLeft(j,:),gr_gridDataStruct(i))
+        end do
+        call itor%next()
      end do
-     call itor%next()
   end do
   if(.not.gr_allPeriodic) then
      do n = 0,NDIM-1

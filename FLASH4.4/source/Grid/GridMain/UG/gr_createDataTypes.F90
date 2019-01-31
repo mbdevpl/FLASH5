@@ -49,7 +49,7 @@ implicit none
   ! the datatype for the first dimension is contiguous in memory 
   ! mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype newtype)
   ! left and right, xdir
-  
+  i=1
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())
      call itor%blkMetaData(blockDesc)
