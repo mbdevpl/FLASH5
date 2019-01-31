@@ -64,15 +64,10 @@ subroutine gr_expandDomain (particlesInitialized)
 
   include 'Flash_mpi.h'
 
-  real, pointer:: solnData(:,:,:,:)
   logical, intent(out) :: particlesInitialized
-  integer :: lnblocks, lrefineMinSave
-
-
-  !!          Local variables and functions
 
   integer :: ntimes, i
-
+  integer :: lnblocks, lrefineMinSave
   integer :: count, cur_treedepth, grid_changed_anytime
   logical :: restart = .false.
   logical :: particlesPosnsDone, retainParticles
@@ -81,7 +76,10 @@ subroutine gr_expandDomain (particlesInitialized)
   character(len=32)                 :: int_to_str
   integer :: gridDataStruct, whichBlocks
   type(flash_iterator_t) :: itor
-  type(flash_tile_t) :: tileDesc
+  type(flash_tile_t)     :: tileDesc
+  real, pointer          :: solnData(:,:,:,:)
+
+  nullify(solnData)
 
   !!============================================================================
 

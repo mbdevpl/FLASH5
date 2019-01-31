@@ -63,15 +63,9 @@ subroutine gr_expandDomain (particlesInitialized)
 
   include 'Flash_mpi.h'
 
-  real, pointer:: solnData(:,:,:,:)
   logical, intent(out) :: particlesInitialized
-  integer :: lnblocks, lrefineMinSave
-
-
-  !!          Local variables and functions
 
   integer :: ntimes, i
-
   integer :: count, cur_treedepth, grid_changed_anytime
   logical :: restart = .false.
   logical :: particlesPosnsDone, retainParticles
@@ -79,14 +73,18 @@ subroutine gr_expandDomain (particlesInitialized)
   character(len=32), dimension(2,2) :: block_buff
   character(len=32)                 :: int_to_str
   integer :: gridDataStruct, whichBlocks
+  integer :: lnblocks, lrefineMinSave
   type(flash_iterator_t) :: itor
-  type(flash_tile_t) :: tileDesc
+  type(flash_tile_t)     :: tileDesc
+  real, pointer          :: solnData(:,:,:,:)
 
   !!============================================================================
 
 
 
   !!============================================================================
+
+  nullify(solnData)
 
   !! The beginning timestep number, time, and timestep.
   !! If the initial redshift (zinitial) is physical (>= 0),

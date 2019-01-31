@@ -495,6 +495,9 @@ contains
     ! This gives the client code the possibility to use either preprocessor
     ! checks to avoid calling this routine needlessly or to do runtime checks
     ! of pointers.
+    !
+    ! DEV: For now, the localFlag parameter might be useful as we pull in more
+    !      units from FLASH4.4.  Try to get rid of it along the way.
     subroutine getDataPtr(this, dataPtr, gridDataStruct, localFlag)
         use amrex_fort_module,      ONLY : wp => amrex_real
 
