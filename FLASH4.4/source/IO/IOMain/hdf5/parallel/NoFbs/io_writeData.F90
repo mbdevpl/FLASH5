@@ -386,7 +386,7 @@ subroutine io_writeData(fileID)
                       io_unklabelsGlobal(u), &
                       dowrite)
               else
-                 unkt(1,:,:,:,1) = real(unk(i,lo(IAXIS):hi(IAXIS),lo(KAXIS):hi(JAXIS),lo(KAXIS):hi(KAXIS),1), kind = single)
+                 unkt(1,:,:,:,1) = real(unk(i,lo(IAXIS):hi(IAXIS),lo(JAXIS):hi(JAXIS),lo(KAXIS):hi(KAXIS),1), kind = single)
                  call io_h5write_unknowns_sp(io_globalMe, &
                       fileID, & 
                       globalIndexLimits(IAXIS), &
