@@ -35,12 +35,12 @@
 !!REORDER(4): solnData
 
 subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
-      use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                                 Grid_getLeafIterator, Grid_releaseLeafIterator
+      use Grid_interface, ONLY : Grid_getTileIterator, &
+                                 Grid_releaseTileIterator
       use Driver_interface, ONLY : Driver_abortFlash
       use IO_data, only: io_unkToGlobal, io_globalComm
-      use leaf_iterator, ONLY : leaf_iterator_t
-      use block_metadata, ONLY : block_metadata_t
+      use flash_iterator, ONLY : flash_iterator_t
+      use flash_tile,     ONLY : flash_tile_t 
       implicit none
       
 #include "Flash_mpi.h"
@@ -62,8 +62,10 @@ subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
 
       integer :: ierr
       integer, dimension(2,MDIM) :: blkLmts
-      type(leaf_iterator_t)  :: itor
-      type(block_metadata_t) :: blockDesc
+      type(flash_iterator_t) :: itor
+      type(flash_tile_t)     :: tileDesc
+
+      nullify(solnData)
 
       if(nvars > 0) then
             allocate(varMin(nvars))
@@ -73,30 +75,30 @@ subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
             varMin(:) = huge(varMin)
             varMax(:) = -huge(varMax)
 
-            call Grid_getLeafIterator(itor)
-            do while (itor%is_valid())
-                  call itor%blkMetaData(blockDesc)
+            call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+            do while (itor%isValid())
+                  call itor%currentTile(tileDesc)
 
-                  call Grid_getBlkPtr(blockDesc, solnData, gridDataStruct)
-                  blkLmts   = blockDesc%limits !DEV: Add one for FACE-centered data?
+                  call tileDesc%getDataPtr(solnData, gridDataStruct)
+                  blkLmts = tileDesc%limits !DEV: Add one for FACE-centered data?
 
                   select case(gridDataStruct)
                   case(CENTER)
-                     do k = blkLmts(1,KAXIS), blkLmts(2,KAXIS)
-                              do j = blkLmts(1,JAXIS), blkLmts(2,JAXIS)
+                     do                k = blkLmts(1,KAXIS), blkLmts(2,KAXIS)
+                              do       j = blkLmts(1,JAXIS), blkLmts(2,JAXIS)
                                     do i = blkLmts(1,IAXIS), blkLmts(2,IAXIS)
                                           do n = UNK_VARS_BEGIN, UNK_VARS_END
                                                 if(io_unkToGlobal(n) > 0) then
                                                 varMin(io_unkToGlobal(n)) = min(varMin(io_unkToGlobal(n)), solnData(n,i,j,k))
                                                 varMax(io_unkToGlobal(n)) = max(varMax(io_unkToGlobal(n)), solnData(n,i,j,k))
-                                       end if
+                                                end if
                                           enddo
                                     enddo
                               enddo
                         enddo
                   case(SCRATCH, FACEX, FACEY, FACEZ)
-                        do k = blkLmts(1,KAXIS), blkLmts(2,KAXIS)
-                              do j = blkLmts(1,JAXIS), blkLmts(2,JAXIS)
+                        do             k = blkLmts(1,KAXIS), blkLmts(2,KAXIS)
+                              do       j = blkLmts(1,JAXIS), blkLmts(2,JAXIS)
                                     do i = blkLmts(1,IAXIS), blkLmts(2,IAXIS)
                                           do n = 1, nvars
                                                 !if(.not. io_unkActive(n)) cycle
@@ -112,10 +114,11 @@ subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
                   
                   ! doing Grid_releaseBlkPtr expansion by hand, see: drift
                   call Driver_driftSetSrcLoc(__FILE__,__LINE__)
-                  call Grid_releaseBlkPtr(blockDesc, solnData, gridDataStruct)
+                  call tileDesc%releaseDataPtr(solnData, gridDataStruct)
                   
                   call itor%next()
             enddo
+            call Grid_releaseTileIterator(itor)
 
             ! now do a global minimization or maximization
             call MPI_AllReduce(varMin, globalVarMin, nvars, FLASH_REAL, &

@@ -25,104 +25,96 @@
 
 !!REORDER(4):solnData
 
+#include "constants.h"
+#include "Flash.h"
+
 subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
-  
-  use Driver_interface, ONLY: Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkPhysicalSize, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getLeafIterator, Grid_releaseLeafIterator
-  use Grid_data, ONLY : gr_meshComm
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use Driver_interface, ONLY : Driver_abortFlash
+  use Grid_interface,   ONLY : Grid_getTileIterator, &
+                               Grid_releaseTileIterator
+  use Grid_data,        ONLY : gr_meshComm
+  use flash_iterator,   ONLY : flash_iterator_t
+  use flash_tile,       ONLY : flash_tile_t
 
   implicit none
 
-#include "constants.h"
-#include "Flash.h"
+  integer, intent(in)  :: iSrc
+  integer, intent(in)  :: iType
+  logical, intent(in)  :: bGuardcell
+  real,    intent(out) :: mean
+
 #include "Flash_mpi.h"
 
-  integer, intent(in) :: iSrc, iType
-  logical, intent(in) :: bGuardcell
-  real, intent(out) :: mean
-
-  real :: localVolume, localSum, blockSum, bvol,  sum
+  real :: localVolume, localSum, blockSum, sum
   real :: numZonesInv
 
   real :: blockVolume, cellVolume, volume
   integer :: i, j, k, ierr
   integer :: ili, iui, jli, jui, kli, kui
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(2,MDIM) :: limits
   real, dimension(MDIM) :: blockSize
   real, dimension(:,:,:,:), pointer :: solnData
   integer :: nxbBlock, nybBlock, nzbBlock
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t)     :: tileDesc
 !!==============================================================================
 
+  nullify(solnData)
+
   mean = 0.0
+  
+  call Driver_abortFlash("[gr_findMean] This has not been tested yet after updates")
 
   if (iType /= 2) then
      call Driver_abortFlash("[gr_findMean] Can only do arithmetic mean with iType=1")
-  end if
-  if (bGuardCell) then
+  else if (bGuardCell) then
      call Driver_abortFlash("[gr_findMean] Inclusion of guardcells not yet coded")
   end if
 
   localVolume = 0.
   localSum = 0.
 
-  call Grid_getLeafIterator(itor)
-  do while (itor%is_valid())
-     call itor%blkMetaData(blockDesc)
-     
-     blkLimits   = blockDesc%limits
-     blkLimitsGC = blockDesc%limitsGC
-     call Grid_getBlkPtr(blockDesc, solnData)
+  call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+  do while (itor%isValid())
+     call itor%currentTile(tileDesc)
+
+     limits = tileDesc%limits
+     call tileDesc%getDataPtr(solnData, CENTER)
 
      ! DEVNOTE: This appears to be for Cartesian only blocks/cells.
      !          Do we need to calculate physical volume or could cell/block
      !          count could be used?
-     call Grid_getBlkPhysicalSize(blockDesc, blockSize)
+     call tileDesc%physicalSize(blockSize)
 
      blockVolume = blockSize(IAXIS)
-     nxbBlock = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
+     nxbBlock = limits(HIGH,IAXIS) - limits(LOW,IAXIS) + 1
      numZonesInv = 1. / real(nxbBlock)
 
      if (NDIM >= 2) then
         blockVolume = blockVolume * blockSize(JAXIS)
-        nybBlock = blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1
+        nybBlock = limits(HIGH,JAXIS) - limits(LOW,JAXIS) + 1
         numZonesInv = numZonesInv / real(nybBlock)
      end if
 
      if (NDIM == 3) then
         blockVolume = blockVolume * blockSize(KAXIS)
-        nzbBlock = blkLimits(HIGH,KAXIS) - blkLimits(LOW,KAXIS) + 1
+        nzbBlock = limits(HIGH,KAXIS) - limits(LOW,KAXIS) + 1
         numZonesInv = numZonesInv / real(nzbBlock)
      end if
-
 
      cellVolume = blockVolume * numZonesInv
      localVolume = localVolume + blockVolume
      blockSum = 0.
 
-     if (bGuardcell) then
-        ili = blkLimitsGC(LOW,IAXIS)
-        iui = blkLImitsGC(HIGH,IAXIS)
-        jli = blkLimitsGC(LOW,JAXIS)
-        jui = blkLImitsGC(HIGH,JAXIS)
-        kli = blkLimitsGC(LOW,KAXIS)
-        kui = blkLImitsGC(HIGH,KAXIS)
-     else
-        ili = blkLimits(LOW,IAXIS)
-        iui = blkLImits(HIGH,IAXIS)
-        jli = blkLimits(LOW,JAXIS)
-        jui = blkLImits(HIGH,JAXIS)
-        kli = blkLimits(LOW,KAXIS)
-        kui = blkLImits(HIGH,KAXIS)
-     endif
+     ili = limits(LOW,IAXIS)
+     iui = limits(HIGH,IAXIS)
+     jli = limits(LOW,JAXIS)
+     jui = limits(HIGH,JAXIS)
+     kli = limits(LOW,KAXIS)
+     kui = limits(HIGH,KAXIS)
 
-     do k = kli, kui
-        do j = jli, jui
+     do       k = kli, kui
+        do    j = jli, jui
            do i = ili, iui
               blockSum = blockSum + solnData(iSrc,i,j,k)
            enddo
@@ -131,12 +123,11 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
 
      localSum = localSum + blockSum * cellVolume
 
-     call Grid_releaseBlkPtr(blockDesc, solnData)
-     nullify(solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
 
      call itor%next()
   enddo
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   call mpi_allreduce ( localSum, sum, 1, FLASH_REAL, & 
        MPI_SUM, gr_meshComm, ierr )
@@ -144,8 +135,5 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
        MPI_SUM, gr_meshComm, ierr )
 
   mean = sum / volume
-
-  return
-
 end subroutine gr_findMean
 

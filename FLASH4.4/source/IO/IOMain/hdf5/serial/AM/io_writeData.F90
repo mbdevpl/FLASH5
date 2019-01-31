@@ -49,11 +49,11 @@
 
 subroutine io_writeData (fileID)
 
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-       Grid_getLocalNumBlks
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
-  use gr_iterator, ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_interface, ONLY : Grid_getLocalNumBlks, &
+                             Grid_getTileIterator, &
+                             Grid_releaseTileIterator
+  use flash_iterator, ONLY : flash_iterator_t
+  use flash_tile,     ONLY : flash_tile_t
 
   use io_typeInterface, ONLY : io_xfer_tree_data
 
@@ -76,7 +76,6 @@ subroutine io_writeData (fileID)
        io_plotFaceVarStr, io_plotfileMetadataDP, io_plotfileGridQuantityDP, &
        io_fileFormatVersion, tree_data_t
   use io_intfTypesModule, ONLY : io_fileID_t
-  use Grid_interface, ONLY : Grid_getLocalNumBlks
 
   use Grid_data, ONLY : gr_globalNumBlocks
   use gr_specificData, ONLY : gr_ioBlkNodeType, gr_ioBlkCoords, gr_ioBlkBsize , gr_ioBlkBoundBox, &
@@ -91,8 +90,8 @@ subroutine io_writeData (fileID)
 
   integer(io_fileID_t), INTENT(in) :: fileID
 
-  type(gr_iterator_t)  :: itor
-  type(block_metadata_t) :: blockDesc
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t)     :: tileDesc
   integer :: lb
   real, dimension(:,:,:,:), POINTER :: solnData
 
@@ -174,6 +173,8 @@ subroutine io_writeData (fileID)
        gsurr_blkst(2,1+(K1D*2),1+(K2D*2),1+(K3D*2),MAXBLOCKS)
 #endif
   integer, parameter :: presentDims = MDIM, libType = IO_FILE_HDF5
+
+  nullify(solnData)
 
   if (io_globalMe == MASTER_PE) then
      print*,'fileID=',fileID
@@ -599,16 +600,16 @@ subroutine io_writeData (fileID)
 
               if (localNumBlockst > 0) then
                  allocate(unkt(NXB,NYB,NZB, localNumBlockst))
-                 call gr_getBlkIterator(itor);  lb = 1
-                 do while (itor%is_valid())
-                    call itor%blkMetaData(blockDesc)
-                    call Grid_getBlkPtr(blockDesc, solnData, localFlag=.TRUE.)
+                 call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.);  lb = 1
+                 do while (itor%isValid())
+                    call itor%currentTile(tileDesc)
+                    call tileDesc%getDataPtr(solnData, CENTER, localFlag=.TRUE.)
                     unkt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi, &
                          io_klo:io_khi)
-                    call Grid_releaseBlkPtr(blockDesc, solnData)
+                    call tileDesc%releaseDataPtr(solnData, CENTER)
                     call itor%next();              lb = lb+1
                  enddo
-                 call gr_releaseBlkIterator(itor)
+                 call Grid_releaseTileIterator(itor)
               end if
            end if !end if jprocs /= MASTER_PE
 
@@ -687,16 +688,16 @@ subroutine io_writeData (fileID)
            if (localNumBlocks > 0) then
               allocate(unkt(NXB, NYB, NZB, localNumBlocks))
 
-              call gr_getBlkIterator(itor);  lb = 1
-              do while (itor%is_valid())
-                 call itor%blkMetaData(blockDesc)
-                 call Grid_getBlkPtr(blockDesc, solnData, localFlag=.TRUE.)
+              call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.);  lb = 1
+              do while (itor%isValid())
+                 call itor%currentTile(tileDesc)
+                 call tileDesc%getDataPtr(solnData, CENTER, localFlag=.TRUE.)
                  unkt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi, &
                       io_klo:io_khi)
-                 call Grid_releaseBlkPtr(blockDesc, solnData)
+                 call tileDesc%releaseDataPtr(solnData, CENTER)
                  call itor%next();              lb = lb+1
               enddo
-              call gr_releaseBlkIterator(itor)
+              call Grid_releaseTileIterator(itor)
 
 
               call MPI_SEND( &
@@ -796,27 +797,27 @@ subroutine io_writeData (fileID)
               if(NDIM .gt. 1) allocate(faceyt(NXB,NYB+1,NZB,localNumBlocks))
               if(NDIM .gt. 2) allocate(facezt(NXB,NYB,NZB+1,localNumBlocks))
 
-                call gr_getBlkIterator(itor);  lb = 1
-                do while (itor%is_valid())
-                call itor%blkMetaData(blockDesc)
-                call Grid_getBlkPtr(blockDesc, solnData, FACEX, localFlag=.TRUE.)
+                call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.);  lb = 1
+                do while (itor%isValid())
+                call itor%currentTile(tileDesc)
+                call tileDesc%getDataPtr(solnData, FACEX, localFlag=.TRUE.)
                 facext(:,:,:,lb) = solnData(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi)
-                call Grid_releaseBlkPtr(blockDesc, solnData)
+                call tileDesc%releaseDataPtr(solnData, FACEX)
                 
                 if(NDIM .gt. 1) then
-                    call Grid_getBlkPtr(blockDesc, solnData, FACEY, localFlag=.TRUE.)
+                    call tileDesc%getDataPtr(solnData, FACEY, localFlag=.TRUE.)
                     faceyt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi)
-                    call Grid_releaseBlkPtr(blockDesc, solnData)
+                    call tileDesc%releaseDataPtr(solnData, FACEY)
                 endif
                 
                 if(NDIM .gt. 2) then
-                    call Grid_getBlkPtr(blockDesc, solnData, FACEZ, localFlag=.TRUE.)
+                    call tileDesc%getDataPtr(solnData, FACEZ, localFlag=.TRUE.)
                     facezt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1)
-                    call Grid_releaseBlkPtr(blockDesc, solnData)
+                    call tileDesc%releaseDataPtr(solnData, FACEZ)
                 endif
                 call itor%next();              lb = lb+1
                 enddo
-                call gr_releaseBlkIterator(itor)
+                call Grid_releaseTileIterator(itor)
 !               facext(:,:,:,:) = facevarx(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi, 1:localNumBlocks)
 !               if(NDIM .gt. 1) faceyt(:,:,:,:) = facevary(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi, 1:localNumBlocks)
 !               if(NDIM .gt. 2) facezt(:,:,:,:) = facevarz(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1, 1:localNumBlocks)
@@ -871,27 +872,27 @@ subroutine io_writeData (fileID)
                  if(NDIM .gt. 1) allocate(faceyt(NXB,NYB+1,NZB,localNumBlocks))
                  if(NDIM .gt. 2) allocate(facezt(NXB,NYB,NZB+1,localNumBlocks))
 
-                call gr_getBlkIterator(itor);  lb = 1
-                do while (itor%is_valid())
-                call itor%blkMetaData(blockDesc)
-                call Grid_getBlkPtr(blockDesc, solnData, FACEX, localFlag=.TRUE.)
+                call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.);  lb = 1
+                do while (itor%isValid())
+                call itor%currentTile(tileDesc)
+                call tileDesc%getDataPtr(solnData, FACEX, localFlag=.TRUE.)
                 facext(:,:,:,lb) = solnData(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi)
-                call Grid_releaseBlkPtr(blockDesc, solnData)
+                call tileDesc%releaseDataPtr(solnData, FACEX)
                 
                 if(NDIM .gt. 1) then
-                    call Grid_getBlkPtr(blockDesc, solnData, FACEY, localFlag=.TRUE.)
+                    call tileDesc%getDataPtr(solnData, FACEY, localFlag=.TRUE.)
                     faceyt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi)
-                    call Grid_releaseBlkPtr(blockDesc, solnData)
+                    call tileDesc%releaseDataPtr(solnData, FACEY)
                 endif
                 
                 if(NDIM .gt. 2) then
-                    call Grid_getBlkPtr(blockDesc, solnData, FACEZ, localFlag=.TRUE.)
+                    call tileDesc%getDataPtr(solnData, FACEZ, localFlag=.TRUE.)
                     facezt(:,:,:,lb) = solnData(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1)
-                    call Grid_releaseBlkPtr(blockDesc, solnData)
+                    call tileDesc%releaseDataPtr(solnData, FACEZ)
                 endif
                 call itor%next();              lb = lb+1
                 enddo
-                call gr_releaseBlkIterator(itor)
+                call Grid_releaseTileIterator(itor)
 !                  facext(:,:,:,:) = facevarx(i, io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi, 1:localNumBlocks)
 !                  if(NDIM .gt. 1) faceyt(:,:,:,:) = facevary(i, io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi, 1:localNumBlocks)
 !                  if(NDIM .gt. 2) facezt(:,:,:,:) = facevarz(i, io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1, 1:localNumBlocks)

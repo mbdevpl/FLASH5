@@ -64,7 +64,7 @@ contains
         type(gr_iterator_t), intent(OUT)          :: itor
         integer,               intent(IN), optional :: level
         logical,               intent(IN), optional :: tiling
-
+        
         call Driver_abortFlash("[build_iterator] You are working with a useless gr_iterator_t stub")
     end subroutine build_iterator
 
@@ -106,7 +106,7 @@ contains
     logical function is_valid(this)
         class(gr_iterator_t), intent(IN) :: this
 
-        write(*,*) "You are working with a useless gr_iterator_t stub"
+        write(*,*) "[is_valid] You are working with a useless gr_iterator_t stub"
         stop
     end function is_valid
 
@@ -126,7 +126,7 @@ contains
     subroutine next(this)
         class(gr_iterator_t), intent(INOUT) :: this
 
-        write(*,*) "You are working with a useless gr_iterator_t stub"
+        write(*,*) "[next] You are working with a useless gr_iterator_t stub"
         stop
     end subroutine next
 
@@ -144,10 +144,12 @@ contains
     !!
     !!****
     subroutine blkMetaData(this, mData)
+        use block_metadata, ONLY : block_metadata_t
+
         class(gr_iterator_t), intent(IN)  :: this
         type(block_metadata_t), intent(OUT) :: mData
 
-        write(*,*) "You are working with a useless gr_iterator_t stub"
+        write(*,*) "[blkMetaData] You are working with a useless gr_iterator_t stub"
         stop
     end subroutine blkMetaData
     

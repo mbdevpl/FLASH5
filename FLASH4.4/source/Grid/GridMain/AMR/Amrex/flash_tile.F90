@@ -88,7 +88,7 @@ module flash_tile
         procedure, public :: coordinates
         procedure, public :: faceAreas
         procedure, public :: cellVolumes
-!        procedure, public :: physicalSize
+        procedure, public :: physicalSize
 !        procedure, public :: onDomainBoundary
 !        procedure, public :: outsideDomain
         procedure, public :: getDataPtr
@@ -432,6 +432,24 @@ contains
       end select
     end subroutine cellVolumes
 
+    ! DEV: FIXME What should the size be for the dimensions > NDIM?
+    !            Should we follow the same rules used to compute
+    !            cell volumes (See User Manual).
+    subroutine physicalSize(this, tileSize) 
+        use amrex_amrcore_module, ONLY : amrex_geom
+
+        class(flash_tile_t), intent(IN)  :: this
+        real,                intent(OUT) :: tileSize(1:MDIM) 
+
+        tileSize(:) = 0.0
+
+        associate(dx => amrex_geom(this%level - 1)%dx, &
+                  lo => this%limits(LOW,  :), &
+                  hi => this%limits(HIGH, :))
+            tileSize(1:NDIM) = (hi(1:NDIM) - lo(1:NDIM) + 1) * dx(1:NDIM)
+        end associate
+    end subroutine physicalSize
+
     function enclosingBlock(this)
         use amrex_fort_module,    ONLY : wp => amrex_real
         use amrex_box_module,     ONLY : amrex_box
@@ -477,7 +495,7 @@ contains
     ! This gives the client code the possibility to use either preprocessor
     ! checks to avoid calling this routine needlessly or to do runtime checks
     ! of pointers.
-    subroutine getDataPtr(this, dataPtr, gridDataStruct)
+    subroutine getDataPtr(this, dataPtr, gridDataStruct, localFlag)
         use amrex_fort_module,      ONLY : wp => amrex_real
 
         use gr_physicalMultifabs,   ONLY : unk, &
@@ -488,6 +506,7 @@ contains
         class(flash_tile_t), intent(IN),  target   :: this
         real(wp),                         pointer  :: dataPtr(:, :, :, :)
         integer,             intent(IN)            :: gridDataStruct
+        logical,             intent(IN),  optional :: localFlag
 
         integer :: lo(1:MDIM)
 
@@ -497,13 +516,23 @@ contains
         end if
 
         lo = this%blkLimitsGC(LOW, :)
+  
         ! These multifabs are hardwired at creation so that the FAB data only
         ! exists for the block interiors
         if (     (gridDataStruct == SCRATCH_CTR) .OR. (gridDataStruct == FLUXX) & 
             .OR. (gridDataStruct == FLUXY)       .OR. (gridDataStruct == FLUXZ)) then
            lo(1:NDIM) = lo(1:NDIM) + NGUARD
+           if (present(localFlag)) then
+               if (localFlag) then
+                   lo(1:NDIM) = NGUARD + 1
+               end if
+           end if
+        else if (present(localFlag)) then
+            if (localFlag) then
+                lo(:) = 1
+            end if
         end if
-  
+
         ! Multifab arrays use 0-based level index set (AMReX) instead of 
         ! 1-based set (FLASH/block)
         associate (ilev => this%level - 1, &

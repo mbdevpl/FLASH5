@@ -38,13 +38,13 @@
 subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
   use IO_data, ONLY : io_restart, io_statsFileName, io_globalComm
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getLeafIterator, Grid_releaseLeafIterator, &
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+                             Grid_releaseTileIterator, &
                              Grid_getSingleCellVol 
 
   use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use flash_iterator, ONLY : flash_iterator_t
+  use flash_tile,     ONLY : flash_tile_t
 
   implicit none
 
@@ -63,9 +63,8 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   
   character (len=MAX_STRING_LENGTH), save :: fname
 
-  integer :: blkLimits(HIGH, MDIM), blkLimitsGC(HIGH, MDIM)
-  type(leaf_iterator_t)  :: itor
-  type(block_metadata_t) :: blockDesc
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t)     :: tileDesc
 
 #ifdef MAGP_VAR
   integer, parameter ::  nGlobalSumProp = 8              ! Number of globally-summed regular quantities
@@ -84,6 +83,8 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   integer :: point(MDIM)
   integer :: ioStat
 
+  nullify(solnData)
+
   if (io_writeMscalarIntegrals) then
      nGlobalSumUsed = nGlobalSum
   else
@@ -94,28 +95,19 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   gsum(1:nGlobalSumUsed) = 0.
   lsum(1:nGlobalSumUsed) = 0.
 
-  call Grid_getLeafIterator(itor)
-  do while (itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while (itor%isValid())
+     call itor%currentTile(tileDesc)
 
-     !get the index limits of the block
-     blkLimits   = blockDesc%limits
-     blkLimitsGC = blockDesc%limitsGC
-
-     ! get a pointer to the current block of data
-     call Grid_getBlkPtr(blockDesc, solnData)
+     call tileDesc%getDataPtr(solnData, CENTER)
 
      ! Sum contributions from the indicated blkLimits of cells.
-     do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
-        do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
-           do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
+     do       k = tileDesc%limits(LOW,KAXIS), tileDesc%limits(HIGH,KAXIS)
+        do    j = tileDesc%limits(LOW,JAXIS), tileDesc%limits(HIGH,JAXIS)
+           do i = tileDesc%limits(LOW,IAXIS), tileDesc%limits(HIGH,IAXIS)
 
-              point(IAXIS) = i
-              point(JAXIS) = j
-              point(KAXIS) = k
-
-!! Get the cell volume for a single cell
-              call Grid_getSingleCellVol(blockDesc, point, dvol)
+              !! Get the cell volume for a single cell
+              call Grid_getSingleCellVol([i, j, k], tileDesc%level, dvol)
 
               ! mass
 #ifdef DENS_VAR
@@ -196,13 +188,11 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
            enddo
         enddo
      enddo
-     call Grid_releaseBlkPtr(blockDesc, solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
 
      call itor%next()
   enddo
-#if defined(__GFORTRAN__) && (__GNUC__ <= 4)
-  call Grid_releaseLeafIterator(itor)
-#endif
+  call Grid_releaseTileIterator(itor)
 
   ! Now the MASTER_PE sums the local contributions from all of
   ! the processors and writes the total to a file.

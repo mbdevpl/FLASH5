@@ -53,7 +53,6 @@ subroutine gr_markInRadius(ic, jc, kc, radius, lev, tags, tagval)
   use Driver_interface,       ONLY : Driver_abortFlash
   use Grid_data,              ONLY : gr_geometry
   use Grid_interface,         ONLY : Grid_getBlkCenterCoords, Grid_getBlkPhysicalSize
-  use gr_interface,           ONLY : gr_getBlkIterator, gr_releaseBlkIterator
   use gr_physicalMultifabs,   ONLY : unk
   use block_metadata,         ONLY : block_metadata_t
 #include "constants.h"

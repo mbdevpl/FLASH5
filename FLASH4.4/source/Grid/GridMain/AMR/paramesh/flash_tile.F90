@@ -24,9 +24,11 @@ module flash_tile
         integer :: blkLimitsGC(LOW:HIGH, MDIM)
     contains
         procedure, public :: deltas
+        procedure, public :: boundBox
         procedure, public :: coordinates
         procedure, public :: faceAreas
         procedure, public :: cellVolumes
+        procedure, public :: physicalSize
         procedure, public :: getDataPtr
         procedure, public :: releaseDataPtr
     end type flash_tile_t
@@ -41,6 +43,21 @@ contains
 
         dx(1:MDIM) = gr_delta(1:MDIM, this%level)
     end subroutine deltas
+
+    subroutine boundBox(this, box)
+        use tree,             ONLY : bnd_box
+        use Driver_interface, ONLY : Driver_abortFlash
+
+        class(flash_tile_t), intent(IN)  :: this
+        real,                intent(OUT) :: box(LOW:HIGH, 1:MDIM)
+  
+        if (this%id <= 0) then
+           print *, "blockId = ", this%id
+           call Driver_abortFlash("[boundBox] blockId out of bounds")
+        end if
+  
+        box = bnd_box(:, :, this%id)
+    end subroutine boundBox 
 
     subroutine coordinates(this, axis, edge, region, coords)
         use Grid_data,        ONLY : gr_globalDomain, &
@@ -340,6 +357,15 @@ contains
          deallocate(centerCoords)
       end select
     end subroutine cellVolumes
+
+    subroutine physicalSize(this, tileSize) 
+        use tree, ONLY : bsize
+
+        class(flash_tile_t), intent(IN)  :: this
+        real,                intent(OUT) :: tileSize(1:MDIM) 
+      
+        tileSize = bsize(:, this%id)
+    end subroutine physicalSize
 
     subroutine getDataPtr(this, dataPtr, gridDataStruct)
         use physicaldata,    ONLY : unk, &
