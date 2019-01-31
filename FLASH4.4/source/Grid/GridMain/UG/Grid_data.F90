@@ -24,68 +24,12 @@ Module Grid_data
 #include "Flash.h"
 #include "constants.h"
 
-#ifdef FIXEDBLOCKSIZE
 
-
-#if NSCRATCH_GRID_VARS > 0
-  real, save, target :: scratch(SCRATCH_GRID_VARS_BEGIN:SCRATCH_GRID_VARS_END,&
-                                GRID_ILO_GC:GRID_IHI_GC+1, &
-                                GRID_JLO_GC:GRID_JHI_GC+1, &
-                                GRID_KLO_GC:GRID_KHI_GC+1,1)
-       
-#else
-  real, save,target :: scratch(1,1,1,1,1)
-#endif
-
-#if NSCRATCH_CENTER_VARS > 0
-  real, save, target :: scratch_ctr(SCRATCH_CENTER_VARS_BEGIN:SCRATCH_CENTER_VARS_END,&
-                 GRID_ILO_GC:GRID_IHI_GC,&
-                 GRID_JLO_GC:GRID_JHI_GC,&
-                 GRID_KLO_GC:GRID_KHI_GC,1)
-#else
-  real, save,target :: scratch_ctr(1,1,1,1,1)
-#endif
-
-#if(NSCRATCH_FACEX_VARS>0)
-  real, save, target :: &
-       scratch_facevarx( SCRATCH_FACEX_VARS_BEGIN:SCRATCH_FACEX_VARS_END,&
-                         GRID_ILO_GC:GRID_IHI_GC+1,&
-                         GRID_JLO_GC:GRID_JHI_GC,  &
-                         GRID_KLO_GC:GRID_KHI_GC,1)
-#else
-  real, save,target,dimension(1,1,1,1,1)::scratch_facevarx
-#endif
-
-#if(NSCRATCH_FACEY_VARS>0)
-  real, save, target :: &
-       scratch_facevary( SCRATCH_FACEY_VARS_BEGIN:SCRATCH_FACEY_VARS_END,&
-                         GRID_ILO_GC:GRID_IHI_GC,    &
-                         GRID_JLO_GC:GRID_JHI_GC+K2D,&
-                         GRID_KLO_GC:GRID_KHI_GC,1)
-#else
-  real, save,target,dimension(1,1,1,1,1)::scratch_facevary
-#endif
-
-#if(NSCRATCH_FACEZ_VARS>0)
-  real, save, target :: &
-       scratch_facevarz( SCRATCH_FACEZ_VARS_BEGIN:SCRATCH_FACEZ_VARS_END,&
-                         GRID_ILO_GC:GRID_IHI_GC, &
-                         GRID_JLO_GC:GRID_JHI_GC, &
-                         GRID_KLO_GC:GRID_KHI_GC+K3D,1) 
-#else
-  real, save,target,dimension(1,1,1,1,1)::scratch_facevarz
-#endif
-
-
-#else
-  !NONFIXEDBLOCKSIZE.
   real, save, target, allocatable :: scratch(:,:,:,:,:)
   real, save, target, allocatable :: scratch_ctr(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevarx(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevary(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevarz(:,:,:,:,:)
-#endif
-!End of ifdef FIXEDBLOCKSIZE
 
 
   integer, parameter :: lnblocks = 1
