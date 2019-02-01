@@ -5,16 +5,6 @@ import re
 import globals
 from globals import * # for GVars
    
-# helper to split multi-line strings and flatten nested iterables into one long iterator of strings
-def flatten(it):
-   if type(it) == type(""):
-      for x in it.split('\n'):
-         yield x
-      else:
-         for x in it:
-            for y in flatten(x):
-               yield y
-
 class preProcess:
 
    rif = re.compile(r"^\s*IF\s*(?P<cond>.*)\s*$")
@@ -52,6 +42,15 @@ class preProcess:
           ns = __import__("genLinesPrelude")
           # execute the code object within the prelude'd namespace
           exec(code, ns.__dict__)
+          # helper to split multi-line strings and flatten nested iterables into one long iterator of strings
+          def flatten(it):
+              if type(it) == type(""):
+                  for x in it.split('\n'):
+                      yield x
+              else:
+                  for x in it:
+                      for y in flatten(x):
+                          yield y
           # def guarddict(d):
           #     def baduser(msg):
           #         e = Exception()
