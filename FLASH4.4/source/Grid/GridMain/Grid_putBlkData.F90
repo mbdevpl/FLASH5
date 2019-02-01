@@ -448,9 +448,9 @@ subroutine Grid_putBlkData(block, gridDataStruct, structIndex, beginCount, &
 !!$#endif
 !!$     end select
      
-     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr_blk(block,solnData,gridDataStruct)
      solnData(structIndex,xb:xe,yb:ye,zb:ze)=datablock(:,:,:)
-     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr_blk(block,solnData,gridDataStruct)
   else
      
      call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))

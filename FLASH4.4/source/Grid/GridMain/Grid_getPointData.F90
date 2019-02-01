@@ -341,9 +341,9 @@ subroutine Grid_getPointData(blockDesc, gridDataStruct, structIndex, beginCount,
      end if
      datablock=cellvalues(1,1,1)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
      datablock = solnData(structIndex,i,j,k)
-     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
   else
      call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then

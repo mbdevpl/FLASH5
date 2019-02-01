@@ -26,10 +26,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-! DEVNOTE: Need REORDER directive here?
-subroutine gr_releaseInteriorBlkPtr(block,dataPtr,gridDataStruct)
-  use Grid_interface,   ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                               Grid_getNumVars
+subroutine gr_releaseInteriorBlkPtr_blk(block,dataPtr,gridDataStruct)
   use Driver_interface, ONLY : Driver_abortFlash
   use block_metadata,   ONLY : block_metadata_t
 
@@ -40,4 +37,18 @@ subroutine gr_releaseInteriorBlkPtr(block,dataPtr,gridDataStruct)
   integer, intent(in) :: gridDataStruct
 
   call Driver_abortFlash("[gr_releaseInteriorBlkPtr]: Not implemented yet!")
+end subroutine gr_releaseInteriorBlkPtr_blk
+
+subroutine gr_releaseInteriorBlkPtr(tileDesc, dataPtr, gridDataStruct)
+  use Driver_interface, ONLY : Driver_abortFlash
+  use flash_tile,       ONLY : flash_tile_t
+
+  implicit none
+
+  type(flash_tile_t), intent(in)         :: tileDesc
+  real,                          pointer :: dataPtr(:,:,:,:)
+  integer,            intent(in)         :: gridDataStruct
+
+  call Driver_abortFlash("[gr_releaseInteriorBlkPtr]: Not implemented yet!")
 end subroutine gr_releaseInteriorBlkPtr
+

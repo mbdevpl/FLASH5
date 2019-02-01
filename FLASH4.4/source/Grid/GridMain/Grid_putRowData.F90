@@ -229,7 +229,10 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_putRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
+#include "constants.h"
+#include "Flash.h"
+
+subroutine Grid_putRowData_blk(blockDesc, gridDataStruct, structIndex, beginCount, &
      row, startingPos, datablock, dataSize)
 
   use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
@@ -240,8 +243,6 @@ subroutine Grid_putRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
 
   implicit none
 
-#include "constants.h"
-#include "Flash.h"
 #ifdef Grid_releaseBlkPtr
 ! disabling per-block drift logging because this routine gets called too much
 ! and clogs the drift logs with too much noise.  see: drift
@@ -444,11 +445,11 @@ subroutine Grid_putRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
   if(NDIM > 2) k = startingPos(KAXIS) + begOffset(KAXIS)
   
   if(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
      if(row==IAXIS)solnData(structIndex,i:i+datasize-1,j,k)= datablock(:)
      if(row==JAXIS)solnData(structIndex,i,j:j+datasize-1,k)= datablock(:)
      if(row==KAXIS)solnData(structIndex,i,j,k:k+datasize-1)= datablock(:)
-     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
   else
      call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
@@ -461,6 +462,242 @@ subroutine Grid_putRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
      if(row==JAXIS)solnData(structIndex,i,j:j+datasize-1,k)= datablock(:)
      if(row==KAXIS)solnData(structIndex,i,j,k:k+datasize-1)= datablock(:)
      call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
+  end if
+  return
+end subroutine Grid_putRowData_blk
+
+subroutine Grid_putRowData(tileDesc, gridDataStruct, structIndex, beginCount, &
+                           row, startingPos, datablock, dataSize)
+  use Driver_interface, ONLY : Driver_abortFlash
+  use gr_interface,     ONLY : gr_getInteriorBlkPtr, &
+                               gr_releaseInteriorBlkPtr
+  use flash_tile,       ONLY : flash_tile_t
+
+  implicit none
+
+#ifdef Grid_releaseBlkPtr
+! disabling per-block drift logging because this routine gets called too much
+! and clogs the drift logs with too much noise.  see: drift
+#undef Grid_releaseBlkPtr
+#endif
+
+  type(flash_tile_t), intent(in)         :: tileDesc
+  integer,            intent(in)         :: structIndex
+  integer,            intent(in)         :: beginCount
+  integer,            intent(in)         :: row
+  integer,            intent(in)         :: gridDataStruct
+  integer,            intent(in)         :: startingPos(MDIM)
+  integer,            intent(in)         :: dataSize
+  real,               intent(in)         :: datablock(dataSize)
+  real,                          pointer :: solnData(:,:,:,:)
+
+  integer :: i, j ,k
+  integer,dimension(MDIM)::begOffset,dataLen
+  integer :: imax, jmax, kmax
+
+  logical :: isget
+  logical :: getIntPtr
+
+  nullify(solnData)
+ 
+#ifdef DEBUG_GRID
+  isget=.true.
+  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
+
+
+  !verify requested row is available given number of dims in problem
+  if((row==KAXIS) .and. (NDIM < 3)) then
+     print *, "Error: Grid_putRowData "
+     call Driver_abortFlash("you have requested to return the KAXIS in a 1d or 2d problem")
+  end if
+  
+
+ 
+
+
+  !verify requested row is available given number of dims in problem
+  if((row==JAXIS) .and. (NDIM < 2)) then
+     print *, "Error: Grid_putRowData"
+     call Driver_abortFlash("you have requested to return the JAXIS in a 1d problem")
+  end if
+     
+  !verify beginCount is set to a valid value
+  if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
+     print *, "Error: Grid_putRowData: beginCount set to improper value"
+     print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
+     call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
+  end if
+     
+
+  !verify that there is enough space in datablock
+  if ((row==IAXIS) .and. (dataSize > imax)) then
+     print *, "Error: Grid_putRowData: dataSize too big"
+     print *,"You are requesting more cells than block has in a dimension"
+     call Driver_abortFlash("Grid_putRowData: dataSize too big")
+  end if
+
+  if ((row==JAXIS) .and. (dataSize > jmax)) then
+     print *, "Error: Grid_putRowData: dataSize too big"
+     print *,"You are requesting more cells than block has in a dimension"
+     call Driver_abortFlash("Grid_putRowData: dataSize too big")
+  end if
+
+  if ((row==KAXIS) .and. (dataSize > kmax)) then
+     print *, "Error: Grid_putRowData: dataSize too big"
+     print *,"You are requesting more cells than block has in a dimension"
+     call Driver_abortFlash("Grid_putRowData: dataSize too big")
+  end if
+
+
+
+  !verify that there is enough space in datablock
+  if ((dataSize < 1)) then 
+     
+     print *, "Error: Grid_putRowData: dataSize too small"
+     print *,"You are requesting more < 1 cell in a dimension of block, 1 is the min"
+     call Driver_abortFlash("Grid_putRowData: dataSize too small")
+  end if
+  
+
+
+
+  !verify that indices aren't too big or too small for the block
+  if(beginCount == EXTERIOR) then
+    
+     if (startingPos(1) > imax) then
+        call Driver_abortFlash("Grid_putRowData startingPos(1) index larger than block")
+     end if
+
+     if ((NDIM > 1) .and. (startingPos(2) > jmax)) then
+        call Driver_abortFlash("Grid_putRowData startingPos(2) index larger than block")
+     end if
+    
+     if ((NDIM > 2) .and. (startingPos(3) > kmax)) then
+        call Driver_abortFlash("Grid_putRowData startingPos(3) index larger than block")
+     end if
+    
+     if (startingPos(1) < 1) then
+        call Driver_abortFlash("Grid_putRowData startingPos(1) index smaller than 1")
+     end if
+
+     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
+        call Driver_abortFlash("Grid_putRowData startingPos(2) index smaller than 1")
+     end if
+    
+     if ((NDIM > 2) .and. (startingPos(3) < 1)) then
+        call Driver_abortFlash("Grid_putRowData startingPos(3) index smaller than 1")
+     end if
+        
+  else !beginCount == INTERIOR
+
+     if ((startingPos(1) + NGUARD -1) > imax) then
+        call Driver_abortFlash("Grid_putRowData startingPos(1) index larger than block")
+     end if
+
+     if ((NDIM > 1) .and. ((startingPos(2) + NGUARD -1) > jmax)) then
+        call Driver_abortFlash("Grid_putRowData startingPos(2) index larger than block")
+     end if
+    
+     if ((NDIM > 2) .and. ((startingPos(3) + NGUARD -1) > kmax)) then
+        call Driver_abortFlash("Grid_putRowData startingPos(3) index larger than block")
+     end if
+    
+     if (startingPos(1) < 1) then
+        call Driver_abortFlash("Grid_putRowData startingPos(1) index smaller than 1")
+     end if
+
+     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
+        call Driver_abortFlash("Grid_putRowData startingPos(2) index smaller than 1")
+     end if
+    
+     if ((NDIM > 2) .and. (startingPos(3) <  1)) then
+        call Driver_abortFlash("Grid_putRowData startingPos(3) index smaller than 1")
+     end if
+
+  end if
+  
+  
+
+  !more verification of indices
+  !check size and starting pos
+  if(beginCount == EXTERIOR) then
+     if(row == IAXIS) then
+        if ((startingPos(IAXIS) + dataSize -1) > imax) then
+           print *, "Error: Grid_putRowData"
+           call Driver_abortFlash("Grid_putRowData indices too large")
+        end if
+     end if
+
+     if(row == JAXIS) then
+        if ((startingPos(JAXIS) + dataSize -1) > jmax) then
+           print *, "Error: Grid_putRowData"
+           call Driver_abortFlash("Grid_putRowData indices too large")
+        end if
+     end if
+
+     if(row == KAXIS) then
+        if ((startingPos(KAXIS) + dataSize -1) > kmax) then
+           print *, "Error: Grid_putRowData"
+           call Driver_abortFlash("Grid_putRowData indices too large")
+        end if
+     end if
+  else if(beginCount == INTERIOR) then
+     if(row == IAXIS) then
+        if ((startingPos(IAXIS) + dataSize + NGUARD -1) > imax) then
+           print *, "Error: Grid_putRowData"
+           call Driver_abortFlash("Grid_putRowData indices too large")
+        end if
+     end if
+
+     if(row == JAXIS) then
+        if ((startingPos(JAXIS) + dataSize + NGUARD -1) > jmax) then
+           print *, "Error: Grid_putRowData"
+           call Driver_abortFlash("Grid_putRowData indices too large")
+        end if
+     end if
+
+     if(row == KAXIS) then
+        if ((startingPos(KAXIS) + dataSize + NGUARD -1) > kmax) then
+           print *, "Error: Grid_putRowData"
+           call Driver_abortFlash("Grid_putRowData indices too large")
+        end if
+     end if
+  end if
+#endif
+
+  dataLen=0
+  dataLen(row)=dataSize
+  call gr_getDataOffsets(tileDesc,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+
+  i=1
+  j=1
+  k=1
+
+
+     !set the starting and ending position in x dir
+  i = startingPos(IAXIS) + begOffset(IAXIS)
+  if(NDIM > 1) j = startingPos(JAXIS) + begOffset(JAXIS)
+  if(NDIM > 2) k = startingPos(KAXIS) + begOffset(KAXIS)
+  
+  if(getIntPtr) then
+     call gr_getInteriorBlkPtr(tileDesc,solnData,gridDataStruct)
+     if(row==IAXIS)solnData(structIndex,i:i+datasize-1,j,k)= datablock(:)
+     if(row==JAXIS)solnData(structIndex,i,j:j+datasize-1,k)= datablock(:)
+     if(row==KAXIS)solnData(structIndex,i,j,k:k+datasize-1)= datablock(:)
+     call gr_releaseInteriorBlkPtr(tileDesc,solnData,gridDataStruct)
+  else
+     call tileDesc%getDataPtr(solnData, gridDataStruct, &
+                              localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
+!!$     if(gridDataStruct==SCRATCH) then
+!!$        if(row==IAXIS)solnData(i:i+datasize-1,j,k,structIndex)= datablock(:)
+!!$        if(row==JAXIS)solnData(i,j:j+datasize-1,k,structIndex)= datablock(:)
+!!$        if(row==KAXIS)solnData(i,j,k:k+datasize-1,structIndex)= datablock(:)
+!!$     else
+!!$     end if
+     if(row==IAXIS)solnData(structIndex,i:i+datasize-1,j,k)= datablock(:)
+     if(row==JAXIS)solnData(structIndex,i,j:j+datasize-1,k)= datablock(:)
+     if(row==KAXIS)solnData(structIndex,i,j,k:k+datasize-1)= datablock(:)
+     call tileDesc%releaseDataPtr(solnData, gridDataStruct)
   end if
   return
 end subroutine Grid_putRowData

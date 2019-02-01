@@ -463,9 +463,9 @@ subroutine Grid_getBlkData(blockDesc, gridDataStruct, structIndex, beginCount, &
   elseif (gridDataStruct == CELL_FACEAREA) then
      call gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,structIndex,blockDesc,dataBlock,beginCount)
   elseif(getIntPtr) then        !DEVNOTE: This case should never happen, unless NO_PERMANENT_GUARDCELLS
-     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)
-     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
   else
      call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
      datablock(:,:,:)=solnData(structIndex,xb:xe,yb:ye,zb:ze)

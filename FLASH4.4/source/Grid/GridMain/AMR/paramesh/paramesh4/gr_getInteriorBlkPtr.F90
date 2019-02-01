@@ -50,10 +50,10 @@
 #define DEBUG_GRID
 #endif
 
-subroutine gr_getInteriorBlkPtr(block,dataPtr, gridDataStruct)
-
 #include "constants.h"
 #include "Flash.h"
+
+subroutine gr_getInteriorBlkPtr_blk(block,dataPtr, gridDataStruct)
 
   use physicaldata, ONLY : unk, facevarx, facevary, facevarz
   use Driver_interface, ONLY : Driver_abortFlash
@@ -76,6 +76,81 @@ subroutine gr_getInteriorBlkPtr(block,dataPtr, gridDataStruct)
   logical,dimension(NUNK_VARS) :: save_ccMask
 
   blockID = block%ID
+
+#ifndef FL_NON_PERMANENT_GUARDCELLS
+  call Driver_abortFlash("interior of blocks can be got only in non permanent gc mode")
+#endif
+
+#ifndef FLASH_GRID_PARAMESH
+  call Driver_abortFlash("interior of blocks can be got only from Paramesh")
+#endif
+
+
+
+#ifdef DEBUG_GRID
+  validGridDataStruct = .false.
+  validGridDataStruct= (gridDataStruct == CENTER).or.validGridDataStruct
+  validGridDataStruct= (gridDataStruct == FACEX).or.validGridDataStruct
+  validGridDataStruct= (gridDataStruct == FACEY).or.validGridDataStruct
+  validGridDataStruct= (gridDataStruct == FACEZ).or.validGridDataStruct
+  validGridDataStruct= (gridDataStruct == WORK).or.validGridDataStruct
+  
+  if(.not.validGridDataStruct) then
+     print *, "gr_getInteriorBlkPtr: gridDataStruct set to improper value"
+     print *, "gridDataStruct must = CENTER,FACEX,FACEY,FACEZ, or " // &
+          "WORK (defined in constants.h)"
+     call Driver_abortFlash("gridDataStruct must be one of CENTER,FACEX,FACEY,FACEZ (see constants.h)")
+  end if
+#endif
+
+  if((blockid<1).or.(blockid>MAXBLOCKS)) then
+     print *, 'gr_getInteriorBlkPtr:  invalid blockid ',blockid
+     call Driver_abortFlash("[gr_getInteriorBlkPtr] invalid blockid ")
+  end if
+  
+  select case(gridDataStruct)
+  case(CENTER)
+     dataPtr => unk(:,:,:,:,blockid)
+  case(FACEX)
+     dataPtr => facevarx(:,:,:,:,blockid)
+  case(FACEY)
+     dataPtr => facevary(:,:,:,:,blockid)
+  case(FACEZ)
+     dataPtr => facevarz(:,:,:,:,blockid)
+#ifdef FLASH_GRID_PARAMESH
+  case(WORK)
+     call Driver_abortFlash( &
+          "[gr_getInteriorBlkPtr] work array cannot be got as pointer - NOT IMPLEMENTED")
+#endif
+  end select
+  return
+end subroutine gr_getInteriorBlkPtr_blk
+
+
+
+subroutine gr_getInteriorBlkPtr(tileDesc,dataPtr, gridDataStruct)
+
+  use physicaldata, ONLY : unk, facevarx, facevary, facevarz
+  use Driver_interface, ONLY : Driver_abortFlash
+  use flash_tile, ONLY : flash_tile_t
+
+#ifdef FLASH_GRID_PARAMESH
+  use workspace, ONLY : work
+#endif 
+
+  implicit none
+  type(flash_tile_t), intent(in) :: tileDesc
+  real, dimension(:,:,:,:), pointer :: dataPtr
+  integer, intent(in) :: gridDataStruct
+
+  logical :: validGridDataStruct
+
+  integer :: blockID
+  integer :: idest, iopt, nlayers, icoord
+  logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
+  logical,dimension(NUNK_VARS) :: save_ccMask
+
+  blockID = tileDesc%ID
 
 #ifndef FL_NON_PERMANENT_GUARDCELLS
   call Driver_abortFlash("interior of blocks can be got only in non permanent gc mode")

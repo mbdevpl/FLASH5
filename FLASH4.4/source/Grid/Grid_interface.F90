@@ -675,11 +675,21 @@ Module Grid_interface
        integer, intent(IN) :: dataSize
        real, dimension(datasize),intent(IN) :: datablock
      end subroutine Grid_putRowData_blkid
-     subroutine Grid_putRowData(blockDesc, gridDataStruct, variable, beginCount, &
+     subroutine Grid_putRowData_blk(blockDesc, gridDataStruct, variable, beginCount, &
           row, startingPos, datablock, dataSize)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(in) :: blockDesc
+       integer, intent(IN) :: variable, beginCount, row, gridDataStruct
+       integer, dimension(MDIM), intent(IN) :: startingPos
+       integer, intent(IN) :: dataSize
+       real, dimension(datasize),intent(IN) :: datablock
+     end subroutine Grid_putRowData_blk
+     subroutine Grid_putRowData(tileDesc, gridDataStruct, variable, beginCount, &
+          row, startingPos, datablock, dataSize)
+       use flash_tile, ONLY : flash_tile_t
+       implicit none
+       type(flash_tile_t), intent(in) :: tileDesc
        integer, intent(IN) :: variable, beginCount, row, gridDataStruct
        integer, dimension(MDIM), intent(IN) :: startingPos
        integer, intent(IN) :: dataSize

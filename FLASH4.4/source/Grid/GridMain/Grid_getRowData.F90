@@ -466,11 +466,11 @@ subroutine Grid_getRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
      if(row==KAXIS) datablock(:)=cellvalues(xb,yb,zb:ze)
      deallocate(cellvalues)
   elseif(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
      if(row==IAXIS)datablock(:) = solnData(structIndex,i:i+datasize-1,j,k)
      if(row==JAXIS)datablock(:) = solnData(structIndex,i,j:j+datasize-1,k)
      if(row==KAXIS)datablock(:) = solnData(structIndex,i,j,k:k+datasize-1)
-     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
   else
      call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then

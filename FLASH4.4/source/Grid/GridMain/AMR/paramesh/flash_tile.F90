@@ -129,7 +129,6 @@ contains
       use Driver_interface, ONLY : Driver_abortFlash
       use Grid_data,        ONLY : gr_geometry, &
                                    gr_delta
-      use gr_interface,     ONLY : gr_getCellFaceArea
 
       class(flash_tile_t), intent(IN)  :: this
       integer,             intent(IN)  :: axis
@@ -367,7 +366,7 @@ contains
         tileSize = bsize(:, this%id)
     end subroutine physicalSize
 
-    subroutine getDataPtr(this, dataPtr, gridDataStruct)
+    subroutine getDataPtr(this, dataPtr, gridDataStruct, localFlag)
         use physicaldata,    ONLY : unk, &
                                     facevarx, facevary, facevarz
         use gr_specificData, ONLY : scratch, &
@@ -377,9 +376,12 @@ contains
                                     scratch_facevarz, &
                                     gr_flxx, gr_flxy, gr_flxz
 
-       class(flash_tile_t), intent(IN),  target   :: this
-       real,                             pointer  :: dataPtr(:, :, :, :)
-       integer,             intent(IN)            :: gridDataStruct
+       class(flash_tile_t), intent(IN), target   :: this
+       real,                            pointer  :: dataPtr(:, :, :, :)
+       integer,             intent(IN)           :: gridDataStruct
+       logical,             intent(IN), optional :: localFlag
+
+       integer :: lo(1:MDIM)
 
 #ifdef DEBUG_GRID
        validGridDataStruct = .false.
@@ -411,42 +413,55 @@ contains
            call Driver_abortFlash("[getDataPtr] Given data pointer must be NULL")
        end if
 
-       ! Note that loFl is presently set under the assumption that tiling
-       ! is *not* implemented with Paramesh
-       associate(blockID => this%id, &
-                 lo      => this%blkLimitsGC(LOW, :), &
-                 loFl    => this%limits(LOW, :))
-          select case (gridDataStruct)
-          case(CENTER)
-             dataPtr(1:, lo(1):, lo(2):, lo(3):) => unk(:,:,:,:,blockID)
-          case(FACEX)
-             dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(:,:,:,:,blockID)
-          case(FACEY)
-             dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(:,:,:,:,blockID)
-          case(FACEZ)
-             dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(:,:,:,:,blockID)
-          case(FLUXX)
-             dataPtr(1:, loFl(1):, loFl(2):, loFl(3):) => gr_flxx(:,:,:,:,blockID)
-          case(FLUXY)
-             dataPtr(1:, loFl(1):, loFl(2):, loFl(3):) => gr_flxy(:,:,:,:,blockID)
-          case(FLUXZ)
-             dataPtr(1:, loFl(1):, loFl(2):, loFl(3):) => gr_flxz(:,:,:,:,blockID)
-          case(SCRATCH)
-             dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch(:,:,:,:,blockID)
-          case(SCRATCH_CTR)
-             dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_ctr(:,:,:,:,blockID)           
-          case(SCRATCH_FACEX)
-             dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarx(:,:,:,:,blockID)           
-          case(SCRATCH_FACEY)
-             dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevary(:,:,:,:,blockID)           
-          case(SCRATCH_FACEZ)
-             dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarz(:,:,:,:,blockID)           
-          case DEFAULT
-             print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
-          case(WORK)
-             call Driver_abortFlash("work array cannot be got as pointer")
-          end select
-       end associate
+       lo = this%blkLimitsGC(LOW, :)
+
+       ! These multifabs are hardwired at creation so that the FAB data only
+       ! exists for the block interiors
+       if (     (gridDataStruct == FLUXX) & 
+           .OR. (gridDataStruct == FLUXY) &
+           .OR. (gridDataStruct == FLUXZ)) then
+          lo(1:NDIM) = lo(1:NDIM) + NGUARD
+          if (present(localFlag)) then
+              if (localFlag) then
+                  lo(1:NDIM) = NGUARD + 1
+              end if
+          end if
+       else if (present(localFlag)) then
+           if (localFlag) then
+               lo(:) = 1
+           end if
+       end if
+
+       select case (gridDataStruct)
+       case(CENTER)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => unk(:,:,:,:,this%id)
+       case(FACEX)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(:,:,:,:,this%id)
+       case(FACEY)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(:,:,:,:,this%id)
+       case(FACEZ)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(:,:,:,:,this%id)
+       case(FLUXX)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => gr_flxx(:,:,:,:,this%id)
+       case(FLUXY)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => gr_flxy(:,:,:,:,this%id)
+       case(FLUXZ)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => gr_flxz(:,:,:,:,this%id)
+       case(SCRATCH)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch(:,:,:,:,this%id)
+       case(SCRATCH_CTR)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_ctr(:,:,:,:,this%id)           
+       case(SCRATCH_FACEX)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarx(:,:,:,:,this%id)           
+       case(SCRATCH_FACEY)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevary(:,:,:,:,this%id)           
+       case(SCRATCH_FACEZ)
+          dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarz(:,:,:,:,this%id)           
+       case DEFAULT
+          print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
+       case(WORK)
+          call Driver_abortFlash("work array cannot be got as pointer")
+       end select
     end subroutine getDataPtr
 
     subroutine releaseDataPtr(this, dataPtr, gridDataStruct)

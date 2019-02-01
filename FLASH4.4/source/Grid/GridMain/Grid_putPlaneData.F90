@@ -502,11 +502,11 @@ subroutine Grid_putPlaneData(blockDesc, gridDataStruct, structIndex, beginCount,
   end if
 
   if(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_getInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
      if(plane==XYPLANE)solnData(structIndex,xb:xe,yb:ye,zb) = datablock(:,:)
      if(plane==XZPLANE)solnData(structIndex,xb:xe,yb,zb:ze) = datablock(:,:)
      if(plane==YZPLANE)solnData(structIndex,xb,yb:ye,zb:ze) = datablock(:,:)
-     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
+     call gr_releaseInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
   else
      call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
 !!$     if(gridDataStruct==SCRATCH) then
