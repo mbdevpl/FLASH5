@@ -34,10 +34,8 @@ subroutine hy_advance(simTime, dt, dtOld)
 
   call Grid_zeroFluxData
 
-#define USE_NOFLUXCORR_SHORTCUT
 #ifdef USE_NOFLUXCORR_SHORTCUT
   ! ***** FIRST VARIANT: OPTIMIZED (somewhat) FOR hy_fluxCorrect==.FALSE. *****
-  hy_fluxCorrect=.false.
   if (.NOT. hy_fluxCorrect) then
      call Grid_getLeafIterator(itor)
      call Timers_start("hy_advance")
@@ -63,7 +61,6 @@ subroutine hy_advance(simTime, dt, dtOld)
      RETURN                     ! DONE, return from here!
   end if
 #endif
-  print*,'should not be arriving here'
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 
 !!$  call hy_memAllocScratch(SCRATCH_CTR,HY_VAR1_SCRATCHCTR_VAR,2, 0,0,0) !for scrch_Ptr - done in Hydro_prepareBuffers
