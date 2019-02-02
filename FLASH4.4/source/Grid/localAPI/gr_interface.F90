@@ -212,11 +212,11 @@ module gr_interface
   end interface
 
   interface
-     subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine gr_estimateBlkError(error, tileDesc, iref, refine_filter)
+       use flash_tile, ONLY : flash_tile_t
        implicit none
        real,intent(INOUT) :: error
-       type(block_metadata_t),intent(IN) :: blockDesc
+       type(flash_tile_t),intent(IN) :: tileDesc
        integer, intent(IN) :: iref
        real, intent(IN) ::  refine_filter
      end subroutine gr_estimateBlkError

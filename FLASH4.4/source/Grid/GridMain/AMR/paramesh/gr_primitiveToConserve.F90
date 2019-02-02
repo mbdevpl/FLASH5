@@ -55,12 +55,12 @@
 
 #include "Flash.h"
 
-subroutine gr_primitiveToConserve(block)
+subroutine gr_primitiveToConserve(tileDesc)
 
   use Grid_data, ONLY: gr_meshMe, gr_convertToConsvdForMeshCalls, &
                         gr_vartypes, gr_anyVarToConvert
   use Driver_interface, ONLY : Driver_abortFlash
-  use block_metadata, ONLY : block_metadata_t
+  use flash_tile, ONLY : flash_tile_t
 #ifdef FLASH_GRID_PARAMESH2
 #define INT_GCELL_ON_CC(IVAR) (.TRUE.)
   use physicaldata, ONLY: unk, nguard, &
@@ -78,7 +78,7 @@ subroutine gr_primitiveToConserve(block)
   implicit none
 #include "constants.h"
 
-  type(block_metadata_t), intent(IN) :: block
+  type(flash_tile_t), intent(IN) :: tileDesc
   integer :: i, j, k,n, blockID, ivar
 #ifdef FLASH_GRID_PARAMESH2
   integer,parameter :: npgs=1
@@ -88,7 +88,7 @@ subroutine gr_primitiveToConserve(block)
 
 #ifdef DENS_VAR           
   if (gr_convertToConsvdForMeshCalls) then
-     blockID = block%id
+     blockID = tileDesc%id
      do k = kk1+nguard*npgs,kk2-nguard*npgs
         do j = jj1+nguard*npgs,jj2-nguard*npgs
            do i = ii1+nguard*npgs,ii2-nguard*npgs

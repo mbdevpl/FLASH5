@@ -67,7 +67,7 @@
 
 !!REORDER(5):unk
 
-subroutine gr_conserveToPrimitive(block, allCells)
+subroutine gr_conserveToPrimitive(tileDesc, allCells)
 
 #include "Flash.h"
 
@@ -75,7 +75,7 @@ subroutine gr_conserveToPrimitive(block, allCells)
                         gr_vartypes, gr_anyVarToConvert
   use physicaldata, ONLY:unk
   use tree, ONLY: nodetype
-  use block_metadata, ONLY : block_metadata_t
+  use flash_tile, ONLY : flash_tile_t
 #ifdef FLASH_GRID_PARAMESH2
   use tree, ONLY: il_bnd,iu_bnd,jl_bnd,ju_bnd,kl_bnd,ku_bnd
 #else
@@ -86,7 +86,7 @@ subroutine gr_conserveToPrimitive(block, allCells)
   implicit none
 #include "constants.h"
 
-  type(block_metadata_t), intent(IN) :: block
+  type(flash_tile_t), intent(IN) :: tileDesc
   logical, intent(IN):: allCells
   real :: dens_old_inv
   integer :: i, j, k,n, blockID, ivar
@@ -121,7 +121,7 @@ subroutine gr_conserveToPrimitive(block, allCells)
 #endif
   end if
 
-  blockID = block%id
+  blockID = tileDesc%id
 #ifdef DENS_VAR
   do k = kl,ku
      do j = jl,ju

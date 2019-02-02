@@ -42,26 +42,18 @@
 
 #include "Flash.h"
 
-subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
+subroutine gr_estimateBlkError(error, tileDesc, iref, refine_filter)
 
   use Grid_data, ONLY: gr_geometry, &
        gr_meshComm, gr_meshMe
-  use Grid_interface, ONLY : Grid_getBlkBC, &
-                             Grid_getCellCoords, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr
-#ifndef FLASH_GRID_ANYAMREX
-  use Grid_data, ONLY: gr_delta
-#else
-  use Grid_interface, ONLY : Grid_getDeltas
-#endif
-  use block_metadata, ONLY : block_metadata_t
+  use flash_tile, ONLY : flash_tile_t
 
   implicit none
 
 #include "constants.h" 
 
   integer, intent(IN) :: iref
-  type(block_metadata_t),intent(IN) :: blockDesc
+  type(flash_tile_t),intent(IN) :: tileDesc
   real, intent(IN) ::  refine_filter
   real,intent(INOUT) :: error
   
@@ -111,25 +103,22 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
      
   !==============================================================================
 
+     nullify(solnData)
 
 #define XCOORD(I) (xCenter(I))
 #define YCOORD(I) (yCenter(I))
 
-     blkLevel    = blockDesc%level
-     blkLimits   = blockDesc%limits
-     blkLimitsGC = blockDesc%limitsGC
-     call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+     blkLevel    = tileDesc%level
+     blkLimits   = tileDesc%limits
+     blkLimitsGC = tileDesc%blkLimitsGC
+     call tileDesc%getDataPtr(solnData, CENTER)
 
 !!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
 
         del=0.0
         ncell(:)=blkLimits(HIGH,:)-blkLimits(LOW,:)+1
-#ifdef FLASH_GRID_ANYAMREX
-        call Grid_getDeltas(blkLevel,delta)
-#else
-        delta(:) = gr_delta(:,blkLevel)
-#endif
+        call tileDesc%deltas(delta)
         del(IAXIS:NDIM) = 0.5e0/delta(IAXIS:NDIM)
         del_f(JAXIS:NDIM) = del(JAXIS:NDIM)
         allocate(delu(NDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
@@ -149,10 +138,8 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
            allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
            allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
 
-           call Grid_getCellCoords(IAXIS, blockDesc, CENTER, WITH_GC, &
-                                xCenter, SIZE(xCenter))
-           call Grid_getCellCoords(JAXIS, blockDesc, CENTER, WITH_GC, &
-                                yCenter, SIZE(yCenter))
+           call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xCenter)
+           call tileDesc%coordinates(JAXIS, CENTER, TILE_AND_HALO, yCenter)
         end if
 
         ! Compute first derivatives
@@ -205,8 +192,7 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
            end do
         end do
         
-        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
-        nullify(solnData)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
         
         ! Compute second derivatives
         bstart=1
@@ -217,7 +203,7 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
         !    grd=NGUARD-1
         ! No guardcells
         !    grd=NGUARD
-        call Grid_getBlkBC(blockDesc,face,bdry)
+        call tileDesc%faceBCs(face,bdry)
         
         do i=1,NDIM
            if (face(LOW,i) == NOT_BOUNDARY)then

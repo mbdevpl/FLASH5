@@ -237,16 +237,16 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+                             Grid_releaseTileIterator
   use gr_interface, ONLY : gr_setGcFillNLayers
   use paramesh_dimensions, ONLY : l2p5d,ndim
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
   use paramesh_interfaces, ONLY : amr_guardcell, amr_restrict
   use paramesh_mpi_interfaces, ONLY: mpi_amr_comm_setup
   use Eos_interface, ONLY : Eos_guardCells
-  use gr_iterator, ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use flash_iterator, ONLY : flash_iterator_t
+  use flash_tile,     ONLY : flash_tile_t
 
   implicit none
 
@@ -271,8 +271,8 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   integer :: nlayers_transverse
   integer :: listBlockType
   real,dimension(:,:,:,:),pointer::solnData
-  type(gr_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t)     :: tileDesc
 
   logical :: lcc, lfc, lec, lnc, lguard, lprolong, lflux, ledge, lrestrict, lfulltree
   integer :: ierr
@@ -298,6 +298,8 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   end if
 
 #endif
+
+  nullify(solnData)
 
   !We can skip this guard cell fill if the guard cells are up to date.
   if (gridDataStruct /= WORK) then
@@ -443,14 +445,14 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
      if((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
         if (.not. skipThisGcellFill) then
-           call gr_getBlkIterator(itor, nodetype=listBlockType)
-           do while (itor%is_valid())
-              call itor%blkMetaData(blockDesc)
-              call gr_primitiveToConserve(blockDesc)
+           call Grid_getTileIterator(itor, listBlockType, tiling=.FALSE.)
+           do while (itor%isValid())
+              call itor%currentTile(tileDesc)
+              call gr_primitiveToConserve(tileDesc)
 
               call itor%next()
            end do
-           call gr_releaseBlkIterator(itor)
+           call Grid_releaseTileIterator(itor)
         end if
      end if
  
@@ -476,14 +478,14 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
 
      if ((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
         if (.not. skipThisGcellFill) then
-            call gr_getBlkIterator(itor, nodetype=listBlockType)
-            do while (itor%is_valid())
-                call itor%blkMetaData(blockDesc)
-                call gr_conserveToPrimitive(blockDesc, .TRUE.)
+            call Grid_getTileIterator(itor, listBlockType, tiling=.FALSE.)
+            do while (itor%isValid())
+                call itor%currentTile(tileDesc)
+                call gr_conserveToPrimitive(tileDesc, .TRUE.)
 
                 call itor%next()
             end do
-            call gr_releaseBlkIterator(itor)
+            call Grid_releaseTileIterator(itor)
 
             if (gr_convertToConsvdInMeshInterp) then
                call gr_sanitizeDataAfterInterp(listBlockType, 'after gc filling', layers)
@@ -507,19 +509,18 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   if(present(doEos)) then
      if(doEos.and.needEos) then
         call Timers_start("eos gc")
-        call gr_getBlkIterator(itor, nodetype=listBlockType)
-        do while (itor%is_valid())
-                call itor%blkMetaData(blockDesc)
-                
-                call Grid_getBlkPtr(blockDesc, solnData)
+        call Grid_getTileIterator(itor, listBlockType, tiling=.FALSE.)
+        do while (itor%isValid())
+                call itor%currentTile(tileDesc)
+
+                call tileDesc%getDataPtr(solnData, CENTER)
                 call Eos_guardCells(gcEosMode, solnData, corners=.true., &
                                     layers=returnLayers, skipSrl=.TRUE.)
-                call Grid_releaseBlkPtr(blockDesc, solnData)
-                nullify(solnData)
+                call tileDesc%releaseDataPtr(solnData, CENTER)
 
                 call itor%next()
         end do
-        call gr_releaseBlkIterator(itor)
+        call Grid_releaseTileIterator(itor)
         call Timers_stop("eos gc")
      end if
   end if

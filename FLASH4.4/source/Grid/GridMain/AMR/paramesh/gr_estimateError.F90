@@ -35,54 +35,23 @@
 !!
 !!***
 
-subroutine gr_estimateError(error, iref, refine_filter)
+#include "constants.h"  
 
-  use Grid_data, ONLY: gr_geometry, &
-       gr_meshComm, gr_meshMe,gr_delta, gr_domainBC
-  use Grid_interface, ONLY : Grid_getBlkBC, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface, ONLY :  gr_getBlkIterator, gr_releaseBlkIterator, &
-                            gr_estimateBlkError
-  use gr_specificData, ONLY : gr_oneBlock
-  use gr_iterator, ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+subroutine gr_estimateError(error, iref, refine_filter)
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+                             Grid_releaseTileIterator
+  use gr_interface,   ONLY : gr_estimateBlkError
+  use flash_iterator, ONLY : flash_iterator_t
+  use flash_tile,     ONLY : flash_tile_t
 
   implicit none
 
-#include "Flash_mpi.h"
-#include "Flash.h"
-#include "constants.h"  
-#ifdef INDEXREORDER
-  integer,parameter::IX=1,IY=2,IZ=3
-#else
-  integer,parameter::IX=2,IY=3,IZ=4
-#endif  
-  integer, intent(IN) :: iref
-  real, intent(IN) ::  refine_filter
-  real,intent(INOUT) :: error(MAXBLOCKS)
-  integer, parameter :: SQNDIM = NDIM*NDIM
+  integer, intent(IN)    :: iref
+  real,    intent(IN)    :: refine_filter
+  real,    intent(INOUT) :: error(MAXBLOCKS)
   
-  real,dimension(MDIM) ::  del, del_f, psize
-  integer,dimension(MDIM) :: ncell
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC,face,bdry
-  real,allocatable,dimension(:,:,:,:)::delu,delua
-
-  real delu2(SQNDIM), delu3(SQNDIM), delu4(SQNDIM)
-
-  real num,denom
-
-  integer i,j,k
-  integer ierr,grd
-  integer,dimension(MDIM)::bstart,bend 
-  integer nsend,nrecv
-
-  integer :: kk
-
-  integer :: idest, iopt, nlayers, icoord
-  logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
-  type(gr_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
-  integer :: blkLevel, blkID
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t)     :: tileDesc
 
 !==============================================================================
 
@@ -108,15 +77,14 @@ subroutine gr_estimateError(error, iref, refine_filter)
      
   !==============================================================================
 
-  call gr_getBlkIterator(itor, nodetype=ACTIVE_BLKS)
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, ACTIVE_BLKS, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 
-     blkID       = blockDesc%id
-     call gr_estimateBlkError(error(blkID), blockDesc, iref, refine_filter)
+     call gr_estimateBlkError(error(tileDesc%id), tileDesc, iref, refine_filter)
 
      call itor%next()
   end do
-  call gr_releaseBlkIterator(itor)
+  call Grid_releaseTileIterator(itor)
 end subroutine gr_estimateError
 

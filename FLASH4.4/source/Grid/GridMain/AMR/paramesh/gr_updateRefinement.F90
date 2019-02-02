@@ -63,8 +63,7 @@ subroutine gr_updateRefinement( gridChanged)
        gr_convertToConsvdInMeshInterp, gr_eosMode, gr_meshMe, gr_gcellsUpToDate
   use gr_specificData, ONLY : gr_blkList
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
   use Simulation_interface, ONLY : Simulation_customizeProlong
   use tree, ONLY : newchild, nodetype, lnblocks, grid_changed
 #ifndef FLASH_GRID_PARAMESH2
@@ -74,8 +73,8 @@ subroutine gr_updateRefinement( gridChanged)
                                   amr_prolong
   use Eos_interface, ONLY : Eos_wrapped
   use Particles_interface, ONLY : Particles_updateRefinement 
-  use gr_iterator, ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use flash_iterator, ONLY : flash_iterator_t
+  use flash_tile,     ONLY : flash_tile_t
 
   implicit none
 
@@ -89,8 +88,8 @@ subroutine gr_updateRefinement( gridChanged)
   integer, dimension(MDIM) :: layers
   integer :: blockID
   real,dimension(:,:,:,:),pointer :: solnData
-  type(gr_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t) :: tileDesc
 !=============================================================================
 
   call Timers_start("tree") !2 of 2 (split into 2 so valid to TAU)
@@ -130,19 +129,19 @@ subroutine gr_updateRefinement( gridChanged)
   ! that were actually parents up to the amr_refine_derefine call.
   ! The prolonging will stuff the new children.
   if (gr_convertToConsvdForMeshCalls) then
-     call gr_getBlkIterator(itor, nodetype=ALL_BLKS)
-     do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        blockID = block%id
+     call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.)
+     do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        blockID = tileDesc%id
         if (     (nodetype(blockID)==LEAF .AND. .not. newchild(blockID)) &
             .OR. (nodetype(blockID)==PARENT_BLK) &
             .OR. (nodetype(blockID)==ANCESTOR)) then
-            call gr_primitiveToConserve(block)
+            call gr_primitiveToConserve(tileDesc)
         end if 
 
         call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseTileIterator(itor)
   endif
   
   
@@ -184,24 +183,26 @@ subroutine gr_updateRefinement( gridChanged)
   ! We do this for all blocks, even ancestors, to keep data in a sane range
   ! even for blocks whose data won't have any impact on further propagation
   ! (but may still be written out to plotfiles etc.).
+  !
+  ! DEV: Should this be a single loop over ALL_BLKS then?
   if (gr_convertToConsvdForMeshCalls) then
-     call gr_getBlkIterator(itor, nodetype=ACTIVE_BLKS)
-     do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        call gr_conserveToPrimitive(block, .FALSE.)
+     call Grid_getTileIterator(itor, ACTIVE_BLKS, tiling=.FALSE.)
+     do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        call gr_conserveToPrimitive(tileDesc, .FALSE.)
 
         call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseTileIterator(itor)
 
-     call gr_getBlkIterator(itor, nodetype=ANCESTOR)
-     do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        call gr_conserveToPrimitive(block, .TRUE.)
+     call Grid_getTileIterator(itor, ANCESTOR, tiling=.FALSE.)
+     do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        call gr_conserveToPrimitive(tileDesc, .TRUE.)
 
         call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseTileIterator(itor)
   endif
 
 #ifndef FLASH_GRID_PARAMESH2
@@ -227,18 +228,17 @@ subroutine gr_updateRefinement( gridChanged)
 
   if (grid_changed .NE. 0) then
      call Timers_start("eos")
-     call gr_getBlkIterator(itor, nodetype=LEAF)
-     do while (itor%is_valid())
-        call itor%blkMetaData(block)
+     call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+     do while (itor%isValid())
+        call itor%currentTile(tileDesc)
 
-        call Grid_getBlkPtr(block, solnData)
-        call Eos_wrapped(gr_eosMode, block%limits, solnData)
-        call Grid_releaseBlkPtr(block, solnData)
-        nullify(solnData)
+        call tileDesc%getDataPtr(solnData, CENTER)
+        call Eos_wrapped(gr_eosMode, tileDesc%limits, solnData)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
 
         call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseTileIterator(itor)
      call Timers_stop("eos")
   end if
 
