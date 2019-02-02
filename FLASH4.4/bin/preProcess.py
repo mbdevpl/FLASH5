@@ -10,10 +10,10 @@ def flatten(it):
    if type(it) == type(""):
       for x in it.split('\n'):
          yield x
-      else:
-         for x in it:
-            for y in flatten(x):
-               yield y
+   else:
+      for x in it:
+         for y in flatten(x):
+            yield y
 
 class preProcess:
 
