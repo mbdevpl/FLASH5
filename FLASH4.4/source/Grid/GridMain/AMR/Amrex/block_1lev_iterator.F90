@@ -140,9 +140,6 @@ contains
        if (tiling) then
           !DEV: TODO Do we need to error check tileSize against block size
           ! or does AMReX do this already?
-          write(*,*) "Creating MFIter with tiling"
-          write(*,*) "  Block Size = ", NXB, NYB, NZB
-          write(*,*) "  Tile  Size = ", tileSize
           call amrex_mfiter_build(this%mfi,mf,tileSize=tileSize)
        else
           call amrex_mfiter_build(this%mfi,mf,tiling=.FALSE.)
@@ -194,9 +191,6 @@ contains
          allocate(this%mfi)
          if (tiling) then
             ! DEV: TODO Do we need to error check tileSize against block size
-            write(*,*) "Creating MFIter with tiling"
-            write(*,*) "  Block Size = ", NXB, NYB, NZB
-            write(*,*) "  Tile  Size = ", tileSize
             call amrex_mfiter_build(this%mfi, this%mf, tileSize=tileSize)
          else
             call amrex_mfiter_build(this%mfi, this%mf, tiling=.FALSE.)

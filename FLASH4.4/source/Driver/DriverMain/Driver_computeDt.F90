@@ -68,10 +68,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Logfile_interface,ONLY : Logfile_stamp
   use IO_interface,     ONLY : IO_writeCheckpoint
-  use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
-       Grid_getSingleCellCoords,Grid_getMaxRefinement, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr, &
-       Grid_getLeafIterator, Grid_releaseLeafIterator
+  use Grid_interface, ONLY : Grid_getSingleCellCoords,Grid_getMaxRefinement, &
+       Grid_getTileIterator, Grid_releaseTileIterator
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Heat_interface, ONLY : Heat_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
@@ -80,8 +78,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Particles_interface, ONLY: Particles_computeDt
 
   use IncompNS_interface, ONLY : IncompNS_computeDt
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use flash_iterator, ONLY : flash_iterator_t
+  use flash_tile, ONLY : flash_tile_t 
 
   implicit none
 
@@ -135,10 +133,10 @@ subroutine Driver_computeDt(nbegin, nstep, &
 #endif
 
   !arrays which hold the starting and ending indicies of a block
-  integer,dimension(LOW:HIGH,MDIM)::blkLimits,blkLimitsGC
+  integer,dimension(LOW:HIGH,MDIM)::blkLimitsGC
 
   !!coordinate infomration to be passed into physics  
-  real, pointer :: solnData(:,:,:,:),U(:,:,:,:)
+  real, pointer :: solnData(:,:,:,:)
   integer :: isize,jsize,ksize
 
   logical :: printTStepLoc
@@ -163,11 +161,12 @@ subroutine Driver_computeDt(nbegin, nstep, &
   real :: extraHydroInfoMin
   real :: extraHydroInfoApp
   real :: dtNewComputed
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t) :: tileDesc
   integer:: ib, level, maxLev
   real :: err
 
+  nullify(solnData)
 
   ! Initializing extraHydroInfo to zero:
   extraHydroInfo = 0.
@@ -219,60 +218,61 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
   call Hydro_consolidateCFL()
   do level=1,maxLev
-     call Grid_getLeafIterator(itor, level=level)
-     do while(itor%is_valid())
-        call itor%blkMetaData(blockDesc)
+     call Grid_getTileIterator(itor, LEAF, level=level, tiling=.FALSE.)
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
 
-        blkLimits   = blockDesc%limits
-        blkLimitsGC = blockDesc%limitsGC
-        call Grid_getBlkPtr(blockDesc, solnData)
+        ! Match the size of the FIXEDBLOCKSIZE case
+        ! This disallows tiling.
+        blkLimitsGC = tileDesc%blkLimitsGC
+        call tileDesc%getDataPtr(solnData, CENTER)
 
-        isize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1+2*NGUARD*K1D
-        jsize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1+2*NGUARD*K2D
-        ksize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1+2*NGUARD*K3D
 #ifndef FIXEDBLOCKSIZE
-        allocate(xLeft(isize))
-        allocate(xRight(isize))
-        allocate(xCenter(isize))
-        allocate(dx(isize))
-        allocate(uxgrid(isize))
-        allocate(yLeft(jsize))
-        allocate(yRight(jsize))
-        allocate(yCenter(jsize))
-        allocate(dy(jsize))
-        allocate(uygrid(jsize))
-        allocate(zLeft(ksize))
-        allocate(zRight(ksize))
-        allocate(zCenter(ksize))
-        allocate(dz(ksize))
-        allocate(uzgrid(ksize))
+        associate(lo => blkLimitsGC(LOW,  :), &
+                  hi => blkLimitsGC(HIGH, :))
+           allocate(xLeft  (lo(IAXIS):hi(IAXIS)))
+           allocate(xRight (lo(IAXIS):hi(IAXIS)))
+           allocate(xCenter(lo(IAXIS):hi(IAXIS)))
+           allocate(dx     (lo(IAXIS):hi(IAXIS)))
+           allocate(uxgrid (lo(IAXIS):hi(IAXIS)))
+           allocate(yLeft  (lo(JAXIS):hi(JAXIS)))
+           allocate(yRight (lo(JAXIS):hi(JAXIS)))
+           allocate(yCenter(lo(JAXIS):hi(JAXIS)))
+           allocate(dy     (lo(JAXIS):hi(JAXIS)))
+           allocate(uygrid (lo(JAXIS):hi(JAXIS)))
+           allocate(zLeft  (lo(KAXIS):hi(KAXIS)))
+           allocate(zRight (lo(KAXIS):hi(KAXIS)))
+           allocate(zCenter(lo(KAXIS):hi(KAXIS)))
+           allocate(dz     (lo(KAXIS):hi(KAXIS)))
+           allocate(uzgrid (lo(KAXIS):hi(KAXIS)))
+        end associate
 #endif
 #ifdef DEBUG_DRIVER
-        print*,'before calling get coordinates',isize,gcell
+        print*,'before calling get coordinates'
 #endif
-        call Grid_getCellCoords(IAXIS,blockDesc,CENTER,gcell,xCenter,isize)
-        call Grid_getCellCoords(IAXIS,blockDesc,LEFT_EDGE,gcell,xLeft,isize)
-        call Grid_getCellCoords(IAXIS,blockDesc,RIGHT_EDGE,gcell,xRight,isize)
+        call tileDesc%coordinates(IAXIS, CENTER,    TILE_AND_HALO, xCenter)
+        call tileDesc%coordinates(IAXIS, LEFT_EDGE, TILE_AND_HALO, xLeft)
+        call tileDesc%coordinates(IAXIS, RIGHT_EDGE,TILE_AND_HALO, xRight)
         
 #ifdef DEBUG_DRIVER
-        print*,'before calling get coordinates',jsize,gcell
+        print*,'before calling get coordinates'
 #endif
         if (NDIM > 1) then
-           call Grid_getCellCoords(JAXIS,blockDesc,CENTER,gcell,yCenter,jsize)
-           call Grid_getCellCoords(JAXIS,blockDesc,LEFT_EDGE,gcell,yLeft,jsize)
-           call Grid_getCellCoords(JAXIS,blockDesc,RIGHT_EDGE,gcell,yRight,jsize)
+           call tileDesc%coordinates(JAXIS, CENTER,    TILE_AND_HALO, yCenter)
+           call tileDesc%coordinates(JAXIS, LEFT_EDGE, TILE_AND_HALO, yLeft)
+           call tileDesc%coordinates(JAXIS, RIGHT_EDGE,TILE_AND_HALO, yRight)
            
            if (NDIM > 2) then
 #ifdef DEBUG_DRIVER
-              print*,'before calling get coordinates',ksize,gcell
+              print*,'before calling get coordinates'
 #endif
-              call Grid_getCellCoords(KAXIS,blockDesc,CENTER,gcell,zCenter,ksize)
-              call Grid_getCellCoords(KAXIS,blockDesc,LEFT_EDGE,gcell,zLeft,ksize)
-              call Grid_getCellCoords(KAXIS,blockDesc,RIGHT_EDGE,gcell,zRight,ksize)
+              call tileDesc%coordinates(KAXIS, CENTER,    TILE_AND_HALO, zCenter)
+              call tileDesc%coordinates(KAXIS, LEFT_EDGE, TILE_AND_HALO, zLeft)
+              call tileDesc%coordinates(KAXIS, RIGHT_EDGE,TILE_AND_HALO, zRight)
            endif
         endif
         
-        call Grid_getDeltas(level, del)
+        call tileDesc%deltas(del)
         dx(:) = del(1)
         dy(:) = del(2)
         dz(:) = del(3)
@@ -286,11 +286,11 @@ subroutine Driver_computeDt(nbegin, nstep, &
         print*,'going to call Hydro timestep'
 #endif
         !extraHydroInfo = 0.
-        call Hydro_computeDt (blockDesc, &
+        call Hydro_computeDt (tileDesc, &
              xCenter, dx, uxgrid, &
              yCenter, dy, uygrid, &
              zCenter, dz, uzgrid, &
-             blkLimits,blkLimitsGC,  &
+             tileDesc%limits, blkLimitsGC,  &
              solnData,      &
              dtLocal(1,HYDRO), lminloc(:,HYDRO), &
              extraInfo=extraHydroInfo )
@@ -334,12 +334,12 @@ subroutine Driver_computeDt(nbegin, nstep, &
         print*,'release blockpointer'
 #endif
         
-        call Grid_releaseBlkPtr(blockDesc, solnData)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
         nullify(solnData)
 
         call itor%next()
      enddo
-     call Grid_releaseLeafIterator(itor)
+     call Grid_releaseTileIterator(itor)
   end do
 !!$     end do
      

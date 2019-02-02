@@ -10,16 +10,16 @@ Module Hydro_interface
   implicit none
 
   interface Hydro_computeDt
-     subroutine Hydro_computeDt (block, &
+     subroutine Hydro_computeDt (tileDesc, &
           x, dx, uxgrid, &
           y, dy, uygrid, &
           z, dz, uzgrid, &
           blkLimits,blkLimitsGC,  &
           solnData,   &
           dt_check, dt_minloc, extraInfo )
-       use block_metadata, ONLY : block_metadata_t
+       use flash_tile, ONLY : flash_tile_t
        implicit none
-       type(block_metadata_t), intent(IN) :: block
+       type(flash_tile_t), intent(IN) :: tileDesc
        integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
        real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
        real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)), intent(IN) :: y, dy, uygrid

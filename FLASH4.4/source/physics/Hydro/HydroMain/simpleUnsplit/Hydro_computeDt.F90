@@ -61,7 +61,7 @@
 !!REORDER(4): U
 #include "Flash.h"
 #undef FIXEDBLOCKSIZE
-Subroutine Hydro_computeDt(block, &
+Subroutine Hydro_computeDt(tileDesc, &
      x, dx, uxgrid, &
      y, dy, uygrid, &
      z, dz, uzgrid, &
@@ -77,14 +77,16 @@ Subroutine Hydro_computeDt(block, &
                                hy_useHydro, hy_updateHydroFluxes,     &
                                hy_useVaryingCFL
   use Driver_interface, ONLY : Driver_abortFlash
-  use block_metadata, ONLY : block_metadata_t
+  use flash_tile,       ONLY : flash_tile_t
   implicit none
 
   !! Arguments type declaration ------------------------------------------
-  type(block_metadata_t), intent(IN) :: block
+  type(flash_tile_t), intent(IN) :: tileDesc
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
 #ifdef FIXEDBLOCKSIZE
+  ! DEV: FIXME This should not be here.  blkLimitsGC should have the correct
+  !            bounds.  Also, it's not in the Unsplit version of this routine.
   real, dimension(GRID_ILO_GC:GRID_IHI_GC), intent(IN) :: x, dx, uxgrid
   real, dimension(GRID_JLO_GC:GRID_JHI_GC), intent(IN) :: y, dy, uygrid
   real, dimension(GRID_KLO_GC:GRID_KHI_GC), intent(IN) :: z, dz, uzgrid
@@ -110,10 +112,19 @@ Subroutine Hydro_computeDt(block, &
   temploc(:) = 0
 
   !! Conversion for unitSystem if needed ---------------------------------------
-  U(DENS_VAR,:,:,:) = U(DENS_VAR,:,:,:)/hy_dref
-  U(ENER_VAR,:,:,:) = U(ENER_VAR,:,:,:)/hy_eref
-  U(PRES_VAR,:,:,:) = U(PRES_VAR,:,:,:)/hy_pref
-  U(VELX_VAR:VELZ_VAR,:,:,:) = U(VELX_VAR:VELZ_VAR,:,:,:)/hy_vref
+  associate(lo => blkLimits(LOW,  :), &
+            hi => blkLimits(HIGH, :))
+     do       k = lo(KAXIS), hi(KAXIS)
+        do    j = lo(JAXIS), hi(JAXIS)
+           do i = lo(IAXIS), hi(IAXIS)
+              U(DENS_VAR,i,j,k) = U(DENS_VAR,i,j,k)/hy_dref
+              U(ENER_VAR,i,j,k) = U(ENER_VAR,i,j,k)/hy_eref
+              U(PRES_VAR,i,j,k) = U(PRES_VAR,i,j,k)/hy_pref
+              U(VELX_VAR:VELZ_VAR,i,j,k) = U(VELX_VAR:VELZ_VAR,i,j,k)/hy_vref
+           end do
+        end do
+     end do
+  end associate
   !! ---------------------------------------------------------------------------
 
 
@@ -133,7 +144,7 @@ Subroutine Hydro_computeDt(block, &
            temploc(1) = i
            temploc(2) = 1
            temploc(3) = 1
-           temploc(4) = block%level
+           temploc(4) = tileDesc%level
            temploc(5) = hy_meshMe
         endif
 
@@ -162,7 +173,7 @@ Subroutine Hydro_computeDt(block, &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = block%level
+                 temploc(4) = tileDesc%level
                  temploc(5) = hy_meshMe
               endif
 
@@ -188,7 +199,7 @@ Subroutine Hydro_computeDt(block, &
                  temploc(1) = i
                  temploc(2) = j
                  temploc(3) = 1
-                 temploc(4) = block%level
+                 temploc(4) = tileDesc%level
                  temploc(5) = hy_meshMe
               endif
            enddo
@@ -221,7 +232,7 @@ Subroutine Hydro_computeDt(block, &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = block%level
+                    temploc(4) = tileDesc%level
                     temploc(5) = hy_meshMe
                  endif
 
@@ -250,7 +261,7 @@ Subroutine Hydro_computeDt(block, &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = block%level
+                    temploc(4) = tileDesc%level
                     temploc(5) = hy_meshMe
                  endif
 
@@ -279,7 +290,7 @@ Subroutine Hydro_computeDt(block, &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = block%level
+                    temploc(4) = tileDesc%level
                     temploc(5) = hy_meshMe
                  endif
 
@@ -310,10 +321,19 @@ Subroutine Hydro_computeDt(block, &
   end if
 
   !! Conversion for unitSystem if needed ---------------------------------------
-  U(DENS_VAR,:,:,:) = U(DENS_VAR,:,:,:)*hy_dref
-  U(ENER_VAR,:,:,:) = U(ENER_VAR,:,:,:)*hy_eref
-  U(PRES_VAR,:,:,:) = U(PRES_VAR,:,:,:)*hy_pref
-  U(VELX_VAR:VELZ_VAR,:,:,:) = U(VELX_VAR:VELZ_VAR,:,:,:)*hy_vref
+  associate(lo => blkLimits(LOW,  :), &
+            hi => blkLimits(HIGH, :))
+     do       k = lo(KAXIS), hi(KAXIS)
+        do    j = lo(JAXIS), hi(JAXIS)
+           do i = lo(IAXIS), hi(IAXIS)
+              U(DENS_VAR,i,j,k) = U(DENS_VAR,i,j,k)*hy_dref
+              U(ENER_VAR,i,j,k) = U(ENER_VAR,i,j,k)*hy_eref
+              U(PRES_VAR,i,j,k) = U(PRES_VAR,i,j,k)*hy_pref
+              U(VELX_VAR:VELZ_VAR,i,j,k) = U(VELX_VAR:VELZ_VAR,i,j,k)*hy_vref
+           end do
+        end do
+     end do
+  end associate
   !! ---------------------------------------------------------------------------
   if(dtCheck <= 0.0) call Driver_abortFlash("[Hydro]: Computed dt is not positive! Aborting!")
   return

@@ -29,6 +29,7 @@ module flash_tile
         procedure, public :: faceAreas
         procedure, public :: cellVolumes
         procedure, public :: physicalSize
+        procedure, public :: faceBCs
         procedure, public :: getDataPtr
         procedure, public :: releaseDataPtr
     end type flash_tile_t
@@ -365,6 +366,51 @@ contains
       
         tileSize = bsize(:, this%id)
     end subroutine physicalSize
+
+    subroutine faceBCs(this, faces, onBoundary)
+        use tree,         ONLY : bnd_box
+        use Grid_data,    ONLY : gr_domainBC, &
+                                 gr_globalDomain, &
+                                 gr_delta
+
+        class(flash_tile_t), intent(IN)            :: this
+        integer,             intent(OUT)           :: faces(LOW:HIGH, 1:MDIM)
+        integer,             intent(OUT), optional :: onBoundary(LOW:HIGH, 1:MDIM)
+
+        real    :: deltas(1:MDIM)
+        integer :: axis, face
+
+        deltas(1:MDIM) = gr_delta(1:MDIM, this%level)
+
+        do    axis = 1, MDIM
+           do face = LOW, HIGH
+              faces(face, axis) = NOT_BOUNDARY
+              if (present (onBoundary)) then
+                 onBoundary(face,axis) = NOT_BOUNDARY
+              end if
+
+              if (almostEqual(bnd_box(face, axis, this%id), &
+                              gr_globalDomain(face, axis), &
+                              deltas(axis))) then
+                 if (gr_domainBC(face, axis) .NE. PERIODIC) &
+                      faces(face,axis) = gr_domainBC(face,axis)
+                 if (present (onBoundary)) then
+                    onBoundary(face,axis) = gr_domainBC(face,axis)
+                 end if
+              end if
+
+           end do
+        end do
+
+    contains
+       logical function almostEqual(x, y, dx)
+          real, intent(IN) :: x
+          real, intent(IN) :: y
+          real, intent(IN) :: dx
+
+          almostEqual = (ABS(x-y) <= (0.01 * dx))
+       end function almostEqual
+    end subroutine faceBCs
 
     subroutine getDataPtr(this, dataPtr, gridDataStruct, localFlag)
         use physicaldata,    ONLY : unk, &

@@ -89,7 +89,7 @@ module flash_tile
         procedure, public :: faceAreas
         procedure, public :: cellVolumes
         procedure, public :: physicalSize
-!        procedure, public :: onDomainBoundary
+        procedure, public :: faceBCs
 !        procedure, public :: outsideDomain
         procedure, public :: getDataPtr
         procedure, public :: releaseDataPtr
@@ -449,6 +449,52 @@ contains
             tileSize(1:NDIM) = (hi(1:NDIM) - lo(1:NDIM) + 1) * dx(1:NDIM)
         end associate
     end subroutine physicalSize
+    
+    subroutine faceBCs(this, faces, onBoundary)
+        use amrex_amrcore_module, ONLY : amrex_geom
+        use Grid_data,            ONLY : gr_globalDomain, &
+                                         gr_domainBC
+
+        class(flash_tile_t), intent(IN)            :: this
+        integer,             intent(OUT)           :: faces(LOW:HIGH, 1:MDIM)
+        integer,             intent(OUT), optional :: onBoundary(LOW:HIGH, 1:MDIM)
+        
+        real    :: bnd_box(LOW:HIGH, 1:MDIM)
+        real    :: deltas(1:MDIM)
+        integer :: axis, face
+ 
+        deltas(:) = amrex_geom(this%level - 1)%dx(:)
+
+        call this%boundBox(bnd_box)
+        do    axis = 1, MDIM
+           do face = LOW, HIGH
+              faces(face, axis) = NOT_BOUNDARY
+              if (present (onBoundary)) then
+                 onBoundary(face,axis) = NOT_BOUNDARY
+              end if
+
+              if (almostEqual(bnd_box(face, axis), &
+                              gr_globalDomain(face, axis), &
+                              deltas(axis))) then
+                 if (gr_domainBC(face, axis) .NE. PERIODIC) &
+                      faces(face,axis) = gr_domainBC(face,axis)
+                 if (present (onBoundary)) then
+                    onBoundary(face,axis) = gr_domainBC(face,axis)
+                 end if
+              end if
+
+           end do
+        end do
+
+    contains
+       logical function almostEqual(x, y, dx)
+          real, intent(IN) :: x
+          real, intent(IN) :: y
+          real, intent(IN) :: dx
+
+          almostEqual = (ABS(x-y) <= (0.01 * dx))
+       end function almostEqual
+    end subroutine faceBCs
 
     function enclosingBlock(this)
         use amrex_fort_module,    ONLY : wp => amrex_real
