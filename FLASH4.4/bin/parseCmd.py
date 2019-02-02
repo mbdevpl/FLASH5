@@ -62,7 +62,11 @@ USAGE="""usage:  setup <problem-name> [options] [VAR=VALUE]...
 def usage():
     """Print usage info and exit"""
     print(USAGE)
-    ans = input("\nDo you want to see a list of shortcuts I know about [Y/n]?")
+    try:
+        from builtins import input
+        ans = input("\nDo you want to see a list of shortcuts I know about [Y/n]?")
+    except ImportError:
+        ans = raw_input("\nDo you want to see a list of shortcuts I know about [Y/n]?")
     ans = ans.replace("\n","")
     if ans.lower() in ["y","yes",""]:
        sitems = list(GVars.shortcuts.items())
@@ -130,6 +134,7 @@ def expandShortcuts(args,RecLimit=255):
    shortcuts = GVars.shortcuts
    while args:
       scut = args[0]
+      oargs = args[0:]
       del args[0]
       if scut[0] != globals.SHORTCUT_CHAR: 
          ans.append(scut) 
@@ -146,7 +151,7 @@ def expandShortcuts(args,RecLimit=255):
             scut = scut[1:].lower() # pick given key
          # now process the shortcut
          if scut not in shortcuts: # invalid shortcut
-            GVars.out.put("\n***WARNING*** Ignoring unknown shortcut %s while expanding %s.\n" % (scut," ".join(args)),globals.IMPINFO)
+            GVars.out.put("\n***WARNING*** Ignoring unknown shortcut %s while expanding %s.\n" % (scut," ".join(oargs)),globals.IMPINFO)
          elif count > 0:
             count = count - 1
             args[0:0] = shortcuts[scut] # insert expansion of shortcut in front of args
