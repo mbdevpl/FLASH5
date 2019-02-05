@@ -6,13 +6,13 @@ import globals
 from globals import * # for GVars
    
 # helper to split multi-line strings and flatten nested iterables into one long iterator of strings
-def flatten(it):
+def _flatten(it):
    if type(it) == type(""):
       for x in it.split('\n'):
          yield x
    else:
       for x in it:
-         for y in flatten(x):
+         for y in _flatten(x):
             yield y
 
 class preProcess:
@@ -74,8 +74,8 @@ class preProcess:
           #             raise Exception('Config scripts may not write to the setup variable dictionary.')
           #     return A(d)
           # # execute the genLines function to get a back an iterable of lines
-          # lines = flatten(ns.genLines(guarddict(self.initvalues.copy())))
-          lines = flatten(ns.genLines(self.initvalues.copy()))
+          # lines = _flatten(ns.genLines(guarddict(self.initvalues.copy())))
+          lines = _flatten(ns.genLines(self.initvalues.copy()))
       else: # just a regular config file
           fd.seek(0)
           lines = fd.readlines()
