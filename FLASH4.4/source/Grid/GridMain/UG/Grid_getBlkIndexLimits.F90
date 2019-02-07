@@ -107,17 +107,18 @@
 
 module Grid_getBlkIndexLimits_mod
 contains
-subroutine Grid_getBlkIndexLimits(blockId, blkLimits, blkLimitsGC, gridDataStruct)
+subroutine Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC, gridDataStruct)
   use Grid_data, ONLY : gr_ilo,gr_ihi,gr_jlo,gr_jhi,gr_klo,gr_khi,&
                         gr_iloGc,gr_ihiGc,gr_jloGc,gr_jhiGc,gr_kloGc,gr_khiGc,&
                         gr_meshMe
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
-  integer,intent(IN) :: blockId
-  integer,dimension(2,MDIM),intent(OUT) :: blkLimits,blkLimitsGC
+  integer,intent(IN) :: blockID
+  integer,dimension(LOW:HIGH,MDIM),intent(OUT) :: blkLimits,blkLimitsGC
   integer,optional, intent(IN) :: gridDataStruct
   integer,dimension(MDIM) :: faces
 

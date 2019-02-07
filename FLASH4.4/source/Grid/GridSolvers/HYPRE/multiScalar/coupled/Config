@@ -1,6 +1,0 @@
-USESETUPVARS Grid
-IF Grid=='UG'
-   REQUIRES ./UG
-ELSE
-   REQUIRES ./paramesh
-ENDIF

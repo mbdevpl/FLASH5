@@ -58,7 +58,7 @@
 !!
 !! SEE ALSO
 !!
-!!   Grid_getListOfBlocks
+!!   gr_pmGetListOfBlocks
 !!
 !!***
 

@@ -6,20 +6,20 @@
 !! SYNOPSIS
 !! 
 !! 
-!!  Grid_getBlkBoundBox(integer(IN)  :: blockId,
+!!  call Grid_getBlkBoundBox(type(block_metadata_t)(IN)  :: blockDesc,
 !!                         real(OUT) :: boundBox(2, MDIM))
 !!  
 !! DESCRIPTION 
 !!
 !!  Gets the physical domain bounding box of the block identified 
-!!  by blockId.  For each dimension the left (lower or forward) 
+!!  by blockDesc.  For each dimension the left (lower or forward) 
 !!  physical coordinate of the block edge and the right (upper or back) 
 !!  physical coordinate of the block edge is returned.  See arguments
 !!  below for more detail.
 !!
 !! ARGUMENTS
 !!
-!!  blockId -local block number
+!!  blockDesc -block metadata
 !!
 !!  boundBox - returned array holding the boundBox coordinates in
 !!             each dimension
@@ -61,16 +61,22 @@
 !!***
 
 
-subroutine Grid_getBlkBoundBox(blockId, boundBox)
+subroutine Grid_getBlkBoundBox(blockDesc, boundBox)
 
   use tree, ONLY : bnd_box
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
-  integer,intent(in) :: blockId
+
+  type(block_metadata_t), intent(in) :: blockDesc
   real,dimension(2,MDIM),intent(out) :: boundBox
+
+  integer :: blockId
+
+  blockid = blockDesc%id
 
   if(blockID <= 0) then
      print *, "blockId = ", blockID
@@ -81,17 +87,3 @@ subroutine Grid_getBlkBoundBox(blockId, boundBox)
 
   return
 end subroutine Grid_getBlkBoundBox
-
-
-
-
-
-
-
-
-
-
-
-
-
-

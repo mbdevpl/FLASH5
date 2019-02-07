@@ -39,7 +39,7 @@
 
 subroutine Grid_getNeighProcList(includeMyProc, neighProcList, numNeigh)
   use Grid_data, ONLY : gr_meshMe
-  use Grid_interface, ONLY : Grid_getListOfBlocks
+  use gr_parameshInterface, ONLY : gr_pmGetListOfBlocks
   use ut_qsortInterface, ONLY : ut_qsort
   use gr_interface, ONLY : gr_findAllNeghID
   use gr_interfaceTypeDecl, ONLY: AllBlockRegions_t
@@ -60,7 +60,7 @@ subroutine Grid_getNeighProcList(includeMyProc, neighProcList, numNeigh)
   ENDJ = max(1,K2D*3)
   ENDK = max(1,K3D*3)
   allCenters = 2**NDIM
-  call Grid_getListOfBlocks(LEAF, blockList, blockCount)
+  call gr_pmGetListOfBlocks(LEAF, blockList, blockCount)
 
   !Up to "2**(NDIM-1)" neighbors for each guard cell region
   !Exactly "((ENDI*ENDJ*ENDK)-1)" guard cell regions in each block

@@ -144,12 +144,14 @@ contains
     !!
     !!****
     subroutine blkMetaData(this, mData)
-        class(gr_iterator_t), intent(IN)  :: this
-        type(block_metadata_t), intent(OUT) :: mData
-
-        write(*,*) "You are working with a useless gr_iterator_t stub"
-        stop
+      use block_metadata, ONLY : block_metadata_t
+      
+      class(gr_iterator_t), intent(IN)  :: this
+      type(block_metadata_t), intent(OUT) :: mData
+      
+      write(*,*) "You are working with a useless gr_iterator_t stub"
+      stop
     end subroutine blkMetaData
     
-end module gr_iterator
+  end module gr_iterator
 

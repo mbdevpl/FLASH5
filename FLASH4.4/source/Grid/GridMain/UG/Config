@@ -85,3 +85,5 @@ PARAMETER smallt	REAL	1.E-10
 D smallu            Cutoff value for velocity
 PARAMETER smallu	REAL	1.E-10	
 
+D flux_correct_perLevel not valid with UG  
+PARAMETER flux_correct_perLevel BOOLEAN false
