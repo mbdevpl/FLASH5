@@ -16,7 +16,9 @@ from rpUtils import * # for RPInfo Class
 from varUtils import * # for VarInfo class
 
 import re, os.path, types, string
-from functools import cmp_to_key
+try:
+    from functools import cmp_to_key
+except ImportError: pass
 
 ###########################################
 
@@ -401,7 +403,11 @@ class UnitList:
       pathlist.sort() 
       # now use our fancy sorting routine, so hopefully there are few calls to our 
       # comparator algorithm
-      pathlist.sort( key = cmp_to_key(compare) )
+      try:
+          pathlist.sort( key = cmp_to_key(compare) )
+      except NameError: # in case we did not import cmp_to_key successfully...
+          pathlist.sort( cmp = compare )
+
       # combine paths back to strings
       tmpList = [ "/".join(x) for x in pathlist ] # contract paths to unitnames
       return tmpList

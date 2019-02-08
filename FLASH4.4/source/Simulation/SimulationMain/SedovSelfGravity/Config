@@ -34,6 +34,6 @@ PARAMETER sim_nsubzones     INTEGER 7
 # Do not reshuffle standard variables (yet). 
 
 USESETUPVARS nDim
-IF nDim <> 1
+IF nDim != 1
   SETUPERROR Sedov self gravity runs in only 1D spherical
 ENDIF
