@@ -286,7 +286,7 @@ class LinkFileList:
   # let the files appear different.
   def samefile(self,filea,fileb):
       try:
-        fa = open(filea)
+        fa = open(filea,"rb")
         cksuma = zlib.adler32(fa.read())
         fa.close()
       except IOError:
@@ -299,7 +299,7 @@ class LinkFileList:
       if not cksuma: return None
 
       try:
-        fb = open(fileb)
+        fb = open(fileb,"rb")
         cksumb = zlib.adler32(fb.read())
         fb.close()
       except IOError:
