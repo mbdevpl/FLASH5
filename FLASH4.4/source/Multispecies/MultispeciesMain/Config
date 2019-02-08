@@ -35,7 +35,7 @@ def genLines(setupvars):
             yield 'PARAMETER eos_' + spec + 'GroupName  STRING "-none-"'
 
             yield 'PARAMETER  ms_' + spec + 'NumElems   INTEGER 0 [... ' + str(maxelems) + ']'
-            for i in xrange(maxelems):
+            for i in range(maxelems):
                 yield 'PARAMETER  ms_' + spec + 'ZElems_'    + str(i+1) + ' INTEGER -999'
                 yield 'PARAMETER  ms_' + spec + 'AElems_'    + str(i+1) + ' REAL    -999.'
                 yield 'PARAMETER  ms_' + spec + 'Fractions_' + str(i+1) + ' REAL    -999.'
