@@ -11,7 +11,6 @@ from utils import *
 from preProcess import preProcess
 
 import re, os.path, types, string, copy
-from functools import cmp_to_key
 
 ######## FLASH UNIT CODE ############
 
@@ -759,7 +758,10 @@ class UnitUnion(dict):
         #Provide a custom compare function to the list's sort method.
         #Sorts list by the number of electrons (field 1) and then alphabetically (field 0).
         #The second condition is only evaluated if the first condition is false.
-        listTuples.sort( key = cmp_to_key(lambda x,y : cmp(int(x[1]),int(y[1])) or cmp(x[0],y[0])) )
+        try:
+            listTuples.sort( key = lambda x : (int(x[1]),x[0]) )
+        except: # for Python versions before 2.4, but those probably do not work for us anyway
+            listTuples.sort( cmp = lambda x,y : cmp(int(x[1]),int(y[1])) or cmp(x[0],y[0]) )
 
         totalSpecies = 0
         self['species'] = []        
@@ -871,7 +873,10 @@ class UnitUnion(dict):
         #We create a sorted temporary list "tmpList", which we then copy into
         #a new list "particleList" with passive particles at the start.
         tmpList = list(self['PARTICLETYPE'].items())
-        tmpList.sort( key = cmp_to_key(lambda x,y : cmp(x[0],y[0])) )  #Sort by particle type.
+        try:
+            tmpList.sort( key = lambda x : x[0] )  #Sort by particle type.
+        except: # for Python versions before 2.4, but those probably do not work for us anyway
+            tmpList.sort( cmp = lambda x,y : cmp(x[0],y[0]) )  #Sort by particle type.
 
         i = 0
         particleList = []

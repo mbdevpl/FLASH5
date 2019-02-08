@@ -31,7 +31,7 @@ ENDIF
 #! ny_subint
 
 USESETUPVARS nDim
-IF nDim <> 2
+IF nDim != 2
   SETUPERROR Isentropic Vortex can only be run in 2D.
 ENDIF
 
