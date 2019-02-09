@@ -421,19 +421,13 @@ Module Grid_interface
   end interface
 
   interface Grid_getSingleCellVol
-     subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
-       integer, intent(in) :: blockID
-       integer, intent(in) :: beginCount
-       integer, intent(in) :: point(MDIM)
-       real, intent(out)   :: cellvolume
-     end subroutine Grid_getSingleCellVol
-     subroutine Grid_getSingleCellVol_Itor(block, point, cellvolume, indexing)
+     subroutine Grid_getSingleCellVol(block, point, cellvolume, indexing)
        use block_metadata, ONLY : block_metadata_t
        type(block_metadata_t), intent(in) :: block
        integer, intent(in) :: point(MDIM)
        real, intent(out)   :: cellvolume
        integer, intent(in),OPTIONAL :: indexing
-     end subroutine Grid_getSingleCellVol_Itor
+     end subroutine Grid_getSingleCellVol
   end interface Grid_getSingleCellVol
 
   interface

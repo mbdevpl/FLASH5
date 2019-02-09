@@ -175,7 +175,7 @@
 !!    temp = (EOS_TEMP-1)*vecLen
 !!
 !!
-!!    call Grid_getBlkPtr(blockID,solnData)
+!!    call Grid_getBlkPtr(block,solnData)
 !!    do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
 !!        do j = blkLimits(LOW,JAXIS), blkLimits(HIGH, JAXIS)
 !!           do i = 1,vecLen

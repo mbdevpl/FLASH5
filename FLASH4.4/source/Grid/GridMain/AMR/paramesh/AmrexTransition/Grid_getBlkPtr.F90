@@ -58,7 +58,7 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
+subroutine Grid_getBlkPtr(block, dataPtr, gridDataStruct,localFlag)
 
 #include "constants.h"
 #include "Flash.h"
@@ -291,5 +291,5 @@ subroutine Grid_getBlkPtr_desc(block, dataPtr, gridDataStruct,localFlag)
 #endif
 
   return
-end subroutine Grid_getBlkPtr_desc
+end subroutine Grid_getBlkPtr
 

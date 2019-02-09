@@ -140,6 +140,7 @@ subroutine gr_amrexInit()
                                 NZB * nBlockZ])
 
   ! Setup AMReX in octree mode
+
   call pp_amr%add   ("max_grid_size_x",     NXB) 
   call pp_amr%add   ("max_grid_size_y",     NYB) 
   call pp_amr%add   ("max_grid_size_z",     NZB) 
