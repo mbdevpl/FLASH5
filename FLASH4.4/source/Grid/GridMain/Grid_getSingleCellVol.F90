@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getSingleCellVol(integer(IN) :: blockid,
+!!  Grid_getSingleCellVol(integer(IN) :: blockDesc,
 !!                        integer(IN) :: beginCount,
 !!                        integer(IN) :: point(MDIM), 
 !!                        real(OUT)   :: cellVolume)
@@ -59,88 +59,7 @@
 !!
 !!***
 
-subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
-
-  use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellCoords, &
-                             Grid_getBlkRefineLevel,                   &
-                             Grid_getGeometry
-
-  implicit none
-
-#include "constants.h"
-#include "Flash.h"
-
-  integer, intent(in) :: blockID, beginCount
-  integer, intent(in) :: point(MDIM)
-  real, intent(out) :: cellvolume
-
-  integer :: geometry
-  integer :: level
-  real :: del(MDIM)
-  real :: centerCoords(MDIM), leftCoords(MDIM), rightCoords(MDIM)
-  
-  del = 1.0
- 
-  call Grid_getGeometry(geometry)
-  call Grid_getBlkRefineLevel(blockID, level)
-  call Grid_getDeltas(level, del)
-
-  select case (geometry)
-
-  case (CARTESIAN)
-     if(NDIM == 1) then
-        cellvolume = del(IAXIS)
-     else if(NDIM == 2) then
-        cellvolume = del(IAXIS) * del(JAXIS)
-     else
-        cellvolume = del(IAXIS) * del(JAXIS) * del(KAXIS)
-     end if
-
-  case (POLAR)
-     call Grid_getSingleCellCoords(point, blockID, CENTER, beginCount, centerCoords)
-
-     if(NDIM == 1) then
-        cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS)
-     else if(NDIM == 2) then
-        cellvolume = del(IAXIS) * del(JAXIS) * centerCoords(IAXIS)
-     else
-        cellvolume = del(IAXIS) * del(JAXIS) * centerCoords(IAXIS) * del(KAXIS)
-     end if
-
-  case (CYLINDRICAL)
-     call Grid_getSingleCellCoords(point, blockID, CENTER, beginCount, centerCoords)
-
-     if(NDIM == 1) then
-        cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS)
-     else if(NDIM == 2) then
-        cellvolume = del(IAXIS) * 2.*PI * centerCoords(IAXIS) * del(JAXIS)
-     else
-        cellvolume = del(IAXIS) * del(JAXIS) * centerCoords(IAXIS) * del(KAXIS)
-     end if
-
-  case (SPHERICAL)
-     call Grid_getSingleCellCoords(point, blockID, LEFT_EDGE, beginCount, leftCoords)
-     call Grid_getSingleCellCoords(point, blockID, RIGHT_EDGE, beginCount, rightCoords)
-
-     cellvolume = del(IAXIS) *  &
-          ( leftCoords(IAXIS)*  leftCoords(IAXIS)  +  &
-            leftCoords(IAXIS)* rightCoords(IAXIS)  +  &
-           rightCoords(IAXIS)* rightCoords(IAXIS) )
-     if(NDIM == 1) then
-        cellvolume = cellvolume * 4.*PI/3.
-     else if(NDIM == 2) then
-        cellvolume = cellvolume * ( cos(leftCoords(JAXIS)) - cos(rightCoords(JAXIS)) ) * 2.*PI/3.
-     else
-        cellvolume = cellvolume * ( cos(leftCoords(JAXIS)) - cos(rightCoords(JAXIS)) ) *  &
-             del(KAXIS) / 3.0
-     end if
-
-  end select
-
-  return
-end subroutine Grid_getSingleCellVol
-
-subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
+subroutine Grid_getSingleCellVol(blockDesc, point, cellvolume, indexing)
 
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface, ONLY : Grid_getDeltas, Grid_getSingleCellCoords, &
@@ -171,14 +90,14 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
 
   blockID = blockDesc%id
   level = blockDesc%level
-  if (level < 1 .OR. beginCount==EXTERIOR .OR. beginCount==INTERIOR) then
-     call Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
-     return
-  end if
+!!$  if (level < 1 .OR. beginCount==EXTERIOR .OR. beginCount==INTERIOR) then
+!!$     call Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
+!!$     return
+!!$  end if
 
-  if (beginCount .NE. GLOBALIDX1 .AND. beginCount .NE. DEFAULTIDX) then
-     call Driver_abortFlash('Grid_getSingleCellVol_Itor: beginCount other than EXTERIOR not supported!')
-  end if
+!!$  if (beginCount .NE. GLOBALIDX1 .AND. beginCount .NE. DEFAULTIDX) then
+!!$     call Driver_abortFlash('Grid_getSingleCellVol_Itor: beginCount other than EXTERIOR not supported!')
+!!$  end if
 
   del = 1.0
   
@@ -241,5 +160,5 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
   end select
 
   return
-end subroutine Grid_getSingleCellVol_Itor
+end subroutine Grid_getSingleCellVol
 
