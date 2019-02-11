@@ -37,10 +37,10 @@
 
 !!REORDER(4): U
 
-Subroutine hy_addViscousFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
+Subroutine hy_addViscousFluxes(block,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
 
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas
-
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
 #include "constants.h"
@@ -48,7 +48,8 @@ Subroutine hy_addViscousFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
 #include "UHD.h"
 
   !! Argument List ----------------------------------------------------------
-  integer, INTENT(IN) :: blockID,ix,iy,iz
+  type(block_metadata_t), INTENT(IN) :: block
+  integer, INTENT(IN) :: ix,iy,iz
   integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
   real, dimension(HY_VARINUM), intent(INOUT) :: Flux
 
@@ -71,7 +72,7 @@ Subroutine hy_addViscousFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
 
 
   !! Get deltas
-  call Grid_getDeltas(blockID,del)
+  call Grid_getDeltas(block%level,del)
 
   idx=1./del(DIR_X)
   if (NDIM >= 2) then
@@ -82,7 +83,7 @@ Subroutine hy_addViscousFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
   endif
 
   !! Get pointer
-  call Grid_getBlkPtr(blockID,U,CENTER)
+  call Grid_getBlkPtr(block,U,CENTER)
 
   !! Compute resistive parts and add them to flux components
   select case(sweepDir)
@@ -227,6 +228,6 @@ Subroutine hy_addViscousFluxes(blockID,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
 
 
   !! Release pointer
-  call Grid_releaseBlkPtr(blockID,U,CENTER)
+  call Grid_releaseBlkPtr(block,U,CENTER)
 
 End Subroutine hy_addViscousFluxes

@@ -79,6 +79,7 @@ implicit none
   
   !! First do the right shift, receive from the neighbor on the left and 
   !! send to the neighbor on the right
+
   
   if( localMyPE == 0) then
      source = localNumProcs-1
@@ -91,13 +92,11 @@ implicit none
   else
      dest = localMyPE+1
   end if
-  !write(*,*)sendRight
-  !write(*,*)recvRight
   
   
   !send guardcell data to neighbor on your right (up, or back)
   select case(gridDataStruct)
-  case(CENTER) 
+  case(CENTER)
      call MPI_SendRecv(unk(sendRight(1), sendRight(2), &
           sendRight(3), sendRight(4),1), &
           1, dataType, dest, 1,&

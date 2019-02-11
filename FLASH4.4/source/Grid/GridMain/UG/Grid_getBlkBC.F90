@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkBC(integer(IN)  :: blockId,
+!!  Grid_getBlkBC(type(block_metadta_t)(IN) :: block,
 !!                integer(OUT) :: faces(2,MDIM),
 !!       optional,integer(OUT) :: onBoundary(2,MDIM))
 !!                    
@@ -29,7 +29,7 @@
 !!   
 !! ARGUMENTS 
 !!
-!!  blockId - the local blockId 
+!!  block - block metadata
 !!  faces   - array returned holding boundary conditions, except when periodic,
 !!            if any of the faces of the block are on a physical boundary. 
 !!                
@@ -48,13 +48,14 @@
 !!***
 
 
-subroutine Grid_getBlkBC(blockid, faces,onBoundary)
+subroutine Grid_getBlkBC(block, faces,onBoundary)
 
   use Grid_data, ONLY : gr_blkBC
+  use block_metadata, ONLY : block_metadata_t
 implicit none
 #include "Flash.h"
 #include "constants.h"
-  integer, intent(in) :: blockid
+  type(block_metadata_t), intent(in) :: block
   integer, dimension(2,MDIM),intent(out):: faces
   !! NOTE onBoundary only included for compatibility with the paramesh versions and interface.
   integer, optional, dimension(LOW:HIGH,MDIM),intent(out):: onBoundary

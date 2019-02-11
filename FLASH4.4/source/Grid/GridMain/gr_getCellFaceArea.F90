@@ -272,6 +272,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
 
 
   end if
+#ifndef FLASH_GRID_UG  
 contains
   pure real function ICOORD_left(i)
     integer,VALUE,INTENT(IN) :: i
@@ -339,4 +340,5 @@ contains
        KCOORD_right = gr_globalDomain(LOW,KAXIS) + i1 * gr_delta(KAXIS,level)
     end if
   end function KCOORD_right
+#endif  
 end subroutine gr_getCellFaceArea

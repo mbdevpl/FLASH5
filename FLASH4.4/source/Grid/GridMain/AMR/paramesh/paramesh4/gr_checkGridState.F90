@@ -25,7 +25,8 @@
 subroutine gr_checkGridState()
 
   use Grid_data, ONLY : gr_meshMe, gr_meshNumProcs, gr_meshComm
-  use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_getBlkIndexLimits
+  use gr_parameshInterface, ONLY : gr_pmGetListOfBlocks
+  use Grid_interface, ONLY : Grid_getBlkIndexLimits
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_interfaceTypeDecl
   use gr_interface, ONLY : gr_findAllNeghID
@@ -49,7 +50,7 @@ subroutine gr_checkGridState()
   guard=blkLimits(LOW,:)-blkLimitsGC(LOW,:)
 
 
-  call Grid_getListOfBlocks(LEAF, listofBlocks, blkCount)
+  call gr_pmGetListOfBlocks(LEAF, listofBlocks, blkCount)
   do blk = 1, blkCount
      blockID = listofBlocks(blk)
 

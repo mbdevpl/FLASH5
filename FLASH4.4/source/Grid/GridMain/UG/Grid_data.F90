@@ -24,68 +24,12 @@ Module Grid_data
 #include "Flash.h"
 #include "constants.h"
 
-#ifdef FIXEDBLOCKSIZE
 
-
-#if NSCRATCH_GRID_VARS > 0
-  real, save, target :: scratch(SCRATCH_GRID_VARS_BEGIN:SCRATCH_GRID_VARS_END,&
-                                GRID_ILO_GC:GRID_IHI_GC+1, &
-                                GRID_JLO_GC:GRID_JHI_GC+1, &
-                                GRID_KLO_GC:GRID_KHI_GC+1,1)
-       
-#else
-  real, save,target :: scratch(1,1,1,1,1)
-#endif
-
-#if NSCRATCH_CENTER_VARS > 0
-  real, save, target :: scratch_ctr(SCRATCH_CENTER_VARS_BEGIN:SCRATCH_CENTER_VARS_END,&
-                 GRID_ILO_GC:GRID_IHI_GC,&
-                 GRID_JLO_GC:GRID_JHI_GC,&
-                 GRID_KLO_GC:GRID_KHI_GC,1)
-#else
-  real, save,target :: scratch_ctr(1,1,1,1,1)
-#endif
-
-#if(NSCRATCH_FACEX_VARS>0)
-  real, save, target :: &
-       scratch_facevarx( SCRATCH_FACEX_VARS_BEGIN:SCRATCH_FACEX_VARS_END,&
-                         GRID_ILO_GC:GRID_IHI_GC+1,&
-                         GRID_JLO_GC:GRID_JHI_GC,  &
-                         GRID_KLO_GC:GRID_KHI_GC,1)
-#else
-  real, save,target,dimension(1,1,1,1,1)::scratch_facevarx
-#endif
-
-#if(NSCRATCH_FACEY_VARS>0)
-  real, save, target :: &
-       scratch_facevary( SCRATCH_FACEY_VARS_BEGIN:SCRATCH_FACEY_VARS_END,&
-                         GRID_ILO_GC:GRID_IHI_GC,    &
-                         GRID_JLO_GC:GRID_JHI_GC+K2D,&
-                         GRID_KLO_GC:GRID_KHI_GC,1)
-#else
-  real, save,target,dimension(1,1,1,1,1)::scratch_facevary
-#endif
-
-#if(NSCRATCH_FACEZ_VARS>0)
-  real, save, target :: &
-       scratch_facevarz( SCRATCH_FACEZ_VARS_BEGIN:SCRATCH_FACEZ_VARS_END,&
-                         GRID_ILO_GC:GRID_IHI_GC, &
-                         GRID_JLO_GC:GRID_JHI_GC, &
-                         GRID_KLO_GC:GRID_KHI_GC+K3D,1) 
-#else
-  real, save,target,dimension(1,1,1,1,1)::scratch_facevarz
-#endif
-
-
-#else
-  !NONFIXEDBLOCKSIZE.
   real, save, target, allocatable :: scratch(:,:,:,:,:)
   real, save, target, allocatable :: scratch_ctr(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevarx(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevary(:,:,:,:,:)
   real, save, target, allocatable :: scratch_facevarz(:,:,:,:,:)
-#endif
-!End of ifdef FIXEDBLOCKSIZE
 
 
   integer, parameter :: lnblocks = 1
@@ -113,7 +57,7 @@ Module Grid_data
   integer, save, dimension(MDIM) :: gr_bndOrder
   logical, save :: gr_allPeriodic
   integer, save, dimension(1)::gr_blkList
-  integer, save, dimension(2,MDIM) :: gr_domainBC, gr_blkBC
+  integer, save, dimension(LOW:HIGH,MDIM) :: gr_domainBC, gr_blkBC
   real ,save :: gr_imin,gr_imax,gr_jmin,gr_jmax,gr_kmin,gr_kmax
 
   integer ,save :: gr_iGridSize,gr_jGridSize,gr_kGridSize
@@ -131,13 +75,14 @@ Module Grid_data
   !mostly not used, but convienent for debugging with Grid_dump tool
   integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars 
  
-  real, save, dimension(MDIM) :: gr_delta
+  real, save, dimension(MDIM,1) :: gr_delta
   real, save, dimension(LOW:HIGH,MDIM) :: gr_globalDomain
 
   integer, save :: gr_iguard,gr_jguard,gr_kguard
   integer, save :: gr_iloGc,gr_ihiGc,gr_jloGc,gr_jhiGc,gr_kloGc,gr_khiGc
   integer, save :: gr_ilo,gr_ihi,gr_jlo,gr_jhi,gr_klo,gr_khi
   real, save,target, allocatable, dimension(:,:,:) ::  gr_iCoords,gr_jCoords,gr_kCoords
+  integer, save:: gr_lrefineMax=1, gr_maxRefine=1
 
   logical, save :: gr_compute_grid_size !used in reordered UG
   real, save :: gr_minCellSize
@@ -157,4 +102,6 @@ Module Grid_data
 
   logical, save :: gr_bcEnableApplyMixedGds
 
+  real,save,target,allocatable,dimension(:,:,:,:) :: gr_flxx, gr_flxy, gr_flxz
+  
 end Module Grid_data

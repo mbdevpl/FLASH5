@@ -62,20 +62,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
-  use Driver_interface, ONLY : Driver_abortFlash
-  
-  implicit none
-
-  integer, intent(in) :: blockID, beginCount
-  integer, intent(in) :: point(MDIM)
-  real, intent(out) :: cellvolume
-
-  cellvolume = 0.0
-  call Driver_abortFlash("[Grid_getSingleCellVol] AMReX does *not* deal in blockIDs")
-end subroutine Grid_getSingleCellVol
-
-subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
+subroutine Grid_getSingleCellVol(blockDesc, point, cellvolume, indexing)
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface,   ONLY : Grid_getDeltas, &
                                Grid_getGeometry, &
@@ -184,5 +171,5 @@ subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
 
   end select
 
-end subroutine Grid_getSingleCellVol_Itor
+end subroutine Grid_getSingleCellVol
 

@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkPtr(type(block_metadata_t)(IN) :: block,
+!!  Grid_getBlkPtr(block_metadata_t(IN)   :: block,
 !!                 real(pointer)(:,:,:,:) :: dataPtr,
 !!                 integer(IN),optional   :: gridDataStruct)
 !!  
@@ -15,10 +15,16 @@
 !!  specified Grid data structure. The block includes guard cells.
 !!  If the optional argument "gridDataStructure" is not specified,
 !!  it returns a block from cell centered data structure.
-!!  
+!!
+!!  When using Paramesh 4 in NO_PERMANENT_GUARDCELLS mode, it is important to
+!!  release the block pointer for a block before getting it for another block.
+!!  For example if pointer to block 1 is not yet released and the user
+!!  tries to get a pointer to block 2, the routine will abort.
+!!
 !! ARGUMENTS 
 !!
-!!  block : block metadata
+!!  block : derived type containing metadata for block whose data we need to
+!!          access
 !!
 !!  dataPtr : Pointer to the data block
 !!
@@ -45,10 +51,8 @@
 !!
 !!***
 
-! Note: Do NOT just include dataPtr, things will go wrong!
-!!REORDER(5): unk, facevar[xyz], scratch_ctr, scratch_facevar[xyz]
-
-!!FOR FUTURE: Add REORDER for unk1, facevar[xyz]1, etc.?
+!!REORDER(4): dataPtr
+!!FOR FUTURE: Add REORDER for unk, facevar[xyz]1, etc.?
 
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
@@ -59,7 +63,6 @@ subroutine Grid_getBlkPtr(block, dataPtr, gridDataStruct,localFlag)
 #include "constants.h"
 #include "Flash.h"
 
-  use physicaldata, ONLY : unk, facevarx, facevary, facevarz
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_specificData, ONLY : scratch,scratch_ctr,&
        scratch_facevarx,scratch_facevary,scratch_facevarz
@@ -72,6 +75,8 @@ subroutine Grid_getBlkPtr(block, dataPtr, gridDataStruct,localFlag)
   use Grid_data, ONLY : gr_meshMe, gr_blkPtrRefCount, gr_lastBlkPtrGotten, &
        gr_blkPtrRefCount_fc, gr_lastBlkPtrGotten_fc,gr_ccMask,gr_fcMask
 #endif 
+  use amrex_multifab_module
+  use gr_amrextData, ONLY : gr_amrextUnkMFs
 
   implicit none
   type(block_metadata_t), intent(in),TARGET :: block
@@ -79,11 +84,11 @@ subroutine Grid_getBlkPtr(block, dataPtr, gridDataStruct,localFlag)
   integer, optional,intent(in) :: gridDataStruct
   logical,optional, intent(in) :: localFlag
   
+  type(amrex_multifab), POINTER :: mf
   integer :: gds, blkPtrRefCount, lastBlkPtrGotten
   logical :: validGridDataStruct
   integer,pointer,dimension(:) :: loUse
   integer :: blockID
-  integer :: i
 
 #ifdef FL_NON_PERMANENT_GUARDCELLS
   integer :: idest, iopt, nlayers, icoord
@@ -93,8 +98,6 @@ subroutine Grid_getBlkPtr(block, dataPtr, gridDataStruct,localFlag)
   logical, dimension(3,NFACE_VARS) :: save_fcMask
 #endif
 #endif
-
-  blockID = block%id
 
 #ifdef DEBUG_GRID
   if(present(gridDataStruct)) then
@@ -117,10 +120,11 @@ subroutine Grid_getBlkPtr(block, dataPtr, gridDataStruct,localFlag)
         call Driver_abortFlash("gridDataStruct must be one of CENTER,FACEX,FACEY,FACEZ,SCRATCH (see constants.h)")
      end if
   end if
-  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print *, 'Grid_getBlkPtr:  invalid blockid ',blockid
-     call Driver_abortFlash("[Grid_getBlkPtr] invalid blockid ")
-  end if
+  ! TODO: Convert this into error checking of AMReX metadata
+!  if((blockid<1).or.(blockid>MAXBLOCKS)) then
+!     print *, 'Grid_getBlkPtr:  invalid blockid ',blockid
+!     call Driver_abortFlash("[Grid_getBlkPtr] invalid blockid ")
+!  end if
 #endif
 
   if(present(gridDataStruct)) then
@@ -188,38 +192,36 @@ subroutine Grid_getBlkPtr(block, dataPtr, gridDataStruct,localFlag)
      if (localFlag) loUse => block%localLimitsGC(LOW, :)
   end if
 
-#ifdef DEBUG_GRID
-  dataPtr => unk(:,:,:,:,blockid)
-98 format('initBlock:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
-99 format('initBlock:',A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
-  print *, "loUse" ,loUse
-  print 99,"UNK" ,(lbound(dataPtr ,i),ubound(dataPtr ,i),i=1,4)
-#endif
-
-
-
      associate (lo => loUse)
 #ifdef INDEXREORDER
         select case (gds)
 #ifndef FL_NON_PERMANENT_GUARDCELLS
         case(CENTER)
-           dataPTR(lo(1):, lo(2):, lo(3):, 1:) => unk(:,:,:,:,blockid)
-        case(FACEX)
-           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarx(:,:,:,:,blockid)
-        case(FACEY)
-           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevary(:,:,:,:,blockid)
-        case(FACEZ)
-           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarz(:,:,:,:,blockid)
+           if (block%grid_index < 0) then
+!!$              print*,'Grid_getBlkPtr_desc: no valid grid_index!!!!!' ! An annoying warning that we are called with a synthetic block descriptor...
+              dataPtr(1:, lo(1):, lo(2):, lo(3):) => block%fp
+           else
+              mf => gr_amrextUnkMFs(block%level-1)
+!!$              print*,'Grid_getBlkPtr: (level,grid_index)=',block%level,block%grid_index
+              dataPtr(1:, lo(1):, lo(2):, lo(3):) => mf%dataPtr(block%grid_index)
+           end if
+
+!!$        case(FACEX)
+!!$           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(ilev)%dataptr(igrd)
+!!$        case(FACEY)
+!!$           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(ilev)%dataptr(igrd)
+!!$        case(FACEZ)
+!!$           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(ilev)%dataptr(igrd)
 #else
         !  #ifndef FL_NON_PERMANENT_GUARDCELLS ...
         case(CENTER)
-           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => unk1(:,:,:,:,idest)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => unk1(:,:,:,:,idest)
         case(FACEX)
-           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarx1(:,:,:,:,idest)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx1(:,:,:,:,idest)
         case(FACEY)
-           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevary1(:,:,:,:,idest)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary1(:,:,:,:,idest)
         case(FACEZ)
-           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarz1(:,:,:,:,idest)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz1(:,:,:,:,idest)
 #endif
         !  end of #ifdef FL_NON_PERMANENT_GUARDCELLS
         case(SCRATCH)
@@ -241,13 +243,13 @@ subroutine Grid_getBlkPtr(block, dataPtr, gridDataStruct,localFlag)
         select case (gds)
 #ifndef FL_NON_PERMANENT_GUARDCELLS
         case(CENTER)
-           dataPtr(1:, lo(1):, lo(2):, lo(3):) => unk(:,:,:,:,blockid)
-        case(FACEX)
-           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(:,:,:,:,blockid)
-        case(FACEY)
-           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(:,:,:,:,blockid)
-        case(FACEZ)
-           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(:,:,:,:,blockid)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => block%fp
+!!$        case(FACEX)
+!!$           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(ilev)%dataptr(igrd)
+!!$        case(FACEY)
+!!$           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(ilev)%dataptr(igrd)
+!!$        case(FACEZ)
+!!$           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(ilev)%dataptr(igrd)
 #else
         !  #ifndef FL_NON_PERMANENT_GUARDCELLS ...
         case(CENTER)

@@ -31,11 +31,11 @@
   
 subroutine gr_bcApplyToAllBlks(axis,isWork)
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkBC
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+  use Grid_interface, ONLY : Grid_getBlkBC, Grid_getLeafIterator, &
+       Grid_releaseLeafIterator
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
   use Grid_data,ONLY : gr_numDataStruct,gr_gridDataStruct,gr_gridDataStructSize
-  use gr_iterator, ONLY : gr_iterator_t
+  use leaf_iterator, ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -52,7 +52,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
   integer :: idest=0
   integer,dimension(gr_numDataStruct) :: localDataStruct,localStructSize
   integer :: localNum
-  type(gr_iterator_t) :: itor
+  type(leaf_iterator_t) :: itor
   type(block_metadata_t) :: blockDesc
 
 #ifdef FLASH_GRID_AMREX
@@ -75,7 +75,7 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
      face(LOW)=LOW
      face(HIGH)=HIGH
 
-     call gr_getBlkIterator(itor)
+     call Grid_getLeafIterator(itor)
      do while (itor%is_valid())
         call itor%blkMetaData(blockDesc) 
 
@@ -102,8 +102,9 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
                    blockDesc,idest)
            end do
         end if
+        call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseLeafIterator(itor)
   end do
 #endif
 

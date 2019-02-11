@@ -50,7 +50,7 @@ subroutine gr_findNeghID(block,pos,negh,neghID)
   use gr_interface, ONLY : gr_getBlkHandle, gr_findWhichChild,gr_xyzToBlock
   use Grid_interface, ONLY : Grid_getBlkBoundBox,Grid_outsideBoundBox, Grid_getBlkBC
   use Grid_data, ONLY : gr_globalDomain, gr_meshMe
-  use tree, ONLY : surr_blks,parent,child
+  use tree, ONLY : surr_blks,parent,child, bnd_box
   use block_metadata, ONLY : block_metadata_t
   
   implicit none
@@ -90,7 +90,8 @@ subroutine gr_findNeghID(block,pos,negh,neghID)
      proc=parent(PROCNO,blockID)
      blk=parent(BLKNO,blockID)
      call gr_getBlkHandle(blk,proc,blkHandle)
-     call Grid_getBlkBoundBox(blkHandle,bndBox)
+     bndBox(:,:)=bnd_box(:,:,blkHandle)
+!!$     call Grid_getBlkBoundBox(blkHandle,bndBox)
      call Grid_outsideBoundBox(pos,bndBox,outside,lnegh)
      neghID(BLKNO:PROCNO)=&
           surr_blks(BLKNO:PROCNO,lnegh(IAXIS),lnegh(JAXIS),lnegh(KAXIS),blkHandle)
@@ -105,7 +106,7 @@ subroutine gr_findNeghID(block,pos,negh,neghID)
      !We don't need to adjust the Grid_outsideBoundBox call (above).
      !--------------------------------------------------------------------------
      call Grid_getBlkBC(block, ignoreMe, faces)
-     call Grid_getBlkBoundBox(blockID, bndBox)
+     call Grid_getBlkBoundBox(block, bndBox)
      wpos = pos
 
      deltaDomain(1:MDIM) = &

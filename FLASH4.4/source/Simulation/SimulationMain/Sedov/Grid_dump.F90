@@ -130,8 +130,9 @@ subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
           nstep, stime, dt
   end if
        
-  call Grid_getBlkPtr(blockID,blkPtr)
-  call Grid_getBlkIndexLimits(blockID, blkLimits,blkLimitsGC)
+  call Grid_getBlkPtr(blockDesc,blkPtr)
+  blkLimits = blockDesc%limits
+  blkLimitsGC=blockDesc%limitsGC
 
   bxn = blkLimitsGC(HIGH,IAXIS) - blkLimitsGC(LOW,IAXIS) + 1
   byn = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
@@ -143,9 +144,9 @@ subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
   allocate(x(bxn))
   allocate(y(byn))
   allocate(z(bzn))
-  call Grid_getCellCoords(IAXIS,blockID,CENTER,.TRUE.,x,bxn)
-  call Grid_getCellCoords(JAXIS,blockID,CENTER,.TRUE.,y,byn)
-  call Grid_getCellCoords(KAXIS,blockID,CENTER,.TRUE.,z,bzn)
+  call Grid_getCellCoords(IAXIS,blockDesc,CENTER,.TRUE.,x,bxn)
+  call Grid_getCellCoords(JAXIS,blockDesc,CENTER,.TRUE.,y,byn)
+  call Grid_getCellCoords(KAXIS,blockDesc,CENTER,.TRUE.,z,bzn)
 
 
   if(.not. gcell) then
@@ -190,7 +191,7 @@ subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
 
   deallocate(x,y,z)
   lastBlockID = blockID
-  call Grid_releaseBlkPtr(blockID,blkPtr)
+  call Grid_releaseBlkPtr(blockDesc,blkPtr)
 
   numCalls = numCalls + 1
   return
