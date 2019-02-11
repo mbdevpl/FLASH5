@@ -52,10 +52,12 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
 #include "constants.h"
 
   use physicaldata, ONLY : unk
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkData
+  use Grid_interface, ONLY : Grid_getBlkData, Grid_getLeafIterator, Grid_releaseLeafIterator
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_data, ONLY : gr_meshComm
+  use block_metadata, ONLY : block_metadata_t
+  use leaf_iterator, ONLY : leaf_iterator_t
 
   implicit none
 
@@ -69,10 +71,10 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
   real    :: cvol
   logical :: include_in_sum
   integer :: totalblockshere
-  integer, dimension(2,MDIM)   :: blkLimitsGC, blkLimits
+  integer, dimension(LOW:HIGH,MDIM)   ::  blkLimits
   real, allocatable :: cellVolumes(:,:,:)
-
-
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
 !===============================================================================
 
   call Timers_start("Grid_computeVarNorm")
@@ -85,7 +87,9 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
     call Driver_abortFlash('only L1 and L2 norms supported in Grid_computeVarNorm!')
   endif
 
-  call Grid_getBlkIndexLimits(1,blkLimits,blkLimitsGC)
+  call Grid_getLeafIterator(itor)
+  call itor%blkMetaData(block)
+  blkLimits(:,:) = block%limits
   allocate(cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
        blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
        blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
@@ -94,7 +98,7 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
   ! leafOnly must be ignored for UG
   if (include_in_sum) then
      totalblockshere = totalblockshere + 1
-     call Grid_getBlkData(1, CELL_VOLUME, 0, EXTERIOR, &
+     call Grid_getBlkData(block, CELL_VOLUME, 0, EXTERIOR, &
           (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
           cellVolumes, &
           (/blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1, &
@@ -116,7 +120,7 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
      endif
      lsum = lsum + bsum
   endif
-
+  call Grid_releaseLeafIterator(itor)
   deallocate(cellVolumes)
   
   call mpi_allreduce ( lsum, sum, 1, FLASH_REAL, & 

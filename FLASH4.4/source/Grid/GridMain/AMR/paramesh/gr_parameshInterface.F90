@@ -16,8 +16,10 @@
 !!***
 
 module gr_parameshInterface
+#include "constants.h"
+#include "Flash.h"  
   implicit none
-
+  
   interface
      function gr_blockMatch(blkID, ntype, refinementLevel) result(match)
        implicit none
@@ -27,6 +29,19 @@ module gr_parameshInterface
        logical                       :: match
      end function gr_blockMatch
   end interface
-
+  
+  interface 
+     subroutine gr_pmGetListOfBlocks(blockType, listOfBlocks,count,refinementLevel,&
+          region_bndBox, includePartialBlocks)
+       
+       integer, intent(in) :: blockType
+       integer,dimension(MAXBLOCKS),intent(out) :: listOfBlocks
+       integer,intent(out) :: count
+       integer,intent(IN), optional :: refinementLevel
+       real, dimension(LOW:HIGH,MDIM), intent(IN), optional :: region_bndBox
+       logical, intent(IN), optional :: includePartialBlocks
+       
+     end subroutine gr_pmGetListOfBlocks
+  end interface
 end module gr_parameshInterface
 

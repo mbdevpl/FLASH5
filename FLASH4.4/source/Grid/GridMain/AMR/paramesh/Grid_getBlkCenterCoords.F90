@@ -1,3 +1,4 @@
+
 !!****if* source/Grid/GridMain/paramesh/Grid_getBlkCenterCoords
 !!
 !! NAME
@@ -5,7 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkCenterCoords(integer(IN) :: blockId,
+!!  Grid_getBlkCenterCoords(type(block_metadata_t)(IN) :: block,
 !!                          real(OUT)   :: blockCenter(MDIM))
 !!
 !!
@@ -15,7 +16,7 @@
 !!
 !!
 !! ARGUMENTS
-!!  blockId - local id number of the block. for UG always 1
+!!  block - block metadata
 !!  blockCenter - returned array of size MDIM holding the blockCenter coords
 !!
 !! Example
@@ -40,16 +41,16 @@
 !!***
 
 
-subroutine Grid_getBlkCenterCoords(blockId, blockCenter)
+subroutine Grid_getBlkCenterCoords(block, blockCenter)
 
   use tree, ONLY : coord
-
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
 #include "constants.h"
 
-  integer,intent(in) :: blockId
+  type(block_metadata_t),intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockCenter
-  blockCenter=coord(:,blockId)
+  blockCenter=coord(:,block%id)
 
 end subroutine Grid_getBlkCenterCoords

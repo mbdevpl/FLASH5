@@ -41,11 +41,12 @@ subroutine Grid_computeVarDiff(level, gr_iRefSoln, gr_iSoln, ires)
 #include "Flash.h"
 #include "constants.h"
 
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits
+
   use physicaldata, ONLY : unk
 
   use Timers_interface, ONLY : Timers_start, Timers_stop
-
+  
+  
   implicit none
 
   integer, intent(in)          :: level, gr_iRefSoln, gr_iSoln, ires
@@ -60,19 +61,8 @@ subroutine Grid_computeVarDiff(level, gr_iRefSoln, gr_iSoln, ires)
   
   
   
-  call Grid_getBlkIndexLimits(1,blkLimits,blkLimitsGC)
-
   if (level==-1 .OR. level == 1) then
-
-     do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)  ! working on interior only
-        do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
-           do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
-              unk(ires,i,j,k,1) = unk(gr_iSoln, i,j,k,1) - unk(gr_iRefSoln, i,j,k,1)
-           enddo
-        enddo
-     enddo
-!!  else
-     ! DEV: Issue warning?
+     unk(ires,:,:,:,1) = unk(gr_iSoln, :,:,:,1) - unk(gr_iRefSoln, :,:,:,1)
   endif
 
 

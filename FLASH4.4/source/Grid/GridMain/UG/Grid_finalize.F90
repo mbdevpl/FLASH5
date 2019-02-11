@@ -24,7 +24,7 @@ subroutine Grid_finalize()
   use Grid_data, ONLY : gr_iCoords,gr_jCoords,gr_kCoords, gr_gid
   use physicalData, ONLY : unk,facevarx,facevary,facevarz
   use Grid_data, ONLY : scratch,scratch_ctr,&
-       &scratch_facevarx,scratch_facevary,scratch_facevarz
+       &scratch_facevarx,scratch_facevary,scratch_facevarz,gr_flxx, gr_flxy, gr_flxz
   use gr_sbInterface, ONLY : gr_sbFinalize
 
   implicit none
@@ -46,7 +46,9 @@ subroutine Grid_finalize()
   deallocate(scratch_facevarx)
   deallocate(scratch_facevary)
   deallocate(scratch_facevarz)
-
+  deallocate(gr_flxx)
+  deallocate(gr_flxy)
+  deallocate(gr_flxz)
 #endif
   call gr_solversFinalize()
   call gr_ptFinalize()

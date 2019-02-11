@@ -7,7 +7,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  Simulation_initBlock(integer (IN) :: blockId)
+!!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
+!!                            integer(IN)  :: blockDesc  )
 !!                       
 !!
 !!
@@ -19,13 +20,14 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockId -           the number of the block to update
+!!  solnData  -        pointer to solution data
+!!  blockDesc -        describes the block to initialize
 !!
 !!
 !!***
 
 
-subroutine Simulation_initBlock(blockId)
+subroutine Simulation_initBlock(solnData,blockDesc)
 
   use Simulation_data, ONLY: sim_xCos, sim_yCos, sim_zCos, &
      & sim_posnL, sim_posnR, sim_smallX, sim_gamma, sim_smallP, &
@@ -34,8 +36,8 @@ subroutine Simulation_initBlock(blockId)
      & sim_pLeft, sim_pMid, sim_pRight, &
      & sim_uLeft, sim_uMid, sim_uRight, &
      sim_eMassInUAmu
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
-    Grid_getCellCoords, Grid_putPointData
+  use Grid_interface, ONLY :Grid_getCellCoords
+  use block_metadata, ONLY : block_metadata_t
 
 #include "constants.h"
 #include "Flash.h"
@@ -44,7 +46,8 @@ subroutine Simulation_initBlock(blockId)
   implicit none      
 
 
-  integer, INTENT(in) :: blockId
+  real,                   pointer    :: solnData(:,:,:,:)
+  type(block_metadata_t), intent(in) :: blockDesc
 
 ! compute the maximum length of a vector in each coordinate direction 
 ! (including guardcells)
@@ -60,36 +63,36 @@ subroutine Simulation_initBlock(blockId)
   real :: ionMassFrac, eleMassFrac, radMassFrac
   
   real, allocatable,dimension(:) ::xCenter,xLeft,xRight,yCoord,zCoord
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
   integer :: sizeX,sizeY,sizeZ
   integer, dimension(MDIM) :: axis
 
   logical :: gcell = .true.
 
-  call Grid_getBlkIndexLimits(blockId,blkLimits,blkLimitsGC)
+  blkLimitsGC(:,:) = blockDesc%limitsGC
+  blkLimits(:,:) = blockDesc%limits
   
-
-  sizeX = blkLimitsGC(HIGH,IAXIS)
-  sizeY = blkLimitsGC(HIGH,JAXIS)
-  sizeZ = blkLimitsGC(HIGH,KAXIS)
-  allocate(xLeft(sizeX))
-  allocate(xRight(sizeX))
-  allocate(xCenter(sizeX))
-  allocate(yCoord(sizeY))
-  allocate(zCoord(sizeZ))
+  allocate(xLeft(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+  allocate(xRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+  allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+  allocate(yCoord(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+  allocate(zCoord(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
   xCenter = 0.0
   xLeft = 0.0
   xRight = 0.0
   yCoord = 0.0
   zCoord = 0.0
+  sizeX = SIZE(xCenter)
+  sizeY = SIZE(yCoord)
+  sizeZ = SIZE(zCoord)
 
   if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, blockId, CENTER,gcell, zCoord, sizeZ)
+                      (KAXIS, blockDesc, CENTER,gcell, zCoord, sizeZ)
   if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, blockId, CENTER,gcell, yCoord, sizeY)
-  call Grid_getCellCoords(IAXIS, blockId, LEFT_EDGE, gcell, xLeft, sizeX)
-  call Grid_getCellCoords(IAXIS, blockId, CENTER, gcell, xCenter, sizeX)
-  call Grid_getCellCoords(IAXIS, blockId, RIGHT_EDGE, gcell, xRight, sizeX)
+                      (JAXIS, blockDesc, CENTER,gcell, yCoord, sizeY)
+  call Grid_getCellCoords(IAXIS, blockDesc, LEFT_EDGE, gcell, xLeft, sizeX)
+  call Grid_getCellCoords(IAXIS, blockDesc, CENTER, gcell, xCenter, sizeX)
+  call Grid_getCellCoords(IAXIS, blockDesc, RIGHT_EDGE, gcell, xRight, sizeX)
 
 
 ! Loop over cells in the block.  For each, compute the physical position of 
@@ -187,18 +190,11 @@ subroutine Simulation_initBlock(blockId)
 
 #if NSPECIES > 0
            !put default species
-           call Grid_putPointData(blockID, CENTER, SPECIES_END, EXTERIOR, &
-                axis, 1.0e0-(NSPECIES-1)*sim_smallX)
-
+           solnData(SPECIES_END,i,j,k)=1.0e0-(NSPECIES-1)*sim_smallX
 
            !if there is only 1 species this loop will not execute
            do n = SPECIES_BEGIN, SPECIES_END-1
-
-              call Grid_putPointData(blockID, CENTER, n, EXTERIOR, &
-                   axis, sim_smallX)
-
-
-
+              solnData(n,i,j,k)=sim_smallX
            enddo
 #endif
            
@@ -208,9 +204,6 @@ subroutine Simulation_initBlock(blockId)
            eintZone = eintZone / rhoZone
            enerZone = eintZone + ekinZone
            enerZone = max(enerZone, sim_smallP)
-           
-!!$           print*,'pres,eint,enerZone:',presZone,eintZone,enerZone
-
            Zfree = 6
            relA = 12
            YeFree = 6/relA
@@ -222,67 +215,70 @@ subroutine Simulation_initBlock(blockId)
 
            radMassFrac = 0.0
 
-           call Grid_putPointData(blockId, CENTER, DENS_VAR, EXTERIOR, axis, rhoZone)
-           call Grid_putPointData(blockId, CENTER, PRES_VAR, EXTERIOR, axis, presZone)
-#ifdef PION_VAR
-           call Grid_putPointData(blockId, CENTER, PION_VAR, EXTERIOR, axis, presZone*ionEnerFrac)   
+           solnData(DENS_VAR,i,j,k)=rhoZone
+           solnData(PRES_VAR,i,j,k)=presZone
+           solnData(VELX_VAR,i,j,k)=velxZone
+           solnData(VELY_VAR,i,j,k)=velyZone
+           solnData(VELZ_VAR,i,j,k)=velzZone
+#ifdef GAME_VAR          
+           solnData(GAME_VAR,i,j,k)=sim_gamma
 #endif
-#ifdef PELE_VAR
-           call Grid_putPointData(blockId, CENTER, PELE_VAR, EXTERIOR, axis, presZone*eleEnerFrac)   
+
+#ifdef GAMC_VAR
+           solnData(GAMC_VAR,i,j,k)=sim_gamma
 #endif
-           call Grid_putPointData(blockId, CENTER, VELX_VAR, EXTERIOR, axis, velxZone)
-           call Grid_putPointData(blockId, CENTER, VELY_VAR, EXTERIOR, axis, velyZone)
-           call Grid_putPointData(blockId, CENTER, VELZ_VAR, EXTERIOR, axis, velzZone)
 
 #ifdef ENER_VAR
-           call Grid_putPointData(blockId, CENTER, ENER_VAR, EXTERIOR, axis, enerZone)   
-#endif
-#ifdef E1_VAR
-           call Grid_putPointData(blockId, CENTER, E1_VAR, EXTERIOR, axis, ekinZone*ionMassFrac+eintZone*ionEnerFrac)
-#endif
-#ifdef E2_VAR
-           call Grid_putPointData(blockId, CENTER, E2_VAR, EXTERIOR, axis, ekinZone*eleMassFrac+eintZone*eleEnerFrac)
-#endif
-#ifdef E3_VAR
-           call Grid_putPointData(blockId, CENTER, E3_VAR, EXTERIOR, axis, sim_smallE)   
+           solnData(ENER_VAR,i,j,k)=enerZone
 #endif
 #ifdef EINT_VAR
-           call Grid_putPointData(blockId, CENTER, EINT_VAR, EXTERIOR, axis, eintZone)
-#endif
-#ifdef EION_VAR
-           call Grid_putPointData(blockId, CENTER, EION_VAR, EXTERIOR, axis, eintZone*ionEnerFrac)   
-#endif
-#ifdef EELE_VAR
-           call Grid_putPointData(blockId, CENTER, EELE_VAR, EXTERIOR, axis, eintZone*eleEnerFrac)
-#endif
-#ifdef ERAD_VAR
-           call Grid_putPointData(blockId, CENTER, ERAD_VAR, EXTERIOR, axis, sim_smallE)   
-#endif
-#ifdef GAME_VAR          
-           call Grid_putPointData(blockId, CENTER, GAME_VAR, EXTERIOR, axis, sim_gamma)
-#endif
-#ifdef GAMC_VAR
-           call Grid_putPointData(blockId, CENTER, GAMC_VAR, EXTERIOR, axis, sim_gamma)
+           solnData(EINT_VAR,i,j,k)=eintZone
 #endif
 #ifdef TEMP_VAR
-           call Grid_putPointData(blockId, CENTER, TEMP_VAR, EXTERIOR, axis, 1e-6)
+           solnData(TEMP_VAR,i,j,k)= 1e-6
+#endif
+
+           
+#ifdef PION_VAR
+           solnData(PION_VAR,i,j,k)=presZone*ionEnerFrac
+#endif
+#ifdef PELE_VAR
+           solnData(PELE_VAR,i,j,k)=presZone*elecEnerFrac
+#endif
+#ifdef E1_VAR
+           solnData(E1_VAR,i,j,k)= ekinZone*ionMassFrac+eintZone*ionEnerFrac
+#endif
+#ifdef E2_VAR
+           solnData(E2_VAR,i,j,k)= ekinZone*eleMassFrac+eintZone*eleEnerFrac
+#endif
+#ifdef E3_VAR
+           solnData(E3_VAR,i,j,k)=sim_smallE
+#endif
+#ifdef EION_VAR
+           solnData(EION_VAR,i,j,k)=eintZone*ionEnerFrac
+#endif
+#ifdef EELE_VAR
+           solnData(EELE_VAR,i,j,k)=eintZone*eleEnerFrac
+#endif
+#ifdef ERAD_VAR
+           solnData(ERAD_VAR,i,j,k)=sim_smallE
 #endif
 #ifdef TION_VAR
-           call Grid_putPointData(blockId, CENTER, TION_VAR, EXTERIOR, axis, 1e-6)
+           solnData(TION_VAR,i,j,k)= 1e-6
 #endif
 #ifdef TELE_VAR
-           call Grid_putPointData(blockId, CENTER, TELE_VAR, EXTERIOR, axis, 1e-6)
+           solnData(TELE_VAR,i,j,k)= 1e-6
 #endif
 #ifdef TRAD_VAR
-           call Grid_putPointData(blockId, CENTER, TRAD_VAR, EXTERIOR, axis, 1e-6)
+           solnData(TRAD_VAR,i,j,k)= 1e-6
 #endif
 #ifdef YE_MSCALAR
-!           call Grid_putPointData(blockId, CENTER, YE_MSCALAR, EXTERIOR, axis, 0.5)
-           call Grid_putPointData(blockId, CENTER, YE_MSCALAR, EXTERIOR, axis, YeFree)
+!!$           solnData(YE_MSCALAR,i,j,k)=0.5
+           solnData(YE_MSCALAR,i,j,k)=YeFree
 #endif
 #ifdef SUMY_MSCALAR
-!           call Grid_putPointData(blockId, CENTER, SUMY_MSCALAR, EXTERIOR, axis, 7.292E-02)
-           call Grid_putPointData(blockId, CENTER, SUMY_MSCALAR, EXTERIOR, axis, 1.0/relA)
+!!$           solnData(SUMY_MSCALAR,i,j,k)= 7.292E-02
+           solnData(SUMY_MSCALAR,i,j,k)=1.0/relA
 #endif
 
         enddo

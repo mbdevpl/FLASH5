@@ -39,9 +39,10 @@
 !!***
 
 subroutine Grid_addToVar(srcVar, destVar, multFactor, reset)
-  use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_getBlkPtr, &
-       Grid_getBlkIndexLimits, Grid_releaseBlkPtr
-
+  use Grid_interface, ONLY : Grid_getBlkPtr,  Grid_releaseBlkPtr,&
+       Grid_getLeafIterator
+  use block_metadata, ONLY : block_metadata_t
+  use leaf_iterator, ONLY : leaf_iterator_t
 #include "Flash.h"
 #include "constants.h"  
 #include "Particles.h"
@@ -54,23 +55,19 @@ subroutine Grid_addToVar(srcVar, destVar, multFactor, reset)
   integer :: blkLimits(LOW:HIGH,MDIM), blkLimitsGC(LOW:HIGH,MDIM)
   integer :: blk, k, j, i, n
   real, dimension(:,:,:,:), pointer :: solnData
-
-  call Grid_getListOfBlocks(LEAF, blockList, blockCount)
-  do blk = 1, blockCount
-     call Grid_getBlkPtr(blockList(blk), solnData)
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+  
+  call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     
+     call Grid_getBlkPtr(block, solnData)
      if (reset) then 
         solnData(destVar,:,:,:) = 0.0
      end if
-     call Grid_getBlkIndexLimits(blockList(blk), &
-          blkLimits, blkLimitsGC, CENTER)
-     do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
-        do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
-           do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
-              solnData(destVar,i,j,k) = solnData(destVar,i,j,k) + &
-                   multFactor*solnData(srcVar,i,j,k)
-           end do
-        end do
-     end do
+     solnData(destVar,:,:,:) = solnData(destVar,:,:,:) + &
+          multFactor*solnData(srcVar,:,:,:)
      call Grid_releaseBlkPtr(blockList(blk), solnData)
   end do
 end subroutine Grid_addToVar

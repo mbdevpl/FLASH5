@@ -148,16 +148,10 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   !! ***************************************************************************
   !! Loop over the blocks
   call hy_advance(simTime, dt, dtOld)
-
   if(.not.hy_fluxCorrectPerLevel)then
      call hy_updateBoundaries()
   end if
-  
-
-
-
   call Hydro_freeBuffers()
-
 
 
 #ifdef GRAVITY /* Perform this only when gravity is used */
@@ -186,7 +180,6 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
 #endif /* End of n+1 gravity coupling */
 
 
-
   call Driver_getSimTime(hy_simTime, hy_simGeneration)
 
 #ifdef DEBUG_GRID_GCMASK
@@ -194,7 +187,6 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
      gcMaskLogged = .TRUE.
   end if
 #endif
-
   call Timers_stop("Hydro")
 
 end subroutine Hydro
