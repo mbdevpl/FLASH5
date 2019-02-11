@@ -1,11 +1,11 @@
-!!****if* source/Grid/GridMain/AMR/Amrex/Grid_getBlkBC_desc
+!!****if* source/Grid/GridMain/AMR/Amrex/Grid_getBlkBC
 !!
 !! NAME
-!!  Grid_getBlkBC_desc
+!!  Grid_getBlkBC
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_getBlkBC_desc(integer(IN)  :: blockDesc,
+!!  call Grid_getBlkBC(integer(IN)  :: blockDesc,
 !!                integer(OUT) :: faces(2,MDIM),
 !!       optional,integer(OUT) :: onBoundary(2,MDIM))
 !!                    
@@ -42,7 +42,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_getBlkBC_desc(blockDesc, faces, onBoundary)
+subroutine Grid_getBlkBC(blockDesc, faces, onBoundary)
   use Grid_data, ONLY : gr_globalDomain, gr_domainBC
   use Grid_interface, ONLY : Grid_getBlkBoundBox
   use block_metadata, ONLY : block_metadata_t
@@ -70,4 +70,4 @@ subroutine Grid_getBlkBC_desc(blockDesc, faces, onBoundary)
 
      end do
   end do
-end subroutine Grid_getBlkBC_desc
+end subroutine Grid_getBlkBC

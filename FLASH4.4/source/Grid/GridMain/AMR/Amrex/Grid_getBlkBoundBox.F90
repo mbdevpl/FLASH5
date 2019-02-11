@@ -63,7 +63,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_getBlkBoundBox_desc(blockDesc, boundBox)
+subroutine Grid_getBlkBoundBox(blockDesc, boundBox)
   use amrex_amrcore_module,  ONLY : amrex_geom
   use amrex_geometry_module, ONLY : amrex_problo
 
@@ -85,5 +85,5 @@ subroutine Grid_getBlkBoundBox_desc(blockDesc, boundBox)
     boundBox(LOW,  1:NDIM) = x0(1:NDIM) + (lo(1:NDIM) - 1)*dx(1:NDIM)
     boundBox(HIGH, 1:NDIM) = x0(1:NDIM) + (hi(1:NDIM)    )*dx(1:NDIM)
   end associate
-end subroutine Grid_getBlkBoundBox_desc
+end subroutine Grid_getBlkBoundBox
 
