@@ -15,7 +15,10 @@ from unitCfg import * # for FlashUnit and UnitUnion classes
 from rpUtils import * # for RPInfo Class
 from varUtils import * # for VarInfo class
 
-import re, os.path, UserDict, types, string
+import re, os.path, types, string
+try:
+    from functools import cmp_to_key
+except ImportError: pass
 
 ###########################################
 
@@ -37,7 +40,7 @@ class UnitList:
        count = 0
        for unitname in unitnames:
            if not unitname: continue
-           if self.units.has_key(unitname): 
+           if unitname in self.units:
               count += 1
               del self.units[unitname]
        return count
@@ -54,7 +57,7 @@ class UnitList:
       rmlist = [] # names of units to be removed
       for unitname in rmunitnames:
           usep = unitname+os.sep
-          for uname in self.units.keys():
+          for uname in list(self.units.keys()):
               if uname == unitname or uname.startswith(usep):
                  rmlist.append(uname)
       for uname in rmlist:
@@ -63,12 +66,12 @@ class UnitList:
     def addUnits(self,unitnames, comment=""): 
        # Add these units also
        # returns the number of units actually added
-       if type(unitnames)==types.StringType: 
+       if isinstance(unitnames,str):
           unitnames = [ unitnames]
        count = 0
        for unitname in unitnames:
            if not unitname: continue
-           if self.units.has_key(unitname): continue
+           if unitname in self.units: continue
            if count == 0 and comment:
               GVars.out.put(comment,globals.INFO)
               GVars.out.push()
@@ -84,7 +87,7 @@ class UnitList:
        return count
 
     def hasUnit(self,unitname):
-        return self.units.has_key(unitname)
+        return unitname in self.units
 
     def checkTopUnits(self):
         for topUnit in GVars.topUnitNames:
@@ -105,7 +108,7 @@ class UnitList:
     def checkSuggest(self):
        # list of units which have been suggested but not included
        badunits = []
-       unames = self.units.keys()
+       unames = list(self.units.keys())
        for uname in unames:
           for suglist in self.units[uname]['SUGGEST']:
               badlist = 1
@@ -122,14 +125,14 @@ class UnitList:
           GVars.out.put("",globals.IMPINFO)
 
     def checkRequirements(self):
-       for unit in self.units.values():
+       for unit in list(self.units.values()):
            setsOfAlternatives = unit["REQUIRES"]  # will be a list of lists
            # each member of this list-within-a-list will represent
            # a series of alternative Units as specified in a Config
            # file by the syntax "REQUIRES A OR B OR C".
            for setOfAlternatives in setsOfAlternatives:
                for unitName in setOfAlternatives:
-                   if self.units.has_key(unitName):
+                   if unitName in self.units:
                        # We have one in the list of required units
                        # so don't bother checking the others
                        break
@@ -140,20 +143,20 @@ class UnitList:
     def checkExclusivity(self):
       GVars.out.put("Checking if Exclusive units are included",globals.DEBUG)
       #units contains everybody's parents
-      for unit in self.units.values():
+      for unit in list(self.units.values()):
         for group in unit['EXCLUSIVE']:
             #No two elements of group must be in units
             a=None
             for b in group:
-                if not self.units.has_key(b): continue
+                if b not in self.units: continue
                 if a: raise SetupError('%s and %s are exclusive'%(a, b))
                 a=b
 
     def checkConflicts(self):
       GVars.out.put("Checking for Conflicting units",globals.DEBUG)
-      for unit in self.units.values():
+      for unit in list(self.units.values()):
         for b in unit['CONFLICTS']:
-            if self.units.has_key(b):
+            if b in self.units:
                raise SetupError("setup Error: requested unit %s CONFLICTS with %s" % (b,unit))
             
     def getUnitNamesFromFile(self,file):
@@ -169,12 +172,12 @@ class UnitList:
       ans = []
       for line in open(file).readlines():
         rawline = line
-        if string.count(line, '#'):
-            line=line[:string.find(line, '#')]
-        line=string.strip(line)
+        if str.count(line, '#'):
+            line=line[:str.find(line, '#')]
+        line=str.strip(line)
         if not line: continue
         try:
-            a,b=string.split(line)
+            a,b=str.split(line)
             if a!='INCLUDE': raise SetupError
         except (ValueError, SetupError):
             raise SetupError('Bad syntax:\n%s'%rawline)
@@ -188,7 +191,7 @@ class UnitList:
 
     def getDefaultUnits(self): 
       # return names of default units of units already present
-      return [unit["DEFAULT"] for unit in self.units.values()]
+      return [unit["DEFAULT"] for unit in list(self.units.values())]
 
     def addDefaultUnits(self):
       # add default units of all units
@@ -203,7 +206,7 @@ class UnitList:
       ans = []
       GVars.out.push()
       GVars.out.put('*** KERNEL *** addKernelUnits *** START ***',globals.DEBUG)
-      for unit in self.units.values():
+      for unit in list(self.units.values()):
         if unit['KERNEL']: 
             GVars.out.put('Processing KERNEL for %s'%unit,globals.DEBUG)
             GVars.out.push()
@@ -225,10 +228,10 @@ class UnitList:
         # Note that no interpolation Unit needs to be added for UG
         ans = []
         if GVars.gridInterpolation == globals.GRID_INTERP_MONOTONIC:
-            for unitName in self.units.keys():
+            for unitName in list(self.units.keys()):
                 if unitName.startswith("Grid/GridMain/AMR/paramesh/paramesh4"):
                     # Check if added this already
-                    for unitName2 in self.units.keys():
+                    for unitName2 in list(self.units.keys()):
                         if unitName2.startswith("Grid/GridMain/AMR/paramesh/interpolation/Paramesh4"):
                             break
                     else:
@@ -237,7 +240,7 @@ class UnitList:
                     break
                 elif unitName.startswith("Grid/GridMain/AMR/paramesh/Paramesh2"):
                     # Check if added this already
-                    for unitName2 in self.units.keys():
+                    for unitName2 in list(self.units.keys()):
                         if unitName2.startswith("Grid/GridMain/AMR/paramesh/Paramesh2/monotonic"):
                             break
                     else:
@@ -281,7 +284,7 @@ class UnitList:
       return ans
 
     def getParentUnits(self):
-        return [unit.getParent() for unit in self.units.values()]
+        return [unit.getParent() for unit in list(self.units.values())]
 
     def addParentUnits(self):
         while self.addUnits(self.getParentUnits()) > 0: pass
@@ -291,7 +294,7 @@ class UnitList:
 
     def getRequiredUnits(self): # list of unitnames to be added
       ans = []
-      for unit in self.units.values():
+      for unit in list(self.units.values()):
           setsOfAlternatives = unit["REQUIRES"]  # will be a list of lists
           # each member of this list-within-a-list will represent
           # a series of alternative Units as specified in a Config
@@ -299,7 +302,7 @@ class UnitList:
           # these units need be appended to 'ans'
           for setOfAlternatives in setsOfAlternatives:
               for unitName in setOfAlternatives:
-                  if self.units.has_key(unitName):
+                  if unitName in self.units:
                       # we already have one in the list of required units
                       # so don't bother checking the others
                       break
@@ -327,7 +330,7 @@ class UnitList:
 
       # Dont print parent units (makes file concise)
       pUnits = self.getParentUnits()
-      cUnits = [x for x in self.units.keys() if x not in pUnits]
+      cUnits = [x for x in list(self.units.keys()) if x not in pUnits]
       cUnits.sort()
       for unitname in cUnits:
           outfd.write('INCLUDE %s\n'%unitname)
@@ -337,9 +340,9 @@ class UnitList:
 ######################################### User calls methods below 
 
     def getList(self):
-        list = self.units.keys()
-        list.sort()
-        return list
+        tmpList = list(self.units.keys())
+        tmpList.sort()
+        return tmpList
 
     def getLinkOrder(self): 
 
@@ -393,20 +396,24 @@ class UnitList:
           
       # returns names of units present in a fixed order
       # split unitnames into list describing path
-      pathlist = [unitname.split("/") for unitname in self.units.keys()]
+      pathlist = [unitname.split("/") for unitname in list(self.units.keys())]
       # First do a lexicographic sort as that should get most of elements in place
       # since this is optimized in python, we have done most of the work without using
       # our fancy ordering
       pathlist.sort() 
       # now use our fancy sorting routine, so hopefully there are few calls to our 
       # comparator algorithm
-      pathlist.sort(compare) 
+      try:
+          pathlist.sort( key = cmp_to_key(compare) )
+      except NameError: # in case we did not import cmp_to_key successfully...
+          pathlist.sort( cmp = compare )
+
       # combine paths back to strings
-      list = [ "/".join(x) for x in pathlist ] # contract paths to unitnames
-      return list
+      tmpList = [ "/".join(x) for x in pathlist ] # contract paths to unitnames
+      return tmpList
 
     def getConfigInfo(self,**kw): # Generate UnitUnion class based on given units
-        cInfo = UnitUnion(self.units.values(),**kw)
+        cInfo = UnitUnion(list(self.units.values()),**kw)
         cInfo.unitNames = self.getList()
         return cInfo
 
@@ -440,8 +447,8 @@ class UnitList:
             
       # now kill units
       if GVars.killUnits:
-         GVars.out.put('Killing subtrees: %s' % ",".join(GVars.killUnits.keys()),globals.INFO) # USER BEWARE
-         self.removeSubTrees(GVars.killUnits.keys())
+         GVars.out.put('Killing subtrees: %s' % ",".join(list(GVars.killUnits.keys())),globals.INFO) # USER BEWARE
+         self.removeSubTrees(list(GVars.killUnits.keys()))
 
       # Tell User about the list of units
       GVars.out.push()
@@ -504,20 +511,20 @@ class UnitList:
        self.checkRequirements()
 
        self.checkSuggest()
-       self.removeSubTrees(GVars.killUnits.keys()) # remove specified units and children (USER BEWARE no CHECK performed on these)
+       self.removeSubTrees(list(GVars.killUnits.keys())) # remove specified units and children (USER BEWARE no CHECK performed on these)
 
     def getRPInfo(self,max_plot_vars,**kw):
         rpInfo = RPInfo(**kw)
-        for (unitname,unit) in self.units.items():
-            for (rpname,(rptype,rpvalue,rpconst,rprange)) in unit['PARAMETER'].items():
+        for (unitname,unit) in list(self.units.items()):
+            for (rpname,(rptype,rpvalue,rpconst,rprange)) in list(unit['PARAMETER'].items()):
                 # try rpname, then rpname_parameter
                 rpcomment = unit['D'].get(rpname,unit['D'].get("%s_parameter"%rpname,""))
                 rpInfo.addRP(rpname, type=rptype, value=rpvalue, const=rpconst, range=rprange,
                              location=unitname, comment=rpcomment)
             # now for all documentation without corresponding parameter declarations
             # which start with __
-            for (key,value) in unit['D'].items():
-                if key[:2] == '__' and not unit['PARAMETER'].has_key(key):
+            for (key,value) in list(unit['D'].items()):
+                if key[:2] == '__' and key not in unit['PARAMETER']:
                    # a type of DOC is for documentation only
                    rpInfo.addRP(key,type='DOC',location=unitname, comment=value)
         # Generate enough plot_var_N names for all variables in the simulation.
@@ -533,66 +540,66 @@ class UnitList:
 
     def getVarInfo(self,**kw):
         varInfo = VarInfo(**kw)
-        for (unitname,unit) in self.units.items(): 
+        for (unitname,unit) in list(self.units.items()):
             # Add all variables
-            for (var,(attr,eos1,eos2)) in unit['VARIABLE'].items():
+            for (var,(attr,eos1,eos2)) in list(unit['VARIABLE'].items()):
                 var = var.lower()
                 varcomment = unit['D'].get("%s_variable" % var,"")
                 varInfo.addVar(var,type="Variable", location=unitname,
                                    attribs=attr,comment=varcomment)
             # Add all particle properties
-            for (var,attr) in unit['PARTICLEPROP'].items():
+            for (var,attr) in list(unit['PARTICLEPROP'].items()):
                 varcomment = unit['D'].get("%s_particleprop"%var,"")
                 varInfo.addVar(var,type="Particle Property", location=unitname,
                                    attribs=[attr],comment=varcomment)
             # Add all particle types
-            for var in unit['PARTICLETYPE'].keys():
+            for var in list(unit['PARTICLETYPE'].keys()):
                 varcomment = unit['D'].get("%s_particletype"%var,"")
                 varInfo.addVar(var,type="Particle Type",location=unitname,
                                    attribs=[],comment=varcomment)
             # Add all particle property -> grid var maps
-            for (var,attr) in unit['PARTICLEMAP'].items():
+            for (var,attr) in list(unit['PARTICLEMAP'].items()):
                 varInfo.addVar(var,type="Particle Property Map",
                                    location=unitname, attribs=[attr])
             # Add all species
-            for var in unit['SPECIES'].keys():
+            for var in list(unit['SPECIES'].keys()):
                 varcomment = unit['D'].get("%s_species"%var,"")
                 varInfo.addVar(var,type="Species",location=unitname,
                                    attribs=[],comment=varcomment)
             # Add all face variables
-            for var in unit['FACEVAR'].keys():
+            for var in list(unit['FACEVAR'].keys()):
                 varcomment = unit['D'].get("%s_facevar"%var,"")
                 varInfo.addVar(var,type="Face Variable",location=unitname,
                                    attribs=[],comment=varcomment)
             # Add all scratch variables
-            for var in unit['SCRATCHVAR'].keys():
+            for var in list(unit['SCRATCHVAR'].keys()):
                 varcomment = unit['D'].get("%s_scratchvar"%var,"")
                 varInfo.addVar(var,type="Scratch Variable",location=unitname,
                                    attribs=[],comment=varcomment)
-            for var in unit['SCRATCHCENTERVAR'].keys():
+            for var in list(unit['SCRATCHCENTERVAR'].keys()):
                 varcomment = unit['D'].get("%s_scratchcentervar"%var,"")
                 varInfo.addVar(var,type="Scratch Center Variable",location=unitname,
                                    attribs=[],comment=varcomment)
-            for var in unit['SCRATCHFACEXVAR'].keys():
+            for var in list(unit['SCRATCHFACEXVAR'].keys()):
                 varcomment = unit['D'].get("%s_scratchfacexvar"%var,"")
                 varInfo.addVar(var,type="Scratch Face-X Variable",location=unitname,
                                    attribs=[],comment=varcomment)
-            for var in unit['SCRATCHFACEYVAR'].keys():
+            for var in list(unit['SCRATCHFACEYVAR'].keys()):
                 varcomment = unit['D'].get("%s_scratchfaceyvar"%var,"")
                 varInfo.addVar(var,type="Scratch Face-Y Variable",location=unitname,
                                    attribs=[],comment=varcomment)
-            for var in unit['SCRATCHFACEZVAR'].keys():
+            for var in list(unit['SCRATCHFACEZVAR'].keys()):
                 varcomment = unit['D'].get("%s_scratchfacezvar"%var,"")
                 varInfo.addVar(var,type="Scratch Face-Z Variable",location=unitname,
                                    attribs=[],comment=varcomment)
                 
             # Add all Mass Scalars
-            for var in unit['MASS_SCALAR'].keys():
+            for var in list(unit['MASS_SCALAR'].keys()):
                 varcomment = unit['D'].get("%s_mass_scalar"%var,"")
                 varInfo.addVar(var,type="Mass Scalar",location=unitname,
                                    attribs=[],comment=varcomment)
             # Add all Fluxes
-            for var in unit['FLUX'].keys():
+            for var in list(unit['FLUX'].keys()):
                 varcomment = unit['D'].get("%s_flux"%var,"")
                 varInfo.addVar(var,type="Flux",location=unitname,
                                    attribs=[],comment=varcomment)
@@ -617,10 +624,10 @@ class UnitList:
            GVars.out.put("No Grid specified/found",globals.WARN)
            grid = ""
         elif len(grids) == 1:
-           grid = grids.keys()[0]
+           grid = list(grids.keys())[0]
            GVars.out.put("Using Grid %s" % grid,globals.INFO)
         else:
-           raise SetupError("Found multiple grids %s!" % str(grids.keys()))
+           raise SetupError("Found multiple grids %s!" % str(list(grids.keys())))
 
         # Adjust maxblocks
         if GVars.maxblocks==None: # using UG
@@ -665,7 +672,7 @@ class UnitList:
         tpl["unit_names"] = self.getList()
         if len(tpl["unit_names"]) > 39:
             pUnits = self.getParentUnits()
-            cUnits = [x for x in self.units.keys() if x not in pUnits]
+            cUnits = [x for x in list(self.units.keys()) if x not in pUnits]
             if len(cUnits) <= 39: # if compression actually got us into the allowed range...
                 cUnits.sort()
                 GVars.out.put("Making list of units for %s more concise by removing parent units:\n   reduced %d -> %d unit names." \
@@ -706,7 +713,7 @@ class UnitList:
         # the exception is "flashUtilities" which is not a
         # Unit.  Look for it specifically
         if not is_upper(lowestBase[0]):
-            if string.find(lowestBase, "flashUtilities") >= 0:
+            if "flashUtilities" in lowestBase:
                 lowestBase = "flashUtilities"
             else:
                 continue

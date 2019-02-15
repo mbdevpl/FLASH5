@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getPlaneData(integer(IN) :: blockID,
+!!  Grid_getPlaneData(type(block_metadata_t)(IN) :: block,
 !!                    integer(IN) :: gridDataStruct,
 !!                    integer(IN) :: structIndex,
 !!                    integer(IN) :: beginCount, 
@@ -33,7 +33,7 @@
 !!  
 !! ARGUMENTS 
 !!
-!!  blockID : the local blockid
+!!  block : block metadata
 !!
 !!
 !!  gridDataStruct : integer value specifying the type of data desired.
@@ -167,7 +167,7 @@
 !!       
 !!      integer ::    startingPos(MDIM)
 !!      integer ::    dataSize(2)
-!!      integer ::    blockID
+!!      type(block_metadata_t) ::    block
 !!      real    ::    dataBlock(:,:)
 !!       
 !!          startingPos(1) = 1 !getting the entire blkLimitsGC of dim   
@@ -181,12 +181,13 @@
 !!
 !!          allocate(datablock(dataSize(1), dataSize(2)))
 !!
-!!          do blockID = 1, localNumBlocks
-!!  
-!!             call Grid_getPlaneData(blockID, CENTER, DENS_VAR, XZPLANE, EXTERIOR, &
+!!          do while(itor%is_valid)
+!!             call itor%blkMetadata(block)
+!!             call Grid_getPlaneData(block, CENTER, DENS_VAR, XZPLANE, EXTERIOR, &
 !!                               startingPos, dataBlock, dataSize)
-!!  
+!!             call itor%next()
 !!          end do
+!!  
 !!
 !!
 !!    EXAMPLE 2:  
@@ -228,7 +229,7 @@
 !!       
 !!      integer ::    startingPos(MDIM)
 !!      integer ::    dataSize(2)
-!!      integer ::    blockID
+!!      integer ::    block
 !!      real    ::    dataBlock(:,:)
 !!       
 !!          startingPos(1) = 4    
@@ -240,11 +241,11 @@
 !!
 !!          allocate(datablock(dataSize(1), dataSize(2)))
 !!
-!!          do blockID = 1, localNumBlocks
-!!  
-!!             call Grid_getPlaneData(blockID, CELL_VOLUME, 0, XZPLANE, INTERIOR, &
+!!          do while(itor%is_valid)
+!!             call itor%blkMetadata(block)
+!!             call Grid_getPlaneData(block, CELL_VOLUME, 0, XZPLANE, INTERIOR, &
 !!                               startingPos, dataBlock, dataSize)
-!!  
+!!             call itor%next()
 !!          end do
 !!
 !!

@@ -155,7 +155,9 @@ subroutine Grid_getLocalBlkIDFromPosSimple(pos,ansBlockID, ansProcID,blkList, bl
 
   use Grid_data, ONLY : gr_minCellSizes, gr_globalDomain, gr_meshMe
   use Grid_data, ONLY : gr_boxContainingLeafNodes
-  use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_getBlkCornerID
+  use Grid_interface, ONLY : Grid_getBlkCornerID
+  use gr_parameshInterface, ONLY : gr_pmGetListOfBlocks
+  
   implicit none
 
   real, dimension(1:MDIM), intent(IN) :: pos
@@ -214,7 +216,7 @@ subroutine Grid_getLocalBlkIDFromPosSimple(pos,ansBlockID, ansProcID,blkList, bl
      blkListEff => blkList
   else
      allocate(blkListEff(blkCountEff))
-     call Grid_getListOfBlocks(LEAF,blkListEff,blkCountEff)
+     call gr_pmGetListOfBlocks(LEAF,blkListEff,blkCountEff)
   end if
   if (blkCountEff==0) goto 2
 

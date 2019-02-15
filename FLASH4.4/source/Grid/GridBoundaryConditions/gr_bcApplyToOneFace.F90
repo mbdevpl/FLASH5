@@ -90,15 +90,17 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
   end if
 
 
-  if(regionType(axis)==LEFT_EDGE) then
+  if((regionType(axis)==LEFT_EDGE)) then
      face=LOW
   else if(regionType(axis)==RIGHT_EDGE) then
+     face=HIGH
+  else if(regionType(axis)==HIGH) then
      face=HIGH
   else
      call Driver_abortFlash("[gr_bcApplyToOneFace] type along BC dir must be LEFT_EDGE or RIGHT_EDGE")
   end if
 
-#if !defined(FLASH_GRID_PARAMESH2) && !defined(FLASH_GRID_AMREX)
+#if !defined(FLASH_GRID_PARAMESH2) && !defined(FLASH_GRID_AMREX) && !defined(FLASH_GRID_UG)
   if(gridDataStruct == WORK) then
      call gr_hgMapBcType(testBcType,bcType,1,gridDataStruct,axis,face,idest)
      if (testBcType == GRIDBC_GIMME_WORK) then
@@ -132,7 +134,7 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
   if (axis==IAXIS) then
      nextDir(1) = JAXIS
      nextDir(2) = KAXIS
-  else if (axis==JAXIS) then
+    else if (axis==JAXIS) then
      nextDir(1) = IAXIS
      nextDir(2) = KAXIS
   else
@@ -164,7 +166,6 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
   regionSize(STRUCTSIZE)=varCount
   allocate(regionData(regionSize(BC_DIR),regionSize(SECOND_DIR),&
        regionSize(THIRD_DIR),regionSize(STRUCTSIZE)))
-
 
   call gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
        regionData,tileDesc,idest)

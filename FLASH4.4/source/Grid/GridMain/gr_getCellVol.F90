@@ -76,7 +76,7 @@ subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock,indexing)
            point(JAXIS) = j
            do i=xb,xe
               point(IAXIS) = i
-              call Grid_getSingleCellVol(block, point, dataBlock(i,j,k), indexing)
+              call Grid_getSingleCellVol(point, block%level, dataBlock(i,j,k))
            end do
         end do
      end do

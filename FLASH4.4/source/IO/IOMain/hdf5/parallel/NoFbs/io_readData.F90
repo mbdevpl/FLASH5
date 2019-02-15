@@ -51,6 +51,7 @@ subroutine io_readData()
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
 
 
+  use block_metadata, ONLY : block_metadata_t
   use physicalData, only : unk, facevarx, facevary, facevarz 
 
   implicit none
@@ -61,6 +62,7 @@ subroutine io_readData()
 
   integer, dimension(LOW:HIGH, MDIM) :: boundBox
   integer, dimension(LOW:HIGH, MDIM) :: blkLimits, blkLimitsGC
+  type(block_metadata_t) :: blockDesc
 
 
   real :: blockCenterCoords(MDIM, 1) !!1 because only 1 block per proc
@@ -208,7 +210,7 @@ subroutine io_readData()
   if((mod(kGridsize, kprocs) .NE. 0) .AND. (io_globalMe .LT. mod(kGridSize, kprocs))) localnxb = localnxb + 1
     
 
-  call Grid_getBlkCornerID(1,cornerID,stride)
+  call Grid_getBlkCornerID(blockDesc,cornerID,stride)
   
   nxbOffset = cornerID(IAXIS) - 1
   nybOffset = (cornerID(JAXIS) - 1) * K2D  

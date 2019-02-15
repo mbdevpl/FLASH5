@@ -53,9 +53,10 @@
 subroutine Grid_initDomain(restart,particlesInitialized)
 
   use Grid_interface, ONLY : Grid_fillGuardCells, &
-    Grid_getListOfBlocks, Grid_sbCreateGroups, Grid_sbSelectMaster, &
+    Grid_sbCreateGroups, Grid_sbSelectMaster, &
     Grid_sbBroadcastParticles, Grid_getBoundboxCentroids
   use gr_interface, ONLY : gr_updateRefinement
+  use gr_parameshInterface, ONLY : gr_pmGetListOfBlocks
   use Logfile_interface, ONLY : Logfile_stampMessage
   use Grid_data
 
@@ -181,7 +182,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
            derefine(:) = .FALSE.
            stay(:) = .FALSE.
            
-           call Grid_getListOfBlocks(LEAF, blkList,blkCount)
+           call gr_pmGetListOfBlocks(LEAF, blkList,blkCount)
            
            do iblk = 1, blkCount
               blockID = blkList(iblk)

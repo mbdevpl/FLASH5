@@ -299,7 +299,6 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   call Hydro_freeBuffers()
 
 
-
 #ifdef GRAVITY /* Perform this only when gravity is used */
   !! ***************************************************************************
   !! Fourth part of advancement to compute gravity at n+1 state                *
@@ -318,7 +317,6 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
 #endif /* End of n+1 gravity coupling */
 
 
-
   call Driver_getSimTime(hy_simTime, hy_simGeneration)
 
 #ifdef DEBUG_GRID_GCMASK
@@ -326,7 +324,6 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
      gcMaskLogged = .TRUE.
   end if
 #endif
-
   call Timers_stop("Hydro")
 
 end subroutine Hydro

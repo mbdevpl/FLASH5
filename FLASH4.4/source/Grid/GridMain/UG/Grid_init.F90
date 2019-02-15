@@ -197,9 +197,7 @@ subroutine Grid_init()
 !!  end do
 
 #ifdef FIXEDBLOCKSIZE
-  gr_gIndexSize(IAXIS)=gr_axisNumProcs(IAXIS)*NXB
-  gr_gIndexSize(JAXIS)=gr_axisNumProcs(JAXIS)*NYB
-  gr_gIndexSize(KAXIS)=gr_axisNumProcs(KAXIS)*NZB
+  call Driver_abortFlash("Uniform Grid is not supported in fixedblocksize mode")
 #else
 
   if (any((gr_gIndexSize / gr_axisNumProcs) <=  0)) then

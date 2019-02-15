@@ -6,7 +6,7 @@
 !! SYNOPSIS
 !!
 !! 
-!!  Grid_getBlkBoundBox(integer(IN)  :: blockId,
+!!  Grid_getBlkBoundBox(type(block_metadta_t)(IN) :: block,
 !!                         real(OUT) :: boundBox(2, MDIM))
 !!  
 !! DESCRIPTION 
@@ -19,7 +19,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockId -local block number
+!! block - block metadata
 !!
 !!  boundBox - returned array holding the boundBox coordinates in
 !!             each dimension
@@ -65,15 +65,17 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkBoundBox(blockId,boundBox)
+subroutine Grid_getBlkBoundBox(block,boundBox)
   use Grid_data, ONLY :gr_iCoords,gr_jCoords,gr_kCoords
   use Grid_data, ONLY: gr_ilo,gr_ihi,gr_jlo,gr_jhi,gr_klo,gr_khi
+  use block_metadata, ONLY : block_metadata_t
+
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
-  integer,intent(in) :: blockId
+  type(block_metadata_t), intent(in) :: block
   real,dimension(2,MDIM),intent(out) :: boundBox
 
 

@@ -171,6 +171,14 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
 
   nullify(U)
 
+!!$  xflux = 0.
+# if (NDIM < 3)
+     zflux = 0.      !avoid compiler warning for intent(OUT) dummy
+#    if (NDIM < 2)
+        yflux = 0.   !avoid compiler warning for intent(OUT) dummy
+#    endif
+# endif
+
   kGrav=0
 #ifdef GRAVITY
   kGrav=1
@@ -523,7 +531,7 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
                             0.5*(scrchFaceXPtr(HY_N06_FACEXPTR_VAR,i,j,k)**2+&
                             scrchFaceXPtr(HY_N07_FACEXPTR_VAR,i,j,k)**2+&
                             scrchFaceXPtr(HY_N08_FACEXPTR_VAR,i,j,k)**2)
-#endif`
+#endif
                        weightMinus = xFaces(i); weightPlus = xFaces(i+1)
                        weightSum = 2.0*xCenter(i)
                        if (hy_geometry == SPHERICAL) then

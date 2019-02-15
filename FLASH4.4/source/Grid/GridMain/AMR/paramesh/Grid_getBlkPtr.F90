@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkPtr(integer(IN)            :: blockID,
+!!  Grid_getBlkPtr(type(block_metadata_t)(IN) :: block,
 !!                 real(pointer)(:,:,:,:) :: dataPtr,
 !!                 integer(IN),optional   :: gridDataStruct)
 !!  
@@ -15,15 +15,10 @@
 !!  specified Grid data structure. The block includes guard cells.
 !!  If the optional argument "gridDataStructure" is not specified,
 !!  it returns a block from cell centered data structure.
-!!
-!!  When using Paramesh 4 in NO_PERMANENT_GUARDCELLS mode, it is important to
-!!  release the block pointer for a block before getting it for another block.
-!!  For example if pointer to block 1 is not yet released and the user
-!!  tries to get a pointer to block 2, the routine will abort.
-!!
+!!  
 !! ARGUMENTS 
 !!
-!!  blockID : the local blockid
+!!  block : block metadata
 !!
 !!  dataPtr : Pointer to the data block
 !!
@@ -50,15 +45,16 @@
 !!
 !!***
 
+! Note: Do NOT just include dataPtr, things will go wrong!
 !!REORDER(5): unk, facevar[xyz], scratch_ctr, scratch_facevar[xyz]
-!!REORDER(4): dataPtr
-!!FOR FUTURE: Add REORDER for unk, facevar[xyz]1, etc.?
+
+!!FOR FUTURE: Add REORDER for unk1, facevar[xyz]1, etc.?
 
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct,localFlag)
+subroutine Grid_getBlkPtr(block, dataPtr, gridDataStruct,localFlag)
 
 #include "constants.h"
 #include "Flash.h"
@@ -67,7 +63,7 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct,localFlag)
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_specificData, ONLY : scratch,scratch_ctr,&
        scratch_facevarx,scratch_facevary,scratch_facevarz
-#ifdef FLASH_GRID_PARAMESH
+  use block_metadata, ONLY : block_metadata_t
   use workspace, ONLY : work
 #ifdef FL_NON_PERMANENT_GUARDCELLS
   use physicaldata, ONLY: unk1, facevarx1, facevary1, facevarz1,&
@@ -76,19 +72,18 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct,localFlag)
   use Grid_data, ONLY : gr_meshMe, gr_blkPtrRefCount, gr_lastBlkPtrGotten, &
        gr_blkPtrRefCount_fc, gr_lastBlkPtrGotten_fc,gr_ccMask,gr_fcMask
 #endif 
-  ! end of ifdef FL_NON_PERMANENT_GUARDCELLS
-
-#endif 
-  ! end of #ifdef FLASH_GRID_PARAMESH
 
   implicit none
-  integer, intent(in) :: blockID
+  type(block_metadata_t), intent(in),TARGET :: block
   real, dimension(:,:,:,:), pointer :: dataPtr
   integer, optional,intent(in) :: gridDataStruct
   logical,optional, intent(in) :: localFlag
   
   integer :: gds, blkPtrRefCount, lastBlkPtrGotten
   logical :: validGridDataStruct
+  integer,pointer,dimension(:) :: loUse
+  integer :: blockID
+  integer :: i
 
 #ifdef FL_NON_PERMANENT_GUARDCELLS
   integer :: idest, iopt, nlayers, icoord
@@ -98,6 +93,8 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct,localFlag)
   logical, dimension(3,NFACE_VARS) :: save_fcMask
 #endif
 #endif
+
+  blockID = block%id
 
 #ifdef DEBUG_GRID
   if(present(gridDataStruct)) then
@@ -111,9 +108,7 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct,localFlag)
      validGridDataStruct= (gridDataStruct == SCRATCH_FACEX).or.validGridDataStruct
      validGridDataStruct= (gridDataStruct == SCRATCH_FACEY).or.validGridDataStruct
      validGridDataStruct= (gridDataStruct == SCRATCH_FACEZ).or.validGridDataStruct
-#ifdef FLASH_GRID_PARAMESH
      validGridDataStruct= (gridDataStruct == WORK).or.validGridDataStruct
-#endif
      
      if(.not.validGridDataStruct) then
         print *, "Grid_getBlkPtr: gridDataStruct set to improper value"
@@ -187,46 +182,101 @@ subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct,localFlag)
   end if
 #endif 
   !  end of #ifdef FL_NON_PERMANENT_GUARDCELLS
+     
+  loUse => block%limitsGC(LOW, :)
+  if (present(localFlag)) then
+     if (localFlag) loUse => block%localLimitsGC(LOW, :)
+  end if
 
-     select case (gds)
+#ifdef DEBUG_GRID
+  dataPtr => unk(:,:,:,:,blockid)
+98 format('initBlock:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
+99 format('initBlock:',A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
+  print *, "loUse" ,loUse
+  print 99,"UNK" ,(lbound(dataPtr ,i),ubound(dataPtr ,i),i=1,4)
+#endif
+
+
+
+     associate (lo => loUse)
+#ifdef INDEXREORDER
+        select case (gds)
 #ifndef FL_NON_PERMANENT_GUARDCELLS
-     case(CENTER)
-        dataPtr => unk(:,:,:,:,blockid)
-     case(FACEX)
-        dataPtr => facevarx(:,:,:,:,blockid)
-     case(FACEY)
-        dataPtr => facevary(:,:,:,:,blockid)
-     case(FACEZ)
-        dataPtr => facevarz(:,:,:,:,blockid)
+        case(CENTER)
+           dataPTR(lo(1):, lo(2):, lo(3):, 1:) => unk(:,:,:,:,blockid)
+        case(FACEX)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarx(:,:,:,:,blockid)
+        case(FACEY)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevary(:,:,:,:,blockid)
+        case(FACEZ)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarz(:,:,:,:,blockid)
 #else
         !  #ifndef FL_NON_PERMANENT_GUARDCELLS ...
-     case(CENTER)
-        dataPtr => unk1(:,:,:,:,idest)
-     case(FACEX)
-        dataPtr => facevarx1(:,:,:,:,idest)
-     case(FACEY)
-        dataPtr => facevary1(:,:,:,:,idest)
-     case(FACEZ)
-        dataPtr => facevarz1(:,:,:,:,idest)
+        case(CENTER)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => unk1(:,:,:,:,idest)
+        case(FACEX)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarx1(:,:,:,:,idest)
+        case(FACEY)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevary1(:,:,:,:,idest)
+        case(FACEZ)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => facevarz1(:,:,:,:,idest)
 #endif
-  !  end of #ifdef FL_NON_PERMANENT_GUARDCELLS
-     case(SCRATCH)
-        dataPtr => scratch(:,:,:,:,blockid)
-     case(SCRATCH_CTR)
-        dataPtr => scratch_ctr(:,:,:,:,blockid)           
-     case(SCRATCH_FACEX)
-        dataPtr => scratch_facevarx(:,:,:,:,blockid)           
-     case(SCRATCH_FACEY)
-        dataPtr => scratch_facevary(:,:,:,:,blockid)           
-     case(SCRATCH_FACEZ)
-        dataPtr => scratch_facevarz(:,:,:,:,blockid)           
-     case DEFAULT
-        print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
-#ifdef FLASH_GRID_PARAMESH
-     case(WORK)
-        call Driver_abortFlash("work array cannot be got as pointer")
+        !  end of #ifdef FL_NON_PERMANENT_GUARDCELLS
+        case(SCRATCH)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => scratch(:,:,:,:,blockid)
+        case(SCRATCH_CTR)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => scratch_ctr(:,:,:,:,blockid)           
+        case(SCRATCH_FACEX)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => scratch_facevarx(:,:,:,:,blockid)           
+        case(SCRATCH_FACEY)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => scratch_facevary(:,:,:,:,blockid)           
+        case(SCRATCH_FACEZ)
+           dataPtr(lo(1):, lo(2):, lo(3):, 1:) => scratch_facevarz(:,:,:,:,blockid)           
+        case DEFAULT
+           print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
+        case(WORK)
+           call Driver_abortFlash("work array cannot be got as pointer")
+        end select
+#else
+        select case (gds)
+#ifndef FL_NON_PERMANENT_GUARDCELLS
+        case(CENTER)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => unk(:,:,:,:,blockid)
+        case(FACEX)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx(:,:,:,:,blockid)
+        case(FACEY)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary(:,:,:,:,blockid)
+        case(FACEZ)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz(:,:,:,:,blockid)
+#else
+        !  #ifndef FL_NON_PERMANENT_GUARDCELLS ...
+        case(CENTER)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => unk1(:,:,:,:,idest)
+        case(FACEX)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarx1(:,:,:,:,idest)
+        case(FACEY)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevary1(:,:,:,:,idest)
+        case(FACEZ)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => facevarz1(:,:,:,:,idest)
 #endif
-     end select
+        !  end of #ifdef FL_NON_PERMANENT_GUARDCELLS
+        case(SCRATCH)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch(:,:,:,:,blockid)
+        case(SCRATCH_CTR)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_ctr(:,:,:,:,blockid)           
+        case(SCRATCH_FACEX)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarx(:,:,:,:,blockid)           
+        case(SCRATCH_FACEY)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevary(:,:,:,:,blockid)           
+        case(SCRATCH_FACEZ)
+           dataPtr(1:, lo(1):, lo(2):, lo(3):) => scratch_facevarz(:,:,:,:,blockid)           
+        case DEFAULT
+           print *, 'TRIED TO GET SOMETHING OTHER THAN UNK OR SCRATCH OR FACE[XYZ]. NOT YET.'
+        case(WORK)
+           call Driver_abortFlash("work array cannot be got as pointer")
+        end select
+#endif
+     end associate
 
 #ifdef FL_NON_PERMANENT_GUARDCELLS
   if (gds .eq. FACEX .or. gds .eq. FACEY .or. gds .eq. FACEZ) then

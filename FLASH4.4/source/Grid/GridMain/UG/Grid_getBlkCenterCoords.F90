@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkCenterCoords(integer(IN) :: blockId,
+!!  Grid_getBlkCenterCoords(type(block_metadta_t)(IN) :: block,
 !!                         real(OUT)   :: blockCenter(MDIM))
 !!                      
 !!  
@@ -46,19 +46,20 @@
 #endif
 
 
-subroutine Grid_getBlkCenterCoords(blockId,blockCenter)
+subroutine Grid_getBlkCenterCoords(block,blockCenter)
   use Grid_interface, ONLY : Grid_getBlkBoundBox
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
-  integer,intent(in) :: blockId
+  type(block_metadata_t), intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockCenter
   integer :: i
 
   real,dimension(2,MDIM) :: bndBox
-  call Grid_getBlkBoundBox(blockId, bndBox)
+  call Grid_getBlkBoundBox(block, bndBox)
 
   blockCenter = 0.0
 

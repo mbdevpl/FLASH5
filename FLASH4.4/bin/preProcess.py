@@ -5,6 +5,16 @@ import re
 import globals
 from globals import * # for GVars
    
+# helper to split multi-line strings and flatten nested iterables into one long iterator of strings
+def _flatten(it):
+   if type(it) == type(""):
+      for x in it.split('\n'):
+         yield x
+   else:
+      for x in it:
+         for y in _flatten(x):
+            yield y
+
 class preProcess:
 
    rif = re.compile(r"^\s*IF\s*(?P<cond>.*)\s*$")
@@ -41,16 +51,7 @@ class preProcess:
           # initialize a namespace with the prelude code
           ns = __import__("genLinesPrelude")
           # execute the code object within the prelude'd namespace
-          exec code in ns.__dict__
-          # helper to split multi-line strings and flatten nested iterables into one long iterator of strings
-          def flatten(it):
-              if type(it) == type(""):
-                  for x in it.split('\n'):
-                      yield x
-              else:
-                  for x in it:
-                      for y in flatten(x):
-                          yield y
+          exec(code, ns.__dict__)
           # def guarddict(d):
           #     def baduser(msg):
           #         e = Exception()
@@ -73,8 +74,8 @@ class preProcess:
           #             raise Exception('Config scripts may not write to the setup variable dictionary.')
           #     return A(d)
           # # execute the genLines function to get a back an iterable of lines
-          # lines = flatten(ns.genLines(guarddict(self.initvalues.copy())))
-          lines = flatten(ns.genLines(self.initvalues.copy()))
+          # lines = _flatten(ns.genLines(guarddict(self.initvalues.copy())))
+          lines = _flatten(ns.genLines(self.initvalues.copy()))
       else: # just a regular config file
           fd.seek(0)
           lines = fd.readlines()
@@ -93,11 +94,11 @@ class preProcess:
       return ans
 
    def printVars(self):
-       for k,v in self.values.items():
+       for k,v in list(self.values.items()):
            if k.startswith("with"): continue
            if type(v)==type(""):
-              print "%s='%s'" % (k,v)
-           else: print '%s=%s' % (k,v)
+              print("%s='%s'" % (k,v))
+           else: print('%s=%s' % (k,v))
 
    def PPKeyword(self,line):
       """Returns "IF,ELSE,ENDIF,USE,None" depending on syntax of line"""
@@ -134,9 +135,9 @@ class preProcess:
       m = self.ruse.match(line)
       if not m: return
       vars = [x.strip() for x in m.group("vars").split(",") ]
-      badlist = [x for x in vars if not self.values.has_key(x) ]
+      badlist = [x for x in vars if x not in self.values ]
       # all declared variables (except for the with* ones)
-      initvars = [x for x in self.values.keys() if not x.startswith("with")]
+      initvars = [x for x in list(self.values.keys()) if not x.startswith("with")]
       if badlist: # found missing variables
          msg = ["\nPre-Processor Warning: \nRequired uninitialized variables will be initialized to ''"]
          msg.append("File: %s\nUnnitialized Variables: %s" % (self.filename,", ".join(badlist)))
@@ -164,7 +165,7 @@ class preProcess:
       valcopy.update(self.values)
       try:
          value = eval(cond,{},valcopy)
-      except Exception,e: 
+      except Exception as e: 
          msg = 'File: %s\nLine: %d\nCondition: %s\nVariables: %s\nDetails: %s'
          raise SetupError(msg % (self.filename,self.lineno,cond,self.values,str(e)))
       else:

@@ -239,7 +239,8 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getListOfBlocks
+  use gr_parameshInterface, ONLY : gr_pmGetListOfBlocks
+
   use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Grid_interface, ONLY : Grid_copyF4DataToMultiFabs
   use gr_interface, ONLY : gr_setGcFillNLayers, gr_sanitizeDataAfterInterp
@@ -447,7 +448,7 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
 
      if((gridDataStruct==CENTER_FACES).or.(gridDataStruct==CENTER)) then
         allocate(blkList(lnblocks))
-        call Grid_getListOfBlocks(listBlockType, blkList, numLeafBlocks)
+        call gr_pmGetListOfBlocks(listBlockType, blkList, numLeafBlocks)
         if (.not. skipThisGcellFill) then
            do  i = 1,numLeafBlocks
               call gr_fillMetaData(blkList(i),blockDesc)
@@ -507,7 +508,7 @@ subroutine Grid_fillGuardCells_blkid( gridDataStruct, idir,&
         call Timers_start("eos gc")
         if ((gridDataStruct.NE.CENTER).AND.(gridDataStruct.NE.CENTER_FACES)) then
            allocate(blkList(lnblocks))
-           call Grid_getListOfBlocks(listBlockType, blkList, numLeafBlocks)
+           call gr_pmGetListOfBlocks(listBlockType, blkList, numLeafBlocks)
         end if
         do i = 1,numLeafBlocks
            call Grid_getBlkPtr(blkList(i), solnData)

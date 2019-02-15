@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkPtr(integer(IN)            :: blockID,
+!!  Grid_getBlkPtr(type(block_metadata_t)(IN) :: block,
 !!                 real(pointer)(:,:,:,:) :: dataPtr,
 !!                 integer(IN),optional   :: gridDataStruct)
 !!  
@@ -18,7 +18,7 @@
 !!  
 !! ARGUMENTS 
 !!
-!!  blockID : the local blockid
+!!  block : block metadata
 !!
 !!  dataPtr : Pointer to the data block
 !!
@@ -50,11 +50,15 @@
 !!  For example if pointer to block 1 is not yet released and the user
 !!  tries to get a pointer to block 2, the routine will abort.
 
-subroutine Grid_getBlkPtr(blockID,dataPtr, gridDataStruct)
-implicit none
-  integer, intent(in) :: blockID
+subroutine Grid_getBlkPtr(block,dataPtr, gridDataStruct, localFlag)
+  use block_metadata, ONLY : block_metadata_t
+
+  implicit none
+  
+  type(block_metadata_t),target, intent(in) :: block
   real, dimension(:,:,:,:), pointer :: dataPtr
   integer, optional,intent(in) :: gridDataStruct
+  logical,optional, intent(in) :: localFlag
 
   return
 end subroutine Grid_getBlkPtr
