@@ -5,20 +5,20 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_bcApplyToRegion(integer(IN)           :: bcType,
-!!                            integer(IN)           :: gridDataStruct,
-!!                            integer(IN)           :: guard,
-!!                            integer(IN)           :: axis,
-!!                            integer(IN)           :: face,
-!!                            real(INOUT)           :: regionData(:,:,:,:),
-!!                            integer(IN)           :: regionSize(:),
-!!                            logical(IN)           :: mask(:),
-!!                            logical(OUT)          :: applied,
-!!                            block_metadata_t(IN)  :: blockDesc,
-!!                            integer(IN)           :: secondDir,
-!!                            integer(IN)           :: thirdDir,
-!!                            integer(IN)           :: endPoints(LOW:HIGH,MDIM),
-!!                   OPTIONAL,integer(IN)           :: idest)
+!!  call Grid_bcApplyToRegion(integer(IN)      :: bcType,
+!!                            integer(IN)      :: gridDataStruct,
+!!                            integer(IN)      :: guard,
+!!                            integer(IN)      :: axis,
+!!                            integer(IN)      :: face,
+!!                            real(INOUT)      :: regionData(:,:,:,:),
+!!                            integer(IN)      :: regionSize(:),
+!!                            logical(IN)      :: mask(:),
+!!                            logical(OUT)     :: applied,
+!!                            flash_tile_t(IN) :: tileDesc,
+!!                            integer(IN)      :: secondDir,
+!!                            integer(IN)      :: thirdDir,
+!!                            integer(IN)      :: endPoints(LOW:HIGH,MDIM),
+!!                   OPTIONAL,integer(IN)      :: idest)
 !!
 !!
 !!
@@ -66,7 +66,7 @@
 !!  other grid information, such as cell coordinates, etc.  Currently
 !!  supported simple boundary conditions include "OUTFLOW", "REFLECTING" and
 !!  "DIODE".
-!!  Additional dummy arguments blockDesc, secondDir, thirdDir, and endPoints
+!!  Additional dummy arguments tileDesc, secondDir, thirdDir, and endPoints
 !!  are not needed for these simple kinds of BCs, but can be
 !!  used by alternative implementations for BC types that do need coordinate
 !!  information, etc.
@@ -115,7 +115,7 @@
 !!  applied - is set true if this routine has handled the given bcType, otherwise it is 
 !!            set to false.
 !!
-!!  blockDesc - Derived type that encapsulates metadata that uniquely
+!!  tileDesc - Derived type that encapsulates metadata that uniquely
 !!              characterizes local block to be operated on
 !!
 !!              With Paramesh 4:
@@ -206,7 +206,7 @@
 
 subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-     blockDesc,secondDir,thirdDir,endPoints,idest)
+     tileDesc,secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -216,7 +216,7 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   use Grid_interface, ONLY : Grid_getGeometry
   use Grid_data, ONLY : gr_dirGeom, &
        gr_smallrho, gr_smallE
-  use block_metadata, ONLY : block_metadata_t
+  use flash_tile, ONLY : flash_tile_t
 
   implicit none
   
@@ -228,7 +228,7 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
-  type(block_metadata_t),intent(IN) :: blockDesc
+  type(flash_tile_t),intent(IN) :: tileDesc
   integer,intent(IN) :: secondDir,thirdDir
   integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest
@@ -238,10 +238,6 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   logical :: isFace
   integer :: sign
   real    :: smallP
-
-  integer :: blkLimitsGC(LOW:HIGH, MDIM)
- 
-  blkLimitsGC = blockDesc%limitsGC
 
   call Grid_getGeometry(geometry)
 

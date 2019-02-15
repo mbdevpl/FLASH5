@@ -122,7 +122,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
   use Grid_data, ONLY : gr_bndOrder,gr_numDataStruct,gr_gridDataStruct,&
        gr_gridDataStructSize
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
-  use block_metadata, ONLY : block_metadata_t
+  use flash_tile, ONLY : flash_tile_t
 
   implicit none
   
@@ -139,7 +139,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
 
   integer :: blockHandle
   integer :: i, struct, varCount,gridDataStruct
-  type(block_metadata_t) :: blockDesc
+  type(flash_tile_t) :: tileDesc
 
   bnd(1)=ibnd
   bnd(2)=jbnd
@@ -221,7 +221,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
      gridDataStruct=WORK
      !! Paramesh supports Work for only cell centered data, so CENTER
      !! is the appropriate gridDataStruct for this call
-     call createBlockMetadata(blockHandle, CENTER, blockDesc)
+     call createBlockMetadata(blockHandle, CENTER, tileDesc)
 
      !! Now that all preparatory work is done, do the calculation.
      !! The three different loops for the three directions are there
@@ -229,7 +229,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
      !! and therefore the loops change.
      call gr_bcApplyToOneFace(bcDir,bcType,&
           gridDataStruct,varCount,regionType,&
-          blockDesc,idest)
+          tileDesc,idest)
   else
      do struct=1,gr_numDataStruct
         gridDataStruct=gr_gridDataStruct(struct)
@@ -237,7 +237,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
  
         !! The next statements gest block index information to 
         !! prepare for the calculation.
-        call createBlockMetadata(blockHandle, gridDataStruct, blockDesc)
+        call createBlockMetadata(blockHandle, gridDataStruct, tileDesc)
 
         !! Now that all preparatory work is done, call the routine
         !! that will repackage relevant parts of the block data
@@ -249,7 +249,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
 !!        print*,bcDir,bcType,gridDataStruct,varCount,regionType(1:NDIM)
         call gr_bcApplyToOneFace(bcDir,bcType,&
              gridDataStruct,varCount,regionType,&
-             blockDesc,idest)
+             tileDesc,idest)
      end do
   end if
 
@@ -512,25 +512,15 @@ contains
       extractBCForDirection = gr_extractBCForDirection(surrblks(1,2+ibnd,2+jbnd,2+kbnd), idir,lowOrHigh)
     end function extractBCForDirection
 
-    subroutine createBlockMetadata(blockID, gds, blockDesc)
+    subroutine createBlockMetadata(blockID, gds, tileDesc)
         use tree,            ONLY : lrefine, lrefine_max, bnd_box
         use Grid_data,       ONLY:  gr_delta,       &
                                     gr_globalDomain
         use gr_specificData, ONLY : gr_oneBlock
 
-        ! IMPORTANT: This is essentially a copy of the blkMetaData method in
-        ! block_iterator_t.  This subroutine should be matched to it.
-
-        ! different variants for cell index numbering:
-        !  1 = normal FLASH convention:     per block, leftmost guard cell = 1
-        !  0 = zero-based FLASH convention: per block, leftmost guard cell = 0
-        ! -1 = global convention for a refinement level: leftmost guard cell = 1
-        ! -2 = global convention for a refinement level: leftmost inner cell = 1
-        integer, parameter :: cellIdxBase = 1
-
-        integer,                intent(IN)  :: blockID
-        integer,                intent(IN)  :: gds
-        type(block_metadata_t), intent(OUT) :: blockDesc
+        integer,            intent(IN)  :: blockID
+        integer,            intent(IN)  :: gds
+        type(flash_tile_t), intent(OUT) :: tileDesc
 
         integer :: blkLimits(LOW:HIGH, MDIM)
         integer :: blkLimitsGC(LOW:HIGH, MDIM)
@@ -538,57 +528,43 @@ contains
         
         call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC, gds)
 
-        blockDesc%id = blockID
+        tileDesc%id = blockID
         if (blockID .LE. MAXBLOCKS) then ! is this really a handle for a local block?
-           blockDesc%cid    = gr_oneBlock(blockDesc%id)%cornerID
-           blockDesc%level  = lrefine(blockID)
-           blockDesc%stride = 2**(lrefine_max - blockDesc%level)
+           tileDesc%cid    = gr_oneBlock(tileDesc%id)%cornerID
+           tileDesc%level  = lrefine(blockID)
+           tileDesc%stride = 2**(lrefine_max - tileDesc%level)
         else                 ! blockID was a handle for a remote block...
-           blockDesc%cid(1:MDIM) = 1
-           blockDesc%cid(1:NDIM) = &
+           tileDesc%cid(1:MDIM) = 1
+           tileDesc%cid(1:NDIM) = &
                 ( bnd_box(1,1:NDIM,blockID) - gr_globalDomain(LOW, 1:NDIM)   &
                                        + gr_delta(1:NDIM,lrefine_max)/2.0 )  &
                                   / gr_delta(1:NDIM,lrefine_max) + 1
 
-           blockDesc%level  = lrefine(blockID) ! assume this is validly cached...
-           blockDesc%stride = 2**(lrefine_max - blockDesc%level)
+           tileDesc%level  = lrefine(blockID) ! assume this is validly cached...
+           tileDesc%stride = 2**(lrefine_max - tileDesc%level)
         end if
-        blockDesc%localLimits   = blkLimits
-        blockDesc%localLimitsGC = blkLimitsGC
 
-        associate(lo    => blockDesc%limits(LOW, :), &
-                  hi    => blockDesc%limits(HIGH, :), &
-                  loGC  => blockDesc%limitsGC(LOW, :), &
-                  hiGC  => blockDesc%limitsGC(HIGH, :), &
-                  blkId => blockDesc%id, &
-                  cid   => blockDesc%cid)
+        ! The cell-indexing for this tile is non-standard as determined by the
+        ! use here.  We use here the prior FLASH convention:
+        !     per block, leftmost guard cell = 1
+        associate(lo      => tileDesc%limits(LOW, :), &
+                  hi      => tileDesc%limits(HIGH, :), &
+                  loGrown => tileDesc%grownLimits(LOW, :), &
+                  hiGrown => tileDesc%grownLimits(HIGH, :), &
+                  loBlkGC => tileDesc%blkLimitsGC(LOW, :), &
+                  hiBlkGC => tileDesc%blkLimitsGC(HIGH, :), &
+                  blkId   => tileDesc%id, &
+                  cid     => tileDesc%cid)
             lo(:) = blkLimits(LOW, :)
             hi(:) = blkLimits(HIGH, :)
-            loGC(:) = blkLimitsGC(LOW, :)
-            hiGC(:) = blkLimitsGC(HIGH, :)
-            if (cellIdxBase == -1) then
-               cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
-               lo(:)   = lo(:)   - 1 + cornerID(:)
-               hi(:)   = hi(:)   - 1 + cornerID(:)
-               loGC(:) = loGC(:) - 1 + cornerID(:)
-               hiGC(:) = hiGC(:) - 1 + cornerID(:)
-            else if (cellIdxBase == -2) then
-               cornerID = (cid - 1) / 2**(lrefine_max-lrefine(blkID)) + 1
-               lo(:)   = lo(:)   - 1 + cornerID(:)
-               hi(:)   = hi(:)   - 1 + cornerID(:)
-               loGC(:) = loGC(:) - 1 + cornerID(:)
-               hiGC(:) = hiGC(:) - 1 + cornerID(:)
-               lo(1:NDIM)   = lo(1:NDIM)   - NGUARD
-               hi(1:NDIM)   = hi(1:NDIM)   - NGUARD
-               loGC(1:NDIM) = loGC(1:NDIM) - NGUARD
-               hiGC(1:NDIM) = hiGC(1:NDIM) - NGUARD
-            else if (cellIdxBase == 0) then
-               lo(:)   = lo(:)   - 1
-               hi(:)   = hi(:)   - 1
-               loGC(:) = loGC(:) - 1
-               hiGC(:) = hiGC(:) - 1
-            end if
+            loBlkGC(:) = blkLimitsGC(LOW, :)
+            hiBlkGC(:) = blkLimitsGC(HIGH, :)
+            ! Since there is no tiling with Paramesh, the grown tile
+            ! is just the block + GC halo
+            loGrown(:) = loBlkGC(:)
+            hiGrown(:) = hiBlkGC(:)
         end associate
     end subroutine createBlockMetadata
 
 end subroutine amr_1blk_bcset
+

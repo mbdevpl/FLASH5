@@ -1015,8 +1015,8 @@ Module Grid_interface
   interface
      subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-          blockDesc,secondDir,ThirdDir,endPoints,idest)
-       use block_metadata, ONLY : block_metadata_t
+          tileDesc,secondDir,ThirdDir,endPoints,idest)
+       use flash_tile, ONLY : flash_tile_t
        implicit none
 
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
@@ -1027,7 +1027,7 @@ Module Grid_interface
             regionSize(STRUCTSIZE)),intent(INOUT)::regionData
        logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
        logical, intent(OUT) :: applied
-       type(block_metadata_t),intent(IN) :: blockDesc
+       type(flash_tile_t),intent(IN) :: tileDesc
        integer,intent(IN) :: secondDir,thirdDir
        integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
        integer,intent(IN),OPTIONAL:: idest
@@ -1037,8 +1037,8 @@ Module Grid_interface
   interface
      subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-          blockDesc,secondDir,ThirdDir,endPoints,idest)
-       use block_metadata, ONLY : block_metadata_t
+          tileDesc,secondDir,ThirdDir,endPoints,idest)
+       use flash_tile, ONLY : flash_tile_t
        implicit none
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
        integer,dimension(REGION_DIM),intent(IN) :: regionSize
@@ -1048,7 +1048,7 @@ Module Grid_interface
             regionSize(STRUCTSIZE)),intent(INOUT)::regionData
        logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
        logical, intent(OUT) :: applied
-       type(block_metadata_t),intent(IN) :: blockDesc
+       type(flash_tile_t),intent(IN) :: tileDesc
        integer,intent(IN) :: secondDir,thirdDir
        integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
        integer,intent(IN),OPTIONAL:: idest
@@ -1062,14 +1062,14 @@ Module Grid_interface
           regionDataC,regionDataFN,regionDataFT1,regionDataFT2,&
           regionSizeCtr,&
           applied,&
-          blockDesc,secondDir,thirdDir,endPointsCtr,rightHanded,idest)
-       use block_metadata, ONLY : block_metadata_t
+          tileDesc,secondDir,thirdDir,endPointsCtr,rightHanded,idest)
+       use flash_tile, ONLY : flash_tile_t
        implicit none
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
        integer,dimension(REGION_DIM),intent(IN) :: regionSizeCtr
        real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
        logical, intent(INOUT) :: applied
-       type(block_metadata_t),intent(IN) :: blockDesc
+       type(flash_tile_t),intent(IN) :: tileDesc
        integer,intent(IN) :: secondDir,thirdDir
        integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPointsCtr
        logical, intent(IN) :: rightHanded

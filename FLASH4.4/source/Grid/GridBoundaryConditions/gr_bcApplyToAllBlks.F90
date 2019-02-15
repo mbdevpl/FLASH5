@@ -31,12 +31,12 @@
   
 subroutine gr_bcApplyToAllBlks(axis,isWork)
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkBC
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+                             Grid_releaseTileIterator
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
   use Grid_data,ONLY : gr_numDataStruct,gr_gridDataStruct,gr_gridDataStructSize
-  use gr_iterator, ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use flash_iterator, ONLY : flash_iterator_t
+  use flash_tile, ONLY : flash_tile_t
 
   implicit none
   
@@ -52,8 +52,8 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
   integer :: idest=0
   integer,dimension(gr_numDataStruct) :: localDataStruct,localStructSize
   integer :: localNum
-  type(gr_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
+  type(flash_iterator_t) :: itor
+  type(flash_tile_t)     :: tileDesc
 
 #ifdef FLASH_GRID_AMREX
   call Driver_abortFlash("[gr_bcApplyToAllBlks] not implemented for AMReX")
@@ -75,11 +75,12 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
      face(LOW)=LOW
      face(HIGH)=HIGH
 
-     call gr_getBlkIterator(itor)
-     do while (itor%is_valid())
-        call itor%blkMetaData(blockDesc) 
+     call Driver_abortFlash("[gr_bcApplyToAllBlks] This has not been tested")
+     call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.)
+     do while (itor%isValid())
+        call itor%currentTile(tileDesc) 
 
-        call Grid_getBlkBC(blockDesc,blkBC)  !! For the block find the faces on the boundary
+        call tileDesc%faceBCs(blkBC)
         loop(LOW)=blkBC(LOW,axis)/=NOT_BOUNDARY      !! along the specified dimension
         loop(HIGH)=blkBC(HIGH,axis)/=NOT_BOUNDARY
         
@@ -99,11 +100,13 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
               if(loop(edge))&
                    call gr_bcApplyToOneFace(axis,bcType(edge),&
                    gridDataStruct,varCount,regionType,&
-                   blockDesc,idest)
+                   tileDesc,idest)
            end do
         end if
+
+        call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseTileIterator(itor)
   end do
 #endif
 
