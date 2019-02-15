@@ -366,7 +366,7 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
   end if
 
 #if   defined FLASH_GRID_AMREX
-  call tileDesc%releaseBlkPtr(dataPtr, gridDataStruct)
+  call tileDesc%releaseDataPtr(dataPtr, gridDataStruct)
 #endif
 
   return

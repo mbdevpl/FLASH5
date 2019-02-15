@@ -66,7 +66,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     use gr_amrexInterface,      ONLY : gr_splitFabAtBoundary, &
                                        gr_copyFabInteriorToRegion, &
                                        gr_copyGuardcellRegionToFab
-    use block_metadata,         ONLY : block_metadata_t 
+    use flash_tile,             ONLY : flash_tile_t 
 
     implicit none
 
@@ -82,7 +82,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     integer                :: gds
     type(amrex_mfiter)     :: mfi
     type(amrex_box)        :: box
-    type(block_metadata_t) :: blockDesc
+    type(flash_tile_t)     :: tileDesc
     
     integer :: n_cells_domain
     integer :: n_cells_level
@@ -234,18 +234,23 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              ! true since this code might not know the identity of the block
              ! that contains this box.
              !
-             ! So far, simple uses of this blockDesc work, but certain routines
+             ! So far, simple uses of this tileDesc work, but certain routines
              ! such as Grid_getBlkBC require that the limit field contain
              ! information consistent with the notion of a block's
              ! limits/interior.
-             blockDesc%level = level
-             blockDesc%grid_index = -1
-             blockDesc%limits(:,  :)          = 1
-             blockDesc%limits(LOW,  1:NDIM)   = endPts(LOW,  1:NDIM)
-             blockDesc%limits(HIGH, 1:NDIM)   = endPts(HIGH, 1:NDIM)
-             blockDesc%limitsGC(:,  :)        = 1
-             blockDesc%limitsGC(LOW,  1:NDIM) = endPts(LOW,  1:NDIM) - NGUARD
-             blockDesc%limitsGC(HIGH, 1:NDIM) = endPts(HIGH, 1:NDIM) + NGUARD
+             !
+             ! Force this to act like a block.  Hopefully we will top using
+             ! tile descriptors soon for the BC work.
+             tileDesc%level = level
+             tileDesc%grid_index = -1
+             tileDesc%limits(:,  :)          = 1
+             tileDesc%limits(LOW,  1:NDIM)   = endPts(LOW,  1:NDIM)
+             tileDesc%limits(HIGH, 1:NDIM)   = endPts(HIGH, 1:NDIM)
+             tileDesc%blkLimitsGC(:,  :)        = 1
+             tileDesc%blkLimitsGC(LOW,  1:NDIM) = endPts(LOW,  1:NDIM) - NGUARD
+             tileDesc%blkLimitsGC(HIGH, 1:NDIM) = endPts(HIGH, 1:NDIM) + NGUARD
+             tileDesc%grownLimits(LOW,  :) = tileDesc%blkLimitsGC(LOW,  :)
+             tileDesc%grownLimits(HIGH, :) = tileDesc%blkLimitsGC(HIGH, :)
 
              ! If necessary, convert interior, guardcells, and endPts
              ! to match index space of given multifab
@@ -290,7 +295,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                                   gds, NGUARD, &
                                                   axis, face, &
                                                   regionData, regionSize, &
-                                                  mask, applied, blockDesc, &
+                                                  mask, applied, tileDesc, &
                                                   axis2, axis3, endPts, 0)
 
              if (.NOT. applied) then
@@ -299,7 +304,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                           gds, NGUARD, &
                                           axis, face, &
                                           regionData, regionSize, &
-                                          mask, applied, blockDesc, &
+                                          mask, applied, tileDesc, &
                                           axis2, axis3, endPts, 0)
              end if
 
