@@ -310,7 +310,7 @@
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
           ! DEV: TODO convert this to tileDesc%coordinates once it can be tested
           call Driver_abortFlash("Update this to use coordinates")
-          call Grid_getCellCoords(JAXIS,tileDesc, CENTER,.false.,yCenter, size(yCenter))
+          call tileDesc%coordinates(JAXIS, CENTER, TILE, yCenter)
        end if
     endif
 !!$

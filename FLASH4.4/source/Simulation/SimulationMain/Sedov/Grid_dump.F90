@@ -134,20 +134,22 @@ subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
   blkLimits = blockDesc%limits
   blkLimitsGC=blockDesc%limitsGC
 
-  bxn = blkLimitsGC(HIGH,IAXIS) - blkLimitsGC(LOW,IAXIS) + 1
-  byn = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
-  bzn = blkLimitsGC(HIGH,KAXIS) - blkLimitsGC(LOW,KAXIS) + 1
+  associate(lo => blkLimitsGC(LOW,  :), &
+            hi => blkLimitsGC(HIGH, :))
+     bxn = hi(IAXIS) - lo(IAXIS) + 1
+     byn = hi(JAXIS) - lo(JAXIS) + 1
+     bzn = hi(KAXIS) - lo(KAXIS) + 1
 
-  count = bxn*byn*bzn
+     count = bxn*byn*bzn
 
+     allocate(x(bxn))
+     allocate(y(byn))
+     allocate(z(bzn))
 
-  allocate(x(bxn))
-  allocate(y(byn))
-  allocate(z(bzn))
-  call Grid_getCellCoords(IAXIS,blockDesc,CENTER,.TRUE.,x,bxn)
-  call Grid_getCellCoords(JAXIS,blockDesc,CENTER,.TRUE.,y,byn)
-  call Grid_getCellCoords(KAXIS,blockDesc,CENTER,.TRUE.,z,bzn)
-
+     call Grid_getCellCoords(IAXIS, CENTER, blockDesc%level, lo, hi, x)
+     call Grid_getCellCoords(JAXIS, CENTER, blockDesc%level, lo, hi, y)
+     call Grid_getCellCoords(KAXIS, CENTER, blockDesc%level, lo, hi, z)
+  end associate
 
   if(.not. gcell) then
      dumpLimits => blkLimits

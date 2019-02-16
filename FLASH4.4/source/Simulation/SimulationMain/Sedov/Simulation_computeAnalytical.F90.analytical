@@ -80,7 +80,6 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
   real     ::  vSub, rhoSub, pSub, errIgnored
   real     ::  simTime
   real,allocatable,dimension(:) :: xCoord,yCoord,zCoord
-  integer :: sizeX,sizeY,sizeZ
   integer, dimension(2,MDIM) :: tileLimits, grownTileLimits
 
 !!$  real     :: dvSub(0:sim_nSubZones-1,0:(sim_nSubZones-1)*K2D)
@@ -137,18 +136,22 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
 
   tileLimits =   tileDesc % limits
   grownTileLimits = tileDesc % grownLimits 
-  allocate(xCoord(grownTileLimits(LOW, IAXIS):grownTileLimits(HIGH, IAXIS))); xCoord = 0.0
-  allocate(yCoord(grownTileLimits(LOW, JAXIS):grownTileLimits(HIGH, JAXIS))); yCoord = 0.0
-  allocate(zCoord(grownTileLimits(LOW, KAXIS):grownTileLimits(HIGH, KAXIS))); zCoord = 0.0
-  sizeX = SIZE(xCoord)
-  sizeY = SIZE(yCoord)
-  sizeZ = SIZE(zCoord)
 
-  if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, tileDesc, CENTER, gcell, zCoord, sizeZ)
-  if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, tileDesc, CENTER,gcell, yCoord, sizeY)
-  call Grid_getCellCoords(IAXIS, tileDesc, CENTER, gcell, xCoord, sizeX)
+  allocate(xCoord(grownTileLimits(LOW, IAXIS):grownTileLimits(HIGH, IAXIS)))
+  allocate(yCoord(grownTileLimits(LOW, JAXIS):grownTileLimits(HIGH, JAXIS)))
+  allocate(zCoord(grownTileLimits(LOW, KAXIS):grownTileLimits(HIGH, KAXIS)))
+  xCoord(:) = 0.0
+  yCoord(:) = 0.0
+  zCoord(:) = 0.0
+
+  call tileDesc%coordinates(IAXIS, CENTER, GROWN_TILE, xCoord)
+#if NDIM >= 2
+  call tileDesc%coordinates(JAXIS, CENTER, GROWN_TILE, yCoord)
+#endif
+#if NDIM == 3
+  call tileDesc%coordinates(KAXIS, CENTER, GROWN_TILE, zCoord)
+#endif
+
   !
   !     For each cell
   !  

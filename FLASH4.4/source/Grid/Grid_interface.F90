@@ -272,22 +272,14 @@ Module Grid_interface
   end interface
  
   interface Grid_getCellCoords
-     subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
-       use block_metadata, ONLY : block_metadata_t
-       integer, intent(in) :: axis, edge
-       type(block_metadata_t), intent(in) :: block
-       integer, intent(in) :: size
-       logical, intent(in) :: guardcell
-       real,intent(out), dimension(size) :: coordinates
+     subroutine Grid_getCellCoords(axis, edge, level, lo, hi, coordinates)
+        integer, intent(in)  :: axis
+        integer, intent(in)  :: edge
+        integer, intent(in)  :: level
+        integer, intent(in)  :: lo(1:MDIM)
+        integer, intent(in)  :: hi(1:MDIM)
+        real,    intent(out) :: coordinates(:)
      end subroutine Grid_getCellCoords
-     subroutine Grid_getCellCoords_tile(axis, tileDesc, edge, guardcell, coordinates, size)
-       use flash_tile, ONLY : flash_tile_t 
-       integer, intent(in) :: axis, edge
-       type(flash_tile_t), intent(in) :: tileDesc
-       integer, intent(in) :: size
-       logical, intent(in) :: guardcell
-       real,intent(out), dimension(size) :: coordinates
-     end subroutine Grid_getCellCoords_tile
   end interface
 
   interface Grid_getDeltas
@@ -406,26 +398,12 @@ Module Grid_interface
   end interface
 
   interface Grid_getSingleCellCoords
-     subroutine Grid_getSingleCellCoords(ind, blockId,edge, beginCount,coords)
-       integer,dimension(MDIM), intent(in) :: ind
-       integer, intent(in) :: blockId, edge
-       integer, intent(in) :: beginCount
-       real, dimension(MDIM), intent(out) :: coords
-     end subroutine Grid_getSingleCellCoords
-     subroutine Grid_getSingleCellCoords_Itor(ind, blockDesc, edge, beginCount,coords)
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: blockDesc
-       integer,dimension(MDIM), intent(in) :: ind
-       integer, intent(in) :: edge
-       integer, intent(in) :: beginCount
-       real, dimension(MDIM), intent(out) :: coords
-     end subroutine Grid_getSingleCellCoords_Itor
-     subroutine Grid_getSingleCellCoords_lev(ind, level,edge, coords)
+     subroutine Grid_getSingleCellCoords(ind, level,edge, coords)
        implicit none
        integer,dimension(MDIM), intent(in) :: ind
        integer, intent(in) :: level, edge
        real, dimension(MDIM), intent(out) :: coords
-     end subroutine Grid_getSingleCellCoords_lev
+     end subroutine Grid_getSingleCellCoords
   end interface
 
   interface Grid_getSingleCellVol

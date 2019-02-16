@@ -63,7 +63,6 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
   integer :: geometry
   real :: areaFactor_1, areaFactor_2, areaFactor_3
   integer :: i,j,k
-  integer :: sizeX, sizeY, sizeZ
   integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
   real,dimension(:),allocatable :: xCoordLeft, xCoordRight, yCoordLeft, &
        yCoordRight, zCoordLeft, zCoordRight
@@ -98,9 +97,6 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
   else
 
      blkLimitsGC = block%limitsGC
-     sizeX = blkLimitsGC(HIGH,IAXIS) - blkLimitsGC(LOW,IAXIS) + 1
-     sizeY = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
-     sizeZ = blkLimitsGC(HIGH,KAXIS) - blkLimitsGC(LOW,KAXIS) + 1
 
      allocate(xCoordLeft (blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)),&
               xCoordRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
@@ -109,12 +105,12 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
      allocate(zCoordLeft (blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)),&
               zCoordRight(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 
-     call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xCoordLeft, sizeX)
-     call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xCoordRight, sizeX)
-     call Grid_getCellCoords(JAXIS, block, LEFT_EDGE, gcell, yCoordLeft, sizeY)
-     call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, gcell, yCoordLeft, sizeY)
-     call Grid_getCellCoords(KAXIS, block, LEFT_EDGE, gcell, zCoordLeft, sizeZ)
-     call Grid_getCellCoords(KAXIS, block, RIGHT_EDGE, gcell, zCoordRight, sizeZ)
+     call Grid_getCellCoords(IAXIS, LEFT_EDGE,  block%level, blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), xCoordLeft)
+     call Grid_getCellCoords(IAXIS, RIGHT_EDGE, block%level, blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), xCoordRight)
+     call Grid_getCellCoords(JAXIS, LEFT_EDGE,  block%level, blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), yCoordLeft)
+     call Grid_getCellCoords(JAXIS, RIGHT_EDGE, block%level, blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), yCoordRight)
+     call Grid_getCellCoords(KAXIS, LEFT_EDGE,  block%level, blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), zCoordLeft)
+     call Grid_getCellCoords(KAXIS, RIGHT_EDGE, block%level, blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), zCoordRight)
 
 #define ICOORD_LEFT(I)  xCoordLeft(I)
 #define ICOORD_RIGHT(I) xCoordRight(I)

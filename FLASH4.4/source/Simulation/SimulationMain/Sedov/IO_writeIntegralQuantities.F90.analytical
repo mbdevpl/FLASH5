@@ -163,9 +163,12 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
      allocate(yCenter(jl:jh))
      allocate(zCenter(kl:kh))
      !! Get the cell coordinates
-     call Grid_getCellCoords(IAXIS,blockDesc,CENTER, .false., xCenter, ih-il+1)
-     call Grid_getCellCoords(JAXIS,blockDesc,CENTER, .false., yCenter, jh-jl+1)
-     call Grid_getCellCoords(KAXIS,blockDesc,CENTER, .false., zCenter, kh-kl+1)
+     call Grid_getCellCoords(IAXIS, CENTER, blockDesc%level, &
+                             blkLimits(LOW, :), blkLimits(HIGH, :), xCenter)
+     call Grid_getCellCoords(JAXIS, CENTER, blockDesc%level, &
+                             blkLimits(LOW, :), blkLimits(HIGH, :), yCenter)
+     call Grid_getCellCoords(KAXIS, CENTER, blockDesc%level, &
+                             blkLimits(LOW, :), blkLimits(HIGH, :), zCenter)
 
      ! get a pointer to the current block of data
      call Grid_getBlkPtr(blockDesc, solnData)

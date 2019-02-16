@@ -1,14 +1,10 @@
-!!****if* source/Grid/GridMain/AMR/paramesh/AmrexTransition/Grid_getSingleCellCoords_lev
+!!****if* source/Grid/GridMain/Grid_getSingleCellCoords
 !!
 !! NAME
-!!  Grid_getSingleCellCoords_lev
+!!  Grid_getSingleCellCoords
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_getSingleCellCoords_lev(integer(in)       ::  ind(MDIM), 
-!!                           integer(in)       ::  level,
-!!                           integer(in)       ::  edge,
-!!                           real(OUT)         ::  coords(MDIM))
 !!  call Grid_getSingleCellCoords(integer(in)       ::  ind(MDIM), 
 !!                           integer(in)       ::  level,
 !!                           integer(in)       ::  edge,
@@ -33,11 +29,6 @@
 !!    
 !!  coords : returned coordinates of the specificed cell
 !!
-!! NOTES
-!!
-!!  The specific routine Grid_getSingleCellCoords_lev is also available under the
-!!  generic name Grid_getSingleCellCoords.
-!!
 !!***
 #ifdef DEBUG_ALL
 #define DEBUG_GRID
@@ -47,21 +38,18 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_getSingleCellCoords_lev(ind, level,edge, coords)
-
+subroutine Grid_getSingleCellCoords(ind, level, edge, coords)
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_interface,   ONLY : Grid_getDeltas
-  use Grid_data, ONLY : gr_globalDomain
-
-  use Grid_data, ONLY : maxRefine => gr_maxRefine
+  use Grid_data,        ONLY : gr_globalDomain, &
+                               maxRefine => gr_maxRefine
 
   implicit none
 
-
-
-  integer,dimension(MDIM), intent(in) :: ind
-  integer, intent(in) :: level, edge
-  real, dimension(MDIM), intent(out) :: coords
+  integer, intent(in)  :: ind(1:MDIM)
+  integer, intent(in)  :: level
+  integer, intent(in)  :: edge
+  real,    intent(out) :: coords(1:MDIM)
 
   integer :: axis
   integer :: stride
@@ -69,20 +57,19 @@ subroutine Grid_getSingleCellCoords_lev(ind, level,edge, coords)
   real    :: fineDeltas(MDIM)
 
 #ifdef DEBUG_GRID
-!!$  print*,' inside Grid_getSingleCellCoords_lev', ind, level, edge
 #ifdef FLASH_GRID_UG
   if((level < 1)) then
      print*,"Grid_getSingleCellCoords_lev :invalid level "
      call Driver_abortFlash("Grid_getSingleCellCoords_lev :invalid level ")
   end if
 #endif
+
   if((edge/=LEFT_EDGE).and.(edge/=CENTER).and.(edge/=RIGHT_EDGE))&
        call Driver_abortFlash('Grid_getSingleCellCoods : invalid edge')
 
 !  print*, 'leaving the DEBUG_GRID statement'
 #endif
 
-  ! DEVNOTE: We wouldn't need the following if we had gr_minCellSizes initialized... - KW
   call Grid_getDeltas(maxRefine, fineDeltas)
 
   stride = 2**(maxRefine - level)
@@ -100,13 +87,5 @@ subroutine Grid_getSingleCellCoords_lev(ind, level,edge, coords)
      coords(axis) = gr_globalDomain(LOW,axis) + (first+(ind(axis)-1)*stride) * fineDeltas(axis)
   end do
 
-end subroutine Grid_getSingleCellCoords_lev
-
-
-
-
-
-
-
-
+end subroutine Grid_getSingleCellCoords
 
