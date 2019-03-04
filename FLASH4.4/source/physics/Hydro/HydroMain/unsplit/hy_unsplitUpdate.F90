@@ -100,6 +100,8 @@
 #endif
     use Driver_interface,     ONLY : Driver_abortFlash
     use Grid_interface,       ONLY : Grid_getCellCoords, &
+                                     Grid_getCellFaceAreas, &
+                                     Grid_getCellVolumes, &
                                      Grid_renormAbundance, &
                                      Grid_limitAbundance
 #ifdef FLASH_UHD_3T
@@ -257,7 +259,9 @@
 
 
     if (hy_geometry /= CARTESIAN) then
-       call tileDesc%faceAreas(IAXIS, TILE, faceAreas)
+       call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
 !#if NDIM > 1
 !    ! DEV: FIXME Add these back in and see if they can be replaced with
 !    !            faceAreas and cellVolumes calls
@@ -270,8 +274,9 @@
 !            (/isize, jsize+1, ksize/) )
 !       end if
 !#endif
-
-       call tileDesc%cellVolumes(TILE, cellVolumes)
+       call Grid_getCellVolumes(tileDesc%level, &
+                                lbound(cellVolumes), ubound(cellVolumes), &
+                                cellVolumes)
     endif
  
 !!$#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
@@ -296,21 +301,25 @@
 #endif
 
 #ifdef DEBUG_HYDRO_POSITIVITY
-    ! DEV: TODO convert this to tileDesc%coordinates once it can be tested
-    call Driver_abortFlash("Update this to use coordinates")
-!    call    Grid_getCellCoords(IAXIS,tileDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+    call Driver_abortFlash("This has not been tested")
+    call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                            blGC(LOW, :), blGC(HIGH, :), xCenter)
 #else
     if (hy_geometry /= CARTESIAN) then
-       call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xCenter)
+       call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xCenter)
     end if
 #endif
     if (hy_geometry /= CARTESIAN) then
-       call tileDesc%coordinates(IAXIS, LEFT_EDGE,  TILE_AND_HALO, xLeft)
-       call tileDesc%coordinates(IAXIS, RIGHT_EDGE, TILE_AND_HALO, xRight)
+       call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xLeft)
+       call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xRight)
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          ! DEV: TODO convert this to tileDesc%coordinates once it can be tested
-          call Driver_abortFlash("Update this to use coordinates")
-          call tileDesc%coordinates(JAXIS, CENTER, TILE, yCenter)
+          call Driver_abortFlash("This has not been tested")
+          call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                  blkLimits(LOW, :), blkLimits(HIGH, :), &
+                                  yCenter)
        end if
     endif
 !!$
@@ -953,7 +962,9 @@
 
 
     if (hy_geometry /= CARTESIAN) then
-       tileDesc%faceAreas(IAXIS, TILE, faceAreas)
+       call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
 !#if NDIM > 1
     ! DEV: FIXME Include this again and see if we can use faceAreas and
     !            cellVolumes instead
@@ -967,7 +978,9 @@
 !       end if
 !#endif
 
-       call tileDesc%cellVolumes(TILE, cellVolumes)
+       call Grid_getCellVolumes(tileDesc%level, &
+                                lbound(cellVolumes), ubound(cellVolumes), &
+                                cellVolumes)
     endif
 
     
@@ -986,12 +999,17 @@
     end if
 
     if (hy_geometry /= CARTESIAN) then
-       call tileDesc%coordinates(IAXIS, CENTER,     TILE_AND_HALO, xCenter)
-       call tileDesc%coordinates(IAXIS, LEFT_EDGE,  TILE_AND_HALO, xLeft)
-       call tileDesc%coordinates(IAXIS, RIGHT_EDGE, TILE_AND_HALO, xRight)
+       call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xCenter)
+       call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xLeft)
+       call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xRight)
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          ! DEV: TODO Convert to tileDesc%coordinates once this can be tested
-          call Grid_getCellCoords(JAXIS,tileDesc, CENTER,.false.,yCenter, size(yCenter))
+          call Driver_abortFlash("This has not been tested")
+          call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                  blkLimits(LOW, :), blkLimits(HIGH, :), &
+                                  yCenter)
        end if
     endif
 

@@ -35,6 +35,8 @@
 subroutine Driver_evolveFlash()
     use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
                                       Grid_getSingleCellCoords, &
+                                      Grid_getCellCoords, &
+                                      Grid_getCellVolumes, &
                                       Grid_getGeometry, &
                                       Grid_getDeltas, &
                                       Grid_getMaxRefinement, &
@@ -106,6 +108,8 @@ subroutine Driver_evolveFlash()
     real, allocatable :: volumes(:, :, :)
     
     integer :: offset(1:MDIM)
+    integer :: lo(1:MDIM)
+    integer :: hi(1:MDIM)
 
     integer :: rank
     integer :: ilev
@@ -286,136 +290,78 @@ subroutine Driver_evolveFlash()
     do while (itor%isValid())
        call itor%currentTile(tileDesc)
 
-       associate(lo => tileDesc%limits(LOW,  :), &
-                 hi => tileDesc%limits(HIGH, :))
-          allocate(x_coords(lo(IAXIS):hi(IAXIS)))
-          allocate(y_coords(lo(JAXIS):hi(JAXIS)))
-          allocate(z_coords(lo(KAXIS):hi(KAXIS)))
+       lo = tileDesc%limits(LOW,  :)
+       hi = tileDesc%limits(HIGH, :)
+       allocate(x_coords(lo(IAXIS):hi(IAXIS)))
+       allocate(y_coords(lo(JAXIS):hi(JAXIS)))
+       allocate(z_coords(lo(KAXIS):hi(KAXIS)))
 
-          call tileDesc%coordinates(IAXIS, LEFT_EDGE, TILE, x_coords)
-          call tileDesc%coordinates(JAXIS, LEFT_EDGE, TILE, y_coords)
-          call tileDesc%coordinates(KAXIS, LEFT_EDGE, TILE, z_coords)
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                     call assertEqual(x_coords(i), XMIN_EX + (i-1)*XDELTA_EX, "Bad X-coordinate")
-                     call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
-                     call assertEqual(z_coords(k), 0.0,                       "Bad Z-coordinate")
-                     
-                     call Grid_getSingleCellCoords([i, j, k], tileDesc%level, LEFT_EDGE, c_lo)
-                     call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
-                     call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
-                     call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
-                end do
+       call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+                               lo, hi, x_coords)
+       call Grid_getCellCoords(JAXIS, LEFT_EDGE, tileDesc%level, &
+                               lo, hi, y_coords)
+       call Grid_getCellCoords(KAXIS, LEFT_EDGE, tileDesc%level, &
+                               lo, hi, z_coords)
+       do       k = lo(KAXIS), hi(KAXIS)
+          do    j = lo(JAXIS), hi(JAXIS)
+             do i = lo(IAXIS), hi(IAXIS)
+                  call assertEqual(x_coords(i), XMIN_EX + (i-1)*XDELTA_EX, "Bad X-coordinate")
+                  call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
+                  call assertEqual(z_coords(k), 0.0,                       "Bad Z-coordinate")
+                  
+                  call Grid_getSingleCellCoords([i, j, k], tileDesc%level, LEFT_EDGE, c_lo)
+                  call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
+                  call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
+                  call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
              end do
           end do
+       end do
 
-          call tileDesc%coordinates(IAXIS, CENTER, TILE, x_coords)
-          call tileDesc%coordinates(JAXIS, CENTER, TILE, y_coords)
-          call tileDesc%coordinates(KAXIS, CENTER, TILE, z_coords)
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                     call assertEqual(x_coords(i), XMIN_EX + (i-0.5)*XDELTA_EX, "Bad X-coordinate")
-                     call assertEqual(y_coords(j), YMIN_EX + (j-0.5)*YDELTA_EX, "Bad Y-coordinate")
-                     call assertEqual(z_coords(k), 0.0,                         "Bad Z-coordinate")
-                     
-                     call Grid_getSingleCellCoords([i, j, k], tileDesc%level, CENTER, c_lo)
-                     call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
-                     call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
-                     call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
-                end do
+       call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                               lo, hi, x_coords)
+       call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                               lo, hi, y_coords)
+       call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                               lo, hi, z_coords)
+       do       k = lo(KAXIS), hi(KAXIS)
+          do    j = lo(JAXIS), hi(JAXIS)
+             do i = lo(IAXIS), hi(IAXIS)
+                  call assertEqual(x_coords(i), XMIN_EX + (i-0.5)*XDELTA_EX, "Bad X-coordinate")
+                  call assertEqual(y_coords(j), YMIN_EX + (j-0.5)*YDELTA_EX, "Bad Y-coordinate")
+                  call assertEqual(z_coords(k), 0.0,                         "Bad Z-coordinate")
+                  
+                  call Grid_getSingleCellCoords([i, j, k], tileDesc%level, CENTER, c_lo)
+                  call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
+                  call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
+                  call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
              end do
           end do
+       end do
 
-          call tileDesc%coordinates(IAXIS, RIGHT_EDGE, TILE, x_coords)
-          call tileDesc%coordinates(JAXIS, RIGHT_EDGE, TILE, y_coords)
-          call tileDesc%coordinates(KAXIS, RIGHT_EDGE, TILE, z_coords)
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                     call assertEqual(x_coords(i), XMIN_EX + i*XDELTA_EX, "Bad X-coordinate")
-                     call assertEqual(y_coords(j), YMIN_EX + j*YDELTA_EX, "Bad Y-coordinate")
-                     call assertEqual(z_coords(k), 0.0,                   "Bad Z-coordinate")
-                     
-                     call Grid_getSingleCellCoords([i, j, k], tileDesc%level, RIGHT_EDGE, c_lo)
-                     call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
-                     call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
-                     call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
-                end do
+       call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+                               lo, hi, x_coords)
+       call Grid_getCellCoords(JAXIS, RIGHT_EDGE, tileDesc%level, &
+                               lo, hi, y_coords)
+       call Grid_getCellCoords(KAXIS, RIGHT_EDGE, tileDesc%level, &
+                               lo, hi, z_coords)
+       do       k = lo(KAXIS), hi(KAXIS)
+          do    j = lo(JAXIS), hi(JAXIS)
+             do i = lo(IAXIS), hi(IAXIS)
+                  call assertEqual(x_coords(i), XMIN_EX + i*XDELTA_EX, "Bad X-coordinate")
+                  call assertEqual(y_coords(j), YMIN_EX + j*YDELTA_EX, "Bad Y-coordinate")
+                  call assertEqual(z_coords(k), 0.0,                   "Bad Z-coordinate")
+                  
+                  call Grid_getSingleCellCoords([i, j, k], tileDesc%level, RIGHT_EDGE, c_lo)
+                  call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
+                  call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
+                  call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
              end do
           end do
+       end do
 
-          deallocate(x_coords)
-          deallocate(y_coords)
-          deallocate(z_coords)
-       end associate
-
-       call itor%next()
-    end do
-    call Grid_releaseTileIterator(itor)
-
-    ! CONFIRM THAT WE CAN GET COORDINATES OF GROWN TILE
-    call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
-    do while (itor%isValid())
-       call itor%currentTile(tileDesc)
-
-       associate(lo => tileDesc%grownLimits(LOW,  :), &
-                 hi => tileDesc%grownLimits(HIGH, :))
-          allocate(x_coords(lo(IAXIS):hi(IAXIS)))
-          allocate(y_coords(lo(JAXIS):hi(JAXIS)))
-          allocate(z_coords(lo(KAXIS):hi(KAXIS)))
-          call tileDesc%coordinates(IAXIS, LEFT_EDGE, GROWN_TILE, x_coords)
-          call tileDesc%coordinates(JAXIS, LEFT_EDGE, GROWN_TILE, y_coords)
-          call tileDesc%coordinates(KAXIS, LEFT_EDGE, GROWN_TILE, z_coords)
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                     call assertEqual(x_coords(i), XMIN_EX + (i-1)*XDELTA_EX, "Bad X-coordinate")
-                     call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
-                     call assertEqual(z_coords(k), 0.0,                       "Bad Z-coordinate")
-                end do
-             end do
-          end do
-
-          deallocate(x_coords)
-          deallocate(y_coords)
-          deallocate(z_coords)
-       end associate
-
-       call itor%next()
-    end do
-    call Grid_releaseTileIterator(itor)
-
-    ! CONFIRM THAT WE CAN GET COORDINATES OF TILE AND ITS HALO
-    call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
-    do while (itor%isValid())
-       call itor%currentTile(tileDesc)
-
-       offset(:) = 0
-       offset(1:NDIM) = NGUARD
-       associate(lo => tileDesc%limits(LOW,  :) - offset, &
-                 hi => tileDesc%limits(HIGH, :) + offset)
-          allocate(x_coords(lo(IAXIS):hi(IAXIS)))
-          allocate(y_coords(lo(JAXIS):hi(JAXIS)))
-          allocate(z_coords(lo(KAXIS):hi(KAXIS)))
-          call tileDesc%coordinates(IAXIS, LEFT_EDGE, TILE_AND_HALO, x_coords)
-          call tileDesc%coordinates(JAXIS, LEFT_EDGE, TILE_AND_HALO, y_coords)
-          call tileDesc%coordinates(KAXIS, LEFT_EDGE, TILE_AND_HALO, z_coords)
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                     call assertEqual(x_coords(i), XMIN_EX + (i-1)*XDELTA_EX, "Bad X-coordinate")
-                     call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
-                     call assertEqual(z_coords(k), 0.0,                       "Bad Z-coordinate")
-                end do
-             end do
-          end do
-
-          deallocate(x_coords)
-          deallocate(y_coords)
-          deallocate(z_coords)
-       end associate
+       deallocate(x_coords)
+       deallocate(y_coords)
+       deallocate(z_coords)
 
        call itor%next()
     end do
@@ -451,64 +397,25 @@ subroutine Driver_evolveFlash()
     do while (itor%isValid())
        call itor%currentTile(tileDesc)
 
-       associate(lo => tileDesc%limits(LOW,  :), &
-                 hi => tileDesc%limits(HIGH, :))
-          allocate(volumes(lo(IAXIS):hi(IAXIS), &
-                           lo(JAXIS):hi(JAXIS), &
-                           lo(KAXIS):hi(KAXIS)))
+       lo = tileDesc%limits(LOW,  :)
+       hi = tileDesc%limits(HIGH, :)
+       allocate(volumes(lo(IAXIS):hi(IAXIS), &
+                        lo(JAXIS):hi(JAXIS), &
+                        lo(KAXIS):hi(KAXIS)))
 
-          call tileDesc%cellVolumes(TILE, volumes)
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                     call Grid_getSingleCellVol([i, j, k], tileDesc%level, volume)
-                     call assertEqual(volumes(i, j, k), volume, "Bad volume")
-                end do
+       call Grid_getCellVolumes(tileDesc%level, &
+                                lbound(volumes), ubound(volumes), &
+                                volumes)
+       do       k = lo(KAXIS), hi(KAXIS)
+          do    j = lo(JAXIS), hi(JAXIS)
+             do i = lo(IAXIS), hi(IAXIS)
+                  call Grid_getSingleCellVol([i, j, k], tileDesc%level, volume)
+                  call assertEqual(volumes(i, j, k), volume, "Bad volume")
              end do
           end do
+       end do
 
-          deallocate(volumes)
-       end associate
-
-       associate(lo => tileDesc%grownLimits(LOW,  :), &
-                 hi => tileDesc%grownLimits(HIGH, :))
-          allocate(volumes(lo(IAXIS):hi(IAXIS), &
-                           lo(JAXIS):hi(JAXIS), &
-                           lo(KAXIS):hi(KAXIS)))
-
-          call tileDesc%cellVolumes(GROWN_TILE, volumes)
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                     call Grid_getSingleCellVol([i, j, k], tileDesc%level, volume)
-                     call assertEqual(volumes(i, j, k), volume, "Bad volume")
-                end do
-             end do
-          end do
-
-          deallocate(volumes)
-       end associate
-
-       offset(:) = 0
-       offset(1:NDIM) = NGUARD
-       associate(lo => tileDesc%limits(LOW,  :) - offset, &
-                 hi => tileDesc%limits(HIGH, :) + offset)
-          allocate(volumes(lo(IAXIS):hi(IAXIS), &
-                           lo(JAXIS):hi(JAXIS), &
-                           lo(KAXIS):hi(KAXIS)))
-
-          call tileDesc%cellVolumes(TILE_AND_HALO, volumes)
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                     call Grid_getSingleCellVol([i, j, k], tileDesc%level, volume)
-                     call assertEqual(volumes(i, j, k), volume, "Bad volume")
-                end do
-             end do
-          end do
-
-          deallocate(volumes)
-       end associate
+       deallocate(volumes)
 
        call itor%next()
     end do

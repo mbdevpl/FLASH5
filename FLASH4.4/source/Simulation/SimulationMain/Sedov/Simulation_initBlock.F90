@@ -59,7 +59,8 @@ subroutine Simulation_initBlock(solnData,tileDesc)
      &  sim_smallT, &
      &  sim_nSubZones, sim_xCenter, sim_yCenter, sim_zCenter, sim_inSubzones, sim_inszd, &
      sim_threadBlockList, sim_threadWithinBlock
-  use Grid_interface, ONLY : Grid_getSingleCellVol, &
+  use Grid_interface, ONLY : Grid_getCellCoords, &
+                             Grid_getSingleCellVol, &
                              Grid_subcellGeometry
   use flash_tile, ONLY : flash_tile_t 
   use ut_interpolationInterface
@@ -222,13 +223,22 @@ subroutine Simulation_initBlock(solnData,tileDesc)
   allocate(yCoord(grownTileLimits(LOW, JAXIS):grownTileLimits(HIGH, JAXIS))); yCoord = 0.0
   allocate(zCoord(grownTileLimits(LOW, KAXIS):grownTileLimits(HIGH, KAXIS))); zCoord = 0.0
 
-  call tileDesc%coordinates(IAXIS, CENTER, GROWN_TILE, xCoord)
-  if (NDIM >= 2) then 
-     call tileDesc%coordinates(JAXIS, CENTER, GROWN_TILE, yCoord)
-  end if
-  if (NDIM == 3) then
-     call tileDesc%coordinates(KAXIS, CENTER, GROWN_TILE, zCoord)
-  end if
+  call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                          grownTileLimits(LOW,  :), &
+                          grownTileLimits(HIGH, :), &
+                          xCoord)
+#if NDIM >= 2
+  call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                          grownTileLimits(LOW,  :), &
+                          grownTileLimits(HIGH, :), &
+                          yCoord)
+#endif
+#if NDIM == 3
+  call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                          grownTileLimits(LOW,  :), &
+                          grownTileLimits(HIGH, :), &
+                          zCoord)
+#endif
   !
   !     For each cell
   !  

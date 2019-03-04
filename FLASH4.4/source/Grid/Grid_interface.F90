@@ -282,6 +282,29 @@ Module Grid_interface
      end subroutine Grid_getCellCoords
   end interface
 
+  interface Grid_getCellFaceAreas
+     subroutine Grid_getCellFaceAreas(axis, level, lo, hi, areas)
+        integer, intent(in)  :: axis
+        integer, intent(in)  :: level
+        integer, intent(in)  :: lo(1:MDIM)
+        integer, intent(in)  :: hi(1:MDIM)
+        real,    intent(out) :: areas(lo(IAXIS):hi(IAXIS), &
+                                      lo(JAXIS):hi(JAXIS), &
+                                      lo(KAXIS):hi(KAXIS))
+     end subroutine Grid_getCellFaceAreas
+  end interface
+
+  interface Grid_getCellVolumes
+     subroutine Grid_getCellVolumes(level, lo, hi, volumes)
+        integer, intent(in)  :: level
+        integer, intent(in)  :: lo(1:MDIM)
+        integer, intent(in)  :: hi(1:MDIM)
+        real,    intent(out) :: volumes(lo(IAXIS):hi(IAXIS), &
+                                        lo(JAXIS):hi(JAXIS), &
+                                        lo(KAXIS):hi(KAXIS))
+     end subroutine Grid_getCellVolumes
+  end interface
+
   interface Grid_getDeltas
      subroutine Grid_getDeltas(lev, del)
        integer, intent(in) :: lev

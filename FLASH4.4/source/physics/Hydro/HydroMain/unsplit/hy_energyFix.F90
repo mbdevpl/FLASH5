@@ -71,6 +71,7 @@ Subroutine hy_energyFix(tileDesc,U,blkLimits,dt,dtOld,del,eosMode)
 #ifdef FLASH_USM_MHD
   use Hydro_data,     ONLY : hy_killdivb, hy_energyFixSwitch
 #endif
+  use Grid_interface, ONLY : Grid_getCellCoords
   use flash_tile,     ONLY : flash_tile_t
 
   implicit none
@@ -133,8 +134,10 @@ Subroutine hy_energyFix(tileDesc,U,blkLimits,dt,dtOld,del,eosMode)
   if (hy_geometry /= CARTESIAN) then
      allocate(xCtr(blkLimits(LOW,IAXIS):blkLimits(HIGH, IAXIS)))
      allocate(yCtr(blkLimits(LOW,JAXIS):blkLimits(HIGH, JAXIS)))
-     call tileDesc%coordinates(IAXIS, CENTER, TILE, xCtr)
-     call tileDesc%coordinates(JAXIS, CENTER, TILE, yCtr)
+     call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                             blkLimits(LOW, :), blkLimits(HIGH, :), xCtr)
+     call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                             blkLimits(LOW, :), blkLimits(HIGH, :), yCtr)
   endif
 
 #ifdef FLASH_USM_MHD /* Update cell-centered magnetic fields for USM-MHD */

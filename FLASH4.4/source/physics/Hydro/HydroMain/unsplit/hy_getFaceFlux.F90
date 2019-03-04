@@ -99,7 +99,8 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
                                             hy_addBiermannBatteryTerms
   use MagneticResistivity_interface, ONLY : MagneticResistivity
 #endif
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use flash_tile,     ONLY : flash_tile_t
 
   implicit none
 
@@ -268,9 +269,15 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
   endif
 
   if (hy_geometry /= CARTESIAN) then
-     call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xCenter)
-     call tileDesc%coordinates(JAXIS, CENTER, TILE_AND_HALO, yCenter)
-     call tileDesc%coordinates(IAXIS, FACES,  TILE_AND_HALO, xFaces)
+     call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                             blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), &
+                             xCenter)
+     call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                             blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), &
+                             yCenter)
+     call Grid_getCellCoords(IAXIS, FACES, tileDesc%level, &
+                             blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), &
+                             xFaces)
   endif
 
   !! Compute intercell fluxes using the updated left & right states
@@ -1133,7 +1140,9 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
 contains
 
   subroutine do_error(solver, VL, VR, i,j,k, dir)
-    use Driver_interface, ONLY: Driver_abortFlash
+    use Driver_interface, ONLY : Driver_abortFlash
+    use Grid_interface,   ONLY : Grid_getCellCoords
+
     implicit none
     
     character(len=*), intent(in) :: solver
@@ -1167,9 +1176,12 @@ contains
     allocate(ycent(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
     allocate(zcent(blkLimitsGC(HIGH, KAXIS):blkLimitsGC(HIGH, KAXIS)))
 
-    call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xcent)
-    call tileDesc%coordinates(JAXIS, CENTER, TILE_AND_HALO, ycent)
-    call tileDesc%coordinates(KAXIS, CENTER, TILE_AND_HALO, zcent)
+    call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                            blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), xcent)
+    call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                            blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), ycent)
+    call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                            blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), zcent)
 
     print *, "NEIGBORING CELLS:"
 

@@ -69,7 +69,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Logfile_interface,ONLY : Logfile_stamp
   use IO_interface,     ONLY : IO_writeCheckpoint
   use Grid_interface, ONLY : Grid_getSingleCellCoords,Grid_getMaxRefinement, &
-       Grid_getTileIterator, Grid_releaseTileIterator
+       Grid_getTileIterator, Grid_releaseTileIterator, &
+                             Grid_getCellCoords
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Heat_interface, ONLY : Heat_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
@@ -132,9 +133,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
 #endif
 
-  !arrays which hold the starting and ending indicies of a block
-  integer,dimension(LOW:HIGH,MDIM)::blkLimitsGC
-
   !!coordinate infomration to be passed into physics  
   real, pointer :: solnData(:,:,:,:)
   integer :: isize,jsize,ksize
@@ -165,6 +163,9 @@ subroutine Driver_computeDt(nbegin, nstep, &
   type(flash_tile_t) :: tileDesc
   integer:: ib, level, maxLev
   real :: err
+
+  integer :: lo(1:MDIM)
+  integer :: hi(1:MDIM)
 
   nullify(solnData)
 
@@ -222,53 +223,61 @@ subroutine Driver_computeDt(nbegin, nstep, &
      do while(itor%isValid())
         call itor%currentTile(tileDesc)
 
-        ! Match the size of the FIXEDBLOCKSIZE case
-        ! This disallows tiling.
-        blkLimitsGC = tileDesc%blkLimitsGC
         call tileDesc%getDataPtr(solnData, CENTER)
 
+        ! Match the size of the FIXEDBLOCKSIZE case
+        ! This disallows tiling.
+        lo = tileDesc%blkLimitsGC(LOW,  :)
+        hi = tileDesc%blkLimitsGC(HIGH, :)
+
 #ifndef FIXEDBLOCKSIZE
-        associate(lo => blkLimitsGC(LOW,  :), &
-                  hi => blkLimitsGC(HIGH, :))
-           allocate(xLeft  (lo(IAXIS):hi(IAXIS)))
-           allocate(xRight (lo(IAXIS):hi(IAXIS)))
-           allocate(xCenter(lo(IAXIS):hi(IAXIS)))
-           allocate(dx     (lo(IAXIS):hi(IAXIS)))
-           allocate(uxgrid (lo(IAXIS):hi(IAXIS)))
-           allocate(yLeft  (lo(JAXIS):hi(JAXIS)))
-           allocate(yRight (lo(JAXIS):hi(JAXIS)))
-           allocate(yCenter(lo(JAXIS):hi(JAXIS)))
-           allocate(dy     (lo(JAXIS):hi(JAXIS)))
-           allocate(uygrid (lo(JAXIS):hi(JAXIS)))
-           allocate(zLeft  (lo(KAXIS):hi(KAXIS)))
-           allocate(zRight (lo(KAXIS):hi(KAXIS)))
-           allocate(zCenter(lo(KAXIS):hi(KAXIS)))
-           allocate(dz     (lo(KAXIS):hi(KAXIS)))
-           allocate(uzgrid (lo(KAXIS):hi(KAXIS)))
-        end associate
+        allocate(xLeft  (lo(IAXIS):hi(IAXIS)))
+        allocate(xRight (lo(IAXIS):hi(IAXIS)))
+        allocate(xCenter(lo(IAXIS):hi(IAXIS)))
+        allocate(dx     (lo(IAXIS):hi(IAXIS)))
+        allocate(uxgrid (lo(IAXIS):hi(IAXIS)))
+        allocate(yLeft  (lo(JAXIS):hi(JAXIS)))
+        allocate(yRight (lo(JAXIS):hi(JAXIS)))
+        allocate(yCenter(lo(JAXIS):hi(JAXIS)))
+        allocate(dy     (lo(JAXIS):hi(JAXIS)))
+        allocate(uygrid (lo(JAXIS):hi(JAXIS)))
+        allocate(zLeft  (lo(KAXIS):hi(KAXIS)))
+        allocate(zRight (lo(KAXIS):hi(KAXIS)))
+        allocate(zCenter(lo(KAXIS):hi(KAXIS)))
+        allocate(dz     (lo(KAXIS):hi(KAXIS)))
+        allocate(uzgrid (lo(KAXIS):hi(KAXIS)))
 #endif
 #ifdef DEBUG_DRIVER
         print*,'before calling get coordinates'
 #endif
-        call tileDesc%coordinates(IAXIS, CENTER,    TILE_AND_HALO, xCenter)
-        call tileDesc%coordinates(IAXIS, LEFT_EDGE, TILE_AND_HALO, xLeft)
-        call tileDesc%coordinates(IAXIS, RIGHT_EDGE,TILE_AND_HALO, xRight)
-        
+        call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                                lo, hi, xCenter)
+        call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+                                lo, hi, xLeft)
+        call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+                                lo, hi, xRight)
+ 
 #ifdef DEBUG_DRIVER
         print*,'before calling get coordinates'
 #endif
         if (NDIM > 1) then
-           call tileDesc%coordinates(JAXIS, CENTER,    TILE_AND_HALO, yCenter)
-           call tileDesc%coordinates(JAXIS, LEFT_EDGE, TILE_AND_HALO, yLeft)
-           call tileDesc%coordinates(JAXIS, RIGHT_EDGE,TILE_AND_HALO, yRight)
-           
+            call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                    lo, hi, yCenter)
+            call Grid_getCellCoords(JAXIS, LEFT_EDGE, tileDesc%level, &
+                                    lo, hi, yLeft)
+            call Grid_getCellCoords(JAXIS, RIGHT_EDGE, tileDesc%level, &
+                                    lo, hi, yRight)
+
            if (NDIM > 2) then
 #ifdef DEBUG_DRIVER
               print*,'before calling get coordinates'
 #endif
-              call tileDesc%coordinates(KAXIS, CENTER,    TILE_AND_HALO, zCenter)
-              call tileDesc%coordinates(KAXIS, LEFT_EDGE, TILE_AND_HALO, zLeft)
-              call tileDesc%coordinates(KAXIS, RIGHT_EDGE,TILE_AND_HALO, zRight)
+            call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                                    lo, hi, zCenter)
+            call Grid_getCellCoords(KAXIS, LEFT_EDGE, tileDesc%level, &
+                                    lo, hi, zLeft)
+            call Grid_getCellCoords(KAXIS, RIGHT_EDGE, tileDesc%level, &
+                                    lo, hi, zRight)
            endif
         endif
         
@@ -290,7 +299,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
              xCenter, dx, uxgrid, &
              yCenter, dy, uygrid, &
              zCenter, dz, uzgrid, &
-             tileDesc%limits, blkLimitsGC,  &
+             tileDesc%limits, tileDesc%blkLimitsGC,  &
              solnData,      &
              dtLocal(1,HYDRO), lminloc(:,HYDRO), &
              extraInfo=extraHydroInfo )

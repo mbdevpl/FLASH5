@@ -114,7 +114,8 @@ Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
                                 WENO => hy_DataReconstructNormalDir_WENO,&
                                 GP   => hy_DataReconstructNormalDir_GP
 
-  use flash_tile,   ONLY : flash_tile_t
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use flash_tile,     ONLY : flash_tile_t
 
   implicit none
 
@@ -188,7 +189,7 @@ Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
   ! first implementation we are hardwiring 2D                      !
   ! ***************************************************************!
   real    :: shockSwitchGP
-  integer :: radius, iSizeGC, jSizeGC,kSizeGC
+  integer :: radius
   real, pointer, dimension(:)      :: x1, x2, x3
   integer,dimension(LOW:HIGH,MDIM) :: blkLimits
 
@@ -444,19 +445,16 @@ Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
                        iz-radius:iz+radius)
 #endif
 
-     iSizeGC = hiGC(IAXIS)-loGC(IAXIS)+1
-     if (NDIM > 1) &
-     jSizeGC = hiGC(JAXIS)-loGC(JAXIS)+1
-     if (NDIM == 3) &
-     kSizeGC = hiGC(KAXIS)-loGC(KAXIS)+1
-   
-     call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xCenter)
-     if (NDIM > 1) then
-        call tileDesc%coordinates(JAXIS, CENTER, TILE_AND_HALO, yCenter)
-     end if
-     if (NDIM == 3) then
-        call tileDesc%coordinates(KAXIS, CENTER, TILE_AND_HALO, zCenter)
-     end if
+     call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                             loGC, hiGC, xCenter)
+#if NDIM > 1
+     call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                             loGC, hiGC, yCenter)
+#endif
+#if NDIM == 3
+     call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                             loGC, hiGC, zCenter)
+#endif
 
      x1 => xCenter(ix-radius:ix+radius)
      if (NDIM > 1) &

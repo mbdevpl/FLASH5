@@ -117,9 +117,9 @@ subroutine Grid_getCellCoords(axis, edge, level, lo, hi, coordinates)
 
   implicit none
 
-  integer, intent(in)  :: level
   integer, intent(in)  :: axis
   integer, intent(in)  :: edge
+  integer, intent(in)  :: level
   integer, intent(in)  :: lo(1:MDIM)
   integer, intent(in)  :: hi(1:MDIM)
   real,    intent(out) :: coordinates(:)
@@ -140,7 +140,7 @@ subroutine Grid_getCellCoords(axis, edge, level, lo, hi, coordinates)
      call Driver_abortFlash("[Grid_getCellCoords] invalid axis, must be IAXIS, JAXIS or KAXIS ")
   end if
 #endif
-  
+ 
   ! Calculate number of cells
   nElements = hi(axis) - lo(axis) + 1
   if      (edge == FACES)  then

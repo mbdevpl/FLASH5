@@ -16,7 +16,10 @@ Grid += Grid_init.o \
 	Grid_outsideBoundBox.o \
 	Grid_getBlkBoundBox.o Grid_getDomainBoundBox.o \
 	Grid_updateRefinement.o \
-	Grid_getCellCoords.o Grid_getDeltas.o \
+	Grid_getDeltas.o \
+	Grid_getCellCoords.o \
+	Grid_getCellFaceAreas.o \
+	Grid_getCellVolumes.o \
 	Grid_getBlkIndexLimits.o Grid_getBlkCornerID.o \
 	Grid_getBlkCenterCoords.o \
 	Grid_getBlkBC.o Grid_getDomainBC.o \

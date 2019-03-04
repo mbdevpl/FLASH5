@@ -3,6 +3,7 @@
 
 subroutine sim_writeDataPoints(initData, tileDesc, points, values)
     use flash_tile,     ONLY : flash_tile_t 
+    use Grid_interface, ONLY : Grid_getCellCoords
 
     implicit none
 
@@ -11,28 +12,30 @@ subroutine sim_writeDataPoints(initData, tileDesc, points, values)
     real,               intent(IN)          :: points(:, :)
     real,               intent(IN)          :: values(:)
 
-    real :: deltas(1:MDIM)
-    real :: bbox(LOW:HIGH, 1:MDIM)
+    real    :: deltas(1:MDIM)
+    real    :: bbox(LOW:HIGH, 1:MDIM)
+    integer :: lo(1:MDIM)
+    integer :: hi(1:MDIM)
 
     real, allocatable :: xcoords(:)
     real, allocatable :: ycoords(:)
 
     integer :: i, j, p
 
-    allocate(xcoords(tileDesc%limits(LOW, IAXIS):tileDesc%limits(HIGH, IAXIS)), &
-             ycoords(tileDesc%limits(LOW, JAXIS):tileDesc%limits(HIGH, JAXIS)))
+    lo(:) = tileDesc%limits(LOW,  :)
+    hi(:) = tileDesc%limits(HIGH, :)
+    allocate(xcoords(lo(IAXIS):hi(IAXIS)), &
+             ycoords(lo(JAXIS):hi(JAXIS)))
  
     call tileDesc%deltas(deltas)
     call tileDesc%boundBox(bbox)
-    call tileDesc%coordinates(IAXIS, CENTER, TILE, xcoords)
-    call tileDesc%coordinates(JAXIS, CENTER, TILE, ycoords)
+    call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, lo, hi, xcoords)
+    call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, lo, hi, ycoords)
 
     do p = 1, SIZE(points, 1)
         associate(pt   => points(p, :), &
                   r_lo => bbox(LOW,  :), &
                   r_hi => bbox(HIGH, :), &
-                  lo   => tileDesc%limits(LOW,  :), &
-                  hi   => tileDesc%limits(HIGH, :), &
                   dx   => 0.5 * deltas(IAXIS), &
                   dy   => 0.5 * deltas(JAXIS), &
                   lev  => tileDesc%level)

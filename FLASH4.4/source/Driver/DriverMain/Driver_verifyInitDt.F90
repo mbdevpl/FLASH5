@@ -38,7 +38,8 @@ subroutine Driver_verifyInitDt()
        dr_globalComm,dr_dtDiffuse, dr_dtAdvect,dr_dtHeatExch,dr_useSTS,       &
        dr_tstepSlowStartFactor
   use Grid_interface, ONLY : Grid_getTileIterator, &
-                             Grid_releaseTileIterator
+                             Grid_releaseTileIterator, &
+                             Grid_getCellCoords
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
   use flash_iterator, ONLY : flash_iterator_t
@@ -120,40 +121,54 @@ subroutine Driver_verifyInitDt()
         lim(:, :) = tileDesc%limits(:, :)
         lim(LOW,  1:NDIM) = lim(LOW,  1:NDIM) - NGUARD
         lim(HIGH, 1:NDIM) = lim(HIGH, 1:NDIM) + NGUARD
-        associate(lo => lim(LOW,  :), &
-                  hi => lim(HIGH, :))
-           allocate(xCoord(lo(IAXIS):hi(IAXIS)))
-           allocate(dx(    lo(IAXIS):hi(IAXIS)))
-           allocate(uxgrid(lo(IAXIS):hi(IAXIS)))
-           allocate(yCoord(lo(JAXIS):hi(JAXIS)))
-           allocate(dy(    lo(JAXIS):hi(JAXIS)))
-           allocate(uygrid(lo(JAXIS):hi(JAXIS)))
-           allocate(zCoord(lo(KAXIS):hi(KAXIS)))
-           allocate(dz(    lo(KAXIS):hi(KAXIS)))
-           allocate(uzgrid(lo(KAXIS):hi(KAXIS)))
-           allocate(xLeft( lo(IAXIS):hi(IAXIS)))
-           allocate(xRight(lo(IAXIS):hi(IAXIS)))
-           allocate(yLeft( lo(JAXIS):hi(JAXIS)))
-           allocate(yRight(lo(JAXIS):hi(JAXIS)))
-           allocate(zLeft( lo(KAXIS):hi(KAXIS)))
-           allocate(zRight(lo(KAXIS):hi(KAXIS)))
-        end associate 
+        allocate(xCoord(lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(dx(    lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(uxgrid(lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(yCoord(lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(dy(    lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(uygrid(lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(zCoord(lim(LOW, KAXIS):lim(HIGH, KAXIS)))
+        allocate(dz(    lim(LOW, KAXIS):lim(HIGH, KAXIS)))
+        allocate(uzgrid(lim(LOW, KAXIS):lim(HIGH, KAXIS)))
+        allocate(xLeft( lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(xRight(lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(yLeft( lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(yRight(lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(zLeft( lim(LOW, KAXIS):lim(HIGH, KAXIS)))
+        allocate(zRight(lim(LOW, KAXIS):lim(HIGH, KAXIS)))
 
-        call tileDesc%coordinates(IAXIS, CENTER,     TILE_AND_HALO, xCoord)
-        call tileDesc%coordinates(IAXIS, LEFT_EDGE,  TILE_AND_HALO, xLeft)
-        call tileDesc%coordinates(IAXIS, RIGHT_EDGE, TILE_AND_HALO, xRight)
-        
-        if (NDIM > 1) then
-           call tileDesc%coordinates(JAXIS, CENTER,     TILE_AND_HALO, yCoord)
-           call tileDesc%coordinates(JAXIS, LEFT_EDGE,  TILE_AND_HALO, yLeft)
-           call tileDesc%coordinates(JAXIS, RIGHT_EDGE, TILE_AND_HALO, yRight)
+        call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                xCoord)
+        call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                xLeft)
+        call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                xRight)
 
-           if (NDIM > 2) then
-              call tileDesc%coordinates(KAXIS, CENTER,     TILE_AND_HALO, zCoord)
-              call tileDesc%coordinates(KAXIS, LEFT_EDGE,  TILE_AND_HALO, zLeft)
-              call tileDesc%coordinates(KAXIS, RIGHT_EDGE, TILE_AND_HALO, zRight)
-           endif
-        endif
+#if NDIM >= 2
+        call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                yCoord)
+        call Grid_getCellCoords(JAXIS, LEFT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                yLeft)
+        call Grid_getCellCoords(JAXIS, RIGHT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                yRight)
+#endif
+#if NDIM == 3
+        call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                zCoord)
+        call Grid_getCellCoords(KAXIS, LEFT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                zLeft)
+        call Grid_getCellCoords(KAXIS, RIGHT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                zRight)
+#endif
 
         call tileDesc%deltas(del)
         dx(:) = del(1)

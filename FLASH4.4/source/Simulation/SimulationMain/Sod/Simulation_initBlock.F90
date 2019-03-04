@@ -59,6 +59,7 @@ subroutine Simulation_initBlock(solnData, tileDesc)
 #endif
      
   use Eos_interface, ONLY : Eos, Eos_wrapped
+  use Grid_interface, ONLY : Grid_getCellCoords
   use flash_tile, ONLY : flash_tile_t
 
   implicit none
@@ -89,30 +90,37 @@ subroutine Simulation_initBlock(solnData, tileDesc)
   real :: pradZone, eradZone
 #endif
 
-  associate(lo => tileDesc%limits(LOW,  :), &
-            hi => tileDesc%limits(HIGH, :))
-     allocate(  xLeft(lo(IAXIS):hi(IAXIS)))
-     allocate( xRight(lo(IAXIS):hi(IAXIS)))
-     allocate(xCenter(lo(IAXIS):hi(IAXIS)))
-     allocate( yCoord(lo(JAXIS):hi(JAXIS)))
-     allocate( zCoord(lo(KAXIS):hi(KAXIS)))
-     xLeft = 0.0
-     xRight = 0.0
-     xCenter = 0.0
-     yCoord = 0.0
-     zCoord = 0.0
-  end associate
+  integer :: lo(1:MDIM)
+  integer :: hi(1:MDIM)
 
-  if (NDIM == 3) then
-    call tileDesc%coordinates(KAXIS, CENTER, TILE, zCoord)
-  end if
-  if (NDIM >= 2) then
-    call tileDesc%coordinates(JAXIS, CENTER, TILE, yCoord)
-  end if
+  lo(:) = tileDesc%limits(LOW,  :)
+  hi(:) = tileDesc%limits(HIGH, :)
+  allocate(  xLeft(lo(IAXIS):hi(IAXIS)))
+  allocate( xRight(lo(IAXIS):hi(IAXIS)))
+  allocate(xCenter(lo(IAXIS):hi(IAXIS)))
+  allocate( yCoord(lo(JAXIS):hi(JAXIS)))
+  allocate( zCoord(lo(KAXIS):hi(KAXIS)))
+  xLeft = 0.0
+  xRight = 0.0
+  xCenter = 0.0
+  yCoord = 0.0
+  zCoord = 0.0
 
-  call tileDesc%coordinates(IAXIS, LEFT_EDGE, TILE, xLeft)
-  call tileDesc%coordinates(IAXIS, CENTER, TILE, xCenter)
-  call tileDesc%coordinates(IAXIS, RIGHT_EDGE, TILE, xRight)
+#if NDIM == 3
+  call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                          lo, hi, zCoord)
+#endif
+#if NDIM >= 2
+  call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                          lo, hi, yCoord)
+#endif
+
+  call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+                          lo, hi, xLeft)
+  call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                          lo, hi, xCenter)
+  call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+                          lo, hi, xRight)
 
 #ifdef DEBUG_SIMULATION
 98 format('initBlock:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')

@@ -43,7 +43,7 @@
 #include "Flash.h"
 
 subroutine gr_estimateBlkError(error, tileDesc, iref, refine_filter)
-
+  use Grid_interface, ONLY : Grid_getCellCoords
   use Grid_data, ONLY: gr_geometry, &
        gr_meshComm, gr_meshMe
   use flash_tile, ONLY : flash_tile_t
@@ -138,8 +138,12 @@ subroutine gr_estimateBlkError(error, tileDesc, iref, refine_filter)
            allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
            allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
 
-           call tileDesc%coordinates(IAXIS, CENTER, TILE_AND_HALO, xCenter)
-           call tileDesc%coordinates(JAXIS, CENTER, TILE_AND_HALO, yCenter)
+           call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                                   blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), &
+                                   xCenter)
+           call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                   blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), &
+                                   yCenter)
         end if
 
         ! Compute first derivatives
