@@ -58,12 +58,12 @@ subroutine Grid_renormAbundance(tileDesc, solnData)
   use Grid_data,        ONLY : gr_smallx
   use Grid_interface,   ONLY : Grid_getSingleCellCoords
   use Driver_interface, ONLY : Driver_abortFlash
-  use flash_tile,       ONLY : flash_tile_t
+  use Grid_tile,        ONLY : Grid_tile_t
 
   implicit none
 
-  type(flash_tile_t), intent(IN)         :: tileDesc
-  real,                          pointer :: solnData(:,:,:,:)
+  type(Grid_tile_t), intent(IN)         :: tileDesc
+  real,                         pointer :: solnData(:,:,:,:)
 
   integer :: i, j, k, n
   

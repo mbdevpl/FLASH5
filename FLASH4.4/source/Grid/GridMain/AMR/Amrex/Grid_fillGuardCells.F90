@@ -118,8 +118,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                         gr_makeMaskConsistent_gen
   use gr_physicalMultifabs,      ONLY : unk, &
                                         facevarx, facevary, facevarz
-  use flash_iterator,            ONLY : flash_iterator_t
-  use flash_tile,                ONLY : flash_tile_t
+  use Grid_iterator,             ONLY : Grid_iterator_t
+  use Grid_tile,                 ONLY : Grid_tile_t
 
 #include "Flash_mpi_implicitNone.fh"
 
@@ -140,8 +140,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   integer,dimension(MDIM) :: layers, returnLayers
   real,pointer :: solnData(:,:,:,:)
 
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
   integer :: ierr
 

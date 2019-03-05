@@ -132,14 +132,14 @@ subroutine gr_getInteriorBlkPtr(tileDesc,dataPtr, gridDataStruct)
 
   use physicaldata, ONLY : unk, facevarx, facevary, facevarz
   use Driver_interface, ONLY : Driver_abortFlash
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
 #ifdef FLASH_GRID_PARAMESH
   use workspace, ONLY : work
 #endif 
 
   implicit none
-  type(flash_tile_t), intent(in) :: tileDesc
+  type(Grid_tile_t), intent(in) :: tileDesc
   real, dimension(:,:,:,:), pointer :: dataPtr
   integer, intent(in) :: gridDataStruct
 

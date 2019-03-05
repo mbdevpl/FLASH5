@@ -47,8 +47,8 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
                                         Grid_releaseTileIterator
   use gr_amrexInterface,         ONLY : gr_primitiveToConserve, &
                                         gr_conserveToPrimitive
-  use flash_iterator,            ONLY : flash_iterator_t
-  use flash_tile,                ONLY : flash_tile_t
+  use Grid_iterator,             ONLY : Grid_iterator_t
+  use Grid_tile,                 ONLY : Grid_tile_t
   use gr_physicalMultifabs,      ONLY : unk, &
                                         facevarx, facevary, facevarz
   use Driver_interface,          ONLY : Driver_abortFlash
@@ -62,8 +62,8 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
   integer :: lev
   integer :: finest_level
 
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
   real, pointer :: solnData(:,:,:,:)
 

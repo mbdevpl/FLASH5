@@ -5,13 +5,13 @@
 !!
 !! SYNOPSIS
 !!
-!!  call gr_bcApplyToOneFaceAllGds(integer(IN)      :: axis,
-!!                                 integer(IN)      :: bcType,
-!!                                 integer(IN)      :: gridDataStruct,
-!!                                 integer(IN)      :: varCount,
-!!                                 integer(IN)      :: regionType(MDIM)
-!!                                 flash_tile_t(IN) :: tileDesc,
-!!                                 integer(IN)      :: idest)
+!!  call gr_bcApplyToOneFaceAllGds(integer(IN)     :: axis,
+!!                                 integer(IN)     :: bcType,
+!!                                 integer(IN)     :: gridDataStruct,
+!!                                 integer(IN)     :: varCount,
+!!                                 integer(IN)     :: regionType(MDIM)
+!!                                 Grid_tile_t(IN) :: tileDesc,
+!!                                 integer(IN)     :: idest)
 !!  
 !! DESCRIPTION 
 !!
@@ -62,13 +62,13 @@ subroutine gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_bcInterface, ONLY : gr_bcGetRegion, gr_bcPutRegion, &
                              gr_bcGetRegionsMixedGds, gr_bcPutRegionsMixedGds
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
   
   integer, intent(in) :: axis,bcType,gridDataStruct,varCount,idest
   integer,dimension(MDIM),intent(IN) :: regionType
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
 
   real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
   integer :: face,guard

@@ -80,11 +80,11 @@ Subroutine Hydro_computeDt( tileDesc,       &
        hy_geometry, hy_units, hy_useVaryingCFL
   use Grid_interface, ONLY : Grid_getBlkBC
   use Driver_interface, ONLY : Driver_abortFlash
-  use flash_tile, ONLY : flash_tile_t 
+  use Grid_tile, ONLY : Grid_tile_t 
   implicit none
 
   !! Arguments type declaration ------------------------------------------
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
   real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid

@@ -43,8 +43,8 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
                              Grid_getSingleCellVol 
 
   use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile,     ONLY : flash_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
 
   implicit none
 
@@ -63,8 +63,8 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   
   character (len=MAX_STRING_LENGTH), save :: fname
 
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
 #ifdef MAGP_VAR
   integer, parameter ::  nGlobalSumProp = 8              ! Number of globally-summed regular quantities

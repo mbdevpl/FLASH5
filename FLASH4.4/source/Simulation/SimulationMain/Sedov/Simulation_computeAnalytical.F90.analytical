@@ -48,7 +48,7 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
      sim_threadBlockList, sim_threadWithinBlock
   use Driver_data,         ONLY : dr_simGeneration
   use Grid_interface,   ONLY : Grid_getCellCoords, Grid_getSingleCellVol, Grid_subcellGeometry
-  use flash_tile,       ONLY : flash_tile_t 
+  use Grid_tile,        ONLY : Grid_tile_t 
   use Driver_interface, ONLY : Driver_getSimTime
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use ut_interpolationInterface
@@ -63,7 +63,7 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
 
   
   real,dimension(:,:,:,:),POINTER_INTENT_IN :: solnData
-  type(flash_tile_t), intent(in) :: tileDesc
+  type(Grid_tile_t), intent(in) :: tileDesc
   real,    intent(in) :: tcurr
 
   integer,parameter :: op = 2

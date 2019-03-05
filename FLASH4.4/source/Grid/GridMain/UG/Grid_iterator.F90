@@ -1,16 +1,15 @@
-!!****ih* source/Grid/GridMain/UG/flash_iterator
+!!****ih* source/Grid/GridMain/UG/Grid_iterator
 !!
 !!
 !!
 !!****
 
 !! defines IMPURE_ELEMENTAL:
+#include "Flash.h"
 #include "constants.h"
 #include "FortranLangFeatures.fh"
 
-module flash_iterator
-
-#include "Flash.h"
+module Grid_iterator
 
     implicit none
 
@@ -18,30 +17,30 @@ module flash_iterator
 
     public :: build_iterator, destroy_iterator
 
-    !!****ic* flash_iterator/flash_iterator_t
+    !!****ic* Grid_iterator/Grid_iterator_t
     !!
     !! NAME
-    !!  flash_iterator_t
+    !!  Grid_iterator_t
     !!
     !!****
-    type, public :: flash_iterator_t
+    type, public :: Grid_iterator_t
         integer :: cur = 2
         integer :: lev = INVALID_LEVEL
     contains
         procedure, public :: isValid
         procedure, public :: next
         procedure, public :: currentTile 
-    end type flash_iterator_t
+    end type Grid_iterator_t
 
 contains
 
-    !!****im* flash_iterator_t/build_iterator
+    !!****im* Grid_iterator_t/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(flash_iterator_t(OUT)  :: itor,
+    !!  build_iterator(Grid_iterator_t(OUT)  :: itor,
     !!                 integer(IN), optional :: level,
     !!                 logical(IN), optional :: tiling)
     !!
@@ -63,10 +62,10 @@ contains
     !!  constants.h
     !!****
     subroutine build_iterator(itor, nodetype, level, tiling)
-        type(flash_iterator_t), intent(OUT)          :: itor
-        integer,                intent(IN)           :: nodetype
-        integer,                intent(IN), optional :: level
-        logical,                intent(IN), optional :: tiling
+        type(Grid_iterator_t), intent(OUT)          :: itor
+        integer,               intent(IN)           :: nodetype
+        integer,               intent(IN), optional :: level
+        logical,               intent(IN), optional :: tiling
 
         itor%cur = 1
         itor%lev = 1
@@ -81,11 +80,11 @@ contains
         end if
 
         if ((nodetype /= LEAF) .AND. (nodetype /= ALL_BLKS)) then
-            call Driver_abortFlash("[flash_iterator]: Unsupported nodetype")
+            call Driver_abortFlash("[Grid_iterator]: Unsupported nodetype")
         end if
     end subroutine build_iterator
 
-    !!****im* flash_iterator_t/destroy_iterator
+    !!****im* Grid_iterator_t/destroy_iterator
     !!
     !! NAME
     !!  destroy_iterator
@@ -98,13 +97,13 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
-        type(flash_iterator_t), intent(INOUT) :: itor
+        type(Grid_iterator_t), intent(INOUT) :: itor
 
         itor%cur = 2
         itor%lev = INVALID_LEVEL
     end subroutine destroy_iterator
 
-    !!****m* flash_iterator_t/isValid
+    !!****m* Grid_iterator_t/isValid
     !!
     !! NAME
     !!  isValid
@@ -120,12 +119,12 @@ contains
     !!
     !!****
     logical function isValid(this)
-        class(flash_iterator_t), intent(IN) :: this
+        class(Grid_iterator_t), intent(IN) :: this
 
         isValid = (this%cur == 1)
     end function isValid
 
-    !!****m* flash_iterator_t/next
+    !!****m* Grid_iterator_t/next
     !!
     !! NAME
     !!  next
@@ -139,18 +138,18 @@ contains
     !!
     !!****
     subroutine next(this)
-        class(flash_iterator_t), intent(INOUT) :: this
+        class(Grid_iterator_t), intent(INOUT) :: this
 
         this%cur = 2
     end subroutine next
 
-    !!****m* flash_iterator_t/currentTile
+    !!****m* Grid_iterator_t/currentTile
     !!
     !! NAME
     !!  currentTile 
     !!
     !! SYNPOSIS
-    !!  call itor%currentTile(flash_tile_t(OUT) : block)
+    !!  call itor%currentTile(Grid_tile_t(OUT) : block)
     !!
     !! DESCRIPTION
     !!  Obtain meta data that characterizes the block currently set in the
@@ -158,7 +157,7 @@ contains
     !!
     !!****
     subroutine currentTile(this, tileDesc)
-        use flash_tile,       ONLY : flash_tile_t
+        use Grid_tile,        ONLY : Grid_tile_t
         use Grid_data,        ONLY : gr_blkCornerID, &
                                      gr_ilo, gr_ihi, &
                                      gr_jlo, gr_jhi, &
@@ -168,8 +167,8 @@ contains
                                      gr_kloGc, gr_khiGc
         use Driver_interface, ONLY : Driver_abortFlash
 
-        class(flash_iterator_t), intent(IN)  :: this
-        type(flash_tile_t),      intent(OUT) :: tileDesc
+        class(Grid_iterator_t), intent(IN)  :: this
+        type(Grid_tile_t),      intent(OUT) :: tileDesc
 
         if (.NOT. this%isValid()) then
             call Driver_abortFlash("[currentTile] No current tile")
@@ -198,5 +197,5 @@ contains
         end associate
     end subroutine currentTile
 
-end module flash_iterator
+end module Grid_iterator
 

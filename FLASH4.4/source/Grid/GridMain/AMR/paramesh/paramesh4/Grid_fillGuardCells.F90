@@ -245,8 +245,8 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   use paramesh_interfaces, ONLY : amr_guardcell, amr_restrict
   use paramesh_mpi_interfaces, ONLY: mpi_amr_comm_setup
   use Eos_interface, ONLY : Eos_guardCells
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile,     ONLY : flash_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
 
   implicit none
 
@@ -271,8 +271,8 @@ subroutine Grid_fillGuardCells( gridDataStruct, idir,&
   integer :: nlayers_transverse
   integer :: listBlockType
   real,dimension(:,:,:,:),pointer::solnData
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
   logical :: lcc, lfc, lec, lnc, lguard, lprolong, lflux, ledge, lrestrict, lfulltree
   integer :: ierr

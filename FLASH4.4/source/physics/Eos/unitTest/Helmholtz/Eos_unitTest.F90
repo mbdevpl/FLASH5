@@ -83,17 +83,17 @@ subroutine Eos_unitTest(fileUnit, perfect)
                             Grid_releaseTileIterator, &
                             Grid_getBlkType, &
                             Grid_putRowData
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile,     ONLY : flash_tile_t
-  use IO_interface, ONLY : IO_writeCheckpoint
-  use Eos_data, ONLY : eos_meshMe, eos_meshNumProcs
-  use eos_testData, ONLY: eos_testPresModeStr, &
-                          eos_testEintModeStr, &
-                          eos_testTempModeStr, &
-                          eos_testPresMode, &
-                          eos_testEintMode, &
-                          eos_testTempMode
-  use eos_testData, ONLY: tolerance => eos_testTolerance
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
+  use IO_interface,  ONLY : IO_writeCheckpoint
+  use Eos_data,      ONLY : eos_meshMe, eos_meshNumProcs
+  use eos_testData,  ONLY : eos_testPresModeStr, &
+                            eos_testEintModeStr, &
+                            eos_testTempModeStr, &
+                            eos_testPresMode, &
+                            eos_testEintMode, &
+                            eos_testTempMode
+  use eos_testData,  ONLY : tolerance => eos_testTolerance
   implicit none
 
 # include "Eos.h"
@@ -104,8 +104,8 @@ subroutine Eos_unitTest(fileUnit, perfect)
   logical, intent(out) :: perfect
   integer :: blockID
   integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
   real :: presErr, tempErr, eintErr
 
   real, pointer, dimension(:,:,:,:):: solnData

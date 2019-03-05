@@ -39,7 +39,7 @@ Subroutine hy_putGravity(tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, 
   use Gravity_interface, ONLY : Gravity_accelOneRow
 
   use Hydro_data,        ONLY : hy_gpotVar, hy_extraAccelVars
-  use flash_tile,        ONLY : flash_tile_t
+  use Grid_tile,         ONLY : Grid_tile_t
   
   implicit none
 
@@ -48,7 +48,7 @@ Subroutine hy_putGravity(tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, 
 #include "UHD.h"
 
   !! ---- Argument List ----------------------------------
-  type(flash_tile_t), intent(IN)   :: tileDesc
+  type(Grid_tile_t), intent(IN)   :: tileDesc
   integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blGC
   real,dimension(:,:,:,:),pointer :: Uin
   integer, dimension(MDIM), intent(IN) :: dataSize

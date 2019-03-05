@@ -61,13 +61,13 @@ end subroutine gr_getInteriorBlkPtr_blk
 
 subroutine gr_getInteriorBlkPtr(tileDesc, dataPtr, gridDataStruct)
   use Driver_interface, ONLY : Driver_abortFlash
-  use flash_tile,       ONLY : flash_tile_t
+  use Grid_tile,        ONLY : Grid_tile_t
  
   implicit none
 
-  type(flash_tile_t), intent(in)         :: tileDesc
-  real,                          pointer :: dataPtr(:,:,:,:)
-  integer,            intent(in)         :: gridDataStruct
+  type(Grid_tile_t), intent(in)         :: tileDesc
+  real,                         pointer :: dataPtr(:,:,:,:)
+  integer,           intent(in)         :: gridDataStruct
 
   call Driver_abortFlash("[gr_getInteriorBlkPtr]: Not implemented yet!")
 end subroutine gr_getInteriorBlkPtr

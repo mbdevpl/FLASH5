@@ -42,8 +42,8 @@ subroutine Driver_verifyInitDt()
                              Grid_getCellCoords
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
 
   implicit none       
 
@@ -76,8 +76,8 @@ subroutine Driver_verifyInitDt()
   integer :: isize,jsize,ksize
   logical :: runVerifyInitDt = .false.
   real :: extraHydroInfo
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
   integer:: ib
 
   nullify(solnData)

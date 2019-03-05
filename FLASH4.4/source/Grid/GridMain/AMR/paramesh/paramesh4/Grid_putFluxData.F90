@@ -102,8 +102,8 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   use tree, ONLY : surr_blks, nodetype
   use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx, gr_flxx, gr_flxy, gr_flxz
   use gr_specificData, ONLY : gr_iloFl, gr_jloFl, gr_kloFl
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
   use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
 #ifdef FLASH_HYDRO_UNSPLIT
 #if NDIM >=2
@@ -124,8 +124,8 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
   real,pointer, dimension(:,:,:,:) :: fluxx,fluxy,fluxz
 
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
   integer :: blockID
 

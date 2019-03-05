@@ -77,11 +77,11 @@ Subroutine Hydro_computeDt(tileDesc, &
                                hy_useHydro, hy_updateHydroFluxes,     &
                                hy_useVaryingCFL
   use Driver_interface, ONLY : Driver_abortFlash
-  use flash_tile,       ONLY : flash_tile_t
+  use Grid_tile,        ONLY : Grid_tile_t
   implicit none
 
   !! Arguments type declaration ------------------------------------------
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
 #ifdef FIXEDBLOCKSIZE

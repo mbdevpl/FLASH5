@@ -41,8 +41,8 @@ subroutine gr_estimateError(error, iref, refine_filter)
   use Grid_interface, ONLY : Grid_getTileIterator, &
                              Grid_releaseTileIterator
   use gr_interface,   ONLY : gr_estimateBlkError
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile,     ONLY : flash_tile_t
+  use Grid_iterator,  ONLY : Grid_iterator_t
+  use Grid_tile,      ONLY : Grid_tile_t
 
   implicit none
 
@@ -50,8 +50,8 @@ subroutine gr_estimateError(error, iref, refine_filter)
   real,    intent(IN)    :: refine_filter
   real,    intent(INOUT) :: error(MAXBLOCKS)
   
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
 !==============================================================================
 

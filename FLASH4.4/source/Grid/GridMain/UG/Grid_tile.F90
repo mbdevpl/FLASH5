@@ -1,4 +1,4 @@
-!!****ih* source/Grid/GridMain/UG/flash_tile
+!!****ih* source/Grid/GridMain/UG/Grid_tile
 !!
 !!
 !!****
@@ -9,12 +9,12 @@
 #include "constants.h"
 #include "Flash.h"
 
-module flash_tile
+module Grid_tile
     implicit none
 
     private
 
-    type, public :: flash_tile_t
+    type, public :: Grid_tile_t
         integer, public :: id
         integer, public :: cid(MDIM)
         integer, public :: stride(MDIM)
@@ -30,15 +30,15 @@ module flash_tile
         procedure, public :: getDataPtr
         procedure, public :: releaseDataPtr
         procedure, public :: enclosingBlock
-    end type flash_tile_t
+    end type Grid_tile_t
 
 contains
 
     subroutine deltas(this, dx)
         use Grid_data, ONLY : gr_delta
 
-        class(flash_tile_t), intent(IN)  :: this
-        real,                intent(OUT) :: dx(1:MDIM)
+        class(Grid_tile_t), intent(IN)  :: this
+        real,               intent(OUT) :: dx(1:MDIM)
 
         dx = gr_delta(:, 1)
     end subroutine deltas
@@ -49,8 +49,8 @@ contains
                               gr_jlo, gr_jhi, &
                               gr_klo, gr_khi
 
-        class(flash_tile_t), intent(IN)  :: this
-        real,                intent(OUT) :: box(LOW:HIGH, 1:MDIM)
+        class(Grid_tile_t), intent(IN)  :: this
+        real,               intent(OUT) :: box(LOW:HIGH, 1:MDIM)
 
         box(:, :) = 0.0
    
@@ -72,8 +72,8 @@ contains
                               gr_jlo, gr_jhi, &
                               gr_klo, gr_khi
 
-        class(flash_tile_t), intent(IN)  :: this
-        real,                intent(OUT) :: tileSize(1:MDIM) 
+        class(Grid_tile_t), intent(IN)  :: this
+        real,               intent(OUT) :: tileSize(1:MDIM) 
 
         tileSize(:) = 0.0
         tileSize(IAXIS) =   gr_iCoords(RIGHT_EDGE, gr_ihi, 1) &
@@ -91,9 +91,9 @@ contains
     subroutine faceBCs(this, faces, onBoundary)
         use Grid_data, ONLY : gr_blkBC
 
-        class(flash_tile_t), intent(IN)            :: this
-        integer,             intent(OUT)           :: faces(LOW:HIGH, 1:MDIM)
-        integer,             intent(OUT), optional :: onBoundary(LOW:HIGH, 1:MDIM)
+        class(Grid_tile_t), intent(IN)            :: this
+        integer,            intent(OUT)           :: faces(LOW:HIGH, 1:MDIM)
+        integer,            intent(OUT), optional :: onBoundary(LOW:HIGH, 1:MDIM)
 
         faces = gr_blkBC
         where (faces == PERIODIC)
@@ -108,8 +108,8 @@ contains
     function enclosingBlock(this)
         use Driver_interface, ONLY : Driver_abortFlash
 
-        class(flash_tile_t), intent(IN) :: this
-        type(flash_tile_t)              :: enclosingBlock
+        class(Grid_tile_t), intent(IN) :: this
+        type(Grid_tile_t)              :: enclosingBlock
             
         call Driver_abortFlash("[enclosingBlock] not implemented yet")
     end function enclosingBlock
@@ -131,10 +131,10 @@ contains
                                  gr_ilo,   gr_jlo,   gr_klo, &
                                  gr_iloGc, gr_jloGc, gr_kloGc
 
-        class(flash_tile_t), intent(IN),  target   :: this
-        real,                             pointer  :: dataPtr(:, :, :, :)
-        integer,             intent(IN)            :: gridDataStruct
-        logical,             intent(IN),  optional :: localFlag
+        class(Grid_tile_t), intent(IN),  target   :: this
+        real,                            pointer  :: dataPtr(:, :, :, :)
+        integer,            intent(IN)            :: gridDataStruct
+        logical,            intent(IN),  optional :: localFlag
 
         ! Avoid possible memory leaks
         if (associated(dataPtr)) then
@@ -170,12 +170,12 @@ contains
     end subroutine getDataPtr
 
     subroutine releaseDataPtr(this, dataPtr, gridDataStruct)
-        class(flash_tile_t), intent(IN)            :: this
-        real,                intent(OUT), pointer  :: dataPtr(:, :, :, :)
-        integer,             intent(IN)            :: gridDataStruct
+        class(Grid_tile_t), intent(IN)            :: this
+        real,               intent(OUT), pointer  :: dataPtr(:, :, :, :)
+        integer,            intent(IN)            :: gridDataStruct
 
         nullify(dataPtr)
     end subroutine releaseDataPtr
 
-end module flash_tile
+end module Grid_tile
 

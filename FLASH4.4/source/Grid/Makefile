@@ -76,5 +76,5 @@ Grid += Grid_init.o \
 Grid += Grid_init.o Grid_coordTransfm.o
 
 Grid += block_metadata.o leaf_iterator.o \
-	flash_tile.o flash_iterator.o
+	Grid_tile.o Grid_iterator.o
 

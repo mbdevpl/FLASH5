@@ -134,14 +134,14 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
   use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_bcInterface, ONLY : gr_bcApplyToAllBlks
-  use flash_tile, ONLY : flash_tile_t
-  use flash_iterator, ONLY: flash_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_iterator, ONLY: Grid_iterator_t
   implicit none
 #include "constants.h"
 #include "Flash.h"
 
-  type(flash_tile_t) :: tileDesc
-  type(flash_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
   integer, intent(in) :: gridDataStruct
   integer, intent(in) :: idir
   integer, optional,intent(in) :: minLayers

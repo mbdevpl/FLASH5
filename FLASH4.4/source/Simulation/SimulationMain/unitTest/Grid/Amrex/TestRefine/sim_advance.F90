@@ -1,16 +1,16 @@
 #include "constants.h"
  
 subroutine sim_advance(step, points, values, set_msg, leaf_msg)
-    use Grid_interface,       ONLY : Grid_updateRefinement, &
-                                     Grid_getTileIterator, &
-                                     Grid_releaseTileIterator
-    use gr_amrexInterface,    ONLY : gr_restrictAllLevels
-    use flash_iterator,       ONLY : flash_iterator_t 
-    use flash_tile,           ONLY : flash_tile_t 
-    use Driver_interface,     ONLY : Driver_abortFlash
-    use sim_interface,        ONLY : sim_writeDataPoints, &
-                                     sim_collectLeaves, &
-                                     sim_printLeaves
+    use Grid_interface,      ONLY : Grid_updateRefinement, &
+                                    Grid_getTileIterator, &
+                                    Grid_releaseTileIterator
+    use gr_amrexInterface,   ONLY : gr_restrictAllLevels
+    use Grid_iterator,       ONLY : Grid_iterator_t 
+    use Grid_tile,           ONLY : Grid_tile_t 
+    use Driver_interface,    ONLY : Driver_abortFlash
+    use sim_interface,       ONLY : sim_writeDataPoints, &
+                                    sim_collectLeaves, &
+                                    sim_printLeaves
 
     implicit none
 
@@ -22,8 +22,8 @@ subroutine sim_advance(step, points, values, set_msg, leaf_msg)
 
     real, contiguous, pointer :: solnData(:,:,:,:)
  
-    type(flash_iterator_t) :: itor
-    type(flash_tile_t)     :: tileDesc
+    type(Grid_iterator_t) :: itor
+    type(Grid_tile_t)     :: tileDesc
 
     logical :: gridChanged
 

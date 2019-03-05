@@ -1,7 +1,7 @@
-!!****ih* source/Grid/GridMain/AMR/Amrex/flash_iterator
+!!****ih* source/Grid/GridMain/AMR/Amrex/Grid_iterator
 !!
 !! NAME
-!!  flash_iterator
+!!  Grid_iterator
 !!
 !! DESCRIPTION
 !!  A class that defines a full-featured iterator for sequentially accessing
@@ -16,7 +16,7 @@
 !!  The following example demonstrates looping over all blocks defined on
 !!  the coarsest level.
 !!
-!!  type(flash_tile_t) :: tileDesc
+!!  type(Grid_tile_t) :: tileDesc
 !!
 !!  call Grid_getTileIterator(itor, ALL_BLKS, level=1)
 !!  do while (itor%isValid())
@@ -35,7 +35,7 @@
 !! SEE ALSO
 !!  Grid_getTileIterator
 !!  Grid_releaseTileIterator
-!!  flash_tile_t
+!!  Grid_tile_t
 !!
 !!****
 
@@ -43,7 +43,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-module flash_iterator
+module Grid_iterator
     use block_1lev_iterator, ONLY : block_1lev_iterator_t
 
     implicit none
@@ -52,10 +52,10 @@ module flash_iterator
 
     public :: build_iterator, destroy_iterator
 
-    !!****ic* flash_iterator/flash_iterator_t
+    !!****ic* Grid_iterator/Grid_iterator_t
     !!
     !! NAME
-    !!  flash_iterator_t
+    !!  Grid_iterator_t
     !!
     !! DESCRIPTION
     !!  This class maintains a set of single-level iterators, which are used
@@ -64,7 +64,7 @@ module flash_iterator
     !!  NOTE: The three level integers as well as the index of li use FLASH's
     !!        1-based level indexing.
     !!****
-    type, public :: flash_iterator_t
+    type, public :: Grid_iterator_t
         type(block_1lev_iterator_t), private, pointer :: li(:)       => null()
         integer,                     private          :: first_level = INVALID_LEVEL
         integer,                     private          :: last_level  = INVALID_LEVEL
@@ -74,7 +74,7 @@ module flash_iterator
         procedure, public :: isValid
         procedure, public :: next
         procedure, public :: currentTile
-    end type flash_iterator_t
+    end type Grid_iterator_t
 
     interface build_iterator
         procedure :: init_iterator
@@ -82,13 +82,13 @@ module flash_iterator
 
 contains
 
-    !!****im* flash_iterator_t/build_iterator
+    !!****im* Grid_iterator_t/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(flash_iterator_t(OUT) :: itor,
+    !!  build_iterator(Grid_iterator_t(OUT) :: itor,
     !!                 integer(IN)           :: nodetype,
     !!                 integer(IN), optional :: level, 
     !!                 logical(IN), optional :: tiling)
@@ -123,11 +123,11 @@ contains
     subroutine init_iterator(itor, nodetype, level, tiling, tileSize)
       use amrex_amrcore_module, ONLY : amrex_get_finest_level
 
-      type(flash_iterator_t), intent(OUT) :: itor
-      integer,                intent(IN)  :: nodetype
-      integer,                intent(IN)  :: level
-      logical,                intent(IN)  :: tiling
-      integer,                intent(IN)  :: tileSize(1:MDIM)
+      type(Grid_iterator_t), intent(OUT) :: itor
+      integer,               intent(IN)  :: nodetype
+      integer,               intent(IN)  :: level
+      logical,               intent(IN)  :: tiling
+      integer,               intent(IN)  :: tileSize(1:MDIM)
 
       integer :: lev
       integer :: finest_level
@@ -167,7 +167,7 @@ contains
       end associate
     end subroutine init_iterator
 
-    !!****im* flash_iterator_t/destroy_iterator
+    !!****im* Grid_iterator_t/destroy_iterator
     !!
     !! NAME
     !!  destroy_iterator
@@ -180,7 +180,7 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
-      type (flash_iterator_t), intent(INOUT) :: itor
+      type (Grid_iterator_t), intent(INOUT) :: itor
 
       integer :: lev
 
@@ -196,7 +196,7 @@ contains
       itor%is_valid = .FALSE.
     end subroutine destroy_iterator
 
-    !!****m* flash_iterator_t/isValid
+    !!****m* Grid_iterator_t/isValid
     !!
     !! NAME
     !!  isValid
@@ -212,13 +212,13 @@ contains
     !!
     !!****
     function isValid(this)
-        class(flash_iterator_t), intent(IN) :: this
+        class(Grid_iterator_t), intent(IN) :: this
         logical :: isValid
 
         isValid = this%is_valid
     end function isValid
 
-    !!****m* flash_iterator_t/next
+    !!****m* Grid_iterator_t/next
     !!
     !! NAME
     !!  next
@@ -232,7 +232,7 @@ contains
     !!
     !!****
     subroutine next(this)
-        class(flash_iterator_t), intent(INOUT) :: this
+        class(Grid_iterator_t), intent(INOUT) :: this
 
         logical :: is_li_valid
 
@@ -251,13 +251,13 @@ contains
         end associate
     end subroutine next
 
-    !!****m* flash_iterator_t/currentTile
+    !!****m* Grid_iterator_t/currentTile
     !!
     !! NAME
     !!  currentTile 
     !!
     !! SYNPOSIS
-    !!  call itor%currentTile(flash_tile_t(OUT) : block)
+    !!  call itor%currentTile(Grid_tile_t(OUT) : block)
     !!
     !! DESCRIPTION
     !!  Obtain meta data that characterizes the block/tile currently set in the
@@ -266,10 +266,10 @@ contains
     !!****
     subroutine currentTile(this, tileDesc)
         use amrex_box_module, ONLY : amrex_box
-        use flash_tile,       ONLY : flash_tile_t
+        use Grid_tile,       ONLY : Grid_tile_t
 
-        class(flash_iterator_t), intent(IN)  :: this
-        type(flash_tile_t),      intent(OUT) :: tileDesc
+        class(Grid_iterator_t), intent(IN)  :: this
+        type(Grid_tile_t),      intent(OUT) :: tileDesc
 
         type(amrex_box) :: box
 
@@ -294,5 +294,5 @@ contains
         tileDesc%blkLimitsGC(HIGH, 1:NDIM) = box%hi(1:NDIM) + 1
     end subroutine currentTile 
  
-end module flash_iterator
+end module Grid_iterator
 

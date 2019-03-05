@@ -36,8 +36,8 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   use hy_interface,        ONLY : hy_gravityStep, &
                                   hy_computeFluxes, &
                                   hy_updateSolution
-  use flash_iterator,      ONLY : flash_iterator_t
-  use flash_tile,          ONLY : flash_tile_t
+  use Grid_iterator,       ONLY : Grid_iterator_t
+  use Grid_tile,           ONLY : Grid_tile_t
 
   implicit none
 
@@ -55,8 +55,8 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
 #endif
   integer:: level, maxLev
   
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
   
   real, pointer :: Uin(:,:,:,:)
   real, pointer :: Uout(:,:,:,:)

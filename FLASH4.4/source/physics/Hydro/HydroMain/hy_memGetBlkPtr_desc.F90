@@ -58,10 +58,10 @@ subroutine hy_memGetBlkPtr_desc(tileDesc,dataPtr, gridDataStruct)
 #include "FortranLangFeatures.fh"
 
   use hy_memInterface, ONLY : hy_memGetBlkPtr
-  use flash_tile,      ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
   implicit none
 
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   real, POINTER_INTENT_OUT :: dataPtr(:,:,:,:)
   integer, optional,intent(in) :: gridDataStruct
 

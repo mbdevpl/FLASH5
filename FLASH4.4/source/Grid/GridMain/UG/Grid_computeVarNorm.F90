@@ -56,8 +56,8 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_data, ONLY : gr_meshComm
-  use flash_tile, ONLY : flash_tile_t
-  use flash_iterator, ONLY : flash_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
 
   implicit none
 
@@ -73,8 +73,8 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
   integer :: totalblockshere
   integer, dimension(LOW:HIGH,MDIM)   ::  blkLimits
   real, allocatable :: cellVolumes(:,:,:)
-  type(flash_tile_t) :: tileDesc
-  type(flash_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
 !===============================================================================
 
   call Timers_start("Grid_computeVarNorm")

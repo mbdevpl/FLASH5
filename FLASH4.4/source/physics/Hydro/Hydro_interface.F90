@@ -17,9 +17,9 @@ Module Hydro_interface
           blkLimits,blkLimitsGC,  &
           solnData,   &
           dt_check, dt_minloc, extraInfo )
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(IN) :: tileDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
        integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
        real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
        real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)), intent(IN) :: y, dy, uygrid

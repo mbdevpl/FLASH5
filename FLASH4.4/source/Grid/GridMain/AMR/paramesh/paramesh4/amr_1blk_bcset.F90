@@ -122,7 +122,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
   use Grid_data, ONLY : gr_bndOrder,gr_numDataStruct,gr_gridDataStruct,&
        gr_gridDataStructSize
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
   
@@ -139,7 +139,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
 
   integer :: blockHandle
   integer :: i, struct, varCount,gridDataStruct
-  type(flash_tile_t) :: tileDesc
+  type(Grid_tile_t) :: tileDesc
 
   bnd(1)=ibnd
   bnd(2)=jbnd
@@ -520,7 +520,7 @@ contains
 
         integer,            intent(IN)  :: blockID
         integer,            intent(IN)  :: gds
-        type(flash_tile_t), intent(OUT) :: tileDesc
+        type(Grid_tile_t), intent(OUT) :: tileDesc
 
         integer :: blkLimits(LOW:HIGH, MDIM)
         integer :: blkLimitsGC(LOW:HIGH, MDIM)

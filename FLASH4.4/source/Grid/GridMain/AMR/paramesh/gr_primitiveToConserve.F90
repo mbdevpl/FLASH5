@@ -60,7 +60,7 @@ subroutine gr_primitiveToConserve(tileDesc)
   use Grid_data, ONLY: gr_meshMe, gr_convertToConsvdForMeshCalls, &
                         gr_vartypes, gr_anyVarToConvert
   use Driver_interface, ONLY : Driver_abortFlash
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 #ifdef FLASH_GRID_PARAMESH2
 #define INT_GCELL_ON_CC(IVAR) (.TRUE.)
   use physicaldata, ONLY: unk, nguard, &
@@ -78,7 +78,7 @@ subroutine gr_primitiveToConserve(tileDesc)
   implicit none
 #include "constants.h"
 
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   integer :: i, j, k,n, blockID, ivar
 #ifdef FLASH_GRID_PARAMESH2
   integer,parameter :: npgs=1

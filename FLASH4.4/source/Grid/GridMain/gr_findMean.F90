@@ -33,8 +33,8 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   use Grid_interface,   ONLY : Grid_getTileIterator, &
                                Grid_releaseTileIterator
   use Grid_data,        ONLY : gr_meshComm
-  use flash_iterator,   ONLY : flash_iterator_t
-  use flash_tile,       ONLY : flash_tile_t
+  use Grid_iterator,    ONLY : Grid_iterator_t
+  use Grid_tile,        ONLY : Grid_tile_t
 
   implicit none
 
@@ -55,8 +55,8 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   real, dimension(MDIM) :: blockSize
   real, dimension(:,:,:,:), pointer :: solnData
   integer :: nxbBlock, nybBlock, nzbBlock
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 !!==============================================================================
 
   nullify(solnData)

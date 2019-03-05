@@ -75,7 +75,7 @@ subroutine gr_conserveToPrimitive(tileDesc, allCells)
                         gr_vartypes, gr_anyVarToConvert
   use physicaldata, ONLY:unk
   use tree, ONLY: nodetype
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 #ifdef FLASH_GRID_PARAMESH2
   use tree, ONLY: il_bnd,iu_bnd,jl_bnd,ju_bnd,kl_bnd,ku_bnd
 #else
@@ -86,7 +86,7 @@ subroutine gr_conserveToPrimitive(tileDesc, allCells)
   implicit none
 #include "constants.h"
 
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   logical, intent(IN):: allCells
   real :: dens_old_inv
   integer :: i, j, k,n, blockID, ivar

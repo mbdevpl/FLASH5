@@ -37,8 +37,8 @@
 subroutine gr_updateData()
   use Grid_interface,        ONLY : Grid_getTileIterator, &
                                     Grid_releaseTileIterator
-  use flash_iterator,        ONLY : flash_iterator_t
-  use flash_tile,            ONLY : flash_tile_t
+  use Grid_iterator,         ONLY : Grid_iterator_t
+  use Grid_tile,             ONLY : Grid_tile_t
   use amrex_geometry_module, ONLY : amrex_problo
   use amrex_box_module,      ONLY : amrex_box
   use amrex_boxarray_module, ONLY : amrex_boxarray
@@ -54,10 +54,10 @@ subroutine gr_updateData()
   integer :: nBlocks, i
   real :: bnd_box_x,bnd_box_y,bnd_box_z
 
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
-  type(amrex_box)        :: bx
-  type(amrex_boxarray)   :: fba
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
+  type(amrex_box)       :: bx
+  type(amrex_boxarray)  :: fba
   integer :: lb, lev
   integer :: rr
   logical :: blockHasChildren

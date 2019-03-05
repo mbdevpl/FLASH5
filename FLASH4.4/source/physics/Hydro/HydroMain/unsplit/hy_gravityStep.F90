@@ -8,8 +8,8 @@ subroutine hy_gravityStep(simTime, dt, dtOld)
   use Timers_interface,    ONLY : Timers_start, Timers_stop
 
   use hy_interface,        ONLY : hy_gravityStepBlk
-  use flash_iterator,      ONLY : flash_iterator_t
-  use flash_tile,          ONLY : flash_tile_t
+  use Grid_iterator,       ONLY : Grid_iterator_t
+  use Grid_tile,           ONLY : Grid_tile_t
 
   implicit none
 
@@ -19,8 +19,8 @@ subroutine hy_gravityStep(simTime, dt, dtOld)
   real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
 #ifdef DEBUG_DRIVER
   print*,' ***************   HYDRO LEVEL', level,'  **********************'

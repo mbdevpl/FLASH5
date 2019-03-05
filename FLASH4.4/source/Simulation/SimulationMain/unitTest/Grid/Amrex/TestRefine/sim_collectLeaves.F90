@@ -1,16 +1,16 @@
 #include "constants.h"
 
 subroutine sim_collectLeaves
-    use Grid_interface,       ONLY : Grid_getTileIterator, &
-                                     Grid_releaseTileIterator
-    use gr_amrexInterface,    ONLY : gr_getFinestLevel
-    use flash_iterator,       ONLY : flash_iterator_t 
-    use flash_tile,           ONLY : flash_tile_t
-    use Simulation_data,      ONLY : leaves, &
-                                     MIN_REFINE_LEVEL, MAX_REFINE_LEVEL
+    use Grid_interface,    ONLY : Grid_getTileIterator, &
+                                  Grid_releaseTileIterator
+    use gr_amrexInterface, ONLY : gr_getFinestLevel
+    use Grid_iterator,     ONLY : Grid_iterator_t 
+    use Grid_tile,         ONLY : Grid_tile_t
+    use Simulation_data,   ONLY : leaves, &
+                                  MIN_REFINE_LEVEL, MAX_REFINE_LEVEL
 
-    type(flash_iterator_t) :: itor
-    type(flash_tile_t)     :: blockDesc
+    type(Grid_iterator_t) :: itor
+    type(Grid_tile_t)     :: blockDesc
 
     logical :: gridChanged
     integer :: finest_level

@@ -74,9 +74,9 @@ Module hy_interface
                                        hy_SpcR,&
                                        hy_SpcL,hy_SpcSig,normalFieldUpdate)
 
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(IN)   :: tileDesc
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits !, blkLimitsGC
        integer, intent(IN), dimension(MDIM):: loGC, hiGC
        real,    intent(IN)   :: dt
@@ -108,9 +108,9 @@ Module hy_interface
                                      loFl, xflux,yflux,zflux,&
                                      scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                      hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(IN)  :: tileDesc
+       type(Grid_tile_t), intent(IN)  :: tileDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
        real,    dimension(MDIM), intent(IN)         :: del
        integer, dimension(MDIM+1),intent(IN)        :: loFl
@@ -137,10 +137,10 @@ Module hy_interface
                                           lambda,leftEig,rghtEig,&
                                           cellCfl,&
                                           hy_SpcR,hy_SpcL,hy_SpcSig)
-       use flash_tile,   ONLY : flash_tile_t
+       use Grid_tile,   ONLY : Grid_tile_t
 
        implicit none
-       type(flash_tile_t),intent(IN) :: tileDesc
+       type(Grid_tile_t),intent(IN) :: tileDesc
        real,dimension(:,:,:,:),pointer :: U
        integer, intent(IN), dimension(MDIM):: loGC, hiGC
        integer,intent(IN) :: order,ix,iy,iz
@@ -380,9 +380,9 @@ Module hy_interface
 
   interface
      subroutine hy_setMinTimeStep(tileDesc,i,j,k,delta,speed)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(IN)   :: tileDesc
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, INTENT(in) :: i,j,k
        real, INTENT(in) :: delta,speed
      end subroutine hy_setMinTimeStep
@@ -470,9 +470,9 @@ Module hy_interface
      subroutine hy_unsplitUpdate(tileDesc,Uin,Uout,rangeSwitch,dt,del,blkLimits,&    
                                      blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                      scrch_Ptr)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(IN)   :: tileDesc
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        real,dimension(:,:,:,:),pointer :: Uin, Uout
        integer,intent(IN) :: rangeSwitch
        real, intent(IN)   :: dt
@@ -573,10 +573,10 @@ Module hy_interface
 
   interface
      subroutine hy_energyFix(tileDesc,U,blkLimits,dt,dtOld,del,eosMode)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        
-       type(flash_tile_t), intent(IN)   :: tileDesc
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        real, pointer, dimension(:,:,:,:) :: U
        integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
        real, intent(IN) :: dt,dtOld
@@ -601,9 +601,9 @@ Module hy_interface
   interface
      subroutine hy_addViscousFluxes&
           (tileDesc,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(IN)   :: tileDesc
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, INTENT(IN) :: ix,iy,iz
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
@@ -626,9 +626,9 @@ Module hy_interface
   interface
      subroutine hy_addThermalFluxes&
           (tileDesc,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(IN)   :: tileDesc
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, INTENT(IN) :: ix,iy,iz
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
@@ -702,9 +702,9 @@ Module hy_interface
        subroutine hy_putGravity&
             (tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
              lastCall)
-         use flash_tile, ONLY : flash_tile_t
+         use Grid_tile, ONLY : Grid_tile_t
          implicit none
-         type(flash_tile_t), intent(IN)   :: tileDesc
+         type(Grid_tile_t), intent(IN)   :: tileDesc
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blGC
          real,dimension(:,:,:,:),pointer :: Uin
          integer, dimension(MDIM), intent(IN) :: dataSize
@@ -721,9 +721,9 @@ Module hy_interface
     interface
        Subroutine hy_addGravity&
             (tileDesc,blkLimits,loGC,hiGC,dt,gravX,gravY,gravZ)
-         use flash_tile, ONLY : flash_tile_t
+         use Grid_tile, ONLY : Grid_tile_t
          implicit none
-         type(flash_tile_t), intent(IN)   :: tileDesc
+         type(Grid_tile_t), intent(IN)   :: tileDesc
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
          integer, intent(IN), dimension(MDIM):: loGC, hiGC
          real,    intent(IN) :: dt
@@ -800,7 +800,7 @@ Module hy_interface
      end subroutine Hy_gravityStep
      
      subroutine hy_gravityStepBlk(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        
        real, pointer, dimension(:,:,:,:) :: Uout
@@ -808,7 +808,7 @@ Module hy_interface
        
        real,dimension(MDIM),intent(IN) :: del
        integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
-       type(flash_tile_t), intent(IN) :: tileDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
      end subroutine hy_gravityStepBlk
   end interface
 
@@ -854,9 +854,9 @@ Module hy_interface
   interface
      subroutine hy_addResistiveFluxes&
           (tileDesc,blkLimitsGC,ix,iy,iz,Flux,eta,sweepDir)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(IN)   :: tileDesc
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, INTENT(IN) :: block,ix,iy,iz
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
@@ -1034,9 +1034,9 @@ Module hy_interface
   interface
      subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t) :: tileDesc
+       type(Grid_tile_t) :: tileDesc
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
@@ -1047,9 +1047,9 @@ Module hy_interface
     interface
      subroutine hy_updateSolution(tileDesc, Uin, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t) :: tileDesc
+       type(Grid_tile_t) :: tileDesc
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder

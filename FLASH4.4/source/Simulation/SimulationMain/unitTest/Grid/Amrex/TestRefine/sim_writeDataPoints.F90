@@ -2,15 +2,15 @@
 #include "constants.h"
 
 subroutine sim_writeDataPoints(initData, tileDesc, points, values)
-    use flash_tile,     ONLY : flash_tile_t 
+    use Grid_tile,      ONLY : Grid_tile_t 
     use Grid_interface, ONLY : Grid_getCellCoords
 
     implicit none
 
-    real,                           pointer :: initData(:, :, :, :)
-    type(flash_tile_t), intent(IN)          :: tileDesc
-    real,               intent(IN)          :: points(:, :)
-    real,               intent(IN)          :: values(:)
+    real,                          pointer :: initData(:, :, :, :)
+    type(Grid_tile_t), intent(IN)          :: tileDesc
+    real,              intent(IN)          :: points(:, :)
+    real,              intent(IN)          :: values(:)
 
     real    :: deltas(1:MDIM)
     real    :: bbox(LOW:HIGH, 1:MDIM)

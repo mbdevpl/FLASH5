@@ -1,4 +1,4 @@
-!!****ih* source/Grid/GridMain/AMR/paramesh/flash_iterator
+!!****ih* source/Grid/GridMain/AMR/paramesh/Grid_iterator
 !!
 !!
 !!
@@ -9,7 +9,7 @@
 #include "Flash.h"
 #include "constants.h"
 
-module flash_iterator
+module Grid_iterator
     use tree, ONLY : lnblocks
 
     implicit none
@@ -17,13 +17,13 @@ module flash_iterator
     private
     public :: build_iterator, destroy_iterator
 
-    !!****ic* flash_iterator/flash_iterator_t
+    !!****ic* Grid_iterator/Grid_iterator_t
     !!
     !! NAME
-    !!  flash_iterator
+    !!  Grid_iterator
     !!
     !!****
-    type, public :: flash_iterator_t
+    type, public :: Grid_iterator_t
         integer :: cur      = 0
         integer :: nodetype = LEAF 
         integer :: lev      = INVALID_LEVEL
@@ -31,17 +31,17 @@ module flash_iterator
         procedure, public :: isValid
         procedure, public :: next
         procedure, public :: currentTile
-    end type flash_iterator_t
+    end type Grid_iterator_t
 
 contains
 
-    !!****im* flash_iterator/build_iterator
+    !!****im* Grid_iterator/build_iterator
     !!
     !! NAME
     !!  build_iterator
     !!
     !! SYNOPOSIS
-    !!  build_iterator(flash_iterator_t(OUT)    :: itor,
+    !!  build_iterator(Grid_iterator_t(OUT)    :: itor,
     !!                 integer(IN)           :: nodetype,
     !!                 integer(IN), optional :: level,
     !!                 logical(IN), optional :: tiling)
@@ -67,11 +67,11 @@ contains
     !!  constants.h
     !!****
     subroutine build_iterator(itor, nodetype, level, tiling, tileSize)
-        type(flash_iterator_t), intent(OUT) :: itor
-        integer,                intent(IN)  :: nodetype
-        integer,                intent(IN)  :: level
-        logical,                intent(IN)  :: tiling
-        integer,                intent(IN)  :: tileSize(1:MDIM)
+        type(Grid_iterator_t), intent(OUT) :: itor
+        integer,               intent(IN)  :: nodetype
+        integer,               intent(IN)  :: level
+        logical,               intent(IN)  :: tiling
+        integer,               intent(IN)  :: tileSize(1:MDIM)
 
         itor%nodetype = nodetype
         itor%lev = level
@@ -80,7 +80,7 @@ contains
         call itor%next()
     end subroutine build_iterator
 
-    !!****im* flash_iterator_t/destroy_iterator
+    !!****im* Grid_iterator_t/destroy_iterator
     !!
     !! NAME
     !!  destroy_iterator
@@ -93,12 +93,12 @@ contains
     !!
     !!****
     IMPURE_ELEMENTAL subroutine destroy_iterator(itor)
-        type(flash_iterator_t), intent(INOUT) :: itor
+        type(Grid_iterator_t), intent(INOUT) :: itor
 
         itor%cur = lnblocks + 1
     end subroutine destroy_iterator
 
-    !!****m* flash_iterator_t/isValid
+    !!****m* Grid_iterator_t/isValid
     !!
     !! NAME
     !!  isValid
@@ -114,12 +114,12 @@ contains
     !!
     !!****
     logical function isValid(this)
-        class(flash_iterator_t), intent(IN) :: this
+        class(Grid_iterator_t), intent(IN) :: this
 
         isValid = (this%cur <= lnblocks)
     end function isValid
 
-    !!****m* flash_iterator_t/next
+    !!****m* Grid_iterator_t/next
     !!
     !! NAME
     !!  next
@@ -135,7 +135,7 @@ contains
     subroutine next(this)
         use gr_parameshInterface, ONLY : gr_blockMatch
 
-        class(flash_iterator_t), intent(INOUT) :: this
+        class(Grid_iterator_t), intent(INOUT) :: this
 
         integer :: j
 
@@ -153,7 +153,7 @@ contains
         this%cur = j
     end subroutine next
 
-    !!****m* flash_iterator_t/blkMetaData
+    !!****m* Grid_iterator_t/blkMetaData
     !!
     !! NAME
     !!  blkMetaData 
@@ -167,13 +167,13 @@ contains
     !!
     !!****
     subroutine currentTile(this, tileDesc)
-        use gr_specificData,            ONLY : gr_oneBlock
-        use flash_tile,                 ONLY : flash_tile_t 
-        use tree,                       ONLY : lrefine, &
-                                               lrefine_max
+        use gr_specificData, ONLY : gr_oneBlock
+        use Grid_tile,       ONLY : Grid_tile_t 
+        use tree,            ONLY : lrefine, &
+                                    lrefine_max
 
-        class(flash_iterator_t), intent(IN)  :: this
-        type(flash_tile_t),      intent(OUT) :: tileDesc
+        class(Grid_iterator_t), intent(IN)  :: this
+        type(Grid_tile_t),      intent(OUT) :: tileDesc
 
         integer :: cornerID(1:MDIM)
         integer :: blkLim(LOW:HIGH, 1:MDIM)
@@ -220,5 +220,5 @@ contains
         end associate
     end subroutine currentTile
 
-end module flash_iterator
+end module Grid_iterator
 

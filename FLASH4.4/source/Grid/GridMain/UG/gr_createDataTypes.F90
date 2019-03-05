@@ -26,8 +26,8 @@ subroutine gr_createDataTypes()
   use Grid_data, ONLY : gr_exch,&
        gr_numDataStruct,gr_gridDataStruct, gr_gridDataStructSize
   use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
-  use flash_tile, ONLY: flash_tile_t
-  use flash_iterator, ONLY: flash_iterator_t
+  use Grid_tile, ONLY: Grid_tile_t
+  use Grid_iterator, ONLY: Grid_iterator_t
 
 implicit none
 
@@ -36,8 +36,8 @@ implicit none
 
   include "Flash_mpi.h"
 
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
   integer :: currentDataTypes
   
   integer :: ierr, flashRealExtent, size, stride, flashCont,i

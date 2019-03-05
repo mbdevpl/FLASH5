@@ -74,12 +74,12 @@ end subroutine Gravity_accelOneRow_blkid
 subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
                                 potentialIndex, extraAccelVars)
 
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 !===============================================================================
 
   implicit none
 
-       type(flash_tile_t),intent(in) :: tileDesc
+  type(Grid_tile_t),intent(in) :: tileDesc
   integer, intent(IN) :: sweepDir,numCells
   integer, dimension(2),INTENT(in) ::pos
   real, dimension(numCells),INTENT(inout) :: grav

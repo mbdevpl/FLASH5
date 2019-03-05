@@ -56,11 +56,11 @@ subroutine gr_getInteriorBlkPtr_blk(blockDesc, dataPtr, gridDataStruct)
 end subroutine gr_getInteriorBlkPtr_blk
 
 subroutine gr_getInteriorBlkPtr(tileDesc, dataPtr, gridDataStruct)
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
-  type(flash_tile_t), intent(IN)         :: tileDesc
+  type(Grid_tile_t), intent(IN)          :: tileDesc
   real,                          pointer :: dataPtr(:,:,:,:)
   integer,            intent(IN)         :: gridDataStruct
   

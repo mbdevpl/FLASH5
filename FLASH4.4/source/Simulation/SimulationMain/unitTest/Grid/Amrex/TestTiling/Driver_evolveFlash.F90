@@ -9,10 +9,10 @@
 !!  Driver_evolveFlash()
 !!
 !! DESCRIPTION
-!!  This unit test exercises the flash_iterator and flash_tile objects both with
+!!  This unit test exercises the Grid_iterator and Grid_tile objects both with
 !!  and without tiling enabled to confirm that iterating over tiles in accord
 !!  with tiling runtime parameters is correct.  In addition, it confirms that
-!!  tiling related features of the flash_tile_t objects are correct.
+!!  tiling related features of the Grid_tile_t objects are correct.
 !!  
 !! NOTES
 !!  This simulation *must* be configured with at least the following
@@ -27,23 +27,23 @@
 #include "constants.h"
 
 subroutine Driver_evolveFlash()
-    use amrex_box_module,      ONLY : amrex_box
+    use amrex_box_module, ONLY : amrex_box
 
-    use flash_iterator,        ONLY : flash_iterator_t
-    use flash_tile,            ONLY : flash_tile_t
-    use Grid_interface,        ONLY : Grid_getTileIterator, &
-                                      Grid_releaseTileIterator
-    use Grid_data,             ONLY : gr_enableTiling, &
-                                      gr_tileSize
+    use Grid_iterator,    ONLY : Grid_iterator_t
+    use Grid_tile,        ONLY : Grid_tile_t
+    use Grid_interface,   ONLY : Grid_getTileIterator, &
+                                 Grid_releaseTileIterator
+    use Grid_data,        ONLY : gr_enableTiling, &
+                                 gr_tileSize
     use ut_testDriverMod
 
     implicit none
 
     integer :: cnt
 
-    type(flash_iterator_t) :: itor
-    type(flash_tile_t)     :: tileDesc
-    type(flash_tile_t)     :: encBlk
+    type(Grid_iterator_t) :: itor
+    type(Grid_tile_t)     :: tileDesc
+    type(Grid_tile_t)     :: encBlk
 
     type(amrex_box) :: tileBox
     type(amrex_box) :: encBox

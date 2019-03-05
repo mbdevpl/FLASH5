@@ -50,7 +50,7 @@ Subroutine hy_addGravity&
 
   use Grid_interface,  ONLY : Grid_getBlkPtr,       &
                               Grid_releaseBlkPtr
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile,       ONLY : Grid_tile_t
 
   implicit none
 
@@ -59,7 +59,7 @@ Subroutine hy_addGravity&
 #include "UHD.h"
 
   !! ---- Argument List ----------------------------------
-  type(flash_tile_t), intent(IN)   :: tileDesc
+  type(Grid_tile_t), intent(IN)   :: tileDesc
 
   integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
   integer, intent(IN), dimension(MDIM):: loGC, hiGC

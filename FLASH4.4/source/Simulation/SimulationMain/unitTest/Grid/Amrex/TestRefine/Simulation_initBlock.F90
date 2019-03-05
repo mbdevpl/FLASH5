@@ -30,13 +30,13 @@
 #include "sim_constants.h"
 
 subroutine Simulation_initBlock(initData, tileDesc)
-    use flash_tile,     ONLY : flash_tile_t 
-    use sim_interface,  ONLY : sim_writeDataPoints
+    use Grid_tile,     ONLY : Grid_tile_t 
+    use sim_interface, ONLY : sim_writeDataPoints
 
     implicit none
 
-    real,                          pointer :: initData(:, :, :, :)
-    type(flash_tile_t), intent(IN)         :: tileDesc
+    real,                         pointer :: initData(:, :, :, :)
+    type(Grid_tile_t), intent(IN)         :: tileDesc
 
     real    :: points(2, 2)
     real    :: values(2)

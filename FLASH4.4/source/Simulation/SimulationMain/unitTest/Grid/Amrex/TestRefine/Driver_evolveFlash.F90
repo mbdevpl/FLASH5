@@ -43,8 +43,8 @@ subroutine Driver_evolveFlash()
     use Grid_data,             ONLY : gr_lRefineMax, gr_maxRefine
     use gr_amrexInterface,     ONLY : gr_getFinestLevel, &
                                       gr_writeData
-    use flash_iterator,        ONLY : flash_iterator_t
-    use flash_tile,            ONLY : flash_tile_t
+    use Grid_iterator,         ONLY : Grid_iterator_t
+    use Grid_tile,             ONLY : Grid_tile_t
     use sim_interface,         ONLY : sim_advance, &
                                       sim_collectLeaves
     use Simulation_data,       ONLY : leaves, &
@@ -66,8 +66,8 @@ subroutine Driver_evolveFlash()
     type(blocks_t) :: leaves_ex(MIN_REFINE_LEVEL:MAX_REFINE_LEVEL)
 
     real, contiguous, pointer :: solnData(:,:,:,:)
-    type(flash_iterator_t)    :: itor
-    type(flash_tile_t)        :: tileDesc
+    type(Grid_iterator_t)     :: itor
+    type(Grid_tile_t)         :: tileDesc
 
     !!!!! CONFIRM PROPER DIMENSIONALITY
     write(*,*)

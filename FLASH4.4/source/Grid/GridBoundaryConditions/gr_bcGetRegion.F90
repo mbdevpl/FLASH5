@@ -5,14 +5,14 @@
 !!
 !! SYNOPSIS
 !!
-!!  call gr_bcGetRegion(integer(IN)     :: gridDataStruct,
-!!                 integer(IN)          :: axis,
-!!                 integer(IN)          :: endPoints(LOW:HIGH,MDIM),
-!!                 integer(IN)          :: regionSize(REGION_DIM),
-!!                 integer(OUT)         :: mask(regionSize(4)),
-!!                 real(out)            :: region(regionSize(1),regionSize(2),regionSize(3),regionSize(4)),
-!!                 flash_tile_t(IN) :: tileDesc,
-!!                 integer(IN)          :: idest)
+!!  call gr_bcGetRegion(integer(IN) :: gridDataStruct,
+!!                 integer(IN)      :: axis,
+!!                 integer(IN)      :: endPoints(LOW:HIGH,MDIM),
+!!                 integer(IN)      :: regionSize(REGION_DIM),
+!!                 integer(OUT)     :: mask(regionSize(4)),
+!!                 real(out)        :: region(regionSize(1),regionSize(2),regionSize(3),regionSize(4)),
+!!                 Grid_tile_t(IN)  :: tileDesc,
+!!                 integer(IN)      :: idest)
 !!  
 !! DESCRIPTION 
 !!  This routine creates a region for the application of boundary condition
@@ -142,7 +142,7 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
 #include "constants.h"
   
   use Driver_interface, ONLY : Driver_abortFlash
-  use flash_tile,   ONLY : flash_tile_t
+  use Grid_tile,   ONLY : Grid_tile_t
   
 #ifdef FLASH_GRID_UG
   use physicaldata, ONLY: unk,facevarx,facevary,facevarz
@@ -170,7 +170,7 @@ subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
   logical,dimension(regionSize(STRUCTSIZE)),intent(OUT) :: mask
   real,dimension(regionSize(BC_DIR),regionSize(SECOND_DIR),&
        regionSize(THIRD_DIR),regionSize(STRUCTSIZE)),intent(OUT) :: region
-  type(flash_tile_t), intent(in) :: tileDesc
+  type(Grid_tile_t), intent(in) :: tileDesc
   integer,intent(IN) :: idest
 
   integer :: var,i,j,k,n,m,strt,fin, varCount,bcVecEnd
@@ -380,18 +380,18 @@ end subroutine gr_bcGetRegion
 !!
 !! SYNOPSIS
 !!
-!!  call gr_bcGetRegionsMixedGds(integer(IN)          :: gridDataStruct,
-!!                               integer(IN)          :: axis,
-!!                               integer(IN)          :: secondDir,
-!!                               integer(IN)          :: thirdDir,
-!!                               integer(IN)          :: endPoints(LOW:HIGH,MDIM),
-!!                               integer(IN)          :: regionSize(REGION_DIM),
-!!                               real(out),POINTER    :: regionC(:,:,:,:),
-!!                               real(out),POINTER    :: regionFN(:,:,:,:),
-!!                               real(out),POINTER    :: regionFT1(:,:,:,:),
-!!                               real(out),POINTER    :: regionFT2(:,:,:,:),
-!!                               flash_tile_t(IN) :: tileDesc,
-!!                               integer(IN)          :: idest)
+!!  call gr_bcGetRegionsMixedGds(integer(IN)       :: gridDataStruct,
+!!                               integer(IN)       :: axis,
+!!                               integer(IN)       :: secondDir,
+!!                               integer(IN)       :: thirdDir,
+!!                               integer(IN)       :: endPoints(LOW:HIGH,MDIM),
+!!                               integer(IN)       :: regionSize(REGION_DIM),
+!!                               real(out),POINTER :: regionC(:,:,:,:),
+!!                               real(out),POINTER :: regionFN(:,:,:,:),
+!!                               real(out),POINTER :: regionFT1(:,:,:,:),
+!!                               real(out),POINTER :: regionFT2(:,:,:,:),
+!!                               Grid_tile_t(IN)   :: tileDesc,
+!!                               integer(IN)       :: idest)
 !!  
 !! DESCRIPTION 
 !!  This routine returns pointers for regions for the application of boundary conditions
@@ -433,7 +433,7 @@ subroutine gr_bcGetRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoi
      tileDesc,idest)
   
   use Driver_interface, ONLY : Driver_abortFlash
-  use flash_tile,   ONLY : flash_tile_t
+  use Grid_tile,   ONLY : Grid_tile_t
   
 #ifdef FLASH_GRID_UG
   use physicaldata, ONLY: unk,facevarx,facevary,facevarz
@@ -457,7 +457,7 @@ subroutine gr_bcGetRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoi
   integer,dimension(LOW:HIGH,MDIM),intent(IN) :: endPoints
   integer,intent(IN) :: regionSize(REGION_DIM)
   real,pointer,dimension(:,:,:,:) :: regionFN, regionFT1, regionFT2, regionC
-  type(flash_tile_t), intent(in) :: tileDesc
+  type(Grid_tile_t), intent(in) :: tileDesc
   integer,intent(IN) :: idest
 
   integer,parameter :: ndim=NDIM

@@ -105,7 +105,7 @@ Subroutine hy_updateSolution(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepO
   use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface,    ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use flash_tile,       ONLY : flash_tile_t
+  use Grid_tile,        ONLY : Grid_tile_t
   use hy_interface,     ONLY : hy_getRiemannState,  &
                                hy_getFaceFlux,      &
                                hy_unsplitUpdate,    &
@@ -149,7 +149,7 @@ Subroutine hy_updateSolution(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepO
   real,dimension(MDIM),intent(IN) :: del
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
   integer :: loFl(MDIM+1)
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
 
   real, pointer, dimension(:,:,:,:)   :: flx
   real, pointer, dimension(:,:,:,:)   :: fly

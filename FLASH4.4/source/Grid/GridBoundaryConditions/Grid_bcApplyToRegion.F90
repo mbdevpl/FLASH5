@@ -14,7 +14,7 @@
 !!                            integer(IN)      :: regionSize(:),
 !!                            logical(IN)      :: mask(:),
 !!                            logical(OUT)     :: applied,
-!!                            flash_tile_t(IN) :: tileDesc,
+!!                            Grid_tile_t(IN)  :: tileDesc,
 !!                            integer(IN)      :: secondDir,
 !!                            integer(IN)      :: thirdDir,
 !!                            integer(IN)      :: endPoints(LOW:HIGH,MDIM),
@@ -216,7 +216,7 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   use Grid_interface, ONLY : Grid_getGeometry
   use Grid_data, ONLY : gr_dirGeom, &
        gr_smallrho, gr_smallE
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
   
@@ -228,7 +228,7 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
-  type(flash_tile_t),intent(IN) :: tileDesc
+  type(Grid_tile_t),intent(IN) :: tileDesc
   integer,intent(IN) :: secondDir,thirdDir
   integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest

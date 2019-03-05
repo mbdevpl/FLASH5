@@ -21,9 +21,9 @@ Module Gravity_interface
   interface Gravity_accelOneRow
      subroutine Gravity_accelOneRow (pos,sweepDir,tileDesc, numCells, grav, Uin,&
            varIndex, extraAccelVars)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t),intent(IN) :: tileDesc
+       type(Grid_tile_t),intent(IN) :: tileDesc
        integer, intent(IN) :: sweepDir,numCells
        integer, dimension(2),INTENT(in) ::pos
        real, dimension(numCells),INTENT(inout) :: grav

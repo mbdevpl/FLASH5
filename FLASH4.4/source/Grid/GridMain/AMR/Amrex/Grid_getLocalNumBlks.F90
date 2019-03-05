@@ -32,13 +32,13 @@
 subroutine Grid_getLocalNumBlks(numBlocks)
   use Grid_interface, ONLY : Grid_getTileIterator, &
                              Grid_releaseTileIterator
-  use flash_iterator, ONLY : flash_iterator_t
+  use Grid_iterator,  ONLY : Grid_iterator_t
 
   implicit none
 
   integer, intent(OUT) :: numBlocks
 
-  type(flash_iterator_t) :: itor
+  type(Grid_iterator_t) :: itor
 
   numBlocks = 0
 
@@ -53,13 +53,13 @@ end subroutine Grid_getLocalNumBlks
 subroutine Grid_getLocalNumLeafBlks(numBlocks)
   use Grid_interface, ONLY : Grid_getTileIterator, &
                              Grid_releaseTileIterator
-  use flash_iterator, ONLY : flash_iterator_t
+  use Grid_iterator,  ONLY : Grid_iterator_t
 
   implicit none
 
   integer, intent(OUT) :: numBlocks
 
-  type(flash_iterator_t) :: itor
+  type(Grid_iterator_t) :: itor
 
   numBlocks = 0
 

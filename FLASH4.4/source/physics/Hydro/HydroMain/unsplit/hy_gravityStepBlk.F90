@@ -43,7 +43,7 @@ Subroutine hy_gravityStepBlk(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
   use Eos_interface,    ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use flash_tile,       ONLY : flash_tile_t
+  use Grid_tile,        ONLY : Grid_tile_t
   use hy_interface,     ONLY : hy_getRiemannState,  &
                                hy_getFaceFlux,      &
                                hy_unsplitUpdate,    &
@@ -84,7 +84,7 @@ Subroutine hy_gravityStepBlk(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   real,dimension(MDIM),intent(IN) :: del
   integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   
   integer, dimension(MDIM) :: datasize
 

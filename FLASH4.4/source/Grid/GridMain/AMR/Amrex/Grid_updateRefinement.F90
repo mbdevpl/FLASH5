@@ -87,8 +87,8 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                         gr_fillPhysicalBC, &
                                         gr_restrictAllLevels
   use gr_physicalMultifabs,      ONLY : unk
-  use flash_iterator,            ONLY : flash_iterator_t
-  use flash_tile,                ONLY : flash_tile_t
+  use Grid_iterator,             ONLY : Grid_iterator_t
+  use Grid_tile,                 ONLY : Grid_tile_t
   use Eos_interface,             ONLY : Eos_wrapped
   use Timers_interface,          ONLY : Timers_start, Timers_stop
  
@@ -109,9 +109,9 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   
   logical :: needConversion
 
-  type(flash_iterator_t)         :: itor
-  type(flash_tile_t)             :: tileDesc
-  real,                  pointer :: solnData(:, :, :, :)
+  type(Grid_iterator_t)         :: itor
+  type(Grid_tile_t)             :: tileDesc
+  real,                 pointer :: solnData(:, :, :, :)
 
   nullify(solnData)
 

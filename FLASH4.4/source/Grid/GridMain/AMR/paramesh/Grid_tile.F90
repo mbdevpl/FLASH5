@@ -1,4 +1,4 @@
-!!****ih* source/Grid/GridMain/AMR/paramesh/flash_tile
+!!****ih* source/Grid/GridMain/AMR/paramesh/Grid_tile
 !!
 !!
 !!
@@ -9,12 +9,12 @@
 #include "constants.h"
 #include "Flash.h"
 
-module flash_tile
+module Grid_tile
     implicit none
 
     private
 
-    type, public :: flash_tile_t 
+    type, public :: Grid_tile_t 
         integer :: id
         integer :: cid(MDIM)
         integer :: stride(MDIM)
@@ -29,15 +29,15 @@ module flash_tile
         procedure, public :: faceBCs
         procedure, public :: getDataPtr
         procedure, public :: releaseDataPtr
-    end type flash_tile_t
+    end type Grid_tile_t
 
 contains
 
     subroutine deltas(this, dx)
         use Grid_data, ONLY: gr_delta
 
-        class(flash_tile_t), intent(IN)  :: this
-        real,                intent(OUT) :: dx(1:MDIM)
+        class(Grid_tile_t), intent(IN)  :: this
+        real,               intent(OUT) :: dx(1:MDIM)
 
         dx(1:MDIM) = gr_delta(1:MDIM, this%level)
     end subroutine deltas
@@ -46,8 +46,8 @@ contains
         use tree,             ONLY : bnd_box
         use Driver_interface, ONLY : Driver_abortFlash
 
-        class(flash_tile_t), intent(IN)  :: this
-        real,                intent(OUT) :: box(LOW:HIGH, 1:MDIM)
+        class(Grid_tile_t), intent(IN)  :: this
+        real,               intent(OUT) :: box(LOW:HIGH, 1:MDIM)
   
         if (this%id <= 0) then
            print *, "blockId = ", this%id
@@ -60,8 +60,8 @@ contains
     subroutine physicalSize(this, tileSize) 
         use tree, ONLY : bsize
 
-        class(flash_tile_t), intent(IN)  :: this
-        real,                intent(OUT) :: tileSize(1:MDIM) 
+        class(Grid_tile_t), intent(IN)  :: this
+        real,               intent(OUT) :: tileSize(1:MDIM) 
       
         tileSize = bsize(:, this%id)
     end subroutine physicalSize
@@ -72,9 +72,9 @@ contains
                                  gr_globalDomain, &
                                  gr_delta
 
-        class(flash_tile_t), intent(IN)            :: this
-        integer,             intent(OUT)           :: faces(LOW:HIGH, 1:MDIM)
-        integer,             intent(OUT), optional :: onBoundary(LOW:HIGH, 1:MDIM)
+        class(Grid_tile_t), intent(IN)            :: this
+        integer,            intent(OUT)           :: faces(LOW:HIGH, 1:MDIM)
+        integer,            intent(OUT), optional :: onBoundary(LOW:HIGH, 1:MDIM)
 
         real    :: deltas(1:MDIM)
         integer :: axis, face
@@ -121,10 +121,10 @@ contains
                                     scratch_facevarz, &
                                     gr_flxx, gr_flxy, gr_flxz
 
-       class(flash_tile_t), intent(IN), target   :: this
-       real,                            pointer  :: dataPtr(:, :, :, :)
-       integer,             intent(IN)           :: gridDataStruct
-       logical,             intent(IN), optional :: localFlag
+       class(Grid_tile_t), intent(IN), target   :: this
+       real,                           pointer  :: dataPtr(:, :, :, :)
+       integer,            intent(IN)           :: gridDataStruct
+       logical,            intent(IN), optional :: localFlag
 
        integer :: lo(1:MDIM)
 
@@ -210,12 +210,12 @@ contains
     end subroutine getDataPtr
 
     subroutine releaseDataPtr(this, dataPtr, gridDataStruct)
-        class(flash_tile_t), intent(IN)            :: this
-        real,                             pointer  :: dataPtr(:, :, :, :)
-        integer,             intent(IN)            :: gridDataStruct
+        class(Grid_tile_t), intent(IN)            :: this
+        real,                            pointer  :: dataPtr(:, :, :, :)
+        integer,            intent(IN)            :: gridDataStruct
 
         nullify(dataPtr)
     end subroutine releaseDataPtr
 
-end module flash_tile
+end module Grid_tile
 

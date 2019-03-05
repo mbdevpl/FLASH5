@@ -35,8 +35,8 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
                              Grid_releaseTileIterator
   use gr_bcInterface, ONLY : gr_bcApplyToOneFace
   use Grid_data,ONLY : gr_numDataStruct,gr_gridDataStruct,gr_gridDataStructSize
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
   
@@ -52,8 +52,8 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
   integer :: idest=0
   integer,dimension(gr_numDataStruct) :: localDataStruct,localStructSize
   integer :: localNum
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
 #ifdef FLASH_GRID_AMREX
   call Driver_abortFlash("[gr_bcApplyToAllBlks] not implemented for AMReX")

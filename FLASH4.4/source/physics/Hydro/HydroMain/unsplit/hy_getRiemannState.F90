@@ -105,7 +105,7 @@ Subroutine hy_getRiemannState(tileDesc,U,blkLimits,loGC,hiGC,dt,del,&
                                    hy_eigenVector,        &
                                    hy_upwindTransverseFlux
   use Grid_interface,   ONLY : Grid_getCellCoords
-  use flash_tile,       ONLY : flash_tile_t 
+  use Grid_tile,        ONLY : Grid_tile_t 
 
   implicit none
 
@@ -113,7 +113,7 @@ Subroutine hy_getRiemannState(tileDesc,U,blkLimits,loGC,hiGC,dt,del,&
 #include "UHD.h"
 
   !! Arguments type declaration ------------------------------------------------------------
-  type(flash_tile_t), intent(IN)   :: tileDesc
+  type(Grid_tile_t), intent(IN)   :: tileDesc
   integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits !, blkLimitsGC
   integer, intent(IN),dimension(MDIM)  :: loGC, hiGC
   real,    intent(IN)   :: dt

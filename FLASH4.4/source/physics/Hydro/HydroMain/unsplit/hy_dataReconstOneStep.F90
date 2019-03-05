@@ -115,7 +115,7 @@ Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
                                 GP   => hy_DataReconstructNormalDir_GP
 
   use Grid_interface, ONLY : Grid_getCellCoords
-  use flash_tile,     ONLY : flash_tile_t
+  use Grid_tile,      ONLY : Grid_tile_t
 
   implicit none
 
@@ -124,7 +124,7 @@ Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
 
 
   !!-----Arguments---------------------------------------------------------
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   real, pointer, dimension(:,:,:,:) :: U
 !!$  integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimitsGC
   integer, intent(IN), dimension(MDIM):: loGC, hiGC

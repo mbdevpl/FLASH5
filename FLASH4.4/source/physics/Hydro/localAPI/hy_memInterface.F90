@@ -34,9 +34,9 @@ Module hy_memInterface
        integer,optional, intent(in) :: gridDataStruct
      end subroutine hy_memGetBlk5Ptr
      subroutine hy_memGetBlkPtr_desc(tileDesc,dataPtr, gridDataStruct)
-       use flash_tile, ONLY : flash_tile_t 
+       use Grid_tile, ONLY : Grid_tile_t 
        implicit none
-       type(flash_tile_t), intent(IN) :: tileDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
        real, POINTER_INTENT_OUT :: dataPtr(:,:,:,:)
        integer,optional, intent(in) :: gridDataStruct
      end subroutine hy_memGetBlkPtr_desc
@@ -56,9 +56,9 @@ Module hy_memInterface
        integer,optional, intent(in) :: gridDataStruct
      end subroutine hy_memReleaseBlk5Ptr
      subroutine hy_memReleaseBlkPtr_desc(tileDesc, dataPtr, gridDataStruct)
-       use flash_tile, ONLY : flash_tile_t 
+       use Grid_tile, ONLY : Grid_tile_t 
        implicit none
-       type(flash_tile_t), intent(IN) :: tileDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
        real, POINTER_INTENT_OUT :: dataPtr(:,:,:,:)
        integer,optional, intent(in) :: gridDataStruct
      end subroutine hy_memReleaseBlkPtr_desc

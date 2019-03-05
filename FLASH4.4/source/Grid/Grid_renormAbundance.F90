@@ -48,12 +48,12 @@
 #include "constants.h"
 
 subroutine Grid_renormAbundance(tileDesc, solnData)
-  use flash_tile,   ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
-  type(flash_tile_t), intent(IN)         :: tileDesc
-  real,                          pointer :: solnData(:,:,:,:)
+  type(Grid_tile_t), intent(IN)         :: tileDesc
+  real,                         pointer :: solnData(:,:,:,:)
 
   return
 end subroutine Grid_renormAbundance

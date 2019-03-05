@@ -471,7 +471,7 @@ subroutine Grid_putRowData(tileDesc, gridDataStruct, structIndex, beginCount, &
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_interface,     ONLY : gr_getInteriorBlkPtr, &
                                gr_releaseInteriorBlkPtr
-  use flash_tile,       ONLY : flash_tile_t
+  use Grid_tile,        ONLY : Grid_tile_t
 
   implicit none
 
@@ -481,15 +481,15 @@ subroutine Grid_putRowData(tileDesc, gridDataStruct, structIndex, beginCount, &
 #undef Grid_releaseBlkPtr
 #endif
 
-  type(flash_tile_t), intent(in)         :: tileDesc
-  integer,            intent(in)         :: structIndex
-  integer,            intent(in)         :: beginCount
-  integer,            intent(in)         :: row
-  integer,            intent(in)         :: gridDataStruct
-  integer,            intent(in)         :: startingPos(MDIM)
-  integer,            intent(in)         :: dataSize
-  real,               intent(in)         :: datablock(dataSize)
-  real,                          pointer :: solnData(:,:,:,:)
+  type(Grid_tile_t), intent(in)         :: tileDesc
+  integer,           intent(in)         :: structIndex
+  integer,           intent(in)         :: beginCount
+  integer,           intent(in)         :: row
+  integer,           intent(in)         :: gridDataStruct
+  integer,           intent(in)         :: startingPos(MDIM)
+  integer,           intent(in)         :: dataSize
+  real,              intent(in)         :: datablock(dataSize)
+  real,                         pointer :: solnData(:,:,:,:)
 
   integer :: i, j ,k
   integer,dimension(MDIM)::begOffset,dataLen

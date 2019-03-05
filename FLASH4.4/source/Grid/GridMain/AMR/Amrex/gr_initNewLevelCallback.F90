@@ -70,8 +70,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           gr_fillPhysicalBC, &
                                           gr_preinterpolationWork, &
                                           gr_postinterpolationWork
-    use flash_iterator,            ONLY : flash_iterator_t
-    use flash_tile,                ONLY : flash_tile_t
+    use Grid_iterator,             ONLY : Grid_iterator_t
+    use Grid_tile,                 ONLY : Grid_tile_t
     use Simulation_interface,      ONLY : Simulation_initBlock
     use Grid_interface,            ONLY : Grid_getTileIterator, &
                                           Grid_releaseTileIterator
@@ -92,8 +92,8 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     type(amrex_boxarray)  :: ba
     type(amrex_distromap) :: dm
 
-    type(flash_iterator_t) :: itor
-    type(flash_tile_t)     :: tileDesc
+    type(Grid_iterator_t) :: itor
+    type(Grid_tile_t)     :: tileDesc
     real(wp), contiguous, pointer :: initData(:,:,:,:)
 
     integer :: n_blocks

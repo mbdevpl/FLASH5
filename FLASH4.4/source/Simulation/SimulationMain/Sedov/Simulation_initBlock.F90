@@ -62,7 +62,7 @@ subroutine Simulation_initBlock(solnData,tileDesc)
   use Grid_interface, ONLY : Grid_getCellCoords, &
                              Grid_getSingleCellVol, &
                              Grid_subcellGeometry
-  use flash_tile, ONLY : flash_tile_t 
+  use Grid_tile, ONLY : Grid_tile_t 
   use ut_interpolationInterface
  
   implicit none
@@ -70,8 +70,8 @@ subroutine Simulation_initBlock(solnData,tileDesc)
 #include "constants.h"
 #include "Flash.h"
   
-  real,               pointer    :: solnData(:,:,:,:)
-  type(flash_tile_t), intent(in) :: tileDesc
+  real,              pointer    :: solnData(:,:,:,:)
+  type(Grid_tile_t), intent(in) :: tileDesc
   
   integer,parameter :: op = 2
   integer  ::  i, j, k, n, jLo, jHi

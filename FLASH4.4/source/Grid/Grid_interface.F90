@@ -576,9 +576,9 @@ Module Grid_interface
      end subroutine Grid_putRowData_blk
      subroutine Grid_putRowData(tileDesc, gridDataStruct, variable, beginCount, &
           row, startingPos, datablock, dataSize)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(in) :: tileDesc
+       type(Grid_tile_t), intent(in) :: tileDesc
        integer, intent(IN) :: variable, beginCount, row, gridDataStruct
        integer, dimension(MDIM), intent(IN) :: startingPos
        integer, intent(IN) :: dataSize
@@ -852,10 +852,10 @@ Module Grid_interface
 
   interface
      subroutine Grid_renormAbundance(tileDesc, solnData)
-       use flash_tile,   ONLY : flash_tile_t
+       use Grid_tile,   ONLY : Grid_tile_t
        implicit none
-       type(flash_tile_t), intent(IN)         :: tileDesc
-       real,                          pointer :: solnData(:,:,:,:)
+       type(Grid_tile_t), intent(IN)         :: tileDesc
+       real,                         pointer :: solnData(:,:,:,:)
      end subroutine Grid_renormAbundance
   end interface
 
@@ -905,7 +905,7 @@ Module Grid_interface
      subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
           tileDesc,secondDir,ThirdDir,endPoints,idest)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
 
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
@@ -916,7 +916,7 @@ Module Grid_interface
             regionSize(STRUCTSIZE)),intent(INOUT)::regionData
        logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
        logical, intent(OUT) :: applied
-       type(flash_tile_t),intent(IN) :: tileDesc
+       type(Grid_tile_t),intent(IN) :: tileDesc
        integer,intent(IN) :: secondDir,thirdDir
        integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
        integer,intent(IN),OPTIONAL:: idest
@@ -927,7 +927,7 @@ Module Grid_interface
      subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
           tileDesc,secondDir,ThirdDir,endPoints,idest)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
        integer,dimension(REGION_DIM),intent(IN) :: regionSize
@@ -937,7 +937,7 @@ Module Grid_interface
             regionSize(STRUCTSIZE)),intent(INOUT)::regionData
        logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
        logical, intent(OUT) :: applied
-       type(flash_tile_t),intent(IN) :: tileDesc
+       type(Grid_tile_t),intent(IN) :: tileDesc
        integer,intent(IN) :: secondDir,thirdDir
        integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
        integer,intent(IN),OPTIONAL:: idest
@@ -952,13 +952,13 @@ Module Grid_interface
           regionSizeCtr,&
           applied,&
           tileDesc,secondDir,thirdDir,endPointsCtr,rightHanded,idest)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
        integer,dimension(REGION_DIM),intent(IN) :: regionSizeCtr
        real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
        logical, intent(INOUT) :: applied
-       type(flash_tile_t),intent(IN) :: tileDesc
+       type(Grid_tile_t),intent(IN) :: tileDesc
        integer,intent(IN) :: secondDir,thirdDir
        integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPointsCtr
        logical, intent(IN) :: rightHanded
@@ -1291,21 +1291,21 @@ Module Grid_interface
 
   interface
      subroutine Grid_getTileIterator(itor, nodetype, level, tiling, tileSize)
-       use flash_iterator, ONLY : flash_iterator_t
+       use Grid_iterator, ONLY : Grid_iterator_t
        implicit none
-       type(flash_iterator_t), intent(OUT)          :: itor
-       integer,                intent(IN)           :: nodetype
-       integer,                intent(IN), optional :: level
-       logical,                intent(IN), optional :: tiling
-       integer,                intent(IN), optional :: tileSize(1:MDIM)
+       type(Grid_iterator_t), intent(OUT)          :: itor
+       integer,               intent(IN)           :: nodetype
+       integer,               intent(IN), optional :: level
+       logical,               intent(IN), optional :: tiling
+       integer,               intent(IN), optional :: tileSize(1:MDIM)
      end subroutine Grid_getTileIterator
   end interface
 
   interface
      subroutine Grid_releaseTileIterator(itor)
-       use flash_iterator, ONLY : flash_iterator_t
+       use Grid_iterator, ONLY : Grid_iterator_t
        implicit none
-       type(flash_iterator_t), intent(INOUT) :: itor
+       type(Grid_iterator_t), intent(INOUT) :: itor
      end subroutine Grid_releaseTileIterator
   end interface
 

@@ -66,7 +66,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     use gr_amrexInterface,      ONLY : gr_splitFabAtBoundary, &
                                        gr_copyFabInteriorToRegion, &
                                        gr_copyGuardcellRegionToFab
-    use flash_tile,             ONLY : flash_tile_t 
+    use Grid_tile,              ONLY : Grid_tile_t 
 
     implicit none
 
@@ -82,7 +82,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     integer                :: gds
     type(amrex_mfiter)     :: mfi
     type(amrex_box)        :: box
-    type(flash_tile_t)     :: tileDesc
+    type(Grid_tile_t)      :: tileDesc
     
     integer :: n_cells_domain
     integer :: n_cells_level

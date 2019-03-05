@@ -72,7 +72,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
    use gr_interface,           ONLY : gr_estimateBlkError
    use gr_physicalMultifabs,   ONLY : unk
-   use flash_tile,             ONLY : flash_tile_t 
+   use Grid_tile,              ONLY : Grid_tile_t 
 
    implicit none
  
@@ -85,7 +85,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    type(amrex_tagboxarray) :: tag
    type(amrex_mfiter)      :: mfi                                                             
    type(amrex_box)         :: bx
-   type(flash_tile_t)      :: tileDesc
+   type(Grid_tile_t)       :: tileDesc
 
    real(wp),               contiguous, pointer :: solnData(:,:,:,:)
    character(kind=c_char), contiguous, pointer :: tagData(:,:,:,:)

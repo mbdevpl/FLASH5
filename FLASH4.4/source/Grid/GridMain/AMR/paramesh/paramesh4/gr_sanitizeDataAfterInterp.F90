@@ -74,8 +74,8 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   use physicaldata, ONLY:unk, gcell_on_cc
   use tree, ONLY:nodetype
   use paramesh_dimensions, ONLY: il_bnd,iu_bnd,jl_bnd,ju_bnd,kl_bnd,ku_bnd, kl_bndi, ndim
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile,     ONLY : flash_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
 
   implicit none
 #include "constants.h"
@@ -94,8 +94,8 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   integer :: kwrite,locs(3),kReorder(1:ku_bnd-kl_bnd+1),nReorder
   character(len=32), dimension(4,2) :: block_buff
   character(len=32)                 :: number_to_str
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
 111 format (a,a,a1,(1x,a18,'=',a),(1x,a2,'=',a5),(1x,a5,'=',a),(1x,a4,'=',a))
 112 format (i3,1x,24(1x,1G8.2))

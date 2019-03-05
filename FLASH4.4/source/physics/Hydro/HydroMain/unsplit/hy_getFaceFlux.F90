@@ -100,7 +100,7 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
   use MagneticResistivity_interface, ONLY : MagneticResistivity
 #endif
   use Grid_interface, ONLY : Grid_getCellCoords
-  use flash_tile,     ONLY : flash_tile_t
+  use Grid_tile,      ONLY : Grid_tile_t
 
   implicit none
 
@@ -109,7 +109,7 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
 #include "UHD.h"
 
   !! Arguments type declaration ------------------------------
-  type(flash_tile_t), intent(IN)  :: tileDesc
+  type(Grid_tile_t), intent(IN)  :: tileDesc
   integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
   real,    dimension(MDIM), intent(IN)         :: del
 

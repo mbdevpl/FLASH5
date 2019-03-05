@@ -118,10 +118,10 @@ subroutine gr_getDataOffsets_blk(block,gridDataStruct,startingPos,length,beginCo
 end subroutine gr_getDataOffsets_blk
 
 subroutine gr_getDataOffsets(tileDesc,gridDataStruct,startingPos,length,beginCount,begOffset,getIntPtr)
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
-  type(flash_tile_t), intent(IN) :: tileDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   integer, intent(IN)  :: gridDataStruct
   integer, intent(IN)  :: beginCount
   integer,dimension(MDIM),intent(IN) :: startingPos

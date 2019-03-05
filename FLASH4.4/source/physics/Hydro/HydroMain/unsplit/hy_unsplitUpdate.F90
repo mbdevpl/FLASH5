@@ -74,7 +74,7 @@
                                   blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                   scrch_Ptr)
 
-    use flash_tile,           ONLY : flash_tile_t
+    use Grid_tile,            ONLY : Grid_tile_t
     use Hydro_data,           ONLY : hy_smalldens,hy_order,hy_irenorm,hy_numXN, &
                                      hy_meshMe, &
                                      hy_geometry, hy_gcMaskSize, &
@@ -113,7 +113,7 @@
     implicit none
 
     !! ---- Arguments ---------------------------------
-    type(flash_tile_t), intent(IN) :: tileDesc
+    type(Grid_tile_t), intent(IN) :: tileDesc
     integer,intent(IN) :: rangeSwitch
     real, intent(IN)   :: dt
     real, intent(IN)   :: del(MDIM)

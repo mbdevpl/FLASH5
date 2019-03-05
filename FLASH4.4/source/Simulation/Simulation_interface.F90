@@ -43,10 +43,10 @@ Module Simulation_interface
 
   interface
      subroutine Simulation_initBlock(solnData,tileDesc)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        real,dimension(:,:,:,:),pointer :: solnData
-       type(flash_tile_t), intent(in) :: tileDesc
+       type(Grid_tile_t), intent(in) :: tileDesc
      end subroutine Simulation_initBlock
   end interface
 
@@ -117,10 +117,10 @@ Module Simulation_interface
 
   interface
      subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
-       use flash_tile, ONLY : flash_tile_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        real,dimension(:,:,:,:),POINTER_INTENT_IN :: solnData
-       type(flash_tile_t), intent(in) :: tileDesc
+       type(Grid_tile_t), intent(in) :: tileDesc
        real   , intent (IN) :: tcurr
      end subroutine Simulation_computeAnalytical
   end interface

@@ -3,15 +3,15 @@
 
 subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind(c)
    use iso_c_binding
-   use amrex_fort_module,      ONLY : wp => amrex_real
-   use amrex_box_module,       ONLY : amrex_box
-   use amrex_tagbox_module,    ONLY : amrex_tagboxarray
-   use amrex_multifab_module,  ONLY : amrex_mfiter, &
-                                      amrex_mfiter_build, &
-                                      amrex_mfiter_destroy
+   use amrex_fort_module,     ONLY : wp => amrex_real
+   use amrex_box_module,      ONLY : amrex_box
+   use amrex_tagbox_module,   ONLY : amrex_tagboxarray
+   use amrex_multifab_module, ONLY : amrex_mfiter, &
+                                     amrex_mfiter_build, &
+                                     amrex_mfiter_destroy
  
-   use flash_tile,             ONLY : flash_tile_t
-   use gr_physicalMultifabs,   ONLY : unk
+   use Grid_tile,             ONLY : Grid_tile_t
+   use gr_physicalMultifabs,  ONLY : unk
 
    implicit none
  
@@ -24,7 +24,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    type(amrex_tagboxarray) :: tag
    type(amrex_mfiter)      :: mfi                                                             
    type(amrex_box)         :: bx
-   type(flash_tile_t)      :: blockDesc
+   type(Grid_tile_t)       :: blockDesc
 
    real(wp),               contiguous, pointer :: solnData(:,:,:,:)
    character(kind=c_char), contiguous, pointer :: tagData(:,:,:,:)

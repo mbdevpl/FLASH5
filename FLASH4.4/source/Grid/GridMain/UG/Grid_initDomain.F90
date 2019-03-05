@@ -40,14 +40,14 @@ subroutine Grid_initDomain( restart,particlesInitialized)
        gr_globalNumProcs
   use Eos_interface, ONLY : Eos_wrapped
   use Simulation_interface, ONLY : Simulation_initBlock, Simulation_initRestart
-  use flash_tile, ONLY : flash_tile_t
-  use flash_iterator, ONLY : flash_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
-  type(flash_tile_t) :: tileDesc
-  type(flash_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
   
   logical, intent(in) :: restart
   logical, intent(inout) :: particlesInitialized

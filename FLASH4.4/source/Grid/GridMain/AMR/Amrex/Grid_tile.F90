@@ -1,4 +1,4 @@
-!!****ih* source/Grid/GridMain/AMR/Amrex/flash_tile
+!!****ih* source/Grid/GridMain/AMR/Amrex/Grid_tile
 !!
 !!  NOTES
 !!    It is generally expected that these objects will never be created directly
@@ -70,12 +70,12 @@
 #include "constants.h"
 #include "Flash.h"
 
-module flash_tile
+module Grid_tile
     implicit none
 
     private
 
-    type, public :: flash_tile_t
+    type, public :: Grid_tile_t
         integer, public :: level
         integer, public :: grid_index
         integer, public :: tile_index
@@ -91,15 +91,15 @@ module flash_tile
         procedure, public :: getDataPtr
         procedure, public :: releaseDataPtr
         procedure, public :: enclosingBlock
-    end type flash_tile_t
+    end type Grid_tile_t
 
 contains
 
     subroutine deltas(this, dx)
         use amrex_amrcore_module, ONLY : amrex_geom
 
-        class(flash_tile_t), intent(IN)  :: this
-        real,                intent(OUT) :: dx(1:MDIM)
+        class(Grid_tile_t), intent(IN)  :: this
+        real,               intent(OUT) :: dx(1:MDIM)
 
         ! AMReX uses zero-based level indexing, but FLASH assumes one-based
         dx(:) = 0.0
@@ -110,8 +110,8 @@ contains
         use amrex_amrcore_module,  ONLY : amrex_geom
         use amrex_geometry_module, ONLY : amrex_problo
 
-        class(flash_tile_t), intent(IN)  :: this
-        real,                intent(OUT) :: box(LOW:HIGH, 1:MDIM)
+        class(Grid_tile_t), intent(IN)  :: this
+        real,               intent(OUT) :: box(LOW:HIGH, 1:MDIM)
 
         ! DEV: FIXME How to manage matching amrex_real to FLASH real
         box(:, :) = 1.0
@@ -132,8 +132,8 @@ contains
     subroutine physicalSize(this, tileSize) 
         use amrex_amrcore_module, ONLY : amrex_geom
 
-        class(flash_tile_t), intent(IN)  :: this
-        real,                intent(OUT) :: tileSize(1:MDIM) 
+        class(Grid_tile_t), intent(IN)  :: this
+        real,               intent(OUT) :: tileSize(1:MDIM) 
 
         tileSize(:) = 0.0
 
@@ -149,9 +149,9 @@ contains
         use Grid_data,            ONLY : gr_globalDomain, &
                                          gr_domainBC
 
-        class(flash_tile_t), intent(IN)            :: this
-        integer,             intent(OUT)           :: faces(LOW:HIGH, 1:MDIM)
-        integer,             intent(OUT), optional :: onBoundary(LOW:HIGH, 1:MDIM)
+        class(Grid_tile_t), intent(IN)            :: this
+        integer,            intent(OUT)           :: faces(LOW:HIGH, 1:MDIM)
+        integer,            intent(OUT), optional :: onBoundary(LOW:HIGH, 1:MDIM)
         
         real    :: bnd_box(LOW:HIGH, 1:MDIM)
         real    :: deltas(1:MDIM)
@@ -196,8 +196,8 @@ contains
 
         use gr_physicalMultifabs, ONLY : unk
 
-        class(flash_tile_t), intent(IN)  :: this
-        type(flash_tile_t)               :: enclosingBlock
+        class(Grid_tile_t), intent(IN)  :: this
+        type(Grid_tile_t)               :: enclosingBlock
 
         type(amrex_box) :: parent_box
         integer         :: idx(1:MDIM+1)
@@ -246,10 +246,10 @@ contains
                                            facevarx, facevary, facevarz, &
                                            fluxes
 
-        class(flash_tile_t), intent(IN),  target   :: this
-        real(wp),                         pointer  :: dataPtr(:, :, :, :)
-        integer,             intent(IN)            :: gridDataStruct
-        logical,             intent(IN),  optional :: localFlag
+        class(Grid_tile_t), intent(IN),  target   :: this
+        real(wp),                        pointer  :: dataPtr(:, :, :, :)
+        integer,            intent(IN)            :: gridDataStruct
+        logical,            intent(IN),  optional :: localFlag
 
         integer :: lo(1:MDIM)
 
@@ -330,12 +330,12 @@ contains
     subroutine releaseDataPtr(this, dataPtr, gridDataStruct)
         use amrex_fort_module, ONLY : wp => amrex_real
 
-        class(flash_tile_t), intent(IN)            :: this
-        real(wp),            intent(OUT), pointer  :: dataPtr(:, :, :, :)
-        integer,             intent(IN)            :: gridDataStruct
+        class(Grid_tile_t), intent(IN)            :: this
+        real(wp),           intent(OUT), pointer  :: dataPtr(:, :, :, :)
+        integer,            intent(IN)            :: gridDataStruct
 
         nullify(dataPtr)
     end subroutine releaseDataPtr
 
-end module flash_tile
+end module Grid_tile
 

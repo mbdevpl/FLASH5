@@ -60,12 +60,12 @@ subroutine Simulation_initBlock(solnData, tileDesc)
      
   use Eos_interface, ONLY : Eos, Eos_wrapped
   use Grid_interface, ONLY : Grid_getCellCoords
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
   real,dimension(:,:,:,:),pointer :: solnData
-  type(flash_tile_t), intent(in) :: tileDesc
+  type(Grid_tile_t), intent(in) :: tileDesc
 
   integer :: i, j, k, n
   integer :: iMax, jMax, kMax

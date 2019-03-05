@@ -39,12 +39,12 @@
 !!***
 
 subroutine gr_estimateBlkError(error, tileDesc, iref, refine_filter)
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
   integer, intent(IN) :: iref
-  type(flash_tile_t),intent(IN) :: tileDesc
+  type(Grid_tile_t),intent(IN) :: tileDesc
   real, intent(IN) ::  refine_filter
   real,intent(INOUT) :: error
 

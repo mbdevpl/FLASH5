@@ -29,12 +29,12 @@
 #include "Flash.h"
   
 subroutine Simulation_initBlock(initData, tileDesc)
-    use flash_tile, ONLY : flash_tile_t
+    use Grid_tile, ONLY : Grid_tile_t
 
     implicit none
 
-    real,                           pointer :: initData(:, :, :, :)
-    type(flash_tile_t), intent(IN)          :: tileDesc
+    real,                          pointer :: initData(:, :, :, :)
+    type(Grid_tile_t), intent(IN)          :: tileDesc
 
     integer :: i, j, k, var
 

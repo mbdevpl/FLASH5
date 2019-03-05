@@ -39,8 +39,8 @@ subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
                                  Grid_releaseTileIterator
       use Driver_interface, ONLY : Driver_abortFlash
       use IO_data, only: io_unkToGlobal, io_globalComm
-      use flash_iterator, ONLY : flash_iterator_t
-      use flash_tile,     ONLY : flash_tile_t 
+      use Grid_iterator, ONLY : Grid_iterator_t
+      use Grid_tile,     ONLY : Grid_tile_t 
       implicit none
       
 #include "Flash_mpi.h"
@@ -62,8 +62,8 @@ subroutine io_getVarExtrema(nvars, globalVarMin, globalVarMax, gridDataStruct)
 
       integer :: ierr
       integer, dimension(2,MDIM) :: blkLmts
-      type(flash_iterator_t) :: itor
-      type(flash_tile_t)     :: tileDesc
+      type(Grid_iterator_t) :: itor
+      type(Grid_tile_t)     :: tileDesc
 
       nullify(solnData)
 

@@ -41,12 +41,12 @@
 !!***
 
 subroutine Simulation_initBlock(solnData, tileDesc)
-  use flash_tile, ONLY : flash_tile_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
   real,dimension(:,:,:,:),pointer :: solnData
-  type(flash_tile_t), intent(in) :: tileDesc
+  type(Grid_tile_t), intent(in) :: tileDesc
 
   return
 end subroutine Simulation_initBlock

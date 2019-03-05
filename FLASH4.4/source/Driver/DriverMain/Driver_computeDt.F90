@@ -79,8 +79,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Particles_interface, ONLY: Particles_computeDt
 
   use IncompNS_interface, ONLY : IncompNS_computeDt
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile, ONLY : flash_tile_t 
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t 
 
   implicit none
 
@@ -159,8 +159,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   real :: extraHydroInfoMin
   real :: extraHydroInfoApp
   real :: dtNewComputed
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
   integer:: ib, level, maxLev
   real :: err
 

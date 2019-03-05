@@ -44,7 +44,7 @@ subroutine Grid_getLeafIterator(itor, level, tiling)
   integer,               intent(IN), optional :: level
   logical,               intent(IN), optional :: tiling
 
-!  call Driver_abortFlash("[Grid_getLeafIterator] This iterator is DEPRECATED.  Use flash_iterator_t.")
+!  call Driver_abortFlash("[Grid_getLeafIterator] This iterator is DEPRECATED.  Use Grid_iterator_t.")
 
   call build_iterator(itor, level, .FALSE.)
 end subroutine Grid_getLeafIterator

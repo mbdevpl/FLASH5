@@ -17,13 +17,13 @@
 subroutine Grid_zeroFluxData()
   use Grid_interface,       ONLY : Grid_getTileIterator, &
                                    Grid_releaseTileIterator
-  use flash_iterator,       ONLY : flash_iterator_t
-  use flash_tile,           ONLY : flash_tile_t
+  use Grid_iterator,        ONLY : Grid_iterator_t
+  use Grid_tile,            ONLY : Grid_tile_t
 
   implicit none
 
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
   real, pointer :: fluxData(:, :, :, :)
   integer       :: i, j, k, var

@@ -54,8 +54,8 @@ subroutine gr_expandDomain (particlesInitialized)
     Particles_updateRefinement
   use Driver_interface, ONLY : Driver_abortFlash
   use RadTrans_interface, ONLY: RadTrans_sumEnergy
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile, ONLY : flash_tile_t 
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t 
 
   implicit none
 
@@ -74,8 +74,8 @@ subroutine gr_expandDomain (particlesInitialized)
   character(len=32)                 :: int_to_str
   integer :: gridDataStruct, whichBlocks
   integer :: lnblocks, lrefineMinSave
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
   real, pointer          :: solnData(:,:,:,:)
 
   !!============================================================================

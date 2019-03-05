@@ -73,8 +73,8 @@ subroutine gr_updateRefinement( gridChanged)
                                   amr_prolong
   use Eos_interface, ONLY : Eos_wrapped
   use Particles_interface, ONLY : Particles_updateRefinement 
-  use flash_iterator, ONLY : flash_iterator_t
-  use flash_tile,     ONLY : flash_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
 
   implicit none
 
@@ -88,8 +88,8 @@ subroutine gr_updateRefinement( gridChanged)
   integer, dimension(MDIM) :: layers
   integer :: blockID
   real,dimension(:,:,:,:),pointer :: solnData
-  type(flash_iterator_t) :: itor
-  type(flash_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
 !=============================================================================
 
   call Timers_start("tree") !2 of 2 (split into 2 so valid to TAU)

@@ -57,8 +57,8 @@ subroutine Driver_evolveFlash()
                                       gr_enforceMaxRefinement, &
                                       gr_eosMode, &
                                       gr_eosModeInit
-    use flash_iterator,        ONLY : flash_iterator_t
-    use flash_tile,            ONLY : flash_tile_t
+    use Grid_iterator,         ONLY : Grid_iterator_t
+    use Grid_tile,             ONLY : Grid_tile_t
     use ut_testDriverMod
 
     implicit none
@@ -96,29 +96,29 @@ subroutine Driver_evolveFlash()
     real    :: z_expected
     integer :: max_level
 
-    type(flash_iterator_t) :: itor
-    type(flash_tile_t)     :: tileDesc
-    real, pointer          :: solnData(:, :, :, :)
-    integer                :: n_blocks
-    integer                :: blkLimits(LOW:HIGH, 1:MDIM)
-    integer                :: blkLimitsGC(LOW:HIGH, 1:MDIM)
-    integer                :: blkGC(LOW:HIGH, 1:MDIM)
-    integer                :: blkSize(1:MDIM)
-    integer                :: xBlkMin
-    integer                :: xBlkMax
-    integer                :: yBlkMin
-    integer                :: yBlkMax
-    integer                :: zBlkMin
-    integer                :: zBlkMax
-    real                   :: xMin
-    real                   :: xMax
-    real                   :: yMin
-    real                   :: yMax
-    real                   :: zMin
-    real                   :: zMax
-    real                   :: boundBox(LOW:HIGH, 1:MDIM)
-    real                   :: c_lo(1:MDIM)
-    real                   :: c_hi(1:MDIM)
+    type(Grid_iterator_t) :: itor
+    type(Grid_tile_t)     :: tileDesc
+    real, pointer         :: solnData(:, :, :, :)
+    integer               :: n_blocks
+    integer               :: blkLimits(LOW:HIGH, 1:MDIM)
+    integer               :: blkLimitsGC(LOW:HIGH, 1:MDIM)
+    integer               :: blkGC(LOW:HIGH, 1:MDIM)
+    integer               :: blkSize(1:MDIM)
+    integer               :: xBlkMin
+    integer               :: xBlkMax
+    integer               :: yBlkMin
+    integer               :: yBlkMax
+    integer               :: zBlkMin
+    integer               :: zBlkMax
+    real                  :: xMin
+    real                  :: xMax
+    real                  :: yMin
+    real                  :: yMax
+    real                  :: zMin
+    real                  :: zMax
+    real                  :: boundBox(LOW:HIGH, 1:MDIM)
+    real                  :: c_lo(1:MDIM)
+    real                  :: c_hi(1:MDIM)
     
     real, allocatable :: x_coords(:)
     real, allocatable :: y_coords(:)
