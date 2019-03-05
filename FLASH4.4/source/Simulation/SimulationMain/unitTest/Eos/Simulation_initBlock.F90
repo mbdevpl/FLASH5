@@ -8,7 +8,7 @@
 !! SYNOPSIS
 !!
 !!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
-!!                            integer(IN)  :: blockDesc  )
+!!                            integer(IN)  :: tileDesc  )
 !!
 !!
 !!
@@ -23,13 +23,13 @@
 !! ARGUMENTS
 !!
 !!  solnData  -        pointer to solution data
-!!  blockDesc -        describes the block to initialize
+!!  tileDesc -        describes the block to initialize
 !!
 !!
 !!***
 
 !!REORDER(4): solnData
-subroutine Simulation_initBlock(solnData,blockDesc)
+subroutine Simulation_initBlock(solnData,tileDesc)
 
 
   use Simulation_data, ONLY : sim_xmin,sim_xmax,sim_ymin,sim_ymax,&
@@ -40,7 +40,7 @@ subroutine Simulation_initBlock(solnData,blockDesc)
   use Simulation_data, ONLY : sim_meshMe, sim_debug
   use Grid_interface, ONLY : Grid_getCellCoords, Grid_getGlobalIndexLimits
     
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
@@ -48,7 +48,7 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 #include "Flash.h"
   
   real,dimension(:,:,:,:),pointer :: solnData
-  type(block_metadata_t), intent(in) :: blockDesc
+  type(Grid_tile_t), intent(in) :: tileDesc
 
   integer :: iMax, jMax, kMax
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
@@ -70,47 +70,50 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 
   
   real,allocatable,dimension(:) :: xCenter,yCenter,zCenter
-  logical,parameter :: gcell = .true.
-  integer :: sizeX, sizeY, sizeZ
   integer,dimension(MDIM) :: pos,globalInd
   integer,save :: callNo = 0
   
 
   call Grid_getGlobalIndexLimits(globalInd)
 
-  blkLimits = blockDesc%limits
-  blkLimitsGC = blockDesc%limitsGC
+  blkLimits = tileDesc%limits
+  blkLimitsGC = tileDesc%grownLimits
 
   if (sim_debug .AND. (sim_meshMe == MASTER_PE)) then
      callNo = callNo + 1
 #ifdef FLASH_GRID_PARAMESH
-     blockID = blockDesc%id
+     blockID = tileDesc%id
 #else
-     blockID = blockDesc % grid_index
+     blockID = tileDesc % grid_index
 #endif
      print*,'call Simulation_initBlock #',callNo,blockID
      print*,'globalInd  :',globalInd
      print*,'blkLimits  :',blkLimits
      print*,'blkLimitsGC:',blkLimitsGC
   end if
-  
-  sizeX = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
-  sizeY = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
-  sizeZ = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
-  
+
   allocate(xCenter( blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS) ))
   allocate(yCenter( blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS) ))
   allocate(zCenter( blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS) ))
-  
+
   zCenter=0.0
   yCenter=0.0
-  if (NDIM == 3) call Grid_getCellCoords&
-                      (KAXIS, blockDesc, CENTER, gcell, zCenter, sizeZ)
-  if (NDIM >= 2) call Grid_getCellCoords&
-                      (JAXIS, blockDesc, CENTER, gcell, yCenter, sizeY)
-
-  call Grid_getCellCoords(IAXIS, blockDesc, CENTER, gcell, xCenter, sizeX)
-
+#if NDIM == 3
+  call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                          blkLimitsGC(LOW,  :), &
+                          blkLimitsGC(HIGH, :), &
+                          zCenter)
+#endif
+#if NDIM >= 2
+  call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                          blkLimitsGC(LOW,  :), &
+                          blkLimitsGC(HIGH, :), &
+                          yCenter)
+#endif
+  call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                          blkLimitsGC(LOW,  :), &
+                          blkLimitsGC(HIGH, :), &
+                          xCenter)
 
   npts_x = globalInd(IAXIS)
   npts_y = globalInd(JAXIS)
