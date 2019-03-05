@@ -131,17 +131,17 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
   use Grid_data, ONLY : gr_axisComm, gr_exch, gr_gridDataStruct, &
        gr_justExchangedGC,gr_domainBC, &
        gr_offset,gr_allPeriodic,gr_bndOrder, gr_meshMe
-  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_bcInterface, ONLY : gr_bcApplyToAllBlks
-  use block_metadata, ONLY : block_metadata_t
-  use leaf_iterator, ONLY: leaf_iterator_t
+  use flash_tile, ONLY : flash_tile_t
+  use flash_iterator, ONLY: flash_iterator_t
   implicit none
 #include "constants.h"
 #include "Flash.h"
 
-  type(block_metadata_t) :: blockDesc
-  type(leaf_iterator_t) :: itor
+  type(flash_tile_t) :: tileDesc
+  type(flash_iterator_t) :: itor
   integer, intent(in) :: gridDataStruct
   integer, intent(in) :: idir
   integer, optional,intent(in) :: minLayers
@@ -246,13 +246,14 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
         if(gr_meshMe == MASTER_PE)print*,'warning: trying to fill face along Z for 2D problem'
      end if
   end select
-  
-  call Grid_getLeafIterator(itor)
+
+  ! DEV: FIXME Should this be moved inside the loop?
+  call Grid_getTileIterator(itor, ALL_BLKS)
   do i = beginDataType,endDataType
-     do while(itor%is_valid())
-        call itor%blkMetaData(blockDesc)
-        blkLimits(:,:)=blockDesc%limits
-        blkLimitsGC(:,:)=blockDesc%limitsGC
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+        blkLimits(:,:)=tileDesc%limits
+        blkLimitsGC(:,:)=tileDesc%grownLimits
         guard(:)=blkLimits(LOW,:)-blkLimitsGC(LOW,:) 
         recvLeft(:,1)=1
         sendLeft(:,1)=1
@@ -283,6 +284,7 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
         call itor%next()
      end do
   end do
+  call Grid_releaseTileIterator(itor)
   if(.not.gr_allPeriodic) then
      do n = 0,NDIM-1
         axis = gr_bndOrder(NDIM-n)

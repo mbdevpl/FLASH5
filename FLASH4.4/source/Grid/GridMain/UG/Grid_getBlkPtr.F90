@@ -58,77 +58,19 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkPtr(block,dataPtr, gridDataStruct)
-
 #include "constants.h"
 #include "Flash.h"
 
-  use Grid_data, ONLY : gr_iloGc, gr_jloGc, gr_kloGc
-  use physicaldata, ONLY : unk, facevarx, facevary, facevarz
+subroutine Grid_getBlkPtr(block,dataPtr, gridDataStruct)
   use Driver_interface, ONLY : Driver_abortFlash
-!!$  use gr_specificData, ONLY : scratch,scratch_ctr,&
-!!$       scratch_facevarx,scratch_facevary,scratch_facevarz
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
+  
   type(block_metadata_t), intent(in) :: block
   real, dimension(:,:,:,:), pointer :: dataPtr
   integer, optional,intent(in) :: gridDataStruct
   
-  integer :: gds, blkPtrRefCount, lastBlkPtrGotten
-  logical :: validGridDataStruct
-
-
-#ifdef DEBUG_GRID
-  if(present(gridDataStruct)) then
-     validGridDataStruct = .false.
-     validGridDataStruct= (gridDataStruct == CENTER).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == FACEX).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == FACEY).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == FACEZ).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH_CTR).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH_FACEX).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH_FACEY).or.validGridDataStruct
-     validGridDataStruct= (gridDataStruct == SCRATCH_FACEZ).or.validGridDataStruct
-     
-     if(.not.validGridDataStruct) then
-        print *, "Grid_getBlkPtr: gridDataStruct set to improper value"
-        print *, "gridDataStruct must = CENTER,FACEX,FACEY,FACEZ," // &
-             "WORK or SCRATCH (defined in constants.h)"
-        call Driver_abortFlash("gridDataStruct must be one of CENTER,FACEX,FACEY,FACEZ,SCRATCH (see constants.h)")
-     end if
-  end if
-  if((blockid<1).or.(blockid>MAXBLOCKS)) then
-     print *, 'Grid_getBlkPtr:  invalid blockid ',blockid
-     call Driver_abortFlash("[Grid_getBlkPtr] invalid blockid ")
-  end if
-#endif
-
-  if(present(gridDataStruct)) then
-     gds = gridDataStruct
-  else
-     gds = CENTER
-  end if
-
-  select case (gds)
-  case(CENTER)
-     dataPtr(1:, gr_iloGc:, gr_jloGc:, gr_kloGc:) => unk(:,:,:,:,1)
-  case(FACEX)
-     dataPtr => facevarx(1:,gr_iloGc:,gr_jloGc:,gr_kloGc:,1)
-  case(FACEY)
-     dataPtr => facevary(1:,gr_iloGc:,gr_jloGc:,gr_kloGc:,1)
-  case(FACEZ)
-     dataPtr => facevarz(1:,gr_iloGc:,gr_jloGc:,gr_kloGc:,1)
-  end select
-
-  return
+  call Driver_abortFlash("[Grid_getBlkPtr] DEPRECATED: Use tile object")
 end subroutine Grid_getBlkPtr
-
-
-
-
-
-
-
 

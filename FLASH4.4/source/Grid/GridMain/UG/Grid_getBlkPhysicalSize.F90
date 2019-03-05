@@ -55,37 +55,18 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkPhysicalSize(block, blockSize)
-
-  use Grid_data, ONLY :gr_iCoords,gr_jCoords,gr_kCoords
-  use Grid_data, ONLY: gr_ilo,gr_ihi,gr_jlo,gr_jhi,gr_klo,gr_khi
- use block_metadata, ONLY : block_metadata_t
-  implicit none
-
 #include "constants.h"
 #include "Flash.h"
+
+subroutine Grid_getBlkPhysicalSize(block, blockSize)
+  use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata,   ONLY : block_metadata_t
+
+  implicit none
+
   type(block_metadata_t), intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockSize
 
-  blockSize=0.0
-  blockSize(IAXIS) = gr_iCoords(RIGHT_EDGE,gr_ihi,1) - &
-                       gr_iCoords(LEFT_EDGE,gr_ilo,1)
-  if(NDIM>1) blockSize(JAXIS) = gr_jCoords(RIGHT_EDGE,gr_jhi,1)-&
-       gr_jCoords(LEFT_EDGE,gr_jlo,1)
-  if(NDIM>2) blockSize(KAXIS) = gr_kCoords(RIGHT_EDGE,gr_khi,1)-&
-       gr_kCoords(LEFT_EDGE,gr_klo,1)
-
-  return
+  call Driver_abortFlash("[Grid_getBlkPhysicalSize] DEPRECATED: Use tile object")
 end subroutine Grid_getBlkPhysicalSize
-
-
-
-
-
-
-
-
-
-
-
 

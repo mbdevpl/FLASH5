@@ -43,8 +43,8 @@
 #include "constants.h"
 
 subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
+  use Driver_interface, ONLY : Driver_abortFlash
   use block_metadata,   ONLY : block_metadata_t
-  use Grid_data, ONLY : gr_flxx, gr_flxy, gr_flxz
 
   implicit none
   
@@ -54,24 +54,6 @@ subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
   real, pointer                      :: fluxPtrY(:,:,:,:)
   real, pointer                      :: fluxPtrZ(:,:,:,:)
 
-  integer :: blockID
-  integer :: lowerBounds(MDIM)
-
-  lowerBounds(IAXIS) = blockDesc%limits(LOW, IAXIS) 
-  lowerBounds(JAXIS) = blockDesc%limits(LOW, JAXIS) 
-  lowerBounds(KAXIS) = blockDesc%limits(LOW, KAXIS) 
-  
-  associate (lo => lowerBounds)
-#ifdef INDEXREORDER
-    fluxPtrX(lo(1):, lo(2):, lo(3):, 1:) => gr_flxx(:,:,:,:)
-    fluxPtrY(lo(1):, lo(2):, lo(3):, 1:) => gr_flxy(:,:,:,:)
-    fluxPtrZ(lo(1):, lo(2):, lo(3):, 1:) => gr_flxz(:,:,:,:)
-#else
-    fluxPtrX(1:, lo(1):, lo(2):, lo(3):) => gr_flxx(:,:,:,:)
-    fluxPtrY(1:, lo(1):, lo(2):, lo(3):) => gr_flxy(:,:,:,:)
-    fluxPtrZ(1:, lo(1):, lo(2):, lo(3):) => gr_flxz(:,:,:,:) 
-#endif
-  end associate
-
+  call Driver_abortFlash("[Grid_getFluxPtr] DEPRECATED: Use tile object")
 end subroutine Grid_getFluxPtr
 

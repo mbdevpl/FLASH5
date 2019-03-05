@@ -65,55 +65,18 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkBoundBox(block,boundBox)
-  use Grid_data, ONLY :gr_iCoords,gr_jCoords,gr_kCoords
-  use Grid_data, ONLY: gr_ilo,gr_ihi,gr_jlo,gr_jhi,gr_klo,gr_khi
-  use block_metadata, ONLY : block_metadata_t
+#include "constants.h"
+#include "Flash.h"
 
+subroutine Grid_getBlkBoundBox(block,boundBox)
+  use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata,   ONLY : block_metadata_t
 
   implicit none
 
-#include "constants.h"
-#include "Flash.h"
   type(block_metadata_t), intent(in) :: block
   real,dimension(2,MDIM),intent(out) :: boundBox
 
-
-  boundBox = 0.0
-
-
-
-  boundBox(1,IAXIS) = gr_iCoords(LEFT_EDGE,gr_ilo,1)
-#if NDIM > 1
-  boundBox(1,JAXIS) = gr_jCoords(LEFT_EDGE,gr_jlo,1)
-#endif
-#if NDIM > 2
-  boundBox(1,KAXIS) = gr_kCoords(LEFT_EDGE,gr_klo,1)
-#endif
-
-
-
-  boundBox(2,IAXIS) = gr_iCoords(RIGHT_EDGE,gr_ihi,1)
-#if NDIM>1 
-  boundBox(2,JAXIS) = gr_jCoords(RIGHT_EDGE,gr_jhi,1)
-#endif
-#if NDIM>2
-  boundBox(2,KAXIS) = gr_kCoords(RIGHT_EDGE,gr_khi,1)
-#endif
-
-  return
+  call Driver_abortFlash("[Grid_getBlkBoundBox] DEPRECATED: Use tile object")
 end subroutine Grid_getBlkBoundBox
-
-
-
-
-
-
-
-
-
-
-
-
-
 

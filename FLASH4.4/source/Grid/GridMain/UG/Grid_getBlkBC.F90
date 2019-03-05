@@ -47,33 +47,19 @@
 !!
 !!***
 
+#include "constants.h"
+#include "Flash.h"
 
 subroutine Grid_getBlkBC(block, faces,onBoundary)
+  use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata,   ONLY : block_metadata_t
 
-  use Grid_data, ONLY : gr_blkBC
-  use block_metadata, ONLY : block_metadata_t
-implicit none
-#include "Flash.h"
-#include "constants.h"
+  implicit none
+
   type(block_metadata_t), intent(in) :: block
   integer, dimension(2,MDIM),intent(out):: faces
-  !! NOTE onBoundary only included for compatibility with the paramesh versions and interface.
   integer, optional, dimension(LOW:HIGH,MDIM),intent(out):: onBoundary
 
-  faces = gr_blkBC
-
-  where (faces == PERIODIC)
-     faces = NOT_BOUNDARY
-  end where 
-  
-  if (present (onBoundary)) then     
-     onBoundary = gr_blkBC
-  endif
- 
-  return
+  call Driver_abortFlash("[Grid_getBlkBC] DEPRECATED: Use tile object")
 end subroutine Grid_getBlkBC
-
-
-
-
 

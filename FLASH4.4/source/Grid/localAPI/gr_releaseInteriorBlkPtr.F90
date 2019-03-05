@@ -23,13 +23,27 @@
 !!  gr_getInteriorBlkPtr
 !!***
 
-subroutine gr_releaseInteriorBlkPtr(blockID,dataPtr,gridDataStruct)
+subroutine gr_releaseInteriorBlkPtr_blk(blockDesc, dataPtr, gridDataStruct)
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
-  integer, intent(IN) :: blockID
-  real, pointer :: dataPtr(:,:,:,:)
-  integer, intent(IN) :: gridDataStruct  
 
+  type(block_metadata_t), intent(IN)         :: blockDesc
+  real,                              pointer :: dataPtr(:,:,:,:)
+  integer,                intent(in)         :: gridDataStruct
+  
   nullify(dataPtr)
+end subroutine gr_releaseInteriorBlkPtr_blk
 
+subroutine gr_releaseInteriorBlkPtr(tileDesc, dataPtr, gridDataStruct)
+  use flash_tile, ONLY : flash_tile_t
+
+  implicit none
+
+  type(flash_tile_t), intent(IN)         :: tileDesc
+  real,                          pointer :: dataPtr(:,:,:,:)
+  integer,            intent(IN)         :: gridDataStruct
+  
+  nullify(dataPtr)
 end subroutine gr_releaseInteriorBlkPtr
+

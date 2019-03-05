@@ -75,7 +75,6 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
      face(LOW)=LOW
      face(HIGH)=HIGH
 
-     call Driver_abortFlash("[gr_bcApplyToAllBlks] This has not been tested")
      call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.)
      do while (itor%isValid())
         call itor%currentTile(tileDesc) 
@@ -111,3 +110,4 @@ subroutine gr_bcApplyToAllBlks(axis,isWork)
 #endif
 
 end subroutine gr_bcApplyToAllBlks
+

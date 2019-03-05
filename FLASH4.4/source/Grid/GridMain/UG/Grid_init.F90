@@ -262,8 +262,15 @@ subroutine Grid_init()
   call gr_sbInit()
 
   gr_region=0.0
-end subroutine Grid_init
 
+  call RuntimeParameters_get("gr_useTiling", gr_enableTiling)
+  if (gr_enableTiling) then
+     write(*,*) "[Grid_init] WARNING: Tiling is not implemented in Uniform Grid mode"
+     write(*,*) "                     Execution will proceed without tiling"
+     ! DEV: TODO Should this be print this to the log as well?
+     gr_enableTiling = .FALSE.
+  end if
+end subroutine Grid_init
 
 subroutine gr_create_surr_blks
   use Grid_data, ONLY : surr_blks, gr_axisNumProcs, gr_meshMe, gr_domainBC, &
