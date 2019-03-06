@@ -58,11 +58,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
 
   use Driver_interface,  ONLY : Driver_abortFlash
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-                                Grid_releaseBlkPtr,     &
-                                Grid_getBlkBoundBox,    &
-                                Grid_getDeltas,         &
-                                Grid_getLeafIterator,   &
+  use Grid_interface,    ONLY : Grid_getTileIterator,   &
                                 Grid_releaseLeafIterator,&
                                 Grid_getCellCoords
 
@@ -79,8 +75,8 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
                                 gr_mpoleThetaCenter,     &
                                 gr_mpoleTotalMass
   
-  use block_metadata,    ONLY : block_metadata_t
-  use leaf_iterator,     ONLY : leaf_iterator_t
+  use Grid_tile,    ONLY : Grid_tile_t
+  use Grid_iterator,     ONLY : Grid_iterator_t
 
   implicit none
   
@@ -108,7 +104,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
 
   integer :: locate      (1:1)
   integer :: status      (MPI_STATUS_SIZE)
-  integer :: blkLimits   (LOW:HIGH,1:MDIM)
+  integer :: tileLimits   (LOW:HIGH,1:MDIM)
   
 
   real    :: alpha, beta
@@ -135,32 +131,32 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
   real, pointer     :: solnData (:,:,:,:)
 
   integer :: lev
-  type(block_metadata_t) :: block
-  type(leaf_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
 !
 !
-!     ...Sum quantities over all locally held leaf blocks.
+!     ...Sum quantities over all locally held leaf tileDescs.
 !
 !
   localMsum   = ZERO
   localMDsum  = ZERO
   localMDZsum = ZERO
 
-  call Grid_getLeafIterator(itor)
+  call Grid_getTileIterator(itor)
   do while(itor%is_valid())
-     call itor%blkMetaData(block)
-     lev=block%level
+     call itor%blkMetaData(tileDesc)
+     lev=tileDesc%level
      
-     blkLimits=block%limits
+     tileLimits=tileDesc%limits
 
-     call Grid_getBlkBoundBox     (block, bndBox)
+     call Grid_getBlkBoundBox     (tileDesc, bndBox)
      call Grid_getDeltas          (lev, delta)
-     call Grid_getBlkPtr          (block, solnData)
+     call Grid_getBlkPtr          (tileDesc, solnData)
 
-     imin = blkLimits (LOW, IAXIS)
-     jmin = blkLimits (LOW, JAXIS)
-     imax = blkLimits (HIGH,IAXIS)
-     jmax = blkLimits (HIGH,JAXIS)
+     imin = tileLimits (LOW, IAXIS)
+     jmin = tileLimits (LOW, JAXIS)
+     imax = tileLimits (HIGH,IAXIS)
+     jmax = tileLimits (HIGH,JAXIS)
 
      DeltaI         = delta (IAXIS)
      DeltaIHalf     = DeltaI * HALF
@@ -277,7 +273,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
         thetaCosine   = thetaCosine - (alpha * thetaCosine + beta * thetaSineSave)
      end do
 
-     call Grid_releaseBlkPtr (block, solnData)
+     call Grid_releaseBlkPtr (tileDesc, solnData)
      call itor%next()
   end do
   call Grid_releaseLeafIterator(itor)
@@ -328,7 +324,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
 !
 !
 !     ...We need to calculate the 2D spherical coordinates of the center
-!        of multipole expansion in order to determine to which block it belongs.
+!        of multipole expansion in order to determine to which tileDesc it belongs.
 !        Only the radial part is of relevance here.
 !
 !
@@ -343,7 +339,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
   gr_mpoleThetaCenter = cmTheta
 !
 !
-!     ...Find the local blockID to which the center of multipole expansion
+!     ...Find the local tileDescID to which the center of multipole expansion
 !        belongs and place the center on the nearest cell corner. Also at
 !        this point we determine the inner zone atomic length, since the
 !        inner zone is defined around the center of multipole expansion.
@@ -357,22 +353,22 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
   messageTag = 1
   invokeRecv = .true.
 
-  call Grid_getLeafIterator(itor)
+  call Grid_getTileIterator(itor)
   do while(itor%is_valid())
-     call itor%blkMetaData(block)
+     call itor%blkMetaData(tileDesc)
      
 
-     call Grid_getBlkBoundBox (block, bndBox)
+     call Grid_getBlkBoundBox (tileDesc, bndBox)
 
      minRsph  = bndBox (LOW ,IAXIS)
      maxRsph  = bndBox (HIGH,IAXIS)
-     minTheta = bndBox (LOW ,JAXIS)    ! needed to find the relevant unique block
-     maxTheta = bndBox (HIGH,JAXIS)    ! needed to find the relevant unique block
+     minTheta = bndBox (LOW ,JAXIS)    ! needed to find the relevant unique tileDesc
+     maxTheta = bndBox (HIGH,JAXIS)    ! needed to find the relevant unique tileDesc
 
      insideBlock =       (cmRsph  >= minRsph ) &
                    .and. (cmTheta >= minTheta) &
                    .and. (cmRsph  <  maxRsph ) &     ! the < instead of <= is necessary
-                   .and. (cmTheta <  maxTheta)       ! for finding the unique block
+                   .and. (cmTheta <  maxTheta)       ! for finding the unique tileDesc
 
      domainRmax     =       (cmRsph  == maxRsph               ) &  ! include (however unlikely) the
                       .and. (cmRsph  == gr_mpoleDomainRmax    )    ! missing R part of the domain
@@ -383,17 +379,17 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
 
      if (insideBlock) then
 
-        lev=block%level
+        lev=tileDesc%level
         call Grid_getDeltas          (lev, delta)
-        blkLimits=block%limits
+        tileLimits=tileDesc%limits
  
          DeltaI = delta (IAXIS)
          DeltaJ = delta (JAXIS)
 
          gr_mpoleDrInnerZone = HALF * DeltaI   ! based on Rsph only
 
-         imin = blkLimits (LOW, IAXIS)
-         imax = blkLimits (HIGH,IAXIS)
+         imin = tileLimits (LOW, IAXIS)
+         imax = tileLimits (HIGH,IAXIS)
 
          nCellsI = imax - imin + 1
          nEdgesI = nCellsI + 1
@@ -402,7 +398,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
 
          guardCells = .false.
 
-         call Grid_getCellCoords (IAXIS, block, FACES, guardCells, shifts (1:nEdgesI), nEdgesI)
+         call Grid_getCellCoords (IAXIS, tileDesc, FACES, guardCells, shifts (1:nEdgesI), nEdgesI)
 
          shifts (1:nEdgesI) = shifts (1:nEdgesI) - cmRsph
          locate (1) = minloc (abs (shifts (1:nEdgesI)), dim = 1)

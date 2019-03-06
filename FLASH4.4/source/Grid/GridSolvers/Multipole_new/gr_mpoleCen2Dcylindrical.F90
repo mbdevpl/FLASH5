@@ -56,12 +56,8 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
 
   use Driver_interface,  ONLY : Driver_abortFlash
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-                                Grid_releaseBlkPtr,     &
-                                Grid_getBlkBoundBox,    &
-                                Grid_getDeltas,         &
-                                Grid_getLeafIterator,   &
-                                Grid_releaseLeafIterator,&
+  use Grid_interface,    ONLY : Grid_getTileIterator,   &
+                                Grid_releaseTileIterator,&
                                 Grid_getCellCoords
 
   use gr_mpoleData,      ONLY : gr_mpoleSymmetryPlane2D, &
@@ -78,8 +74,8 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
                                 gr_mpoleXcenterOfMass,   &
                                 gr_mpoleYcenterOfMass
 
-  use block_metadata,    ONLY : block_metadata_t
-  use leaf_iterator,     ONLY : leaf_iterator_t
+  use Grid_tile,    ONLY : Grid_tile_t
+  use Grid_iterator,     ONLY : Grid_iterator_t
 
   implicit none
   
@@ -92,7 +88,6 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
   integer, intent (in) :: idensvar
 
   logical :: domainRmax, domainZmax
-  logical :: guardCells
   logical :: insideBlock
   logical :: invokeRecv
 
@@ -108,7 +103,7 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
 
   integer :: locate      (1:2)
   integer :: status      (MPI_STATUS_SIZE)
-  integer :: blkLimits   (LOW:HIGH,1:MDIM)
+  integer :: tileLimits   (LOW:HIGH,1:MDIM)
   
 
   real    :: bndBoxILow
@@ -131,12 +126,13 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
   real, pointer     :: solnData (:,:,:,:)
 
   integer :: lev
-  type(block_metadata_t) :: block
-  type(leaf_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
   !
+  NULLIFY(solnData)
 !
 !
-!     ...Sum quantities over all locally held leaf blocks.
+!     ...Sum quantities over all locally held leaf tileDescs.
 !
 !
   localMsum   = ZERO
@@ -144,21 +140,21 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
   localMDYsum = ZERO
   localMYsum  = ZERO
 
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(block)
-     lev=block%level
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     lev=tileDesc%level
      
-     blkLimits=block%limits
+     tileLimits=tileDesc%limits
  
-     call Grid_getBlkBoundBox     (block, bndBox)
-     call Grid_getDeltas          (lev, delta)
-     call Grid_getBlkPtr          (block, solnData)
+     call tileDesc%boundBox(bndBox)
+     call tileDesc%deltas(delta)
+     call tileDesc%getDataPtr(solnData, CENTER)
  
-     imin = blkLimits (LOW, IAXIS)
-     jmin = blkLimits (LOW, JAXIS)
-     imax = blkLimits (HIGH,IAXIS)
-     jmax = blkLimits (HIGH,JAXIS)
+     imin = tileLimits (LOW, IAXIS)
+     jmin = tileLimits (LOW, JAXIS)
+     imax = tileLimits (HIGH,IAXIS)
+     jmax = tileLimits (HIGH,JAXIS)
 
      DeltaI = delta (IAXIS)
      DeltaJ = delta (JAXIS)
@@ -231,7 +227,7 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
         z = z + DeltaJ
      end do
 
-     call Grid_releaseBlkPtr (block, solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
 
      call itor%next()
   end do
@@ -304,12 +300,12 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
   messageTag = 1
   invokeRecv = .true.
 
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(block)
+  call Grid_getTileIterator(itor,LEAF,tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
      
 
-     call Grid_getBlkBoundBox (block, bndBox)
+     call tileDesc%boundBox (bndBox)
 
      minRcyl = bndBox (LOW ,IAXIS)
      maxRcyl = bndBox (HIGH,IAXIS)
@@ -319,7 +315,7 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
      insideBlock =       (gr_mpoleRcenter >= minRcyl) &
                    .and. (gr_mpoleZcenter >= minZ   ) &
                    .and. (gr_mpoleRcenter <  maxRcyl) &               ! the < instead of <= is necessary
-                   .and. (gr_mpoleZcenter <  maxZ   )                 ! for finding the unique block
+                   .and. (gr_mpoleZcenter <  maxZ   )                 ! for finding the unique tileDesc
 
      domainRmax  =       (gr_mpoleRcenter == maxRcyl           ) &    ! include (however unlikely) the
                    .and. (gr_mpoleRcenter == gr_mpoleDomainRmax)      ! missing R part of the domain
@@ -330,19 +326,19 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
 
      if (insideBlock) then
 
-        lev=block%level
-        call Grid_getDeltas          (lev, delta)
-        blkLimits=block%limits
+        lev=tileDesc%level
+        call tileDesc%deltas(delta)
+        tileLimits=tileDesc%limits
 
          DeltaI = delta (IAXIS)
          DeltaJ = delta (JAXIS)
 
          gr_mpoleDrInnerZone = HALF * sqrt (DeltaI * DeltaJ)
 
-         imin = blkLimits (LOW, IAXIS)
-         jmin = blkLimits (LOW, JAXIS)
-         imax = blkLimits (HIGH,IAXIS)
-         jmax = blkLimits (HIGH,JAXIS)
+         imin = tileLimits (LOW, IAXIS)
+         jmin = tileLimits (LOW, JAXIS)
+         imax = tileLimits (HIGH,IAXIS)
+         jmax = tileLimits (HIGH,JAXIS)
 
          nCellsI = imax - imin + 1
          nCellsJ = jmax - jmin + 1
@@ -354,10 +350,8 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
 
          allocate (shifts (1:maxEdges,2))
 
-         guardCells = .false.
-
-         call Grid_getCellCoords (IAXIS, block, FACES, guardCells, shifts (1:nEdgesI,1), nEdgesI)
-         call Grid_getCellCoords (JAXIS, block, FACES, guardCells, shifts (1:nEdgesJ,2), nEdgesJ)
+         call Grid_getCellCoords (IAXIS, FACES, lev, tileLimits(LOW,:), tileLimits(HIGH,:), shifts (1:nEdgesI,1))
+         call Grid_getCellCoords (JAXIS, FACES, lev, tileLimits(LOW,:), tileLimits(HIGH,:), shifts (1:nEdgesJ,2))
 
          shifts (1:nEdgesI,1) = shifts (1:nEdgesI,1) - gr_mpoleRcenter
          shifts (1:nEdgesJ,2) = shifts (1:nEdgesJ,2) - gr_mpoleZcenter
@@ -392,7 +386,7 @@ subroutine gr_mpoleCen2Dcylindrical (idensvar)
      end if
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
 
