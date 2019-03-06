@@ -60,8 +60,9 @@ subroutine Simulation_initBlock(solnData,tileDesc)
      &  sim_nSubZones, sim_xCenter, sim_yCenter, sim_zCenter, sim_inSubzones, sim_inszd, &
      sim_threadBlockList, sim_threadWithinBlock
   use Grid_interface, ONLY : Grid_getCellCoords, &
-                             Grid_getSingleCellVol, &
-                             Grid_subcellGeometry
+                             Grid_getCellVolumes, &
+                             Grid_subcellGeometry, &
+                             Grid_getDeltas
   use Grid_tile, ONLY : Grid_tile_t 
   use ut_interpolationInterface
  
@@ -87,6 +88,7 @@ subroutine Simulation_initBlock(solnData,tileDesc)
   real     ::  vSub, rhoSub, pSub, errIgnored
 
   real,allocatable,dimension(:) :: xCoord,yCoord,zCoord
+  real,allocatable :: cellVolumes(:, :, :)
   integer,dimension(LOW:HIGH,MDIM) :: tileLimits
   integer,dimension(LOW:HIGH,MDIM) :: grownTileLimits
   integer,dimension(MDIM) :: axis
@@ -94,6 +96,8 @@ subroutine Simulation_initBlock(solnData,tileDesc)
 !!$  real     :: dvSub(0:sim_nSubZones-1,0:(sim_nSubZones-1)*K2D)
   real,allocatable :: dvSub(:,:)
   real     :: dvc, quotinv
+
+  real :: deltas(1:MDIM)
 
   if (sim_useProfileFromFile) then
      ! lazy initialization - should already have been done from Simulation_init
@@ -143,6 +147,26 @@ subroutine Simulation_initBlock(solnData,tileDesc)
   ! get the coordinate information for the current block
   tileLimits = tileDesc%limits
   grownTileLimits = tileDesc%grownLimits
+    
+  call Grid_getDeltas(tileDesc%level, deltas)
+
+  ! Find a real difference between z's if problem is >= 3D
+  if (NDIM > 2) then
+     dzz = deltas(KAXIS)
+  ! Otherwise this problem is <= 2D, so dzz is meaningless
+  else
+     dzz = 0.0
+  endif
+
+  ! Find a real difference between y's if problem is >= 2D
+  if (NDIM > 1) then
+     dyy = deltas(JAXIS)
+  ! Otherwise this problem is <= 1D, so dyy is meaningless
+  else
+    dyy = 0.0
+  endif
+
+  dxx = deltas(IAXIS)
 
   if (sim_tinitial > 0.0) then
 
@@ -159,7 +183,7 @@ subroutine Simulation_initBlock(solnData,tileDesc)
      !$omp sim_smallT,&
      !$omp solnData, &
      !$omp sim_xCenter,sim_yCenter,sim_zCenter) &
-     !$omp private(i,j,k,ii,jj,kk,n,dxx,dyy,dzz,sumRho,sumP,sumVX,sumVY,sumVZ,&
+     !$omp private(i,j,k,ii,jj,kk,n,sumRho,sumP,sumVX,sumVY,sumVZ,&
      !$omp xx,yy,zz,xDist,yDist,zDist,dist,distInv,jLo,jHi,frac,vel,axis,&
      !$omp rho,p,vx,vy,vz,ek,e,eint,kat)
 
@@ -222,6 +246,9 @@ subroutine Simulation_initBlock(solnData,tileDesc)
   allocate(xCoord(grownTileLimits(LOW, IAXIS):grownTileLimits(HIGH, IAXIS))); xCoord = 0.0
   allocate(yCoord(grownTileLimits(LOW, JAXIS):grownTileLimits(HIGH, JAXIS))); yCoord = 0.0
   allocate(zCoord(grownTileLimits(LOW, KAXIS):grownTileLimits(HIGH, KAXIS))); zCoord = 0.0
+  allocate(cellVolumes(grownTileLimits(LOW, IAXIS):grownTileLimits(HIGH, IAXIS), &
+                       grownTileLimits(LOW, JAXIS):grownTileLimits(HIGH, JAXIS), &
+                       grownTileLimits(LOW, KAXIS):grownTileLimits(HIGH, KAXIS)))
 
   call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
                           grownTileLimits(LOW,  :), &
@@ -239,6 +266,9 @@ subroutine Simulation_initBlock(solnData,tileDesc)
                           grownTileLimits(HIGH, :), &
                           zCoord)
 #endif
+  call Grid_getCellVolumes(tileDesc%level, &
+                           lbound(cellVolumes), ubound(cellVolumes), cellVolumes)
+
   !
   !     For each cell
   !  
@@ -248,15 +278,15 @@ subroutine Simulation_initBlock(solnData,tileDesc)
 
   !$omp parallel if (sim_threadBlockList .or. sim_threadWithinBlock) &
   !$omp default(none) &
-  !$omp shared(grownTileLimits,xCoord,yCoord,zCoord,tileDesc,&
+  !$omp shared(grownTileLimits,xCoord,yCoord,zCoord,cellVolumes,tileDesc,&
   !$omp sim_inSubzones,sim_nSubZones,sim_rProf,sim_minRhoInit,sim_smallRho,sim_smallP,&
   !$omp sim_smallX,sim_pProf,sim_rhoProf,sim_vProf,sim_gamma,sim_inszd,&
-  !$omp rProf,pProf,rhoProf,vProf,&
+  !$omp rProf,pProf,rhoProf,vProf,dxx,dyy,dzz,&
   !$omp sim_smallT,&
   !$omp sim_useProfileFromFile,sim_tinitial,errIgnored,solnData, &
   !$omp sim_rhoAmbient,sim_pAmbient, &
   !$omp sim_xCenter,sim_yCenter,sim_zCenter) &
-  !$omp private(i,j,k,ii,jj,kk,n,dxx,dyy,dzz,sumRho,sumP,sumVX,sumVY,sumVZ,&
+  !$omp private(i,j,k,ii,jj,kk,n,sumRho,sumP,sumVX,sumVY,sumVZ,&
   !$omp xx,yy,zz,xDist,yDist,zDist,dist,distInv,jLo,jHi,frac,vel,axis,&
   !$omp rho,p,vx,vy,vz,ek,e,eint,kat,rhoSub,pSub,vSub,dvc,quotinv,dvSub)
 
@@ -266,34 +296,12 @@ subroutine Simulation_initBlock(solnData,tileDesc)
   !$omp do schedule(static)
 #endif
   do k = grownTileLimits(LOW,KAXIS), grownTileLimits(HIGH,KAXIS)
-     ! Find a real difference between z's if problem is >= 3D
-     if (NDIM > 2) then
-        if (k .eq. grownTileLimits(LOW,KAXIS)) then
-           dzz = zCoord(grownTileLimits(LOW,KAXIS)+1) - zCoord(grownTileLimits(LOW,KAXIS))
-        else
-           dzz = zCoord(k) - zCoord(k-1) 
-        endif
-     ! Otherwise this problem is <= 2D, so dzz is meaningless
-     else
-       dzz = 0.0
-     endif
      zz = zCoord(k)
 
 #if NDIM == 2
      !$omp do schedule(static)
 #endif
      do j = grownTileLimits(LOW, JAXIS), grownTileLimits(HIGH, JAXIS)
-        ! Find a real difference between y's if problem is >= 2D
-        if (NDIM > 1) then
-           if (j .eq. grownTileLimits(LOW,JAXIS)) then
-              dyy = yCoord(grownTileLimits(LOW,JAXIS)+1) - yCoord(grownTileLimits(LOW,JAXIS))
-           else
-              dyy = yCoord(j) - yCoord(j-1) 
-           endif
-        ! Otherwise this problem is <= 1D, so dyy is meaningless
-        else
-          dyy = 0.0
-        endif
         yy = yCoord(j)
         
 #if NDIM == 1
@@ -301,16 +309,13 @@ subroutine Simulation_initBlock(solnData,tileDesc)
 #endif
         do i = grownTileLimits(LOW,IAXIS), grownTileLimits(HIGH, IAXIS)
            xx = xCoord(i)
-           if (i .eq. grownTileLimits(LOW,IAXIS)) then
-              dxx = xCoord(grownTileLimits(LOW,IAXIS)+1) - xCoord(grownTileLimits(LOW,IAXIS))
-           else
-              dxx = xCoord(i) - xCoord(i-1) 
-           endif
-          
-           call Grid_getSingleCellVol((/i,j,k/), tileDesc%level, dvc)
-           call Grid_subcellGeometry(sim_nSubZones,1+(sim_nSubZones-1)*K2D,1+(sim_nSubZones-1)*K3D, &
-                dvc, dvSub, xCoord(i)-0.5*dxx, xCoord(i)+0.5*dxx)
 
+           dvc = cellVolumes(i, j, k)
+           call Grid_subcellGeometry(   sim_nSubZones, &
+                                     1+(sim_nSubZones-1)*K2D, &
+                                     1+(sim_nSubZones-1)*K3D, &
+                                     dvc, dvSub, &
+                                     xCoord(i)-0.5*dxx, xCoord(i)+0.5*dxx)
 
            sumRho = 0.
            sumP   = 0.
@@ -340,46 +345,32 @@ subroutine Simulation_initBlock(solnData,tileDesc)
                     
                     dist    = sqrt( xDist**2 + yDist**2 + zDist**2 )
                     distInv = 1. / max( dist, 1.E-10 )
-                    if (sim_useProfileFromFile .AND. sim_tinitial > 0) then
-                       if (dist .LE. sim_rProf(sim_nProfile+1)) then
-                          call ut_hunt(sim_rProf,sim_nProfile+1,dist,kat)
-                          kat = max(1, min(kat - op/2 + 1, sim_nProfile - op + 2))
-                          call ut_polint(sim_rProf(kat),sim_vProf  (kat),op,dist,vSub  ,errIgnored)
-                          call ut_polint(sim_rProf(kat),sim_rhoProf(kat),op,dist,rhoSub,errIgnored)
-                          call ut_polint(sim_rProf(kat),sim_pProf  (kat),op,dist,pSub  ,errIgnored)
-                       else
-                          vSub    = 0.0
-                          rhoSub  = sim_rhoAmbient
-                          psub    = sim_pAmbient
-                       end if
-                    else
-                       call sim_find (rProf, sim_nProfile, dist, jLo)
+                    call sim_find (rProf, sim_nProfile, dist, jLo)
                     !
                     !  a point at `dist' is frac-way between jLo and jHi.   We do a
                     !  linear interpolation of the quantities at jLo and jHi and sum those.
                     ! 
-                       if (jLo .eq. 0) then
-                          jLo = 1
-                          jHi = 1
-                          frac = 0.
-                       else if (jLo .eq. sim_nProfile) then
-                          jLo = sim_nProfile
-                          jHi = sim_nProfile
-                          frac = 0.
-                       else
-                          jHi = jLo + 1
-                          frac = (dist - rProf(jLo)) / & 
-                            (rProf(jHi)-rProf(jLo))
-                       endif
+                    if (jLo .eq. 0) then
+                       jLo = 1
+                       jHi = 1
+                       frac = 0.
+                    else if (jLo .eq. sim_nProfile) then
+                       jLo = sim_nProfile
+                       jHi = sim_nProfile
+                       frac = 0.
+                    else
+                       jHi = jLo + 1
+                       frac = (dist - rProf(jLo)) / & 
+                         (rProf(jHi)-rProf(jLo))
+                    endif
 
-                       pSub   =  pProf(jLo) + frac*(pProf(jHi)  - pProf(jLo))
+                    pSub   =  pProf(jLo) + frac*(pProf(jHi)  - pProf(jLo))
 
-                       rhoSub =  rhoProf(jLo) + frac*(rhoProf(jHi)- rhoProf(jLo))
-                       rhoSub = max(rhoSub, sim_minRhoInit)
+                    rhoSub =  rhoProf(jLo) + frac*(rhoProf(jHi)- rhoProf(jLo))
+                    rhoSub = max(rhoSub, sim_minRhoInit)
 
-                       vSub   = vProf(jLo) + frac*(vProf(jHi)  - vProf(jLo))
+                    vSub   = vProf(jLo) + frac*(vProf(jHi)  - vProf(jLo))
 
-                    end if
                     ! 
                     !   Now total these quantities.   Note that  v is a radial velocity; 
                     !   we multiply by the tangents of the appropriate angles to get
@@ -458,6 +449,7 @@ subroutine Simulation_initBlock(solnData,tileDesc)
   deallocate(xCoord)
   deallocate(yCoord)
   deallocate(zCoord)
+  deallocate(cellVolumes)
 
   deallocate(rProf)
   deallocate(vProf)
