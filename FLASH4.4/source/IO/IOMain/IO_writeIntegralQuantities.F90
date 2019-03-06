@@ -40,7 +40,7 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   use IO_data, ONLY : io_restart, io_statsFileName, io_globalComm
   use Grid_interface, ONLY : Grid_getTileIterator, &
                              Grid_releaseTileIterator, &
-                             Grid_getSingleCellVol 
+                             Grid_getCellVolumes
 
   use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
   use Grid_iterator, ONLY : Grid_iterator_t
@@ -77,11 +77,14 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
   integer :: ivar
   integer :: i, j, k
-  real :: dvol             !, del(MDIM)
+  integer :: lo(1:MDIM)
+  integer :: hi(1:MDIM)
+  real    :: dvol
   real, DIMENSION(:,:,:,:), POINTER :: solnData
 
-  integer :: point(MDIM)
   integer :: ioStat
+  
+  real, allocatable :: cellVolumes(:,:,:)
 
   nullify(solnData)
 
@@ -99,15 +102,23 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   do while (itor%isValid())
      call itor%currentTile(tileDesc)
 
+     lo = tileDesc%limits(LOW,  :)
+     hi = tileDesc%limits(HIGH, :)
+     allocate(cellVolumes(lo(IAXIS):hi(IAXIS), &
+                          lo(JAXIS):hi(JAXIS), &
+                          lo(KAXIS):hi(KAXIS)))
+     call Grid_getCellVolumes(tileDesc%level, &
+                              lbound(cellVolumes), ubound(cellVolumes), &
+                              cellVolumes)
+
      call tileDesc%getDataPtr(solnData, CENTER)
 
      ! Sum contributions from the indicated blkLimits of cells.
-     do       k = tileDesc%limits(LOW,KAXIS), tileDesc%limits(HIGH,KAXIS)
-        do    j = tileDesc%limits(LOW,JAXIS), tileDesc%limits(HIGH,JAXIS)
-           do i = tileDesc%limits(LOW,IAXIS), tileDesc%limits(HIGH,IAXIS)
+     do       k = lo(KAXIS), hi(KAXIS)
+        do    j = lo(JAXIS), hi(JAXIS)
+           do i = lo(IAXIS), hi(IAXIS)
 
-              !! Get the cell volume for a single cell
-              call Grid_getSingleCellVol([i, j, k], tileDesc%level, dvol)
+              dvol = cellVolumes(i, j, k)
 
               ! mass
 #ifdef DENS_VAR
@@ -189,6 +200,8 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
         enddo
      enddo
      call tileDesc%releaseDataPtr(solnData, CENTER)
+
+     deallocate(cellVolumes)
 
      call itor%next()
   enddo
