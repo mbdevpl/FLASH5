@@ -145,9 +145,13 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   !! ***************************************************************************
   call Grid_zeroFluxData
 
+#ifdef USE_NOFLUXCORR_SHORTCUT
   if (.NOT. hy_fluxCorrect) then
      ! ***** FIRST VARIANT: OPTIMIZED (somewhat) FOR hy_fluxCorrect==.FALSE. *****
-     
+  
+     ! The use of the Uin => Uout optimization trick means that this variant
+     ! cannot use tiling.  To use tiling in the absence of flux correction, 
+     ! don't define USE_NOFLUXCORR_SHORTCUT
      call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
      call Timers_start("advance")
      do while(itor%isValid())
@@ -165,6 +169,9 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
      call Timers_stop("advance")
      call Grid_releaseTileIterator(itor)
   else if (.NOT. hy_fluxCorrectPerLevel) then
+#else
+  if      (.NOT. hy_fluxCorrectPerLevel) then
+#endif
      ! ***** SECOND VARIANT: FOR hy_fluxCorrectPerLevel==.FALSE. *****
 
      call Timers_start("compute fluxes")

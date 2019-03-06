@@ -47,7 +47,10 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
      &  sim_nSubZones, sim_xCenter, sim_yCenter, sim_zCenter, sim_inSubzones, sim_inszd, &
      sim_threadBlockList, sim_threadWithinBlock
   use Driver_data,         ONLY : dr_simGeneration
-  use Grid_interface,   ONLY : Grid_getCellCoords, Grid_getSingleCellVol, Grid_subcellGeometry
+  use Grid_interface,   ONLY : Grid_getCellCoords, &
+                               Grid_getCellVolumes, &
+                               Grid_subcellGeometry, &
+                               Grid_getDeltas
   use Grid_tile,        ONLY : Grid_tile_t 
   use Driver_interface, ONLY : Driver_getSimTime
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -80,14 +83,14 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
   real     ::  vSub, rhoSub, pSub, errIgnored
   real     ::  simTime
   real,allocatable,dimension(:) :: xCoord,yCoord,zCoord
-  integer, dimension(2,MDIM) :: tileLimits, grownTileLimits
+  real,allocatable :: cellVolumes(:, :, :)
+  integer, dimension(2,MDIM) :: tileLimits
 
 !!$  real     :: dvSub(0:sim_nSubZones-1,0:(sim_nSubZones-1)*K2D)
   real,allocatable :: dvSub(:,:)
   real     :: dvc, quotinv
 
-  logical :: gcell = .true.
-
+  real :: deltas(1:MDIM)
 
   if (tcurr == sim_analyticTime) then
      call Driver_getSimTime(simTime, simGen)
@@ -135,28 +138,53 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
   ! get the coordinate information for the current block
 
   tileLimits =   tileDesc % limits
-  grownTileLimits = tileDesc % grownLimits 
 
-  allocate(xCoord(grownTileLimits(LOW, IAXIS):grownTileLimits(HIGH, IAXIS)))
-  allocate(yCoord(grownTileLimits(LOW, JAXIS):grownTileLimits(HIGH, JAXIS)))
-  allocate(zCoord(grownTileLimits(LOW, KAXIS):grownTileLimits(HIGH, KAXIS)))
+  call Grid_getDeltas(tileDesc%level, deltas)
+
+  ! Find a real difference between z's if problem is >= 3D
+  if (NDIM > 2) then
+     dzz = deltas(KAXIS)
+  ! Otherwise this problem is <= 2D, so dzz is meaningless
+  else
+     dzz = 0.0
+  endif
+
+  ! Find a real difference between y's if problem is >= 2D
+  if (NDIM > 1) then
+     dyy = deltas(JAXIS)
+  ! Otherwise this problem is <= 1D, so dyy is meaningless
+  else
+    dyy = 0.0
+  endif
+
+  dxx = deltas(IAXIS)
+
+  allocate(xCoord(tileLimits(LOW, IAXIS):tileLimits(HIGH, IAXIS)))
+  allocate(yCoord(tileLimits(LOW, JAXIS):tileLimits(HIGH, JAXIS)))
+  allocate(zCoord(tileLimits(LOW, KAXIS):tileLimits(HIGH, KAXIS)))
+  allocate(cellVolumes(tileLimits(LOW, IAXIS):tileLimits(HIGH, IAXIS), &
+                       tileLimits(LOW, JAXIS):tileLimits(HIGH, JAXIS), &
+                       tileLimits(LOW, KAXIS):tileLimits(HIGH, KAXIS)))
   xCoord(:) = 0.0
   yCoord(:) = 0.0
   zCoord(:) = 0.0
+  cellVolumes(:,:,:) = 0.0
 
   call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
-                          grownTileLimits(LOW, :), grownTileLimits(HIGH, :), &
+                          tileLimits(LOW, :), tileLimits(HIGH, :), &
                           xCoord)
 #if NDIM >= 2
   call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
-                          grownTileLimits(LOW, :), grownTileLimits(HIGH, :), &
+                          tileLimits(LOW, :), tileLimits(HIGH, :), &
                           yCoord)
 #endif
 #if NDIM == 3
   call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
-                          grownTileLimits(LOW, :), grownTileLimits(HIGH, :), &
+                          tileLimits(LOW, :), tileLimits(HIGH, :), &
                           zCoord)
 #endif
+  call Grid_getCellVolumes(tileDesc%level, &
+                           lbound(cellVolumes), ubound(cellVolumes), cellVolumes)
 
   !
   !     For each cell
@@ -168,14 +196,14 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
 
   !$omp parallel if (sim_threadBlockList .or. sim_threadWithinBlock) &
   !$omp default(none) &
-  !$omp shared(tileLimits,grownTileLimits,xCoord,yCoord,zCoord,&
+  !$omp shared(tileLimits,cellVolumes,xCoord,yCoord,zCoord,&
   !$omp sim_inSubzones,sim_nSubZones,sim_rProf,sim_minRhoInit,sim_smallRho,sim_smallP,&
   !$omp sim_smallX,sim_pProf,sim_rhoProf,sim_vProf,sim_gamma,sim_inszd,&
-  !$omp sim_smallT,&
+  !$omp sim_smallT,dxx,dyy,dzz,&
   !$omp sim_useProfileFromFile,errIgnored,solnData, &
   !$omp sim_rhoAmbient,sim_pAmbient, &
   !$omp sim_xCenter,sim_yCenter,sim_zCenter) &
-  !$omp private(i,j,k,ii,jj,kk,dxx,dyy,dzz,sumRho,sumP,sumVX,sumVY,sumVZ,&
+  !$omp private(i,j,k,ii,jj,kk,sumRho,sumP,sumVX,sumVY,sumVZ,&
   !$omp xx,yy,zz,xDist,yDist,zDist,dist,distInv,jLo,jHi,frac,vel,&
   !$omp rho,p,vx,vy,vz,ek,e,eint,kat,rhoSub,pSub,vSub,dvc,quotinv,dvSub)
 
@@ -185,34 +213,12 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
   !$omp do schedule(static)
 #endif
   do k = tileLimits(LOW,KAXIS), tileLimits(HIGH,KAXIS)
-     ! Find a real difference between z's if problem is >= 3D
-     if (NDIM > 2) then
-        if (k .eq. grownTileLimits(LOW,KAXIS)) then
-           dzz = zCoord(grownTileLimits(LOW,KAXIS)+1) - zCoord(grownTileLimits(LOW,KAXIS))
-        else
-           dzz = zCoord(k) - zCoord(k-1) 
-        endif
-     ! Otherwise this problem is <= 2D, so dzz is meaningless
-     else
-       dzz = 0.0
-     endif
      zz = zCoord(k)
 
 #if NDIM == 2
      !$omp do schedule(static)
 #endif
      do j = tileLimits(LOW, JAXIS), tileLimits(HIGH, JAXIS)
-        ! Find a real difference between y's if problem is >= 2D
-        if (NDIM > 1) then
-           if (j .eq. grownTileLimits(LOW,JAXIS)) then
-              dyy = yCoord(grownTileLimits(LOW,JAXIS)+1) - yCoord(grownTileLimits(LOW,JAXIS))
-           else
-              dyy = yCoord(j) - yCoord(j-1) 
-           endif
-        ! Otherwise this problem is <= 1D, so dyy is meaningless
-        else
-          dyy = 0.0
-        endif
         yy = yCoord(j)
         
 #if NDIM == 1
@@ -220,13 +226,8 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
 #endif
         do i = tileLimits(LOW,IAXIS), tileLimits(HIGH, IAXIS)
            xx = xCoord(i)
-           if (i .eq. grownTileLimits(LOW,IAXIS)) then
-              dxx = xCoord(grownTileLimits(LOW,IAXIS)+1) - xCoord(grownTileLimits(LOW,IAXIS))
-           else
-              dxx = xCoord(i) - xCoord(i-1) 
-           endif
-           
-           call Grid_getSingleCellVol((/i,j,k/), tileDesc%level, dvc)
+
+           dvc = cellVolumes(i, j, k)
            call Grid_subcellGeometry(sim_nSubZones,1+(sim_nSubZones-1)*K2D,1+(sim_nSubZones-1)*K3D, &
                 dvc, dvSub, xCoord(i)-0.5*dxx, xCoord(i)+0.5*dxx )
 
@@ -386,6 +387,7 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
   deallocate(xCoord)
   deallocate(yCoord)
   deallocate(zCoord)
+  deallocate(cellVolumes)
 
   sim_analyticTime = tcurr
 
