@@ -75,7 +75,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
                                 gr_mpoleThetaCenter,     &
                                 gr_mpoleTotalMass
   
-  use Grid_tile,    ONLY : Grid_tile_t
+  use Grid_tile,         ONLY : Grid_tile_t
   use Grid_iterator,     ONLY : Grid_iterator_t
 
   implicit none
@@ -88,382 +88,386 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
   
   integer, intent (in) :: idensvar
 
-  logical :: domainRmax, domainThetaMax
-  logical :: guardCells
-  logical :: insideBlock
-  logical :: invokeRecv
-
-  
-  
-  integer :: error
-  integer :: i,imin,imax
-  integer :: j,jmin,jmax
-  integer :: messageTag
-  integer :: nCellsI
-  integer :: nEdgesI
-
-  integer :: locate      (1:1)
-  integer :: status      (MPI_STATUS_SIZE)
-  integer :: tileLimits   (LOW:HIGH,1:MDIM)
-  
-
-  real    :: alpha, beta
-  real    :: angularVolumePart
-  real    :: bndBoxILow
-  real    :: bndBoxJLow
-  real    :: cellDensity, cellMass, cellMassDensity, cellVolume
-  real    :: cmRsph, cmTheta
-  real    :: DeltaI, DeltaIHalf, DeltaIcube
-  real    :: DeltaJ, DeltaJHalf, DeltaJSine, DeltaJHalfSine
-  real    :: localMsum, localMDsum, localMDZsum
-  real    :: maxRsph, maxTheta
-  real    :: minRsph, minTheta
-  real    :: Rsph
-  real    :: theta, thetaCosine, thetaSine, thetaSineSave
-  real    :: z
-
-  real    :: delta     (1:MDIM)
-  real    :: localData (1:3)
-  real    :: totalData (1:3)
-  real    :: bndBox    (LOW:HIGH,1:MDIM)
-
-  real, allocatable :: shifts   (:)
-  real, pointer     :: solnData (:,:,:,:)
-
-  integer :: lev
-  type(Grid_tile_t) :: tileDesc
-  type(Grid_iterator_t) :: itor
+  call Driver_abortFlash("[gr_mpoleCen2Dspherical] Implement with tiling!")
+!  logical :: domainRmax, domainThetaMax
+!  logical :: guardCells
+!  logical :: insideBlock
+!  logical :: invokeRecv
+!
+!  
+!  
+!  integer :: error
+!  integer :: i,imin,imax
+!  integer :: j,jmin,jmax
+!  integer :: messageTag
+!  integer :: nCellsI
+!  integer :: nEdgesI
+!
+!  integer :: locate      (1:1)
+!  integer :: status      (MPI_STATUS_SIZE)
+!  integer :: tileLimits   (LOW:HIGH,1:MDIM)
+!  
+!
+!  real    :: alpha, beta
+!  real    :: angularVolumePart
+!  real    :: bndBoxILow
+!  real    :: bndBoxJLow
+!  real    :: cellDensity, cellMass, cellMassDensity, cellVolume
+!  real    :: cmRsph, cmTheta
+!  real    :: DeltaI, DeltaIHalf, DeltaIcube
+!  real    :: DeltaJ, DeltaJHalf, DeltaJSine, DeltaJHalfSine
+!  real    :: localMsum, localMDsum, localMDZsum
+!  real    :: maxRsph, maxTheta
+!  real    :: minRsph, minTheta
+!  real    :: Rsph
+!  real    :: theta, thetaCosine, thetaSine, thetaSineSave
+!  real    :: z
+!
+!  real    :: delta     (1:MDIM)
+!  real    :: localData (1:3)
+!  real    :: totalData (1:3)
+!  real    :: bndBox    (LOW:HIGH,1:MDIM)
+!
+!  real, allocatable :: shifts   (:)
+!  real, pointer     :: solnData (:,:,:,:)
+!
+!  integer :: lev
+!  type(Grid_tile_t)     :: tileDesc
+!  type(Grid_iterator_t) :: itor
 !
 !
-!     ...Sum quantities over all locally held leaf tileDescs.
+!  nullify(solnData)
+!!
+!!
+!!     ...Sum quantities over all locally held leaf tileDescs.
+!!
+!!
+!  localMsum   = ZERO
+!  localMDsum  = ZERO
+!  localMDZsum = ZERO
 !
+!  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+!  do while(itor%isValid())
+!     call itor%blkMetaData(tileDesc)
+!     lev=tileDesc%level
+!     
+!     tileLimits=tileDesc%limits
 !
-  localMsum   = ZERO
-  localMDsum  = ZERO
-  localMDZsum = ZERO
-
-  call Grid_getTileIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(tileDesc)
-     lev=tileDesc%level
-     
-     tileLimits=tileDesc%limits
-
-     call Grid_getBlkBoundBox     (tileDesc, bndBox)
-     call Grid_getDeltas          (lev, delta)
-     call Grid_getBlkPtr          (tileDesc, solnData)
-
-     imin = tileLimits (LOW, IAXIS)
-     jmin = tileLimits (LOW, JAXIS)
-     imax = tileLimits (HIGH,IAXIS)
-     jmax = tileLimits (HIGH,JAXIS)
-
-     DeltaI         = delta (IAXIS)
-     DeltaIHalf     = DeltaI * HALF
-     DeltaIcube     = DeltaI * DeltaI * DeltaI
-     DeltaJ         = delta (JAXIS)
-     DeltaJHalf     = DeltaJ * HALF
-     DeltaJSine     = sin (DeltaJ)
-     DeltaJHalfSine = sin (DeltaJHalf)
-
-     bndBoxILow = bndBox (LOW,IAXIS)
-     bndBoxJLow = bndBox (LOW,JAXIS)
+!     call Grid_getBlkBoundBox     (tileDesc, bndBox)
+!     call Grid_getDeltas          (lev, delta)
+!     call Grid_getBlkPtr          (tileDesc, solnData)
 !
+!     imin = tileLimits (LOW, IAXIS)
+!     jmin = tileLimits (LOW, JAXIS)
+!     imax = tileLimits (HIGH,IAXIS)
+!     jmax = tileLimits (HIGH,JAXIS)
 !
-!          ...The 2D spherical case:
+!     DeltaI         = delta (IAXIS)
+!     DeltaIHalf     = DeltaI * HALF
+!     DeltaIcube     = DeltaI * DeltaI * DeltaI
+!     DeltaJ         = delta (JAXIS)
+!     DeltaJHalf     = DeltaJ * HALF
+!     DeltaJSine     = sin (DeltaJ)
+!     DeltaJHalfSine = sin (DeltaJHalf)
 !
+!     bndBoxILow = bndBox (LOW,IAXIS)
+!     bndBoxJLow = bndBox (LOW,JAXIS)
+!!
+!!
+!!          ...The 2D spherical case:
+!!
+!!
+!!
+!!                         |*
+!!                         |     *
+!!                         |theta/  *
+!!                         |    /     *
+!!                         |   /       *
+!!                         |  /         *              Rsph --> stored in i-index
+!!                         | / Rsph      *            theta --> stored in j-index
+!!                         |/            *
+!!                         |             *
+!!                         |            *
+!!                         |           *
+!!                         |          *
+!!                         |        *
+!!                         |     *
+!!                         |*
+!!
+!!
+!!             Here the convention used in FLASH is to store the Rsph values into the
+!!             i-index (FLASH x-axis) and the angular theta values (in radians) into
+!!             the j-index (FLASH y-axis). Due to symmetry, the center of mass only
+!!             has a radial component and must have theta = 0.
+!!
+!!             The cell volume is:
+!!
+!!                      (2/3) * pi * (R^3 - r^3) * (cos[t] - cos[T])
+!!
+!!             where
+!!                       r  =  left-most (smaller) radial cell distance
+!!                       R  =  right-most (larger) radial cell distance
+!!                       t  =  smaller cell angle
+!!                       T  =  larger cell angle
+!!
+!!             The above formula can be obtained from the simple formula for a spherical
+!!             cone and noting that the cell can be obtained by adding and subtracting
+!!             the appropriate spherical cones. The cell looks like a torus with a 2D polar
+!!             cell cross-sectional shape. Since our angular and radial measures are based
+!!             on the 2D polar cell's center, we have:
+!!
+!!                       r  =  Rsph - Dr/2
+!!                       R  =  Rsph + Dr/2
+!!                       t  =  theta - Dt/2
+!!                       T  =  theta + Dt/2
+!!
+!!             with Dt and Dr being the cell's angular and radial delta value.
+!!             Hence the cell volume becomes, after using some trig identities:
+!!
+!!               (4pi * (Rsph)^2 * Dr + (pi/3) * Dr^3) * sin[Dt/2] * sin[theta]
+!!
+!!             Note, that the 'cartesian' center of multipole expansion coordinates
+!!             are obtained. This 'cartesian' framework is solely used to facilitate
+!!             computations in the spherical framework, especially if the center of
+!!             multipole expansion shifts away from the spherical domain origin.
+!!             The two frameworks are related via:
+!!
+!!                           x = Rsph * sin (theta)
+!!                           z = Rsph * cos (theta)
+!!
+!!             with the y-cartesian direction being covered by the implicitly assumed
+!!             symmetry around the z-axis. The center of multipole expansion must be
+!!             along the z-axis (i.e. have theta = 0 for z >= 0 or theta = pi for z < 0)
+!!             due to the assumed symmetry around the z-axis.
+!!
+!!             The recursions for evaluating the sine and cosine functions for angles
+!!             which increase by a fixed amount are taken from the Numerical Recipies.
+!!
+!!
+!     alpha       = TWO * DeltaJHalfSine * DeltaJHalfSine
+!     beta        = DeltaJSine
+!     theta       = bndBoxJLow + DeltaJHalf
+!     thetaSine   = sin (theta)
+!     thetaCosine = cos (theta)
 !
+!     do j = jmin,jmax
 !
-!                         |*
-!                         |     *
-!                         |theta/  *
-!                         |    /     *
-!                         |   /       *
-!                         |  /         *              Rsph --> stored in i-index
-!                         | / Rsph      *            theta --> stored in j-index
-!                         |/            *
-!                         |             *
-!                         |            *
-!                         |           *
-!                         |          *
-!                         |        *
-!                         |     *
-!                         |*
+!        angularVolumePart = DeltaJHalfSine * thetaSine
 !
+!        Rsph = bndBoxILow + DeltaIHalf
+!        do i = imin,imax
 !
-!             Here the convention used in FLASH is to store the Rsph values into the
-!             i-index (FLASH x-axis) and the angular theta values (in radians) into
-!             the j-index (FLASH y-axis). Due to symmetry, the center of mass only
-!             has a radial component and must have theta = 0.
+!           cellVolume      = angularVolumePart * (  gr_mpoleFourPi * Rsph * Rsph * DeltaI  &
+!                                                  + gr_mpoleThirdPi * DeltaIcube )
+!           cellDensity     = solnData (idensvar,i,j,1)
+!           cellMass        = cellDensity * cellVolume
+!           cellMassDensity = cellMass * cellDensity
 !
-!             The cell volume is:
+!           z = Rsph * thetaCosine
 !
-!                      (2/3) * pi * (R^3 - r^3) * (cos[t] - cos[T])
+!           localMsum   = localMsum   + cellMass
+!           localMDsum  = localMDsum  + cellMassDensity
+!           localMDZsum = localMDZsum + cellMassDensity * z
 !
-!             where
-!                       r  =  left-most (smaller) radial cell distance
-!                       R  =  right-most (larger) radial cell distance
-!                       t  =  smaller cell angle
-!                       T  =  larger cell angle
+!           Rsph = Rsph + DeltaI
+!        end do
 !
-!             The above formula can be obtained from the simple formula for a spherical
-!             cone and noting that the cell can be obtained by adding and subtracting
-!             the appropriate spherical cones. The cell looks like a torus with a 2D polar
-!             cell cross-sectional shape. Since our angular and radial measures are based
-!             on the 2D polar cell's center, we have:
+!        thetaSineSave = thetaSine
+!        thetaSine     = thetaSine   - (alpha * thetaSine   - beta * thetaCosine  )
+!        thetaCosine   = thetaCosine - (alpha * thetaCosine + beta * thetaSineSave)
+!     end do
 !
-!                       r  =  Rsph - Dr/2
-!                       R  =  Rsph + Dr/2
-!                       t  =  theta - Dt/2
-!                       T  =  theta + Dt/2
+!     call Grid_releaseBlkPtr (tileDesc, solnData)
+!     call itor%next()
+!  end do
+!  call Grid_releaseLeafIterator(itor)
+!!
+!!
+!!     ...Prepare for a one-time all reduce call.
+!!
+!!
+!  localData (1) = localMsum
+!  localData (2) = localMDsum
+!  localData (3) = localMDZsum
+!!
+!!
+!!     ...Calculate the total sums and give a copy to each processor.
+!!
+!!
+!  call  MPI_AllReduce (localData,   &
+!                       totalData,   &
+!                       3,           &
+!                       FLASH_REAL,  & 
+!                       MPI_Sum,     &
+!                       gr_meshComm, &
+!                       error        )
+!!
+!!
+!!     ...Proceed according to symmetry situation. Take the total mass x 2 if
+!!        a symmetry plane has been specified along the theta = 90 degree (pi/2)
+!!        2D spherical boundary. Analyze total mass obtained. If nonsense, abort.
+!!        Calculate center of multipole expansion in cartesian z-coordinates. Due
+!!        to implicit rotational apherical symmetry around the z-axis, the center
+!!        of multipole expansion must have an x-coordinate of zero and needs not
+!!        be explicitly stored. For the z-coordinate, override the center of
+!!        multipole expansion if a symmetry plane is present. In this case the
+!!        z-coordinate is equal to zero.
+!!
+!!
+!  if (gr_mpoleSymmetryPlane2D) then
+!      gr_mpoleTotalMass = TWO * totalData (1)
+!      gr_mpoleZcenter   = ZERO
+!  else
+!      gr_mpoleTotalMass = totalData (1)
+!      gr_mpoleZcenter   = totalData (3) / totalData (2)
+!  end if
 !
-!             with Dt and Dr being the cell's angular and radial delta value.
-!             Hence the cell volume becomes, after using some trig identities:
+!  if (abs (gr_mpoleTotalMass) < tiny (gr_mpoleTotalMass)) then
+!      call Driver_abortFlash ('[gr_mpoleCen2Dspherical] ERROR:  gr_mpoleTotalMass <= 0')
+!  end if
+!!
+!!
+!!     ...We need to calculate the 2D spherical coordinates of the center
+!!        of multipole expansion in order to determine to which tileDesc it belongs.
+!!        Only the radial part is of relevance here.
+!!
+!!
+!  cmRsph = abs (gr_mpoleZcenter)
 !
-!               (4pi * (Rsph)^2 * Dr + (pi/3) * Dr^3) * sin[Dt/2] * sin[theta]
+!  if (gr_mpoleZcenter >= ZERO) then
+!      cmTheta = ZERO
+!  else
+!      cmTheta = gr_mpolePi
+!  end if
 !
-!             Note, that the 'cartesian' center of multipole expansion coordinates
-!             are obtained. This 'cartesian' framework is solely used to facilitate
-!             computations in the spherical framework, especially if the center of
-!             multipole expansion shifts away from the spherical domain origin.
-!             The two frameworks are related via:
+!  gr_mpoleThetaCenter = cmTheta
+!!
+!!
+!!     ...Find the local tileDescID to which the center of multipole expansion
+!!        belongs and place the center on the nearest cell corner. Also at
+!!        this point we determine the inner zone atomic length, since the
+!!        inner zone is defined around the center of multipole expansion.
+!!        Whatever processor is doing the relevant calculation sends its
+!!        final data (updated center of multipole expansion and inner zone
+!!        atomic length) to the master, which then broadcasts the info.
+!!        The inner zone atomic length is based entirely on the radial
+!!        component.
+!!
+!!
+!  messageTag = 1
+!  invokeRecv = .true.
 !
-!                           x = Rsph * sin (theta)
-!                           z = Rsph * cos (theta)
+!  call Grid_getTileIterator(itor)
+!  do while(itor%is_valid())
+!     call itor%blkMetaData(tileDesc)
+!     
 !
-!             with the y-cartesian direction being covered by the implicitly assumed
-!             symmetry around the z-axis. The center of multipole expansion must be
-!             along the z-axis (i.e. have theta = 0 for z >= 0 or theta = pi for z < 0)
-!             due to the assumed symmetry around the z-axis.
+!     call Grid_getBlkBoundBox (tileDesc, bndBox)
 !
-!             The recursions for evaluating the sine and cosine functions for angles
-!             which increase by a fixed amount are taken from the Numerical Recipies.
+!     minRsph  = bndBox (LOW ,IAXIS)
+!     maxRsph  = bndBox (HIGH,IAXIS)
+!     minTheta = bndBox (LOW ,JAXIS)    ! needed to find the relevant unique tileDesc
+!     maxTheta = bndBox (HIGH,JAXIS)    ! needed to find the relevant unique tileDesc
 !
+!     insideBlock =       (cmRsph  >= minRsph ) &
+!                   .and. (cmTheta >= minTheta) &
+!                   .and. (cmRsph  <  maxRsph ) &     ! the < instead of <= is necessary
+!                   .and. (cmTheta <  maxTheta)       ! for finding the unique tileDesc
 !
-     alpha       = TWO * DeltaJHalfSine * DeltaJHalfSine
-     beta        = DeltaJSine
-     theta       = bndBoxJLow + DeltaJHalf
-     thetaSine   = sin (theta)
-     thetaCosine = cos (theta)
-
-     do j = jmin,jmax
-
-        angularVolumePart = DeltaJHalfSine * thetaSine
-
-        Rsph = bndBoxILow + DeltaIHalf
-        do i = imin,imax
-
-           cellVolume      = angularVolumePart * (  gr_mpoleFourPi * Rsph * Rsph * DeltaI  &
-                                                  + gr_mpoleThirdPi * DeltaIcube )
-           cellDensity     = solnData (idensvar,i,j,1)
-           cellMass        = cellDensity * cellVolume
-           cellMassDensity = cellMass * cellDensity
-
-           z = Rsph * thetaCosine
-
-           localMsum   = localMsum   + cellMass
-           localMDsum  = localMDsum  + cellMassDensity
-           localMDZsum = localMDZsum + cellMassDensity * z
-
-           Rsph = Rsph + DeltaI
-        end do
-
-        thetaSineSave = thetaSine
-        thetaSine     = thetaSine   - (alpha * thetaSine   - beta * thetaCosine  )
-        thetaCosine   = thetaCosine - (alpha * thetaCosine + beta * thetaSineSave)
-     end do
-
-     call Grid_releaseBlkPtr (tileDesc, solnData)
-     call itor%next()
-  end do
-  call Grid_releaseLeafIterator(itor)
+!     domainRmax     =       (cmRsph  == maxRsph               ) &  ! include (however unlikely) the
+!                      .and. (cmRsph  == gr_mpoleDomainRmax    )    ! missing R part of the domain
+!     domainThetaMax =       (cmTheta == maxTheta              ) &  ! include (very likely) the
+!                      .and. (cmTheta == gr_mpoleDomainThetaMax)    ! missing theta part of the domain
 !
+!     insideBlock = insideBlock .or. domainRmax .or. domainThetaMax
 !
-!     ...Prepare for a one-time all reduce call.
+!     if (insideBlock) then
 !
+!        lev=tileDesc%level
+!        call Grid_getDeltas          (lev, delta)
+!        tileLimits=tileDesc%limits
+! 
+!         DeltaI = delta (IAXIS)
+!         DeltaJ = delta (JAXIS)
 !
-  localData (1) = localMsum
-  localData (2) = localMDsum
-  localData (3) = localMDZsum
+!         gr_mpoleDrInnerZone = HALF * DeltaI   ! based on Rsph only
 !
+!         imin = tileLimits (LOW, IAXIS)
+!         imax = tileLimits (HIGH,IAXIS)
 !
-!     ...Calculate the total sums and give a copy to each processor.
+!         nCellsI = imax - imin + 1
+!         nEdgesI = nCellsI + 1
 !
+!         allocate (shifts (1:nEdgesI))
 !
-  call  MPI_AllReduce (localData,   &
-                       totalData,   &
-                       3,           &
-                       FLASH_REAL,  & 
-                       MPI_Sum,     &
-                       gr_meshComm, &
-                       error        )
+!         guardCells = .false.
 !
+!         call Grid_getCellCoords (IAXIS, tileDesc, FACES, guardCells, shifts (1:nEdgesI), nEdgesI)
 !
-!     ...Proceed according to symmetry situation. Take the total mass x 2 if
-!        a symmetry plane has been specified along the theta = 90 degree (pi/2)
-!        2D spherical boundary. Analyze total mass obtained. If nonsense, abort.
-!        Calculate center of multipole expansion in cartesian z-coordinates. Due
-!        to implicit rotational apherical symmetry around the z-axis, the center
-!        of multipole expansion must have an x-coordinate of zero and needs not
-!        be explicitly stored. For the z-coordinate, override the center of
-!        multipole expansion if a symmetry plane is present. In this case the
-!        z-coordinate is equal to zero.
+!         shifts (1:nEdgesI) = shifts (1:nEdgesI) - cmRsph
+!         locate (1) = minloc (abs (shifts (1:nEdgesI)), dim = 1)
 !
+!         cmRsph = cmRsph + shifts (locate (1))  ! move multipole center to nearest R edge
 !
-  if (gr_mpoleSymmetryPlane2D) then
-      gr_mpoleTotalMass = TWO * totalData (1)
-      gr_mpoleZcenter   = ZERO
-  else
-      gr_mpoleTotalMass = totalData (1)
-      gr_mpoleZcenter   = totalData (3) / totalData (2)
-  end if
-
-  if (abs (gr_mpoleTotalMass) < tiny (gr_mpoleTotalMass)) then
-      call Driver_abortFlash ('[gr_mpoleCen2Dspherical] ERROR:  gr_mpoleTotalMass <= 0')
-  end if
+!         deallocate (shifts)
 !
+!         if (cmTheta == ZERO) then
+!             gr_mpoleZcenter = cmRsph
+!         else
+!             gr_mpoleZcenter = - cmRsph
+!         end if
 !
-!     ...We need to calculate the 2D spherical coordinates of the center
-!        of multipole expansion in order to determine to which tileDesc it belongs.
-!        Only the radial part is of relevance here.
+!         localData (1) = gr_mpoleDrInnerZone
+!         localData (2) = gr_mpoleZcenter
 !
+!         if (gr_meshMe /= MASTER_PE) then
 !
-  cmRsph = abs (gr_mpoleZcenter)
-
-  if (gr_mpoleZcenter >= ZERO) then
-      cmTheta = ZERO
-  else
-      cmTheta = gr_mpolePi
-  end if
-
-  gr_mpoleThetaCenter = cmTheta
+!             call MPI_Send (localData,    &
+!                            2,            &
+!                            FLASH_REAL,   &
+!                            MASTER_PE,    &
+!                            messageTag,   &
+!                            gr_meshComm,  &
+!                            error         )
+!         else
+!             invokeRecv = .false.
+!         end if
 !
+!         exit
 !
-!     ...Find the local tileDescID to which the center of multipole expansion
-!        belongs and place the center on the nearest cell corner. Also at
-!        this point we determine the inner zone atomic length, since the
-!        inner zone is defined around the center of multipole expansion.
-!        Whatever processor is doing the relevant calculation sends its
-!        final data (updated center of multipole expansion and inner zone
-!        atomic length) to the master, which then broadcasts the info.
-!        The inner zone atomic length is based entirely on the radial
-!        component.
+!     end if
+!     call itor%next()
+!  end do
+!  call Grid_releaseLeafIterator(itor)
 !
+!  if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
 !
-  messageTag = 1
-  invokeRecv = .true.
-
-  call Grid_getTileIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(tileDesc)
-     
-
-     call Grid_getBlkBoundBox (tileDesc, bndBox)
-
-     minRsph  = bndBox (LOW ,IAXIS)
-     maxRsph  = bndBox (HIGH,IAXIS)
-     minTheta = bndBox (LOW ,JAXIS)    ! needed to find the relevant unique tileDesc
-     maxTheta = bndBox (HIGH,JAXIS)    ! needed to find the relevant unique tileDesc
-
-     insideBlock =       (cmRsph  >= minRsph ) &
-                   .and. (cmTheta >= minTheta) &
-                   .and. (cmRsph  <  maxRsph ) &     ! the < instead of <= is necessary
-                   .and. (cmTheta <  maxTheta)       ! for finding the unique tileDesc
-
-     domainRmax     =       (cmRsph  == maxRsph               ) &  ! include (however unlikely) the
-                      .and. (cmRsph  == gr_mpoleDomainRmax    )    ! missing R part of the domain
-     domainThetaMax =       (cmTheta == maxTheta              ) &  ! include (very likely) the
-                      .and. (cmTheta == gr_mpoleDomainThetaMax)    ! missing theta part of the domain
-
-     insideBlock = insideBlock .or. domainRmax .or. domainThetaMax
-
-     if (insideBlock) then
-
-        lev=tileDesc%level
-        call Grid_getDeltas          (lev, delta)
-        tileLimits=tileDesc%limits
- 
-         DeltaI = delta (IAXIS)
-         DeltaJ = delta (JAXIS)
-
-         gr_mpoleDrInnerZone = HALF * DeltaI   ! based on Rsph only
-
-         imin = tileLimits (LOW, IAXIS)
-         imax = tileLimits (HIGH,IAXIS)
-
-         nCellsI = imax - imin + 1
-         nEdgesI = nCellsI + 1
-
-         allocate (shifts (1:nEdgesI))
-
-         guardCells = .false.
-
-         call Grid_getCellCoords (IAXIS, tileDesc, FACES, guardCells, shifts (1:nEdgesI), nEdgesI)
-
-         shifts (1:nEdgesI) = shifts (1:nEdgesI) - cmRsph
-         locate (1) = minloc (abs (shifts (1:nEdgesI)), dim = 1)
-
-         cmRsph = cmRsph + shifts (locate (1))  ! move multipole center to nearest R edge
-
-         deallocate (shifts)
-
-         if (cmTheta == ZERO) then
-             gr_mpoleZcenter = cmRsph
-         else
-             gr_mpoleZcenter = - cmRsph
-         end if
-
-         localData (1) = gr_mpoleDrInnerZone
-         localData (2) = gr_mpoleZcenter
-
-         if (gr_meshMe /= MASTER_PE) then
-
-             call MPI_Send (localData,    &
-                            2,            &
-                            FLASH_REAL,   &
-                            MASTER_PE,    &
-                            messageTag,   &
-                            gr_meshComm,  &
-                            error         )
-         else
-             invokeRecv = .false.
-         end if
-
-         exit
-
-     end if
-     call itor%next()
-  end do
-  call Grid_releaseLeafIterator(itor)
-
-  if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
-
-       call MPI_Recv (localData,      &
-                      2,              &
-                      FLASH_REAL,     &
-                      MPI_ANY_SOURCE, &
-                      messageTag,     &
-                      gr_meshComm,    &
-                      status,         &
-                      error           )
-  end if
+!       call MPI_Recv (localData,      &
+!                      2,              &
+!                      FLASH_REAL,     &
+!                      MPI_ANY_SOURCE, &
+!                      messageTag,     &
+!                      gr_meshComm,    &
+!                      status,         &
+!                      error           )
+!  end if
+!!
+!!
+!!     ...At this point, the master has all the info. Broadcast and update all
+!!        other processors.
+!!
+!!
+!  call MPI_Bcast (localData,   &
+!                  2,           &
+!                  FLASH_REAL,  &
+!                  MASTER_PE,   &
+!                  gr_meshComm, &
+!                  error        )
 !
-!
-!     ...At this point, the master has all the info. Broadcast and update all
-!        other processors.
-!
-!
-  call MPI_Bcast (localData,   &
-                  2,           &
-                  FLASH_REAL,  &
-                  MASTER_PE,   &
-                  gr_meshComm, &
-                  error        )
-
-  gr_mpoleDrInnerZone    = localData (1)
-  gr_mpoleDrInnerZoneInv = ONE / gr_mpoleDrInnerZone
-  gr_mpoleZcenter        = localData (2)
-  gr_mpoleRcenter        = abs (gr_mpoleZcenter)
+!  gr_mpoleDrInnerZone    = localData (1)
+!  gr_mpoleDrInnerZoneInv = ONE / gr_mpoleDrInnerZone
+!  gr_mpoleZcenter        = localData (2)
+!  gr_mpoleRcenter        = abs (gr_mpoleZcenter)
 !
 !
 !     ...Ready!

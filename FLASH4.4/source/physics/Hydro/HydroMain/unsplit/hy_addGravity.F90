@@ -73,6 +73,8 @@ Subroutine hy_addGravity&
   real, pointer, dimension(:,:,:,:) :: U
   real, dimension(3) :: velNew
 
+  nullify(U)
+  
   hdt = 0.5 * dt
 
   !! Get block pointer for storages of Riemann states

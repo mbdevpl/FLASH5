@@ -22,6 +22,9 @@ subroutine hy_gravityStep(simTime, dt, dtOld)
   type(Grid_iterator_t) :: itor
   type(Grid_tile_t)     :: tileDesc
 
+  nullify(Uin)
+  nullify(Uout)
+
 #ifdef DEBUG_DRIVER
   print*,' ***************   HYDRO LEVEL', level,'  **********************'
 #endif
