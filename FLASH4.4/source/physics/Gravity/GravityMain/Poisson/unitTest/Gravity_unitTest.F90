@@ -37,12 +37,11 @@
 subroutine Gravity_unitTest( fileUnit, perfect)
 
   use Gravity_interface, ONLY : Gravity_potential
-  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator,&
-                             Grid_releaseBlkPtr, Grid_getBlkPtr
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
   use Simulation_data, ONLY:  sim_passTolerance
   use Gravity_data, ONLY : grv_meshMe
-  use block_metadata, ONLY : block_metadata_t
-  use leaf_iterator, ONLY : leaf_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
   implicit none
 
 # include "constants.h"
@@ -50,10 +49,10 @@ subroutine Gravity_unitTest( fileUnit, perfect)
 
   integer, intent(in) :: fileUnit
   logical, intent(out) :: perfect
-  type(block_metadata_t) :: block
-  type(leaf_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
   
-  integer,dimension(LOW:HIGH,MDIM) :: blkLimits
+  integer,dimension(LOW:HIGH,MDIM) :: tileLimits
   integer :: blkCount
   real :: potError,potErrorMax,factorMin,factorMax,apotAbsMax,gpotAbsMax
   real, parameter :: orig_tolerance = 1e-9 !unused
@@ -61,7 +60,7 @@ subroutine Gravity_unitTest( fileUnit, perfect)
 
   real, pointer, dimension(:,:,:,:):: solnData
 
-
+  NULLIFY(solnData)
   call Gravity_potential()
 
   potErrorMax = tiny(0.0)
@@ -70,22 +69,22 @@ subroutine Gravity_unitTest( fileUnit, perfect)
   factorMin =  1.0E10
   factorMax = -1.0E10
 
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(block)
+  call Grid_getTileIterator(itor, CENTER, tiling = .FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 
-     call Grid_getBlkPtr(block,solnData)
+     call tileDesc%getDataPtr(solnData, CENTER)
 
-     blkLimits=block%limits
+     tileLimits=tileDesc%limits
 
-     ib=blkLimits(LOW,IAXIS)
-     ie=blkLimits(HIGH,IAXIS)
+     ib=tileLimits(LOW,IAXIS)
+     ie=tileLimits(HIGH,IAXIS)
 
-     jb=blkLimits(LOW,JAXIS)
-     je=blkLimits(HIGH,JAXIS)
+     jb=tileLimits(LOW,JAXIS)
+     je=tileLimits(HIGH,JAXIS)
 
-     kb=blkLimits(LOW,KAXIS)
-     ke=blkLimits(HIGH,KAXIS)
+     kb=tileLimits(LOW,KAXIS)
+     ke=tileLimits(HIGH,KAXIS)
 
      ! Create error variables
      !  ERRM = difference, ERRD = division, ERRN = normalized
@@ -105,10 +104,10 @@ subroutine Gravity_unitTest( fileUnit, perfect)
      factorMax = max(factorMax,maxval(solnData(ERRD_VAR,ib:ie,jb:je,kb:ke)))
      factorMin = min(factorMin,minval(solnData(ERRD_VAR,ib:ie,jb:je,kb:ke)))
 
-     call Grid_releaseBlkPtr(block,solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   if(potErrorMax < sim_passTolerance*min(apotAbsMax,gpotAbsMax) .and. &
        factorMin .GE. 1-sim_passTolerance .and. &
