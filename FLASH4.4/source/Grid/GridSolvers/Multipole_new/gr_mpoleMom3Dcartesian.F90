@@ -26,13 +26,8 @@
 
 subroutine gr_mpoleMom3Dcartesian (idensvar)
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-                                Grid_releaseBlkPtr,     &
-                                Grid_getBlkBoundBox,    &
-                                Grid_getBlkRefineLevel, &
-                                Grid_getDeltas,         &
-                                Grid_getLeafIterator,   &
-                                Grid_releaseLeafIterator
+  use Grid_interface,    ONLY : Grid_getTileIterator,   &
+                                Grid_releaseTileIterator
 
   use gr_mpoleInterface, ONLY : gr_mpoleMomBins3Dcartesian
 
@@ -63,8 +58,8 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
                                 gr_mpoleYcenter,                &
                                 gr_mpoleZcenter
 
-  use block_metadata,    ONLY : block_metadata_t
-  use leaf_iterator,     ONLY : leaf_iterator_t
+  use Grid_tile,    ONLY : Grid_tile_t
+  use Grid_iterator,     ONLY : Grid_iterator_t
  
   implicit none
   
@@ -89,7 +84,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   
   integer, save :: maxQtype                ! for multithreading needs to be on stack (save)
 
-  integer :: blkLimits   (LOW:HIGH,1:MDIM)
+  integer :: tileLimits   (LOW:HIGH,1:MDIM)
 
   real    :: bndBoxILow, bndBoxJLow, bndBoxKLow
   real    :: cellDensity, cellMass, cellVolume
@@ -105,12 +100,13 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 
   real, pointer :: solnData (:,:,:,:)
   integer :: lev
-  type(block_metadata_t) :: block
-  type(leaf_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
 
+NULLIFY(solnData)
 !
 !
-!     ...The first pass over all blocks on the current processor will get us information
+!     ...The first pass over all tiles on the current processor will get us information
 !        about how many different radial bin indices will be addressed and for each such
 !        radial bin index, how many cells it will contain.
 !
@@ -118,22 +114,22 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   !$omp single
   gr_mpoleQused (:) = 0 
 
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(block)
-     lev=block%level
-     blkLimits=block%limits
+  call Grid_getTileIterator(itor, CENTER, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     lev=tileDesc%level
+     tileLimits=tileDesc%limits
      
-     call Grid_getBlkBoundBox     (block, bndBox)
-     call Grid_getDeltas          (lev, delta)
-     call Grid_getBlkPtr          (block, solnData)
+     call tileDesc%boundBox(bndBox)
+     call tileDesc%deltas(delta)
+     call tileDesc%getDataPtr(solnData, CENTER)
 
-     imin       = blkLimits (LOW, IAXIS)
-     jmin       = blkLimits (LOW, JAXIS)
-     kmin       = blkLimits (LOW, KAXIS)  
-     imax       = blkLimits (HIGH,IAXIS)
-     jmax       = blkLimits (HIGH,JAXIS)
-     kmax       = blkLimits (HIGH,KAXIS)
+     imin       = tileLimits (LOW, IAXIS)
+     jmin       = tileLimits (LOW, JAXIS)
+     kmin       = tileLimits (LOW, KAXIS)  
+     imax       = tileLimits (HIGH,IAXIS)
+     jmax       = tileLimits (HIGH,JAXIS)
+     kmax       = tileLimits (HIGH,KAXIS)
 
      DeltaI     = delta (IAXIS)
      DeltaJ     = delta (JAXIS)
@@ -203,10 +199,10 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
       z = z + DeltaK
      end do
 
-     call Grid_releaseBlkPtr (block, solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 !
 !
 !     ...Create the arrays that will contain the radial info.
@@ -220,7 +216,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   allocate (gr_mpoleQdataCells3D   (1:maxCells , 1:maxQtype))
 !
 !
-!     ...The second pass over all blocks on the current processor will scatter all
+!     ...The second pass over all tiles on the current processor will scatter all
 !        the radial bin information into the radial bin info array.
 !
 !
@@ -228,22 +224,22 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 
   nQ = 0
 
-   call Grid_getLeafIterator(itor)
-   do while(itor%is_valid())
-     call itor%blkMetaData(block)
-     lev=block%level
-     blkLimits=block%limits
+   call Grid_getTileIterator(itor, CENTER, tiling=.FALSE.)
+   do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     lev=tileDesc%level
+     tileLimits=tileDesc%limits
      
-     call Grid_getBlkBoundBox     (block, bndBox)
-     call Grid_getDeltas          (lev, delta)
-     call Grid_getBlkPtr          (block, solnData)
+     call tileDesc%boundBox(bndBox)
+     call tileDesc%deltas(delta)
+     call tileDesc%getDataPtr(solnData, CENTER)
 
-     imin       = blkLimits (LOW, IAXIS)
-     jmin       = blkLimits (LOW, JAXIS)
-     kmin       = blkLimits (LOW, KAXIS)  
-     imax       = blkLimits (HIGH,IAXIS)
-     jmax       = blkLimits (HIGH,JAXIS)
-     kmax       = blkLimits (HIGH,KAXIS)
+     imin       = tileLimits (LOW, IAXIS)
+     jmin       = tileLimits (LOW, JAXIS)
+     kmin       = tileLimits (LOW, KAXIS)  
+     imax       = tileLimits (HIGH,IAXIS)
+     jmax       = tileLimits (HIGH,JAXIS)
+     kmax       = tileLimits (HIGH,KAXIS)
 
      DeltaI     = delta (IAXIS)
      DeltaJ     = delta (JAXIS)
@@ -344,10 +340,10 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
       z = z + DeltaK
      end do
 
-     call Grid_releaseBlkPtr (block, solnData)
+     call tileDesc%getDataPtr(solnData, CENTER)
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
   !$omp end single
 !
 !
