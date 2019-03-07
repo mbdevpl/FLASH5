@@ -272,6 +272,14 @@ Module Grid_interface
   end interface
  
   interface Grid_getCellCoords
+     subroutine Grid_getCellCoords_blk(axis, block, edge, guardcell, coordinates, size)
+        use block_metadata, ONLY : block_metadata_t
+        integer, intent(in) :: axis, edge
+        type(block_metadata_t) :: block
+        integer, intent(in) :: size
+        logical, intent(in) :: guardcell
+        real,intent(out), dimension(size) :: coordinates
+     end subroutine Grid_getCellCoords_blk
      subroutine Grid_getCellCoords(axis, edge, level, lo, hi, coordinates)
         integer, intent(in)  :: axis
         integer, intent(in)  :: edge

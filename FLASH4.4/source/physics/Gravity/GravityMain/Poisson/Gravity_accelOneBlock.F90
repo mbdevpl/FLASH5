@@ -75,6 +75,8 @@ subroutine Gravity_accelOneBlock ( blockDesc, ngcellcomp, gvec, potentialIndex)
   real, dimension(:), allocatable     :: inv_r, inv_sintheta
   integer :: i,j,k
   
+  call Driver_abortFlash("[Gravity_accelOneBlock] Implement for tiling")
+
   !==================================================
 
   ! If a variable index is explicitly specified, assume that as the potential

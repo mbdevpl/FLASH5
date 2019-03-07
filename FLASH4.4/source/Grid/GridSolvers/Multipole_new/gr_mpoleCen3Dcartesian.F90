@@ -51,8 +51,12 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
 
   use Driver_interface,  ONLY : Driver_abortFlash
 
-  use Grid_interface,    ONLY : Grid_getTileIterator,   &
-                                Grid_releaseTileIterator,&
+  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
+                                Grid_releaseBlkPtr,     &
+                                Grid_getBlkBoundBox,    &
+                                Grid_getDeltas,         &
+                                Grid_getLeafIterator,   &
+                                Grid_releaseLeafIterator,&
                                 Grid_getCellCoords
 
   use gr_mpoleData,      ONLY : gr_mpoleDomainXmin,     &
@@ -74,8 +78,8 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
                                 gr_mpoleYcenterOfMass,  &
                                 gr_mpoleZcenterOfMass
 
-  use Grid_tile,    ONLY : Grid_tile_t
-  use Grid_iterator,     ONLY : Grid_iterator_t
+  use block_metadata,    ONLY : block_metadata_t
+  use leaf_iterator,     ONLY : leaf_iterator_t
   
   implicit none
   
@@ -88,6 +92,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   integer, intent (in) :: idensvar
 
   logical :: domainXmax, domainYmax, domainZmax
+  logical :: guardCells
   logical :: insideBlock
   logical :: invokeRecv
 
@@ -104,7 +109,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
 
   integer :: locate      (1:3)
   integer :: status      (MPI_STATUS_SIZE)
-  integer :: tileLimits   (LOW:HIGH,1:MDIM)
+  integer :: blkLimits   (LOW:HIGH,1:MDIM)
   
 
   real    :: bndBoxILow
@@ -127,12 +132,14 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   real, pointer     :: solnData (:,:,:,:)
 
   integer :: lev
-  type(Grid_tile_t) :: tileDesc
-  type(Grid_iterator_t) :: itor
+  type(block_metadata_t) :: block
+  type(leaf_iterator_t) :: itor
+
+  nullify(solnData)
+
   !
-  NULLIFY(solnData)
 !
-!     ...Sum quantities over all locally held leaf tileDescs.
+!     ...Sum quantities over all locally held leaf blocks.
 !
 !
   localData(1)   = ZERO
@@ -145,22 +152,22 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   localData(8)  = ZERO
 
   
-  call Grid_getTileIterator(itor, CENTER, tiling = .FALSE.)
-  do while(itor%isValid())
-     call itor%currentTile(tileDesc)
-     lev=tileDesc%level
+  call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
+     lev=block%level
      
-     tileLimits=tileDesc%limits
+     blkLimits=block%limits
      
-     call tileDesc%boundBox(bndBox)
-     call tileDesc%deltas(delta)
-     call tileDesc%getDataPtr(solnData, CENTER)
-     imin = tileLimits (LOW, IAXIS)
-     jmin = tileLimits (LOW, JAXIS)
-     kmin = tileLimits (LOW, KAXIS)  
-     imax = tileLimits (HIGH,IAXIS)
-     jmax = tileLimits (HIGH,JAXIS)
-     kmax = tileLimits (HIGH,KAXIS)
+     call Grid_getBlkBoundBox     (block, bndBox)
+     call Grid_getDeltas          (lev, delta)
+     call Grid_getBlkPtr          (block, solnData)
+     imin = blkLimits (LOW, IAXIS)
+     jmin = blkLimits (LOW, JAXIS)
+     kmin = blkLimits (LOW, KAXIS)  
+     imax = blkLimits (HIGH,IAXIS)
+     jmax = blkLimits (HIGH,JAXIS)
+     kmax = blkLimits (HIGH,KAXIS)
 
      DeltaI = delta (IAXIS)
      DeltaJ = delta (JAXIS)
@@ -202,10 +209,10 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
         z = z + DeltaK
      end do
 
-     call tileDesc%releaseDataPtr(solnData, CENTER)
+     call Grid_releaseBlkPtr (block, solnData)
      call itor%next()
   end do
-  call Grid_releaseTileIterator(itor)
+  call Grid_releaseLeafIterator(itor)
 !
 !
 !     ...Prepare for a one-time all reduce call.
@@ -253,7 +260,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   gr_mpoleZcenterOfMass = totalData (8) / totalData (1)
 !
 !
-!     ...Find the local tileDescID to which the center of multipole expansion
+!     ...Find the local blockID to which the center of multipole expansion
 !        belongs and place the center on the nearest cell corner. Also at
 !        this point we determine the inner zone atomic length, since the
 !        inner zone is defined around the center of multipole expansion.
@@ -265,11 +272,11 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   messageTag = 1
   invokeRecv = .true.
 
-  call Grid_getTileIterator(itor, CENTER, tiling = .FALSE.)
-  do while(itor%isValid())
-     call itor%currentTile(tileDesc)
+  call Grid_getLeafIterator(itor)
+  do while(itor%is_valid())
+     call itor%blkMetaData(block)
      
-     call tileDesc%boundBox(bndBox)
+     call Grid_getBlkBoundBox (block, bndBox)
      
      insideBlock =       (gr_mpoleXcenter >= bndBox (LOW ,IAXIS)) &
           .and. (gr_mpoleYcenter >= bndBox (LOW ,JAXIS)) &
@@ -288,21 +295,21 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
      insideBlock = insideBlock .or. domainXmax .or. domainYmax .or. domainZmax
      
      if (insideBlock) then
-        lev=tileDesc%level
-        call tileDesc%deltas(delta)
-        tileLimits=tileDesc%limits
+        lev=block%level
+        call Grid_getDeltas          (lev, delta)
+        blkLimits=block%limits
         
         DeltaI = delta (IAXIS)
         DeltaJ = delta (JAXIS)
         DeltaK = delta (KAXIS)
         
         gr_mpoleDrInnerZone = HALF * (DeltaI * DeltaJ * DeltaK) ** (ONE / THREE)
-        imin = tileLimits (LOW, IAXIS)
-        jmin = tileLimits (LOW, JAXIS)
-        kmin = tileLimits (LOW, KAXIS)  
-        imax = tileLimits (HIGH,IAXIS)
-        jmax = tileLimits (HIGH,JAXIS)
-        kmax = tileLimits (HIGH,KAXIS)
+        imin = blkLimits (LOW, IAXIS)
+        jmin = blkLimits (LOW, JAXIS)
+        kmin = blkLimits (LOW, KAXIS)  
+        imax = blkLimits (HIGH,IAXIS)
+        jmax = blkLimits (HIGH,JAXIS)
+        kmax = blkLimits (HIGH,KAXIS)
         
         nCellsI = imax - imin + 1
         nCellsJ = jmax - jmin + 1
@@ -316,10 +323,12 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
         
         allocate (shifts (1:maxEdges,3))
         
-         call Grid_getCellCoords (IAXIS, FACES, lev, tileLimits(LOW,:), tileLimits(HIGH,:), shifts (1:nEdgesI,1))
-         call Grid_getCellCoords (JAXIS, FACES, lev, tileLimits(LOW,:), tileLimits(HIGH,:), shifts (1:nEdgesJ,2))
-         call Grid_getCellCoords (KAXIS, FACES, lev, tileLimits(LOW,:), tileLimits(HIGH,:), shifts (1:nEdgesK,3))
-
+        guardCells = .false.
+        
+        call Grid_getCellCoords (IAXIS, block, FACES, guardCells, shifts (1:nEdgesI,1), nEdgesI)
+        call Grid_getCellCoords (JAXIS, block, FACES, guardCells, shifts (1:nEdgesJ,2), nEdgesJ)
+        call Grid_getCellCoords (KAXIS, block, FACES, guardCells, shifts (1:nEdgesK,3), nEdgesK)
+        
         shifts (1:nEdgesI,1) = shifts (1:nEdgesI,1) - gr_mpoleXcenter
         shifts (1:nEdgesJ,2) = shifts (1:nEdgesJ,2) - gr_mpoleYcenter
         shifts (1:nEdgesK,3) = shifts (1:nEdgesK,3) - gr_mpoleZcenter
@@ -356,7 +365,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
      end if
      call itor%next()
   end do
-  call Grid_releaseTileIterator(itor)
+  call Grid_releaseLeafIterator(itor)
   if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
      
      call MPI_Recv (localData,      &
