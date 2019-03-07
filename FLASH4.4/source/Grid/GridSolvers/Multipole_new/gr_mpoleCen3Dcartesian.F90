@@ -145,7 +145,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   localData(8)  = ZERO
 
   
-  call Grid_getTileIterator(itor, CENTER, tiling = .FALSE.)
+  call Grid_getTileIterator(itor, LEAF, tiling = .FALSE.)
   do while(itor%isValid())
      call itor%currentTile(tileDesc)
      lev=tileDesc%level
@@ -265,7 +265,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   messageTag = 1
   invokeRecv = .true.
 
-  call Grid_getTileIterator(itor, CENTER, tiling = .FALSE.)
+  call Grid_getTileIterator(itor, LEAF, tiling = .FALSE.)
   do while(itor%isValid())
      call itor%currentTile(tileDesc)
      

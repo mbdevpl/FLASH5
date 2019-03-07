@@ -69,7 +69,7 @@ subroutine Gravity_unitTest( fileUnit, perfect)
   factorMin =  1.0E10
   factorMax = -1.0E10
 
-  call Grid_getTileIterator(itor, CENTER, tiling = .FALSE.)
+  call Grid_getTileIterator(itor, LEAF, tiling = .FALSE.)
   do while(itor%isValid())
      call itor%currentTile(tileDesc)
 
