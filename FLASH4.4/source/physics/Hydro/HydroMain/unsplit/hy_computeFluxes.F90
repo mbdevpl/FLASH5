@@ -123,6 +123,8 @@ Subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepOr
   integer :: loFl(MDIM+1)
   type(Grid_tile_t), intent(IN) :: tileDesc
 
+  integer :: dataSize(1:MDIM)
+  
   real, pointer, dimension(:,:,:,:)   :: flx
   real, pointer, dimension(:,:,:,:)   :: fly
   real, pointer, dimension(:,:,:,:)   :: flz
@@ -253,8 +255,8 @@ Subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepOr
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call Driver_abortFlash("Not using Gravity yet!")
-!        call hy_putGravity(tileDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+        dataSize(1:MDIM) = halo(HIGH, 1:MDIM) - halo(LOW, 1:MDIM) + 1
+        call hy_putGravity(tileDesc,halo,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref

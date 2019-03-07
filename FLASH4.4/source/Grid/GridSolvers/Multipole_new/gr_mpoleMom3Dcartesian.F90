@@ -103,7 +103,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   type(Grid_tile_t) :: tileDesc
   type(Grid_iterator_t) :: itor
 
-NULLIFY(solnData)
+  NULLIFY(solnData)
 !
 !
 !     ...The first pass over all tiles on the current processor will get us information
@@ -340,7 +340,7 @@ NULLIFY(solnData)
       z = z + DeltaK
      end do
 
-     call tileDesc%getDataPtr(solnData, CENTER)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
      call itor%next()
   end do
   call Grid_releaseTileIterator(itor)

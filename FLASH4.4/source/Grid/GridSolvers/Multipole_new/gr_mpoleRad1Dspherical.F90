@@ -49,8 +49,8 @@ subroutine gr_mpoleRad1Dspherical ()
                                 gr_mpoleDomainXmax
 
 
-  use block_metadata,    ONLY : block_metadata_t
-  use leaf_iterator,     ONLY : leaf_iterator_t
+!  use block_metadata,    ONLY : block_metadata_t
+!  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
 
@@ -60,238 +60,239 @@ subroutine gr_mpoleRad1Dspherical ()
 
   include "Flash_mpi.h"
 
+  call Driver_abortFlash("[gr_mpoleRad1Dspherical] Implement with tiling!")
   
   
-  integer :: error
-  integer :: i,imin,imax
-  integer :: nPinnerZone
-  integer :: nRinnerZone
-  integer :: nBlocal, nblks
-  integer :: nPlocal
-  integer :: nRlocal
-  integer :: nRlocalPrev
-
-  integer :: localData   (1:2)
-  integer :: globalData  (1:2)
-  integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  
-
-  real    :: bndBoxILow
-  real    :: DeltaI
-  real    :: DeltaIHalf
-  real    :: Dxmin
-  real    :: Rsph
-
-  real    :: delta        (1:MDIM)
-  real    :: minCellSizes (1:MDIM)
-  real    :: bndBox       (LOW:HIGH,1:MDIM)
-
-  logical, allocatable :: blockListInnerZone (:)
-  real,    allocatable :: RinnerZone         (:)
+!  integer :: error
+!  integer :: i,imin,imax
+!  integer :: nPinnerZone
+!  integer :: nRinnerZone
+!  integer :: nBlocal, nblks
+!  integer :: nPlocal
+!  integer :: nRlocal
+!  integer :: nRlocalPrev
 !
-  integer :: lev
-  type(block_metadata_t) :: block
-  type(leaf_iterator_t) :: itor
+!  integer :: localData   (1:2)
+!  integer :: globalData  (1:2)
+!  integer :: blkLimits   (LOW:HIGH,1:MDIM)
+!  
 !
-!       ...Get the minimum cell sizes for the entire domain.
+!  real    :: bndBoxILow
+!  real    :: DeltaI
+!  real    :: DeltaIHalf
+!  real    :: Dxmin
+!  real    :: Rsph
 !
+!  real    :: delta        (1:MDIM)
+!  real    :: minCellSizes (1:MDIM)
+!  real    :: bndBox       (LOW:HIGH,1:MDIM)
 !
-  call Grid_getMinCellSizes (minCellSizes)
-
-  Dxmin = minCellSizes (IAXIS)
+!  logical, allocatable :: blockListInnerZone (:)
+!  real,    allocatable :: RinnerZone         (:)
+!!
+!  integer :: lev
+!  type(block_metadata_t) :: block
+!  type(leaf_iterator_t) :: itor
+!!
+!!       ...Get the minimum cell sizes for the entire domain.
+!!
+!!
+!  call Grid_getMinCellSizes (minCellSizes)
 !
+!  Dxmin = minCellSizes (IAXIS)
+!!
+!!
+!!       ...Set the largest possible radial distance and the 'atomic' radial
+!!          spacing. This is the smallest possible size of one radial bin.
+!!          Half the Geometric mean (n-th root of product of n samples) is
+!!          used to determine the atomic spacing from the minimum cell spacings
+!!          in each x,y,z direction. The inverse is also calculated for further
+!!          reference. Checking if the center of mass became too close to
+!!          a cell midpoint is not needed here, since the center of mass
+!!          does not move in an 1D spherical problem. Note, that the
+!!          spherical case here has the radial component already in one
+!!          coordinate (x-axis).
+!!
+!!
+!  gr_mpoleMaxR  = gr_mpoleDomainXmax
+!  gr_mpoleDr    = HALF * Dxmin
+!  gr_mpoleDrInv = ONE / gr_mpoleDr
+!!
+!!
+!!       ...Set initial indicators for inner and outer zone.
+!!
+!!
+!  gr_mpoleInnerZoneExists = .not. gr_mpoleIgnoreInnerZone
+!  gr_mpoleOuterZoneExists = .not. gr_mpoleInnerZoneExists
 !
-!       ...Set the largest possible radial distance and the 'atomic' radial
-!          spacing. This is the smallest possible size of one radial bin.
-!          Half the Geometric mean (n-th root of product of n samples) is
-!          used to determine the atomic spacing from the minimum cell spacings
-!          in each x,y,z direction. The inverse is also calculated for further
-!          reference. Checking if the center of mass became too close to
-!          a cell midpoint is not needed here, since the center of mass
-!          does not move in an 1D spherical problem. Note, that the
-!          spherical case here has the radial component already in one
-!          coordinate (x-axis).
+!  if (gr_mpoleInnerZoneExists) then
+!!
+!!
+!!     ...Proceed with establishing the inner zone (if any). From the determined
+!!        inner zone atomic length and the previously found maximal radial domain
+!!        distance, readjust the inner zone size variable. Two cases can happen:
+!!        1) the size of the inner zone fits into the complete radial doamin (no
+!!        adjustment needed) or 2) the size of the inner zone exceeds the complete
+!!        radial domain (adjustment needed). Also override existence criterion for
+!!        the outer zone, if the largest domain radius exceeds the inner zone radius.
+!!
+!!
+!      gr_mpoleOuterZoneExists = (gr_mpoleInnerZoneSize * gr_mpoleDrInnerZone < gr_mpoleMaxR)
 !
+!      if ( gr_mpoleInnerZoneSize * gr_mpoleDrInnerZone > gr_mpoleMaxR ) then
+!           gr_mpoleInnerZoneSize = int (ceiling (gr_mpoleMaxR * gr_mpoleDrInnerZoneInv))
+!      end if
+!!
+!!
+!!     ...Determine the number of radii to be expected in the inner zone.
+!!        For each processor, store those local blockID's that actually
+!!        have radii in the inner zone.
+!!
+!!
+!      call Grid_getLocalNumBlks(nblks)
+!      allocate (blockListInnerZone (1:nblks))
 !
-  gr_mpoleMaxR  = gr_mpoleDomainXmax
-  gr_mpoleDr    = HALF * Dxmin
-  gr_mpoleDrInv = ONE / gr_mpoleDr
+!      gr_mpoleInnerZoneMaxR = real (gr_mpoleInnerZoneSize) * gr_mpoleDrInnerZone
 !
+!      nBlocal = 0
+!      nRlocal = 0
+!      nRlocalPrev = 0
 !
-!       ...Set initial indicators for inner and outer zone.
+!      call Grid_getLeafIterator(itor)
+!      do while(itor%is_valid())
+!         call itor%blkMetaData(block)
+!         lev=block%level
+!         blkLimits=block%limits
+!         
+!         call Grid_getBlkBoundBox     (block, bndBox)
+!         call Grid_getDeltas          (lev, delta)
+! 
+!         imin       = blkLimits (LOW, IAXIS)
+!         imax       = blkLimits (HIGH,IAXIS)
+!         DeltaI     = delta (IAXIS)
+!         DeltaIHalf = DeltaI * HALF
+!         bndBoxILow = bndBox (LOW,IAXIS)
 !
+!         Rsph = bndBoxILow + DeltaIHalf
+!         do i = imin,imax
 !
-  gr_mpoleInnerZoneExists = .not. gr_mpoleIgnoreInnerZone
-  gr_mpoleOuterZoneExists = .not. gr_mpoleInnerZoneExists
-
-  if (gr_mpoleInnerZoneExists) then
+!            if (Rsph <= gr_mpoleInnerZoneMaxR) then
+!                nRlocal = nRlocal + 1
+!            end if
 !
+!            Rsph = Rsph + DeltaI
+!         end do
 !
-!     ...Proceed with establishing the inner zone (if any). From the determined
-!        inner zone atomic length and the previously found maximal radial domain
-!        distance, readjust the inner zone size variable. Two cases can happen:
-!        1) the size of the inner zone fits into the complete radial doamin (no
-!        adjustment needed) or 2) the size of the inner zone exceeds the complete
-!        radial domain (adjustment needed). Also override existence criterion for
-!        the outer zone, if the largest domain radius exceeds the inner zone radius.
+!         nBlocal = nBlocal + 1
+!         blockListInnerZone (nBlocal) = (nRlocal > nRlocalPrev)
+!         nRlocalPrev = nRlocal
+!         
+!         call itor%next()
+!      end do
+!      call Grid_releaseLeafIterator(itor)
+!!
+!!
+!!     ...Calculate the total number of processors contributing to the inner
+!!        zone radii and the overall total number of inner zone radii to be
+!!        expected. Allocate the array that will contain all inner zone radii
+!!        on all processors. If no inner zone radii are found globally, there
+!!        is something wrong and the program has to stop.
+!!
+!!
+!      nPlocal = min (nRlocal,1)  ! current processor adds +1, if inner zone radii found
 !
+!      localData (1) = nPlocal
+!      localData (2) = nRlocal
 !
-      gr_mpoleOuterZoneExists = (gr_mpoleInnerZoneSize * gr_mpoleDrInnerZone < gr_mpoleMaxR)
-
-      if ( gr_mpoleInnerZoneSize * gr_mpoleDrInnerZone > gr_mpoleMaxR ) then
-           gr_mpoleInnerZoneSize = int (ceiling (gr_mpoleMaxR * gr_mpoleDrInnerZoneInv))
-      end if
+!      call MPI_AllReduce (localData,     &
+!                          globalData,    &
+!                          2,             &
+!                          FLASH_INTEGER, &
+!                          MPI_SUM,       &
+!                          gr_meshComm,   &
+!                          error          )
 !
+!      nPinnerZone = globalData (1)
+!      nRinnerZone = globalData (2)
 !
-!     ...Determine the number of radii to be expected in the inner zone.
-!        For each processor, store those local blockID's that actually
-!        have radii in the inner zone.
+!      if (nRinnerZone == 0) then
+!          call Driver_abortFlash ('[gr_mpoleRad1Dspherical] ERROR: no inner zone radii found')
+!      end if
 !
+!      allocate (RinnerZone (1:nRinnerZone))
+!!
+!!
+!!     ...Calculate and store now all inner zone radii on each processor.
+!!        Loop only over those local blocks which actually contribute to the
+!!        inner zone (skip, if no blocks).
+!!
+!!
+!      nRlocal = 0
+!      nBlocal = 0
 !
-      call Grid_getLocalNumBlks(nblks)
-      allocate (blockListInnerZone (1:nblks))
-
-      gr_mpoleInnerZoneMaxR = real (gr_mpoleInnerZoneSize) * gr_mpoleDrInnerZone
-
-      nBlocal = 0
-      nRlocal = 0
-      nRlocalPrev = 0
-
-      call Grid_getLeafIterator(itor)
-      do while(itor%is_valid())
-         call itor%blkMetaData(block)
-         lev=block%level
-         blkLimits=block%limits
-         
-         call Grid_getBlkBoundBox     (block, bndBox)
-         call Grid_getDeltas          (lev, delta)
- 
-         imin       = blkLimits (LOW, IAXIS)
-         imax       = blkLimits (HIGH,IAXIS)
-         DeltaI     = delta (IAXIS)
-         DeltaIHalf = DeltaI * HALF
-         bndBoxILow = bndBox (LOW,IAXIS)
-
-         Rsph = bndBoxILow + DeltaIHalf
-         do i = imin,imax
-
-            if (Rsph <= gr_mpoleInnerZoneMaxR) then
-                nRlocal = nRlocal + 1
-            end if
-
-            Rsph = Rsph + DeltaI
-         end do
-
-         nBlocal = nBlocal + 1
-         blockListInnerZone (nBlocal) = (nRlocal > nRlocalPrev)
-         nRlocalPrev = nRlocal
-         
-         call itor%next()
-      end do
-      call Grid_releaseLeafIterator(itor)
-!
-!
-!     ...Calculate the total number of processors contributing to the inner
-!        zone radii and the overall total number of inner zone radii to be
-!        expected. Allocate the array that will contain all inner zone radii
-!        on all processors. If no inner zone radii are found globally, there
-!        is something wrong and the program has to stop.
-!
-!
-      nPlocal = min (nRlocal,1)  ! current processor adds +1, if inner zone radii found
-
-      localData (1) = nPlocal
-      localData (2) = nRlocal
-
-      call MPI_AllReduce (localData,     &
-                          globalData,    &
-                          2,             &
-                          FLASH_INTEGER, &
-                          MPI_SUM,       &
-                          gr_meshComm,   &
-                          error          )
-
-      nPinnerZone = globalData (1)
-      nRinnerZone = globalData (2)
-
-      if (nRinnerZone == 0) then
-          call Driver_abortFlash ('[gr_mpoleRad1Dspherical] ERROR: no inner zone radii found')
-      end if
-
-      allocate (RinnerZone (1:nRinnerZone))
-!
-!
-!     ...Calculate and store now all inner zone radii on each processor.
-!        Loop only over those local blocks which actually contribute to the
-!        inner zone (skip, if no blocks).
-!
-!
-      nRlocal = 0
-      nBlocal = 0
-
-      call Grid_getLeafIterator(itor)
-      do while(itor%is_valid())
-         nBlocal=nBlocal+1
-         if(blockListInnerZone(nBlocal)) then
-            
-            call itor%blkMetaData(block)
-            lev=block%level
-            blkLimits=block%limits
-            
-            call Grid_getBlkBoundBox     (block, bndBox)
-            call Grid_getDeltas          (lev, delta)
-            imin       = blkLimits (LOW, IAXIS)
-            imax       = blkLimits (HIGH,IAXIS)
-            DeltaI     = delta (IAXIS)
-            DeltaIHalf = DeltaI * HALF
-            bndBoxILow = bndBox (LOW,IAXIS)
-            
-            Rsph = bndBoxILow + DeltaIHalf
-            do i = imin,imax
-               
-               if (Rsph <= gr_mpoleInnerZoneMaxR) then
-                  nRlocal = nRlocal + 1
-                  RinnerZone (nRlocal) = Rsph
-               end if
-               
-               Rsph = Rsph + DeltaI
-            end do
-            
-         end if
-         call itor%next()
-      end do
-      call Grid_releaseLeafIterator(itor)
-      deallocate (blockListInnerZone)
-      !
-      !
-      !       ...Set up the inner zone radial grid.
-      !
-      !
-      call gr_mpoleSetInnerZoneGrid (nRlocal,     &
-           nRinnerZone, &
-           nPinnerZone, &
-           RinnerZone   )
-      
-      deallocate (RinnerZone)
-      
-   else
-      !
-      !
-      !       ...No inner zone! Set the inner zone variables to nonexistent.
-      !
-      !
-      gr_mpoleDrInnerZone   = ZERO
-      gr_mpoleInnerZoneMaxR = ZERO
-      gr_mpoleInnerZoneQmax = 0
-      
-   end if  ! inner zone condition
-   !
-   !
-   !       ...Complete the radial grid picture by setting up the outer (statistical)
-   !          zone radial grid.
-   !
-   !
-   call gr_mpoleSetOuterZoneGrid ()
+!      call Grid_getLeafIterator(itor)
+!      do while(itor%is_valid())
+!         nBlocal=nBlocal+1
+!         if(blockListInnerZone(nBlocal)) then
+!            
+!            call itor%blkMetaData(block)
+!            lev=block%level
+!            blkLimits=block%limits
+!            
+!            call Grid_getBlkBoundBox     (block, bndBox)
+!            call Grid_getDeltas          (lev, delta)
+!            imin       = blkLimits (LOW, IAXIS)
+!            imax       = blkLimits (HIGH,IAXIS)
+!            DeltaI     = delta (IAXIS)
+!            DeltaIHalf = DeltaI * HALF
+!            bndBoxILow = bndBox (LOW,IAXIS)
+!            
+!            Rsph = bndBoxILow + DeltaIHalf
+!            do i = imin,imax
+!               
+!               if (Rsph <= gr_mpoleInnerZoneMaxR) then
+!                  nRlocal = nRlocal + 1
+!                  RinnerZone (nRlocal) = Rsph
+!               end if
+!               
+!               Rsph = Rsph + DeltaI
+!            end do
+!            
+!         end if
+!         call itor%next()
+!      end do
+!      call Grid_releaseLeafIterator(itor)
+!      deallocate (blockListInnerZone)
+!      !
+!      !
+!      !       ...Set up the inner zone radial grid.
+!      !
+!      !
+!      call gr_mpoleSetInnerZoneGrid (nRlocal,     &
+!           nRinnerZone, &
+!           nPinnerZone, &
+!           RinnerZone   )
+!      
+!      deallocate (RinnerZone)
+!      
+!   else
+!      !
+!      !
+!      !       ...No inner zone! Set the inner zone variables to nonexistent.
+!      !
+!      !
+!      gr_mpoleDrInnerZone   = ZERO
+!      gr_mpoleInnerZoneMaxR = ZERO
+!      gr_mpoleInnerZoneQmax = 0
+!      
+!   end if  ! inner zone condition
+!   !
+!   !
+!   !       ...Complete the radial grid picture by setting up the outer (statistical)
+!   !          zone radial grid.
+!   !
+!   !
+!   call gr_mpoleSetOuterZoneGrid ()
    !
    !
    !       ...Ready!

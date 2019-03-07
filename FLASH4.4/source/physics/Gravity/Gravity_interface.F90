@@ -34,10 +34,10 @@ Module Gravity_interface
   end interface
 
   interface Gravity_accelOneBlock
-     subroutine Gravity_accelOneBlock ( block, ngcellcomp, gvec, potentialIndex)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine Gravity_accelOneBlock (tileDesc, ngcellcomp, gvec, potentialIndex)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t) :: block
+       type(Grid_tile_t) :: tileDesc
       integer, intent(in)             :: ngcellcomp
        real, dimension(:,:,:,:),intent(out)  :: gvec
        integer, intent(in),optional    :: potentialIndex

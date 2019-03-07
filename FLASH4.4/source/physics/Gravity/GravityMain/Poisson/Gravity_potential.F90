@@ -96,11 +96,11 @@ subroutine Gravity_potential( potentialIndex)
        Particles_sinkAccelGasOnSinksAndSinksOnGas
   use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, GRID_PDE_BND_NEUMANN, &
        GRID_PDE_BND_ISOLATED, GRID_PDE_BND_DIRICHLET, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getLeafIterator, Grid_releaseLeafIterator, &
+       Grid_getTileIterator, Grid_releaseTileIterator, &
        Grid_notifySolnDataUpdate, &
        Grid_solvePoisson
-  use block_metadata, ONLY : block_metadata_t
-  use leaf_iterator, ONLY : leaf_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
   
   implicit none
 
@@ -124,9 +124,13 @@ subroutine Gravity_potential( potentialIndex)
   integer       :: density
   integer       :: newPotVar
   logical       :: saveLastPot
-  type(block_metadata_t) :: block
-  type(leaf_iterator_t) :: itor
-  
+  type(Grid_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+
+  integer :: i, j, k
+
+  nullify(solnVec)
+
   saveLastPot = (.NOT. present(potentialIndex))
   if (present(potentialIndex)) then
      newPotVar = potentialIndex
@@ -176,26 +180,44 @@ subroutine Gravity_potential( potentialIndex)
      bcTypes = GRID_PDE_BND_NEUMANN
   end where
   bcValues = 0.
-     
+ 
   if (grav_temporal_extrp) then
      
      call Driver_abortFlash("shouldn't be here right now")
      !call extrp_initial_guess( igpot, igpol, igpot )
      
   else
-     call Grid_getLeafIterator(itor)
-  
-     do while(itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getBlkPtr(block, solnVec)
+     call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+        call tileDesc%getDataPtr(solnVec, CENTER)
 #ifdef GPOL_VAR
-        if (saveLastPot) solnVec(GPOL_VAR,:,:,:) = solnVec(GPOT_VAR,:,:,:)
+        if (saveLastPot) then
+           call Driver_abortFlash("[Gravity_potential] Not tested first!")
+           ! If tiling is used here, we probably need to write this as an
+           ! explicit loop nest over the tile's indices
+           solnVec(GPOL_VAR,:,:,:) = solnVec(GPOT_VAR,:,:,:)
+        end if
 #endif
-        solnVec(newPotVar,:,:,:) = solnVec(newPotVar,:,:,:) * rescale
+        ! DEV: The previous implementation was computing the data on the GC as
+        !      well.  However, limited testing showed that it worked with just
+        !      setting the data on the interior.  We default to setting the GC
+        !      for now.  TBD if setting on the interior is the actual intent.
+        do       k = tileDesc%grownLimits(LOW, KAXIS), tileDesc%grownLimits(HIGH, KAXIS)
+           do    j = tileDesc%grownLimits(LOW, JAXIS), tileDesc%grownLimits(HIGH, JAXIS)
+              do i = tileDesc%grownLimits(LOW, IAXIS), tileDesc%grownLimits(HIGH, IAXIS)
+                 solnVec(newPotVar,i,j,k) = solnVec(newPotVar,i,j,k) * rescale
+              end do
+           end do
+        end do
 
         ! CTSS - We should also be storing the old sink particle accelerations:
 #if defined(SGXO_VAR) && defined(SGYO_VAR) && defined(SGZO_VAR)
         if (saveLastPot) then   !... but only if we are saving the old potential - kW
+           call Driver_abortFlash("[Gravity_potential] Not tested third!")
+           ! If tiling is used here, we probably need to write this as an
+           ! explicit loop nest over the tile's indices
            solnVec(SGXO_VAR,:,:,:) = solnVec(SGAX_VAR,:,:,:)
            solnVec(SGYO_VAR,:,:,:) = solnVec(SGAY_VAR,:,:,:)
            solnVec(SGZO_VAR,:,:,:) = solnVec(SGAZ_VAR,:,:,:)
@@ -205,15 +227,18 @@ subroutine Gravity_potential( potentialIndex)
         ! for direct acceleration calculation by tree solver, added by R. Wunsch
 #if defined(GAOX_VAR) && defined(GAOY_VAR) && defined(GAOZ_VAR)
         if (saveLastPot) then 
+           call Driver_abortFlash("[Gravity_potential] Not tested fourth!")
+           ! If tiling is used here, we probably need to write this as an
+           ! explicit loop nest over the tile's indices
            solnVec(GAOX_VAR,:,:,:) = solnVec(GACX_VAR,:,:,:)
            solnVec(GAOY_VAR,:,:,:) = solnVec(GACY_VAR,:,:,:)
            solnVec(GAOZ_VAR,:,:,:) = solnVec(GACZ_VAR,:,:,:)
         end if
 #endif
-        call Grid_releaseBlkPtr(block, solnVec)
+        call tileDesc%releaseDataPtr(solnVec, CENTER)
         call itor%next()
      enddo
-     call Grid_releaseLeafIterator(itor)
+     call Grid_releaseTileIterator(itor)
 #ifdef GPOL_VAR
      if (saveLastPot) call Grid_notifySolnDataUpdate( (/GPOL_VAR/) )
 #endif
@@ -229,18 +254,18 @@ subroutine Gravity_potential( potentialIndex)
   if (.NOT. grav_unjunkPden) call Grid_notifySolnDataUpdate( (/PDEN_VAR/) )
   density = PDEN_VAR
 #ifdef DENS_VAR
-  
-  call Grid_getLeafIterator(itor)
-     
-  do while(itor%is_valid())
-     call itor%blkMetaData(block)
-     call Grid_getBlkPtr(block, solnVec)
+
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     call tileDesc%getDataPtr(solnVec, CENTER)
+     call Driver_abortFlash("[Gravity_potential] Not tested either!")
      solnVec(density,:,:,:) = solnVec(density,:,:,:) + &
           solnVec(DENS_VAR,:,:,:)
-     call Grid_releaseBlkPtr(block, solnVec)
+     call tileDesc%releaseDataPtr(solnVec, CENTER)
      call itor%next()
   enddo
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 #endif
 #endif
 #endif
@@ -256,20 +281,24 @@ subroutine Gravity_potential( potentialIndex)
   if (grav_unjunkPden) then
      density = PDEN_VAR
 #ifdef DENS_VAR           
-     do while(itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getBlkPtr(block, solnVec)
+     call Driver_abortFlash("[Gravity_potential] Not tested I guess!")
+     ! I (JO) added this line to create the iterator.  I don't know if it is
+     ! correct or if this code has ever been called.
+     call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+        call tileDesc%getDataPtr(solnVec, CENTER)
         solnVec(density,:,:,:) = solnVec(density,:,:,:) + &
              solnVec(DENS_VAR,:,:,:)
-        call Grid_releaseBlkPtr(block, solnVec)
+        call tileDesc%releaseDataPtr(solnVec, CENTER)
         call itor%next()
      enddo
-     call Grid_releaseLeafIterator(itor)
+     call Grid_releaseTileIterator(itor)
      if (density .NE. PDEN_VAR) call Grid_notifySolnDataUpdate( (/density/) )
 #endif
   end if
 #endif
-  
+
   if (.NOT. present(potentialIndex)) then
      ! Compute acceleration of the sink particles caused by gas and vice versa
      call Particles_sinkAccelGasOnSinksAndSinksOnGas()

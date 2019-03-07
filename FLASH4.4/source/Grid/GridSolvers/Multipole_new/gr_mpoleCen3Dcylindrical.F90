@@ -80,9 +80,8 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
                                 gr_mpolePhiCenter,      &
                                 gr_mpoleTotalMass
 
-
-  use block_metadata,    ONLY : block_metadata_t
-  use leaf_iterator,     ONLY : leaf_iterator_t
+!  use block_metadata,    ONLY : block_metadata_t
+!  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
   
@@ -94,444 +93,449 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
   
   integer, intent (in) :: idensvar
 
-  logical :: domainRmax, domainZmax, domainPhiMax
-  logical :: guardCells
-  logical :: insideBlock
-  logical :: invokeRecv
-  logical :: positiveYaxis, negativeYaxis
-  logical :: quadrantI, quadrantII, quadrantIII, quadrantIV
+  call Driver_abortFlash("Update to tiling!")
 
-  
-  
-  integer :: error
-  integer :: i,imin,imax
-  integer :: j,jmin,jmax
-  integer :: k,kmin,kmax
-  integer :: maxEdges
-  integer :: messageTag
-  integer :: nCellsI, nCellsJ, nCellsK
-  integer :: nEdgesI, nEdgesJ, nEdgesK
-
-  integer :: locate      (1:3)
-  integer :: status      (MPI_STATUS_SIZE)
-  integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  
-
-  real    :: alpha, beta
-  real    :: bndBoxILow
-  real    :: bndBoxJLow
-  real    :: bndBoxKLow
-  real    :: cellDelta, cellDensity, cellMass, cellMassDensity, cellVolume
-  real    :: cmRcyl, cmZ, cmPhi
-  real    :: DeltaI, DeltaIHalf
-  real    :: DeltaJ, DeltaJHalf
-  real    :: DeltaK, DeltaKHalf, DeltaKSine, DeltaKHalfSine
-  real    :: localMsum, localMDsum, localMDXsum, localMDYsum, localMDZsum
-  real    :: maxRcyl, maxZ, maxPhi
-  real    :: minRcyl, minZ, minPhi
-  real    :: phi, phiCosine, phiSine, phiSineSave
-  real    :: Rcyl
-  real    :: totalMassDensityInv
-  real    :: x,y,z
-
-  real    :: delta     (1:MDIM)
-  real    :: localData (1:6)
-  real    :: totalData (1:5)
-  real    :: bndBox    (LOW:HIGH,1:MDIM)
-
-  real, allocatable :: shifts   (:,:)
-  real, pointer     :: solnData (:,:,:,:)
-
-  integer :: lev
-  type(block_metadata_t) :: block
-  type(leaf_iterator_t) :: itor
-  !
+!  logical :: domainRmax, domainZmax, domainPhiMax
+!  logical :: guardCells
+!  logical :: insideBlock
+!  logical :: invokeRecv
+!  logical :: positiveYaxis, negativeYaxis
+!  logical :: quadrantI, quadrantII, quadrantIII, quadrantIV
 !
-!     ...Sum quantities over all locally held leaf blocks.
+!  
+!  
+!  integer :: error
+!  integer :: i,imin,imax
+!  integer :: j,jmin,jmax
+!  integer :: k,kmin,kmax
+!  integer :: maxEdges
+!  integer :: messageTag
+!  integer :: nCellsI, nCellsJ, nCellsK
+!  integer :: nEdgesI, nEdgesJ, nEdgesK
 !
+!  integer :: locate      (1:3)
+!  integer :: status      (MPI_STATUS_SIZE)
+!  integer :: blkLimits   (LOW:HIGH,1:MDIM)
+!  
 !
-  localMsum   = ZERO
-  localMDsum  = ZERO
-  localMDXsum = ZERO
-  localMDYsum = ZERO
-  localMDZsum = ZERO
-
- call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(block)
-     lev=block%level
-     
-     blkLimits=block%limits
-
-     call Grid_getBlkBoundBox     (block, bndBox)
-     call Grid_getDeltas          (lev, delta)
-     call Grid_getBlkPtr          (block, solnData)
-
-     imin = blkLimits (LOW, IAXIS)
-     jmin = blkLimits (LOW, JAXIS)
-     kmin = blkLimits (LOW, KAXIS)  
-     imax = blkLimits (HIGH,IAXIS)
-     jmax = blkLimits (HIGH,JAXIS)
-     kmax = blkLimits (HIGH,KAXIS)
-
-     DeltaI         = delta (IAXIS)
-     DeltaJ         = delta (JAXIS)
-     DeltaK         = delta (KAXIS)
-     DeltaIHalf     = DeltaI * HALF
-     DeltaJHalf     = DeltaJ * HALF
-     DeltaKHalf     = DeltaK * HALF
-     DeltaKSine     = sin (DeltaK)
-     DeltaKHalfSine = sin (DeltaKHalf)
-
-     bndBoxILow = bndBox (LOW,IAXIS)
-     bndBoxJLow = bndBox (LOW,JAXIS)
-     bndBoxKLow = bndBox (LOW,KAXIS)
+!  real    :: alpha, beta
+!  real    :: bndBoxILow
+!  real    :: bndBoxJLow
+!  real    :: bndBoxKLow
+!  real    :: cellDelta, cellDensity, cellMass, cellMassDensity, cellVolume
+!  real    :: cmRcyl, cmZ, cmPhi
+!  real    :: DeltaI, DeltaIHalf
+!  real    :: DeltaJ, DeltaJHalf
+!  real    :: DeltaK, DeltaKHalf, DeltaKSine, DeltaKHalfSine
+!  real    :: localMsum, localMDsum, localMDXsum, localMDYsum, localMDZsum
+!  real    :: maxRcyl, maxZ, maxPhi
+!  real    :: minRcyl, minZ, minPhi
+!  real    :: phi, phiCosine, phiSine, phiSineSave
+!  real    :: Rcyl
+!  real    :: totalMassDensityInv
+!  real    :: x,y,z
 !
+!  real    :: delta     (1:MDIM)
+!  real    :: localData (1:6)
+!  real    :: totalData (1:5)
+!  real    :: bndBox    (LOW:HIGH,1:MDIM)
 !
-!          ...The 3D cylindrical case:
+!  real, allocatable :: shifts   (:,:)
+!  real, pointer     :: solnData (:,:,:,:)
 !
+!  integer :: lev
+!  type(block_metadata_t) :: block
+!  type(leaf_iterator_t) :: itor
 !
-!                               ------
-!                             /        \
-!                            /     z    \
-!                           |\     |    /|
-!                           | \    |   / |
-!                           |   ------   |
-!                           |      | /   |
-!                           |      |/phi |         Rcyl --> stored in i-index (FLASH x)
-!                           |      ----->|            z --> stored in j-index (FLASH y)
-!                           |       Rcyl |          phi --> stored in k-index (FLASH z)
-!                           |            |
-!                           |            |
-!                           |   ------   |
-!                           | /        \ |
-!                           |/          \|
-!                            \          /
-!                             \        /
-!                               ------
+!  nullify(solnData)
 !
-!             The (Rcyl,phi) pair needs to be converted to the corresponding cartesian
-!             (x,y) pair, because the location of the center of multipole expansion
-!             will be determined in 3D cartesian (x,y,z) coordinates.
+!  !
+!!
+!!     ...Sum quantities over all locally held leaf blocks.
+!!
+!!
+!  localMsum   = ZERO
+!  localMDsum  = ZERO
+!  localMDXsum = ZERO
+!  localMDYsum = ZERO
+!  localMDZsum = ZERO
 !
-!             The cell volume is:
+! call Grid_getLeafIterator(itor)
+!  do while(itor%is_valid())
+!     call itor%blkMetaData(block)
+!     lev=block%level
+!     
+!     blkLimits=block%limits
 !
-!                              (1/2) * Dphi * Dz * (R^2 - r^2)
+!     call Grid_getBlkBoundBox     (block, bndBox)
+!     call Grid_getDeltas          (lev, delta)
+!     call Grid_getBlkPtr          (block, solnData)
 !
-!             where r is the left-most (smaller) and R is the right-most (larger)
-!             radial cell distance, Dz is the cell's z-axis delta value and Dphi is the
-!             cell's angular delta value in radians. Since our radial measure is based
-!             on the cell's center, we have: r = Rcyl - Dr/2 and R = Rcyl + Dr/2 with
-!             Dr being the cell's radial delta value. Hence the cell volume becomes:
+!     imin = blkLimits (LOW, IAXIS)
+!     jmin = blkLimits (LOW, JAXIS)
+!     kmin = blkLimits (LOW, KAXIS)  
+!     imax = blkLimits (HIGH,IAXIS)
+!     jmax = blkLimits (HIGH,JAXIS)
+!     kmax = blkLimits (HIGH,KAXIS)
 !
-!                                  Rcyl * Dr * Dphi * Dz
+!     DeltaI         = delta (IAXIS)
+!     DeltaJ         = delta (JAXIS)
+!     DeltaK         = delta (KAXIS)
+!     DeltaIHalf     = DeltaI * HALF
+!     DeltaJHalf     = DeltaJ * HALF
+!     DeltaKHalf     = DeltaK * HALF
+!     DeltaKSine     = sin (DeltaK)
+!     DeltaKHalfSine = sin (DeltaKHalf)
 !
+!     bndBoxILow = bndBox (LOW,IAXIS)
+!     bndBoxJLow = bndBox (LOW,JAXIS)
+!     bndBoxKLow = bndBox (LOW,KAXIS)
+!!
+!!
+!!          ...The 3D cylindrical case:
+!!
+!!
+!!                               ------
+!!                             /        \
+!!                            /     z    \
+!!                           |\     |    /|
+!!                           | \    |   / |
+!!                           |   ------   |
+!!                           |      | /   |
+!!                           |      |/phi |         Rcyl --> stored in i-index (FLASH x)
+!!                           |      ----->|            z --> stored in j-index (FLASH y)
+!!                           |       Rcyl |          phi --> stored in k-index (FLASH z)
+!!                           |            |
+!!                           |            |
+!!                           |   ------   |
+!!                           | /        \ |
+!!                           |/          \|
+!!                            \          /
+!!                             \        /
+!!                               ------
+!!
+!!             The (Rcyl,phi) pair needs to be converted to the corresponding cartesian
+!!             (x,y) pair, because the location of the center of multipole expansion
+!!             will be determined in 3D cartesian (x,y,z) coordinates.
+!!
+!!             The cell volume is:
+!!
+!!                              (1/2) * Dphi * Dz * (R^2 - r^2)
+!!
+!!             where r is the left-most (smaller) and R is the right-most (larger)
+!!             radial cell distance, Dz is the cell's z-axis delta value and Dphi is the
+!!             cell's angular delta value in radians. Since our radial measure is based
+!!             on the cell's center, we have: r = Rcyl - Dr/2 and R = Rcyl + Dr/2 with
+!!             Dr being the cell's radial delta value. Hence the cell volume becomes:
+!!
+!!                                  Rcyl * Dr * Dphi * Dz
+!!
+!!
+!     cellDelta = DeltaI * DeltaJ * DeltaK
 !
-     cellDelta = DeltaI * DeltaJ * DeltaK
-
-     alpha     = TWO * DeltaKHalfSine * DeltaKHalfSine
-     beta      = DeltaKSine
-
-     phi       = bndBoxKLow + DeltaKHalf
-     phiSine   = sin (phi)
-     phiCosine = cos (phi)
-
-     do k = kmin, kmax
-        z = bndBoxJLow + DeltaJHalf
-        do j = jmin, jmax
-           Rcyl = bndBoxILow + DeltaIHalf
-           do i = imin,imax
-
-              cellVolume      = Rcyl * cellDelta
-              cellDensity     = solnData (idensvar,i,j,k)
-              cellMass        = cellDensity * cellVolume
-              cellMassDensity = cellMass * cellDensity
-
-              x = Rcyl * phiCosine
-              y = Rcyl * phiSine
-
-              localMsum   = localMsum   + cellMass
-              localMDsum  = localMDsum  + cellMassDensity
-              localMDXsum = localMDXsum + cellMassDensity * x
-              localMDYsum = localMDYsum + cellMassDensity * y
-              localMDZsum = localMDZsum + cellMassDensity * z
-
-              Rcyl = Rcyl + DeltaI
-           end do
-           z = z + DeltaJ
-        end do
-
-        phiSineSave = phiSine
-        phiSine     = phiSine   - (alpha * phiSine   - beta * phiCosine  )
-        phiCosine   = phiCosine - (alpha * phiCosine + beta * phiSineSave)
-
-     end do
-
-     call Grid_releaseBlkPtr (block, solnData)
-
-     call itor%next()
-  end do
-  call Grid_releaseLeafIterator(itor)
+!     alpha     = TWO * DeltaKHalfSine * DeltaKHalfSine
+!     beta      = DeltaKSine
 !
+!     phi       = bndBoxKLow + DeltaKHalf
+!     phiSine   = sin (phi)
+!     phiCosine = cos (phi)
 !
-!     ...Prepare for a one-time all reduce call.
+!     do k = kmin, kmax
+!        z = bndBoxJLow + DeltaJHalf
+!        do j = jmin, jmax
+!           Rcyl = bndBoxILow + DeltaIHalf
+!           do i = imin,imax
 !
+!              cellVolume      = Rcyl * cellDelta
+!              cellDensity     = solnData (idensvar,i,j,k)
+!              cellMass        = cellDensity * cellVolume
+!              cellMassDensity = cellMass * cellDensity
 !
-  localData (1) = localMsum
-  localData (2) = localMDsum
-  localData (3) = localMDXsum
-  localData (4) = localMDYsum
-  localData (5) = localMDZsum
+!              x = Rcyl * phiCosine
+!              y = Rcyl * phiSine
 !
+!              localMsum   = localMsum   + cellMass
+!              localMDsum  = localMDsum  + cellMassDensity
+!              localMDXsum = localMDXsum + cellMassDensity * x
+!              localMDYsum = localMDYsum + cellMassDensity * y
+!              localMDZsum = localMDZsum + cellMassDensity * z
 !
-!     ...Calculate the total sums and give a copy to each processor.
+!              Rcyl = Rcyl + DeltaI
+!           end do
+!           z = z + DeltaJ
+!        end do
 !
+!        phiSineSave = phiSine
+!        phiSine     = phiSine   - (alpha * phiSine   - beta * phiCosine  )
+!        phiCosine   = phiCosine - (alpha * phiCosine + beta * phiSineSave)
 !
-  call  MPI_AllReduce (localData,   &
-                       totalData,   &
-                       5,           &
-                       FLASH_REAL,  & 
-                       MPI_Sum,     &
-                       gr_meshComm, &
-                       error        )
+!     end do
 !
+!     call Grid_releaseBlkPtr (block, solnData)
 !
-!     ...Analyze total mass obtained. If nonsense, abort.
+!     call itor%next()
+!  end do
+!  call Grid_releaseLeafIterator(itor)
+!!
+!!
+!!     ...Prepare for a one-time all reduce call.
+!!
+!!
+!  localData (1) = localMsum
+!  localData (2) = localMDsum
+!  localData (3) = localMDXsum
+!  localData (4) = localMDYsum
+!  localData (5) = localMDZsum
+!!
+!!
+!!     ...Calculate the total sums and give a copy to each processor.
+!!
+!!
+!  call  MPI_AllReduce (localData,   &
+!                       totalData,   &
+!                       5,           &
+!                       FLASH_REAL,  & 
+!                       MPI_Sum,     &
+!                       gr_meshComm, &
+!                       error        )
+!!
+!!
+!!     ...Analyze total mass obtained. If nonsense, abort.
+!!
+!!
+!  gr_mpoleTotalMass = totalData (1)
+!     
+!  if (abs (gr_mpoleTotalMass) < tiny (gr_mpoleTotalMass)) then
+!      call Driver_abortFlash ('[gr_mpoleCen3Dcylindrical] ERROR:  gr_mpoleTotalMass <= 0')
+!  end if
+!!
+!!
+!!     ...Calculate center of multipole expansion cartesian coordinates.
+!!
+!!
+!  totalMassDensityInv = ONE / totalData (2)
 !
+!  gr_mpoleXcenter = totalData (3) * totalMassDensityInv
+!  gr_mpoleYcenter = totalData (4) * totalMassDensityInv
+!  gr_mpoleZcenter = totalData (5) * totalMassDensityInv
+!!
+!!
+!!     ...We need to calculate the 3D cylindrical coordinates of the center
+!!        of multipole expansion in order to determine to which block it belongs.
+!!        FLASH convention is such that the phi angle of the 3D cylindrical
+!!        geometry ranges from 0 to 2pi. For accurate angle determination
+!!        we use the atan function, which returns angles in the range of
+!!        -pi/2 < phi < pi/2. The following inverse angle calculations are
+!!        thus performed, depending on which quadrant in the xy-plane the center
+!!        of multipole expansion lays:
+!!
+!!
+!!                                          y
+!!                                          |
+!!                         Quadrant II      |     Quadrant I
+!!                                          |
+!!                   phi = pi + atan (y/x)  |  phi = atan (y/x)
+!!                                          |  
+!!                                          | /
+!!                                          |/phi
+!!                       ----------------------------------------> x
+!!                                          |
+!!                                          |
+!!                         Quadrant III     |     Quadrant I
+!!                                          |
+!!                   phi = pi + atan (y/x)  |  phi = 2pi + atan (y/x)
+!!                                          |
+!!                                          |
+!!                                          |
+!!
+!!
+!!        If the center of multipole expansion lays exactly on the y-axis (x = 0),
+!!        we handle those cases separately.
+!!
+!!
+!  cmZ    = gr_mpoleZcenter
+!  cmRcyl = sqrt (gr_mpoleXcenter * gr_mpoleXcenter + gr_mpoleYcenter * gr_mpoleYcenter)
 !
-  gr_mpoleTotalMass = totalData (1)
-     
-  if (abs (gr_mpoleTotalMass) < tiny (gr_mpoleTotalMass)) then
-      call Driver_abortFlash ('[gr_mpoleCen3Dcylindrical] ERROR:  gr_mpoleTotalMass <= 0')
-  end if
+!  quadrantI     = (gr_mpoleXcenter >  ZERO) .and. (gr_mpoleYcenter >= ZERO)
+!  quadrantII    = (gr_mpoleXcenter <  ZERO) .and. (gr_mpoleYcenter >= ZERO)
+!  quadrantIII   = (gr_mpoleXcenter <  ZERO) .and. (gr_mpoleYcenter <  ZERO)
+!  quadrantIV    = (gr_mpoleXcenter >  ZERO) .and. (gr_mpoleYcenter <  ZERO)
+!  positiveYaxis = (gr_mpoleXcenter == ZERO) .and. (gr_mpoleYcenter >  ZERO)
+!  negativeYaxis = (gr_mpoleXcenter == ZERO) .and. (gr_mpoleYcenter <  ZERO)
 !
+!  if (quadrantI) then
+!      cmPhi = atan (gr_mpoleYcenter / gr_mpoleXcenter)
+!  else if (quadrantII) then
+!      cmPhi = gr_mpolePi + atan (gr_mpoleYcenter / gr_mpoleXcenter)
+!  else if (quadrantIII) then
+!      cmPhi = gr_mpolePi + atan (gr_mpoleYcenter / gr_mpoleXcenter)
+!  else if (quadrantIV) then
+!      cmPhi = gr_mpoleTwoPi + atan (gr_mpoleYcenter / gr_mpoleXcenter)
+!  else if (positiveYaxis) then
+!      cmPhi = gr_mpoleHalfPi
+!  else if (negativeYaxis) then
+!      cmPhi = gr_mpolePi + gr_mpoleHalfPi
+!  else
+!      cmPhi = ZERO
+!  end if
+!!
+!!
+!!     ...Find the local blockID to which the center of multipole expansion
+!!        belongs and place the center on the nearest cell corner. Also at
+!!        this point we determine the inner zone atomic length, since the
+!!        inner zone is defined around the center of multipole expansion.
+!!        Whatever processor is doing the relevant calculation sends its
+!!        final data (updated center of multipole expansion and inner zone
+!!        atomic length) to the master, which then broadcasts the info.
+!!
+!!
+!  messageTag = 1
+!  invokeRecv = .true.
 !
-!     ...Calculate center of multipole expansion cartesian coordinates.
+!   call Grid_getLeafIterator(itor)
+!   do while(itor%is_valid())
+!     call itor%blkMetaData(block)
+!     
 !
+!     call Grid_getBlkBoundBox (block, bndBox)
 !
-  totalMassDensityInv = ONE / totalData (2)
-
-  gr_mpoleXcenter = totalData (3) * totalMassDensityInv
-  gr_mpoleYcenter = totalData (4) * totalMassDensityInv
-  gr_mpoleZcenter = totalData (5) * totalMassDensityInv
+!     minRcyl = bndBox (LOW ,IAXIS)
+!     maxRcyl = bndBox (HIGH,IAXIS)
+!     minZ    = bndBox (LOW ,JAXIS)
+!     maxZ    = bndBox (HIGH,JAXIS)
+!     minPhi  = bndBox (LOW ,KAXIS)
+!     maxPhi  = bndBox (HIGH,KAXIS)
 !
+!     insideBlock  =       (cmRcyl >= minRcyl) &
+!                    .and. (cmZ    >= minZ   ) &
+!                    .and. (cmPhi  >= minPhi ) &
+!                    .and. (cmRcyl <  maxRcyl) &     ! the < instead of <= is
+!                    .and. (cmZ    <  maxZ   ) &     ! necessary for finding
+!                    .and. (cmPhi  <  maxPhi )       ! the unique block
 !
-!     ...We need to calculate the 3D cylindrical coordinates of the center
-!        of multipole expansion in order to determine to which block it belongs.
-!        FLASH convention is such that the phi angle of the 3D cylindrical
-!        geometry ranges from 0 to 2pi. For accurate angle determination
-!        we use the atan function, which returns angles in the range of
-!        -pi/2 < phi < pi/2. The following inverse angle calculations are
-!        thus performed, depending on which quadrant in the xy-plane the center
-!        of multipole expansion lays:
+!     domainRmax   =       (cmRcyl == maxRcyl             ) &    ! include (however unlikely) the
+!                    .and. (cmRcyl == gr_mpoleDomainRmax  )      ! missing R part of the domain
+!     domainZmax   =       (cmZ    == maxZ                ) &    ! include (however unlikely) the
+!                    .and. (cmZ    == gr_mpoleDomainZmax  )      ! missing Z part of the domain
+!     domainPhiMax =       (cmPhi  == maxPhi              ) &    ! include (however unlikely)) the
+!                    .and. (cmPhi  == gr_mpoleDomainPhiMax)      ! missing phi part of the domain
 !
+!     insideBlock  = insideBlock .or. domainRmax .or. domainZmax .or. domainPhiMax
 !
-!                                          y
-!                                          |
-!                         Quadrant II      |     Quadrant I
-!                                          |
-!                   phi = pi + atan (y/x)  |  phi = atan (y/x)
-!                                          |  
-!                                          | /
-!                                          |/phi
-!                       ----------------------------------------> x
-!                                          |
-!                                          |
-!                         Quadrant III     |     Quadrant I
-!                                          |
-!                   phi = pi + atan (y/x)  |  phi = 2pi + atan (y/x)
-!                                          |
-!                                          |
-!                                          |
+!     if (insideBlock) then
 !
+!        lev=block%level
+!        call Grid_getDeltas          (lev, delta)
+!        blkLimits=block%limits
+!        
+!        DeltaI = delta (IAXIS)
+!        DeltaJ = delta (JAXIS)
+!        DeltaK = delta (KAXIS)
+!        
+!        gr_mpoleDrInnerZone = HALF * sqrt (DeltaI * DeltaJ)   ! based on Rcyl and Z only
+!        
+!        imin = blkLimits (LOW, IAXIS)
+!        jmin = blkLimits (LOW, JAXIS)
+!        kmin = blkLimits (LOW, KAXIS)  
+!        imax = blkLimits (HIGH,IAXIS)
+!        jmax = blkLimits (HIGH,JAXIS)
+!        kmax = blkLimits (HIGH,KAXIS)
+!        
+!        nCellsI = imax - imin + 1
+!        nCellsJ = jmax - jmin + 1
+!        nCellsK = kmax - kmin + 1
+!        
+!        nEdgesI = nCellsI + 1
+!        nEdgesJ = nCellsJ + 1
+!        nEdgesK = nCellsK + 1
+!        
+!        maxEdges = max (nEdgesI, nEdgesJ, nEdgesK)
+!        
+!        allocate (shifts (1:maxEdges,3))
+!        
+!        guardCells = .false.
+!        
+!        call Grid_getCellCoords (IAXIS, block, FACES, guardCells, shifts (1:nEdgesI,1), nEdgesI)
+!        call Grid_getCellCoords (JAXIS, block, FACES, guardCells, shifts (1:nEdgesJ,2), nEdgesJ)
+!        call Grid_getCellCoords (KAXIS, block, FACES, guardCells, shifts (1:nEdgesK,3), nEdgesK)
+!        
+!        shifts (1:nEdgesI,1) = shifts (1:nEdgesI,1) - cmRcyl
+!        shifts (1:nEdgesJ,2) = shifts (1:nEdgesJ,2) - cmZ
+!        shifts (1:nEdgesK,3) = shifts (1:nEdgesK,3) - cmPhi
+!        
+!        locate (1) = minloc (abs (shifts (1:nEdgesI,1)), dim = 1)
+!        locate (2) = minloc (abs (shifts (1:nEdgesJ,2)), dim = 1)
+!        locate (3) = minloc (abs (shifts (1:nEdgesK,3)), dim = 1)
+!        
+!        cmRcyl = cmRcyl + shifts (locate (1),1)  ! move multipole center to nearest R edge
+!        cmZ    = cmZ    + shifts (locate (2),2)  ! move multipole center to nearest Z edge
+!        cmPhi  = cmPhi  + shifts (locate (3),3)  ! move multipole center to nearest Phi edge
+!        
+!        deallocate (shifts)
+!        
+!        gr_mpoleXcenter   = cmRcyl * cos (cmPhi)    !
+!        gr_mpoleYcenter   = cmRcyl * sin (cmPhi)    ! convert back to 3D cartesian
+!        gr_mpoleZcenter   = cmZ                     !
+!        gr_mpoleRcenter   = cmRcyl
+!        gr_mpolePhiCenter = cmPhi
+!        
+!        localData (1) = gr_mpoleDrInnerZone
+!        localData (2) = gr_mpoleXcenter
+!        localData (3) = gr_mpoleYcenter
+!        localData (4) = gr_mpoleZcenter
+!        localData (5) = gr_mpoleRcenter
+!        localData (6) = gr_mpolePhiCenter
+!        
+!        if (gr_meshMe /= MASTER_PE) then
+!           
+!           call MPI_Send (localData,    &
+!                6,            &
+!                FLASH_REAL,   &
+!                MASTER_PE,    &
+!                messageTag,   &
+!                gr_meshComm,  &
+!                error         )
+!        else
+!           invokeRecv = .false.
+!        end if
+!        
+!        exit
+!        
+!     end if
+!      call itor%next()
+!  end do
+!  call Grid_releaseLeafIterator(itor)  
+!  if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
 !
-!        If the center of multipole expansion lays exactly on the y-axis (x = 0),
-!        we handle those cases separately.
+!       call MPI_Recv (localData,      &
+!                      6,              &
+!                      FLASH_REAL,     &
+!                      MPI_ANY_SOURCE, &
+!                      messageTag,     &
+!                      gr_meshComm,    &
+!                      status,         &
+!                      error           )
+!  end if
+!!
+!!
+!!     ...At this point, the master has all the info. Broadcast and update all
+!!        other processors.
+!!
+!!
+!  call MPI_Bcast (localData,   &
+!                  6,           &
+!                  FLASH_REAL,  &
+!                  MASTER_PE,   &
+!                  gr_meshComm, &
+!                  error        )
 !
-!
-  cmZ    = gr_mpoleZcenter
-  cmRcyl = sqrt (gr_mpoleXcenter * gr_mpoleXcenter + gr_mpoleYcenter * gr_mpoleYcenter)
-
-  quadrantI     = (gr_mpoleXcenter >  ZERO) .and. (gr_mpoleYcenter >= ZERO)
-  quadrantII    = (gr_mpoleXcenter <  ZERO) .and. (gr_mpoleYcenter >= ZERO)
-  quadrantIII   = (gr_mpoleXcenter <  ZERO) .and. (gr_mpoleYcenter <  ZERO)
-  quadrantIV    = (gr_mpoleXcenter >  ZERO) .and. (gr_mpoleYcenter <  ZERO)
-  positiveYaxis = (gr_mpoleXcenter == ZERO) .and. (gr_mpoleYcenter >  ZERO)
-  negativeYaxis = (gr_mpoleXcenter == ZERO) .and. (gr_mpoleYcenter <  ZERO)
-
-  if (quadrantI) then
-      cmPhi = atan (gr_mpoleYcenter / gr_mpoleXcenter)
-  else if (quadrantII) then
-      cmPhi = gr_mpolePi + atan (gr_mpoleYcenter / gr_mpoleXcenter)
-  else if (quadrantIII) then
-      cmPhi = gr_mpolePi + atan (gr_mpoleYcenter / gr_mpoleXcenter)
-  else if (quadrantIV) then
-      cmPhi = gr_mpoleTwoPi + atan (gr_mpoleYcenter / gr_mpoleXcenter)
-  else if (positiveYaxis) then
-      cmPhi = gr_mpoleHalfPi
-  else if (negativeYaxis) then
-      cmPhi = gr_mpolePi + gr_mpoleHalfPi
-  else
-      cmPhi = ZERO
-  end if
-!
-!
-!     ...Find the local blockID to which the center of multipole expansion
-!        belongs and place the center on the nearest cell corner. Also at
-!        this point we determine the inner zone atomic length, since the
-!        inner zone is defined around the center of multipole expansion.
-!        Whatever processor is doing the relevant calculation sends its
-!        final data (updated center of multipole expansion and inner zone
-!        atomic length) to the master, which then broadcasts the info.
-!
-!
-  messageTag = 1
-  invokeRecv = .true.
-
-   call Grid_getLeafIterator(itor)
-   do while(itor%is_valid())
-     call itor%blkMetaData(block)
-     
-
-     call Grid_getBlkBoundBox (block, bndBox)
-
-     minRcyl = bndBox (LOW ,IAXIS)
-     maxRcyl = bndBox (HIGH,IAXIS)
-     minZ    = bndBox (LOW ,JAXIS)
-     maxZ    = bndBox (HIGH,JAXIS)
-     minPhi  = bndBox (LOW ,KAXIS)
-     maxPhi  = bndBox (HIGH,KAXIS)
-
-     insideBlock  =       (cmRcyl >= minRcyl) &
-                    .and. (cmZ    >= minZ   ) &
-                    .and. (cmPhi  >= minPhi ) &
-                    .and. (cmRcyl <  maxRcyl) &     ! the < instead of <= is
-                    .and. (cmZ    <  maxZ   ) &     ! necessary for finding
-                    .and. (cmPhi  <  maxPhi )       ! the unique block
-
-     domainRmax   =       (cmRcyl == maxRcyl             ) &    ! include (however unlikely) the
-                    .and. (cmRcyl == gr_mpoleDomainRmax  )      ! missing R part of the domain
-     domainZmax   =       (cmZ    == maxZ                ) &    ! include (however unlikely) the
-                    .and. (cmZ    == gr_mpoleDomainZmax  )      ! missing Z part of the domain
-     domainPhiMax =       (cmPhi  == maxPhi              ) &    ! include (however unlikely)) the
-                    .and. (cmPhi  == gr_mpoleDomainPhiMax)      ! missing phi part of the domain
-
-     insideBlock  = insideBlock .or. domainRmax .or. domainZmax .or. domainPhiMax
-
-     if (insideBlock) then
-
-        lev=block%level
-        call Grid_getDeltas          (lev, delta)
-        blkLimits=block%limits
-        
-        DeltaI = delta (IAXIS)
-        DeltaJ = delta (JAXIS)
-        DeltaK = delta (KAXIS)
-        
-        gr_mpoleDrInnerZone = HALF * sqrt (DeltaI * DeltaJ)   ! based on Rcyl and Z only
-        
-        imin = blkLimits (LOW, IAXIS)
-        jmin = blkLimits (LOW, JAXIS)
-        kmin = blkLimits (LOW, KAXIS)  
-        imax = blkLimits (HIGH,IAXIS)
-        jmax = blkLimits (HIGH,JAXIS)
-        kmax = blkLimits (HIGH,KAXIS)
-        
-        nCellsI = imax - imin + 1
-        nCellsJ = jmax - jmin + 1
-        nCellsK = kmax - kmin + 1
-        
-        nEdgesI = nCellsI + 1
-        nEdgesJ = nCellsJ + 1
-        nEdgesK = nCellsK + 1
-        
-        maxEdges = max (nEdgesI, nEdgesJ, nEdgesK)
-        
-        allocate (shifts (1:maxEdges,3))
-        
-        guardCells = .false.
-        
-        call Grid_getCellCoords (IAXIS, block, FACES, guardCells, shifts (1:nEdgesI,1), nEdgesI)
-        call Grid_getCellCoords (JAXIS, block, FACES, guardCells, shifts (1:nEdgesJ,2), nEdgesJ)
-        call Grid_getCellCoords (KAXIS, block, FACES, guardCells, shifts (1:nEdgesK,3), nEdgesK)
-        
-        shifts (1:nEdgesI,1) = shifts (1:nEdgesI,1) - cmRcyl
-        shifts (1:nEdgesJ,2) = shifts (1:nEdgesJ,2) - cmZ
-        shifts (1:nEdgesK,3) = shifts (1:nEdgesK,3) - cmPhi
-        
-        locate (1) = minloc (abs (shifts (1:nEdgesI,1)), dim = 1)
-        locate (2) = minloc (abs (shifts (1:nEdgesJ,2)), dim = 1)
-        locate (3) = minloc (abs (shifts (1:nEdgesK,3)), dim = 1)
-        
-        cmRcyl = cmRcyl + shifts (locate (1),1)  ! move multipole center to nearest R edge
-        cmZ    = cmZ    + shifts (locate (2),2)  ! move multipole center to nearest Z edge
-        cmPhi  = cmPhi  + shifts (locate (3),3)  ! move multipole center to nearest Phi edge
-        
-        deallocate (shifts)
-        
-        gr_mpoleXcenter   = cmRcyl * cos (cmPhi)    !
-        gr_mpoleYcenter   = cmRcyl * sin (cmPhi)    ! convert back to 3D cartesian
-        gr_mpoleZcenter   = cmZ                     !
-        gr_mpoleRcenter   = cmRcyl
-        gr_mpolePhiCenter = cmPhi
-        
-        localData (1) = gr_mpoleDrInnerZone
-        localData (2) = gr_mpoleXcenter
-        localData (3) = gr_mpoleYcenter
-        localData (4) = gr_mpoleZcenter
-        localData (5) = gr_mpoleRcenter
-        localData (6) = gr_mpolePhiCenter
-        
-        if (gr_meshMe /= MASTER_PE) then
-           
-           call MPI_Send (localData,    &
-                6,            &
-                FLASH_REAL,   &
-                MASTER_PE,    &
-                messageTag,   &
-                gr_meshComm,  &
-                error         )
-        else
-           invokeRecv = .false.
-        end if
-        
-        exit
-        
-     end if
-      call itor%next()
-  end do
-  call Grid_releaseLeafIterator(itor)  
-  if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
-
-       call MPI_Recv (localData,      &
-                      6,              &
-                      FLASH_REAL,     &
-                      MPI_ANY_SOURCE, &
-                      messageTag,     &
-                      gr_meshComm,    &
-                      status,         &
-                      error           )
-  end if
-!
-!
-!     ...At this point, the master has all the info. Broadcast and update all
-!        other processors.
-!
-!
-  call MPI_Bcast (localData,   &
-                  6,           &
-                  FLASH_REAL,  &
-                  MASTER_PE,   &
-                  gr_meshComm, &
-                  error        )
-
-  gr_mpoleDrInnerZone    = localData (1)
-  gr_mpoleDrInnerZoneInv = ONE / gr_mpoleDrInnerZone
-  gr_mpoleXcenter        = localData (2)
-  gr_mpoleYcenter        = localData (3)
-  gr_mpoleZcenter        = localData (4)
-  gr_mpoleRcenter        = localData (5)
-  gr_mpolePhiCenter      = localData (6)
+!  gr_mpoleDrInnerZone    = localData (1)
+!  gr_mpoleDrInnerZoneInv = ONE / gr_mpoleDrInnerZone
+!  gr_mpoleXcenter        = localData (2)
+!  gr_mpoleYcenter        = localData (3)
+!  gr_mpoleZcenter        = localData (4)
+!  gr_mpoleRcenter        = localData (5)
+!  gr_mpolePhiCenter      = localData (6)
 !
 !
 !     ...Ready!

@@ -9,7 +9,7 @@
 !!
 !!  call Gravity_accelOneRow(integer(IN)  :: pos(2),
 !!                           integer(IN)  :: sweepDir,
-!!                           integer(IN)  :: blockDesc,
+!!                           integer(IN)  :: tileDesc,
 !!                           integer(IN)  :: numCells,
 !!                           real(INOUT)  :: grav(numCells),
 !!                           integer(IN),optional :: potentialIndex,
@@ -67,15 +67,10 @@
 #include "constants.h"
 
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
+subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
                                 potentialIndex, extraAccelVars)
-
-
-  use Grid_interface, ONLY : Grid_getBlkPhysicalSize, Grid_getBlkPtr, &
-    Grid_releaseBlkPtr, Grid_getBlkIndexLimits
-!  use Driver_interface, ONLY : Driver_abortFlash
-  use Gravity_data, ONLY: grv_defaultGpotVar
-  use block_metadata, ONLY : block_metadata_t
+  use Gravity_data, ONLY : grv_defaultGpotVar
+  use Grid_tile,    ONLY : Grid_tile_t
 
   implicit none
 
@@ -85,7 +80,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 #undef Grid_releaseBlkPtr
 #endif
 
-  type(block_metadata_t),intent(in) :: blockDesc
+  type(Grid_tile_t),     intent(in) :: tileDesc
   integer, dimension(2), intent(in) :: pos
   integer, intent(IN)               :: sweepDir,numCells
   real, intent(inout)               :: grav(numCells)
@@ -95,7 +90,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 
   real            :: blockSize(MDIM)
   real, POINTER, DIMENSION(:,:,:,:) :: solnVec
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits
   integer         :: ii, iimin, iimax
   real            :: gpot(numCells), delxinv
   integer         :: potVar, nxbBlock, nybBlock, nzbBlock
@@ -103,15 +98,13 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 
   !==================================================
   
+  nullify(solnVec)
   
-  call Grid_getBlkPhysicalSize(blockDesc, blockSize)
+  call tileDesc%physicalSize(blockSize)
   
-  
-  call Grid_getBlkPtr(blockDesc, solnVec)
+  call tileDesc%getDataPtr(solnVec, CENTER)
 
-
-  blkLimits(:,:) = blockDesc%limits
-  blkLimitsGC(:,:) = blockDesc%limitsGC
+  blkLimits(:,:) = tileDesc%limits
 
   nxbBlock = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
   nybBlock = blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1
@@ -207,11 +200,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   grav(iimin) = grav(iimin+1)     ! this is invalid data - must not be used
   grav(iimax) = grav(iimax-1)
   
-  
-  call Grid_releaseBlkPtr(blockDesc, solnVec)
-  
-  return
-   
+  call tileDesc%releaseDataPtr(solnVec, CENTER)
 end subroutine Gravity_accelOneRow
 
 

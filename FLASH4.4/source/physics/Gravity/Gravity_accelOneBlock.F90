@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Gravity_accelOneBlock(integer, intent(in) :: block, 
+!!  Gravity_accelOneBlock(integer, intent(in) :: tileDesc, 
 !!                        integer, intent(in) :: ngcellcomp
 !!                        real(:,:,:,:)),intent(out) :: gvec, 
 !!                        integer, intent(in),optional :: potentialIndex)
@@ -32,7 +32,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  block           -  metadata for the block, such as its integer bounds, refinement level etc
+!!  tileDesc           -  metadata for the block, such as its integer bounds, refinement level etc
 !!  gvec(:,:,:,:)   -  Array to receive gravitational acceleration
 !!                        as as NDIM-dimensional vector.  It is assumed
 !!                        the the space provided is the size of the block
@@ -49,15 +49,15 @@
 !!***
 
 
-subroutine Gravity_accelOneBlock ( block, ngcellcomp, gvec, potentialIndex)
+subroutine Gravity_accelOneBlock ( tileDesc, ngcellcomp, gvec, potentialIndex)
 
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
 
-  type(block_metadata_t), intent(in)   :: block
+  type(Grid_tile_t), intent(in)   :: tileDesc
   integer, intent(in)                  :: ngcellcomp
   real, dimension(:,:,:,:),intent(out) :: gvec
   integer, intent(in),optional         :: potentialIndex
