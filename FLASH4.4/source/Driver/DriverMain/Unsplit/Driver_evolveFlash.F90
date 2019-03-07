@@ -215,12 +215,19 @@ subroutine Driver_evolveFlash()
 !!$     call Grid_fillGuardCells(CENTER,ALLDIR)
 
      call Hydro(dr_simTime, dr_dt, dr_dtOld)
+#ifdef DEBUG_DRIVER
+     print*,'returned from hydro myPE=',dr_globalMe
+#endif
 
 !!!!!! Stuff from here has been MOVED TO Hydro !!!!!!
 
 !  3. Burn/sourceTerm
      call Burn(dr_dt)
 
+#ifdef DEBUG_DRIVER
+     print*,'returned from burn myPE=',dr_globalMe
+#endif
+     
 #ifdef FLASH_GRID_AMREXTRANSITION
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
      call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
