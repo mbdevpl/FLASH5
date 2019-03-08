@@ -40,13 +40,13 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   use IO_data, ONLY : io_restart, io_statsFileName, io_globalComm
   use Driver_interface, ONLY : Driver_getDt
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator, &
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+    Grid_releaseTileIterator, &
     Grid_getMaxRefinement, &
-    Grid_getBlkPtr, Grid_getSingleCellVol, &
     Grid_getCellCoords, &
-    Grid_releaseBlkPtr
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+    Grid_getCellVolumes
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
 
    use IO_data, ONLY : io_globalMe, io_writeMscalarIntegrals
    use Simulation_data, ONLY : sim_testInitialized, &
@@ -79,10 +79,11 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   integer :: error
   integer :: nGlobalSumUsed, iSum
   
-  integer :: blkLimits(HIGH, MDIM), blkLimitsGC(HIGH, MDIM)
-  type(leaf_iterator_t)  :: itor
-  type(block_metadata_t) :: blockDesc
+  integer :: blkLimits(HIGH, MDIM)
+  type(Grid_iterator_t)  :: itor
+  type(Grid_tile_t)      :: tileDesc
   real, dimension(:), allocatable :: xCenter, yCenter, zCenter
+  real,               allocatable :: cellVolumes(:,:,:)
 
 #ifdef MAGP_VAR
   integer, parameter ::  nGlobalSumProp = 20             ! Number of globally-summed regular quantities
@@ -118,8 +119,9 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   real :: dvol             !, del(MDIM)
   real, DIMENSION(:,:,:,:), POINTER :: solnData
 
-  integer :: point(MDIM)
   integer :: ioStat
+
+  nullify(solnData)
 
   call Timers_start("writeIntegQ")
   if (sim_oneLevelIntegralsOnly) then
@@ -145,16 +147,15 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   lMax(1:nGlobalExtProp) = -HUGE(1.0)
   
   if (sim_oneLevelIntegralsOnly) then
-     call Grid_getLeafIterator(itor, level=currentLevel)
+     call Grid_getTileIterator(itor, LEAF, level=currentLevel, tiling=.FALSE.)
   else
-     call Grid_getLeafIterator(itor)
+     call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
   end if
-  do while (itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  do while (itor%isValid())
+     call itor%currentTile(tileDesc)
 
      !get the index limits of the block
-     blkLimits   = blockDesc%limits
-     blkLimitsGC = blockDesc%limitsGC
+     blkLimits   = tileDesc%limits
 
      il = blkLimits(LOW,IAXIS); ih = blkLimits(HIGH,IAXIS)
      jl = blkLimits(LOW,JAXIS); jh = blkLimits(HIGH,JAXIS)
@@ -162,16 +163,22 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
      allocate(xCenter(il:ih))
      allocate(yCenter(jl:jh))
      allocate(zCenter(kl:kh))
+     allocate(cellVolumes(il:ih, &
+                          jl:jh, &
+                          kl:kh))
      !! Get the cell coordinates
-     call Grid_getCellCoords(IAXIS, CENTER, blockDesc%level, &
+     call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
                              blkLimits(LOW, :), blkLimits(HIGH, :), xCenter)
-     call Grid_getCellCoords(JAXIS, CENTER, blockDesc%level, &
+     call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
                              blkLimits(LOW, :), blkLimits(HIGH, :), yCenter)
-     call Grid_getCellCoords(KAXIS, CENTER, blockDesc%level, &
+     call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
                              blkLimits(LOW, :), blkLimits(HIGH, :), zCenter)
+     call Grid_getCellVolumes(tileDesc%level, &
+                              lbound(cellVolumes), ubound(cellVolumes), &
+                              cellVolumes)
 
      ! get a pointer to the current block of data
-     call Grid_getBlkPtr(blockDesc, solnData)
+     call tileDesc%getDataPtr(solnData, CENTER)
 
      ! Sum contributions from the indicated blkLimits of cells.
      do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
@@ -195,12 +202,8 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
               end if
 
               
-              point(IAXIS) = i
-              point(JAXIS) = j
-              point(KAXIS) = k
-
-!! Get the cell volume for a single cell
-              call Grid_getSingleCellVol(point, blockDesc%level, dvol)
+              !! Get the cell volume for a single cell
+              dvol = cellVolumes(i, j, k)
      
               ! mass   
 #ifdef DENS_VAR
@@ -406,14 +409,15 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
            enddo
         enddo
      enddo
-     call Grid_releaseBlkPtr(blockDesc, solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
 
      deallocate(xCenter)
      deallocate(yCenter)
      deallocate(zCenter)
+     deallocate(cellVolumes)
      call itor%next()
   enddo
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
   
 
   

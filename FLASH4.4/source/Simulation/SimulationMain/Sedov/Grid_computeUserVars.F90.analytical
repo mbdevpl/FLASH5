@@ -30,9 +30,9 @@ subroutine Grid_computeUserVars()
   use Driver_data,         ONLY : dr_simGeneration
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_interface, ONLY : Grid_getTileIterator, &
-    Grid_releaseTileIterator, &
-    Grid_getBlkData
-  use Driver_interface, ONLY: Driver_getSimTime
+                             Grid_releaseTileIterator
+  use Driver_interface, ONLY: Driver_getSimTime, &
+                              Driver_abortFlash
 !  use Grid_data, ONLY : gr_meshMe
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile, ONLY : Grid_tile_t 
@@ -71,12 +71,13 @@ subroutine Grid_computeUserVars()
      allocate( cellVol(bl(LOW,IAXIS):bl(HIGH,IAXIS), &
                        bl(LOW,JAXIS):bl(HIGH,JAXIS), &
                        bl(LOW,KAXIS):bl(HIGH,KAXIS)) )
-     call Grid_getBlkData(tileDesc, CELL_VOLUME, 0, EXTERIOR, &
-            (/bl(LOW,IAXIS),bl(LOW,JAXIS),bl(LOW,KAXIS)/), &
-            cellVol   (bl(LOW,IAXIS):bl(HIGH,IAXIS), &
-                       bl(LOW,JAXIS):bl(HIGH,JAXIS), &
-                       bl(LOW,KAXIS):bl(HIGH,KAXIS)), &
-            dataSize=bsize )
+     call Driver_abortFlash("[Grid_computeUserVars] Get volumes from Grid_getCellVolumes")
+!     call Grid_getBlkData(tileDesc, CELL_VOLUME, 0, EXTERIOR, &
+!            (/bl(LOW,IAXIS),bl(LOW,JAXIS),bl(LOW,KAXIS)/), &
+!            cellVol   (bl(LOW,IAXIS):bl(HIGH,IAXIS), &
+!                       bl(LOW,JAXIS):bl(HIGH,JAXIS), &
+!                       bl(LOW,KAXIS):bl(HIGH,KAXIS)), &
+!            dataSize=bsize )
 #endif
 
 !!$

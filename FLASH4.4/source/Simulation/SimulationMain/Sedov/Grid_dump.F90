@@ -54,7 +54,8 @@ subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr, &
                              Grid_getCellCoords
-  use Driver_interface, ONLY : Driver_getNStep, Driver_getSimTime, Driver_getDt
+  use Driver_interface, ONLY : Driver_getNStep, Driver_getSimTime, Driver_getDt, &
+                               Driver_abortFlash
 
   use Simulation_data , ONLY : sim_fileUnitOutNum, sim_fileUnitOutAna
   use Simulation_data , ONLY : sim_ffNum, sim_ffAna
@@ -86,6 +87,8 @@ subroutine Grid_dump(var,num, solnData,blockDesc, gcell)
   integer :: bxn,byn,bzn
   real :: stime, dt
   integer,save :: numCalls = 0, lastBlockID = -1
+
+  call Driver_abortFlash("[Grid_dump] Implement for tiling")
 
   blockID = blockDesc % id
 

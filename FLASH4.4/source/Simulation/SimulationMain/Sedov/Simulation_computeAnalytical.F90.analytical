@@ -49,8 +49,7 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
   use Driver_data,         ONLY : dr_simGeneration
   use Grid_interface,   ONLY : Grid_getCellCoords, &
                                Grid_getCellVolumes, &
-                               Grid_subcellGeometry, &
-                               Grid_getDeltas
+                               Grid_subcellGeometry
   use Grid_tile,        ONLY : Grid_tile_t 
   use Driver_interface, ONLY : Driver_getSimTime
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -139,7 +138,7 @@ subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
 
   tileLimits =   tileDesc % limits
 
-  call Grid_getDeltas(tileDesc%level, deltas)
+  call tileDesc%deltas(deltas)
 
   ! Find a real difference between z's if problem is >= 3D
   if (NDIM > 2) then

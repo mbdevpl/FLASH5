@@ -136,8 +136,6 @@ subroutine Simulation_initBlock(solnData, tileDesc)
 ! Then decide which side of the initial discontinuity it is on and initialize 
 ! the hydro variables appropriately.
 
-  associate(lo => tileDesc%limits(LOW,  :), &
-            hi => tileDesc%limits(HIGH, :))
   do k = lo(KAXIS), hi(KAXIS)
   
      ! get the coordinates of the cell center in the z-direction
@@ -336,7 +334,6 @@ subroutine Simulation_initBlock(solnData, tileDesc)
         enddo
      enddo
   enddo
-  end associate
 
   deallocate(xLeft)
   deallocate(xRight)
