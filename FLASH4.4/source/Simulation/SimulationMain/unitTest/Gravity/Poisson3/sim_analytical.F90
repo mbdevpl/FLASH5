@@ -27,6 +27,7 @@
 !!
 !!***
 
+!!REORDER(4): solnData
 subroutine sim_analytical(tileDesc)
 
   use Simulation_data, ONLY:  sim_Newton, sim_pi, &
@@ -108,6 +109,8 @@ subroutine sim_analytical(tileDesc)
   dy = deltas(JAXIS)
   dz = deltas(KAXIS)
 
+  call tileDesc%getDataPtr(solnData, CENTER)
+
   !! Loop over all LEAF elements and generate the analytical solution
 !  print *,'sim_nsubinv,nsubzones',sim_nsubinv,sim_nsubzones
   do       k = lo(KAXIS), hi(KAXIS)
@@ -179,12 +182,12 @@ subroutine sim_analytical(tileDesc)
               enddo
            enddo
 
-           call tileDesc%getDataPtr(solnData, CENTER)
            solnData(APOT_VAR, i, j, k) = -phiSum/(sim_nsubzones**3)   
-           call tileDesc%releaseDataPtr(solnData, CENTER)
         enddo
      enddo
   enddo
+
+  call tileDesc%releaseDataPtr(solnData, CENTER)
 
   ! Cleanup
   deallocate(xLeft)

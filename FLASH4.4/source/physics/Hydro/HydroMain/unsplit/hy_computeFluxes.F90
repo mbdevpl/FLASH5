@@ -123,8 +123,6 @@ Subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepOr
   integer :: loFl(MDIM+1)
   type(Grid_tile_t), intent(IN) :: tileDesc
 
-  integer :: dataSize(1:MDIM)
-  
   real, pointer, dimension(:,:,:,:)   :: flx
   real, pointer, dimension(:,:,:,:)   :: fly
   real, pointer, dimension(:,:,:,:)   :: flz
@@ -162,9 +160,8 @@ Subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepOr
      updateMode = UPDATE_NONE
   end if
 
-  ! Temporarily assume that all internal arrays created here and in routines
-  ! called here will need data for the tile interior as well as for NGUARD
-  ! layers of GCs around the interior
+  ! We need data for the tile interior as well as for NGUARD layers of GCs 
+  ! around the interior (tile + halo)
   halo(:, :) = tileDesc%limits(:, :)
   halo(LOW,  1:NDIM) = halo(LOW,  1:NDIM) - NGUARD
   halo(HIGH, 1:NDIM) = halo(HIGH, 1:NDIM) + NGUARD
@@ -255,8 +252,7 @@ Subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepOr
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        dataSize(1:MDIM) = halo(HIGH, 1:MDIM) - halo(LOW, 1:MDIM) + 1
-        call hy_putGravity(tileDesc,halo,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+        call hy_putGravity(tileDesc,halo,Uin,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref

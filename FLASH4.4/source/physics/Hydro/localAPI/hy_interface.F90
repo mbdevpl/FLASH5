@@ -700,14 +700,13 @@ Module hy_interface
 
     interface
        subroutine hy_putGravity&
-            (tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
+            (tileDesc,blGC,Uin,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
              lastCall)
          use Grid_tile, ONLY : Grid_tile_t
          implicit none
          type(Grid_tile_t), intent(IN)   :: tileDesc
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blGC
          real,dimension(:,:,:,:),pointer :: Uin
-         integer, dimension(MDIM), intent(IN) :: dataSize
          real,    intent(IN) :: dt, dtOld
          real,dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),&
               intent(OUT) :: gravX,gravY,gravZ

@@ -8,7 +8,6 @@
 !!
 !!  hy_putGravity( integer(IN) :: Uin,
 !!                            integer(IN) :: blkLimitsGC(2,MDIM),
-!!                            integer(IN) :: dataSize(MDIM),
 !!                            real   (IN) :: dt,
 !!                            real   (IN) :: dtOld,
 !!                            real(OUT)   :: gravX(:,:,:),
@@ -20,7 +19,6 @@
 !!  blockID     - a current block ID
 !!  blkLimitsGC - an array that holds the lower and upper indices of the section
 !!                of block with the guard cells
-!!  dataSize    - dimensions for gravX, gravY and gravZ arrays
 !!  dt          - timestep
 !!  dtOld       - old timestep (needed for temporal extrapolations of gravity)
 !!  gravX       - gravity components in x-direcition at time steps n
@@ -34,7 +32,7 @@
 !!
 !!*** 
 
-Subroutine hy_putGravity(tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
+Subroutine hy_putGravity(tileDesc,blGC,Uin,dt,dtOld,gravX,gravY,gravZ, potentialIndex, lastCall)
 
   use Gravity_interface, ONLY : Gravity_accelOneRow
 
@@ -51,7 +49,6 @@ Subroutine hy_putGravity(tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, 
   type(Grid_tile_t), intent(IN)   :: tileDesc
   integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blGC
   real,dimension(:,:,:,:),pointer :: Uin
-  integer, dimension(MDIM), intent(IN) :: dataSize
   real,    intent(IN) :: dt, dtOld
 
   real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS)), &
@@ -83,23 +80,33 @@ Subroutine hy_putGravity(tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, 
               potVar = hy_gpotVar
            end if
            if (hy_extraAccelVars(1)>0) then
-              call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,potVar,&
+              call Gravity_accelOneRow(gravPos, DIR_X, tileDesc, &
+                                       blGC(LOW, IAXIS), blGC(HIGH, IAXIS), gravX(:,iy,iz), &
+                                       Uin, potVar, &
                                        extraAccelVars=hy_extraAccelVars)
            else
-              call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,potVar)
+              call Gravity_accelOneRow(gravPos, DIR_X, tileDesc, &
+                                       blGC(LOW, IAXIS), blGC(HIGH, IAXIS), gravX(:,iy,iz), &
+                                       Uin, potVar)
            end if
         else if (present(potentialIndex)) then
-           call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,potentialIndex)
+           call Gravity_accelOneRow(gravPos, DIR_X, tileDesc, &
+                                    blGC(LOW, IAXIS), blGC(HIGH, IAXIS), gravX(:,iy,iz), &
+                                    Uin, potentialIndex)
         else
 #if defined(GPOT_VAR) && defined(FLASH_GRAVITY_TIMEDEP)
         ! Gravity implementation defines FLASH_GRAVITY_TIMEDEP -> time-dependent gravity field
         ! gravity at time step n
-           call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin,GPOT_VAR)
+           call Gravity_accelOneRow(gravPos, DIR_X, tileDesc, &
+                                    blGC(LOW, IAXIS), blGC(HIGH, IAXIS), gravX(:,iy,iz), &
+                                    Uin, GPOT_VAR)
 #else
         ! FLASH_GRAVITY_TIMEDEP not defined -> assume time-independent gravity field.
         ! Also if GPOT_VAR is defined -> use current accel without time
         ! interpolation, i.e., handle like time-independent gravity field - KW
-           call Gravity_accelOneRow(gravPos,DIR_X,tileDesc,dataSize(IAXIS),gravX(:,iy,iz),Uin)
+           call Gravity_accelOneRow(gravPos, DIR_X, tileDesc, &
+                                    blGC(LOW, IAXIS), blGC(HIGH, IAXIS), gravX(:,iy,iz), &
+                                    Uin)
 #endif
         endif
      enddo
@@ -118,19 +125,29 @@ Subroutine hy_putGravity(tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, 
                  potVar = hy_gpotVar
               end if
               if (hy_extraAccelVars(2)>0) then
-                 call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,potVar,&
+                 call Gravity_accelOneRow(gravPos, DIR_Y, tileDesc, &
+                                          blGC(LOW, JAXIS), blGC(HIGH, JAXIS), gravY(ix,:,iz), &
+                                          Uin, potVar, &
                                           extraAccelVars=hy_extraAccelVars)
               else
-                 call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,potVar)
+                 call Gravity_accelOneRow(gravPos, DIR_Y, tileDesc, &
+                                          blGC(LOW, JAXIS), blGC(HIGH, JAXIS), gravY(ix,:,iz), &
+                                          Uin, potVar)
               end if
            else if (present(potentialIndex)) then
-              call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,potentialIndex)
+              call Gravity_accelOneRow(gravPos, DIR_Y, tileDesc, &
+                                       blGC(LOW, JAXIS), blGC(HIGH, JAXIS), gravY(ix,:,iz), &
+                                       Uin, potentialIndex)
            else
 #if defined(GPOT_VAR) && defined(FLASH_GRAVITY_TIMEDEP)
-           ! gravity at time step n
-              call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin,GPOT_VAR)
+              ! gravity at time step n
+              call Gravity_accelOneRow(gravPos, DIR_Y, tileDesc, &
+                                       blGC(LOW, JAXIS), blGC(HIGH, JAXIS), gravY(ix,:,iz), &
+                                       Uin, GPOT_VAR)
 #else
-              call Gravity_accelOneRow(gravPos,DIR_Y,tileDesc,dataSize(JAXIS),gravY(ix,:,iz),Uin)
+              call Gravity_accelOneRow(gravPos, DIR_Y, tileDesc, &
+                                       blGC(LOW, JAXIS), blGC(HIGH, JAXIS), gravY(ix,:,iz), &
+                                       Uin)
 #endif
            end if
         enddo
@@ -149,19 +166,29 @@ Subroutine hy_putGravity(tileDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ, 
                     potVar = hy_gpotVar
                  end if
                  if (hy_extraAccelVars(3)>0) then
-                    call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,potVar,&
+                    call Gravity_accelOneRow(gravPos, DIR_Z, tileDesc, &
+                                             blGC(LOW, KAXIS), blGC(HIGH, KAXIS), gravZ(ix,iy,:), &
+                                             Uin, potVar, &
                                              extraAccelVars=hy_extraAccelVars)
                  else
-                    call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,potVar)
+                    call Gravity_accelOneRow(gravPos, DIR_Z, tileDesc, &
+                                             blGC(LOW, KAXIS), blGC(HIGH, KAXIS), gravZ(ix,iy,:), &
+                                             Uin, potVar)
                  end if
               else if (present(potentialIndex)) then
-                 call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,potentialIndex)
+                 call Gravity_accelOneRow(gravPos, DIR_Z, tileDesc, &
+                                          blGC(LOW, KAXIS), blGC(HIGH, KAXIS), gravZ(ix,iy,:), &
+                                          Uin, potentialIndex)
               else
 #if defined(GPOT_VAR) && defined(FLASH_GRAVITY_TIMEDEP)
-              ! gravity at time step n
-                 call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin,GPOT_VAR)
+                 ! gravity at time step n
+                 call Gravity_accelOneRow(gravPos, DIR_Z, tileDesc, &
+                                          blGC(LOW, KAXIS), blGC(HIGH, KAXIS), gravZ(ix,iy,:), &
+                                          Uin, GPOT_VAR)
 #else
-                 call Gravity_accelOneRow(gravPos,DIR_Z,tileDesc,dataSize(KAXIS),gravZ(ix,iy,:),Uin)
+                 call Gravity_accelOneRow(gravPos, DIR_Z, tileDesc, &
+                                          blGC(LOW, KAXIS), blGC(HIGH, KAXIS), gravZ(ix,iy,:), &
+                                          Uin)
 #endif
               end if
            enddo

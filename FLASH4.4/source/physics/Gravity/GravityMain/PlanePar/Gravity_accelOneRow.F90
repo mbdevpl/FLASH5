@@ -72,7 +72,6 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
   integer :: sizeX,sizeY,sizeZ
   logical :: gcell=.true.
 
-!
 !==============================================================================
   if (.NOT.useGravity) return
 
@@ -173,6 +172,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   use Gravity_data, ONLY: useGravity
   use Grid_interface, ONLY : Grid_getCellCoords
   use block_metadata, ONLY : block_metadata_t
+  use Driver_interface, ONLY : Driver_abortFlash
 
   implicit none
 
@@ -205,6 +205,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   integer :: sizeX,sizeY,sizeZ
   logical :: gcell=.true.
 
+  call Driver_abortFlash("[Gravity_accelOneRow] Update to work with tiling")!
 !
 !==============================================================================
   if (.NOT.useGravity) return

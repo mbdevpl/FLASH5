@@ -71,22 +71,21 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
   return
 end subroutine Gravity_accelOneRow_blkid
 
-subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
-                                potentialIndex, extraAccelVars)
-
+subroutine Gravity_accelOneRow(pos, sweepDir, tileDesc, lo, hi, grav, Uin, &
+                               potentialIndex, extraAccelVars)
   use Grid_tile, ONLY : Grid_tile_t
-!===============================================================================
 
   implicit none
 
-  type(Grid_tile_t),intent(in) :: tileDesc
-  integer, intent(IN) :: sweepDir,numCells
-  integer, dimension(2),INTENT(in) ::pos
-  real, dimension(numCells),INTENT(inout) :: grav
-  real,   POINTER,   OPTIONAL :: Uin(:,:,:,:)
-  integer,intent(IN),optional :: potentialIndex
-  integer, intent(IN),OPTIONAL      :: extraAccelVars(MDIM)
-!======================================================================
+  integer,           intent(IN)                      :: pos(2)
+  integer,           intent(IN)                      :: sweepDir
+  type(Grid_tile_t), intent(IN)                      :: tileDesc
+  integer,           intent(IN)                      :: lo
+  integer,           intent(IN)                      :: hi
+  real,              intent(INOUT)                   :: grav(lo:hi)
+  real,                            POINTER, OPTIONAL :: Uin(:,:,:,:)
+  integer,           intent(IN),            OPTIONAL :: potentialIndex
+  integer,           intent(IN),            OPTIONAL :: extraAccelVars(MDIM)
 
   return
 end subroutine Gravity_accelOneRow

@@ -86,8 +86,6 @@ Subroutine hy_gravityStepBlk(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
   type(Grid_tile_t), intent(IN) :: tileDesc
   
-  integer, dimension(MDIM) :: datasize
-
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
 
   call Timers_start("loop5 body")
@@ -96,8 +94,6 @@ Subroutine hy_gravityStepBlk(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
      loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
      lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
-
-     datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
      allocate(gravX(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
      allocate(gravY(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
@@ -112,7 +108,7 @@ Subroutine hy_gravityStepBlk(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_putGravity(tileDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,&
+        call hy_putGravity(tileDesc,blkLimitsGC,Uin,dt,dtOld,gravX,gravY,gravZ,&
              lastCall=.TRUE.)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref

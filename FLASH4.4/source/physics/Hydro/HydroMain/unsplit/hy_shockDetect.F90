@@ -4,15 +4,7 @@ subroutine hy_shockDetect
   use Grid_interface, ONLY : Grid_getDeltas, &
                              Grid_getBlkPtr, Grid_releaseBlkPtr, &
                              Grid_getLeafIterator, Grid_releaseLeafIterator
-  use hy_interface, ONLY : hy_getRiemannState,  &
-                               hy_getFaceFlux,      &
-                               hy_unsplitUpdate,    &
-                               hy_unitConvert,      &
-                               hy_energyFix,        &
-                               hy_prepareNewGravityAccel,&
-                               hy_putGravity,&
-                               hy_addGravity,&
-                               hy_shockDetectBlk
+  use hy_interface, ONLY : hy_shockDetectBlk
   use leaf_iterator,  ONLY : leaf_iterator_t
   use block_metadata, ONLY : block_metadata_t
   use Hydro_data, ONLY : hy_fluxCorrect,      &
@@ -36,6 +28,8 @@ subroutine hy_shockDetect
                          hy_simTime,          &
                          hy_simGeneration,    &
                          hy_shockDetectOn
+  use Driver_interface, ONLY : Driver_abortFlash
+
   implicit none
 
 #include "UHD.h"
@@ -49,6 +43,7 @@ subroutine hy_shockDetect
   real, dimension(:,:,:,:),pointer :: Uin
   real,dimension(:,:,:,:), pointer :: Uout
 
+  call Driver_abortFlash("[hy_shockDetect] Implement for use with tiling")
 
   call Grid_getLeafIterator(itor)
   do while(itor%is_valid())

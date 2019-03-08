@@ -151,6 +151,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
     Grid_getCellCoords
   use block_metadata, ONLY : block_metadata_t
+  use Driver_interface, ONLY : Driver_abortFlash
   implicit none
 
 #include "Flash.h"
@@ -176,6 +177,8 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   logical :: gcell = .true.
 
 !==============================================================================
+
+  call Driver_abortFlash("[Gravity_accelOneRow] Update to work with tiling")
 
   if (.NOT.useGravity) return
 
