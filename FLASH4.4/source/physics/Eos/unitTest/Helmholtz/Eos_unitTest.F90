@@ -74,15 +74,14 @@
 !!
 !!***
 
-!!REORDER(4): solnData
+!!REORDER(4): solnData, scratchData
 
 subroutine Eos_unitTest(fileUnit, perfect)
 
   use Eos_interface, ONLY : Eos_wrapped, Eos
   use Grid_interface,ONLY : Grid_getTileIterator, &
                             Grid_releaseTileIterator, &
-                            Grid_getBlkType, &
-                            Grid_putRowData
+                            Grid_getBlkType
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile,     ONLY : Grid_tile_t
   use IO_interface,  ONLY : IO_writeCheckpoint
@@ -109,6 +108,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
   real :: presErr, tempErr, eintErr
 
   real, pointer, dimension(:,:,:,:):: solnData
+  real, pointer, dimension(:,:,:,:):: scratchData
   logical:: test1,test2,test3,test4 !for a block
   logical:: test1allB,test2allB,test3allB,test4allB !for all blocks
 
@@ -125,10 +125,11 @@ subroutine Eos_unitTest(fileUnit, perfect)
   integer,parameter :: maxPrintPE = 20
   integer,save :: nodeType = LEAF
   integer :: ib,ie,jb,je,kb,ke
-  integer, dimension(3) :: startingPos, dataSize, startRow
+  integer, dimension(3) :: startingPos, dataSize
      real presErr1, presErr2
 
   nullify(solnData)
+  nullify(scratchData)
  
   if (eos_meshNumProcs==1) then
      a = ''
@@ -455,6 +456,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
      temp = (EOS_TEMP-1)*vecLen
 
      call tileDesc%getDataPtr(solnData, CENTER)
+     call tileDesc%getDataPtr(scratchData, SCRATCH_CTR)
      
      ! Space and dimensions for scratch variables
      dataSize(1) = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
@@ -479,20 +481,27 @@ subroutine Eos_unitTest(fileUnit, perfect)
            
            call Eos(MODE_DENS_PRES,vecLen,eosData,massFrac,mask)
 
-           
-           startRow(1) = blkLimits(LOW,IAXIS)
-           startRow(2) = j
-           startRow(3) = k
            do e=EOS_VARS+1,EOS_NUM
               m = (e-1)*vecLen
               derivedVariables(1:vecLen,j-jb+1,k-kb+1,e) =  eosData(m+1:m+vecLen)
-              if (e==EOS_DEA) &
-                 call Grid_putRowData(tileDesc,SCRATCH_CTR,DRV1_SCRATCH_CENTER_VAR,GLOBALIDX1,IAXIS, &
-                      startRow,eosData(m+1:m+vecLen),vecLen)
-              if (e==EOS_DPT) &
-                 call Grid_putRowData(tileDesc,SCRATCH_CTR,DRV2_SCRATCH_CENTER_VAR,GLOBALIDX1,IAXIS, &
-                      startRow,eosData(m+1:m+vecLen),vecLen)
-
+              if (e==EOS_DEA) then
+                 ! DEV: I (JO) have converted putRowData calls to these explicit
+                 !      loop nests.  However, this code does not seem to have
+                 !      an effect on the success of this test.
+                 do i = blkLimits(LOW, IAXIS), blkLimits(HIGH, IAXIS)
+                    scratchData(DRV1_SCRATCH_CENTER_VAR, i, j, k) &
+                       = eosData(m+i-blkLimits(LOW, IAXIS)+1)
+                 end do
+              end if
+              if (e==EOS_DPT) then
+                 ! DEV: I (JO) have converted putRowData calls to these explicit
+                 !      loop nests.  However, this code does not seem to have
+                 !      an effect on the success of this test.
+                 do i = blkLimits(LOW, IAXIS), blkLimits(HIGH, IAXIS)
+                    scratchData(DRV2_SCRATCH_CENTER_VAR, i, j, k) &
+                       = eosData(m+i-blkLimits(LOW, IAXIS)+1)
+                 end do
+              end if
            end do
 
           !!Stuff a few test derivatives into scratch storage so you can see what they look like
@@ -503,7 +512,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
            end do
         end do
      end do
-     
+
      !! Stuff a few test derivatives into scratch storage so you can see what they look like
      !!  Feel free to change the variable inserted
      !! This is an alternate way of outputting data.  But since LBR can't see anything, who can
@@ -514,6 +523,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
      !!           deriv2,dataSize)
 
      call tileDesc%releaseDataPtr(solnData, CENTER)
+     call tileDesc%releaseDataPtr(scratchData, SCRATCH_CTR)
 
      deallocate(deriv1)
      deallocate(deriv2)
