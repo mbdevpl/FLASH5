@@ -446,26 +446,6 @@ Module hy_interface
      end subroutine hy_TVDslopeUpwind
   end interface
 
-
-
-  interface
-     subroutine hy_unsplit( blockDesc,Uin,blkLimitsGC,&
-                      Uout,blkLimits,&
-                      del,dt, dtOld )
-       use block_metadata,   ONLY : block_metadata_t
-       implicit none
-
-       type(block_metadata_t), intent(IN) :: blockDesc
-       real,    INTENT(IN) :: dt, dtOld
-       integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
-       real, dimension(:,:,:,:),pointer :: Uin
-       real,dimension(:,:,:,:), pointer :: Uout
-       real,dimension(MDIM),INTENT(IN) :: del
-     end subroutine hy_unsplit
-  end interface
-
-
-
   interface
      subroutine hy_unsplitUpdate(tileDesc,Uin,Uout,rangeSwitch,dt,del,blkLimits,&    
                                      blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
@@ -488,34 +468,6 @@ Module hy_interface
        real, pointer, dimension(:,:,:,:) :: scrch_Ptr
      end subroutine hy_unsplitUpdate
   end interface
-
-
-
-
-
-    interface
-       subroutine hy_unsplitUpdateMultiTemp&
-            (block,rangeSwitch,blkLimits,datasize,dt,del,xflux,yflux,zflux, scrch_Ptr)
-       use block_metadata, ONLY : block_metadata_t
-       implicit none
-       type(block_metadata_t), intent(IN)   :: block
-       integer,intent(IN) :: rangeSwitch
-       integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
-       integer,intent(IN) :: datasize(MDIM)      
-       real, intent(IN) :: dt
-       real, intent(IN) :: del(MDIM)
-#ifdef FIXEDBLOCKSIZE
-         real, intent(in) :: xflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-         real, intent(in) :: yflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-         real, intent(in) :: zflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-#else
-         real, intent(in) :: xflux(NFLUXES,datasize(IAXIS),datasize(JAXIS),datasize(KAXIS))  
-         real, intent(in) :: yflux(NFLUXES,datasize(IAXIS),datasize(JAXIS),datasize(KAXIS))  
-         real, intent(in) :: zflux(NFLUXES,datasize(IAXIS),datasize(JAXIS),datasize(KAXIS))
-#endif
-         real, pointer, dimension(:,:,:,:) :: scrch_Ptr
-       end subroutine hy_unsplitUpdateMultiTemp
-    end interface
 
     interface
        subroutine hy_multiTempAfter(blockCount, blockList, dt)
@@ -811,21 +763,6 @@ Module hy_interface
      end subroutine hy_gravityStepBlk
   end interface
 
-#ifdef FLASH_UGLM_MHD
-    interface
-       Subroutine hy_updateSourceGLM(block,dt,del,blkLimits,blkLimitsGC,C_hyp,C_par)
-       use block_metadata, ONLY : block_metadata_t
-         implicit none
-         type(block_metadata_t), intent(IN)   :: block
-         real,    intent(IN) :: dt
-         real,    dimension(MDIM),   intent(IN) :: del
-         integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
-         real,    intent(IN) :: C_hyp,C_par
-       end Subroutine hy_updateSourceGLM
-    end interface
-#endif
-
-
   ! Dongwook thinks that the following two interfaces should be taken care of for
   ! general implementation later.
 !!$  interface
@@ -876,13 +813,12 @@ Module hy_interface
 
 
   interface
-     subroutine hy_addOhmicHeating&
-          (block,blkLimits,ix,iy,iz,Qohm,eta)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_addOhmicHeating(tileDesc,blkLimits,ix,iy,iz,Qohm,eta)
+       use Grid_tile, ONLY : Grid_tile_t
      implicit none
-     type(block_metadata_t), intent(IN)   :: block
-     integer, INTENT(IN) :: block,ix,iy,iz
+     type(Grid_tile_t), intent(IN) :: tileDesc
      integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits
+     integer, INTENT(IN) :: ix,iy,iz
      real, intent(INOUT) :: Qohm
      real, intent(IN)    :: eta  
      end subroutine hy_addOhmicHeating
@@ -890,11 +826,10 @@ Module hy_interface
 
 
   interface
-     subroutine hy_staggeredDivb(block,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_staggeredDivb(tileDesc,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
+       use Grid_tile, ONLY : Grid_tile_t 
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
-       integer, intent(IN) :: block
+       type(Grid_tile_t), intent(IN) :: tileDesc
        real,    intent(IN) :: dt
        real,    dimension(MDIM),   intent(IN) :: del
        integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
@@ -918,10 +853,10 @@ Module hy_interface
 
 
   interface
-     subroutine hy_getElectricFields( block,blkLimits,blkLimitsGC,del,flx,fly,flz)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_getElectricFields(tileDesc,blkLimits,blkLimitsGC,del,flx,fly,flz)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
+       type(Grid_tile_t), intent(IN) :: tileDesc
        integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
        real,    intent(IN), dimension(MDIM)  :: del  
 #ifdef FIXEDBLOCKSIZE
@@ -943,15 +878,12 @@ Module hy_interface
 
 
   interface
-     subroutine hy_getCurrents( &
-        block, rangeSwitch, blkLimits,datasize, del, Jp, Jm, mode_switch,&
-        scrch_Ptr,&
-        ix,iy,iz)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_getCurrents(tileDesc, rangeSwitch, blkLimits,datasize, del, Jp, Jm, &
+                               mode_switch, scrch_Ptr,ix,iy,iz)
+       use Grid_tile, ONLY : Grid_tile_t
         implicit none
-        ! Arguments:
-         type(block_metadata_t), intent(IN)   :: block
-        integer,intent(in) :: block, rangeSwitch
+         type(Grid_tile_t), intent(IN) :: tileDesc
+        integer,intent(in) :: rangeSwitch
         integer,intent(in) :: blkLimits  (LOW:HIGH,MDIM)
         integer,intent(in) :: datasize(MDIM), mode_switch
         real,   intent(in) :: del(MDIM)
@@ -999,11 +931,11 @@ Module hy_interface
 
 
   interface
-     Subroutine hy_addBiermannBatteryTerms(block,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
-       use block_metadata, ONLY : block_metadata_t
+     Subroutine hy_addBiermannBatteryTerms(tileDesc,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
+       use Grid_tile, ONLY : Grid_tile_t 
        implicit none
        integer, INTENT(IN) :: ix,iy,iz
-       type(block_metadata_t), intent(IN)   :: block
+       type(Grid_tile_t), intent(IN) :: tileDesc
        
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux

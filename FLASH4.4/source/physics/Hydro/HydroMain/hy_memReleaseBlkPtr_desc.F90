@@ -44,15 +44,3 @@ subroutine hy_memReleaseBlkPtr_desc(tileDesc, dataPtr, gridDataStruct)
 
 end subroutine hy_memReleaseBlkPtr_desc
 
-subroutine hy_memReleaseBlk5Ptr_desc(blockDesc, data5Ptr, gridDataStruct)
-  use block_metadata,   ONLY : block_metadata_t
-
-  implicit none
-
-  type(block_metadata_t), intent(IN) :: blockDesc
-  real, POINTER_INTENT_OUT :: data5Ptr(:,:,:,:,:)
-  integer,optional, intent(in) :: gridDataStruct
-
-  nullify(data5Ptr)
-
-end subroutine hy_memReleaseBlk5Ptr_desc

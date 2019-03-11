@@ -12,25 +12,10 @@
 #include "UHD.h"
 
 Subroutine hy_hllUpdateSolution( tileLimits, Uin, plo, Uout, flX, flY, flZ, loFl, del, dt )
-  use Hydro_data, ONLY : hy_fluxCorrect,      &
-                         hy_gref,             &
-                         hy_useGravity,       &
-                         hy_order,            &
-                         hy_gcMaskSize,       &
-                         hy_gcMask,           &
-                         hy_unsplitEosMode,   &
-                         hy_eosModeAfter,     &
-                         hy_useGravHalfUpdate,&
-                         hy_useGravPotUpdate, &
-                         hy_gravConsv,        &
-                         hy_updateHydroFluxes,&
-                         hy_geometry,         &
-                         hy_fluxCorVars,      &
-                         hy_threadBlockList
-#ifdef FLASH_USM_MHD
-  use Hydro_data, ONLY : hy_E_upwind
-#endif
-
+  use Hydro_data,        ONLY : hy_fluxCorrect,      &
+                                hy_useGravity,       &
+                                hy_unsplitEosMode,   &
+                                hy_updateHydroFluxes
   use Driver_interface,  ONLY : Driver_abortFlash
   use Logfile_interface, ONLY : Logfile_stampVarMask
 
@@ -63,16 +48,9 @@ Subroutine hy_hllUpdateSolution( tileLimits, Uin, plo, Uout, flX, flY, flZ, loFl
   print*,'tileLim:',tileLimits
 #endif
 
-#ifdef FLASH_GRID_PARAMESH2
-  call Driver_abortFlash("The unsplit Hydro solver only works with PARAMESH 3 or 4!")
-#endif
-
-
-#ifdef FLASH_GRID_PARAMESH3OR4
   if (hy_fluxCorrect) then
      call Driver_abortFlash("hy_hllUnsplit: flux correction is not implemented!")
   end if
-#endif
 
   if (hy_useGravity) then
      call Driver_abortFlash("hy_hllUnsplit: support for gravity not implemented!")
@@ -81,13 +59,6 @@ Subroutine hy_hllUpdateSolution( tileLimits, Uin, plo, Uout, flX, flY, flZ, loFl
   if (.NOT.hy_updateHydroFluxes) then
      return
   end if
-
-  !! ***************************************************************************
-  !! There is only one overall loop in this simplified advancement             *
-  !! ***************************************************************************
-  !! Loop over the blocks
-     
-  ! Note: Not handling gravity.
 
   !! ************************************************************************
   !! Unsplit update for conservative variables from n to n+1 time step

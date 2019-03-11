@@ -8,10 +8,10 @@
 !!
 !! SYNOPSIS
 !!
-!!  call hy_updateSolution(block_metadata_t(IN) :: blockDesc,
-!!       real,POINTER(in),dimension(:,:,:,:)   :: Uin,
-!!       real,POINTER(in),dimension(:,:,:,:)   :: Uout,
-!!                        real(IN)             :: del(MDM),
+!!  call hy_updateSolution(Grid_tile_t(IN)   :: tileDesc,
+!!       real,POINTER(in),dimension(:,:,:,:) :: Uin,
+!!       real,POINTER(in),dimension(:,:,:,:) :: Uout,
+!!                        real(IN)           :: del(MDM),
 !!        real(IN)    :: timeEndAdv,
 !!        real(IN)    :: dt,
 !!        real(IN)    :: dtOld,

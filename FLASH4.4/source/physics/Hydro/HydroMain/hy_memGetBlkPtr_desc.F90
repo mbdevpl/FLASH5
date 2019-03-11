@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call hy_memGetBlkPtr(block_metadata(IN)  :: blockDesc,
+!!  call hy_memGetBlkPtr(Grid_tile_t(IN)  :: tileDesc,
 !!                 real(pointer)(:,:,:,:) :: dataPtr,
 !!                 integer(IN),optional   :: gridDataStruct)
 !!
@@ -84,23 +84,3 @@ subroutine hy_memGetBlkPtr_desc(tileDesc,dataPtr, gridDataStruct)
   return
 end subroutine hy_memGetBlkPtr_desc
 
-subroutine hy_memGetBlk5Ptr_desc(blockDesc,data5Ptr, gridDataStruct)
-
-  use hy_memInterface, ONLY : hy_memGetBlkPtr
-  use block_metadata,   ONLY : block_metadata_t
-  implicit none
-
-  type(block_metadata_t), intent(IN) :: blockDesc
-
-  real, dimension(:,:,:,:,:), pointer :: data5Ptr
-  integer, optional,intent(in) :: gridDataStruct
-
-  integer :: blockID
-
-  blockID = blockDesc%id
-
-  call hy_memGetBlkPtr(blockID,data5Ptr,gridDataStruct)
-
-  !! DEV: Should probably do some index-shifting as in hy_memGetBlkPtr_desc above.
-
-end subroutine hy_memGetBlk5Ptr_desc

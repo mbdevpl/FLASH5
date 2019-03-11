@@ -8,7 +8,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call hy_computeFluxes(block_metadata_t(IN) :: blockDesc,
+!!  call hy_computeFluxes(Grid_tile_t(IN)      :: tileDesc,
 !!       real,POINTER(in),dimension(:,:,:,:)   :: Uin,
 !!       real,POINTER(in),dimension(:,:,:,:)   :: Uout,
 !!                        real(IN)             :: del(MDM),

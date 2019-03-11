@@ -37,9 +37,10 @@
 
 Subroutine hy_addThermalFluxes(block,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
 
-  use Hydro_data,     ONLY : hy_qref
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas
-  use block_metadata, ONLY : block_metadata_t
+  use Hydro_data,       ONLY : hy_qref
+  use Grid_interface,   ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas
+  use Grid_tile,        ONLY : Grid_tile_t
+  use Driver_interface, ONLY : Driver_abortFlash
   implicit none
 
 #include "constants.h"
@@ -47,7 +48,7 @@ Subroutine hy_addThermalFluxes(block,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
 #include "UHD.h"
 
   !! Argument List ----------------------------------------------------------
-  type(block_metadata_t), INTENT(IN) :: block
+  type(Grid_tile_t), INTENT(IN) :: tileDesc
   integer, INTENT(IN) :: ix,iy,iz
   integer, dimension(LOW:HIGH,MDIM),intent(IN)  :: blkLimitsGC 
   real,    dimension(HY_VARINUM), intent(INOUT) :: Flux
@@ -64,53 +65,54 @@ Subroutine hy_addThermalFluxes(block,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
   integer, INTENT(IN) :: sweepDir
   !! ----------------------------------------------------------------------
 
-  real    :: idx,idy,idz,kappa_loc
-  real, dimension(MDIM) :: del
-  real, pointer, dimension(:,:,:,:) :: U
+!  real    :: idx,idy,idz,kappa_loc
+!  real, dimension(MDIM) :: del
+!  real, pointer, dimension(:,:,:,:) :: U
 
+  call Driver_abortFlash("[hy_addThermalFluxes] Implement for tiling")
 
-  !! Get deltas
-  call Grid_getDeltas(block%level,del)
-
-  idx=1./del(DIR_X)
-  if (NDIM >= 2) then
-     idy=1./del(DIR_Y)
-     if (NDIM == 3) then
-        idz=1./del(DIR_Z)
-     endif
-  endif
-
-  !! Get pointer
-  call Grid_getBlkPtr(block,U,CENTER)
-
-
-  select case(sweepDir)
-  case(DIR_X)
-     !! Take a spatial average of visc at each interface 
-     kappa_loc = 0.5*(kappa(ix-1,iy,iz)+kappa(ix,iy,iz))
-
-     Flux(F05ENER_FLUX) = Flux(F05ENER_FLUX)-&
-          idx*kappa_loc*(U(TEMP_VAR,ix,iy,iz)-U(TEMP_VAR,ix-1,iy,iz))
-
-#if NDIM >= 2
-  case(DIR_Y)
-     !! Take a spatial average of visc at each interface 
-     kappa_loc = 0.5*(kappa(ix,iy-1,iz)+kappa(ix,iy,iz))
-
-     Flux(F05ENER_FLUX) = Flux(F05ENER_FLUX)-&
-          idy*kappa_loc*(U(TEMP_VAR,ix,iy,iz)-U(TEMP_VAR,ix,iy-1,iz))
-
-#if NDIM == 3
-  case(DIR_Z)
-     !! Take a spatial average of visc at each interface 
-     kappa_loc = 0.5*(kappa(ix,iy,iz-1)+kappa(ix,iy,iz))
-
-     Flux(F05ENER_FLUX) = Flux(F05ENER_FLUX)-&
-          idz*kappa_loc*(U(TEMP_VAR,ix,iy,iz)-U(TEMP_VAR,ix,iy,iz-1))
-#endif
-#endif
-  end select
-
-  call Grid_releaseBlkPtr(block,U,CENTER)
+!  !! Get deltas
+!  call Grid_getDeltas(block%level,del)
+!
+!  idx=1./del(DIR_X)
+!  if (NDIM >= 2) then
+!     idy=1./del(DIR_Y)
+!     if (NDIM == 3) then
+!        idz=1./del(DIR_Z)
+!     endif
+!  endif
+!
+!  !! Get pointer
+!  call Grid_getBlkPtr(block,U,CENTER)
+!
+!
+!  select case(sweepDir)
+!  case(DIR_X)
+!     !! Take a spatial average of visc at each interface 
+!     kappa_loc = 0.5*(kappa(ix-1,iy,iz)+kappa(ix,iy,iz))
+!
+!     Flux(F05ENER_FLUX) = Flux(F05ENER_FLUX)-&
+!          idx*kappa_loc*(U(TEMP_VAR,ix,iy,iz)-U(TEMP_VAR,ix-1,iy,iz))
+!
+!#if NDIM >= 2
+!  case(DIR_Y)
+!     !! Take a spatial average of visc at each interface 
+!     kappa_loc = 0.5*(kappa(ix,iy-1,iz)+kappa(ix,iy,iz))
+!
+!     Flux(F05ENER_FLUX) = Flux(F05ENER_FLUX)-&
+!          idy*kappa_loc*(U(TEMP_VAR,ix,iy,iz)-U(TEMP_VAR,ix,iy-1,iz))
+!
+!#if NDIM == 3
+!  case(DIR_Z)
+!     !! Take a spatial average of visc at each interface 
+!     kappa_loc = 0.5*(kappa(ix,iy,iz-1)+kappa(ix,iy,iz))
+!
+!     Flux(F05ENER_FLUX) = Flux(F05ENER_FLUX)-&
+!          idz*kappa_loc*(U(TEMP_VAR,ix,iy,iz)-U(TEMP_VAR,ix,iy,iz-1))
+!#endif
+!#endif
+!  end select
+!
+!  call Grid_releaseBlkPtr(block,U,CENTER)
 
 End Subroutine hy_addThermalFluxes
