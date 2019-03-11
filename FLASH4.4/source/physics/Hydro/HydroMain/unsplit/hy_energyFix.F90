@@ -110,12 +110,16 @@ Subroutine hy_energyFix(tileDesc,U,blkLimits,dt,dtOld,del,eosMode)
 #endif
 #endif /* For MHD */
 
-
   !! Get block pointers - NO!
 !!$  call Grid_getBlkPtr(block,U,CENTER)
 #ifdef FLASH_USM_MHD /* For MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1
+  nullify(E)
+  nullify(Bx)
+  nullify(By)
+  nullify(Bz)
+
   call tileDesc%getDataPtr(E, SCRATCH)
   call tileDesc%getDataPtr(Bx, FACEX)
   call tileDesc%getDataPtr(By, FACEY)

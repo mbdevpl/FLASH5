@@ -53,19 +53,19 @@ Subroutine hy_addViscousFluxes(tileDesc,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
   integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
   real, dimension(HY_VARINUM), intent(INOUT) :: Flux
 
-!#ifdef FIXEDBLOCKSIZE 
-!  real, dimension(GRID_ILO_GC:GRID_IHI_GC, & 
-!                  GRID_JLO_GC:GRID_JHI_GC, & 
-!                  GRID_KLO_GC:GRID_KHI_GC),intent(IN) :: mu
-!#else 
-!  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), & 
-!                  blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), & 
-!                  blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)),& 
-!                  intent(IN) :: mu
-!#endif 
-!  integer, INTENT(IN) :: sweepDir
-!  !! ----------------------------------------------------------------------
-!
+#ifdef FIXEDBLOCKSIZE 
+  real, dimension(GRID_ILO_GC:GRID_IHI_GC, & 
+                  GRID_JLO_GC:GRID_JHI_GC, & 
+                  GRID_KLO_GC:GRID_KHI_GC),intent(IN) :: mu
+#else 
+  real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS), & 
+                  blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS), & 
+                  blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)),& 
+                  intent(IN) :: mu
+#endif 
+  integer, INTENT(IN) :: sweepDir
+  !! ----------------------------------------------------------------------
+
 !  real    :: idx,idy,idz,mu_loc
 !  real, dimension(MDIM) :: del
 !  real, pointer, dimension(:,:,:,:) :: U

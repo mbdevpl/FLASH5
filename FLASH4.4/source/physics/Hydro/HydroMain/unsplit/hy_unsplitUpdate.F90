@@ -138,7 +138,7 @@
     real    :: IntEner,tempPres
 
 #if (NSPECIES+NMASS_SCALARS) > 0
-    call Driver_abortFlash("Check if these sizes are adequate for tiling")
+    call Driver_abortFlash("[hy_unsplitUpdate] Check if these sizes are adequate for tiling")
     real, dimension(hy_numXN,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: SpOld
     real, dimension(6,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: Uold
 #else
@@ -262,18 +262,17 @@
        call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
                                   lbound(faceAreas), ubound(faceAreas), &
                                   faceAreas)
-!#if NDIM > 1
-!    ! DEV: FIXME Add these back in and see if they can be replaced with
-!    !            faceAreas and cellVolumes calls
-!       if (hy_geometry == SPHERICAL) then
+#if NDIM > 1
+       if (hy_geometry == SPHERICAL) then
+           call Driver_abortFlash("[hy_unsplitUpdate] Implement with Grid_getCellFaceAreas")
 !          call Grid_getBlkData(tileDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
 !            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
 !            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
 !            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
 !            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
 !            (/isize, jsize+1, ksize/) )
-!       end if
-!#endif
+       end if
+#endif
        call Grid_getCellVolumes(tileDesc%level, &
                                 lbound(cellVolumes), ubound(cellVolumes), &
                                 cellVolumes)
@@ -289,7 +288,7 @@
 #if (NSPECIES+NMASS_SCALARS) > 0
     ! Use do loop nest to only set the portion of the tile
     ! that we are working on.
-    call Driver_abortFlash("Update this to work with tiles")
+    call Driver_abortFlash("[hy_unsplitUpdate] Update this to work with tiles")
     do ispu =  SPECIES_BEGIN, MASS_SCALARS_END !SPECIES_END
        isph= ispu-NPROP_VARS
        SpOld(isph,:,:,:) = Uin(ispu,:,:,:)
@@ -301,7 +300,7 @@
 #endif
 
 #ifdef DEBUG_HYDRO_POSITIVITY
-    call Driver_abortFlash("This has not been tested")
+    call Driver_abortFlash("[hy_unsplitUpdate] This has not been tested")
     call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
                             blGC(LOW, :), blGC(HIGH, :), xCenter)
 #else
@@ -316,7 +315,7 @@
        call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
                                blGC(LOW, :), blGC(HIGH, :), xRight)
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          call Driver_abortFlash("This has not been tested")
+          call Driver_abortFlash("[hy_unsplitUpdate] This has not been tested")
           call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
                                   blkLimits(LOW, :), blkLimits(HIGH, :), &
                                   yCenter)
@@ -903,7 +902,7 @@
     !! ---------------------------------------------------------------
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
     ! Set with explicit do loops over appropriate tile-based region
-    call Driver_abortFlash("Update this to work with tiles")
+    call Driver_abortFlash("[hy_unsplitUpdate] Update this to work with tiles")
     if (hy_forceHydroLimit) then
        Uout(MAGX_VAR:MAGZ_VAR,:,:,:) = 0.
     endif
@@ -912,7 +911,7 @@
 #if (NSPECIES+NMASS_SCALARS) > 0
   ! Renormalize or limit abundances
     if (hy_irenorm == 1) then
-       call Grid_renormAbundance(tileDesc,Uout)
+       call Grid_renormAbundance(tileDesc,blkLimits,Uout)
     else
        call Grid_limitAbundance(blkLimits,Uout)
     endif
@@ -965,18 +964,19 @@
        call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
                                   lbound(faceAreas), ubound(faceAreas), &
                                   faceAreas)
-!#if NDIM > 1
+#if NDIM > 1
     ! DEV: FIXME Include this again and see if we can use faceAreas and
     !            cellVolumes instead
-!       if (hy_geometry == SPHERICAL) then
+       if (hy_geometry == SPHERICAL) then
+           call Driver_abortFlash("[hy_unsplitUpdate] Implement with Grid_getCellFaceAreas")
 !          call Grid_getBlkData(tileDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
 !            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
 !            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
 !            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
 !            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
 !            (/isize, jsize+1, ksize/) )
-!       end if
-!#endif
+       end if
+#endif
 
        call Grid_getCellVolumes(tileDesc%level, &
                                 lbound(cellVolumes), ubound(cellVolumes), &
@@ -987,7 +987,7 @@
 
     if (.NOT. hy_fullSpecMsFluxHandling) then
        ! Set these with explicit loop nests over a tile-based region
-       call Driver_abortFlash("Update these to work with tiles")
+       call Driver_abortFlash("[hy_unsplitUpdate] Update these to work with tiles")
        do ispu =  SPECIES_BEGIN, MASS_SCALARS_END
           isph= ispu-NPROP_VARS
           SpOld(isph,:,:,:) = Uout(ispu,:,:,:)
@@ -1006,7 +1006,7 @@
        call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
                                blGC(LOW, :), blGC(HIGH, :), xRight)
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          call Driver_abortFlash("This has not been tested")
+          call Driver_abortFlash("[hy_unsplitUpdate] This has not been tested")
           call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
                                   blkLimits(LOW, :), blkLimits(HIGH, :), &
                                   yCenter)

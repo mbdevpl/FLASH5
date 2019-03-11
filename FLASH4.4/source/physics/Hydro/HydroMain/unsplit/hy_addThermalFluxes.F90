@@ -35,7 +35,7 @@
 
 !!REORDER(4): U
 
-Subroutine hy_addThermalFluxes(block,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
+Subroutine hy_addThermalFluxes(tileDesc,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
 
   use Hydro_data,       ONLY : hy_qref
   use Grid_interface,   ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas

@@ -54,7 +54,7 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_renormAbundance(tileDesc, solnData)
+subroutine Grid_renormAbundance(tileDesc, tileLimits, solnData)
   use Grid_data,        ONLY : gr_smallx
   use Grid_interface,   ONLY : Grid_getSingleCellCoords
   use Driver_interface, ONLY : Driver_abortFlash
@@ -63,6 +63,7 @@ subroutine Grid_renormAbundance(tileDesc, solnData)
   implicit none
 
   type(Grid_tile_t), intent(IN)         :: tileDesc
+  integer,           intent(IN)         :: tileLimits(LOW:HIGH, 1:MDIM)
   real,                         pointer :: solnData(:,:,:,:)
 
   integer :: i, j, k, n
@@ -74,8 +75,8 @@ subroutine Grid_renormAbundance(tileDesc, solnData)
   real,dimension(MDIM)::pntCoord
   character(len=120)::log_message
 
-  associate(lo => tileDesc%limits(LOW,  :), &
-            hi => tileDesc%limits(HIGH, :))
+  associate(lo => tileLimits(LOW,  :), &
+            hi => tileLimits(HIGH, :))
      do       k = lo(KAXIS), hi(KAXIS)
         do    j = lo(JAXIS), hi(JAXIS)
            do i = lo(IAXIS), hi(IAXIS)

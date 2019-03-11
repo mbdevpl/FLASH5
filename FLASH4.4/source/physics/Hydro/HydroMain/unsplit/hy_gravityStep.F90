@@ -26,7 +26,7 @@ subroutine hy_gravityStep(simTime, dt, dtOld)
   nullify(Uout)
 
 #ifdef DEBUG_DRIVER
-  print*,' ***************   HYDRO LEVEL', level,'  **********************'
+  print*,' ***************   HYDRO LEVEL  **********************'
 #endif
 
   call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)

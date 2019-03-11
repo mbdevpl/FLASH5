@@ -207,11 +207,14 @@ Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
 
   !****************** End of GP declarations **********************!
 
-#ifdef FLASH_USM_MHD
-#if NDIM == 2
-  !!NAG complains if this isn't here, since Bz is uninitialized.
+#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
+#if NFACE_VARS > 0
+#if NDIM > 1
+  nullify(Bx)
+  nullify(By)
   nullify(Bz)
-#endif /* NDIM < 3 */
+#endif
+#endif
 #endif
 
   ! Set index range depending on hydro or MHD
