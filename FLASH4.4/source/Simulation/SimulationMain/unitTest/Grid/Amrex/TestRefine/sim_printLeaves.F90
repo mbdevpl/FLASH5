@@ -2,15 +2,12 @@
 
 subroutine sim_printLeaves(title)
     use gr_amrexInterface, ONLY : gr_getFinestLevel
-    use Grid_tile,         ONLY : Grid_tile_t
     use Simulation_data,   ONLY : leaves, &
                                   MIN_REFINE_LEVEL
 
     implicit none
 
     character(*), intent(IN) :: title
-
-    type(Grid_tile_t) :: tileDesc
 
     integer :: level, j
     integer :: finest_level

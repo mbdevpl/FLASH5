@@ -24,7 +24,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    type(amrex_tagboxarray) :: tag
    type(amrex_mfiter)      :: mfi                                                             
    type(amrex_box)         :: bx
-   type(Grid_tile_t)       :: blockDesc
+   type(Grid_tile_t)       :: tileDesc
 
    real(wp),               contiguous, pointer :: solnData(:,:,:,:)
    character(kind=c_char), contiguous, pointer :: tagData(:,:,:,:)
@@ -45,22 +45,22 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       bx = mfi%tilebox()
 
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
-      blockDesc%level = lev + 1
-      blockDesc%grid_index = mfi%grid_index()
-      blockDesc%tile_index = 0
-      blockDesc%limits(LOW,  :) = 1
-      blockDesc%limits(HIGH, :) = 1
-      blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
-      blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
-      blockDesc%blkLimitsGC(LOW,  :) = 1
-      blockDesc%blkLimitsGC(HIGH, :) = 1
-      blockDesc%blkLimitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
-      blockDesc%blkLimitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
+      tileDesc%level = lev + 1
+      tileDesc%grid_index = mfi%grid_index()
+      tileDesc%tile_index = 0
+      tileDesc%limits(LOW,  :) = 1
+      tileDesc%limits(HIGH, :) = 1
+      tileDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+      tileDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+      tileDesc%blkLimitsGC(LOW,  :) = 1
+      tileDesc%blkLimitsGC(HIGH, :) = 1
+      tileDesc%blkLimitsGC(LOW,  1:NDIM) = tileDesc%limits(LOW,  1:NDIM) - NGUARD
+      tileDesc%blkLimitsGC(HIGH, 1:NDIM) = tileDesc%limits(HIGH, 1:NDIM) + NGUARD
 
-      call blockDesc%getDataPtr(solnData, CENTER)
+      call tileDesc%getDataPtr(solnData, CENTER)
 
-      associate (lo => blockDesc%limits(LOW,  :), &
-                 hi => blockDesc%limits(HIGH, :))
+      associate (lo => tileDesc%limits(LOW,  :), &
+                 hi => tileDesc%limits(HIGH, :))
         tagData => tag%dataptr(mfi)
         tagData(:, :, :, :) = clearval
         do     j = lo(JAXIS), hi(JAXIS)
@@ -88,7 +88,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
         end do
       end associate
 
-      call blockDesc%releaseDataPtr(solnData, CENTER)
+      call tileDesc%releaseDataPtr(solnData, CENTER)
    end do
    call amrex_mfiter_destroy(mfi)
 
