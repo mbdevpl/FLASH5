@@ -93,7 +93,7 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
   
   integer, intent (in) :: idensvar
 
-  call Driver_abortFlash("Update to tiling!")
+  call Driver_abortFlash("[gr_mpoleCen3Dcylindrical] Update to tiling!")
 
 !  logical :: domainRmax, domainZmax, domainPhiMax
 !  logical :: guardCells

@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Gravity_accelOneBlock(block_metadata_t, intent(in) :: block, 
+!!  Gravity_accelOneBlock(Grid_tile_t, intent(in) :: tileDesc, 
 !!                        integer, intent(in) :: ngcellcomp,
 !!                        real(:,:,:,:)),intent(out) :: gvec, 
 !!                        integer, intent(in),optional :: potentialIndex)
@@ -47,21 +47,19 @@
 !!
 !!***
 
-subroutine Gravity_accelOneBlock ( blockDesc, ngcellcomp, gvec, potentialIndex)
+subroutine Gravity_accelOneBlock ( tileDesc, ngcellcomp, gvec, potentialIndex)
 
 
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getDeltas, Grid_getBlkIndexLimits, &
-                             Grid_getGeometry
+  use Grid_interface, ONLY : Grid_getGeometry
   use Driver_interface, ONLY : Driver_abortFlash
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
 
-  type(block_metadata_t) :: blockDesc
+  type(Grid_tile_t) :: tileDesc
   integer, intent(in)                    :: ngcellcomp
   real, dimension(:,:,:,:), intent(out)  :: gvec
   integer, intent(in),optional           :: potentialIndex
@@ -88,13 +86,15 @@ subroutine Gravity_accelOneBlock ( blockDesc, ngcellcomp, gvec, potentialIndex)
   end if
 
   ! get block data and block info
-  call Grid_getBlkPtr(blockDesc, solnData)
-  call Grid_getDeltas(blockDesc%level, delta)
+  call tileDesc%getDataPtr(solnData, CENTER)
+  call tileDesc%deltas(delta)
   inv_2delta(1:NDIM) = 0.5/delta(1:NDIM)
-  blkLimits = blockDesc%limits
-  blkLimitsGC = blockDesc%limitsGC
+  blkLimits = tileDesc%limits
+  blkLimitsGC = tileDesc%blkLimitsGC
   call Grid_getGeometry(geom)
 
+  ! DEV: FIXME Should this be tile and halo or grown tile?
+  call Driver_abortFlash("[Gravity_accelOneBlock] Implement for tiling")
   sizeI = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
   sizeJ = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
   sizeK = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
@@ -102,9 +102,11 @@ subroutine Gravity_accelOneBlock ( blockDesc, ngcellcomp, gvec, potentialIndex)
   ! pull out potential for better cache locality
   allocate( gpot(sizeI,sizeJ,sizeK), STAT=istat)
   if (istat/=0) call Driver_abortFlash("unable to allocate gpot in Gravity_accelOneBlock")
+  ! DEV: TODO For tiling, we might need to write this as an explicit
+  !           loop nest
   gpot(:,:,:) = solnData(potVar, :,:,:)
 
-  call Grid_releaseBlkPtr(blockDesc, solnData)
+  call Grid_releaseBlkPtr(tileDesc, solnData)
 
   ! now calculate gravity, depending on geometry
   select case (geom)

@@ -34,6 +34,9 @@
 !! 
 !!***
 
+#include "Flash.h"
+#include "constants.h"
+
 subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
                                 potentialIndex, extraAccelVars)
 
@@ -44,9 +47,6 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
     Grid_getCellCoords
 
   implicit none
-
-#include "Flash.h"
-#include "constants.h"
 
   integer, intent(IN) :: sweepDir,blockID,numCells
   integer, dimension(2),INTENT(in) ::pos
@@ -164,23 +164,20 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
 end subroutine Gravity_accelOneRow_blkid
 
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
+subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
                                 potentialIndex, extraAccelVars)
 
 !========================================================================
 
   use Gravity_data, ONLY: useGravity
   use Grid_interface, ONLY : Grid_getCellCoords
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
   use Driver_interface, ONLY : Driver_abortFlash
 
   implicit none
 
-#include "Flash.h"
-#include "constants.h"
-
   integer, intent(IN) :: sweepDir,numCells
-  type(block_metadata_t),intent(IN) :: blockDesc
+  type(Grid_tile_t),intent(IN) :: tileDesc
   integer, dimension(2),INTENT(in) ::pos
   real, dimension(numCells),INTENT(inout) :: grav
   real,    POINTER,   OPTIONAL      :: Uin(:,:,:,:)

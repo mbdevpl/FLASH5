@@ -253,7 +253,7 @@ subroutine gr_mpoleCen3Dcartesian (idensvar)
   gr_mpoleZcenterOfMass = totalData (8) / totalData (1)
 !
 !
-!     ...Find the local tileDescID to which the center of multipole expansion
+!     ...Find the local tile to which the center of multipole expansion
 !        belongs and place the center on the nearest cell corner. Also at
 !        this point we determine the inner zone atomic length, since the
 !        inner zone is defined around the center of multipole expansion.

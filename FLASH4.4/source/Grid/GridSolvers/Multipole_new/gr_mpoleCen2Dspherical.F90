@@ -59,7 +59,7 @@ subroutine gr_mpoleCen2Dspherical (idensvar)
   use Driver_interface,  ONLY : Driver_abortFlash
 
   use Grid_interface,    ONLY : Grid_getTileIterator,   &
-                                Grid_releaseLeafIterator,&
+                                Grid_releaseTileIterator,&
                                 Grid_getCellCoords
 
   use gr_mpoleData,      ONLY : gr_mpoleSymmetryPlane2D, &
