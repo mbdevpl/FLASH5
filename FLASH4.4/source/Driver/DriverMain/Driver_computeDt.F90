@@ -68,9 +68,10 @@ subroutine Driver_computeDt(nbegin, nstep, &
   use Driver_interface, ONLY : Driver_abortFlash
   use Logfile_interface,ONLY : Logfile_stamp
   use IO_interface,     ONLY : IO_writeCheckpoint
-  use Grid_interface, ONLY : Grid_getSingleCellCoords,Grid_getMaxRefinement, &
-       Grid_getTileIterator, Grid_releaseTileIterator, &
-                             Grid_getCellCoords
+  use Grid_interface,   ONLY : Grid_getCellCoords, &
+                               Grid_getMaxRefinement, &
+                               Grid_getTileIterator, &
+                               Grid_releaseTileIterator
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Heat_interface, ONLY : Heat_computeDt
   use Diffuse_interface, ONLY : Diffuse_computeDt 
@@ -106,8 +107,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
   integer :: dtMinLoc(5), lminloc(5,nUnits), ngmin, pgmin
   integer :: status(MPI_Status_Size)
 
-  logical :: gcell = .true.
   real, DIMENSION(MDIM) :: coords
+  real, DIMENSION(1)    :: tmpCoord
 
   real, dimension(nUnits) :: tstepOutput
   character (len=20), save, DIMENSION(nUnits) :: &
@@ -250,33 +251,33 @@ subroutine Driver_computeDt(nbegin, nstep, &
 #ifdef DEBUG_DRIVER
         print*,'before calling get coordinates'
 #endif
-        call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+        call Grid_getCellCoords(IAXIS, CENTER, level, &
                                 lo, hi, xCenter)
-        call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+        call Grid_getCellCoords(IAXIS, LEFT_EDGE, level, &
                                 lo, hi, xLeft)
-        call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+        call Grid_getCellCoords(IAXIS, RIGHT_EDGE, level, &
                                 lo, hi, xRight)
  
 #ifdef DEBUG_DRIVER
         print*,'before calling get coordinates'
 #endif
         if (NDIM > 1) then
-            call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+            call Grid_getCellCoords(JAXIS, CENTER, level, &
                                     lo, hi, yCenter)
-            call Grid_getCellCoords(JAXIS, LEFT_EDGE, tileDesc%level, &
+            call Grid_getCellCoords(JAXIS, LEFT_EDGE, level, &
                                     lo, hi, yLeft)
-            call Grid_getCellCoords(JAXIS, RIGHT_EDGE, tileDesc%level, &
+            call Grid_getCellCoords(JAXIS, RIGHT_EDGE, level, &
                                     lo, hi, yRight)
 
            if (NDIM > 2) then
 #ifdef DEBUG_DRIVER
               print*,'before calling get coordinates'
 #endif
-            call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+            call Grid_getCellCoords(KAXIS, CENTER, level, &
                                     lo, hi, zCenter)
-            call Grid_getCellCoords(KAXIS, LEFT_EDGE, tileDesc%level, &
+            call Grid_getCellCoords(KAXIS, LEFT_EDGE, level, &
                                     lo, hi, zLeft)
-            call Grid_getCellCoords(KAXIS, RIGHT_EDGE, tileDesc%level, &
+            call Grid_getCellCoords(KAXIS, RIGHT_EDGE, level, &
                                     lo, hi, zRight)
            endif
         endif
@@ -420,7 +421,7 @@ subroutine Driver_computeDt(nbegin, nstep, &
   dr_dtDiffuse = dtModule(1,DIFF)
       
   ! have the processor that is determining the timestep limit broadcast the
-  ! proc number, block number, and i,j,k of the zone that set the timestep
+  ! proc number, level, and i,j,k of the zone that set the timestep
   ! to all processors
 
   dtMinLoc(:) = lminloc(:,ngmin)
@@ -459,38 +460,24 @@ subroutine Driver_computeDt(nbegin, nstep, &
 
 
   if (printTStepLoc) then
-         
      ! convert the dtMinLoc array into a physical position (x,y,z) where the
      ! timestep is being set.  dtMinLoc(5) is the processor number, dtMinLoc(4)
-     ! is the blockID on that proc.
-     coords(:) = 0.0
-
-     if (dr_globalMe == dtMinLoc(5)) then
-
-        if (dtMinLoc(4) > 0) then
-           index(:)=dtMinLoc(1:MDIM)
-           call Grid_getSingleCellCoords(index,dtMinLoc(4),CENTER,coords=coords)
-        else
-           coords(:) = 999.0
-        end if
-
-        ! send this to the master processor
-        if (dr_globalMe /= MASTER_PE) then
-
-           call MPI_Send (coords(1), 3, FLASH_REAL, MASTER_PE, & 
-                0, dr_globalComm, error)
-           
-        endif
-        
-     elseif (dr_globalMe == MASTER_PE) then
-        
-        call MPI_Recv (coords(1), 3, FLASH_REAL, dtMinLoc(5), 0, & 
-             dr_globalComm, status, error)            
-        
-     endif
-     
+     ! is the level of the cell.
+     coords(:) = 999.0
+     if (dtMinLoc(4) > 0) then
+        index(:)=dtMinLoc(1:MDIM)
+        call Grid_getCellCoords(IAXIS, CENTER, dtMinLoc(4), &
+                                index, index, tmpCoord)
+        coords(IAXIS) = tmpCoord(1)
+        call Grid_getCellCoords(JAXIS, CENTER, dtMinLoc(4), &
+                                index, index, tmpCoord)
+        coords(JAXIS) = tmpCoord(1)
+        call Grid_getCellCoords(KAXIS, CENTER, dtMinLoc(4), &
+                                index, index, tmpCoord)
+        coords(KAXIS) = tmpCoord(1)
+     end if
   endif
-  
+
   ! Print out the time and next timestep.
   
   ! only print out the timestep from the limiters that are active
