@@ -64,9 +64,9 @@
 
 subroutine Grid_getSingleCellVol(point, level, cellvolume)
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface,   ONLY : Grid_getDeltas, &
-                               Grid_getGeometry, &
-                               Grid_getSingleCellCoords
+!  use Grid_interface,   ONLY : Grid_getDeltas, &
+!                               Grid_getGeometry, &
+!                               Grid_getSingleCellCoords
 
   implicit none
 
@@ -74,93 +74,95 @@ subroutine Grid_getSingleCellVol(point, level, cellvolume)
   integer, intent(IN)  :: level
   real,    intent(OUT) :: cellvolume
 
-  integer :: geometry
-  real    :: del(1:MDIM)
-  real    :: centerCoords(1:MDIM)
-  real    :: leftCoords(1:MDIM)
-  real    :: rightCoords(1:MDIM)
- 
-  call Grid_getGeometry(geometry)
-  call Grid_getDeltas(level, del)
+  call Driver_abortFlash("[Grid_getSingleCellVol] DEPRECATED")
 
-  if (.NOT. ((geometry == CARTESIAN                  ) .OR. &
-             (geometry == CYLINDRICAL .AND. NDIM == 2))  ) then
-    cellvolume = 0.0
-    call Driver_abortFlash("[Grid_getSingleCellVol] Not tested yet")
-  end if
-
-  select case (geometry)
-
-  case (CARTESIAN)
-     associate(dx => del(IAXIS), &
-               dy => del(JAXIS), &
-               dz => del(KAXIS))
-        if(NDIM == 1) then
-           cellvolume = dx
-        else if(NDIM == 2) then
-           cellvolume = dx * dy
-        else
-           cellvolume = dx * dy * dz
-        end if
-     end associate
-
-  case (POLAR)
-     call Grid_getSingleCellCoords(point, level, CENTER, centerCoords)
-
-     associate(dr   => del(IAXIS), &
-               dPhi => del(JAXIS), &
-               dz   => del(KAXIS), &
-               r    => ABS(centerCoords(IAXIS)))
-        if(NDIM == 1) then
-           cellvolume = 2.*PI * r * dr
-        else if(NDIM == 2) then
-           cellvolume = r * dr * dPhi
-        else
-           cellvolume = r * dr * dz * dPhi
-        end if
-     end associate
-
-  case (CYLINDRICAL)
-     call Grid_getSingleCellCoords(point, level, CENTER, centerCoords)
-
-     associate(dr   => del(IAXIS), &
-               dz   => del(JAXIS), &
-               dPhi => del(KAXIS), &
-               r    => ABS(centerCoords(IAXIS)))
-        if(NDIM == 1) then
-           cellvolume = 2.*PI * r * dr
-        else if(NDIM == 2) then
-           cellvolume = 2.*PI * r * dr * dz
-        else
-           cellvolume = r * dr * dz * dPhi
-        end if
-     end associate
-
-  case (SPHERICAL)
-     call Grid_getSingleCellCoords(point, level, LEFT_EDGE, leftCoords)
-     call Grid_getSingleCellCoords(point, level, RIGHT_EDGE, rightCoords)
-
-     associate(dr      => del(IAXIS), &
-               dTheta  => del(JAXIS), &
-               dPhi    => del(KAXIS), &
-               r_inner => ABS(leftCoords(IAXIS)), &
-               r_outer => ABS(rightCoords(IAXIS)), &
-               theta_L => leftCoords(JAXIS), &
-               theta_R => rightCoords(JAXIS))
-        ! This is equal to r_outer^3 - r_inner^3
-        cellvolume = dr * (r_inner * r_inner +  &
-                           r_inner * r_outer + &
-                           r_outer * r_outer)
-        if(NDIM == 1) then
-           cellvolume = cellvolume * 4.*PI/3.
-        else if(NDIM == 2) then
-           cellvolume = cellvolume * ( cos(theta_L) - cos(theta_R) ) * 2.*PI/3.
-        else
-           cellvolume = cellvolume * ( cos(theta_L) - cos(theta_R) ) * dPhi/3.
-        end if
-     end associate
-
-  end select
+!  integer :: geometry
+!  real    :: del(1:MDIM)
+!  real    :: centerCoords(1:MDIM)
+!  real    :: leftCoords(1:MDIM)
+!  real    :: rightCoords(1:MDIM)
+! 
+!  call Grid_getGeometry(geometry)
+!  call Grid_getDeltas(level, del)
+!
+!  if (.NOT. ((geometry == CARTESIAN                  ) .OR. &
+!             (geometry == CYLINDRICAL .AND. NDIM == 2))  ) then
+!    cellvolume = 0.0
+!    call Driver_abortFlash("[Grid_getSingleCellVol] Not tested yet")
+!  end if
+!
+!  select case (geometry)
+!
+!  case (CARTESIAN)
+!     associate(dx => del(IAXIS), &
+!               dy => del(JAXIS), &
+!               dz => del(KAXIS))
+!        if(NDIM == 1) then
+!           cellvolume = dx
+!        else if(NDIM == 2) then
+!           cellvolume = dx * dy
+!        else
+!           cellvolume = dx * dy * dz
+!        end if
+!     end associate
+!
+!  case (POLAR)
+!     call Grid_getSingleCellCoords(point, level, CENTER, centerCoords)
+!
+!     associate(dr   => del(IAXIS), &
+!               dPhi => del(JAXIS), &
+!               dz   => del(KAXIS), &
+!               r    => ABS(centerCoords(IAXIS)))
+!        if(NDIM == 1) then
+!           cellvolume = 2.*PI * r * dr
+!        else if(NDIM == 2) then
+!           cellvolume = r * dr * dPhi
+!        else
+!           cellvolume = r * dr * dz * dPhi
+!        end if
+!     end associate
+!
+!  case (CYLINDRICAL)
+!     call Grid_getSingleCellCoords(point, level, CENTER, centerCoords)
+!
+!     associate(dr   => del(IAXIS), &
+!               dz   => del(JAXIS), &
+!               dPhi => del(KAXIS), &
+!               r    => ABS(centerCoords(IAXIS)))
+!        if(NDIM == 1) then
+!           cellvolume = 2.*PI * r * dr
+!        else if(NDIM == 2) then
+!           cellvolume = 2.*PI * r * dr * dz
+!        else
+!           cellvolume = r * dr * dz * dPhi
+!        end if
+!     end associate
+!
+!  case (SPHERICAL)
+!     call Grid_getSingleCellCoords(point, level, LEFT_EDGE, leftCoords)
+!     call Grid_getSingleCellCoords(point, level, RIGHT_EDGE, rightCoords)
+!
+!     associate(dr      => del(IAXIS), &
+!               dTheta  => del(JAXIS), &
+!               dPhi    => del(KAXIS), &
+!               r_inner => ABS(leftCoords(IAXIS)), &
+!               r_outer => ABS(rightCoords(IAXIS)), &
+!               theta_L => leftCoords(JAXIS), &
+!               theta_R => rightCoords(JAXIS))
+!        ! This is equal to r_outer^3 - r_inner^3
+!        cellvolume = dr * (r_inner * r_inner +  &
+!                           r_inner * r_outer + &
+!                           r_outer * r_outer)
+!        if(NDIM == 1) then
+!           cellvolume = cellvolume * 4.*PI/3.
+!        else if(NDIM == 2) then
+!           cellvolume = cellvolume * ( cos(theta_L) - cos(theta_R) ) * 2.*PI/3.
+!        else
+!           cellvolume = cellvolume * ( cos(theta_L) - cos(theta_R) ) * dPhi/3.
+!        end if
+!     end associate
+!
+!  end select
 
 end subroutine Grid_getSingleCellVol
 

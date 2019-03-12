@@ -67,20 +67,22 @@ subroutine Grid_getSingleCellCoords(ind, level, edge, coords)
   integer, intent(in)  :: edge
   real,    intent(out) :: coords(1:MDIM)
 
-#ifdef DEBUG_GRID
-  print*,' inside Grid_getSingleCellCoords', ind, level, edge, coords
-  if((level /= 1)) then
-     print*,"Grid_getSingleCellCoords: invalid level"
-     call Driver_abortFlash("[Grid_getSingleCellCoords] invalid level")
-  end if
-  if((edge/=LEFT_EDGE).and.(edge/=CENTER).and.(edge/=RIGHT_EDGE))&
-       call Driver_abortFlash('Grid_getSingleCellCoords : invalid edge')
+  call Driver_abortFlash("[Grid_getSingleCellCoords] DEPRECATED")
 
-  print*, 'leaving the DEBUG_GRID statement'
-#endif
-
-  coords(IAXIS) = gr_iCoords(edge,ind(IAXIS)+gr_guard(IAXIS),1)
-  coords(JAXIS) = gr_jCoords(edge,ind(JAXIS)+gr_guard(JAXIS),1)
-  coords(KAXIS) = gr_kCoords(edge,ind(KAXIS)+gr_guard(KAXIS),1)
+!#ifdef DEBUG_GRID
+!  print*,' inside Grid_getSingleCellCoords', ind, level, edge, coords
+!  if((level /= 1)) then
+!     print*,"Grid_getSingleCellCoords: invalid level"
+!     call Driver_abortFlash("[Grid_getSingleCellCoords] invalid level")
+!  end if
+!  if((edge/=LEFT_EDGE).and.(edge/=CENTER).and.(edge/=RIGHT_EDGE))&
+!       call Driver_abortFlash('Grid_getSingleCellCoords : invalid edge')
+!
+!  print*, 'leaving the DEBUG_GRID statement'
+!#endif
+!
+!  coords(IAXIS) = gr_iCoords(edge,ind(IAXIS)+gr_guard(IAXIS),1)
+!  coords(JAXIS) = gr_jCoords(edge,ind(JAXIS)+gr_guard(JAXIS),1)
+!  coords(KAXIS) = gr_kCoords(edge,ind(KAXIS)+gr_guard(KAXIS),1)
 end subroutine Grid_getSingleCellCoords
 

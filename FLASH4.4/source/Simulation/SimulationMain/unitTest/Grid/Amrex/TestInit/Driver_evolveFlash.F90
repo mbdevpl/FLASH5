@@ -41,7 +41,6 @@ subroutine Driver_evolveFlash()
     use amrex_parallel_module, ONLY : amrex_parallel_myproc
 
     use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
-                                      Grid_getSingleCellCoords, &
                                       Grid_getCellCoords, &
                                       Grid_getGeometry, &
                                       Grid_getDeltas, &
@@ -116,9 +115,7 @@ subroutine Driver_evolveFlash()
     real                  :: zMin
     real                  :: zMax
     real                  :: boundBox(LOW:HIGH, 1:MDIM)
-    real                  :: c_lo(1:MDIM)
-    real                  :: c_hi(1:MDIM)
-    
+
     real, allocatable :: x_coords(:)
     real, allocatable :: y_coords(:)
     real, allocatable :: z_coords(:)
@@ -459,37 +456,6 @@ subroutine Driver_evolveFlash()
     call Grid_releaseTileIterator(itor)
 
     !!!!! CONFIRM CELL COORDINATE ACCESSORS
-    ! DEV: TODO Apply proper Z-info and test in 3D
-    ! Find coordinates of lo/hi
-    call Grid_getSingleCellCoords([1, 1, 1],   1, LEFT_EDGE,  c_lo)
-    call Grid_getSingleCellCoords([NXCELL_EX, NYCELL_EX, NZCELL_EX], 1, RIGHT_EDGE, c_hi)
-
-#if NDIM == 1
-    call assertEqual(c_lo(IAXIS), XMIN_EX, "Invalid cell X-coordinate")
-    call assertEqual(c_lo(JAXIS), 0.0,     "Invalid cell Y-coordinate")
-    call assertEqual(c_lo(KAXIS), 0.0,     "Invalid cell Z-coordinate")
-    
-    call assertEqual(c_hi(IAXIS), XMAX_EX, "Invalid cell X-coordinate")
-    call assertEqual(c_hi(JAXIS), 0.0,     "Invalid cell Y-coordinate")
-    call assertEqual(c_hi(KAXIS), 0.0,     "Invalid cell Z-coordinate")
-#elif NDIM == 2
-    call assertEqual(c_lo(IAXIS), XMIN_EX, "Invalid cell X-coordinate")
-    call assertEqual(c_lo(JAXIS), YMIN_EX, "Invalid cell Y-coordinate")
-    call assertEqual(c_lo(KAXIS), 0.0,     "Invalid cell Z-coordinate")
-    
-    call assertEqual(c_hi(IAXIS), XMAX_EX, "Invalid cell X-coordinate")
-    call assertEqual(c_hi(JAXIS), YMAX_EX, "Invalid cell Y-coordinate")
-    call assertEqual(c_hi(KAXIS), 0.0,     "Invalid cell Z-coordinate")
-#elif NDIM == 3
-    call assertEqual(c_lo(IAXIS), XMIN_EX, "Invalid cell X-coordinate")
-    call assertEqual(c_lo(JAXIS), YMIN_EX, "Invalid cell Y-coordinate")
-    call assertEqual(c_lo(KAXIS), ZMIN_EX, "Invalid cell Z-coordinate")
-    
-    call assertEqual(c_hi(IAXIS), XMAX_EX, "Invalid cell X-coordinate")
-    call assertEqual(c_hi(JAXIS), YMAX_EX, "Invalid cell Y-coordinate")
-    call assertEqual(c_hi(KAXIS), ZMAX_EX, "Invalid cell Z-coordinate")
-#endif
-
     ! TEST THAT COORDINATE FUNCTIONS ARE CORRECT
     call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
     do while (itor%isValid())
@@ -523,10 +489,6 @@ subroutine Driver_evolveFlash()
                   call assertEqual(y_coords(j), YMIN_EX + (j-1)*YDELTA_EX, "Bad Y-coordinate")
                   call assertEqual(z_coords(k), ZMIN_EX + (k-1)*ZDELTA_EX, "Bad Z-coordinate")
 #endif
-                  call Grid_getSingleCellCoords([i, j, k], tileDesc%level, LEFT_EDGE, c_lo)
-                  call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
-                  call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
-                  call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
              end do
           end do
        end do
@@ -553,10 +515,6 @@ subroutine Driver_evolveFlash()
                  call assertEqual(y_coords(j), YMIN_EX + (j-0.5)*YDELTA_EX, "Bad Y-coordinate")
                  call assertEqual(z_coords(k), ZMIN_EX + (k-0.5)*ZDELTA_EX, "Bad Z-coordinate")
 #endif
-                  call Grid_getSingleCellCoords([i, j, k], tileDesc%level, CENTER, c_lo)
-                  call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
-                  call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
-                  call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
              end do
           end do
        end do
@@ -583,10 +541,6 @@ subroutine Driver_evolveFlash()
                   call assertEqual(y_coords(j), YMIN_EX + j*YDELTA_EX, "Bad Y-coordinate")
                   call assertEqual(z_coords(k), ZMIN_EX + k*ZDELTA_EX, "Bad Z-coordinate")
 #endif
-                  call Grid_getSingleCellCoords([i, j, k], tileDesc%level, RIGHT_EDGE, c_lo)
-                  call assertEqual(x_coords(i), c_lo(IAXIS), "X-coordinate doesn't match")
-                  call assertEqual(y_coords(j), c_lo(JAXIS), "Y-coordinate doesn't match")
-                  call assertEqual(z_coords(k), c_lo(KAXIS), "Z-coordinate doesn't match")
              end do
           end do
        end do

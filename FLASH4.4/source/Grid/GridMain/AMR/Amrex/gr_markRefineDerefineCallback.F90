@@ -144,9 +144,9 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 end do
             end do
             
-            i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
-            j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
-            k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
+            i = INT(0.5 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
+            j = INT(0.5 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
+            k = INT(0.5 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
  
             tagData(i, j, k, 1) = tagval
          end associate
@@ -216,7 +216,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             iref = gr_refine_var(l)
             if (iref < 1)   CYCLE
     
-            error = 0.0d0
+            error = 0.0
             refineFilter = gr_refine_filter(l)
             call gr_estimateBlkError(error, tileDesc, iref, refineFilter)
 
@@ -235,9 +235,9 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 ! array may differ.  This space is needed for ensuring proper
                 ! nesting and is used by AMReX.  Client code need not set those
                 ! when tagging for refinement.
-                i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
-                j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
-                k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
+                i = INT(0.5 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
+                j = INT(0.5 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
+                k = INT(0.5 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
  
                 ! NOTE: last dimension has range 1:1
                 tagData(i, j, k, 1) = tagval

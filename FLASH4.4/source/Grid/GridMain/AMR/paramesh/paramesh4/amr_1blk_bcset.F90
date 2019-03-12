@@ -221,7 +221,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
      gridDataStruct=WORK
      !! Paramesh supports Work for only cell centered data, so CENTER
      !! is the appropriate gridDataStruct for this call
-     call createBlockMetadata(blockHandle, CENTER, tileDesc)
+     call createTileDescriptor(blockHandle, CENTER, tileDesc)
 
      !! Now that all preparatory work is done, do the calculation.
      !! The three different loops for the three directions are there
@@ -237,7 +237,7 @@ subroutine amr_1blk_bcset(mype,ibc,lb,pe,idest,&
  
         !! The next statements gest block index information to 
         !! prepare for the calculation.
-        call createBlockMetadata(blockHandle, gridDataStruct, tileDesc)
+        call createTileDescriptor(blockHandle, gridDataStruct, tileDesc)
 
         !! Now that all preparatory work is done, call the routine
         !! that will repackage relevant parts of the block data
@@ -512,14 +512,14 @@ contains
       extractBCForDirection = gr_extractBCForDirection(surrblks(1,2+ibnd,2+jbnd,2+kbnd), idir,lowOrHigh)
     end function extractBCForDirection
 
-    subroutine createBlockMetadata(blockID, gds, tileDesc)
+    subroutine createTileDescriptor(blockID, gds, tileDesc)
         use tree,            ONLY : lrefine, lrefine_max, bnd_box
         use Grid_data,       ONLY:  gr_delta,       &
                                     gr_globalDomain
         use gr_specificData, ONLY : gr_oneBlock
 
-        integer,            intent(IN)  :: blockID
-        integer,            intent(IN)  :: gds
+        integer,           intent(IN)  :: blockID
+        integer,           intent(IN)  :: gds
         type(Grid_tile_t), intent(OUT) :: tileDesc
 
         integer :: blkLimits(LOW:HIGH, MDIM)
@@ -564,7 +564,7 @@ contains
             loGrown(:) = loBlkGC(:)
             hiGrown(:) = hiBlkGC(:)
         end associate
-    end subroutine createBlockMetadata
+    end subroutine createTileDescriptor
 
 end subroutine amr_1blk_bcset
 

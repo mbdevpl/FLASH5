@@ -267,7 +267,7 @@ subroutine Grid_init()
   if (gr_enableTiling) then
      write(*,*) "[Grid_init] WARNING: Tiling is not implemented in Uniform Grid mode"
      write(*,*) "                     Execution will proceed without tiling"
-     ! DEV: TODO Should this be print this to the log as well?
+     ! DEV: TODO Should we print this to the log as well?
      gr_enableTiling = .FALSE.
   end if
 end subroutine Grid_init

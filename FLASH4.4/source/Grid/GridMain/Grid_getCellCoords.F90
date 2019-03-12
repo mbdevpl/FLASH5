@@ -130,12 +130,6 @@ subroutine Grid_getCellCoords(axis, edge, level, lo, hi, coordinates)
   integer :: i
 
 #ifdef DEBUG_GRID
-  if (      (edge /= LEFT_EDGE) .AND. (edge /= RIGHT_EDGE) &
-      .AND. (edge /= FACES)     .AND. (edge /= CENTER)) then
-     call Driver_abortFlash("[Grid_getCellCoords] invalid edge specification, must be LEFT_EDGE &
-          RIGHT_EDGE, or CENTER")
-  end if
-
   if((axis /= IAXIS) .AND. (axis /= JAXIS) .AND. (axis /= KAXIS)) then
      call Driver_abortFlash("[Grid_getCellCoords] invalid axis, must be IAXIS, JAXIS or KAXIS ")
   end if

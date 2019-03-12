@@ -34,6 +34,8 @@
 #include "constants.h"
 
 subroutine Grid_getSingleCellCoords(ind, level, edge, coords)
+  use Driver_interface, ONLY : Driver_abortFlash
+
   implicit none
 
   integer, intent(in)  :: ind(1:MDIM)
@@ -42,4 +44,6 @@ subroutine Grid_getSingleCellCoords(ind, level, edge, coords)
   real,    intent(out) :: coords(1:MDIM)
 
   coords(:) = 0.0
+
+  call Driver_abortFlash("[Grid_getSingleCellCoords] DEPRECATED")
 end subroutine Grid_getSingleCellCoords

@@ -51,41 +51,43 @@ subroutine Grid_getSingleCellCoords(ind, level, edge, coords)
   integer, intent(in)  :: edge
   real,    intent(out) :: coords(1:MDIM)
 
-  integer :: axis
-  integer :: stride
-  real    :: first
-  real    :: fineDeltas(MDIM)
+  call Driver_abortFlash("[Grid_getSingleCellCoords] DEPRECATED")
 
-#ifdef DEBUG_GRID
-#ifdef FLASH_GRID_UG
-  if((level < 1)) then
-     print*,"Grid_getSingleCellCoords_lev :invalid level "
-     call Driver_abortFlash("Grid_getSingleCellCoords_lev :invalid level ")
-  end if
-#endif
-
-  if((edge/=LEFT_EDGE).and.(edge/=CENTER).and.(edge/=RIGHT_EDGE))&
-       call Driver_abortFlash('Grid_getSingleCellCoods : invalid edge')
-
-!  print*, 'leaving the DEBUG_GRID statement'
-#endif
-
-  call Grid_getDeltas(maxRefine, fineDeltas)
-
-  stride = 2**(maxRefine - level)
-
-
-  first = 0
-  if (edge==CENTER) then
-     first = stride * 0.5
-  else if (edge==RIGHT_EDGE) then
-     first = stride
-  end if
-
-  coords(:) = 0.0
-  do axis = 1,NDIM
-     coords(axis) = gr_globalDomain(LOW,axis) + (first+(ind(axis)-1)*stride) * fineDeltas(axis)
-  end do
+!  integer :: axis
+!  integer :: stride
+!  real    :: first
+!  real    :: fineDeltas(MDIM)
+!
+!#ifdef DEBUG_GRID
+!#ifdef FLASH_GRID_UG
+!  if((level < 1)) then
+!     print*,"Grid_getSingleCellCoords_lev :invalid level "
+!     call Driver_abortFlash("Grid_getSingleCellCoords_lev :invalid level ")
+!  end if
+!#endif
+!
+!  if((edge/=LEFT_EDGE).and.(edge/=CENTER).and.(edge/=RIGHT_EDGE))&
+!       call Driver_abortFlash('Grid_getSingleCellCoods : invalid edge')
+!
+!!  print*, 'leaving the DEBUG_GRID statement'
+!#endif
+!
+!  call Grid_getDeltas(maxRefine, fineDeltas)
+!
+!  stride = 2**(maxRefine - level)
+!
+!
+!  first = 0
+!  if (edge==CENTER) then
+!     first = stride * 0.5
+!  else if (edge==RIGHT_EDGE) then
+!     first = stride
+!  end if
+!
+!  coords(:) = 0.0
+!  do axis = 1,NDIM
+!     coords(axis) = gr_globalDomain(LOW,axis) + (first+(ind(axis)-1)*stride) * fineDeltas(axis)
+!  end do
 
 end subroutine Grid_getSingleCellCoords
 

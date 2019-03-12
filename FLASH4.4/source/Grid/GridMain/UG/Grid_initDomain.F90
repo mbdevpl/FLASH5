@@ -75,7 +75,7 @@ subroutine Grid_initDomain( restart,particlesInitialized)
      !  zero data in case we don't initialize all data in
      !  Simulation_initBlock... in particular the total vs. internal
      !  energies can cause problems in the eos call that follows
-     call Grid_getTileIterator(itor, ALL_BLKS)
+     call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.)
      do while (itor%isValid())
         call itor%currentTile(tileDesc)
         call tileDesc%getDataPtr(solnData, CENTER)
