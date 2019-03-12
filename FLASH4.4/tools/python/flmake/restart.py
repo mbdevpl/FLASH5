@@ -46,7 +46,7 @@ def main(ns, rc):
     desc_run = desc['run']
     desc_run['id'] = gvars.run_id
     desc_run['history'] = prev_desc_run['history'] + [prev_desc_run['id']]
-    flash_executable = os.path.join(gvars.run_dir, "flash4")
+    flash_executable = os.path.join(gvars.run_dir, "flash5")
     with open(flash_executable, 'rb') as f:
         desc_run['flash_executable_hash'] = hashlib.sha1(f.read()).hexdigest()
     desc_run['flash_executable_mtime'] = os.path.getmtime(flash_executable)
@@ -92,7 +92,7 @@ def main(ns, rc):
 
     # run flash
     nprocs = ['-n', ns.nprocs] if ns.nprocs is not None else []
-    cmd = [MPIRUN_CMD] + nprocs + ns.options + ["./flash4"]
+    cmd = [MPIRUN_CMD] + nprocs + ns.options + ["./flash5"]
     try:
         rtn = subprocess.check_call(cmd, cwd=gvars.run_dir)
     finally:

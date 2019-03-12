@@ -4,12 +4,12 @@
 # size utility and then calculates the maximum stack+heap memory
 # available to the executable in each BG/P mode.
 # It is used as follows:
-#   binary_size.sh ./flash4
+#   binary_size.sh ./flash5
 #
 # The script also displays the N biggest bss memory allocations, 
 # where N is 10 by default.  This can be changed by
 # passing an optional second argument as follows:
-#   binary_size.sh ./flash4 20
+#   binary_size.sh ./flash5 20
 # 
 
 DEFAULT_NUM_BSS_ALLOCS=10

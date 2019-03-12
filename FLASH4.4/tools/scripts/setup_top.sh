@@ -210,7 +210,7 @@ The default batch submission script is also copied into the new run
 directory.
 
 The default flash source tree is searched for a build directory called
-"object", where the flash4 executable and any required data files are
+"object", where the flash5 executable and any required data files are
 expected.  Those files will be copied into the run directory.
 
 The default flash source tree will also be queried (using svn) for version
@@ -253,7 +253,7 @@ consistency with the value of "basenm".
 (7) By default, it is intended that operators should do flash setups and
 makes in the default Flash source directory.  The file 'flash_source' is
 actually a symlink to that directory.  If this is done, then
-setup_rundir.sh should correctly pick up the flash4 executable, the
+setup_rundir.sh should correctly pick up the flash5 executable, the
 required data files, the configuration history, and the subversion info
 necessary for any required post-mortems.
 
@@ -268,7 +268,7 @@ or modify the symlink "flash_source" to point to your tree.
 To use a custom tree for a single run, tell setup_rundir.sh where to find
 it on the command line using FLASH_PATH=/path/to/your/source/tree.
 
-Please, please, do not just copy in a random flash4 executable from some
+Please, please, do not just copy in a random flash5 executable from some
 unrecorded tree with undocumented and uncommitted source modifications.  If
 something goes wrong -- or worse, if we notice three weeks later that
 something was wrong -- we probably wouldn't be able to reconstruct what
