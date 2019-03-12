@@ -91,7 +91,7 @@ subroutine gr_updateRefinement( gridChanged)
   type(Grid_iterator_t) :: itor
   type(Grid_tile_t) :: tileDesc
 !=============================================================================
-
+  nullify(solnData)
   call Timers_start("tree") !2 of 2 (split into 2 so valid to TAU)
   !store the local number of blocks before refinement
   oldLocalNumBlocks = lnblocks
