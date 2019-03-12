@@ -41,7 +41,6 @@ subroutine Driver_evolveFlash()
     use amrex_parallel_module, ONLY : amrex_parallel_myproc
 
     use Grid_interface,        ONLY : Grid_getDomainBoundBox, &
-                                      Grid_getBlkBoundBox, &
                                       Grid_getSingleCellCoords, &
                                       Grid_getCellCoords, &
                                       Grid_getGeometry, &

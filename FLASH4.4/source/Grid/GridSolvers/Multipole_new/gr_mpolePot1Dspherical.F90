@@ -26,12 +26,12 @@
 
 subroutine gr_mpolePot1Dspherical (ipotvar)
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,        &
-                                Grid_releaseBlkPtr,    &
-                                Grid_getBlkBoundBox,   &
-                                Grid_getDeltas,        &
-                                Grid_getLeafIterator,   &
-                                Grid_releaseLeafIterator
+!  use Grid_interface,    ONLY : Grid_getBlkPtr,        &
+!                                Grid_releaseBlkPtr,    &
+!                                Grid_getBlkBoundBox,   &
+!                                Grid_getDeltas,        &
+!                                Grid_getLeafIterator,   &
+!                                Grid_releaseLeafIterator
 
   use gr_mpoleData,      ONLY : gr_mpoleGravityConstant,        &
                                 gr_mpoleDrInv,                  &

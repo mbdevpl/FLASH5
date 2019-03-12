@@ -26,12 +26,12 @@
 
 subroutine gr_mpoleMom3Dcylindrical (idensvar)
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-                                Grid_releaseBlkPtr,     &
-                                Grid_getBlkBoundBox,    &
-                                Grid_getDeltas,         &
-                                Grid_getLeafIterator,   &
-                                Grid_releaseLeafIterator
+!  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
+!                                Grid_releaseBlkPtr,     &
+!                                Grid_getBlkBoundBox,    &
+!                                Grid_getDeltas,         &
+!                                Grid_getLeafIterator,   &
+!                                Grid_releaseLeafIterator
 
   use gr_mpoleInterface, ONLY : gr_mpoleMomBins3Dcylindrical
 

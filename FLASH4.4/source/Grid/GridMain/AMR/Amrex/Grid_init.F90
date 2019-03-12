@@ -273,7 +273,7 @@ subroutine Grid_init()
 !----------------------------------------------------------------------------------
 ! Store interface-accessible data as local Grid data variables for optimization
 !----------------------------------------------------------------------------------
-  !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
+  !Store computational domain limits in a convenient array
   call Grid_getDomainBoundBox(gr_globalDomain)
 
   call Grid_getMaxRefinement(gr_lRefineMax, mode=1)

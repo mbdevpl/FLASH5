@@ -57,13 +57,13 @@ subroutine gr_mpoleCen3Dcylindrical (idensvar)
 
   use Driver_interface,  ONLY : Driver_abortFlash
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-                                Grid_releaseBlkPtr,     &
-                                Grid_getBlkBoundBox,    &
-                                Grid_getDeltas,         &
-                                Grid_getLeafIterator,   &
-                                Grid_releaseLeafIterator,&
-                                Grid_getCellCoords
+!  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
+!                                Grid_releaseBlkPtr,     &
+!                                Grid_getBlkBoundBox,    &
+!                                Grid_getDeltas,         &
+!                                Grid_getLeafIterator,   &
+!                                Grid_releaseLeafIterator,&
+!                                Grid_getCellCoords
 
   use gr_mpoleData,      ONLY : gr_mpoleDomainRmax,     &
                                 gr_mpoleDomainZmax,     &

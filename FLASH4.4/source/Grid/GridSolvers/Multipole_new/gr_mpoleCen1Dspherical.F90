@@ -31,12 +31,12 @@ subroutine gr_mpoleCen1Dspherical (idensvar)
   use Grid_data,         ONLY : gr_meshMe,   &
                                 gr_meshComm
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-                                Grid_releaseBlkPtr,     &
-                                Grid_getBlkBoundBox,    &
-                                Grid_getDeltas,         &
-                                Grid_getLeafIterator,   &
-                                Grid_releaseLeafIterator
+!  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
+!                                Grid_releaseBlkPtr,     &
+!                                Grid_getBlkBoundBox,    &
+!                                Grid_getDeltas,         &
+!                                Grid_getLeafIterator,   &
+!                                Grid_releaseLeafIterator
 
   use gr_mpoleData,      ONLY : gr_mpoleDrInnerZone,    &
                                 gr_mpoleDrInnerZoneInv, &

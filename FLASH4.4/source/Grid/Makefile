@@ -5,16 +5,12 @@ Grid += Grid_init.o \
 	Grid_copyF4DataToMultiFabs.o \
 	Grid_conserveFluxes.o \
 	Grid_getLocalNumBlks.o \
-	Grid_getBlkRefineLevel.o \
     Grid_getMaxRefinement.o \
 	Grid_fillGuardCells.o Grid_notifySolnDataUpdate.o \
-	Grid_getBlkPtr.o Grid_markRefineDerefine.o \
-	Grid_getBlkPhysicalSize.o \
+	Grid_markRefineDerefine.o \
 	Grid_putFluxData.o \
-	Grid_getFluxPtr.o Grid_releaseFluxPtr.o \
-	Grid_releaseBlkPtr.o \
 	Grid_outsideBoundBox.o \
-	Grid_getBlkBoundBox.o Grid_getDomainBoundBox.o \
+	Grid_getDomainBoundBox.o \
 	Grid_updateRefinement.o \
 	Grid_getDeltas.o \
 	Grid_getCellCoords.o \
@@ -22,7 +18,7 @@ Grid += Grid_init.o \
 	Grid_getCellVolumes.o \
 	Grid_getBlkIndexLimits.o Grid_getBlkCornerID.o \
 	Grid_getBlkCenterCoords.o \
-	Grid_getBlkBC.o Grid_getDomainBC.o \
+	Grid_getDomainBC.o \
 	Grid_getSingleCellCoords.o Grid_sendOutputData.o Grid_finalize.o \
 	Grid_guardCellMaskHook.o \
 	Grid_putLocalNumBlks.o Grid_dump.o \

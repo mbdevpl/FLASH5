@@ -47,12 +47,12 @@ subroutine gr_mpolePotential_exact (idensvar,ipotvar,poissonFactor)
   use Logfile_interface,           ONLY : Logfile_stamp
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
 
-  use Grid_interface,              ONLY : Grid_getBlkPtr,        &
-                                          Grid_releaseBlkPtr,    &
-                                          Grid_getBlkBoundBox,   &
-                                          Grid_getDeltas,        &
-                                          Grid_getLeafIterator,   &
-                                          Grid_releaseLeafIterator
+!  use Grid_interface,              ONLY : Grid_getBlkPtr,        &
+!                                          Grid_releaseBlkPtr,    &
+!                                          Grid_getBlkBoundBox,   &
+!                                          Grid_getDeltas,        &
+!                                          Grid_getLeafIterator,   &
+!                                          Grid_releaseLeafIterator
 
   use gr_mpoleData,                ONLY : gr_mpoleSymmetryPlane2D, &
                                           gr_mpoleTwoPi,           &

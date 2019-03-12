@@ -206,11 +206,11 @@
 subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount, &
      position, datablock)
 
-  use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
+!  use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_getInteriorBlkPtr,gr_releaseInteriorBlkPtr
-  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
+!  use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
+!  use gr_interface, ONLY : gr_getInteriorBlkPtr,gr_releaseInteriorBlkPtr
+!  use gr_interface, ONLY : gr_getCellVol, gr_getCellFaceArea
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -230,110 +230,110 @@ subroutine Grid_putPointData(blockDesc, gridDataStruct, structIndex, beginCount,
   real, intent(IN) :: datablock
   real, pointer, dimension(:,:,:,:) :: solnData
 
+  call Driver_abortFlash("[Grid_putPointData] DEPRECATED")
 
-
-  integer ::  var, i, j, k, ii
-  integer,dimension(MDIM) :: begOffset,dataLen
-  integer :: imax, jmax, kmax
-
-  logical :: isget
-  logical :: getIntPtr
-
-#ifdef DEBUG_GRID
-  isget=.true.
-  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
-
-  !verify beginCount is set to a valid value
-  if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
-     print *, "Grid_putPointData: beginCount set to improper value"
-     print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
-     call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
-  end if
-
-
-
-  !verify that indicies aren't too big or too small for the blockDesc
-  if(beginCount == EXTERIOR) then
-    
-     if (position(1) > imax) then
-        call Driver_abortFlash("Grid_putPointData position(1) index larger than block")
-     end if
-
-     if ((NDIM > 1) .and. (position(2) > jmax)) then
-        call Driver_abortFlash("Grid_putPointData position(2) index larger than block")
-     end if
-    
-     if ((NDIM > 2) .and. (position(3) > kmax)) then
-        call Driver_abortFlash("Grid_putPointData position(3) index larger than block")
-     end if
-    
-     if (position(1) < 1) then
-        print*,'position is ',position(1)
-        call Driver_abortFlash("Grid_putPointData position(1) index smaller than 1")
-     end if
-
-     if ((NDIM > 1) .and. (position(2) < 1)) then
-        call Driver_abortFlash("Grid_putPointData position(2) index smaller than 1")
-     end if
-    
-     if ((NDIM > 2) .and. (position(3) < 1)) then
-        call Driver_abortFlash("Grid_putPointData position(3) index smaller than 1")
-     end if
-        
-  else !beginCount == INTERIOR
-
-     if ((position(1) + gr_iguard -1) > imax) then
-        call Driver_abortFlash("Grid_putPointData position(1) index larger than block")
-     end if
-
-     if ((NDIM > 1) .and. ((position(2) + gr_jguard -1) > jmax)) then
-        call Driver_abortFlash("Grid_putPointData position(2) index larger than block")
-     end if
-    
-     if ((NDIM > 2) .and. ((position(3) + gr_kguard -1) > kmax)) then
-        call Driver_abortFlash("Grid_putPointData position(3) index larger than block")
-     end if
-    
-     if (position(1) < 1) then
-        call Driver_abortFlash("Grid_putPointData position(1) index smaller than 1")
-     end if
-
-     if ((NDIM > 1) .and. (position(2) < 1)) then
-        call Driver_abortFlash("Grid_putPointData position(2) index smaller than 1")
-     end if
-    
-     if ((NDIM > 2) .and. (position(3) < 1)) then
-        call Driver_abortFlash("Grid_putPointData position(3) index smaller than 1")
-     end if
-
-  end if
-  
-#endif
-
-  dataLen=0
-  call gr_getDataOffsets(blockDesc,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
-
-
-  k = 1
-  if(NDIM > 2)k = position(KAXIS) + begOffset(KAXIS) 
-  
-  j = 1
-  if(NDIM > 1)j = position(JAXIS) + begOffset(JAXIS)
-  
-  i = position(IAXIS) + begOffset(IAXIS)
-  
-  if(getIntPtr) then
-     call gr_getInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
-     solnData(structIndex,i,j,k) = datablock
-     call gr_releaseInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
-  else
-     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
-!!$     if(gridDataStruct==SCRATCH) then
-!!$        solnData(structIndex,i,j,k) = datablock
-!!$     else
-!!$     end if
-     solnData(structIndex,i,j,k) = datablock
-     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
-  end if
-  return
+!  integer ::  var, i, j, k, ii
+!  integer,dimension(MDIM) :: begOffset,dataLen
+!  integer :: imax, jmax, kmax
+!
+!  logical :: isget
+!  logical :: getIntPtr
+!
+!#ifdef DEBUG_GRID
+!  isget=.true.
+!  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
+!
+!  !verify beginCount is set to a valid value
+!  if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
+!     print *, "Grid_putPointData: beginCount set to improper value"
+!     print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
+!     call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
+!  end if
+!
+!
+!
+!  !verify that indicies aren't too big or too small for the blockDesc
+!  if(beginCount == EXTERIOR) then
+!    
+!     if (position(1) > imax) then
+!        call Driver_abortFlash("Grid_putPointData position(1) index larger than block")
+!     end if
+!
+!     if ((NDIM > 1) .and. (position(2) > jmax)) then
+!        call Driver_abortFlash("Grid_putPointData position(2) index larger than block")
+!     end if
+!    
+!     if ((NDIM > 2) .and. (position(3) > kmax)) then
+!        call Driver_abortFlash("Grid_putPointData position(3) index larger than block")
+!     end if
+!    
+!     if (position(1) < 1) then
+!        print*,'position is ',position(1)
+!        call Driver_abortFlash("Grid_putPointData position(1) index smaller than 1")
+!     end if
+!
+!     if ((NDIM > 1) .and. (position(2) < 1)) then
+!        call Driver_abortFlash("Grid_putPointData position(2) index smaller than 1")
+!     end if
+!    
+!     if ((NDIM > 2) .and. (position(3) < 1)) then
+!        call Driver_abortFlash("Grid_putPointData position(3) index smaller than 1")
+!     end if
+!        
+!  else !beginCount == INTERIOR
+!
+!     if ((position(1) + gr_iguard -1) > imax) then
+!        call Driver_abortFlash("Grid_putPointData position(1) index larger than block")
+!     end if
+!
+!     if ((NDIM > 1) .and. ((position(2) + gr_jguard -1) > jmax)) then
+!        call Driver_abortFlash("Grid_putPointData position(2) index larger than block")
+!     end if
+!    
+!     if ((NDIM > 2) .and. ((position(3) + gr_kguard -1) > kmax)) then
+!        call Driver_abortFlash("Grid_putPointData position(3) index larger than block")
+!     end if
+!    
+!     if (position(1) < 1) then
+!        call Driver_abortFlash("Grid_putPointData position(1) index smaller than 1")
+!     end if
+!
+!     if ((NDIM > 1) .and. (position(2) < 1)) then
+!        call Driver_abortFlash("Grid_putPointData position(2) index smaller than 1")
+!     end if
+!    
+!     if ((NDIM > 2) .and. (position(3) < 1)) then
+!        call Driver_abortFlash("Grid_putPointData position(3) index smaller than 1")
+!     end if
+!
+!  end if
+!  
+!#endif
+!
+!  dataLen=0
+!  call gr_getDataOffsets(blockDesc,gridDataStruct,position,dataLen,beginCount,begOffset,getIntPtr)
+!
+!
+!  k = 1
+!  if(NDIM > 2)k = position(KAXIS) + begOffset(KAXIS) 
+!  
+!  j = 1
+!  if(NDIM > 1)j = position(JAXIS) + begOffset(JAXIS)
+!  
+!  i = position(IAXIS) + begOffset(IAXIS)
+!  
+!  if(getIntPtr) then
+!     call gr_getInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
+!     solnData(structIndex,i,j,k) = datablock
+!     call gr_releaseInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
+!  else
+!     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
+!!!$     if(gridDataStruct==SCRATCH) then
+!!!$        solnData(structIndex,i,j,k) = datablock
+!!!$     else
+!!!$     end if
+!     solnData(structIndex,i,j,k) = datablock
+!     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
+!  end if
+!  return
 end subroutine Grid_putPointData

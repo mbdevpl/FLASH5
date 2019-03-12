@@ -48,8 +48,6 @@ Subroutine hy_addGravity&
   use Hydro_data,      ONLY : hy_useGravity,        &
                               hy_useGravHalfUpdate
 
-  use Grid_interface,  ONLY : Grid_getBlkPtr,       &
-                              Grid_releaseBlkPtr
   use Grid_tile,       ONLY : Grid_tile_t
 
   implicit none

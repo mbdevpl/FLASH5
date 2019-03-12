@@ -187,24 +187,6 @@ Module Grid_interface
      end subroutine Grid_finalize
   end interface
 
-  interface Grid_getBlkBC
-     subroutine Grid_getBlkBC(blockDesc, faces, onBoundary)
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t),target, intent(in) :: blockDesc
-       integer, dimension(2,MDIM),intent(out):: faces
-       integer, optional, dimension(2,MDIM), intent(out) :: onBoundary
-     end subroutine Grid_getBlkBC
-  end interface
-
-  interface Grid_getBlkBoundBox
-     subroutine Grid_getBlkBoundBox(blockDesc,boundBox)
-       use block_metadata, ONLY : block_metadata_t
-       implicit none
-       type(block_metadata_t), intent(in) :: blockDesc
-       real, dimension(2, MDIM), intent(out) :: boundBox
-     end subroutine Grid_getBlkBoundBox
-  end interface
-
   interface Grid_getBlkCenterCoords
      subroutine Grid_getBlkCenterCoords(blockDesc,blockCenter)
        use block_metadata, ONLY : block_metadata_t
@@ -246,31 +228,6 @@ Module Grid_interface
      end subroutine Grid_getBlkIndexLimits_STANDALONE
   end interface
 
-  interface Grid_getBlkPhysicalSize
-     subroutine Grid_getBlkPhysicalSize(block, blockSize)
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: block
-       real,dimension(MDIM),intent(out) :: blockSize
-     end subroutine Grid_getBlkPhysicalSize
-  end interface
-
-  interface Grid_getBlkPtr
-     subroutine Grid_getBlkPtr(block, dataPtr,gridDataStruct,localFlag)
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: block
-       real,dimension(:,:,:,:), pointer :: dataPtr
-       integer,optional, intent(in) :: gridDataStruct
-       logical,optional, intent(in) :: localFlag
-     end subroutine Grid_getBlkPtr
-  end interface
-
-  interface Grid_getBlkRefineLevel
-     subroutine Grid_getBlkRefineLevel(blockID, refineLevel)
-       integer,intent(in) :: blockID
-       integer,intent(out) :: refineLevel
-     end subroutine Grid_getBlkRefineLevel
-  end interface
- 
   interface Grid_getCellCoords
      subroutine Grid_getCellCoords_blk(axis, block, edge, guardcell, coordinates, size)
         use block_metadata, ONLY : block_metadata_t
@@ -318,28 +275,6 @@ Module Grid_interface
        integer, intent(in) :: lev
        real, dimension(MDIM), intent(out) :: del
      end subroutine Grid_getDeltas
-  end interface
-
-  interface
-     subroutine Grid_getFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
-       use block_metadata, ONLY : block_metadata_t
-       implicit none
-       type(block_metadata_t), intent(IN) :: blockDesc
-       real, pointer                      :: fluxPtrX(:,:,:,:)
-       real, pointer                      :: fluxPtrY(:,:,:,:)
-       real, pointer                      :: fluxPtrZ(:,:,:,:)
-     end subroutine Grid_getFluxPtr
-  end interface
-
-  interface
-     subroutine Grid_releaseFluxPtr(blockDesc, fluxPtrX, fluxPtrY, fluxPtrZ)
-       use block_metadata, ONLY : block_metadata_t
-       implicit none
-       type(block_metadata_t), intent(IN) :: blockDesc
-       real, pointer                      :: fluxPtrX(:,:,:,:)
-       real, pointer                      :: fluxPtrY(:,:,:,:)
-       real, pointer                      :: fluxPtrZ(:,:,:,:)
-     end subroutine Grid_releaseFluxPtr
   end interface
 
   interface
@@ -592,20 +527,6 @@ Module Grid_interface
        integer, intent(IN) :: dataSize
        real, dimension(datasize),intent(IN) :: datablock
      end subroutine Grid_putRowData
-  end interface
-
-  interface Grid_releaseBlkPtr
-     subroutine Grid_releaseBlkPtr(blockId, dataPtr, gridDataStruct)
-       integer, intent(in) :: blockId
-       real, pointer :: dataPtr(:,:,:,:)
-       integer,optional, intent(in) :: gridDataStruct
-     end subroutine Grid_releaseBlkPtr
-     subroutine Grid_releaseBlkPtr_Itor(block, dataPtr, gridDataStruct)
-       use block_metadata, ONLY : block_metadata_t
-       type(block_metadata_t), intent(in) :: block
-       real, pointer :: dataPtr(:,:,:,:)
-       integer,optional, intent(in) :: gridDataStruct
-     end subroutine Grid_releaseBlkPtr_Itor
   end interface
 
   interface Grid_restrictAllLevels
