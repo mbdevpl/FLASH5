@@ -683,4 +683,7 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
      call hy_initGP(hy_RinvGP, hy_WpGP, hy_WmGP, blkLimitsGC)
   endif
 
+  call RuntimeParameters_get("gr_useTiling", hy_enableTiling)
+
 End Subroutine Hydro_init
+

@@ -13,26 +13,26 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
                                   Grid_releaseTileIterator, &
                                   Grid_conserveFluxes, &
                                   Grid_putFluxData
-  use Grid_data,           ONLY : gr_enableTiling
   use Driver_interface,    ONLY : Driver_getSimTime
   use Logfile_interface,   ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
   use Hydro_data,          ONLY : hy_fluxCorrect,       &
                                   hy_fluxCorrectPerLevel, &
-                                  hy_useGravity,        &
-                                  hy_gcMaskSize,        &
-                                  hy_gcMask,hy_gcMaskSD,&
-                                  hy_eosModeGc,         &
-                                  hy_updateHydroFluxes, &
-                                  hy_cfl,               &
-                                  hy_cfl_original,      &
-                                  hy_dtmin,             &
-                                  hy_simTime,           &
-                                  hy_simGeneration,     &
-                                  hy_shockDetectOn,     &
-                                  hy_useHydro,          &
-                                  hy_gpotAlreadyUpToDate
+                                  hy_useGravity,          &
+                                  hy_gcMaskSize,          &
+                                  hy_gcMask,hy_gcMaskSD,  &
+                                  hy_eosModeGc,           &
+                                  hy_updateHydroFluxes,   &
+                                  hy_cfl,                 &
+                                  hy_cfl_original,        &
+                                  hy_dtmin,               &
+                                  hy_simTime,             &
+                                  hy_simGeneration,       &
+                                  hy_shockDetectOn,       &
+                                  hy_useHydro,            &
+                                  hy_gpotAlreadyUpToDate, &
+                                  hy_enableTiling
   use hy_interface,        ONLY : hy_gravityStep, &
                                   hy_computeFluxes, &
                                   hy_updateSolution
@@ -228,7 +228,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
      call Grid_releaseTileIterator(itor)
   else
      ! ***** THIRD VARIANT: FOR hy_fluxCorrectPerLevel==.TRUE. *****
-     useTiling = gr_enableTiling
+     useTiling = hy_enableTiling
      do level= maxLev,1,-1
 #ifdef DEBUG_DRIVER
         print*,' ***************   HYDRO LEVEL', level,'  **********************'
