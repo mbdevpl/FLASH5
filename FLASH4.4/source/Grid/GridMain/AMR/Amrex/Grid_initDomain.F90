@@ -69,6 +69,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   !      index translation
   allocate(unk     (0:amrex_max_level))
 #if NFACE_VARS > 0
+  call Driver_abortFlash("[Grid_initDomain] Face-centered variables not yet supported with AMReX Grid implementation")
   allocate(facevarx(0:amrex_max_level))
 #if NDIM >= 2
   allocate(facevary(0:amrex_max_level))
