@@ -56,7 +56,6 @@ subroutine hy_memGetBlkPtr_desc(tileDesc,dataPtr, gridDataStruct)
 #include "Flash.h"
 #include "FortranLangFeatures.fh"
 
-  use Grid_interface, ONLY : Grid_getBlkPtr
   use Grid_tile, ONLY : Grid_tile_t
   implicit none
 

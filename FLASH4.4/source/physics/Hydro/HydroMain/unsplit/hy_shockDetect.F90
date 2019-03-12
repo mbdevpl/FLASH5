@@ -1,9 +1,9 @@
 #include "constants.h"
 
 subroutine hy_shockDetect
-  use Grid_interface, ONLY : Grid_getDeltas, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getLeafIterator, Grid_releaseLeafIterator
+!  use Grid_interface, ONLY : Grid_getDeltas, &
+!                             Grid_getBlkPtr, Grid_releaseBlkPtr, &
+!                             Grid_getLeafIterator, Grid_releaseLeafIterator
   use hy_interface,   ONLY : hy_shockDetectBlk
   use Grid_iterator,  ONLY : Grid_iterator_t
   use Grid_tile,      ONLY : Grid_tile_t

@@ -39,7 +39,7 @@
 
 Subroutine hy_addViscousFluxes(tileDesc,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface,   ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas
+!  use Grid_interface,   ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas
   use Grid_tile,        ONLY : Grid_tile_t 
   implicit none
 

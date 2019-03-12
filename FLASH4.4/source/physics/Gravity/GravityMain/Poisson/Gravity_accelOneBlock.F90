@@ -106,7 +106,7 @@ subroutine Gravity_accelOneBlock ( tileDesc, ngcellcomp, gvec, potentialIndex)
   !           loop nest
   gpot(:,:,:) = solnData(potVar, :,:,:)
 
-  call Grid_releaseBlkPtr(tileDesc, solnData)
+  call tileDesc%releaseDataPtr(solnData, CENTER)
 
   ! now calculate gravity, depending on geometry
   select case (geom)

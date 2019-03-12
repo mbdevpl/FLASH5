@@ -69,7 +69,6 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                       gr_refine_filter, gr_refine_var, &
                                       gr_maxRefine, gr_enforceMaxRefinement, &
                                       gr_minRefine
-   use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
    use gr_interface,           ONLY : gr_estimateBlkError
    use gr_physicalMultifabs,   ONLY : unk
    use Grid_tile,              ONLY : Grid_tile_t 

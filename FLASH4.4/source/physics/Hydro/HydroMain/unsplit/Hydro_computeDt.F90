@@ -78,7 +78,6 @@ Subroutine Hydro_computeDt( tileDesc,       &
        hy_cfl, hy_cfl_original, hy_cflStencil, &
        hy_dref, hy_eref, hy_pref, hy_vref, hy_bref, &
        hy_geometry, hy_units, hy_useVaryingCFL
-  use Grid_interface, ONLY : Grid_getBlkBC
   use Driver_interface, ONLY : Driver_abortFlash
   use Grid_tile, ONLY : Grid_tile_t 
   implicit none

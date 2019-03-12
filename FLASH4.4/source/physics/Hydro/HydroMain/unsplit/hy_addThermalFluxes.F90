@@ -38,7 +38,7 @@
 Subroutine hy_addThermalFluxes(tileDesc,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
 
   use Hydro_data,       ONLY : hy_qref
-  use Grid_interface,   ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas
+!  use Grid_interface,   ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getDeltas
   use Grid_tile,        ONLY : Grid_tile_t
   use Driver_interface, ONLY : Driver_abortFlash
   implicit none

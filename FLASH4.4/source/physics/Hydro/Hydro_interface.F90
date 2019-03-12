@@ -120,21 +120,6 @@ Module Hydro_interface
      end subroutine Hydro_sendOutputData
   end interface
 
-  interface Hydro_recalibrateEints
-     subroutine Hydro_recalibrateEints(range,blockID)
-       implicit none
-       integer, dimension(2,MDIM), intent(in) :: range
-       integer,intent(in) :: blockID
-     end subroutine Hydro_recalibrateEints
-     subroutine Hydro_recalibrateEintsForCell(eint,eion,eele,erad,e1,e2,e3)
-       implicit none
-       real,intent(in)    :: eint
-       real,intent(INOUT) :: eion,eele
-       real,intent(INOUT),OPTIONAL :: erad
-       real,intent(INOUT),OPTIONAL :: e1,e2,e3
-     end subroutine Hydro_recalibrateEintsForCell
-  end interface
-
   interface
      logical function Hydro_gravPotIsAlreadyUpdated()
        implicit none

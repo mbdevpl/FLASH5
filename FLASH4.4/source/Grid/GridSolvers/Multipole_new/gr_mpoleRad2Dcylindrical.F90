@@ -22,14 +22,14 @@ subroutine gr_mpoleRad2Dcylindrical ()
   use Grid_data,         ONLY : gr_meshMe,   &
                                 gr_meshComm
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-                                Grid_releaseBlkPtr,     &
-                                Grid_getBlkBoundBox,    &
-                                Grid_getDeltas,         &
-                                Grid_getMinCellSizes,   &
-                                Grid_getLocalNumBlks,   &
-                                Grid_getLeafIterator,   &
-                                Grid_releaseLeafIterator
+!  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
+!                                Grid_releaseBlkPtr,     &
+!                                Grid_getBlkBoundBox,    &
+!                                Grid_getDeltas,         &
+!                                Grid_getMinCellSizes,   &
+!                                Grid_getLocalNumBlks,   &
+!                                Grid_getLeafIterator,   &
+!                                Grid_releaseLeafIterator
 
   use gr_mpoleInterface, ONLY : gr_mpoleSetInnerZoneGrid, &
                                 gr_mpoleSetOuterZoneGrid
