@@ -214,3 +214,6 @@ ddt:use_ddt=True:--defines=DDT:--with-unit=source/monitors/Debugger/DebuggerMain
 xnet:--with-unit=physics/sourceTerms/Burn/BurnMain/nuclearBurn/XNet:xnet=True
 xnet_alpha:+xnet:xnetData=Data_alpha
 xnet_160:+xnet:xnetData=Data_SN160
+
+#Shortcut to use Aprox13
+a13:--with-unit=physics/sourceTerms/Burn/BurnMain/nuclearBurn/Aprox13

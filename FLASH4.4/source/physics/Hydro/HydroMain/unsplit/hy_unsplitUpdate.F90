@@ -138,7 +138,6 @@
     real    :: IntEner,tempPres
 
 #if (NSPECIES+NMASS_SCALARS) > 0
-    call Driver_abortFlash("[hy_unsplitUpdate] Check if these sizes are adequate for tiling")
     real, dimension(hy_numXN,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: SpOld
     real, dimension(6,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),blGC(LOW,JAXIS):blGC(HIGH,JAXIS),blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) :: Uold
 #else
@@ -288,15 +287,41 @@
 #if (NSPECIES+NMASS_SCALARS) > 0
     ! Use do loop nest to only set the portion of the tile
     ! that we are working on.
-    call Driver_abortFlash("[hy_unsplitUpdate] Update this to work with tiles")
+!!    call Driver_abortFlash("[hy_unsplitUpdate] Update this to work with tiles")
     do ispu =  SPECIES_BEGIN, MASS_SCALARS_END !SPECIES_END
        isph= ispu-NPROP_VARS
-       SpOld(isph,:,:,:) = Uin(ispu,:,:,:)
+       SpOld(isph, blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(ispu,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
     enddo
-    Uold(1,  :,:,:) = Uin(DENS_VAR,:,:,:)
-    Uold(2,  :,:,:) = Uin(PRES_VAR,:,:,:)
-    Uold(3:5,:,:,:) = Uin(VELX_VAR:VELZ_VAR,:,:,:)
-    Uold(6,  :,:,:) = Uin(GAME_VAR,:,:,:)
+    Uold(1,  blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(DENS_VAR,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+    Uold(2,  blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(PRES_VAR,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))    
+    Uold(3:5,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(VELX_VAR:VELZ_VAR,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+    Uold(6,  blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(GAME_VAR,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+
 #endif
 
 #ifdef DEBUG_HYDRO_POSITIVITY

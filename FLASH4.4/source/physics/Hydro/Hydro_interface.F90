@@ -94,20 +94,18 @@ Module Hydro_interface
   end interface
   
   interface Hydro_shockStrength
-     subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
-          guardCells, &
+     subroutine Hydro_shockStrength(solnData, shock, lo,hi,loHalo,hiHalo,&
           primaryCoord,secondCoord,thirdCoord, &
           threshold, mode)
           implicit none
-       integer, intent(IN), dimension(2,MDIM) :: blkLimits, blkLimitsGC
-       integer, intent(IN) :: guardCells(MDIM)
+       integer, intent(IN), dimension(1:MDIM) :: lo,hi,loHalo,hiHalo
        real, pointer :: solnData(:,:,:,:) 
-       real,intent(inout),dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
-            blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
-            blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: shock
-       real,intent(IN),dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)) :: primaryCoord
-       real,intent(IN),dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)) :: secondCoord
-       real,intent(IN),dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: thirdCoord
+       real,intent(inout),dimension(loHalo(IAXIS):hiHalo(IAXIS),&
+            loHalo(JAXIS):hiHalo(JAXIS),&
+            loHalo(KAXIS):hiHalo(KAXIS)) :: shock
+       real,intent(IN),dimension(loHalo(IAXIS):hiHalo(IAXIS)) :: primaryCoord
+       real,intent(IN),dimension(loHalo(JAXIS):hiHalo(JAXIS)) :: secondCoord
+       real,intent(IN),dimension(loHalo(KAXIS):hiHalo(KAXIS)) :: thirdCoord
        real, intent(IN) :: threshold
        integer, intent(IN) :: mode
      end subroutine Hydro_shockStrength
