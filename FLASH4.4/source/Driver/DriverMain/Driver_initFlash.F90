@@ -212,10 +212,12 @@ subroutine Driver_initFlash()
   call Particles_initData(dr_restart,dr_particlesInitialized)
 
   if(.not. dr_restart) then
-     print*,'calling gravity potential'
-     call Gravity_potential()
-     print*,'done with that'
-     call Particles_initForces()
+     call Grid_getListOfBlocks(LEAF,blockList,blockCount)
+     call Gravity_potentialListOfBlocks(blockCount,blockList)
+!     print*,'calling gravity potential'
+!     call Gravity_potential()
+!     print*,'done with that'
+!     call Particles_initForces()
   end if
 
   ! If we want to free any arrays created during simulation
