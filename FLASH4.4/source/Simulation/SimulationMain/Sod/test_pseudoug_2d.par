@@ -87,8 +87,11 @@ refine_var_1      = "dens"
 
 # These parameters are used only for the uniform grid
 iProcs = 2	#number or procs in the i direction	
-jProcs = 1
+jProcs = 2
 kProcs = 1
+iGridSize = 256
+jGridSize = 256
+kGridSize = 1
 
 ## -------------------------------------------------------------##
 ##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
