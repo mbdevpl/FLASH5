@@ -117,6 +117,9 @@ subroutine Grid_initDomain(restart,particlesInitialized)
     call Driver_abortFlash("[Grid_initDomain] restarts not yet implemented")
   end if
 
+  !Initialize for Grid sovlers
+    call gr_solversInit()
+
   particlesInitialized = .FALSE.
 end subroutine Grid_initDomain
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import sys, re, getopt, os
 
 ################ Global variables
@@ -30,7 +31,7 @@ def getREORDdict(filename):
     """Handle one file"""
     reorddata = {"TWO":[], "THREE":[], "FOUR" : [],"FIVE":[],"FLAGS":{} }
     if not os.path.isfile(filename): return reorddata
-    for x in file(filename).readlines():
+    for x in open(filename).readlines():
         m = reordRE.match(x)
         if m:
             if m.group("num") == "2":
@@ -55,7 +56,7 @@ def makeregexp():
     global ArrayNames,regexp
 
     rlist = []
-    for suf,lst in ArrayNames.items():
+    for suf,lst in list(ArrayNames.items()):
         if lst:
            rlist.append(r"(?P<%s>%s)" % (suf,"|".join([r"(?:%s)"%x for x in lst])))
     if (rlist):
@@ -64,7 +65,7 @@ def makeregexp():
         regexp = re.compile(nameregexp)
     else:
         regexp = None
-        print >> sys.stderr, "Warning: setup_reorder.py was invoked without any arrays to reorder."
+        print("Warning: setup_reorder.py was invoked without any arrays to reorder.", file=sys.stderr)
 
 def replfunc(mobj):
     d = mobj.groupdict()
@@ -102,26 +103,26 @@ def Array(inlines):
 ############ house keeping code follows
 
 def usage():
-   print >> sys.stderr, "Usage: %s [options] " % sys.argv[0]
-   print >> sys.stderr
-   print >> sys.stderr, "Processes input freeform source code and reorder access to certain arrays"
-   print >> sys.stderr
-   print >> sys.stderr, "-i <filename>, --input=<filename>"
-   print >> sys.stderr, "           Which file has input source."
-   print >> sys.stderr, "           Use '-' for stdin"
-   print >> sys.stderr 
-   print >> sys.stderr, "-o <filename>, --output=<filename>"
-   print >> sys.stderr, "           Which file should have output."
-   print >> sys.stderr, "           Use '-' for stdout"
-   print >> sys.stderr, "           Use '.EXT' for same name as input except extension is EXT"
-   print >> sys.stderr 
-   print >> sys.stderr, "--five=<arrname>, --four=<arrname>"
-   print >> sys.stderr, "           Add specified name to list of array names to process"
-   print >> sys.stderr, "           five implies this is a 5d array, four means 4d array"
-   print >> sys.stderr, "           Usually 4d=space+varIndex, 5d=4d+BlockIndex"
-   print >> sys.stderr 
-   print >> sys.stderr, "--auto"
-   print >> sys.stderr, "           Find out the names from the !!REORDER instructions in the file"
+   print("Usage: %s [options] " % sys.argv[0], file=sys.stderr)
+   print(file=sys.stderr)
+   print("Processes input freeform source code and reorder access to certain arrays", file=sys.stderr)
+   print(file=sys.stderr)
+   print("-i <filename>, --input=<filename>", file=sys.stderr)
+   print("           Which file has input source.", file=sys.stderr)
+   print("           Use '-' for stdin", file=sys.stderr)
+   print(file=sys.stderr) 
+   print("-o <filename>, --output=<filename>", file=sys.stderr)
+   print("           Which file should have output.", file=sys.stderr)
+   print("           Use '-' for stdout", file=sys.stderr)
+   print("           Use '.EXT' for same name as input except extension is EXT", file=sys.stderr)
+   print(file=sys.stderr) 
+   print("--five=<arrname>, --four=<arrname>", file=sys.stderr)
+   print("           Add specified name to list of array names to process", file=sys.stderr)
+   print("           five implies this is a 5d array, four means 4d array", file=sys.stderr)
+   print("           Usually 4d=space+varIndex, 5d=4d+BlockIndex", file=sys.stderr)
+   print(file=sys.stderr) 
+   print("--auto", file=sys.stderr)
+   print("           Find out the names from the !!REORDER instructions in the file", file=sys.stderr)
    sys.exit(1)
 
 def main():
@@ -142,13 +143,13 @@ def main():
         elif k in ["-h","--help"]:
            usage()
         else: 
-           print >> sys.stderr, "Unrecognized option pair (%s,%s)" % (k,v)
+           print("Unrecognized option pair (%s,%s)" % (k,v), file=sys.stderr)
            usage()
 
     # now for the magic stuff
     if input == "-":
-       if auto: print >>sys.stderr, "auto does not work with stdin. Ignoring"
-       print >>sys.stderr, "Awaiting input from stdin"
+       if auto: print("auto does not work with stdin. Ignoring", file=sys.stderr)
+       print("Awaiting input from stdin", file=sys.stderr)
        ifd = sys.stdin
     else: ifd = open(input,"r")
     if output == "-":
@@ -163,7 +164,7 @@ def main():
     if auto:
        reordnames = getREORDdict(input)
        if "ERROR" in reordnames["FLAGS"]:
-          print >>sys.stderr, "File has an ERROR flag in the !!REORDER line. Quitting"
+          print("File has an ERROR flag in the !!REORDER line. Quitting", file=sys.stderr)
           sys.exit(1)
        ArrayNames["TWO"].extend(reordnames["TWO"])
        ArrayNames["THREE"].extend(reordnames["THREE"])
@@ -217,7 +218,7 @@ def main():
     dimensionReg = re.compile("dimension[(]",re.I)
     start = 0
     m = dimensionReg.search(hugeline,start)
-    ArrayNamesKeys = ArrayNames.keys()
+    ArrayNamesKeys = list(ArrayNames.keys())
     while m:  
       s = m.start()
       e = m.end()
@@ -300,7 +301,7 @@ def main():
               count += 1                        
             colonPtr += 1 #end while count == 0
           if not foundMatch:
-              print "ERROR: A variable specified in a dimension declaration that is to be reordered, is not declared in the REORDER declaration of the file %s, and is not specified on the command line!  Aborting!" % input
+              print("ERROR: A variable specified in a dimension declaration that is to be reordered, is not declared in the REORDER declaration of the file %s, and is not specified on the command line!  Aborting!" % input)
               sys.exit(-1)
 
         if newlineFound and (not ampersandFound): 

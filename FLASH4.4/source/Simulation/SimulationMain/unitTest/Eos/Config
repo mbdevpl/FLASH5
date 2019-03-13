@@ -11,7 +11,7 @@ REQUESTS IO
 
 USESETUPVARS nDim
 
-IF nDim <> 3 and nDim <> 2
+IF nDim != 3 and nDim != 2
   SETUPERROR All EOS unit tests must be run in 3d (or maybe 2d).  Use ./setup unitTest/Eos -auto -3d blah blah blah
 ENDIF
 

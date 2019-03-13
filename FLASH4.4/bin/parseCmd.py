@@ -61,20 +61,24 @@ USAGE="""usage:  setup <problem-name> [options] [VAR=VALUE]...
 
 def usage():
     """Print usage info and exit"""
-    print USAGE
-    ans = raw_input("\nDo you want to see a list of shortcuts I know about [Y/n]?")
+    print(USAGE)
+    try:
+        from builtins import input
+        ans = input("\nDo you want to see a list of shortcuts I know about [Y/n]?")
+    except ImportError:
+        ans = raw_input("\nDo you want to see a list of shortcuts I know about [Y/n]?")
     ans = ans.replace("\n","")
     if ans.lower() in ["y","yes",""]:
-       sitems = GVars.shortcuts.items()
+       sitems = list(GVars.shortcuts.items())
        sitems.sort()
        c = 0
        for (k,v) in sitems:
            c = max(c,len(k))
        tpl = "   %%-%ds %%s" % (c+2) # template for printing the dictionary
-       print "\nTo use a shortcut add '+shortcut' to your setup line."
-       print "For example ./setup Sod -auto +ug\n"
+       print("\nTo use a shortcut add '+shortcut' to your setup line.")
+       print("For example ./setup Sod -auto +ug\n")
        for k,v in sitems:
-           print tpl % (k," ".join(v))
+           print(tpl % (k," ".join(v)))
     raise SetupError("")
 
 def cleanupCommandLine(args):
@@ -88,7 +92,7 @@ def cleanupCommandLine(args):
 
 # processes an existing file and returns a dictionary of shortcuts
 def getShortcutDict(filename):
-   sfd = file(filename)
+   sfd = open(filename)
    shortcuts = {}
    GVars.out.put("Processing Shortcut file: %s" % filename,globals.IMPINFO)
    for line in sfd:
@@ -107,7 +111,7 @@ def getShortcutDict(filename):
 # shortcuts is a dictionary mapping shortcut to list of arguments
 # shortcut X is invoked as "+x" option to setup
 def getShortcuts():
-   if not os.environ.has_key("SETUP_SHORTCUTS"):
+   if "SETUP_SHORTCUTS" not in os.environ:
       GVars.out.put("No Shortcut file specified using default",globals.DEBUG)
       sfiles = ["setup_shortcuts.txt"]
    else:
@@ -130,6 +134,7 @@ def expandShortcuts(args,RecLimit=255):
    shortcuts = GVars.shortcuts
    while args:
       scut = args[0]
+      oargs = args[0:]
       del args[0]
       if scut[0] != globals.SHORTCUT_CHAR: 
          ans.append(scut) 
@@ -137,16 +142,16 @@ def expandShortcuts(args,RecLimit=255):
          # found a shortcut
          cand = []
          # find a shortcut starting with given letters (case insensitive)
-         for x in shortcuts.keys():
+         for x in list(shortcuts.keys()):
              y = x.lower()
              if y.startswith(scut[1:].lower()): cand.append(x)
          if len(cand) == 1:
             scut = cand[0] # only one candidate
-         elif shortcuts.has_key(scut[1:].lower()): # specified key as such exists
+         elif scut[1:].lower() in shortcuts: # specified key as such exists
             scut = scut[1:].lower() # pick given key
          # now process the shortcut
-         if not shortcuts.has_key(scut): # invalid shortcut
-            GVars.out.put("\n***WARNING*** Ignoring unknown shortcut %s while expanding %s.\n" % (scut," ".join(args)),globals.IMPINFO)
+         if scut not in shortcuts: # invalid shortcut
+            GVars.out.put("\n***WARNING*** Ignoring unknown shortcut %s while expanding %s.\n" % (scut," ".join(oargs)),globals.IMPINFO)
          elif count > 0:
             count = count - 1
             args[0:0] = shortcuts[scut] # insert expansion of shortcut in front of args
@@ -199,7 +204,7 @@ def parseCommandLine():
 
     try:
        (fullcmdline,optvallist,rest) = custom_getopt(longopts)
-    except getopt.GetoptError,e:
+    except getopt.GetoptError as e:
        GVars.out.put(str(e),globals.ERROR)
        usage() # print usage info
 
@@ -297,7 +302,7 @@ def parseCommandLine():
         elif arg == "--without-unit": # remove all units added which come under specified unit
              # also add to list of units to be ignored when handling REQUESTS keyword
              if val.endswith(os.sep): val = val[:-1] 
-             rmlist = [x for x in withUnits.keys() if x == val or x.startswith(val+os.sep)]
+             rmlist = [x for x in list(withUnits.keys()) if x == val or x.startswith(val+os.sep)]
              for x in rmlist:
                  del withUnits[x]
              GVars.withoutUnits[val] = 1
@@ -307,31 +312,31 @@ def parseCommandLine():
              if not val: continue # no name given --> ignore 
              parts = val.split(",")
              libname = parts[0]
-             args = string.join(parts[1:]," ") # replace commas with space
+             args = " ".join(parts[1:]) # replace commas with space
              if len(args) >= 2 and args[0] == args[-1] and args[0] in ['"',"'"]: # argument has been quoted
                 args = args[1:-1]
              GVars.withLibraries[libname.lower()] = args
         elif arg == "--without-library":
              val = val.lower()
-             if GVars.withLibraries.has_key(val): del GVars.withLibraries[val]
+             if val in GVars.withLibraries: del GVars.withLibraries[val]
              GVars.withoutLibraries[val] = 1
         elif arg == '--verbose': # set verbosity level
              if not val: continue # no argument dont change level
-             if vrblevels.has_key(val.upper()): 
+             if val.upper() in vrblevels: 
                 GVars.verbose = vrblevels[val.upper()]
              else:
                 GVars.out.put("Unrecognized verbosity level [%s]" % val,globals.ERROR)
                 usage()
         elif arg == '--gridinterpolation':  # set grid interpolation
              if not val: continue  # no argument; don't change interpolation
-             if allGridInterpolations.has_key(val.upper()):
+             if val.upper() in allGridInterpolations:
                  GVars.gridInterpolation = allGridInterpolations[val.upper()]
              else:
                  GVars.out.put("Unrecognized grid interpolation [%s]" % val, globals.ERROR)
                  usage()                 
         elif arg == '--geometry': # set geometry
              if not val: continue # no argument; don't change geom
-             if allGeometries.has_key(val.upper()):
+             if val.upper() in allGeometries:
                  GVars.gridGeometry = allGeometries[val.upper()]
                  if val.upper() != "CARTESIAN":
                      # All geometries other than cartesian (i.e. cylindrical,
@@ -396,7 +401,7 @@ def parseCommandLine():
             GVars.out.put('Invalid Option: %s' % a,globals.ERROR)
             usage()
 
-    GVars.withUnits = withUnits.keys() # takes care of duplicate --with-unit=X arguments
+    GVars.withUnits = list(withUnits.keys()) # takes care of duplicate --with-unit=X arguments
 
     GVars.out.setDebugLevel(GVars.verbose) # inform GVars.out about the verbosity level
 
@@ -451,7 +456,7 @@ def finalizeOpts():
 ##    if GVars.setupVars.get("ParameshLibraryMode"):
 ##        defines["LIBRARY"] = None
 
-    ditems = defines.items()
+    ditems = list(defines.items())
     ditems.sort()
     for (k,v) in ditems:
       if v: 

@@ -79,7 +79,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 
   implicit none
 
-       type(block_metadata_t) :: blockDesc
+       type(block_metadata_t),intent(in) :: blockDesc
   integer, intent(IN) :: sweepDir,numCells
   integer, dimension(2),INTENT(in) ::pos
   real, dimension(numCells),INTENT(inout) :: grav

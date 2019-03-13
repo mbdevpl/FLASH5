@@ -25,8 +25,6 @@ subroutine Driver_initMaterialProperties()
   use Viscosity_interface, ONLY : Viscosity_init
   use NSE_interface, ONLY : NSE_init
 
-  use PlasmaState_interface, ONLY : PlasmaState_init
-
   implicit none
 
   call Conductivity_init()
@@ -34,7 +32,5 @@ subroutine Driver_initMaterialProperties()
   call Viscosity_init()
   call MagneticResistivity_init()
   call NSE_init()
-
-  call PlasmaState_init()
 
 end subroutine Driver_initMaterialProperties

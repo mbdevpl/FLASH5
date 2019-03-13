@@ -41,6 +41,8 @@ subroutine sim_interpolate1dWd( volume, r_inner, r_outer, dens, temp, x )
   dens = 0.0
   temp = 0.0
   x(:) = 0.0
+  imin = 1
+  imax = sim_wd_npnts
 
   ! if inner edge is above WD radius, use fluff
   if ( r_inner > sim_wd_radius ) then
@@ -48,34 +50,7 @@ subroutine sim_interpolate1dWd( volume, r_inner, r_outer, dens, temp, x )
      temp = sim_wd_temp_tab(sim_wd_npnts+1)
      x(:) = sim_wd_spec_tab(sim_wd_npnts+1,:)
   else
-
-     ! Determine the indices in the WD profile corresponding to r_inner and r_outer
-     imin = locate( r_inner, sim_wd_npnts, sim_wd_rad_tab(1:sim_wd_npnts) )
-     imax = locate( r_outer, sim_wd_npnts, sim_wd_rad_tab(1:sim_wd_npnts) )
-
-     ! If grid resolution is coarser than WD profile, construct an average
-     ! If grid resolution is finer than WD profile, do simple interpolation
-     if ( imax > imin ) then
-        ! Average cells by mass
-        vol = 0.0
-        mass = 0.0
-        masstemp = 0.0
-        massx(:) = 0.0
-        do i = imin, imax
-           r1 = max( sim_wd_rad_tab(i-1), r_inner )
-           r2 = min( sim_wd_rad_tab(i),   r_outer )
-           dr = r2 - r1
-           dvol = dr * ( 3.0*r1*r2 + dr*dr ) * 4.0*PI/3.0
-           dmass = dvol * sim_wd_dens_tab(i)
-           vol = vol + dvol
-           mass = mass + dmass
-           masstemp = masstemp + dmass*sim_wd_temp_tab(i)
-           massx(:) = massx(:) + dmass*sim_wd_spec_tab(i,:)
-        end do
-        dens = mass / vol 
-        temp = masstemp / mass
-        x(:) = massx(:) / mass
-     else if ( volume > sim_wd_volume ) then
+     if ( volume > sim_wd_volume ) then
         ! Do not interpolate if in fluff, just set it
         dens = sim_wd_dens_tab(sim_wd_npnts+1)
         temp = sim_wd_temp_tab(sim_wd_npnts+1)
@@ -83,11 +58,9 @@ subroutine sim_interpolate1dWd( volume, r_inner, r_outer, dens, temp, x )
      else
          ! Interpolate density in volume
         call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts), volume, dens)
-        call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts)*&
-				sim_wd_temp_tab(1:sim_wd_npnts), volume, temp)
+        call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts)*sim_wd_temp_tab(1:sim_wd_npnts), volume, temp)
         do i = 1, sim_wd_nspec
-           call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts)*&
-				sim_wd_spec_tab(1:sim_wd_npnts,i), volume, x(i))
+           call interp1d_linear(sim_wd_vol_tab(1:sim_wd_npnts), sim_wd_dens_tab(1:sim_wd_npnts)*sim_wd_spec_tab(1:sim_wd_npnts,i), volume, x(i))
         end do
         temp = temp / dens
         x(:) = x(:) / dens

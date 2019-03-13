@@ -2,7 +2,7 @@
 # Bunch of small functions doing useful stuff
 
 __all__ = [ "updateAndMergeVariablePropertyTuples", "getRelPath", "dirGlob", "stripComments", "determineMachine", 
-            "is_upper",  "strictlyCaseSensitiveFilenames",
+            "is_upper",  "strictlyCaseSensitiveFilenames", "cmp"
           ] 
 
 ##############################################
@@ -17,10 +17,10 @@ def is_upper(letter):
     return letter == letter.upper()
 
 def updateAndMergeVariablePropertyTuples(dictout,dictin,infotext):
-    for (k,v) in dictin.items():
-        if not dictout.has_key(k):
+    for (k,v) in list(dictin.items()):
+        if k not in dictout:
             dictout[k] = v
-        elif type(v)==type([]) or type(v)==type(()):
+        elif isinstance(v,(list,tuple)):
             def checkIfBothSignificantAndDifferent(l):
                 if not l[1] or l[1]=='NONEXISTENT' or l[1]=='GENERIC':
                     return False
@@ -28,11 +28,11 @@ def updateAndMergeVariablePropertyTuples(dictout,dictin,infotext):
                     return False
                 return (l[0] != l[1])
 
-            if not (filter(lambda x:x=='NONEXISTENT' or x=='GENERIC', v)):
+            if not ([x for x in v if x=='NONEXISTENT' or x=='GENERIC']):
 ##                print "Merging", dictout[k], "<=", v 
-                zippedItem = zip(dictout[k], v)
+                zippedItem = list(zip(dictout[k], v))
                 try:
-                    firstProblem = map(checkIfBothSignificantAndDifferent, zippedItem).index(True)
+                    firstProblem = list(map(checkIfBothSignificantAndDifferent, zippedItem)).index(True)
                 except ValueError:
                     firstProblem = -1
                 if (firstProblem >= 0): # Put some effort into generating meaningful messages.
@@ -69,9 +69,9 @@ def updateAndMergeVariablePropertyTuples(dictout,dictin,infotext):
                     return l[1]
                     
 ##                print "Merging", dictout[k], "<-", v 
-                zippedItem = zip(dictout[k], v)
+                zippedItem = list(zip(dictout[k], v))
                 try:
-                    firstProblem = map(checkIfBothSignificantAndDifferent, zippedItem).index(True)
+                    firstProblem = list(map(checkIfBothSignificantAndDifferent, zippedItem)).index(True)
                 except ValueError:
                     firstProblem = -1
                 if (firstProblem >= 0): # Put some effort into generating meaningful messages.
@@ -99,7 +99,7 @@ def updateAndMergeVariablePropertyTuples(dictout,dictin,infotext):
                             attr = "EOSMAP"
                     raise SetupError('Conflicting specifications for %s %s %s: "%s" and "%s".' %
                                      (infotext,k,attr, zippedItem[firstProblem][0],zippedItem[firstProblem][1]))
-                mergedItem = map(secondIfSignificant, zippedItem)
+                mergedItem = list(map(secondIfSignificant, zippedItem))
 ##                print "Mergeditem is", mergedItem 
                 dictout[k] = mergedItem
         else:
@@ -131,7 +131,7 @@ def getRelPath(filename,basedir):
 def dirGlob(pathname):
     # maps a -> [aA] but "/" -> "/", "1" -> "1" 
     mapfn = lambda x: (x.upper() != x.lower() and "[%s%s]" % (x.lower(),x.upper())) or x
-    globstr = string.join(map(mapfn,pathname),"") # concatenate
+    globstr = "".join(list(map(mapfn,pathname))) # concatenate
     # find files which match pathname (except for case)
     files = glob.glob(globstr)
     # return only those of which are directories
@@ -141,22 +141,22 @@ def dirGlob(pathname):
 def stripComments(line, commentChar='#',quoteChar='"'):
     cut = 0
     while cut < len(line):
-       pos = string.find(line[cut:],commentChar)
+       pos = str.find(line[cut:],commentChar)
        # no real comment in line
        if pos < 0: 
           return line  
        # do we have even number quotes before it? If so this is real comment
-       if string.count(line[:cut+pos],quoteChar) % 2 == 0:
+       if str.count(line[:cut+pos],quoteChar) % 2 == 0:
           return line[:cut+pos]
        cut = cut + pos+1
     return line
 
 def getOSType(prototypesDir):
-    ostype = string.lower(sys.platform)
+    ostype = str.lower(sys.platform)
     if '-' in ostype:
-        ostype = ostype[:string.find(ostype, '-')]
+        ostype = ostype[:str.find(ostype, '-')]
     for proto in os.listdir(prototypesDir):
-        if string.count(ostype, string.lower(proto)):
+        if str.count(ostype, str.lower(proto)):
             return proto
     return ostype
 
@@ -169,12 +169,12 @@ def getHostName(sitesDir):
     
     tempHostName = socket.gethostname()
 
-    try:	
-    	temp = socket.gethostbyaddr(tempHostName)
+    try:
+        temp = socket.gethostbyaddr(tempHostName)
     except:
-	temp = (socket.getfqdn(),[])
+        temp = (socket.getfqdn(),[])
         
-	
+
     fallback = temp[0]
     namesToTry = [temp[0]]
     namesToTry.append(socket.gethostname())
@@ -187,11 +187,11 @@ def getHostName(sitesDir):
        GVars.out.put('checking sites Aliases file',globals.IMPINFO)
        for line in aliasFile.readlines():
            line = stripComments(line, '#','"')
-           line = string.strip(line)
+           line = str.strip(line)
            if line:
-              parts = string.split(line)
-              if len(parts) <> 2:
-                 GVars.out.put("Ignoring bad Aliases file line '%s'" % string.strip(line),globals.WARN)
+              parts = str.split(line)
+              if len(parts) != 2:
+                 GVars.out.put("Ignoring bad Aliases file line '%s'" % str.strip(line),globals.WARN)
               else: aliasLines.append(parts)
        aliasFile.close()
     except IOError:
@@ -216,7 +216,7 @@ def getHostNameToUse(sitesDir,hostname,aliasLines):
             
     ans = None
     for site in os.listdir(sitesDir):
-        if string.count(hostname, site):
+        if str.count(hostname, site):
             ans = site
     return ans
 
@@ -304,3 +304,5 @@ def strictlyCaseSensitiveFilenames():
     GVars.out.pop()
     return ans
 
+def cmp(a, b):
+    return (a > b) - (a < b) 

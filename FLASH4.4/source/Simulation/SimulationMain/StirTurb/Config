@@ -43,7 +43,7 @@ PARAMETER mach           REAL    0.3
 SCRATCHCENTERVAR mvrt
 
 USESETUPVARS nDim
-IF nDim <> 3
+IF nDim != 3
   SETUPERROR At present Stir turb works correctly only in 3D.  Use ./setup StirTurb -3d blah blah
 ENDIF
 # Don't use the passive scalars causes it's trashing things

@@ -267,7 +267,7 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
   real, INTENT(inout), dimension(vecLen*EOS_NUM) :: eosData
   real, optional,INTENT(in), dimension(vecLen*NSPECIES) :: massFrac !UNUSED
   ! must correspond to dimensions of Eos_wrapped
-  logical,optional, dimension(EOS_VARS+1:EOS_NUM),INTENT(in)::mask
+  logical,optional,target, dimension(EOS_VARS+1:EOS_NUM),INTENT(in)::mask
 
   ! This is the variable that is used internally -- set to false unless mask comes in.
   logical, dimension(EOS_VARS+1:EOS_NUM) :: maskInternal

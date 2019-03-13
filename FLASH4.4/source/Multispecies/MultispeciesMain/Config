@@ -30,12 +30,12 @@ def genLines(setupvars):
             yield 'PARAMETER  ms_' + spec + 'ZMin       REAL -998.'
             yield 'PARAMETER  op_' + spec + 'LowTemp    REAL 0.0'
             yield 'PARAMETER eos_' + spec + 'EosType    STRING "-none-" ["-none-","eos_gam","eos_tab"]'
-	    yield 'PARAMETER eos_' + spec + 'SubType    STRING "-none-" ["-none-","ionmix","ionmix4","ionmix6","propaceos","opacplot"]'
+            yield 'PARAMETER eos_' + spec + 'SubType    STRING "-none-" ["-none-","ionmix","ionmix4","ionmix6","propaceos","opacplot"]'
             yield 'PARAMETER eos_' + spec + 'TableFile  STRING "-none-"'
             yield 'PARAMETER eos_' + spec + 'GroupName  STRING "-none-"'
 
             yield 'PARAMETER  ms_' + spec + 'NumElems   INTEGER 0 [... ' + str(maxelems) + ']'
-            for i in xrange(maxelems):
+            for i in range(maxelems):
                 yield 'PARAMETER  ms_' + spec + 'ZElems_'    + str(i+1) + ' INTEGER -999'
                 yield 'PARAMETER  ms_' + spec + 'AElems_'    + str(i+1) + ' REAL    -999.'
                 yield 'PARAMETER  ms_' + spec + 'Fractions_' + str(i+1) + ' REAL    -999.'

@@ -21,7 +21,7 @@ ELSEIF IO=="pnetcdf"
 ELSEIF IO=="MPIHybrid"
    DEFAULT MPIHybrid
 ELSEIF IO=="hdf5" 
-ELSEIF IO <> ""
+ELSEIF IO != ""
    SETUPERROR Setup Variable 'IO' must be something I know about
 ENDIF
 

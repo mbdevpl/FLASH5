@@ -164,7 +164,8 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
   return
 end subroutine Gravity_accelOneRow_blkid
 
-subroutine Gravity_accelOneRow (pos, sweepDir, block, numCells, grav, &
+
+subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
                                 potentialIndex, extraAccelVars)
 
 !========================================================================
@@ -179,9 +180,10 @@ subroutine Gravity_accelOneRow (pos, sweepDir, block, numCells, grav, &
 #include "constants.h"
 
   integer, intent(IN) :: sweepDir,numCells
-  type(block_metadata_t),intent(IN) :: block
+  type(block_metadata_t),intent(IN) :: blockDesc
   integer, dimension(2),INTENT(in) ::pos
   real, dimension(numCells),INTENT(inout) :: grav
+  real,    POINTER,   OPTIONAL      :: Uin(:,:,:,:)
   integer,intent(IN),optional :: potentialIndex
   integer,intent(IN),OPTIONAL :: extraAccelVars(MDIM)
 
@@ -208,7 +210,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, block, numCells, grav, &
   if (.NOT.useGravity) return
 
 #ifndef FIXEDBLOCKSIZE
-  blkLimitsGC=block%limitsGC
+  blkLimitsGC=blockDesc%limitsGC
   sizeX=blkLimitsGC(HIGH,IAXIS)
   sizeY=blkLimitsGC(HIGH,JAXIS)
   sizeZ=blkLimitsGC(HIGH,KAXIS)
@@ -237,19 +239,19 @@ subroutine Gravity_accelOneRow (pos, sweepDir, block, numCells, grav, &
   xRight = 0.
 
   if (NDIM == 3) then
-     call Grid_getCellCoords(KAXIS, block, CENTER, gcell,zCenter, sizeZ)
-     call Grid_getCellCoords(KAXIS, block, LEFT_EDGE, gcell, zLeft, sizeZ)
-     call Grid_getCellCoords(KAXIS, block, RIGHT_EDGE, gcell,zRight, sizeZ)
+     call Grid_getCellCoords(KAXIS, blockDesc, CENTER, gcell,zCenter, sizeZ)
+     call Grid_getCellCoords(KAXIS, blockDesc, LEFT_EDGE, gcell, zLeft, sizeZ)
+     call Grid_getCellCoords(KAXIS, blockDesc, RIGHT_EDGE, gcell,zRight, sizeZ)
   end if
   if (NDIM > 1) then
-     call Grid_getCellCoords(JAXIS, block, CENTER, gcell,yCenter, sizeY)
-     call Grid_getCellCoords(JAXIS, block, LEFT_EDGE, gcell, yLeft, sizeY)
-     call Grid_getCellCoords(JAXIS, block, RIGHT_EDGE, gcell,yRight, sizeY)
+     call Grid_getCellCoords(JAXIS, blockDesc, CENTER, gcell,yCenter, sizeY)
+     call Grid_getCellCoords(JAXIS, blockDesc, LEFT_EDGE, gcell, yLeft, sizeY)
+     call Grid_getCellCoords(JAXIS, blockDesc, RIGHT_EDGE, gcell,yRight, sizeY)
   end if
 
-  call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCenter, sizeX)
-  call Grid_getCellCoords(IAXIS, block, LEFT_EDGE, gcell, xLeft, sizeX)
-  call Grid_getCellCoords(IAXIS, block, RIGHT_EDGE, gcell, xRight, sizeX)
+  call Grid_getCellCoords(IAXIS, blockDesc, CENTER, gcell, xCenter, sizeX)
+  call Grid_getCellCoords(IAXIS, blockDesc, LEFT_EDGE, gcell, xLeft, sizeX)
+  call Grid_getCellCoords(IAXIS, blockDesc, RIGHT_EDGE, gcell, xRight, sizeX)
 
   j = pos(1); k=pos(2)
   grav(1:numCells) = 0.

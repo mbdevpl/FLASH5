@@ -27,7 +27,7 @@ from utils import * # for GetRelPath
 import types, os, string, shutil
 try:
   import zlib
-except ImportError, e:
+except ImportError as e:
   # print ("Tried importing zlib, %s, continuing anyway..." % e)
   #  GVars.out.put doesn't seem to work here - KW
   pass
@@ -53,7 +53,7 @@ class LinkFileList:
     # in this file or in any file that instantiates this class.
     #  - nttaylor
     for x in groups:
-        if type(x) == types.ListType:
+        if isinstance(x,list):
            self.groups.append(x)
            self.exts.extend(x)
            for y in x: self.groupdict[y] = x
@@ -86,14 +86,14 @@ class LinkFileList:
     # make dictionary mapping "LINKIF" function names
     # to lists of all units on which that function depends.
     for (fname, uname) in udpairs:
-      if allLinkifFunctions.has_key(fname):
+      if fname in allLinkifFunctions:
         allLinkifFunctions[fname].append(uname)
       else:
         allLinkifFunctions[fname] = [uname]
 
     # If each and every unit on which a function depends is
     # included, add that function to 'functionOverrideList'
-    for fname in allLinkifFunctions.keys():
+    for fname in list(allLinkifFunctions.keys()):
       for uname in allLinkifFunctions[fname]:
         if not self.isUnitPresent(uname, unitlist):
           # One of the units on which this function depends is not
@@ -110,7 +110,7 @@ class LinkFileList:
         # Pull out the parts delimited by "."
         # throw out all but the first 2, and join them back up
         # file = "a/b/c/d.e.f.g" -> outfile = "d.e"
-        outfile = string.join( string.split(os.path.basename(file),".")[:2],".")
+        outfile = ".".join( os.path.basename(file).split(".")[:2])
         self.addLink(os.path.join(GVars.sourceDir, file), outfile)
 
 
@@ -137,12 +137,12 @@ class LinkFileList:
      # now fdict is a dictionary mapping filenames to units they depend on
      # If a file depends on MULTIPLE units, it will be included only if ALL
      # the units it depends on are in the units list
-     for fname in deldict.keys():
+     for fname in list(deldict.keys()):
         # find num units in fdict[fname] not in unitlist
         ans = [x for x in fdict[fname] if not self.isUnitPresent(x,unitlist)]
         if not ans: del deldict[fname]
      # Return the absolute path of file names left in deldict
-     self.DontLink = [os.path.join(GVars.sourceDir,x) for x in deldict.keys()]
+     self.DontLink = [os.path.join(GVars.sourceDir,x) for x in list(deldict.keys())]
      GVars.out.put("%d Files which will not be linked:"%len(self.DontLink),globals.DEBUG)
      GVars.out.push()
      for m in self.DontLink: GVars.out.put(m,globals.DEBUG)
@@ -188,7 +188,7 @@ class LinkFileList:
         # Pull out the parts delimited by "."
         # throw out all but the first 2, and join them back up
         # file = "a/b/c/d.e.f.g" -> outfile = "d.e"
-        outfile = string.join( string.split(os.path.basename(file),".")[:2],".")
+        outfile = ".".join( os.path.basename(file).split(".")[:2])
         self.addLink(file, outfile)
 
 
@@ -201,11 +201,11 @@ class LinkFileList:
     pwd = os.getcwd()
     # run through the links and do the appropriate thing
     if GVars.portable:
-       for (link,real) in self.links.items():
+       for (link,real) in list(self.links.items()):
           if os.path.isfile(link): os.remove(link)
           shutil.copy2(real,link)
     else:
-       for (link,real) in self.links.items():
+       for (link,real) in list(self.links.items()):
           if os.path.isfile(link): os.remove(link)
           else:
 #            print("Not a file: %s\n" % link)
@@ -269,7 +269,7 @@ class LinkFileList:
   def checkLinks(self):
     # check to see if we are trying to link in a ABC.F90 as well as an ABC.C, if so 
     # inform user of potential problem and quit
-    keys = self.links.keys()
+    keys = list(self.links.keys())
     for file in keys:
         base,ext = os.path.splitext(file)
         be = base+ext
@@ -286,7 +286,7 @@ class LinkFileList:
   # let the files appear different.
   def samefile(self,filea,fileb):
       try:
-        fa = open(filea)
+        fa = open(filea,"rb")
         cksuma = zlib.adler32(fa.read())
         fa.close()
       except IOError:
@@ -299,7 +299,7 @@ class LinkFileList:
       if not cksuma: return None
 
       try:
-        fb = open(fileb)
+        fb = open(fileb,"rb")
         cksumb = zlib.adler32(fb.read())
         fb.close()
       except IOError:

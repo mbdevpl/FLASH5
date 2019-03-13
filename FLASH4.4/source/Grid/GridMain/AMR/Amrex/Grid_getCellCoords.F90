@@ -149,7 +149,7 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
     else if (edge == RIGHT_EDGE) then
       shift = 1.0
     else if (edge == FACES) then
-      call Driver_abortFlash("[Grid_getCellCoords] FACES not handled yet")
+      shift = 0.0
     else
       call Driver_abortFlash('[Grid_getCellCoods] invalid edge')
     end if

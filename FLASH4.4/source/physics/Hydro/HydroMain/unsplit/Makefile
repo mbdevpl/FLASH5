@@ -1,5 +1,4 @@
 Hydro += Hydro_data.o\
-	Hydro_computeVars.o\
 	hy_addViscousFluxes.o\
 	hy_updateSpeciesMassScalar.o\
 	hy_prepareNewGravityAccel.o\

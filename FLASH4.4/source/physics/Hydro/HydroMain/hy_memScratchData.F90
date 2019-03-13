@@ -333,17 +333,17 @@ contains
        if (rankLoc==0 .OR. rankLoc==4) then
           select case (gds)
           case(SCRATCH)
-             deallocate(hy_memArrayScratch)
+             if(allocated(hy_memArrayScratch))deallocate(hy_memArrayScratch)
           case(CENTER)
              if (allocated(hy_memArrayCenter)) deallocate(hy_memArrayCenter)
           case(SCRATCH_CTR)
-             deallocate(hy_memArrayScratch_ctr)
+             if (allocated(hy_memArrayScratch_ctr))deallocate(hy_memArrayScratch_ctr)
           case(SCRATCH_FACEX)
-             deallocate(hy_memArrayScratch_facevarx)
+             if (allocated(hy_memArrayScratch_facevarx))deallocate(hy_memArrayScratch_facevarx)
           case(SCRATCH_FACEY)
-             deallocate(hy_memArrayScratch_facevary)
+             if (allocated(hy_memArrayScratch_facevary))deallocate(hy_memArrayScratch_facevary)
           case(SCRATCH_FACEZ)
-             deallocate(hy_memArrayScratch_facevarz)
+             if (allocated(hy_memArrayScratch_facevarz))deallocate(hy_memArrayScratch_facevarz)
           case DEFAULT
              call Driver_abortFlash("[hy_memDeallocScratch] Unsupported gds")
           end select
@@ -367,9 +367,9 @@ contains
        end if
     else
        if (rankLoc==0 .OR. rankLoc==4) then
-          if (allocated(hy_memArrayScratch))          deallocate(hy_memArrayScratch)
-          if (allocated(hy_memArrayCenter))      deallocate(hy_memArrayCenter)
-          if (allocated(hy_memArrayScratch_ctr))      deallocate(hy_memArrayScratch_ctr)
+          if (allocated(hy_memArrayScratch))deallocate(hy_memArrayScratch)
+          if (allocated(hy_memArrayCenter)) deallocate(hy_memArrayCenter)
+          if (allocated(hy_memArrayScratch_ctr))deallocate(hy_memArrayScratch_ctr)
           if (allocated(hy_memArrayScratch_facevarx)) deallocate(hy_memArrayScratch_facevarx)
           if (allocated(hy_memArrayScratch_facevary)) deallocate(hy_memArrayScratch_facevary)
           if (allocated(hy_memArrayScratch_facevarz)) deallocate(hy_memArrayScratch_facevarz)

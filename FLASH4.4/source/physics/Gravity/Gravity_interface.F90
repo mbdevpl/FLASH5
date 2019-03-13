@@ -19,20 +19,11 @@ Module Gravity_interface
   end interface
 
   interface Gravity_accelOneRow
-     subroutine Gravity_accelOneRow_blkid (pos,sweepDir,blockID, numCells, grav, &
-           varIndex, extraAccelVars)
-       implicit none
-       integer, intent(IN) :: sweepDir,blockID,numCells
-       integer, dimension(2),INTENT(in) ::pos
-       real, dimension(numCells),INTENT(inout) :: grav
-       integer, intent(IN), optional :: varIndex 
-       integer, intent(IN),OPTIONAL      :: extraAccelVars(MDIM)
-     end subroutine Gravity_accelOneRow_blkid
-     subroutine Gravity_accelOneRow (pos,sweepDir,block, numCells, grav, Uin,&
+     subroutine Gravity_accelOneRow (pos,sweepDir,blockDesc, numCells, grav, Uin,&
            varIndex, extraAccelVars)
        use block_metadata, ONLY : block_metadata_t
        implicit none
-       type(block_metadata_t) :: block
+       type(block_metadata_t),intent(IN) :: blockDesc
        integer, intent(IN) :: sweepDir,numCells
        integer, dimension(2),INTENT(in) ::pos
        real, dimension(numCells),INTENT(inout) :: grav
@@ -43,13 +34,6 @@ Module Gravity_interface
   end interface
 
   interface Gravity_accelOneBlock
-     subroutine Gravity_accelOneBlock_blkid ( blockID, ngcellcomp, gvec, potentialIndex)
-       use block_metadata, ONLY : block_metadata_t
-       implicit none
-      integer, intent(in)             :: ngcellcomp, blockID
-       real, dimension(:,:,:,:),intent(out)  :: gvec
-       integer, intent(in),optional    :: potentialIndex
-     end subroutine Gravity_accelOneBlock_blkid
      subroutine Gravity_accelOneBlock ( block, ngcellcomp, gvec, potentialIndex)
        use block_metadata, ONLY : block_metadata_t
        implicit none

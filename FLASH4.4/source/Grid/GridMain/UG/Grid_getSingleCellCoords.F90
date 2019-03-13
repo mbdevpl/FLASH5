@@ -6,7 +6,7 @@
 !! SYNOPSIS
 !!
 !!  Grid_getSingleCellCoords(integer(in)       ::  ind(MDIM), 
-!!                           integer(in)       ::  blockid,
+!!                   type(block_metadta_t)(IN) :: block,
 !!                           integer(in)       ::  edge,
 !!                           integer(in)       ::  beginCount,
 !!                           real(OUT)         ::  coords(MDIM))
@@ -20,7 +20,7 @@
 !!
 !!  ind - array holding the indices of the cell whose coordinates to return
 !! 
-!!  blockid - local block number
+!!   block - block metadata
 !!
 !!  edge - indicates if user wants the left, center or right edge of the block
 !!         options are LEFT_EDGE, RIGHT_EDGE, or CENTER.  These constants are
@@ -53,10 +53,11 @@
 #endif
 
 
-subroutine Grid_getSingleCellCoords(ind, blockId,edge, beginCount,coords)
+subroutine Grid_getSingleCellCoords(ind, block,edge, beginCount,coords)
 
   use Grid_data,ONLY :gr_iCoords,gr_jCoords,gr_kCoords,gr_guard
   use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -66,7 +67,8 @@ subroutine Grid_getSingleCellCoords(ind, blockId,edge, beginCount,coords)
 
 
   integer,dimension(MDIM), intent(in) :: ind
-  integer, intent(in) :: blockId, edge
+  type(block_metadata_t), intent(in) :: block
+  integer, intent(in) :: edge
   integer, intent(in) :: beginCount
   real, dimension(MDIM), intent(out) :: coords
 

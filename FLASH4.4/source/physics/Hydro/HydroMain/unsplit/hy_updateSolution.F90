@@ -247,16 +247,16 @@ Subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
 !!$     print*,'came upto this point'
 !!$#endif
 !!$     !! ************************************************************************
-!!$     !! Get gravity
-!!$     gravX = 0.
-!!$     gravY = 0.
-!!$     gravZ = 0.
-!!$     if (hy_useGravity) then
-!!$        call hy_putGravity(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
-!!$        gravX = gravX/hy_gref
-!!$        gravY = gravY/hy_gref
-!!$        gravZ = gravZ/hy_gref
-!!$     endif
+     !! Get gravity
+     gravX = 0.
+     gravY = 0.
+     gravZ = 0.
+     if (hy_useGravity) then
+        call hy_putGravity(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+        gravX = gravX/hy_gref
+        gravY = gravY/hy_gref
+        gravZ = gravZ/hy_gref
+     endif
 
 
 !!$     if (hy_updateHydroFluxes) then
