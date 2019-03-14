@@ -85,6 +85,8 @@ subroutine Gravity_accelOneRow(pos, sweepDir, tileDesc, lo, hi, grav, Uin, &
   type(Grid_tile_t), intent(IN)                      :: tileDesc
   integer,           intent(IN)                      :: lo
   integer,           intent(IN)                      :: hi
+  ! DEV:  For this implementation, grav could be changed to IN only
+  !       Check if this works in all cases and if so implement
   real,              intent(INOUT)                   :: grav(lo:hi)
   real,                            POINTER, OPTIONAL :: Uin(:,:,:,:)
   integer,           intent(IN),            OPTIONAL :: potentialIndex
@@ -203,10 +205,24 @@ subroutine Gravity_accelOneRow(pos, sweepDir, tileDesc, lo, hi, grav, Uin, &
   
   delxinv = 0.5e0 * delxinv
   
+  ! DEV: TODO We should probably error check the indices to check that
+  !           we can actually compute something
   do i = lo+1, hi-1
      grav(i) = grav(i) + delxinv * (gpot(i-1) - gpot(i+1))
   enddo
-  
+ 
+  ! DEV: We cannot compute the values at these locations.  If someone needs
+  !      data at these locations, they would need to decrease lo by one and
+  !      increase hi by one.  If this is impossible (e.g. lo is the 
+  !      blkLimitsGC), then we are sunk.
+  !
+  !      One way to deal with this is to set these values to something obviously
+  !      wrong such as a signaling NaN.
+  !
+  !      Check to see if there is code that uses this routine with lo/hi at 
+  !      blkLimitsGC and that requires some quasi-reasonable value here for 
+  !      actual computations.  Consider altering implementation to deal
+  !      better for all possible cases.
   grav(lo) = grav(lo+1)     ! this is invalid data - must not be used
   grav(hi) = grav(hi-1)
   
