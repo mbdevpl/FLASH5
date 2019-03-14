@@ -851,8 +851,7 @@ Module Grid_interface
   interface
      subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,level,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-          tileDesc,secondDir,ThirdDir,endPoints,idest)
-       use Grid_tile, ONLY : Grid_tile_t
+          secondDir,ThirdDir,endPoints,idest)
        implicit none
        integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct, level
        integer,dimension(REGION_DIM),intent(IN) :: regionSize
@@ -862,7 +861,6 @@ Module Grid_interface
             regionSize(STRUCTSIZE)),intent(INOUT)::regionData
        logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
        logical, intent(OUT) :: applied
-       type(Grid_tile_t),intent(IN) :: tileDesc
        integer,intent(IN) :: secondDir,thirdDir
        integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
        integer,intent(IN),OPTIONAL:: idest

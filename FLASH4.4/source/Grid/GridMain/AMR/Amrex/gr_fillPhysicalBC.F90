@@ -75,7 +75,6 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                        Grid_bcApplyToRegionSpecialized
     use gr_amrexInterface,      ONLY : gr_copyFabInteriorToRegion, &
                                        gr_copyGuardcellRegionToFab
-    use Grid_tile,              ONLY : Grid_tile_t 
 
     implicit none
 
@@ -98,8 +97,6 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
     type(amrex_box) :: guardcells
     type(amrex_box) :: bcData
 
-    type(Grid_tile_t)      :: tileDesc
-    
     integer :: n_cells_domain
     integer :: n_cells_level
 
@@ -312,25 +309,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
              endPts(:, :) = 1
              endPts(LOW,  1:NDIM) = bcData%lo(1:NDIM) + 1
              endPts(HIGH, 1:NDIM) = bcData%hi(1:NDIM) + 1
-#if(0)
-             ! So far, simple uses of this tileDesc work, but certain routines
-             ! such as Grid_getBlkBC require that the limit field contain
-             ! information consistent with the notion of a block's
-             ! limits/interior.
-             !
-             ! Force this to act like a block.  Hopefully we will stop using
-             ! tile descriptors soon for the BC work.
-             tileDesc%level = level
-             tileDesc%grid_index = -1
-             tileDesc%limits(:,  :)          = 1
-             tileDesc%limits(LOW,  1:NDIM)   = endPts(LOW,  1:NDIM)
-             tileDesc%limits(HIGH, 1:NDIM)   = endPts(HIGH, 1:NDIM)
-             tileDesc%blkLimitsGC(:,  :)        = 1
-             tileDesc%blkLimitsGC(LOW,  1:NDIM) = endPts(LOW,  1:NDIM) - NGUARD
-             tileDesc%blkLimitsGC(HIGH, 1:NDIM) = endPts(HIGH, 1:NDIM) + NGUARD
-             tileDesc%grownLimits(LOW,  :) = tileDesc%blkLimitsGC(LOW,  :)
-             tileDesc%grownLimits(HIGH, :) = tileDesc%blkLimitsGC(HIGH, :)
-#endif
+
              ! Create buffer to hold data with indices permuted for use with
              ! Grid_bcApplyToRegion
              regionSize(BC_DIR)     = endPts(HIGH, axis)  - endPts(LOW, axis)  + 1
@@ -368,7 +347,7 @@ subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
                                           axis, face, &
                                           regionData, regionSize, &
                                           mask, applied, &
-                                          tileDesc, axis2, axis3, endPts, 0)
+                                          axis2, axis3, endPts, 0)
              end if
 
              call gr_copyGuardcellRegionToFab(regionData, gds, face, axis, &

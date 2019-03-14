@@ -7,6 +7,7 @@
 !!
 !!  call Grid_bcApplyToRegion(integer(IN)  :: bcType,
 !!                            integer(IN)  :: gridDataStruct,
+!!                            integer(IN)  :: level,
 !!                            integer(IN)  :: guard,
 !!                            integer(IN)  :: axis,
 !!                            integer(IN)  :: face,
@@ -14,7 +15,6 @@
 !!                            integer(IN)  :: regionSize(:),
 !!                            logical(IN)  :: mask(:),
 !!                            logical(OUT) :: applied,
-!!                            integer(IN)  :: blockHandle,
 !!                            integer(IN)  :: secondDir,
 !!                            integer(IN)  :: thirdDir,
 !!                            integer(IN)  :: endPoints(LOW:HIGH,MDIM),
@@ -212,6 +212,8 @@
 !!
 !!***
 
+#error This Grid_bcApplyToRegion uses PARAMESHisms and has not been updated for FLASH5.
+
 subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
           guard,axis,face,regionData,regionSize,mask,applied,&
      blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, idest)
@@ -253,7 +255,7 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   logical, intent(OUT) :: applied
   integer,intent(IN) :: blockHandle
   integer,intent(IN) :: secondDir,thirdDir
-  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest
 
   integer :: i,j, k,ivar,je,ke,n,varCount,bcTypeActual

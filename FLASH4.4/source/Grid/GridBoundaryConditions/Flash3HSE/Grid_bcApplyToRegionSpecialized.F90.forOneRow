@@ -39,10 +39,11 @@
 !!  for all variables in the gridDataStruct that are not masked out. The 
 !!  argument "mask" has the information about the masked variables.
 !! 
+!!   Where masked(variables)
 !!     If (face=LOW)  
-!!       regionData(1:guard,:,:,masked(variables) =  boundary values
+!!       regionData(1:guard,:,:,variables) =  boundary values
 !!     If (face=HIGH) 
-!!       regionData(regionSize(BC_DIR)-guard+1:regionSize(BCDIR),:,:,masked(variables) =  boundary values
+!!       regionData(regionSize(BC_DIR)-guard+1:regionSize(BC_DIR),:,:,variables) =  boundary values
 !!
 !!
 !!   This interface serves two purposes. One it provides a mechanism by which users can

@@ -15,7 +15,6 @@
 !!                            integer(IN)      :: regionSize(:),
 !!                            logical(IN)      :: mask(:),
 !!                            logical(OUT)     :: applied,
-!!                            Grid_tile_t(IN)  :: tileDesc,
 !!                            integer(IN)      :: secondDir,
 !!                            integer(IN)      :: thirdDir,
 !!                            integer(IN)      :: endPoints(LOW:HIGH,MDIM),
@@ -67,7 +66,7 @@
 !!  other grid information, such as cell coordinates, etc.  Currently
 !!  supported simple boundary conditions include "OUTFLOW", "REFLECTING" and
 !!  "DIODE".
-!!  Additional dummy arguments tileDesc, secondDir, thirdDir, and endPoints
+!!  Additional dummy arguments secondDir, thirdDir, and endPoints
 !!  are not needed for these simple kinds of BCs, but can be
 !!  used by alternative implementations for BC types that do need coordinate
 !!  information, etc.
@@ -208,7 +207,7 @@
 
 subroutine Grid_bcApplyToRegion(bcType,gridDataStruct, level, &
           guard,axis,face,regionData,regionSize,mask,applied,&
-     tileDesc,secondDir,thirdDir,endPoints,idest)
+          secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -230,7 +229,6 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct, level, &
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
-  type(Grid_tile_t),intent(IN) :: tileDesc
   integer,intent(IN) :: secondDir,thirdDir
   integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest
