@@ -44,9 +44,9 @@ subroutine Grid_conserveFluxes( axis, coarse_level)
   use tree, ONLY : surr_blks, nodetype, lrefine_max
   use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx, gr_flxx, gr_flxy, gr_flxz
   use gr_specificData, ONLY : gr_iloFl, gr_jloFl, gr_kloFl
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
-  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
 
 #ifndef FLASH_GRID_PARAMESH2
   use physicaldata, ONLY: no_permanent_guardcells
@@ -70,8 +70,8 @@ subroutine Grid_conserveFluxes( axis, coarse_level)
   integer :: sx,ex,sy,ey,sz,ez
   real,pointer, dimension(:,:,:,:) :: fluxx,fluxy,fluxz
 
-  type(leaf_iterator_t)  :: itor
-  type(block_metadata_t) :: blockDesc
+  type(Grid_iterator_t)  :: itor
+  type(Grid_tile_t) :: tileDesc
   integer :: blockID
   logical :: xtrue,ytrue,ztrue
   integer, dimension(MDIM) :: datasize
@@ -122,14 +122,14 @@ subroutine Grid_conserveFluxes( axis, coarse_level)
      ztrue = (axis==KAXIS)
   end if
 
-  call Grid_getLeafIterator(itor, level=coarse_level)
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
-     if ((coarse_level == UNSPEC_LEVEL) .AND. (blockDesc%level == lrefine_max)) then
+  call Grid_getTileIterator(itor, LEAF, level=coarse_level, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     if ((coarse_level == UNSPEC_LEVEL) .AND. (tileDesc%level == lrefine_max)) then
         call itor%next()
         CYCLE !Skip blocks at highest level.
      end if
-     blockID=blockDesc%id
+     blockID=tileDesc%id
      
      fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
      fluxy(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxy(:,:,:,:,blockID)
@@ -253,7 +253,7 @@ subroutine Grid_conserveFluxes( axis, coarse_level)
      end if
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
   return
 end subroutine Grid_conserveFluxes
    

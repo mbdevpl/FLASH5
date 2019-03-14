@@ -69,10 +69,9 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                       gr_refine_filter, gr_refine_var, &
                                       gr_maxRefine, gr_enforceMaxRefinement, &
                                       gr_minRefine
-   use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
    use gr_interface,           ONLY : gr_estimateBlkError
    use gr_physicalMultifabs,   ONLY : unk
-   use block_metadata,         ONLY : block_metadata_t
+   use Grid_tile,              ONLY : Grid_tile_t 
 
    implicit none
  
@@ -85,7 +84,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    type(amrex_tagboxarray) :: tag
    type(amrex_mfiter)      :: mfi                                                             
    type(amrex_box)         :: bx
-   type(block_metadata_t)  :: blockDesc
+   type(Grid_tile_t)       :: tileDesc
 
    real(wp),               contiguous, pointer :: solnData(:,:,:,:)
    character(kind=c_char), contiguous, pointer :: tagData(:,:,:,:)
@@ -97,6 +96,9 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
    integer :: iref
    integer :: i, j, k, l
+
+   nullify(solnData)
+   nullify(tagData)
 
    ! AMReX uses 0-based spatial indices / FLASH uses 1-based
    ! The indices agree on inactive dimensions.
@@ -121,15 +123,15 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       do while(mfi%next())
          bx = mfi%fabbox()
 
-         blockDesc%limits(LOW,  :) = 1
-         blockDesc%limits(HIGH, :) = 1
-         blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
-         blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
+         tileDesc%limits(LOW,  :) = 1
+         tileDesc%limits(HIGH, :) = 1
+         tileDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
+         tileDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
 
          tagData => tag%dataptr(mfi)
 
-         associate (lo     => blockDesc%limits(LOW,  :), &
-                    hi     => blockDesc%limits(HIGH, :), &
+         associate (lo     => tileDesc%limits(LOW,  :), &
+                    hi     => tileDesc%limits(HIGH, :), &
                     lo_tag => lbound(tagData), &
                     hi_tag => ubound(tagData))
             
@@ -142,9 +144,9 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 end do
             end do
             
-            i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
-            j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
-            k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
+            i = INT(0.5 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
+            j = INT(0.5 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
+            k = INT(0.5 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
  
             tagData(i, j, k, 1) = tagval
          end associate
@@ -164,23 +166,24 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
 
       ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
-      blockDesc%level = lev + 1
-      blockDesc%grid_index = mfi%grid_index()
-      blockDesc%limits(LOW,  :) = 1
-      blockDesc%limits(HIGH, :) = 1
-      blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
-      blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
-      blockDesc%limitsGC(LOW,  :) = 1
-      blockDesc%limitsGC(HIGH, :) = 1
-      blockDesc%limitsGC(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
-      blockDesc%limitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+      tileDesc%level = lev + 1
+      tileDesc%grid_index = mfi%grid_index()
+      tileDesc%limits(LOW,  :) = 1
+      tileDesc%limits(HIGH, :) = 1
+      tileDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
+      tileDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
+      tileDesc%blkLimitsGC(LOW,  :) = 1
+      tileDesc%blkLimitsGC(HIGH, :) = 1
+      tileDesc%blkLimitsGC(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+      tileDesc%blkLimitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+      tileDesc%grownLimits(:, :) = tileDesc%blkLimitsGC(:, :)
 
-      call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+      call tileDesc%getDataPtr(solnData, CENTER)
 
       tagData => tag%dataptr(mfi)
      
-      associate (lo     => blockDesc%limits(LOW,  :), &
-                 hi     => blockDesc%limits(HIGH, :), &
+      associate (lo     => tileDesc%limits(LOW,  :), &
+                 hi     => tileDesc%limits(HIGH, :), &
                  lo_tag => lbound(tagData), &
                  hi_tag => ubound(tagData))
      
@@ -213,9 +216,9 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             iref = gr_refine_var(l)
             if (iref < 1)   CYCLE
     
-            error = 0.0d0
+            error = 0.0
             refineFilter = gr_refine_filter(l)
-            call gr_estimateBlkError(error, blockDesc, iref, refineFilter)
+            call gr_estimateBlkError(error, tileDesc, iref, refineFilter)
 
             ! Refinement is based on Berger-Rigoutsis algorithm, for which each
             ! cell is marked as having sufficient or insufficient resolution.
@@ -232,9 +235,9 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 ! array may differ.  This space is needed for ensuring proper
                 ! nesting and is used by AMReX.  Client code need not set those
                 ! when tagging for refinement.
-                i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
-                j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
-                k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
+                i = INT(0.5 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
+                j = INT(0.5 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
+                k = INT(0.5 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
  
                 ! NOTE: last dimension has range 1:1
                 tagData(i, j, k, 1) = tagval
@@ -260,7 +263,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       end associate
 
       nullify(tagData)
-      call Grid_releaseBlkPtr(blockDesc, solnData)
+      call tileDesc%releaseDataPtr(solnData, CENTER)
    end do
    call amrex_mfiter_destroy(mfi)
 

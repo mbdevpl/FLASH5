@@ -22,14 +22,10 @@ subroutine gr_mpoleRad3Dcartesian ()
   use Grid_data,         ONLY : gr_meshMe,  &
                                 gr_meshComm
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-                                Grid_releaseBlkPtr,     &
-                                Grid_getBlkBoundBox,    &
-                                Grid_getDeltas,         &
-                                Grid_getMinCellSizes,   &
+  use Grid_interface,    ONLY : Grid_getMinCellSizes,   &
                                 Grid_getLocalNumBlks,   &
-                                Grid_getLeafIterator,   &
-                                Grid_releaseLeafIterator
+                                Grid_getTileIterator,   &
+                                Grid_releaseTileIterator
 
   use gr_mpoleInterface, ONLY : gr_mpoleSetInnerZoneGrid, &
                                 gr_mpoleSetOuterZoneGrid
@@ -55,8 +51,8 @@ subroutine gr_mpoleRad3Dcartesian ()
                                 gr_mpoleYcenter,         &
                                 gr_mpoleZcenter
 
-  use block_metadata,    ONLY : block_metadata_t
-  use leaf_iterator,     ONLY : leaf_iterator_t
+  use Grid_tile,    ONLY : Grid_tile_t
+  use Grid_iterator,     ONLY : Grid_iterator_t
 
   implicit none
 
@@ -81,7 +77,7 @@ subroutine gr_mpoleRad3Dcartesian ()
 
   integer :: localData   (1:2)
   integer :: globalData  (1:2)
-  integer :: blkLimits   (LOW:HIGH,1:MDIM)
+  integer :: tileLimits   (LOW:HIGH,1:MDIM)
   
 
   real    :: bndBoxILow
@@ -107,8 +103,8 @@ subroutine gr_mpoleRad3Dcartesian ()
   real,    allocatable :: RinnerZone         (:)
 
   integer :: lev
-  type(block_metadata_t) :: block
-  type(leaf_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
 !
 !
 !       ...Get the minimum cell sizes for the entire domain.
@@ -198,7 +194,7 @@ subroutine gr_mpoleRad3Dcartesian ()
      !
      !
      !     ...Determine the number of radii to be expected in the inner zone.
-     !        For each processor, store those local blockID's that actually
+     !        For each processor, store those local tileDescID's that actually
      !        have radii in the inner zone.
      !
      !
@@ -212,21 +208,21 @@ subroutine gr_mpoleRad3Dcartesian ()
      nRlocalPrev = 0
      nBlocal = 0
      
-     call Grid_getLeafIterator(itor)
-     do while(itor%is_valid())
-        call itor%blkMetaData(block)
-        lev=block%level
-        blkLimits=block%limits
+     call Grid_getTileIterator(itor, LEAF, tiling = .FALSE.)
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+        lev=tileDesc%level
+        tileLimits=tileDesc%limits
         
-        call Grid_getBlkBoundBox     (block, bndBox)
-        call Grid_getDeltas          (lev, delta)
+        call tileDesc%boundBox(bndBox)
+        call tileDesc%deltas(delta)
         
-        imin       = blkLimits (LOW, IAXIS)
-        jmin       = blkLimits (LOW, JAXIS)
-        kmin       = blkLimits (LOW, KAXIS)  
-        imax       = blkLimits (HIGH,IAXIS)
-        jmax       = blkLimits (HIGH,JAXIS)
-        kmax       = blkLimits (HIGH,KAXIS)
+        imin       = tileLimits (LOW, IAXIS)
+        jmin       = tileLimits (LOW, JAXIS)
+        kmin       = tileLimits (LOW, KAXIS)  
+        imax       = tileLimits (HIGH,IAXIS)
+        jmax       = tileLimits (HIGH,JAXIS)
+        kmax       = tileLimits (HIGH,KAXIS)
         
         DeltaI     = delta (IAXIS)
         DeltaJ     = delta (JAXIS)
@@ -265,7 +261,7 @@ subroutine gr_mpoleRad3Dcartesian ()
         
         call itor%next()
      end do
-     call Grid_releaseLeafIterator(itor)
+     call Grid_releaseTileIterator(itor)
      !
      !
      !     ...Calculate the total number of processors contributing to the inner
@@ -299,31 +295,31 @@ subroutine gr_mpoleRad3Dcartesian ()
      !
      !
      !     ...Calculate and store now all inner zone radii on each processor.
-     !        Loop only over those local blocks which actually contribute to the
-     !        inner zone (skip, if no blocks).
+     !        Loop only over those local tileDescs which actually contribute to the
+     !        inner zone (skip, if no tileDescs).
      !
      !
      nRlocal = 0
      
      nBlocal = 0
-     call Grid_getLeafIterator(itor)
-     do while(itor%is_valid())
+     call Grid_getTileIterator(itor, LEAF, tiling = .FALSE.)
+     do while(itor%isValid())
         nBlocal=nBlocal+1
         if(blockListInnerZone(nBlocal)) then
            
-           call itor%blkMetaData(block)
-           lev=block%level
-           blkLimits=block%limits
+           call itor%currentTile(tileDesc)
+           lev=tileDesc%level
+           tileLimits=tileDesc%limits
            
-           call Grid_getBlkBoundBox     (block, bndBox)
-           call Grid_getDeltas          (lev, delta)
+           call tileDesc%boundBox(bndBox)
+           call tileDesc%deltas(delta)
            
-           imin       = blkLimits (LOW, IAXIS)
-           jmin       = blkLimits (LOW, JAXIS)
-           kmin       = blkLimits (LOW, KAXIS)  
-           imax       = blkLimits (HIGH,IAXIS)
-           jmax       = blkLimits (HIGH,JAXIS)
-           kmax       = blkLimits (HIGH,KAXIS)
+           imin       = tileLimits (LOW, IAXIS)
+           jmin       = tileLimits (LOW, JAXIS)
+           kmin       = tileLimits (LOW, KAXIS)  
+           imax       = tileLimits (HIGH,IAXIS)
+           jmax       = tileLimits (HIGH,JAXIS)
+           kmax       = tileLimits (HIGH,KAXIS)
            
            DeltaI     = delta (IAXIS)
            DeltaJ     = delta (JAXIS)
@@ -360,7 +356,7 @@ subroutine gr_mpoleRad3Dcartesian ()
         end if
         call itor%next()
      end do
-     call Grid_releaseLeafIterator(itor)
+     call Grid_releaseTileIterator(itor)
      
      deallocate (blockListInnerZone)
      !

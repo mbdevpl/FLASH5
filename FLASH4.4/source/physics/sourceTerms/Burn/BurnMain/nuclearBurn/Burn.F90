@@ -55,14 +55,14 @@ subroutine Burn (  dt  )
 
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_interface, ONLY : Grid_fillGuardCells, Grid_getCellCoords, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr, Grid_getMaxRefinement, &
-       Grid_getLeafIterator, Grid_releaseLeafIterator
+       Grid_getMaxRefinement, &
+       Grid_getTileIterator, Grid_releaseTileIterator
   use Eos_interface, ONLY : Eos_wrapped
   use Hydro_data, ONLY : hy_gcMaskSD
   use Hydro_interface, ONLY : Hydro_shockStrength
 
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   !$ use omp_lib
 
@@ -86,8 +86,8 @@ subroutine Burn (  dt  )
   logical, parameter :: getGuardCells = .true.
 
   real, allocatable, dimension(:) :: xCoord, yCoord, zCoord
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
-  integer :: iSize, jSize, kSize, iSizeGC, jSizeGC, kSizeGC
+  integer, dimension(1:MDIM) :: lo,hi,loHalo,hiHalo
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits
 
   integer, parameter :: shock_mode = 1
   real, parameter :: shock_thresh = 0.33
@@ -96,14 +96,14 @@ subroutine Burn (  dt  )
   real, pointer, dimension(:,:,:,:) :: solnData
 
   integer :: level, maxLev
-  type(leaf_iterator_t)  :: itor
-  type(block_metadata_t) :: blockDesc
+  type(Grid_iterator_t)  :: itor
+  type(Grid_tile_t) :: tileDesc
 
   ! ----------------------- check if burning is requested in runtime parameters -------
   if (.not. bn_useBurn) return
 
   !---------------------------------------------------------------------------------
-
+  nullify(solnData)
   ! start the timer ticking
   call Timers_start("burn")
 
@@ -117,145 +117,139 @@ subroutine Burn (  dt  )
      call Grid_fillGuardCells(CENTER, ALLDIR, maskSize=NUNK_VARS, mask=hy_gcMaskSD)
   endif
 
-  do level = 1, maxLev
-     call Grid_getLeafIterator(itor, level=level)
-     do while(itor%is_valid())
-        call itor%blkMetaData(blockDesc)
-
-        burnedZone = .FALSE.
-
-        ! get dimensions/limits and coordinates
-        blkLimitsGC = blockDesc%limitsGC
-        iSizeGC = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
-        jSizeGC = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
-        kSizeGC = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
-
-        blkLimits = blockDesc%limits
-        iSize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1
-        jSize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1
-        kSize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1
-
-        ! allocate space for dimensions
-        allocate(xCoord(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-        allocate(yCoord(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-        allocate(zCoord(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-
-        allocate(shock(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
-                       blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
-                       blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-
-        call Grid_getCellCoords(IAXIS,blockDesc,CENTER,getGuardCells,xCoord,iSizeGC)
-        call Grid_getCellCoords(JAXIS,blockDesc,CENTER,getGuardCells,yCoord,jSizeGC)
-        call Grid_getCellCoords(KAXIS,blockDesc,CENTER,getGuardCells,zCoord,kSizeGC)
-
-        ! Get a pointer to solution data
-        call Grid_getBlkPtr(blockDesc, solnData)
-
-        ! Shock detector
-        if (.NOT. bn_useShockBurn) then
-           call Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, (/0,0,0/), &
-              xCoord,yCoord,zCoord,shock_thresh,shock_mode)
-        else
-           shock(:,:,:) = 0.0
-        endif
-
-        !$omp parallel do &
-        !$omp collapse(3) &
-        !$omp default(shared) &
-        !$omp private(i,j,k,n,speciesMap,tmp,rho,sdot,xIn,xOut,ei,ek,enuc, &
-        !$omp         okBurnTemp,okBurnDens,okBurnShock,okBurnNickel)
-        do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
-           do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
-              do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
-
-                 tmp  = solnData(TEMP_VAR,i,j,k)
-                 rho  = solnData(DENS_VAR,i,j,k)
-                 sdot = 0.0e0
-
-                 okBurnTemp = (tmp >= bn_nuclearTempMin .AND. tmp <= bn_nuclearTempMax)
-                 okBurnDens = (rho >= bn_nuclearDensMin .AND. rho <= bn_nuclearDensMax)
-                 okBurnShock = (shock(i,j,k) <= 0.0 .OR. (shock(i,j,k) > 0.0 .AND. bn_useShockBurn))
-
-                 if (okBurnTemp .AND. okBurnDens .AND. okBurnShock) then
-
-                    if (NI56_SPEC /= NONEXISTENT) then
-                       okBurnNickel = (solnData(NI56_SPEC,i,j,k) <  bn_nuclearNI56Max)
-                    else    ! nickel is not even a species in this simulation, so we'll always burn
-                       okBurnNickel = .TRUE.
-                    endif
-
-                    if (okBurnNickel) then
-
-                       !$omp atomic write
-                       burnedZone = .TRUE.
-                       !$omp end atomic
-
-                       ! Map the solution data into the order required by bn_burner
-                       do n = 1, NSPECIES
-                          call bn_mapNetworkToSpecies(n,speciesMap)
-                          xIn(n) = solnData(speciesMap,i,j,k)
-                       end do
-
-                       ! Do the actual burn
-                       call bn_burner(dt, tmp, rho, xIn, xOut, sdot)
-
-                       !  Map it back NOTE someday make a nicer interface....
-                       do n = 1, NSPECIES
-                          call bn_mapNetworkToSpecies(n,speciesMap)
-                          solnData(speciesMap,i,j,k) = xOut(n)
-                       end do
-
-                       ek = 0.5e0*(solnData(VELX_VAR,i,j,k)**2 +  &
-                            solnData(VELY_VAR,i,j,k)**2 +  &
-                            solnData(VELZ_VAR,i,j,k)**2)
-
-                       ! internal energy, add on nuclear rate*timestep
-                       enuc = dt*sdot
-                       ei = solnData(ENER_VAR,i,j,k) + enuc - ek
-
-#ifdef EINT_VAR
-                       solnData(EINT_VAR,i,j,k) = ei
-#endif
-                       solnData(ENER_VAR,i,j,k) = ei + ek
-#ifdef EELE_VAR
-                       solnData(EELE_VAR,i,j,k) = solnData(EELE_VAR,i,j,k) + dt*sdot
-#endif
-                       solnData(ENUC_VAR,i,j,k) = sdot
-
-                    endif
+  
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE. )
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     
+     burnedZone = .FALSE.
+     
+     ! get dimensions/limits and coordinates
+     lo(1:MDIM) = tileDesc%limits(LOW,1:MDIM)
+     hi(1:MDIM) = tileDesc%limits(HIGH,1:MDIM)
+     
+     
+     ! allocate space for dimensions
+     allocate(xCoord(lo(IAXIS):hi(IAXIS)))
+     allocate(yCoord(lo(JAXIS):hi(JAXIS)))
+     allocate(zCoord(lo(KAXIS):hi(KAXIS)))
+     
+     allocate(shock(lo(IAXIS):hi(IAXIS),&
+          lo(JAXIS):hi(JAXIS),&
+          lo(KAXIS):hi(KAXIS)))
+     
+     call Grid_getCellCoords(IAXIS,CENTER,tileDesc%level,lo,hi,xCoord)
+     call Grid_getCellCoords(JAXIS,CENTER,tileDesc%level,lo,hi,yCoord)
+     call Grid_getCellCoords(KAXIS,CENTER,tileDesc%level,lo,hi,zCoord)
+     
+     ! Get a pointer to solution data
+     call tileDesc%getDataPtr(solnData, CENTER)
+     
+     ! Shock detector
+     if (.NOT. bn_useShockBurn) then
+        call Hydro_shockStrength(solnData, shock, lo,hi,loHalo,hiHalo, &
+             xCoord,yCoord,zCoord,shock_thresh,shock_mode)
+     else
+        shock(:,:,:) = 0.0
+     endif
+     
+     !$omp parallel do &
+     !$omp collapse(3) &
+     !$omp default(shared) &
+     !$omp private(i,j,k,n,speciesMap,tmp,rho,sdot,xIn,xOut,ei,ek,enuc, &
+     !$omp         okBurnTemp,okBurnDens,okBurnShock,okBurnNickel)
+     do k = lo(KAXIS), hi(KAXIS)
+        do j = lo(JAXIS), hi(JAXIS)
+           do i = lo(IAXIS), hi(IAXIS)
+              
+              tmp  = solnData(TEMP_VAR,i,j,k)
+              rho  = solnData(DENS_VAR,i,j,k)
+              sdot = 0.0e0
+              
+              okBurnTemp = (tmp >= bn_nuclearTempMin .AND. tmp <= bn_nuclearTempMax)
+              okBurnDens = (rho >= bn_nuclearDensMin .AND. rho <= bn_nuclearDensMax)
+              okBurnShock = (shock(i,j,k) <= 0.0 .OR. (shock(i,j,k) > 0.0 .AND. bn_useShockBurn))
+              
+              if (okBurnTemp .AND. okBurnDens .AND. okBurnShock) then
+                 
+                 if (NI56_SPEC /= NONEXISTENT) then
+                    okBurnNickel = (solnData(NI56_SPEC,i,j,k) <  bn_nuclearNI56Max)
+                 else    ! nickel is not even a species in this simulation, so we'll always burn
+                    okBurnNickel = .TRUE.
                  endif
-
-              end do
+                 
+                 if (okBurnNickel) then
+                    
+                    !$omp atomic write
+                    burnedZone = .TRUE.
+                    !$omp end atomic
+                    
+                    ! Map the solution data into the order required by bn_burner
+                    do n = 1, NSPECIES
+                       call bn_mapNetworkToSpecies(n,speciesMap)
+                       xIn(n) = solnData(speciesMap,i,j,k)
+                    end do
+                    
+                    ! Do the actual burn
+                    call bn_burner(dt, tmp, rho, xIn, xOut, sdot)
+                    
+                    !  Map it back NOTE someday make a nicer interface....
+                    do n = 1, NSPECIES
+                       call bn_mapNetworkToSpecies(n,speciesMap)
+                       solnData(speciesMap,i,j,k) = xOut(n)
+                    end do
+                    
+                    ek = 0.5e0*(solnData(VELX_VAR,i,j,k)**2 +  &
+                         solnData(VELY_VAR,i,j,k)**2 +  &
+                         solnData(VELZ_VAR,i,j,k)**2)
+                    
+                    ! internal energy, add on nuclear rate*timestep
+                    enuc = dt*sdot
+                    ei = solnData(ENER_VAR,i,j,k) + enuc - ek
+                    
+#ifdef EINT_VAR
+                    solnData(EINT_VAR,i,j,k) = ei
+#endif
+                    solnData(ENER_VAR,i,j,k) = ei + ek
+#ifdef EELE_VAR
+                    solnData(EELE_VAR,i,j,k) = solnData(EELE_VAR,i,j,k) + dt*sdot
+#endif
+                    solnData(ENUC_VAR,i,j,k) = sdot
+                    
+                 endif
+              endif
+              
            end do
         end do
-        !$omp end parallel do
-
-        ! we've altered the EI, let's equilabrate
-        if (burnedZone) then
-
-#ifdef FLASH_UHD_3T
-           call Eos_wrapped(MODE_DENS_EI_GATHER,blkLimits,solnData,CENTER) ! modified for 3T
-#else
-           call Eos_wrapped(MODE_DENS_EI,blkLimits,solnData,CENTER)
-#endif
-
-        end if
-
-        call Grid_releaseBlkPtr(blockDesc,solnData)
-        nullify(solnData)
-
-        deallocate(xCoord)
-        deallocate(yCoord)
-        deallocate(zCoord)
-        deallocate(shock)
-
-        call itor%next()
-
      end do
-     call Grid_releaseLeafIterator(itor)
+     !$omp end parallel do
+     
+     ! we've altered the EI, let's equilabrate
+     if (burnedZone) then
+        blkLimits(LOW,:)=lo(:)
+        blkLimits(HIGH,:)=hi(:)
+        
+#ifdef FLASH_UHD_3T
+        call Eos_wrapped(MODE_DENS_EI_GATHER,blkLimits,solnData,CENTER) ! modified for 3T
+#else
+        call Eos_wrapped(MODE_DENS_EI,blkLimits,solnData,CENTER)
+#endif
+        
+     end if
+     
+     call tileDesc%releaseDataPtr(solnData, CENTER)
+     
+     deallocate(xCoord)
+     deallocate(yCoord)
+     deallocate(zCoord)
+     deallocate(shock)
+     
+     call itor%next()
+     
   end do
-
+  call Grid_releaseTileIterator(itor)
+  
   call Timers_stop("burn")
-
+  
   return
 end subroutine Burn

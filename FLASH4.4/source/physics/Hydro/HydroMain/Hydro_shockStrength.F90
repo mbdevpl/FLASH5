@@ -69,8 +69,7 @@
 
 !#define DEBUG_HYDRO_GUARDCELLS
 
-subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
-                             guardCells, &
+subroutine Hydro_shockStrength(solnData, shock, lo,hi,loHalo,hiHalo,&
                              primaryCoord,secondCoord,thirdCoord, &
                              threshold, mode)
 
@@ -79,20 +78,20 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
 
   implicit none
 
-  integer, intent(IN), dimension(2,MDIM) :: blkLimits, blkLimitsGC
-  integer, intent(IN) :: guardCells(MDIM)
+  integer, intent(IN), dimension(1:MDIM) :: lo,hi,loHalo,hiHalo
   real, pointer :: solnData(:,:,:,:) 
-  real,intent(inout),dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
-                               blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
-                               blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: shock
-  real,intent(IN),dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)) :: primaryCoord
-  real,intent(IN),dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)) :: secondCoord
-  real,intent(IN),dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: thirdCoord
-  real, dimension(MDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
-                  blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
-                  blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: div_v
+  real,intent(inout),dimension(loHalo(IAXIS):hiHalo(IAXIS),&
+       loHalo(JAXIS):hiHalo(JAXIS),&
+       loHalo(KAXIS):hiHalo(KAXIS)) :: shock
+  real,intent(IN),dimension(loHalo(IAXIS):hiHalo(IAXIS)) :: primaryCoord
+  real,intent(IN),dimension(loHalo(JAXIS):hiHalo(JAXIS)) :: secondCoord
+  real,intent(IN),dimension(loHalo(KAXIS):hiHalo(KAXIS)) :: thirdCoord
   real, intent(IN) :: threshold
   integer, intent(IN) :: mode
+  
+  real, dimension(MDIM,loHalo(IAXIS):hiHalo(IAXIS),&
+                  loHalo(JAXIS):hiHalo(JAXIS),&
+                  loHalo(KAXIS):hiHalo(KAXIS)) :: div_v
 
   real,parameter :: biggReal = 1.0e20 ! pretty big, for a shock strength
 
@@ -129,12 +128,12 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
 
 ! get a pointer to all the data for the current block
 
-  ib = max(blkLimitsGC(LOW,IAXIS)+1,    blkLimits(LOW,IAXIS) -     guardCells(IAXIS) )
-  ie = min(blkLimitsGC(HIGH,IAXIS)-1,   blkLimits(HIGH,IAXIS)+     guardCells(IAXIS) )
-  jb = max(blkLimitsGC(LOW,JAXIS)+K2D,  blkLimits(LOW,JAXIS) - K2D*guardCells(JAXIS) )
-  je = min(blkLimitsGC(HIGH,JAXIS)-K2D, blkLimits(HIGH,JAXIS)+ K2D*guardCells(JAXIS) )
-  kb = max(blkLimitsGC(LOW,KAXIS)+K3D,  blkLimits(LOW,KAXIS) - K3D*guardCells(KAXIS) )
-  ke = min(blkLimitsGC(HIGH,KAXIS)-K3D, blkLimits(HIGH,KAXIS)+ K3D*guardCells(KAXIS) )
+!!$  ib = max(blkLimitsGC(LOW,IAXIS)+1,    blkLimits(LOW,IAXIS) -     guardCells(IAXIS) )
+!!$  ie = min(blkLimitsGC(HIGH,IAXIS)-1,   blkLimits(HIGH,IAXIS)+     guardCells(IAXIS) )
+!!$  jb = max(blkLimitsGC(LOW,JAXIS)+K2D,  blkLimits(LOW,JAXIS) - K2D*guardCells(JAXIS) )
+!!$  je = min(blkLimitsGC(HIGH,JAXIS)-K2D, blkLimits(HIGH,JAXIS)+ K2D*guardCells(JAXIS) )
+!!$  kb = max(blkLimitsGC(LOW,KAXIS)+K3D,  blkLimits(LOW,KAXIS) - K3D*guardCells(KAXIS) )
+!!$  ke = min(blkLimitsGC(HIGH,KAXIS)-K3D, blkLimits(HIGH,KAXIS)+ K3D*guardCells(KAXIS) )
 
 
   smlusq = hy_smallu**2
@@ -154,7 +153,7 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
 #if NDIM == 1
 ! compute the velocity divergence
   if (hy_geometry == CARTESIAN) then
-     do i = ib, ie
+     do i = lo(IAXIS), hi(IAXIS)
         
         div_v(IAXIS,i,1,1) = (solnData(VELX_VAR,i+1,1,1) -    &
                              solnData(VELX_VAR,i-1,1,1)) /   &
@@ -164,7 +163,7 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
         
   else if (hy_geometry == SPHERICAL) then
         
-     do i = ib, ie
+     do i = lo(IAXIS), hi(IAXIS)
            
         ! divergence is (1/r**2) (d/dr) (r**2 v_r)
         
@@ -179,8 +178,8 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
   
 #elif NDIM == 2
   if (hy_geometry == CARTESIAN) then
-     do j = jb, je
-        do i = ib, ie
+     do j = lo(JAXIS), hi(JAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
               
            div_v(IAXIS,i,j,1) =                 &
                 (solnData(VELX_VAR,i+1,j,1) -    & 
@@ -199,8 +198,8 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
         
         ! 2-d cylindrical geometry (r,z)
         
-     do j = jb, je
-        do i = ib, ie
+     do j = lo(JAXIS), hi(JAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
               
            ! divergence is (1/r) (d/dr) (v_r) + (d/dz) (v_z)
            
@@ -221,8 +220,8 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
         
      ! 2-d polar geometry (r,phi)
         
-     do j = jb, je
-        do i = ib, ie
+     do j = lo(JAXIS), hi(JAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
               
            ! divergence is (1/r) (d/dr) (v_r) + (1/r) (d/df) (v_f)
            
@@ -243,8 +242,8 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
         
      ! spherical geometry (r,theta)
      
-     do j = jb, je
-        do i = ib, ie
+     do j = lo(JAXIS), hi(JAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
            
            ! divergence is (1/r**2) (d/dr) (r**2 v_r) 
            ! + (1/(r sin(t)) ) (d/dt)(sin(t) v_t)
@@ -272,9 +271,9 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
   
   if (hy_geometry == CARTESIAN) then 
      
-     do k = kb,ke
-        do j = jb,je
-           do i = ib,ie
+     do k = lo(KAXIS),hi(KAXIS)
+        do j = lo(JAXIS),hi(JAXIS)
+           do i = lo(IAXIS),hi(IAXIS)
               
               div_v(IAXIS,i,j,k) =                 &
                    (solnData(VELX_VAR,i+1,j,k) -    &
@@ -299,9 +298,9 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
      
      ! 3-d cylindrical geometry (r,z,phi)
      
-     do k = kb,ke
-        do j = jb,je
-           do i = ib,ie
+     do k = lo(KAXIS),hi(KAXIS)
+        do j = lo(JAXIS),hi(JAXIS)
+           do i = lo(IAXIS),hi(IAXIS)
               
               ! divergence is (1/r) (d/dr) (v_r) 
               ! + (d/dz) (v_z) + (1/r) (d/df) (v_f)
@@ -329,9 +328,9 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
      
      ! 3-d spherical geometry (r,theta,phi)
      
-     do k = kb,ke
-        do j = jb,je
-           do i = ib,ie
+     do k = lo(KAXIS),hi(KAXIS)
+        do j = lo(JAXIS),hi(JAXIS)
+           do i = lo(IAXIS),hi(IAXIS)
               
               ! divergence is (1/r**2) (d/dr) (r**2 v_r) 
               ! + (1/(r sin(t)) ) (d/dt)(sin(t) v_t)
@@ -365,9 +364,9 @@ subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
   
   ! shock detection and direction of shock propagation
   
-  do k = kb,ke
-     do j = jb,je
-        do i = ib,ie
+  do k = lo(KAXIS),hi(KAXIS)
+     do j = lo(JAXIS),hi(JAXIS)
+        do i = lo(IAXIS),hi(IAXIS)
            
 ! interface centred jumps along given dimension needed for calculation 
 ! of direction of shock propagation

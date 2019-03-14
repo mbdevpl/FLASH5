@@ -18,7 +18,7 @@ from .setup_globals import gvars
 from .utils import desc_cmd_metadata
 from ..dsl import runtime_parameters
 
-CP_OBJ_FILES = ['flash4']
+CP_OBJ_FILES = ['flash5']
 
 def init_rundir():
     """Initializes run_dir and run_id in gvars."""
@@ -81,7 +81,7 @@ def main(ns, rc):
     desc_run = desc['run']
     desc_run['id'] = gvars.run_id
     desc_run['history'] = []
-    flash_executable = os.path.join(gvars.run_dir, "flash4")
+    flash_executable = os.path.join(gvars.run_dir, "flash5")
     with open(flash_executable, 'rb') as f:
         desc_run['flash_executable_hash'] = hashlib.sha1(f.read()).hexdigest()
     desc_run['flash_executable_mtime'] = os.path.getmtime(flash_executable)
@@ -106,7 +106,7 @@ def main(ns, rc):
     # run flash
     rtn = 0
     nprocs = ['-n', ns.nprocs] if ns.nprocs is not None else []
-    cmd = [MPIRUN_CMD] + nprocs + ns.options + ["./flash4"]
+    cmd = [MPIRUN_CMD] + nprocs + ns.options + ["./flash5"]
     try:
         rtn = subprocess.check_call(cmd, cwd=gvars.run_dir)
     except subprocess.CalledProcessError:

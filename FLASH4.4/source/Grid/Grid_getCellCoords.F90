@@ -111,16 +111,18 @@
 !!   starting with gr_ are local varibles or arguments passed to the 
 !!   routine.
 
-subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
+subroutine Grid_getCellCoords(axis, edge, level, lo, hi, coordinates)
   use block_metadata, ONLY : block_metadata_t 
   
   implicit none
   
-  integer, intent(in) :: axis, edge
-  type(block_metadata_t), intent(in) :: block
-  integer, intent(in) :: size
-  logical, intent(in) :: guardcell
-  real,intent(out), dimension(size) :: coordinates
-  coordinates=0.0
-  return
+  integer, intent(in)  :: axis
+  integer, intent(in)  :: edge
+  integer, intent(in)  :: level
+  integer, intent(in)  :: lo(1:MDIM)
+  integer, intent(in)  :: hi(1:MDIM)
+  real,    intent(out) :: coordinates(:)
+
+  coordinates(:) = 0.0
 end subroutine Grid_getCellCoords
+

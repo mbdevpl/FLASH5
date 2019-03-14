@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridMain/paramesh/gr_expandDomain
+!!****if* source/Simulation/SimulationMain/Sedov/gr_expandDomain
 !!
 !!  NAME
 !!     gr_expandDomain
@@ -10,7 +10,7 @@
 !!
 !!    The grid is initialized in gr_createDomain, with a specified
 !!    number of root blocks, typically one single block. This routine
-!!    refines appropriate portions of the initialized physical 
+!!    refines appropriate portions of the initialized physical
 !!    domain according to the given refinement criteria, and applies
 !!    initial conditions to the AMR domain.
 !!
@@ -34,11 +34,12 @@ subroutine gr_expandDomain (particlesInitialized)
   use Grid_data, ONLY : gr_domainBC,gr_eosModeInit,gr_refineOnParticleCount,&
        gr_maxParticlesPerBlk,gr_minParticlesPerBlk, gr_meshMe,&
        gr_meshNumProcs, gr_lrefineMinInit, gr_gcellsUpToDate
+  use Driver_data,         ONLY : dr_simGeneration
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_stampVarMask
   use Grid_interface, ONLY :  Grid_getLocalNumBlks, Grid_markRefineDerefine, &
-                              Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+                              Grid_getTileIterator, &
+                              Grid_releaseTileIterator
   use tree, ONLY : lrefine, lrefine_min, lrefine_max, grid_changed
   use paramesh_interfaces, ONLY : amr_refine_derefine, amr_restrict
   use Eos_interface, ONLY : Eos_wrapped
@@ -54,8 +55,8 @@ subroutine gr_expandDomain (particlesInitialized)
     Particles_updateRefinement
   use Driver_interface, ONLY : Driver_abortFlash
   use RadTrans_interface, ONLY: RadTrans_sumEnergy
-  use gr_iterator, ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
 
   implicit none
 
@@ -63,15 +64,10 @@ subroutine gr_expandDomain (particlesInitialized)
 
   include 'Flash_mpi.h'
 
-  real, pointer:: solnData(:,:,:,:)
   logical, intent(out) :: particlesInitialized
-  integer :: lnblocks, lrefineMinSave
-
-
-  !!          Local variables and functions
 
   integer :: ntimes, i
-
+  integer :: lnblocks, lrefineMinSave
   integer :: count, cur_treedepth, grid_changed_anytime
   logical :: restart = .false.
   logical :: particlesPosnsDone, retainParticles
@@ -79,8 +75,11 @@ subroutine gr_expandDomain (particlesInitialized)
   character(len=32), dimension(2,2) :: block_buff
   character(len=32)                 :: int_to_str
   integer :: gridDataStruct, whichBlocks
-  type(gr_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
+  real, pointer         :: solnData(:,:,:,:)
+
+  nullify(solnData)
 
   !!============================================================================
 
@@ -107,7 +106,7 @@ subroutine gr_expandDomain (particlesInitialized)
 
   ! The Paramesh call above may have already resulted in some block refining,
   ! so try get the current max level from the lrefine array. This is only used for
-  ! diagnostic output. Note that this assumes that lrefine on the current 
+  ! diagnostic output. Note that this assumes that lrefine on the current
   ! processor is representative of the grid as a whole.
   cur_treedepth = maxval(lrefine)
 
@@ -122,7 +121,7 @@ subroutine gr_expandDomain (particlesInitialized)
   grid_changed_anytime = grid_changed ! save value established by previous Paramesh initialization
 
   retainParticles=.false.
-  
+
   do ntimes = 1, lrefine_max+2
      if (ntimes .EQ. gr_lrefineMinInit) then
         lrefine_min = lrefineMinSave
@@ -130,7 +129,7 @@ subroutine gr_expandDomain (particlesInitialized)
      write (block_buff(1,1), '(a)') 'iteration'
      write (int_to_str, '(i7,a1)') ntimes, ','
      write (block_buff(1,2), '(a,1x,a)') trim(adjustl(int_to_str))
-     
+
      write (block_buff(2,1), '(a)') 'create level'
      write (int_to_str, '(i7)') min(cur_treedepth+1,lrefine_max)
      write (block_buff(2,2), '(a)') trim(adjustl(int_to_str))
@@ -155,25 +154,24 @@ subroutine gr_expandDomain (particlesInitialized)
      end if
 #endif
 
-     call gr_getBlkIterator(itor, nodetype=whichBlocks)
-     do while(itor%is_valid())
-        call itor%blkMetaData(block)
-        
+     call Grid_getTileIterator(itor, nodetype=whichBlocks, tiling=.FALSE.)
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
-        !  the total vs. internal energies can cause problems in the eos call that 
+        !  the total vs. internal energies can cause problems in the eos call that
         !  follows.
-        call Grid_getBlkPtr(block, solnData)
+        call tileDesc%getDataPtr(solnData, CENTER)
         solnData = 0.0
         !      Now reinitialize the solution on the new grid so that it has
         !      the exact solution.
-        call Simulation_initBlock(solnData, block)
-        call Grid_releaseBlkPtr(block, solnData)
-        nullify(solnData)
+        call Simulation_initBlock(solnData, tileDesc)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
 
         call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseTileIterator(itor)
 
 #ifdef ERAD_VAR
      ! Sum radiation energy density over all meshes. This call is
@@ -187,22 +185,22 @@ subroutine gr_expandDomain (particlesInitialized)
      ! This is here for safety, in case the user did not take care to make things
      ! thermodynamically consistent in the initial state.- KW
      call Timers_start("eos")
-     call itor%first()
-     do while(itor%is_valid())
-        call itor%blkMetaData(block)
-        
-        call Grid_getBlkPtr(block, solnData)
-        call Eos_wrapped(gr_eosModeInit, block%limits, solnData)
-        call Grid_releaseBlkPtr(block, solnData)
-        nullify(solnData)
+     call Grid_getTileIterator(itor, nodetype=whichBlocks, tiling=.FALSE.)
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+
+        call tileDesc%getDataPtr(solnData, CENTER)
+        call Eos_wrapped(gr_eosModeInit, tileDesc%limits, solnData)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
 
         call itor%next()
      end do
+     call Grid_releaseTileIterator(itor)
 
      call Timers_stop("eos")
 
      if(gr_refineOnParticleCount ) then
-        
+
         !!   This loop initializes the particle positions if
         !!   their count is one of the refinement criteria.
         !!   If the initialization routine intends to keep
@@ -212,7 +210,7 @@ subroutine gr_expandDomain (particlesInitialized)
         !!   In case of initializing particles from a file,
         !!   if the whole file has been read in
         !!   then particlesPosnsDone should be true, otherwise false.
-        !!    
+        !!
         if(.not.retainParticles) then
            particlesPosnsDone=.false.
         end if
@@ -223,15 +221,16 @@ subroutine gr_expandDomain (particlesInitialized)
         end if
 #endif
      end if
+     dr_simGeneration = dr_simGeneration + 1
      if (ntimes .le. lrefine_max+1) then
         ! Guard cell filling and Eos_wrapped are done in Grid_markRefineDerefine as needed.
         call Grid_markRefineDerefine()
         grid_changed_anytime = max(grid_changed, grid_changed_anytime)
-        grid_changed = 0              ! will be 1 after amr_refine_derefine if the grid actually changed  
+        grid_changed = 0              ! will be 1 after amr_refine_derefine if the grid actually changed
         call amr_refine_derefine()
 #ifndef FLASH_GRID_PARAMESH2
         if (grid_changed .NE. 0) mpi_pattern_id = -abs(mpi_pattern_id) !make it different from recognized values
-#endif           
+#endif
         if(gr_refineOnParticleCount.and.retainParticles) call Particles_updateRefinement(lnblocks)
         cur_treedepth = max(maxval(lrefine),min(cur_treedepth+1,lrefine_max))
 

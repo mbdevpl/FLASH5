@@ -247,7 +247,9 @@ MASTER_PE is the designated master processor in a run.
 #define CENTER_FACES 380
 #define CELL_VOLUME 382
 #define CELL_FACEAREA 383
-
+#define FLUXX 401
+#define FLUXY 402
+#define FLUXZ 403
 
 #if 0
   Variable descriptors are used in some interfaces to identify

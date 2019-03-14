@@ -18,6 +18,11 @@ nblockx =  2
 nblocky =  2 
 nblockz =  1
 
+gr_useTiling = .TRUE.
+gr_tileSizeX = 4
+gr_tileSizeY = 2
+gr_tileSizeZ = 1
+
 ##### BOUNDARY CONDITIONS
 xl_boundary_type = "periodic" 
 xr_boundary_type = "periodic"

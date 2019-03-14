@@ -43,27 +43,27 @@
 !!
 !!***
 
-!!REORDER(5): unk, facevar[xyz]
-!!FOR FUTURE: Add REORDER for unk, facevar[xyz]1, etc.?
-
-#ifdef DEBUG_ALL
-#define DEBUG_GRID
-#endif
-
-subroutine gr_getInteriorBlkPtr(blockID,dataPtr, gridDataStruct)
+subroutine gr_getInteriorBlkPtr_blk(blockDesc, dataPtr, gridDataStruct)
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
-  integer, intent(in) :: blockID
-  real, dimension(:,:,:,:), pointer :: dataPtr
-  integer, intent(in) :: gridDataStruct
+
+  type(block_metadata_t), intent(IN)         :: blockDesc
+  real,                              pointer :: dataPtr(:,:,:,:)
+  integer,                intent(in)         :: gridDataStruct
+  
+  return
+end subroutine gr_getInteriorBlkPtr_blk
+
+subroutine gr_getInteriorBlkPtr(tileDesc, dataPtr, gridDataStruct)
+  use Grid_tile, ONLY : Grid_tile_t
+
+  implicit none
+
+  type(Grid_tile_t), intent(IN)          :: tileDesc
+  real,                          pointer :: dataPtr(:,:,:,:)
+  integer,            intent(IN)         :: gridDataStruct
   
   return
 end subroutine gr_getInteriorBlkPtr
-
-
-
-
-
-
-
 

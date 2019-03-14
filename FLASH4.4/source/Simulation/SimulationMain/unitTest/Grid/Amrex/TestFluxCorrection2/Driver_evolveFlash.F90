@@ -31,27 +31,31 @@
 subroutine Driver_evolveFlash()
     use amrex_fort_module,     ONLY : amrex_spacedim
 
-    use Grid_interface,        ONLY : Grid_getFluxPtr, Grid_releaseFluxPtr, &
-                                      Grid_zeroFluxData, &
+    use Grid_interface,        ONLY : Grid_zeroFluxData, &
+                                      Grid_getTileIterator, &
+                                      Grid_releaseTileIterator, &
                                       Grid_addFineToFluxRegister, &
                                       Grid_addCoarseToFluxRegister, &
                                       Grid_conserveFluxes
     use gr_amrexInterface,     ONLY : gr_getFinestLevel
-    use gr_iterator,           ONLY : gr_iterator_t, &
-                                      build_iterator, destroy_iterator
-    use block_metadata,        ONLY : block_metadata_t
+    use Grid_iterator,         ONLY : Grid_iterator_t
+    use Grid_tile,             ONLY : Grid_tile_t
     use ut_testDriverMod
 
     implicit none
 
-    type(gr_iterator_t)    :: itor
-    type(block_metadata_t) :: block
-    real, pointer          :: fluxDataX(:, :, :, :) => null() 
-    real, pointer          :: fluxDataY(:, :, :, :) => null()
-    real, pointer          :: fluxDataZ(:, :, :, :) => null()
+    type(Grid_iterator_t) :: itor
+    type(Grid_tile_t)     :: tileDesc
+    real, pointer         :: fluxDataX(:, :, :, :)
+    real, pointer         :: fluxDataY(:, :, :, :)
+    real, pointer         :: fluxDataZ(:, :, :, :)
 
     integer :: finest_level
     integer :: lev, i, j
+    
+    nullify(fluxDataX)
+    nullify(fluxDataY)
+    nullify(fluxDataZ)
 
     !!!!! CONFIRM PROPER DIMENSIONALITY
     write(*,*)
@@ -84,11 +88,13 @@ subroutine Driver_evolveFlash()
     end do
 
     ! Zero flux at all faces
-    call build_iterator(itor, ALL_BLKS, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
+    call Grid_getTileIterator(itor, ALL_BLKS, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
 
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+        call tileDesc%getDataPtr(fluxDataZ, FLUXZ)
         
         call assertTrue( associated(fluxDataX), "flux X Ptr should be set")
         call assertTrue( associated(fluxDataY), "flux Y Ptr should be set")
@@ -99,34 +105,42 @@ subroutine Driver_evolveFlash()
         call assertEqual(SIZE(fluxDataY, 1), 8, "Incorrect width of Y block")
         call assertEqual(SIZE(fluxDataY, 2), 9, "Incorrect height of Y block")
 
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level")
                 end do
             end do
         end associate
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
+        call tileDesc%releaseDataPtr(fluxDataZ, FLUXZ)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     !!!!! ADD ONLY COARSE FLUX TO REGISTERS
     write(*,*) "Coarse Flux ONLY Test Phase"
     write(*,*) "------------------------------------------------------------"
     do lev = 1, finest_level
-        call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-        do while (itor%is_valid())
-            call itor%blkMetaData(block)
+        call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+        do while (itor%isValid())
+            call itor%currentTile(tileDesc)
 
-            call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-            associate(lo => block%limits(LOW,  :), &
-                      hi => block%limits(HIGH, :))
+            call tileDesc%getDataPtr(fluxDataX, FLUXX)
+            call tileDesc%getDataPtr(fluxDataY, FLUXY)
+            associate(lo => tileDesc%limits(LOW,  :), &
+                      hi => tileDesc%limits(HIGH, :))
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)+1
                         fluxDataX(i, j, 1, 1) = j
@@ -138,11 +152,12 @@ subroutine Driver_evolveFlash()
                     end do
                 end do
             end associate
-            call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+            call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+            call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
             call itor%next()
         end do
-        call destroy_iterator(itor)
+        call Grid_releaseTileIterator(itor)
 
         if (lev < finest_level) then
             call Grid_addCoarseToFluxRegister(lev, zeroFullRegister=.TRUE.)
@@ -156,37 +171,44 @@ subroutine Driver_evolveFlash()
 
     ! No Fine/Coarse boundaries on coarsest level
     lev = 1
-    call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
+    call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
 
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level 1")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level 1")
                 end do
             end do
         end associate
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     ! Second layer has one leaf block on top
     lev = 2
-    call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+    call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             ! Check X-face fluxes
             do     j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)+1
@@ -243,46 +265,56 @@ subroutine Driver_evolveFlash()
                 end do
             end do
         end associate
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+
+    call Grid_releaseTileIterator(itor)
 
     ! No Fine/Coarse boundaries on finest level
     lev = 3
-    call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+    call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level 3")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level 3")
                 end do
             end do
         end associate
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     !!!!! CREATE FLUX ERROR IN REGISTERS
     write(*,*) "Flux Error Test Phase"
     write(*,*) "------------------------------------------------------------"
     do lev = finest_level, 1, -1
-        call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-        do while (itor%is_valid())
-            call itor%blkMetaData(block)
+        call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+        do while (itor%isValid())
+            call itor%currentTile(tileDesc)
 
-            call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-            associate(lo => block%limits(LOW,  :), &
-                      hi => block%limits(HIGH, :))
+            call tileDesc%getDataPtr(fluxDataX, FLUXX)
+            call tileDesc%getDataPtr(fluxDataY, FLUXY)
+            associate(lo => tileDesc%limits(LOW,  :), &
+                      hi => tileDesc%limits(HIGH, :))
                 do     j = lo(JAXIS), hi(JAXIS)
                     do i = lo(IAXIS), hi(IAXIS)+1
                         fluxDataX(i, j, 1, 1) = j
@@ -294,11 +326,12 @@ subroutine Driver_evolveFlash()
                     end do
                 end do
             end associate
-            call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+            call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+            call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
             call itor%next()
         end do
-        call destroy_iterator(itor)
+        call Grid_releaseTileIterator(itor)
 
         ! Construct flux error in flux register whose coarse flux
         ! is associated with current level
@@ -317,36 +350,45 @@ subroutine Driver_evolveFlash()
 
     ! No Fine/Coarse boundaries on coarsest level
     lev = 1
-    call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+    call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level 1")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level 1")
                 end do
             end do
         end associate
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     ! Second layer had one block refined 
     lev = 2
-    call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+    call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+        
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             ! Check X-face fluxes
             do     j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)+1
@@ -412,51 +454,73 @@ subroutine Driver_evolveFlash()
                 end do
             end do
         end associate
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     ! No Fine/Coarse boundaries on finest level
     lev = 3
-    call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+    call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level 1")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level 1")
                 end do
             end do
         end associate
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     !!!!! USE FINE/COARSE MULTIPLICATIVE FACTORS TO CANCEL FLUX
     write(*,*) "Flux Cancellation Test Phase"
     write(*,*) "------------------------------------------------------------"
     do lev = finest_level, 1, -1
-        call build_iterator(itor, ALL_BLKS, lev, tiling=.FALSE.)
-        do while (itor%is_valid())
-            call itor%blkMetaData(block)
+        call Grid_getTileIterator(itor, ALL_BLKS, lev, tiling=.TRUE.)
+        do while (itor%isValid())
+            call itor%currentTile(tileDesc)
 
-            call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-            fluxDataX(:, :, :, :) =  lev
-            fluxDataY(:, :, :, :) = -lev
-            call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+            call tileDesc%getDataPtr(fluxDataX, FLUXX)
+            call tileDesc%getDataPtr(fluxDataY, FLUXY)
+            associate(lo => tileDesc%limits(LOW,  :), &
+                      hi => tileDesc%limits(HIGH, :))
+                do     j = lo(JAXIS), hi(JAXIS) 
+                    do i = lo(IAXIS), hi(IAXIS)+1
+                        fluxDataX(i, j, 1, 1) =  lev
+                    end do
+                end do
+                do     j = lo(JAXIS), hi(JAXIS)+1 
+                    do i = lo(IAXIS), hi(IAXIS)
+                        fluxDataY(i, j, 1, 1) = -lev
+                    end do
+                end do
+            end associate
+
+            call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+            call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
             call itor%next()
         end do
-        call destroy_iterator(itor)
+        call Grid_releaseTileIterator(itor)
 
         ! Construct flux error in flux register whose coarse flux
         ! is associated with current level
@@ -479,26 +543,33 @@ subroutine Driver_evolveFlash()
     end do
 
     ! Zero flux everywhere
-    call build_iterator(itor, ALL_BLKS, tiling=.FALSE.)
-    do while (itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
-        associate(lo => block%limits(LOW,  :), &
-                  hi => block%limits(HIGH, :))
+    call Grid_getTileIterator(itor, ALL_BLKS, tiling=.TRUE.)
+    do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+
+        call tileDesc%getDataPtr(fluxDataX, FLUXX)
+        call tileDesc%getDataPtr(fluxDataY, FLUXY)
+        associate(lo => tileDesc%limits(LOW,  :), &
+                  hi => tileDesc%limits(HIGH, :))
             do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+                do i = lo(IAXIS), hi(IAXIS)+1
                     call assertEqual(DBLE(0.0), fluxDataX(i, j, 1, 1), &
                                      "Incorrect X flux data on level")
+                end do
+            end do
+            do     j = lo(JAXIS), hi(JAXIS)+1
+                do i = lo(IAXIS), hi(IAXIS)
                     call assertEqual(DBLE(0.0), fluxDataY(i, j, 1, 1), &
                                      "Incorrect Y flux data on level")
                 end do
             end do
         end associate
-        call Grid_releaseFluxPtr(block, fluxDataX, fluxDataY, fluxDataZ)
+        call tileDesc%releaseDataPtr(fluxDataX, FLUXX)
+        call tileDesc%releaseDataPtr(fluxDataY, FLUXY)
 
         call itor%next()
     end do
-    call destroy_iterator(itor)
+    call Grid_releaseTileIterator(itor)
 
     call finish_test_run
 

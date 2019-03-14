@@ -106,3 +106,9 @@ mpole_dumpMoments          = .false.      # output the moment array
 eintSwitch     = 1.e-4
 
 num_poisson_solves = 100
+
+gr_useTiling = .TRUE.
+gr_tileSizeX = 8
+gr_tileSizeY = 4
+gr_tileSizeZ = 2
+

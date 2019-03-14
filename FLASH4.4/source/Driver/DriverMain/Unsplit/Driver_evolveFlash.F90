@@ -72,8 +72,6 @@ subroutine Driver_evolveFlash()
                                   Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
                                   Grid_getDeltas,&
-                                  Grid_getBlkPtr,&
-                                  Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
   use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
 #ifdef FLASH_GRID_AMREX

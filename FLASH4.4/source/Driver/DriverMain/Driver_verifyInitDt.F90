@@ -37,14 +37,13 @@ subroutine Driver_verifyInitDt()
        dr_dtSTS, dr_dtNew, dr_meshComm,                                       &
        dr_globalComm,dr_dtDiffuse, dr_dtAdvect,dr_dtHeatExch,dr_useSTS,       &
        dr_tstepSlowStartFactor
-  use Grid_interface, ONLY :  Grid_getCellCoords, Grid_getDeltas, &
-       Grid_getSingleCellCoords, Grid_getMaxRefinement, &
-       Grid_getBlkPtr, Grid_releaseBlkPtr, &
-       Grid_getLeafIterator, Grid_releaseLeafIterator
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+                             Grid_releaseTileIterator, &
+                             Grid_getCellCoords
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
   use Diffuse_interface, ONLY: Diffuse_computeDt
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
 
   implicit none       
 
@@ -70,16 +69,18 @@ subroutine Driver_verifyInitDt()
        xLeft,xRight,yLeft,yRight,zLeft,zRight
 
   !arrays which hold the starting and ending indicies of a block
-  integer,dimension(2,MDIM)::lim,limGC
+  integer,dimension(2,MDIM)::lim
 
   !!coordinate infomration to be passed into physics  
   real, pointer :: solnData(:,:,:,:)
   integer :: isize,jsize,ksize
   logical :: runVerifyInitDt = .false.
   real :: extraHydroInfo
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
-  integer:: ib, level, maxLev
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
+  integer:: ib
+
+  nullify(solnData)
 
 !!$  dr_dtSTS = 0.0     !First use is in a max(dr_dtSTS,...), see Driver_evolveFlash. - KW
 !!$  dr_dtNew = 0.0     !First use is in a max(dr_dtSTS,...), see Driver_evolveFlash. - KW
@@ -93,8 +94,6 @@ subroutine Driver_verifyInitDt()
      endif
   endif
 
-  call Grid_getMaxRefinement(maxLev,mode=1)
-  
   if (.not. dr_restart) then
      ! compute the CFL timestep for the simulation and compare it to the
      ! user specified initial timestep.  Scream loudly if there is a problem.
@@ -107,110 +106,116 @@ subroutine Driver_verifyInitDt()
      call Hydro_consolidateCFL()
 #endif
         
-        !There is some overhead in calling Hydro_computeDt.  Although it is a
-        !pain to get the coordinates and solution data before calling the 
-        !routine, this is just initialization.  Getting the coordinates inside
-        !Hydro_computeDt would be much more costly during the run
-        
-     do level=1,maxLev
-        call Grid_getLeafIterator(itor, level=level)
-        do while(itor%is_valid())
-           call itor%blkMetaData(blockDesc)
-          
-           lim=blockDesc%Limits
-           limGC=blockDesc%LimitsGC
-           call Grid_getBlkPtr(blockDesc, solnData)
+     !There is some overhead in calling Hydro_computeDt.  Although it is a
+     !pain to get the coordinates and solution data before calling the 
+     !routine, this is just initialization.  Getting the coordinates inside
+     !Hydro_computeDt would be much more costly during the run
 
-           isize = limGC(HIGH,IAXIS)-limGC(LOW,IAXIS)+1
-           jsize = limGC(HIGH,JAXIS)-limGC(LOW,JAXIS)+1
-           ksize = limGC(HIGH,KAXIS)-limGC(LOW,KAXIS)+1
-           
-           allocate(xCoord(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-           allocate(dx(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-           allocate(uxgrid(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-           allocate(yCoord(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
-           allocate(dy(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
-           allocate(uygrid(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
-           allocate(zCoord(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           allocate(dz(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           allocate(uzgrid(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           allocate(xLeft(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-           allocate(xRight(limGC(LOW,IAXIS):limGC(HIGH,IAXIS)))
-           allocate(yLeft(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
-           allocate(yRight(limGC(LOW,JAXIS):limGC(HIGH,JAXIS)))
-           allocate(zLeft(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           allocate(zRight(limGC(LOW,KAXIS):limGC(HIGH,KAXIS)))
-           
-           
-           coordSize = isize
-           call Grid_getCellCoords(IAXIS,blockDesc,CENTER,gcell,xCoord,coordSize)
-           call Grid_getCellCoords(IAXIS,blockDesc,LEFT_EDGE,gcell,xLeft,isize)
-           call Grid_getCellCoords(IAXIS,blockDesc,RIGHT_EDGE,gcell,xRight,isize)
-           
-           if (NDIM > 1) then
-              coordSize = jsize
-              call Grid_getCellCoords(JAXIS,blockDesc,CENTER,gcell,yCoord,coordSize)
-              call Grid_getCellCoords(JAXIS,blockDesc,LEFT_EDGE,gcell,yLeft,jsize)
-              call Grid_getCellCoords(JAXIS,blockDesc,RIGHT_EDGE,gcell,yRight,jsize)
-              
-              if (NDIM > 2) then
-                 coordSize = ksize
-                 call Grid_getCellCoords(KAXIS,blockDesc,CENTER,gcell,zCoord,coordSize)
-                 call Grid_getCellCoords(KAXIS,blockDesc,LEFT_EDGE,gcell,zLeft,ksize)
-                 call Grid_getCellCoords(KAXIS,blockDesc,RIGHT_EDGE,gcell,zRight,ksize)
-              endif
-           endif
-           
-           
-           
-           call Grid_getDeltas(level, del)
-           dx(:) = del(1)
-           dy(:) = del(2)
-           dz(:) = del(3)
-           
-           uxgrid(:) = 0
-           uygrid(:) = 0
-           uzgrid(:) = 0
-           
-           call Hydro_computeDt (blockDesc, &
-                xCoord, dx, uxgrid, &
-                yCoord, dy, uygrid, &
-                zCoord, dz, uzgrid, &
-                lim,limGC,  &
-                solnData,      &
-                dtCheck(1), dtMinLoc, &
-                extraInfo=extraHydroInfo)
-!!$        call Diffuse_computeDt ( blockList(i), &
-!!$             xCoord, xLeft,xRight, dx, uxgrid, &
-!!$             yCoord, yLeft,yRight, dy, uygrid, &
-!!$             zCoord, zLeft,zRight, dz, uzgrid, &
-!!$             lim,limGC,  &
-!!$             solnData,      &
-!!$             dtCheck(2), dtMinLoc )
-           
-           call Grid_releaseBlkPtr(blockDesc, solnData)
-           nullify(solnData)
+     call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+      
+        call tileDesc%getDataPtr(solnData, CENTER)
+
+        ! DEV: Do we really need to get the data for the GC as well?
+        lim(:, :) = tileDesc%limits(:, :)
+        lim(LOW,  1:NDIM) = lim(LOW,  1:NDIM) - NGUARD
+        lim(HIGH, 1:NDIM) = lim(HIGH, 1:NDIM) + NGUARD
+        allocate(xCoord(lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(dx(    lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(uxgrid(lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(yCoord(lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(dy(    lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(uygrid(lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(zCoord(lim(LOW, KAXIS):lim(HIGH, KAXIS)))
+        allocate(dz(    lim(LOW, KAXIS):lim(HIGH, KAXIS)))
+        allocate(uzgrid(lim(LOW, KAXIS):lim(HIGH, KAXIS)))
+        allocate(xLeft( lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(xRight(lim(LOW, IAXIS):lim(HIGH, IAXIS)))
+        allocate(yLeft( lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(yRight(lim(LOW, JAXIS):lim(HIGH, JAXIS)))
+        allocate(zLeft( lim(LOW, KAXIS):lim(HIGH, KAXIS)))
+        allocate(zRight(lim(LOW, KAXIS):lim(HIGH, KAXIS)))
+
+        call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                xCoord)
+        call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                xLeft)
+        call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                xRight)
+
+#if NDIM >= 2
+        call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                yCoord)
+        call Grid_getCellCoords(JAXIS, LEFT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                yLeft)
+        call Grid_getCellCoords(JAXIS, RIGHT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                yRight)
+#endif
+#if NDIM == 3
+        call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                zCoord)
+        call Grid_getCellCoords(KAXIS, LEFT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                zLeft)
+        call Grid_getCellCoords(KAXIS, RIGHT_EDGE, tileDesc%level, &
+                                lim(LOW, :), lim(HIGH, :), &
+                                zRight)
+#endif
+
+        call tileDesc%deltas(del)
+        dx(:) = del(1)
+        dy(:) = del(2)
+        dz(:) = del(3)
+        
+        uxgrid(:) = 0
+        uygrid(:) = 0
+        uzgrid(:) = 0
+        
+        call Hydro_computeDt (tileDesc, &
+             xCoord, dx, uxgrid, &
+             yCoord, dy, uygrid, &
+             zCoord, dz, uzgrid, &
+             tileDesc%limits, lim,  &
+             solnData,      &
+             dtCheck(1), dtMinLoc, &
+             extraInfo=extraHydroInfo)
+!!$     call Diffuse_computeDt ( blockList(i), &
+!!$          xCoord, xLeft,xRight, dx, uxgrid, &
+!!$          yCoord, yLeft,yRight, dy, uygrid, &
+!!$          zCoord, zLeft,zRight, dz, uzgrid, &
+!!$          lim,limGC,  &
+!!$          solnData,      &
+!!$          dtCheck(2), dtMinLoc )
+        
+        call tileDesc%releaseDataPtr(solnData, CENTER)
  
-           deallocate(xCoord)
-           deallocate(dx)
-           deallocate(uxgrid)
-           deallocate(yCoord)
-           deallocate(dy)
-           deallocate(uygrid)
-           deallocate(zCoord)
-           deallocate(dz)
-           deallocate(uzgrid)
-           deallocate(xLeft)
-           deallocate(xRight)
-           deallocate(yLeft)
-           deallocate(yRight)
-           deallocate(zLeft)
-           deallocate(zRight)
-           
-           call itor%next()
-        end do
-        call Grid_releaseLeafIterator(itor)
+        deallocate(xCoord)
+        deallocate(dx)
+        deallocate(uxgrid)
+        deallocate(yCoord)
+        deallocate(dy)
+        deallocate(uygrid)
+        deallocate(zCoord)
+        deallocate(dz)
+        deallocate(uzgrid)
+        deallocate(xLeft)
+        deallocate(xRight)
+        deallocate(yLeft)
+        deallocate(yRight)
+        deallocate(zLeft)
+        deallocate(zRight)
+        
+        call itor%next()
      end do
+     call Grid_releaseTileIterator(itor)
      
      ! find the minimum across all processors, store it in dtCFL on MasterPE
      call MPI_AllReduce(dtCheck(1), dtCFL(1), 3, FLASH_REAL, MPI_MIN, &

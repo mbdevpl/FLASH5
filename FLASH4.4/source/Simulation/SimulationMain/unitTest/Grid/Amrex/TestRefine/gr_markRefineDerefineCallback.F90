@@ -1,22 +1,20 @@
-subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind(c)
-   use iso_c_binding
-   use amrex_fort_module,      ONLY : wp => amrex_real
-   use amrex_box_module,       ONLY : amrex_box
-   use amrex_tagbox_module,    ONLY : amrex_tagboxarray
-   use amrex_multifab_module,  ONLY : amrex_mfiter, &
-                                      amrex_mfiter_build, &
-                                      amrex_mfiter_destroy, &
-                                      amrex_multifab_build
- 
-   use Grid_interface,         ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-   use block_metadata,         ONLY : block_metadata_t
-   use gr_physicalMultifabs,   ONLY : unk
-
-   implicit none
- 
 #include "Flash.h"
 #include "constants.h"
 
+subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind(c)
+   use iso_c_binding
+   use amrex_fort_module,     ONLY : wp => amrex_real
+   use amrex_box_module,      ONLY : amrex_box
+   use amrex_tagbox_module,   ONLY : amrex_tagboxarray
+   use amrex_multifab_module, ONLY : amrex_mfiter, &
+                                     amrex_mfiter_build, &
+                                     amrex_mfiter_destroy
+ 
+   use Grid_tile,             ONLY : Grid_tile_t
+   use gr_physicalMultifabs,  ONLY : unk
+
+   implicit none
+ 
    integer,           intent(IN), value :: lev
    type(c_ptr),       intent(in), value :: tags 
    real(wp),          intent(in), value :: time
@@ -26,43 +24,43 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    type(amrex_tagboxarray) :: tag
    type(amrex_mfiter)      :: mfi                                                             
    type(amrex_box)         :: bx
-   type(block_metadata_t)  :: blockDesc
+   type(Grid_tile_t)       :: tileDesc
 
    real(wp),               contiguous, pointer :: solnData(:,:,:,:)
    character(kind=c_char), contiguous, pointer :: tagData(:,:,:,:)
 
-   integer :: off(1:MDIM)
-
    integer :: refine_to
    integer :: i, j
 
+   nullify(solnData)
+   nullify(tagData)
+
    write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                        "      Started on level ", lev + 1
-   
+
    tag = tags
 
    call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)                             
    do while(mfi%next())
       bx = mfi%tilebox()
 
-      ! DEVNOTE: TODO Simulate block until we have a natural iterator for FLASH
       ! Level must be 1-based index and limits/limitsGC must be 1-based also
-      ! DEVNOTE: Should we use gr_[ijk]guard here?
-      blockDesc%level = lev + 1
-      blockDesc%grid_index = mfi%grid_index()
-      blockDesc%limits(LOW,  :) = 1
-      blockDesc%limits(HIGH, :) = 1
-      blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
-      blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
-      blockDesc%limitsGC(LOW,  :) = 1
-      blockDesc%limitsGC(HIGH, :) = 1
-      blockDesc%limitsGC(LOW,  1:NDIM) = blockDesc%limits(LOW,  1:NDIM) - NGUARD
-      blockDesc%limitsGC(HIGH, 1:NDIM) = blockDesc%limits(HIGH, 1:NDIM) + NGUARD
+      tileDesc%level = lev + 1
+      tileDesc%grid_index = mfi%grid_index()
+      tileDesc%tile_index = 0
+      tileDesc%limits(LOW,  :) = 1
+      tileDesc%limits(HIGH, :) = 1
+      tileDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+      tileDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+      tileDesc%blkLimitsGC(LOW,  :) = 1
+      tileDesc%blkLimitsGC(HIGH, :) = 1
+      tileDesc%blkLimitsGC(LOW,  1:NDIM) = tileDesc%limits(LOW,  1:NDIM) - NGUARD
+      tileDesc%blkLimitsGC(HIGH, 1:NDIM) = tileDesc%limits(HIGH, 1:NDIM) + NGUARD
 
-      call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+      call tileDesc%getDataPtr(solnData, CENTER)
 
-      associate (lo => blockDesc%limits(LOW,  :), &
-                 hi => blockDesc%limits(HIGH, :))
+      associate (lo => tileDesc%limits(LOW,  :), &
+                 hi => tileDesc%limits(HIGH, :))
         tagData => tag%dataptr(mfi)
         tagData(:, :, :, :) = clearval
         do     j = lo(JAXIS), hi(JAXIS)
@@ -72,7 +70,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                 ! Stored data is density.  We need to reverse transformation
                 ! back to level of refinement integer that is the same on
                 ! all levels
-                refine_to = INT(solnData(i,j,1,1) * 4.0d0**(4-(lev+1)))
+                refine_to = INT(solnData(i,j,1,1) * 4.0**(4-(lev+1)))
                 if (solnData(i,j,1,1) > 0.0d0) then
                     write(*,'(A,I3,A,I3,A,F7.5,A,I3)') &
                           "     Non-zero data at (", &
@@ -90,7 +88,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
         end do
       end associate
 
-      call Grid_releaseBlkPtr(blockDesc, solnData)
+      call tileDesc%releaseDataPtr(solnData, CENTER)
    end do
    call amrex_mfiter_destroy(mfi)
 

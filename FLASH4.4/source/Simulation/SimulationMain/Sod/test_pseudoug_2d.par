@@ -43,6 +43,10 @@ xr_boundary_type = "outflow"
 yl_boundary_type = "outflow"
 yr_boundary_type = "outflow"
 
+gr_useTiling = .TRUE.
+gr_tileSizeX = 4
+gr_tileSizeY = 2
+gr_tileSizeZ = 1
 
 #	Simulation (grid, time, I/O) parameters
 cfl		= 0.3
@@ -81,10 +85,15 @@ lrefine_min       = 6
 lrefine_max       = 6
 refine_var_1      = "dens"
 
-# These parameters are used only for the uniform grid
+# Uniform Grid specific parameters
+# This setup should run a UG simulation that is identical to the 
+# pseudo-UG setup
 iProcs = 2	#number or procs in the i direction	
-jProcs = 1
+jProcs = 2
 kProcs = 1
+iGridSize = 256
+jGridSize = 256
+kGridSize = 1
 
 ## -------------------------------------------------------------##
 ##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
