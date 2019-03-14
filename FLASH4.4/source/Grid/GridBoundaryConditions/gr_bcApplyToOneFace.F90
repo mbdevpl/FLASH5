@@ -171,7 +171,7 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
        regionData,tileDesc,idest)
   call Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,tileDesc%level,&
        guard,axis,face,regionData,regionSize,mask,applied,&
-       tileDesc,nextDir(1),nextDir(2),endPoints,idest)
+       nextDir(1),nextDir(2),endPoints,idest)
   if(.not.applied) then
      call Grid_bcApplyToRegion(bcType,gridDataStruct,tileDesc%level,&
           guard,axis,face,regionData,regionSize,mask,applied,&

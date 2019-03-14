@@ -15,6 +15,7 @@
 !!                            integer(IN)  :: regionSize(:),
 !!                            logical(IN)  :: mask(:),
 !!                            logical(OUT) :: applied,
+!!                            Grid_tile_t(IN)  :: tileDesc,
 !!                            integer(IN)  :: secondDir,
 !!                            integer(IN)  :: thirdDir,
 !!                            integer(IN)  :: endPoints(LOW:HIGH,MDIM),
@@ -38,13 +39,14 @@
 !!  for all variables in the gridDataStruct that are not masked out. The 
 !!  argument "mask" has the information about the masked variables.
 !! 
+!!   Where masked(variables)
 !!     If (face=LOW)  
-!!       regionData(1:guard,:,:,masked(variables) =  boundary values
+!!       regionData(1:guard,:,:,variables) =  boundary values
 !!     If (face=HIGH) 
-!!       regionData(regionSize(BC_DIR)-guard+1:regionSize(BC_DIR),:,:,masked(variables) =  boundary values
+!!       regionData(regionSize(BC_DIR)-guard+1:regionSize(BC_DIR),:,:,variables) =  boundary values
 !!
 !!  One reason why information about direction and variable is
-!!  included in this interface is because Velocities need to be
+!!  included in this interface is because velocities need to be
 !!  treated specially for REFLECTING boundary conditions. if
 !!  axis=IAXIS, then the variable VELX_VAR is treated differently,
 !!  same with VELY_VAR if axis=JAXIS and VELZ_VAR if
@@ -52,7 +54,8 @@
 !!  in through the argument "dataRow" from the appropriated blocks,
 !!  and send it to this routine for boundary calculation. The
 !!  PERIODIC boundary is calculated by default when the blocks are
-!!  exchanging data with each other.
+!!  exchanging data with each other, and therefore will not be encountered
+!!  by this routine.
 !!  One possible implementation of this interface passes handling of all other
 !!  boundary condition types on to calls of the old style Grid_applyBCEdge,
 !!  which is called for each of the variables in turn.  However, this implementation
@@ -79,6 +82,7 @@
 !!  gridDataStruct - the Grid dataStructure, should be given as
 !!                   one of the constants CENTER, FACEX, FACEY, FACEZ
 !!                   (or, with some Grid implementations, WORK).
+!!  level - the 1-based refinement level on which the regionData is defined
 !!  guard -    number of guard cells
 !!  axis  - the dimension along which to apply boundary conditions,
 !!          can take values of IAXIS, JAXIS and KAXIS
@@ -87,8 +91,15 @@
 !!             upperface
 !!  regionData     : the extracted region from a block of permanent storage of the 
 !!                   specified data structure. Its size is given by regionSize.
+!!                     NOTE that the first three dimensions of this array do not necessarily
+!!                     correspond to the (IAXIS, JAXIS, KAXIS) directions in this order;
+!!                     rather, the axes are permuted such that the first index
+!!                     of regionData always corresponds to the direction given by axis.
+!!                     See regionSize for more information.
 !!  regionSize     : regionSize(BC_DIR) contains the size of each row of data
-!!                   in the regionData array.  For the common case of guard=4,
+!!                   in the regionData array.  With row we mean here an array slice
+!!                   regionData(:,I2,I3,VAR), corresponding to cells that are situated
+!!                   along a line in the 'axis' direction. For the common case of guard=4,
 !!                   regionSize(BC_DIR) will be 8 for cell-centered data structures
 !!                   (e.g., when gridDataStruct=CENTER) and either 8 or 9 for face-
 !!                   centered data, depending on the direction given by axis.
@@ -96,7 +107,12 @@
 !!                   direction, and regionSize(THIRD_DIR) has the number of rows
 !!                   along the third direction. regionSize(GRID_DATASTRUCT) contains the
 !!                   number of variables in the data structure.
-!!  mask - if present applies boundary conditions to only selected variables
+!!  mask - if present, boundary conditions are to be applied only to selected variables.
+!!         However, an implementation of this interface may ignore the mask argument;
+!!         a mask should be understood as a possible opportunity for optimization which
+!!         an implementation may ignore.
+!!         Specifying a mask does not mean that previous values of other variables in
+!!         guard cells will be left undisturbed.
 !!  applied - is set true if this routine has handled the given bcType, otherwise it is 
 !!            set to false.
 !!
@@ -110,8 +126,8 @@
 !!                         convenience so that more complex boundary condition
 !!                         can make use of it.
 !!                         The values are currently fully determined by the sweep
-!!                         direction bcDir as follows:
-!!                          bcDir   |    secondDir       thirdDir
+!!                         direction axis as follows:
+!!                          axis   |    secondDir       thirdDir
 !!                          ------------------------------------------
 !!                          IAXIS   |    JAXIS             KAXIS
 !!                          JAXIS   |    IAXIS             KAXIS
@@ -143,8 +159,8 @@
 !!
 !!  NOTES 
 !!
-!!   (1)      NOTE that the second indices of the endPoints
-!!            arrays count the (IAXIS, JAXIS, KAXIS)
+!!   (1)      NOTE that the second index of the endPoints
+!!            array counts the (IAXIS, JAXIS, KAXIS)
 !!            directions in the usual order, not permuted as in
 !!            regionSize.
 !!
@@ -181,7 +197,7 @@
 
 subroutine Grid_bcApplyToRegion(bcType,gridDataStruct, level, &
           guard,axis,face,regionData,regionSize,mask,applied,&
-          secondDir,thirdDir,endPoints,idest)
+     tileDesc,secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -193,6 +209,7 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct, level, &
   use gr_bcInterface, ONLY : gr_bcMapBcType, gr_hseStep
   use Grid_data, ONLY : gr_geometry, gr_dirGeom, &
        gr_smallrho, gr_smallE
+  use Grid_tile, ONLY : Grid_tile_t
   use gr_bcHseData, ONLY : gr_bcHseDirection, gr_bcHseGravConst, HSE_FORWARD, HSE_BACKWARD, HSE_SETTEMP
 
   implicit none
@@ -205,6 +222,7 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct, level, &
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
+  type(Grid_tile_t),intent(IN) :: tileDesc
   integer,intent(IN) :: secondDir,thirdDir
   integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest

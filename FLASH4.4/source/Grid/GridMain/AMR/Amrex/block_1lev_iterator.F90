@@ -366,7 +366,7 @@ contains
       class(block_1lev_iterator_t), intent(IN) :: this
       integer                                  :: idx
 
-      idx = this%mfi%local_tile_index()
+!!$      idx = this%mfi%local_tile_index()   ! DEV: This method of amrex_mfiter does not exist any more?
     end function local_tile_index
 
     !!****m* block_1lev_iterator_t/tilebox

@@ -174,8 +174,8 @@
 !!
 !!  NOTES 
 !!
-!!   (1)      NOTE that the second indices of the endPoints and
-!!            blkLimitsGC arrays count the (IAXIS, JAXIS, KAXIS)
+!!   (1)      NOTE that the second index of the endPoints
+!!            array counts the (IAXIS, JAXIS, KAXIS)
 !!            directions in the usual order, not permuted as in
 !!            regionSize.
 !!
