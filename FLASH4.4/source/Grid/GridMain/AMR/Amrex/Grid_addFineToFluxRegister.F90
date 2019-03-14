@@ -92,7 +92,12 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
 
     ! The coarsest refinement level is never the fine level of a flux register
     if ((fine <= 0) .OR. (fine > amrex_get_finest_level())) then
+#ifdef DEBUG_GRID
+        print*,'fine=',fine,', but amrex_get_finest_level() returns',amrex_get_finest_level(),'.'
         call Driver_abortFlash("[Grid_addFineToFluxRegister] Invalid level")
+#else
+        RETURN
+#endif
     end if
 
     if (present(coefficient)) then

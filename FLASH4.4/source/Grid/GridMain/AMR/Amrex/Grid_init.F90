@@ -526,7 +526,7 @@ subroutine Grid_init()
 !  gr_lastBlkPtrGotten_fc = 0
 !#endif
 !  call gr_setDataStructInfo()
-!  call gr_bcInit()
+  call gr_bcInit()
 
   ! DEVNOTE: Is this Paramesh-specific.  Defined in paramesh
   !Initialize grid arrays used by IO
