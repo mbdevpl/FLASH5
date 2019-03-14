@@ -178,4 +178,8 @@ PARAMETER smalle	REAL	1.E-10
 D Attempt to reduce the number of guard cell fills
 PARAMETER reduceGcellFills BOOLEAN FALSE
 
+D gr_useTiling Global switch to enable tiling where implemented or to turn
+D &            off all tiling
+PARAMETER gr_useTiling BOOLEAN FALSE
+
 EXCLUSIVE paramesh UG Amrex

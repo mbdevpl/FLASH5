@@ -212,11 +212,11 @@ module gr_interface
   end interface
 
   interface
-     subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine gr_estimateBlkError(error, tileDesc, iref, refine_filter)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        real,intent(INOUT) :: error
-       type(block_metadata_t),intent(IN) :: blockDesc
+       type(Grid_tile_t),intent(IN) :: tileDesc
        integer, intent(IN) :: iref
        real, intent(IN) ::  refine_filter
      end subroutine gr_estimateBlkError
@@ -238,20 +238,34 @@ module gr_interface
   end interface
   
   interface
-     subroutine gr_getInteriorBlkPtr(blockDesc,dataPtr,gridDataStruct)
+     subroutine gr_getInteriorBlkPtr_blk(blockDesc,dataPtr,gridDataStruct)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN) :: blockDesc
+       real,dimension(:,:,:,:),pointer :: dataPtr
+       integer, intent(IN) :: gridDataStruct
+     end subroutine gr_getInteriorBlkPtr_blk
+     subroutine gr_getInteriorBlkPtr(tileDesc,dataPtr,gridDataStruct)
+       use Grid_tile, ONLY : Grid_tile_t
+       implicit none
+       type(Grid_tile_t), intent(IN) :: tileDesc
        real,dimension(:,:,:,:),pointer :: dataPtr
        integer, intent(IN) :: gridDataStruct
      end subroutine gr_getInteriorBlkPtr
   end interface
 
   interface 
-     subroutine gr_releaseInteriorBlkPtr(blockDesc,dataPtr,gridDataStruct)
+     subroutine gr_releaseInteriorBlkPtr_blk(blockDesc,dataPtr,gridDataStruct)
        use block_metadata, ONLY : block_metadata_t
        implicit none
        type(block_metadata_t), intent(IN) :: blockDesc
+       real,dimension(:,:,:,:),pointer :: dataPtr
+       integer, intent(IN) :: gridDataStruct
+     end subroutine gr_releaseInteriorBlkPtr_blk
+     subroutine gr_releaseInteriorBlkPtr(tileDesc,dataPtr,gridDataStruct)
+       use Grid_tile, ONLY : Grid_tile_t
+       implicit none
+       type(Grid_tile_t), intent(IN) :: tileDesc
        real,dimension(:,:,:,:),pointer :: dataPtr
        integer, intent(IN) :: gridDataStruct
      end subroutine gr_releaseInteriorBlkPtr
@@ -489,7 +503,7 @@ module gr_interface
   end interface
 
   interface gr_getDataOffsets
-     subroutine gr_getDataOffsets(block, gridDataStruct, startingPos, &
+     subroutine gr_getDataOffsets_blk(block, gridDataStruct, startingPos, &
                                   length, beginCount, begOffset, getIntPtr)
        use block_metadata, ONLY : block_metadata_t
        implicit none
@@ -500,6 +514,18 @@ module gr_interface
        integer,                intent(IN)  :: length(MDIM)
        integer,                intent(OUT) :: begOffset(MDIM)
        logical,                intent(OUT) :: getIntPtr
+     end subroutine gr_getDataOffsets_blk
+     subroutine gr_getDataOffsets(tileDesc, gridDataStruct, startingPos, &
+                                  length, beginCount, begOffset, getIntPtr)
+       use Grid_tile, ONLY : Grid_tile_t
+       implicit none
+       type(Grid_tile_t),  intent(IN)  :: tileDesc
+       integer,            intent(IN)  :: gridDataStruct
+       integer,            intent(IN)  :: beginCount
+       integer,            intent(IN)  :: startingPos(MDIM)
+       integer,            intent(IN)  :: length(MDIM)
+       integer,            intent(OUT) :: begOffset(MDIM)
+       logical,            intent(OUT) :: getIntPtr
      end subroutine gr_getDataOffsets
      subroutine gr_getDataOffsets_blkid(blockID, gridDataStruct, startingPos, &
                                         length, beginCount, begOffset, getIntPtr)

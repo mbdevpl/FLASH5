@@ -37,8 +37,8 @@ subroutine gr_expandDomain (particlesInitialized)
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_stampVarMask
   use Grid_interface, ONLY :  Grid_getLocalNumBlks, Grid_markRefineDerefine, &
-                              Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+                              Grid_getTileIterator, &
+                              Grid_releaseTileIterator
   use tree, ONLY : lrefine, lrefine_min, lrefine_max, grid_changed
   use paramesh_interfaces, ONLY : amr_refine_derefine, amr_restrict
   use Eos_interface, ONLY : Eos_wrapped
@@ -54,8 +54,8 @@ subroutine gr_expandDomain (particlesInitialized)
     Particles_updateRefinement
   use Driver_interface, ONLY : Driver_abortFlash
   use RadTrans_interface, ONLY: RadTrans_sumEnergy
-  use gr_iterator, ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t 
 
   implicit none
 
@@ -63,15 +63,9 @@ subroutine gr_expandDomain (particlesInitialized)
 
   include 'Flash_mpi.h'
 
-  real, pointer:: solnData(:,:,:,:)
   logical, intent(out) :: particlesInitialized
-  integer :: lnblocks, lrefineMinSave
-
-
-  !!          Local variables and functions
 
   integer :: ntimes, i
-
   integer :: count, cur_treedepth, grid_changed_anytime
   logical :: restart = .false.
   logical :: particlesPosnsDone, retainParticles
@@ -79,14 +73,18 @@ subroutine gr_expandDomain (particlesInitialized)
   character(len=32), dimension(2,2) :: block_buff
   character(len=32)                 :: int_to_str
   integer :: gridDataStruct, whichBlocks
-  type(gr_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  integer :: lnblocks, lrefineMinSave
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
+  real, pointer          :: solnData(:,:,:,:)
 
   !!============================================================================
 
 
 
   !!============================================================================
+
+  nullify(solnData)
 
   !! The beginning timestep number, time, and timestep.
   !! If the initial redshift (zinitial) is physical (>= 0),
@@ -155,25 +153,24 @@ subroutine gr_expandDomain (particlesInitialized)
      end if
 #endif
 
-     call gr_getBlkIterator(itor, nodetype=whichBlocks)
-     do while(itor%is_valid())
-        call itor%blkMetaData(block)
-        
+     call Grid_getTileIterator(itor, whichBlocks, tiling=.FALSE.)
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+
         !  We need to zero data in case we reuse blocks from previous levels
         !  but don't initialize all data in Simulation_initBlock... in particular
         !  the total vs. internal energies can cause problems in the eos call that 
         !  follows.
-        call Grid_getBlkPtr(block, solnData)
+        call tileDesc%getDataPtr(solnData, CENTER)
         solnData = 0.0
         !      Now reinitialize the solution on the new grid so that it has
         !      the exact solution.
-        call Simulation_initBlock(solnData, block)
-        call Grid_releaseBlkPtr(block, solnData)
-        nullify(solnData)
+        call Simulation_initBlock(solnData, tileDesc)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
 
         call itor%next()
      end do
-     call gr_releaseBlkIterator(itor)
+     call Grid_releaseTileIterator(itor)
 
 #ifdef ERAD_VAR
      ! Sum radiation energy density over all meshes. This call is
@@ -187,17 +184,17 @@ subroutine gr_expandDomain (particlesInitialized)
      ! This is here for safety, in case the user did not take care to make things
      ! thermodynamically consistent in the initial state.- KW
      call Timers_start("eos")
-     call itor%first()
-     do while(itor%is_valid())
-        call itor%blkMetaData(block)
-        
-        call Grid_getBlkPtr(block, solnData)
-        call Eos_wrapped(gr_eosModeInit, block%limits, solnData)
-        call Grid_releaseBlkPtr(block, solnData)
-        nullify(solnData)
+     call Grid_getTileIterator(itor, whichBlocks, tiling=.FALSE.)
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+ 
+        call tileDesc%getDataPtr(solnData, CENTER)
+        call Eos_wrapped(gr_eosModeInit, tileDesc%limits, solnData)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
 
         call itor%next()
      end do
+     call Grid_releaseTileIterator(itor)
 
      call Timers_stop("eos")
 

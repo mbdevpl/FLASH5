@@ -104,4 +104,5 @@ Module Grid_data
 
   real,save,target,allocatable,dimension(:,:,:,:) :: gr_flxx, gr_flxy, gr_flxz
   
+  logical, save :: gr_enableTiling
 end Module Grid_data

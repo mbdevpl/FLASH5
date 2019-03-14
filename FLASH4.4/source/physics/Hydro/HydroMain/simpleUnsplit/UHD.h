@@ -402,11 +402,14 @@
 #define HY_ENER 5
 
 !! FLUX VARIABLES FOR PURE HYDRO
-#define HY_DENS_FLUX 1
-#define HY_XMOM_FLUX 2
-#define HY_YMOM_FLUX 3
-#define HY_ZMOM_FLUX 4
-#define HY_ENER_FLUX 5
+! DEV: TODO Figure out how to move these over to Config
+!      appropriately.  What about other fluxes here and
+!      above for MHD?
+!#define HY_DENS_FLUX 1
+!#define HY_XMOM_FLUX 2
+!#define HY_YMOM_FLUX 3
+!#define HY_ZMOM_FLUX 4
+!#define HY_ENER_FLUX 5
 #define HY_P_FLUX 6
 #define HY_EINT_FLUX 7
 #define HY_VOLU_FLUX 8

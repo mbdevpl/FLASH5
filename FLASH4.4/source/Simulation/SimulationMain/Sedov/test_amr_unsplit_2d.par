@@ -44,8 +44,6 @@ yr_boundary_type = "periodic"
 zl_boundary_type = "periodic"
 zr_boundary_type = "periodic"
 
-flux_correct = .FALSE.
-
 #	Simulation time, I/O  parameters
 cfl		 = 0.45
 basenm   = "sedov_"
@@ -79,6 +77,11 @@ refine_var_1      = "dens"
 refine_var_2      = "pres"
 refine_cutoff_1   = 0.5
 derefine_cutoff_1 = 0.5
+
+gr_useTiling = .TRUE.
+gr_tileSizeX = 4
+gr_tileSizeY = 2
+gr_tileSizeZ = 1
 
 # Uniform Grid specific parameters 
 iProcs = 1	#num procs in i direction

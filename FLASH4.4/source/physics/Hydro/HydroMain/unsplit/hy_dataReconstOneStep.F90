@@ -79,7 +79,7 @@
 #ifdef FLASH_USM_MHD
 !! REORDER(4): B[xyz],U
 #endif
-Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
+Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
                                      dt,del,ogravX,ogravY,ogravZ,&
                                      DivU, FlatCoeff,  &
                                      TransX_updateOnly,&
@@ -106,9 +106,6 @@ Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
 
   use Timers_interface,  ONLY : Timers_start, Timers_stop
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr,&
-                                Grid_getCellCoords
-
   !! Use short nicknames for the reconstruction subroutines.
   !! Some compilers (e.g., Absoft) can be confused with similar subroutine names.
   use hy_interface,  ONLY : hy_checkRHjumpCond,&
@@ -117,7 +114,8 @@ Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
                                 WENO => hy_DataReconstructNormalDir_WENO,&
                                 GP   => hy_DataReconstructNormalDir_GP
 
-  use block_metadata,   ONLY : block_metadata_t
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use Grid_tile,      ONLY : Grid_tile_t
 
   implicit none
 
@@ -126,7 +124,7 @@ Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
 
 
   !!-----Arguments---------------------------------------------------------
-  type(block_metadata_t), intent(IN) :: block
+  type(Grid_tile_t), intent(IN) :: tileDesc
   real, pointer, dimension(:,:,:,:) :: U
 !!$  integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimitsGC
   integer, intent(IN), dimension(MDIM):: loGC, hiGC
@@ -191,7 +189,7 @@ Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
   ! first implementation we are hardwiring 2D                      !
   ! ***************************************************************!
   real    :: shockSwitchGP
-  integer :: radius, iSizeGC, jSizeGC,kSizeGC
+  integer :: radius
   real, pointer, dimension(:)      :: x1, x2, x3
   integer,dimension(LOW:HIGH,MDIM) :: blkLimits
 
@@ -209,11 +207,14 @@ Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
 
   !****************** End of GP declarations **********************!
 
-#ifdef FLASH_USM_MHD
-#if NDIM == 2
-  !!NAG complains if this isn't here, since Bz is uninitialized.
+#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
+#if NFACE_VARS > 0
+#if NDIM > 1
+  nullify(Bx)
+  nullify(By)
   nullify(Bz)
-#endif /* NDIM < 3 */
+#endif
+#endif
 #endif
 
   ! Set index range depending on hydro or MHD
@@ -332,10 +333,10 @@ Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
 #ifdef FLASH_USM_MHD /* extra definitions for MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1
-  call Grid_getBlkPtr(block,Bx,FACEX)
-  call Grid_getBlkPtr(block,By,FACEY)
+  call tileDesc%getDataPtr(Bx, FACEX)
+  call tileDesc%getDataPtr(By, FACEY)
 #if NDIM == 3
-  call Grid_getBlkPtr(block,Bz,FACEZ)
+  call tileDesc%getDataPtr(Bz, FACEZ)
 #endif /* NDIM == 3      */
 #endif /* NDUM > 1       */
 #endif /* NFACE_VARS > 0 */
@@ -447,17 +448,16 @@ Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
                        iz-radius:iz+radius)
 #endif
 
-     iSizeGC = hiGC(IAXIS)-loGC(IAXIS)+1
-     if (NDIM > 1) &
-     jSizeGC = hiGC(JAXIS)-loGC(JAXIS)+1
-     if (NDIM == 3) &
-     kSizeGC = hiGC(KAXIS)-loGC(KAXIS)+1
-    
-     call Grid_getCellCoords(IAXIS,block, CENTER, .true.,xCenter,iSizeGC)
-    if (NDIM > 1) &
-     call Grid_getCellCoords(JAXIS,block, CENTER, .true.,yCenter,jSizeGC)
-     if (NDIM == 3) &
-     call Grid_getCellCoords(KAXIS,block, CENTER, .true.,zCenter,kSizeGC)
+     call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                             loGC, hiGC, xCenter)
+#if NDIM > 1
+     call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                             loGC, hiGC, yCenter)
+#endif
+#if NDIM == 3
+     call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, &
+                             loGC, hiGC, zCenter)
+#endif
 
      x1 => xCenter(ix-radius:ix+radius)
      if (NDIM > 1) &
@@ -1199,10 +1199,10 @@ Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
 #ifdef FLASH_USM_MHD /* extra definitions for MHD */
 #if NFACE_VARS > 0
 #if NDIM > 1
-  call Grid_releaseBlkPtr(block,Bx,FACEX)
-  call Grid_releaseBlkPtr(block,By,FACEY)
+  call tileDesc%releaseDataPtr(Bx, FACEX)
+  call tileDesc%releaseDataPtr(By, FACEY)
 #if NDIM == 3
-  call Grid_releaseBlkPtr(block,Bz,FACEZ)
+  call tileDesc%releaseDataPtr(Bz, FACEZ)
 #endif /* NDIM == 3      */
 #endif /* NDUM > 1       */
 #endif /* NFACE_VARS > 0 */

@@ -5,13 +5,13 @@
 !!
 !! SYNOPSIS
 !!
-!!  call gr_bcApplyToOneFace(integer(IN)     :: axis,
-!!                      integer(IN)          :: bcType,
-!!                      integer(IN)          :: gridDataStruct,
-!!                      integer(IN)          :: varCount,
-!!                      integer(IN)          :: regionType(MDIM)
-!!                      block_metadata_t(IN) :: blockDesc,
-!!                      integer(IN)          :: idest)
+!!  call gr_bcApplyToOneFace(integer(IN) :: axis,
+!!                      integer(IN)      :: bcType,
+!!                      integer(IN)      :: gridDataStruct,
+!!                      integer(IN)      :: varCount,
+!!                      integer(IN)      :: regionType(MDIM)
+!!                      Grid_tile_t(IN)  :: tileDesc,
+!!                      integer(IN)      :: idest)
 !!  
 !! DESCRIPTION 
 !!
@@ -37,7 +37,7 @@
 !!                     the block and NO_VEC implies that the correspoding dimension is not
 !!                     a part of the region. Normally this value is most likely to be used
 !!                     along KAXIS in a 2D problems, and JAXIS and KAXIS in a 1D problem
-!!    blockDesc      - Derived type that encapsulates metadata that uniquely
+!!    tileDesc      - Derived type that encapsulates metadata that uniquely
 !!                     characterizes local block to be operated on
 !!    idest          - this is used in Paramesh 4, where boundary condition handling is applied
 !!                     not to a block's solution data in their permanent location (named UNK, etc.),
@@ -54,19 +54,19 @@
 #include "Flash.h"
 
 subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
-                               regionType,blockDesc,idest)
+                               regionType,tileDesc,idest)
 
   use Grid_interface, ONLY : Grid_bcApplyToRegion, &
        Grid_bcApplyToRegionSpecialized
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_bcInterface, ONLY : gr_bcGetRegion, gr_bcPutRegion
   use gr_hgInterface, ONLY : gr_hgMapBcType !!, gr_hg_amr_1blk_bcset_work
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
   implicit none
  
   integer, intent(in) :: axis,bcType,gridDataStruct,varCount,idest
   integer,dimension(MDIM),intent(IN) :: regionType
-  type(block_metadata_t), intent(IN) :: blockDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   integer :: face,guard
   integer,dimension(LOW:HIGH,MDIM) :: endPoints
   integer,dimension(REGION_DIM) :: regionSize
@@ -85,7 +85,7 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
 
   if (gridDataStruct==CENTER_FACES .OR. gridDataStruct==FACES) then
      call gr_bcApplyToOneFaceAllGds(axis,bcType,gridDataStruct,varCount,&
-          regionType,blockDesc,idest)
+          regionType,tileDesc,idest)
      return                  ! DONE - RETURN TO CALLER FROM HERE!
   end if
 
@@ -104,7 +104,7 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
   if(gridDataStruct == WORK) then
      call gr_hgMapBcType(testBcType,bcType,1,gridDataStruct,axis,face,idest)
      if (testBcType == GRIDBC_GIMME_WORK) then
-        call gr_hg_amr_1blk_bcset_work (blockDesc%id, idest, 1, 0)
+        call gr_hg_amr_1blk_bcset_work (tileDesc%id, idest, 1, 0)
         return                  ! DONE - RETURN TO CALLER FROM HERE!
      end if
   end if
@@ -112,8 +112,8 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
 
   allocate(mask(varCount))
   mask=.true.
-  blkLimits   = blockDesc%limits
-  blkLimitsGC = blockDesc%limitsGc
+  blkLimits   = tileDesc%limits
+  blkLimitsGC = tileDesc%grownLimits
   guard=blkLimits(LOW,axis)-blkLimitsGC(LOW,axis)
 
   isFaceVarNormalDir = (gridDataStruct==FACEX).and.(axis==IAXIS)
@@ -168,14 +168,14 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
        regionSize(THIRD_DIR),regionSize(STRUCTSIZE)))
 
   call gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
-       regionData,blockDesc,idest)
-  call Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,blockDesc%level,&
+       regionData,tileDesc,idest)
+  call Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,tileDesc%level,&
        guard,axis,face,regionData,regionSize,mask,applied,&
-       nextDir(1),nextDir(2),endPoints,idest)
+       tileDesc,nextDir(1),nextDir(2),endPoints,idest)
   if(.not.applied) then
-     call Grid_bcApplyToRegion(bcType,gridDataStruct,blockDesc%level,&
+     call Grid_bcApplyToRegion(bcType,gridDataStruct,tileDesc%level,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-          nextDir(1),nextDir(2),endPoints,idest)
+          tileDesc,nextDir(1),nextDir(2),endPoints,idest)
   end if
   if(.not.applied) then
      print*,'gr_bcApplyToOneFace: Unhandled boundary type',bcType, 'axis,regionType=',axis,regionType(axis)
@@ -186,7 +186,7 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
      end if
   end if
   call gr_bcPutRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
-       regionData,blockDesc,idest)
+                      regionData,tileDesc,idest)
 
 
   deallocate(regionData)

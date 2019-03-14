@@ -45,17 +45,16 @@
 !!
 !!***
 
-subroutine Grid_renormAbundance(blockDesc,blkLimits,solnData)
+#include "constants.h"
 
-  use block_metadata,   ONLY : block_metadata_t
+subroutine Grid_renormAbundance(tileDesc, tileLimits, solnData)
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
-#include "constants.h"
-
-  type(block_metadata_t), intent(IN) :: blockDesc
-  integer, intent(in), dimension(2,MDIM)::blkLimits
-  real,pointer :: solnData(:,:,:,:)
+  type(Grid_tile_t), intent(IN)         :: tileDesc
+  integer,           intent(IN)         :: tileLimits(LOW:HIGH, 1:MDIM)
+  real,                         pointer :: solnData(:,:,:,:)
 
   return
 end subroutine Grid_renormAbundance

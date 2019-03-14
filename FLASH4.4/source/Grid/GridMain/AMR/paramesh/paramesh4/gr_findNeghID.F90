@@ -47,10 +47,11 @@ subroutine gr_findNeghID(block,pos,negh,neghID)
 #include "constants.h"
 #include "Flash.h"
 
-  use gr_interface, ONLY : gr_getBlkHandle, gr_findWhichChild,gr_xyzToBlock
-  use Grid_interface, ONLY : Grid_getBlkBoundBox,Grid_outsideBoundBox, Grid_getBlkBC
-  use Grid_data, ONLY : gr_globalDomain, gr_meshMe
-  use tree, ONLY : surr_blks,parent,child, bnd_box
+!  use gr_interface, ONLY : gr_getBlkHandle, gr_findWhichChild,gr_xyzToBlock
+!  use Grid_interface, ONLY : Grid_getBlkBoundBox,Grid_outsideBoundBox, Grid_getBlkBC
+!  use Grid_data, ONLY : gr_globalDomain, gr_meshMe
+!  use tree, ONLY : surr_blks,parent,child, bnd_box
+  use Driver_interface, ONLY : Driver_abortFlash
   use block_metadata, ONLY : block_metadata_t
   
   implicit none
@@ -59,89 +60,91 @@ subroutine gr_findNeghID(block,pos,negh,neghID)
   integer,dimension(MDIM),intent(IN) :: negh
   integer,dimension(BLKNO:PROCNO),intent(OUT) :: neghID
 
-  integer,dimension(BLKNO:TYPENO) :: negh_prop
-  integer :: blkHandle, childID, proc, blk, eachAxis
-  real,dimension(LOW:HIGH,MDIM) :: bndBox
-  integer,dimension(MDIM) :: lnegh
-  logical :: outside
-  real, dimension(MDIM) :: wpos, deltaDomain
-  integer, dimension(LOW:HIGH, MDIM) :: faces, ignoreMe
-  integer :: blockID
+  call Driver_abortFlash("[gr_findNeighID] Update for tiling")
 
-  !It is possible that unused dimensions of neghInput are
-  !uninitialized in the calling code.  We make gr_findNeghID more
-  !robust by not using elements of negh beyond NDIM.
-
-#ifndef BITTREE
-#if NDIM == 1 
-  negh_prop(:)=surr_blks(:,negh(IAXIS), 1         , 1         ,blockID)
-#endif
-#if NDIM == 2 
-  negh_prop(:)=surr_blks(:,negh(IAXIS),negh(JAXIS), 1         ,blockID)
-#endif
-#if NDIM == 3 
-  negh_prop(:)=surr_blks(:,negh(IAXIS),negh(JAXIS),negh(KAXIS),blockID)
-#endif
-
-  blockID = block%id
-
-  if (negh_prop(PROCNO)==NONEXISTENT) then
-
-     proc=parent(PROCNO,blockID)
-     blk=parent(BLKNO,blockID)
-     call gr_getBlkHandle(blk,proc,blkHandle)
-     bndBox(:,:)=bnd_box(:,:,blkHandle)
-!!$     call Grid_getBlkBoundBox(blkHandle,bndBox)
-     call Grid_outsideBoundBox(pos,bndBox,outside,lnegh)
-     neghID(BLKNO:PROCNO)=&
-          surr_blks(BLKNO:PROCNO,lnegh(IAXIS),lnegh(JAXIS),lnegh(KAXIS),blkHandle)
-
-  elseif(negh_prop(PROCNO).GE.0 .AND. negh_prop(TYPENO)==PARENT_BLK) then
-
-     !When we have a neighbor on a periodic boundary adjust the position 
-     !"pos" to its wrapped around position "wpos".
-     !Also move the box to the other side of the domain so that 
-     !"midPoint" will be correct in gr_findWhichChild.
-     !These changes are both temporary and are local to this subroutine.
-     !We don't need to adjust the Grid_outsideBoundBox call (above).
-     !--------------------------------------------------------------------------
-     call Grid_getBlkBC(block, ignoreMe, faces)
-     call Grid_getBlkBoundBox(block, bndBox)
-     wpos = pos
-
-     deltaDomain(1:MDIM) = &
-          (gr_globalDomain(HIGH,1:MDIM) - gr_globalDomain(LOW,1:MDIM))
-
-     do eachAxis = 1, NDIM
-        if ( (negh(eachAxis) == LEFT_EDGE) .and. & 
-             (faces(LOW,eachAxis) == PERIODIC) ) then
-           
-           wpos(eachAxis) = pos(eachAxis) + deltaDomain(eachAxis)                
-           bndBox(LOW:HIGH,eachAxis) = &
-                bndBox(LOW:HIGH,eachAxis) + deltaDomain(eachAxis)
-
-        else if ( (negh(eachAxis) == RIGHT_EDGE) .and. & 
-             (faces(HIGH,eachAxis) == PERIODIC) ) then
-           
-           wpos(eachAxis) = pos(eachAxis) - deltaDomain(eachAxis)
-           bndBox(LOW:HIGH,eachAxis) = &
-                bndBox(LOW:HIGH,eachAxis) - deltaDomain(eachAxis)
-        end if
-     end do
-     !--------------------------------------------------------------------------
-
-     call gr_findWhichChild(wpos,bndBox,negh,childID)
-
-     proc=negh_prop(PROCNO)
-     blk=negh_prop(BLKNO)
-     call gr_getBlkHandle(blk,proc,blkHandle)
-
-     neghID(BLKNO:PROCNO)=child(BLKNO:PROCNO,childID,blkHandle)
-
-  else
-     neghID(BLKNO:PROCNO)=negh_prop(BLKNO:PROCNO)
-  end if
-#else
-  call gr_xyzToBlock(pos,neghID(PROCNO),neghID(BLKNO))
-#endif
+!  integer,dimension(BLKNO:TYPENO) :: negh_prop
+!  integer :: blkHandle, childID, proc, blk, eachAxis
+!  real,dimension(LOW:HIGH,MDIM) :: bndBox
+!  integer,dimension(MDIM) :: lnegh
+!  logical :: outside
+!  real, dimension(MDIM) :: wpos, deltaDomain
+!  integer, dimension(LOW:HIGH, MDIM) :: faces, ignoreMe
+!  integer :: blockID
+!
+!  !It is possible that unused dimensions of neghInput are
+!  !uninitialized in the calling code.  We make gr_findNeghID more
+!  !robust by not using elements of negh beyond NDIM.
+!
+!#ifndef BITTREE
+!#if NDIM == 1 
+!  negh_prop(:)=surr_blks(:,negh(IAXIS), 1         , 1         ,blockID)
+!#endif
+!#if NDIM == 2 
+!  negh_prop(:)=surr_blks(:,negh(IAXIS),negh(JAXIS), 1         ,blockID)
+!#endif
+!#if NDIM == 3 
+!  negh_prop(:)=surr_blks(:,negh(IAXIS),negh(JAXIS),negh(KAXIS),blockID)
+!#endif
+!
+!  blockID = block%id
+!
+!  if (negh_prop(PROCNO)==NONEXISTENT) then
+!
+!     proc=parent(PROCNO,blockID)
+!     blk=parent(BLKNO,blockID)
+!     call gr_getBlkHandle(blk,proc,blkHandle)
+!     bndBox(:,:)=bnd_box(:,:,blkHandle)
+!!!$     call Grid_getBlkBoundBox(blkHandle,bndBox)
+!     call Grid_outsideBoundBox(pos,bndBox,outside,lnegh)
+!     neghID(BLKNO:PROCNO)=&
+!          surr_blks(BLKNO:PROCNO,lnegh(IAXIS),lnegh(JAXIS),lnegh(KAXIS),blkHandle)
+!
+!  elseif(negh_prop(PROCNO).GE.0 .AND. negh_prop(TYPENO)==PARENT_BLK) then
+!
+!     !When we have a neighbor on a periodic boundary adjust the position 
+!     !"pos" to its wrapped around position "wpos".
+!     !Also move the box to the other side of the domain so that 
+!     !"midPoint" will be correct in gr_findWhichChild.
+!     !These changes are both temporary and are local to this subroutine.
+!     !We don't need to adjust the Grid_outsideBoundBox call (above).
+!     !--------------------------------------------------------------------------
+!     call Grid_getBlkBC(block, ignoreMe, faces)
+!     call Grid_getBlkBoundBox(block, bndBox)
+!     wpos = pos
+!
+!     deltaDomain(1:MDIM) = &
+!          (gr_globalDomain(HIGH,1:MDIM) - gr_globalDomain(LOW,1:MDIM))
+!
+!     do eachAxis = 1, NDIM
+!        if ( (negh(eachAxis) == LEFT_EDGE) .and. & 
+!             (faces(LOW,eachAxis) == PERIODIC) ) then
+!           
+!           wpos(eachAxis) = pos(eachAxis) + deltaDomain(eachAxis)                
+!           bndBox(LOW:HIGH,eachAxis) = &
+!                bndBox(LOW:HIGH,eachAxis) + deltaDomain(eachAxis)
+!
+!        else if ( (negh(eachAxis) == RIGHT_EDGE) .and. & 
+!             (faces(HIGH,eachAxis) == PERIODIC) ) then
+!           
+!           wpos(eachAxis) = pos(eachAxis) - deltaDomain(eachAxis)
+!           bndBox(LOW:HIGH,eachAxis) = &
+!                bndBox(LOW:HIGH,eachAxis) - deltaDomain(eachAxis)
+!        end if
+!     end do
+!     !--------------------------------------------------------------------------
+!
+!     call gr_findWhichChild(wpos,bndBox,negh,childID)
+!
+!     proc=negh_prop(PROCNO)
+!     blk=negh_prop(BLKNO)
+!     call gr_getBlkHandle(blk,proc,blkHandle)
+!
+!     neghID(BLKNO:PROCNO)=child(BLKNO:PROCNO,childID,blkHandle)
+!
+!  else
+!     neghID(BLKNO:PROCNO)=negh_prop(BLKNO:PROCNO)
+!  end if
+!#else
+!  call gr_xyzToBlock(pos,neghID(PROCNO),neghID(BLKNO))
+!#endif
 end subroutine gr_findNeghID

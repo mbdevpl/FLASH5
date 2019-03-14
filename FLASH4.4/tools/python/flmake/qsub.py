@@ -46,7 +46,7 @@ def qsub_command(arg_lists):
     # perform hostname specific modifications if needed
     execpath = qsub_hostname_mod(ns)
     if execpath is None:
-        execpath = os.path.join(os.path.abspath(gvars.run_dir), 'flash4')
+        execpath = os.path.join(os.path.abspath(gvars.run_dir), 'flash5')
 
     # create the qsub command line string from the namespace
     opt_strings = dict([(act.dest, act.option_strings[0]) for act in \
@@ -156,7 +156,7 @@ def qsub_hostname_mod(ns):
 def eureka_mod(ns):
     """Changes needed to make qsub run on Eureka."""
     runpath = os.path.abspath(gvars.run_dir)
-    flshpath = os.path.join(runpath, 'flash4')
+    flshpath = os.path.join(runpath, 'flash5')
     execpath = os.path.join(runpath, 'run_script.sh')
     nodes = int(ns.n) if hasattr(ns, 'n') else 1
     nodes = int(ns.np) if hasattr(ns, 'np') else nodes
@@ -182,7 +182,7 @@ def eureka_mod(ns):
 def beagle_mod(ns):
     """Changes needed to make qsub run on Beagle."""
     runpath = os.path.abspath(gvars.run_dir)
-    flshpath = os.path.join('.', 'flash4')
+    flshpath = os.path.join('.', 'flash5')
     execpath = os.path.join(runpath, 'flash.pbs')
     nodes = int(ns.n) if hasattr(ns, 'n') else 1
     nodes = int(ns.np) if hasattr(ns, 'np') else nodes

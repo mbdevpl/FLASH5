@@ -43,6 +43,10 @@ xr_boundary_type = "outflow"
 yl_boundary_type = "outflow"
 yr_boundary_type = "outflow"
 
+gr_useTiling = .TRUE.
+gr_tileSizeX = 4
+gr_tileSizeY = 2
+gr_tileSizeZ = 1
 
 #	Simulation (grid, time, I/O) parameters
 cfl		= 0.3

@@ -79,6 +79,11 @@ refine_var_2      = "pres"
 refine_cutoff_1   = 0.75
 derefine_cutoff_1 = 0.75
 
+gr_useTiling = .TRUE.
+gr_tileSizeX = 8
+gr_tileSizeY = 4
+gr_tileSizeZ = 4
+
 ## -------------------------------------------------------------##
 ##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
 #	I. INTERPOLATION SCHEME:

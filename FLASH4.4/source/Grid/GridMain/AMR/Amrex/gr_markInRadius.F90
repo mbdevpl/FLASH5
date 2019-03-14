@@ -52,8 +52,7 @@ subroutine gr_markInRadius(ic, jc, kc, radius, lev, tags, tagval)
 
   use Driver_interface,       ONLY : Driver_abortFlash
   use Grid_data,              ONLY : gr_geometry
-  use Grid_interface,         ONLY : Grid_getBlkCenterCoords, Grid_getBlkPhysicalSize
-  use gr_interface,           ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+!  use Grid_interface,         ONLY : Grid_getBlkCenterCoords, Grid_getBlkPhysicalSize
   use gr_physicalMultifabs,   ONLY : unk
   use block_metadata,         ONLY : block_metadata_t
 #include "constants.h"
@@ -67,118 +66,120 @@ subroutine gr_markInRadius(ic, jc, kc, radius, lev, tags, tagval)
   type(c_ptr),             intent(IN) :: tags
   character(c_char),       intent(IN) :: tagval
 
+  call Driver_abortFlash("[gr_markInRadius] Update for tiling")
+
 ! Local data
 
-  type(amrex_tagboxarray) :: tag
-  type(amrex_mfiter)      :: mfi
-  type(amrex_box)         :: bx
-  type(block_metadata_t)  :: blockDesc
-
-  character(c_char), contiguous, pointer :: tagData(:,:,:,:)
-
-  real, dimension(MDIM) :: blockCenter, blockSize
-  real                  :: bxl, bxr, byl, byr, bzl, bzr
-  real                  :: dist2, xdist2, ydist2, zdist2
-
-  integer :: i, j, k
-
-  tag = tags
-
-  call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
-  do while(mfi%next())
-     bx = mfi%fabbox()
-
-     blockDesc%level = lev + 1
-     blockDesc%grid_index = mfi%grid_index()
-     blockDesc%limits(LOW,  :) = 1
-     blockDesc%limits(HIGH, :) = 1
-     blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
-     blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
-     blockDesc%limitsGC(LOW,  :) = 1
-     blockDesc%limitsGC(HIGH, :) = 1
-     blockDesc%limitsGC(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
-     blockDesc%limitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
-
-     call Grid_getBlkCenterCoords(blockDesc, blockCenter)
-     call Grid_getBlkPhysicalSize(blockDesc, blockSize)
-
-! Find minimum distance from (ic,jc,kc) for each dimension.  For each
-! coordinate, if both "left" and "right" distances have the same sign,
-! then the smaller magnitude is the minimum.  Otherwise (ic,jc,kc) is
-! contained within the interval for that dimension, so the minimum is 0.
-! Nonexistent dimensions have had all distances set to zero, so they are
-! ignored.
-
-     bxl = blockCenter(1) - blockSize(1) - ic
-     bxr = blockCenter(1) + blockSize(1) - ic
-
-     if ((gr_geometry == CARTESIAN).or.(gr_geometry == CYLINDRICAL)) then
-        if (NDIM > 1) then
-           byl = blockCenter(2) - blockSize(2) - jc
-           byr = blockCenter(2) + blockSize(2) - jc
-        else
-           byl = 0.
-           byr = 0.
-        endif
-        if ((NDIM == 3).and.(gr_geometry==CARTESIAN)) then
-           bzl = blockCenter(3) - blockSize(3) - kc
-           bzr = blockCenter(3) + blockSize(3) - kc
-        else
-           bzl = 0.
-           bzr = 0.
-        endif
-
-! Now compute the minimum distance to (ic,jc,kc) and compare it to the
-! specified radius.  If it is less than this radius, then the block contains
-! at least part of the interval/circle/sphere and is marked for refinement.
-
-        if (bxl*bxr > 0.) then
-           xdist2 = min( bxl**2, bxr**2 )
-        else
-           xdist2 = 0.
-        endif
-        if (byl*byr > 0.) then
-           ydist2 = min( byl**2, byr**2 )
-        else
-           ydist2 = 0.
-        endif
-        if (bzl*bzr > 0.) then
-           zdist2 = min( bzl**2, bzr**2 )
-        else
-           zdist2 = 0.
-        endif
-        dist2 = xdist2 + ydist2 + zdist2
-     elseif ((gr_geometry==POLAR).or.(gr_geometry==SPHERICAL)) then
-        if (bxl*bxr > 0.) then
-           dist2 = min( bxl**2, bxr**2 )
-        else
-           dist2 = 0.
-        endif
-     else
-        call Driver_abortFlash("MarkRefine: geometry spec is wrong")
-     endif
-
-     tagData => tag%dataptr(mfi)
-
-     associate (lo     => blockDesc%limits(LOW,  :), &
-                hi     => blockDesc%limits(HIGH, :), &
-                lo_tag => lbound(tagData), &
-                hi_tag => ubound(tagData))
-
-        if (dist2 <= radius**2) then
-           i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
-           j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
-           k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
-
-           ! Fourth index is 1:1
-           tagData(i, j, k, 1) = tagval
-        endif
-
-     end associate
-
-     nullify(tagData)
-  end do
-  call amrex_mfiter_destroy(mfi)
-
-  return
+!  type(amrex_tagboxarray) :: tag
+!  type(amrex_mfiter)      :: mfi
+!  type(amrex_box)         :: bx
+!  type(block_metadata_t)  :: blockDesc
+!
+!  character(c_char), contiguous, pointer :: tagData(:,:,:,:)
+!
+!  real, dimension(MDIM) :: blockCenter, blockSize
+!  real                  :: bxl, bxr, byl, byr, bzl, bzr
+!  real                  :: dist2, xdist2, ydist2, zdist2
+!
+!  integer :: i, j, k
+!
+!  tag = tags
+!
+!  call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
+!  do while(mfi%next())
+!     bx = mfi%fabbox()
+!
+!     blockDesc%level = lev + 1
+!     blockDesc%grid_index = mfi%grid_index()
+!     blockDesc%limits(LOW,  :) = 1
+!     blockDesc%limits(HIGH, :) = 1
+!     blockDesc%limits(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1 + NGUARD
+!     blockDesc%limits(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1 - NGUARD
+!     blockDesc%limitsGC(LOW,  :) = 1
+!     blockDesc%limitsGC(HIGH, :) = 1
+!     blockDesc%limitsGC(LOW,  1:NDIM) = bx%lo(1:NDIM) + 1
+!     blockDesc%limitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
+!
+!     call Grid_getBlkCenterCoords(blockDesc, blockCenter)
+!     call Grid_getBlkPhysicalSize(blockDesc, blockSize)
+!
+!! Find minimum distance from (ic,jc,kc) for each dimension.  For each
+!! coordinate, if both "left" and "right" distances have the same sign,
+!! then the smaller magnitude is the minimum.  Otherwise (ic,jc,kc) is
+!! contained within the interval for that dimension, so the minimum is 0.
+!! Nonexistent dimensions have had all distances set to zero, so they are
+!! ignored.
+!
+!     bxl = blockCenter(1) - blockSize(1) - ic
+!     bxr = blockCenter(1) + blockSize(1) - ic
+!
+!     if ((gr_geometry == CARTESIAN).or.(gr_geometry == CYLINDRICAL)) then
+!        if (NDIM > 1) then
+!           byl = blockCenter(2) - blockSize(2) - jc
+!           byr = blockCenter(2) + blockSize(2) - jc
+!        else
+!           byl = 0.
+!           byr = 0.
+!        endif
+!        if ((NDIM == 3).and.(gr_geometry==CARTESIAN)) then
+!           bzl = blockCenter(3) - blockSize(3) - kc
+!           bzr = blockCenter(3) + blockSize(3) - kc
+!        else
+!           bzl = 0.
+!           bzr = 0.
+!        endif
+!
+!! Now compute the minimum distance to (ic,jc,kc) and compare it to the
+!! specified radius.  If it is less than this radius, then the block contains
+!! at least part of the interval/circle/sphere and is marked for refinement.
+!
+!        if (bxl*bxr > 0.) then
+!           xdist2 = min( bxl**2, bxr**2 )
+!        else
+!           xdist2 = 0.
+!        endif
+!        if (byl*byr > 0.) then
+!           ydist2 = min( byl**2, byr**2 )
+!        else
+!           ydist2 = 0.
+!        endif
+!        if (bzl*bzr > 0.) then
+!           zdist2 = min( bzl**2, bzr**2 )
+!        else
+!           zdist2 = 0.
+!        endif
+!        dist2 = xdist2 + ydist2 + zdist2
+!     elseif ((gr_geometry==POLAR).or.(gr_geometry==SPHERICAL)) then
+!        if (bxl*bxr > 0.) then
+!           dist2 = min( bxl**2, bxr**2 )
+!        else
+!           dist2 = 0.
+!        endif
+!     else
+!        call Driver_abortFlash("MarkRefine: geometry spec is wrong")
+!     endif
+!
+!     tagData => tag%dataptr(mfi)
+!
+!     associate (lo     => blockDesc%limits(LOW,  :), &
+!                hi     => blockDesc%limits(HIGH, :), &
+!                lo_tag => lbound(tagData), &
+!                hi_tag => ubound(tagData))
+!
+!        if (dist2 <= radius**2) then
+!           i = INT(0.5d0 * DBLE(lo_tag(IAXIS) + hi_tag(IAXIS)))
+!           j = INT(0.5d0 * DBLE(lo_tag(JAXIS) + hi_tag(JAXIS)))
+!           k = INT(0.5d0 * DBLE(lo_tag(KAXIS) + hi_tag(KAXIS)))
+!
+!           ! Fourth index is 1:1
+!           tagData(i, j, k, 1) = tagval
+!        endif
+!
+!     end associate
+!
+!     nullify(tagData)
+!  end do
+!  call amrex_mfiter_destroy(mfi)
+!
+!  return
 end subroutine gr_markInRadius

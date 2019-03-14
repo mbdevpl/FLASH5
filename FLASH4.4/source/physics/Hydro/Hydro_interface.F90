@@ -10,16 +10,16 @@ Module Hydro_interface
   implicit none
 
   interface Hydro_computeDt
-     subroutine Hydro_computeDt (block, &
+     subroutine Hydro_computeDt (tileDesc, &
           x, dx, uxgrid, &
           y, dy, uygrid, &
           z, dz, uzgrid, &
           blkLimits,blkLimitsGC,  &
           solnData,   &
           dt_check, dt_minloc, extraInfo )
-       use block_metadata, ONLY : block_metadata_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN) :: block
+       type(Grid_tile_t), intent(IN) :: tileDesc
        integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
        real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
        real, dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)), intent(IN) :: y, dy, uygrid
@@ -94,20 +94,18 @@ Module Hydro_interface
   end interface
   
   interface Hydro_shockStrength
-     subroutine Hydro_shockStrength(solnData, shock, blkLimits, blkLimitsGC, &
-          guardCells, &
+     subroutine Hydro_shockStrength(solnData, shock, lo,hi,loHalo,hiHalo,&
           primaryCoord,secondCoord,thirdCoord, &
           threshold, mode)
           implicit none
-       integer, intent(IN), dimension(2,MDIM) :: blkLimits, blkLimitsGC
-       integer, intent(IN) :: guardCells(MDIM)
+       integer, intent(IN), dimension(1:MDIM) :: lo,hi,loHalo,hiHalo
        real, pointer :: solnData(:,:,:,:) 
-       real,intent(inout),dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
-            blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS),&
-            blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: shock
-       real,intent(IN),dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)) :: primaryCoord
-       real,intent(IN),dimension(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)) :: secondCoord
-       real,intent(IN),dimension(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)) :: thirdCoord
+       real,intent(inout),dimension(loHalo(IAXIS):hiHalo(IAXIS),&
+            loHalo(JAXIS):hiHalo(JAXIS),&
+            loHalo(KAXIS):hiHalo(KAXIS)) :: shock
+       real,intent(IN),dimension(loHalo(IAXIS):hiHalo(IAXIS)) :: primaryCoord
+       real,intent(IN),dimension(loHalo(JAXIS):hiHalo(JAXIS)) :: secondCoord
+       real,intent(IN),dimension(loHalo(KAXIS):hiHalo(KAXIS)) :: thirdCoord
        real, intent(IN) :: threshold
        integer, intent(IN) :: mode
      end subroutine Hydro_shockStrength
@@ -118,21 +116,6 @@ Module Hydro_interface
      subroutine Hydro_sendOutputData()
        
      end subroutine Hydro_sendOutputData
-  end interface
-
-  interface Hydro_recalibrateEints
-     subroutine Hydro_recalibrateEints(range,blockID)
-       implicit none
-       integer, dimension(2,MDIM), intent(in) :: range
-       integer,intent(in) :: blockID
-     end subroutine Hydro_recalibrateEints
-     subroutine Hydro_recalibrateEintsForCell(eint,eion,eele,erad,e1,e2,e3)
-       implicit none
-       real,intent(in)    :: eint
-       real,intent(INOUT) :: eion,eele
-       real,intent(INOUT),OPTIONAL :: erad
-       real,intent(INOUT),OPTIONAL :: e1,e2,e3
-     end subroutine Hydro_recalibrateEintsForCell
   end interface
 
   interface

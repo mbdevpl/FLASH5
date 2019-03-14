@@ -51,7 +51,7 @@
 !!                   dtMinLoc(1) = i index
 !!                   dtMinLoc(2) = j index
 !!                   dtMinLoc(3) = k index
-!!                   dtMinLoc(4) = blockID
+!!                   dtMinLoc(4) = refinement level
 !!                   dtMinLoc(5) = hy_meshMe
 !!  extraInfo     -  Driver_computeDt can provide extra info to the caller
 !!                   using this argument.
@@ -60,7 +60,7 @@
 
 !!REORDER(4): U
 
-Subroutine Hydro_computeDt( block,       &
+Subroutine Hydro_computeDt( tileDesc,       &
                             x, dx, uxgrid, &
                             y, dy, uygrid, &
                             z, dz, uzgrid, &
@@ -78,13 +78,12 @@ Subroutine Hydro_computeDt( block,       &
        hy_cfl, hy_cfl_original, hy_cflStencil, &
        hy_dref, hy_eref, hy_pref, hy_vref, hy_bref, &
        hy_geometry, hy_units, hy_useVaryingCFL
-  use Grid_interface, ONLY : Grid_getBlkBC
   use Driver_interface, ONLY : Driver_abortFlash
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t 
   implicit none
 
   !! Arguments type declaration ------------------------------------------
-  type(block_metadata_t), intent(IN) :: block 
+  type(Grid_tile_t), intent(IN) :: tileDesc
   integer,dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
 
   real, dimension(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)), intent(IN) :: x, dx, uxgrid
@@ -117,7 +116,7 @@ Subroutine Hydro_computeDt( block,       &
        hy_dtminValid .and. &
       (.not. hy_hydroComputeDtFirstCall .OR. hy_restart)) then
      dtCflLoc = hy_cfl
-     if ( hy_dtmin < dtCheck .AND. hy_dtminloc(4) == block%level) then
+     if ( hy_dtmin < dtCheck .AND. hy_dtminloc(4) == tileDesc%level) then
         dtCheck  = hy_dtmin
         dtMinLoc = hy_dtminloc(1:5)
         dtCflLoc = hy_dtminCfl
@@ -195,7 +194,7 @@ Subroutine Hydro_computeDt( block,       &
                  if (hy_cflStencil<1) then
                     localCfl = U(CFL_VAR,i,j,k)
                  else
-                    call Grid_getBlkBC(block,bcs)
+                    call tileDesc%faceBCs(bcs)
                     imS=max(blkLimitsGC(LOW,IAXIS), i-hy_cflStencil)
                     ipS=min(blkLimitsGC(HIGH,IAXIS),i+hy_cflStencil)
                     
@@ -267,7 +266,7 @@ Subroutine Hydro_computeDt( block,       &
                     temploc(1) = i
                     temploc(2) = j
                     temploc(3) = k
-                    temploc(4) = block%level
+                    temploc(4) = tileDesc%level
                     temploc(5) = hy_meshMe
                  endif
 #ifdef BDRY_VAR

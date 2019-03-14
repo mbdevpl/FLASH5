@@ -18,6 +18,11 @@ nblockx =  8
 nblocky = 16
 nblockz =  2
 
+gr_useTiling = .TRUE.
+gr_tileSizeX = 4
+gr_tileSizeY = 2
+gr_tileSizeZ = 1
+
 ##### BOUNDARY CONDITIONS
 xl_boundary_type = "reflect"
 xr_boundary_type = "outflow"

@@ -74,25 +74,25 @@
 !!
 !!***
 
-!!REORDER(4): solnData
+!!REORDER(4): solnData, scratchData
 
 subroutine Eos_unitTest(fileUnit, perfect)
 
   use Eos_interface, ONLY : Eos_wrapped, Eos
-  use Grid_interface,ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-       Grid_getLeafIterator, Grid_releaseLeafIterator, &
-       Grid_getBlkType, Grid_putRowData
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
-  use IO_interface, ONLY : IO_writeCheckpoint
-  use Eos_data, ONLY : eos_meshMe, eos_meshNumProcs
-  use eos_testData, ONLY: eos_testPresModeStr, &
-                          eos_testEintModeStr, &
-                          eos_testTempModeStr, &
-                          eos_testPresMode, &
-                          eos_testEintMode, &
-                          eos_testTempMode
-  use eos_testData, ONLY: tolerance => eos_testTolerance
+  use Grid_interface,ONLY : Grid_getTileIterator, &
+                            Grid_releaseTileIterator, &
+                            Grid_getBlkType
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
+  use IO_interface,  ONLY : IO_writeCheckpoint
+  use Eos_data,      ONLY : eos_meshMe, eos_meshNumProcs
+  use eos_testData,  ONLY : eos_testPresModeStr, &
+                            eos_testEintModeStr, &
+                            eos_testTempModeStr, &
+                            eos_testPresMode, &
+                            eos_testEintMode, &
+                            eos_testTempMode
+  use eos_testData,  ONLY : tolerance => eos_testTolerance
   implicit none
 
 # include "Eos.h"
@@ -103,11 +103,12 @@ subroutine Eos_unitTest(fileUnit, perfect)
   logical, intent(out) :: perfect
   integer :: blockID
   integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
   real :: presErr, tempErr, eintErr
 
   real, pointer, dimension(:,:,:,:):: solnData
+  real, pointer, dimension(:,:,:,:):: scratchData
   logical:: test1,test2,test3,test4 !for a block
   logical:: test1allB,test2allB,test3allB,test4allB !for all blocks
 
@@ -124,9 +125,12 @@ subroutine Eos_unitTest(fileUnit, perfect)
   integer,parameter :: maxPrintPE = 20
   integer,save :: nodeType = LEAF
   integer :: ib,ie,jb,je,kb,ke
-  integer, dimension(3) :: startingPos, dataSize, startRow
+  integer, dimension(3) :: startingPos, dataSize
      real presErr1, presErr2
 
+  nullify(solnData)
+  nullify(scratchData)
+ 
   if (eos_meshNumProcs==1) then
      a = ''
      ap => a
@@ -142,17 +146,17 @@ subroutine Eos_unitTest(fileUnit, perfect)
 
   mask = .true.
 
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 #ifdef FLASH_GRID_PARAMESH
-     blockID = blockDesc%id     ! only used for some useful screen output
+     blockID = tileDesc%id     ! only used for some useful screen output
 #else
-     blockID = blockDesc % grid_index  ! only for some useful output
+     blockID = tileDesc % grid_index  ! only for some useful output
 #endif
      call Grid_getBlkType(blockId,nodeType)
-     call Grid_getBlkPtr(blockDesc,solnData)
-     blkLimits = blockDesc%limits
+     call tileDesc%getDataPtr(solnData, CENTER)
+     blkLimits = tileDesc%limits
 
      !! In Simulation_initBlock,
      !! temperature is initialized in CTMP_VAR and pressure is
@@ -203,26 +207,26 @@ subroutine Eos_unitTest(fileUnit, perfect)
      solnData(OENT_VAR,ib:ie,jb:je,kb:ke)=solnData(EINT_VAR,ib:ie,jb:je,kb:ke)
      solnData(OTMP_VAR,ib:ie,jb:je,kb:ke)=solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)
 
-     call Grid_releaseBlkPtr(blockDesc,solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   call IO_writeCheckpoint()   !! This is checkpoint 001
 
 
   test1allB = .TRUE.
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 #ifdef FLASH_GRID_PARAMESH
-     blockID = blockDesc%id
+     blockID = tileDesc%id
 #else
-     blockID = blockDesc % grid_index
+     blockID = tileDesc % grid_index
 #endif
      call Grid_getBlkType(blockId,nodeType)
-     call Grid_getBlkPtr(blockDesc,solnData)
-     blkLimits = blockDesc%limits
+     call tileDesc%getDataPtr(solnData, CENTER)
+     blkLimits = tileDesc%limits
 
      ib=blkLimits(LOW,IAXIS)
      ie=blkLimits(HIGH,IAXIS)
@@ -262,7 +266,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
           solnData(PRES_VAR,ib:ie,jb:je,kb:ke)))
      if (eos_meshMe<maxPrintPE) print*,ap,'  The calculated error in pressure is ',presErr
 
-     call Grid_releaseBlkPtr(blockDesc,solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
 
      test1 = (tolerance > tempErr)
      test1 = test1.and.(tolerance > presErr)
@@ -274,24 +278,24 @@ subroutine Eos_unitTest(fileUnit, perfect)
      endif
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   call IO_writeCheckpoint()  !! This is checkpoint 002
 
 
 
   test2allB = .TRUE.
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 #ifdef FLASH_GRID_PARAMESH
-     blockID = blockDesc%id
+     blockID = tileDesc%id
 #else
-     blockID = blockDesc % grid_index
+     blockID = tileDesc % grid_index
 #endif
      call Grid_getBlkType(blockId,nodeType)
-     call Grid_getBlkPtr(blockDesc,solnData)
-     blkLimits = blockDesc%limits
+     call tileDesc%getDataPtr(solnData, CENTER)
+     blkLimits = tileDesc%limits
 
      ib=blkLimits(LOW,IAXIS)
      ie=blkLimits(HIGH,IAXIS)
@@ -332,10 +336,10 @@ subroutine Eos_unitTest(fileUnit, perfect)
         test2allB = .FALSE.
      endif
 
-     call Grid_releaseBlkPtr(blockDesc,solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   call IO_writeCheckpoint()   !! This is checkpoint 003
 
@@ -343,17 +347,17 @@ subroutine Eos_unitTest(fileUnit, perfect)
 
   test3allB = .TRUE.
   test4allB = .TRUE.
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 #ifdef FLASH_GRID_PARAMESH
-     blockID = blockDesc%id
+     blockID = tileDesc%id
 #else
-     blockID = blockDesc % grid_index
+     blockID = tileDesc % grid_index
 #endif
      call Grid_getBlkType(blockId,nodeType)
-     call Grid_getBlkPtr(blockDesc,solnData)
-     blkLimits = blockDesc%limits
+     call tileDesc%getDataPtr(solnData, CENTER)
+     blkLimits = tileDesc%limits
 
      ib=blkLimits(LOW,IAXIS)
      ie=blkLimits(HIGH,IAXIS)
@@ -427,7 +431,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
      solnData(OPRS_VAR,ib:ie,jb:je,kb:ke)=solnData(PRES_VAR,ib:ie,jb:je,kb:ke)
      solnData(OENT_VAR,ib:ie,jb:je,kb:ke)=solnData(EINT_VAR,ib:ie,jb:je,kb:ke)
      solnData(OTMP_VAR,ib:ie,jb:je,kb:ke)=solnData(TEMP_VAR,ib:ie,jb:je,kb:ke)
-     call Grid_releaseBlkPtr(blockDesc,solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
 
      !! Finally, do a test of the derived variables just for exercise.....
      if (eos_meshMe<maxPrintPE) print *,ap,' Now testing the derived variables'
@@ -451,7 +455,8 @@ subroutine Eos_unitTest(fileUnit, perfect)
      dens = (EOS_DENS-1)*vecLen
      temp = (EOS_TEMP-1)*vecLen
 
-     call Grid_getBlkPtr(blockDesc,solnData)
+     call tileDesc%getDataPtr(solnData, CENTER)
+     call tileDesc%getDataPtr(scratchData, SCRATCH_CTR)
      
      ! Space and dimensions for scratch variables
      dataSize(1) = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
@@ -476,20 +481,27 @@ subroutine Eos_unitTest(fileUnit, perfect)
            
            call Eos(MODE_DENS_PRES,vecLen,eosData,massFrac,mask)
 
-           
-           startRow(1) = blkLimits(LOW,IAXIS)
-           startRow(2) = j
-           startRow(3) = k
            do e=EOS_VARS+1,EOS_NUM
               m = (e-1)*vecLen
               derivedVariables(1:vecLen,j-jb+1,k-kb+1,e) =  eosData(m+1:m+vecLen)
-              if (e==EOS_DEA) &
-                 call Grid_putRowData(blockDesc,SCRATCH_CTR,DRV1_SCRATCH_CENTER_VAR,GLOBALIDX1,IAXIS, &
-                      startRow,eosData(m+1:m+vecLen),vecLen)
-              if (e==EOS_DPT) &
-                 call Grid_putRowData(blockDesc,SCRATCH_CTR,DRV2_SCRATCH_CENTER_VAR,GLOBALIDX1,IAXIS, &
-                      startRow,eosData(m+1:m+vecLen),vecLen)
-
+              if (e==EOS_DEA) then
+                 ! DEV: I (JO) have converted putRowData calls to these explicit
+                 !      loop nests.  However, this code does not seem to have
+                 !      an effect on the success of this test.
+                 do i = blkLimits(LOW, IAXIS), blkLimits(HIGH, IAXIS)
+                    scratchData(DRV1_SCRATCH_CENTER_VAR, i, j, k) &
+                       = eosData(m+i-blkLimits(LOW, IAXIS)+1)
+                 end do
+              end if
+              if (e==EOS_DPT) then
+                 ! DEV: I (JO) have converted putRowData calls to these explicit
+                 !      loop nests.  However, this code does not seem to have
+                 !      an effect on the success of this test.
+                 do i = blkLimits(LOW, IAXIS), blkLimits(HIGH, IAXIS)
+                    scratchData(DRV2_SCRATCH_CENTER_VAR, i, j, k) &
+                       = eosData(m+i-blkLimits(LOW, IAXIS)+1)
+                 end do
+              end if
            end do
 
           !!Stuff a few test derivatives into scratch storage so you can see what they look like
@@ -500,7 +512,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
            end do
         end do
      end do
-     
+
      !! Stuff a few test derivatives into scratch storage so you can see what they look like
      !!  Feel free to change the variable inserted
      !! This is an alternate way of outputting data.  But since LBR can't see anything, who can
@@ -510,7 +522,8 @@ subroutine Eos_unitTest(fileUnit, perfect)
      !!call Grid_putBlkData(blockID,SCRATCH_CTR,DRV2_SCRATCH_CENTER_VAR,INTERIOR,startingPos, &
      !!           deriv2,dataSize)
 
-     call Grid_releaseBlkPtr(blockDesc,solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
+     call tileDesc%releaseDataPtr(scratchData, SCRATCH_CTR)
 
      deallocate(deriv1)
      deallocate(deriv2)
@@ -528,7 +541,7 @@ subroutine Eos_unitTest(fileUnit, perfect)
      call itor%next()
      
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   !! Output to get the derived variables
   call IO_writeCheckpoint()
