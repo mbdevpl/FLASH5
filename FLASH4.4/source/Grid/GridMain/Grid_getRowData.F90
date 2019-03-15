@@ -262,6 +262,7 @@ subroutine Grid_getRowData(blockDesc, gridDataStruct, structIndex, beginCount, &
   integer, intent(in) :: dataSize
   real, dimension(datasize),intent(out) :: datablock
 
+  datablock(:) = 0.0
   call Driver_abortFlash("[Grid_getRowData] DEPRECATED.")
 
 !  real,allocatable,dimension(:,:,:) :: cellvalues

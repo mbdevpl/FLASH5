@@ -50,6 +50,7 @@ subroutine gr_getCellVol(xb,xe,yb,ye,zb,ze,block,dataBlock,indexing)
   real,dimension(xb:xe,yb:ye,zb:ze),intent(OUT)::dataBlock
   integer,intent(IN) :: indexing
 
+  dataBlock(:,:,:) = 0.0
   call Driver_abortFlash("[gr_getCellVol] DEPRECATED. Use Grid_getCellVolumes")
  
 !  integer :: geometry
