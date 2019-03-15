@@ -8,7 +8,7 @@ subroutine Hydro_prepareBuffers
 #include "constants.h"
 #include "UHD.h"
 
-#ifndef FLASH_GRID_ANYAMREX
+#ifndef FLASH_GRID_AMREX
 #ifndef FLASH_GRID_UG
   integer :: blockList(MAXBLOCKS)
   integer :: blockCount

@@ -60,6 +60,7 @@ subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,block,dataBlock,beginCount)
   real,dimension(MDIM) :: del
   integer,intent(IN) :: beginCount
 
+  dataBlock(:,:,:) = 0.0
   call Driver_abortFlash("[gr_getCellFaceArea] DEPRECATED.  Use Grid_getCellFaceAreas")
 
 !  integer :: geometry

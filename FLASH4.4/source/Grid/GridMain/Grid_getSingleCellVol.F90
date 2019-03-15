@@ -74,6 +74,7 @@ subroutine Grid_getSingleCellVol(point, level, cellvolume)
   integer, intent(IN)  :: level
   real,    intent(OUT) :: cellvolume
 
+  cellvolume = 0.0
   call Driver_abortFlash("[Grid_getSingleCellVol] DEPRECATED")
 
 !  integer :: geometry

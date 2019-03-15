@@ -288,6 +288,7 @@ subroutine Grid_getPlaneData(blockDesc, gridDataStruct, structIndex, beginCount,
   real,allocatable,dimension(:,:,:) :: cellvalues
   real, pointer, dimension(:,:,:,:) :: solnData
 
+  datablock(:,:) = 0.0
   call Driver_abortFlash("[Grid_getPlaneData] DEPRECATED.")
 
 !  integer :: i, var, xb, xe, yb, ye, zb, ze, x, y, z

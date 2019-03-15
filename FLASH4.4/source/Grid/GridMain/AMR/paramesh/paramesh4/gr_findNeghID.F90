@@ -60,6 +60,7 @@ subroutine gr_findNeghID(block,pos,negh,neghID)
   integer,dimension(MDIM),intent(IN) :: negh
   integer,dimension(BLKNO:PROCNO),intent(OUT) :: neghID
 
+  neghID(:) = 0
   call Driver_abortFlash("[gr_findNeighID] Update for tiling")
 
 !  integer,dimension(BLKNO:TYPENO) :: negh_prop

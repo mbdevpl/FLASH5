@@ -102,21 +102,6 @@ Module Grid_interface
      end subroutine Grid_applyBCEdgeAllUnkVars
   end interface
 
-  interface
-     subroutine Grid_copyF4DataToMultiFabs(gds, phi, nodetype, reverse)
-#ifdef FLASH_GRID_ANYAMREX
-       use amrex_multifab_module, ONLY : amrex_multifab
-       implicit none
-       type(amrex_multifab),OPTIONAL,intent(INOUT) :: phi(:)
-#else
-       type(*),OPTIONAL :: phi
-#endif
-       integer,intent(IN),OPTIONAL :: gds
-       integer,intent(IN),OPTIONAL :: nodetype
-       logical,intent(IN),OPTIONAL :: reverse
-     end subroutine Grid_copyF4DataToMultiFabs
-  end interface
-
   interface Grid_computeUserVars
      subroutine Grid_computeUserVars()
      end subroutine Grid_computeUserVars
