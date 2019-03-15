@@ -1,7 +1,7 @@
 USESETUPVARS Grid
 #USESETUPVARS ThreeT
 
-IF Grid in ['', 'UG', 'Amrex']
+#IF Grid in ['', 'UG', 'PM4DEV', 'Amrex']
 # Several flux variables are used in simpleUnsplit and they are formally
 # declared in the file UHD.h.
 #
@@ -23,9 +23,9 @@ FLUX dummyFlux5
 #ENDIF
 
 # For simpleHydro, we do not currently use 3T
-#IF Gridin ['', 'UG', 'Amrex'] and ThreeT
+#IF Gridin ['', 'UG', 'PM4DEV', 'Amrex'] and ThreeT
 #FLUX dummyFlux9
 #FLUX dummyFlux10
 #FLUX dummyFlux11
-ENDIF
+#ENDIF
 
