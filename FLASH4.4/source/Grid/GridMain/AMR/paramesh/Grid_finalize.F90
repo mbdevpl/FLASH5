@@ -22,7 +22,6 @@ subroutine Grid_finalize()
   use gr_ptInterface, ONLY : gr_ptFinalize
   use gr_specificData, ONLY : gr_nToLeft, gr_gid, gr_gsurr_blks
   use gr_sbInterface, ONLY: gr_sbFinalize
-  use gr_amrextInterface, ONLY: gr_amrextAmrexFinalize
   implicit none
 
   if(allocated(gr_gid))deallocate(gr_gid)
@@ -35,7 +34,6 @@ subroutine Grid_finalize()
   call gr_solversFinalize()
   call gr_bcFinalize()
 !  call gr_sbFinalize()
-  call gr_amrextAmrexFinalize()
   call Paramesh_finalize()
 
 end subroutine Grid_finalize

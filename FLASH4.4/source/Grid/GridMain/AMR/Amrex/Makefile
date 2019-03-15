@@ -26,5 +26,3 @@ Grid += gr_amrexInterface.o \
 Grid += gr_specificData.o gr_initSpecific.o \
         gr_updateData.o
 
-Grid += gr_amrextInterface.o
-

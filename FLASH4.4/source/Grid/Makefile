@@ -2,7 +2,6 @@ Grid += Grid_init.o \
 	Grid_getLeafIterator.o Grid_releaseLeafIterator.o \
 	Grid_getTileIterator.o Grid_releaseTileIterator.o \
 	Grid_ascModule.o Grid_ascGetBlkPtr.o Grid_ascReleaseBlkPtr.o \
-	Grid_copyF4DataToMultiFabs.o \
 	Grid_conserveFluxes.o \
 	Grid_getLocalNumBlks.o \
     Grid_getMaxRefinement.o \
