@@ -208,7 +208,7 @@ subroutine Driver_evolveFlash()
         call itor%next()
     end do
 
-    call Grid_releaseLeafIterator(itor)
+    call Grid_releaseTileIterator(itor)
     
     ! Confirm proper number of blocks and cells
     call assertEqual(xBlkMin, 1, "Incorrect origin X-coordinate")

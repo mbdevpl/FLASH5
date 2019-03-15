@@ -75,10 +75,6 @@ subroutine Driver_initFlash()
 
   use IncompNS_interface, ONLY : IncompNS_init
 
-#ifdef FLASH_GRID_AMREXTRANSITION
-  use amrex_base_module, ONLY : amrex_init
-#endif
-
   implicit none
 
 #include "constants.h"
@@ -103,11 +99,6 @@ subroutine Driver_initFlash()
   !! Now set the parallel environment and introduce any communicators
   !! that might be needed during the simulation
   call Driver_setupParallelEnv()
-
-#ifdef FLASH_GRID_AMREXTRANSITION
-  call amrex_init(dr_globalComm,.FALSE.) !DEV: Should use dr_meshComm !?
-#endif
-
 
   !! Initialize the code timers.  Ideally should be first thing in
   !! code but currently the timing package
