@@ -14,7 +14,7 @@ about Makefile.h can be found in the FLASH user guide.  Once
 customized the application can be built with gnu make.  FLASH can then
 be launched using:
 
-mpiexec -n ${NPROC} ./flash4
+mpiexec -n ${NPROC} ./flash5
 where NPROC is the number of MPI processes.
 
 The compact application directories contain a parameter file named

@@ -21,10 +21,7 @@ USESETUPVARS FlashAmrexMode
 LINKIF Grid_markRefineDerefine.F90 Grid/GridMain/AMR/paramesh
 IF FlashAmrexMode == 2
    LINKIF gr_expandDomain.F90.M2      Grid/GridMain/AMR/paramesh/AmrexTransition
-ELSE
-   LINKIF gr_expandDomain.F90         Grid/GridMain/AMR/paramesh
 ENDIF
-LINKIF Grid_dump.F90               Grid/GridMain/AMR/paramesh
 
 USESETUPVARS threadBlockList
 IF threadBlockList and withHydro

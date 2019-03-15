@@ -27,7 +27,7 @@ FLASH_PAR=./flash.par           # Operator should have provided this default
 
 BATCH_SCRIPT=./batch_submission_script
 
-FLASH_BUILD_DIR=object          # Where we'll look for flash4 and its files
+FLASH_BUILD_DIR=object          # Where we'll look for flash5 and its files
 
 RUNDIR_STEM=rundir_             # Run directories named "rundir_000", 
                                 #    "rundir_001"...
@@ -172,16 +172,16 @@ else
 fi
 
 # It needs an executable, and any required data files.
-[ -x $FLASH_PATH/$FLASH_BUILD_DIR/flash4 ] || {
+[ -x $FLASH_PATH/$FLASH_BUILD_DIR/flash5 ] || {
 
-  echo "No flash4 executable found in $FLASH_PATH/$FLASH_BUILD_DIR.  Did you"
+  echo "No flash5 executable found in $FLASH_PATH/$FLASH_BUILD_DIR.  Did you"
   echo "build one?"
   [ ! "$EXISTING_RUNDIR" ] && rmdir $new_rundir
   exit 1
 }
 
-echo "Copying flash4 and any required datafiles to $new_rundir..."
-cp $FLASH_PATH/$FLASH_BUILD_DIR/flash4 $new_rundir
+echo "Copying flash5 and any required datafiles to $new_rundir..."
+cp $FLASH_PATH/$FLASH_BUILD_DIR/flash5 $new_rundir
 [ -f $FLASH_PATH/$FLASH_BUILD_DIR/setup_datafiles ] && {
 
   for path in `cat $FLASH_PATH/$FLASH_BUILD_DIR/setup_datafiles`; do

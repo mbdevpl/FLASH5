@@ -264,13 +264,8 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     end do
     call amrex_mfiter_destroy(mfi)
 
-    !! DEV : Control of gr_scratchCtr allocation is very hacky...
-#ifdef HY_VAR2_SCRATCHCTR_VAR
-# ifdef HY_XN06_SCRATCHCTR_VAR
-    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, HY_XN06_SCRATCHCTR_VAR, 0)
-# else
-    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, HY_VAR2_SCRATCHCTR_VAR, 0)
-# endif
+#if NSCRATCH_CENTER_VARS > 0
+    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, NSCRATCH_CENTER_VARS, 0)
 #endif
 
 #if NFLUXES > 0

@@ -201,6 +201,11 @@ subroutine Grid_init()
 
   call RuntimeParameters_get("flux_correct", gr_doFluxCorrection)
 
+  call RuntimeParameters_get("gr_useTiling", gr_enableTiling)
+  call RuntimeParameters_get("gr_tileSizeX", gr_tileSize(IAXIS))
+  call RuntimeParameters_get("gr_tileSizeY", gr_tileSize(JAXIS))
+  call RuntimeParameters_get("gr_tileSizeZ", gr_tileSize(KAXIS))
+
 #ifdef FLASH_PARTICLES
   call RuntimeParameters_get('useParticles',gr_useParticles)
   call RuntimeParameters_get('pt_maxPerProc',gr_maxParticlesPerProc)

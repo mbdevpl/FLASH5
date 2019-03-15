@@ -29,18 +29,18 @@ module gr_bcInterface
 
   interface
      subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
-          regionType,blockDesc,idest)
-       use block_metadata, ONLY : block_metadata_t
+          regionType,tileDesc,idest)
+       use Grid_tile, ONLY : Grid_tile_t
        integer, intent(in) :: axis,bcType,gridDataStruct,varCount,idest
        integer,dimension(MDIM),intent(IN) :: regionType
-       type(block_metadata_t), intent(IN) :: blockDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
      end subroutine gr_bcApplyToOneFace
   end interface
 
   interface 
      subroutine gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
-          region,blockDesc,idest)
-       use block_metadata, ONLY : block_metadata_t
+          region,tileDesc,idest)
+       use Grid_tile, ONLY : Grid_tile_t
        integer, intent(in) :: gridDataStruct,axis
        integer,dimension(LOW:HIGH,MDIM),intent(IN) :: endPoints
        integer,intent(IN) :: regionSize(REGION_DIM)
@@ -48,28 +48,28 @@ module gr_bcInterface
        real,dimension(regionSize(BC_DIR),regionSize(SECOND_DIR),&
             regionSize(THIRD_DIR),regionSize(STRUCTSIZE)),&
             intent(OUT) :: region
-       type(block_metadata_t), intent(IN) :: blockDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
        integer,intent(IN) :: idest
      end subroutine gr_bcGetRegion
      subroutine gr_bcGetRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoints,&
           regionSize,&
           regionDataC,regionDataFN,regionDataFT1,regionDataFT2,&
-          blockDesc,idest)
-       use block_metadata, ONLY : block_metadata_t
+          tileDesc,idest)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        integer, intent(in) :: gridDataStruct,axis, secondDir,thirdDir
        integer,dimension(LOW:HIGH,MDIM),intent(IN) :: endPoints
        integer,intent(IN) :: regionSize(REGION_DIM)
        real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
-       type(block_metadata_t), intent(IN) :: blockDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
        integer,intent(IN) :: idest
      end subroutine gr_bcGetRegionsMixedGds
   end interface
 
   interface 
      subroutine gr_bcPutRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
-          region,blockDesc,idest)
-       use block_metadata, ONLY : block_metadata_t
+          region,tileDesc,idest)
+       use Grid_tile, ONLY : Grid_tile_t
        integer, intent(in) :: gridDataStruct,axis
        integer,dimension(LOW:HIGH,MDIM),intent(IN) :: endPoints
        integer,intent(IN) :: regionSize(REGION_DIM)
@@ -77,20 +77,20 @@ module gr_bcInterface
        real,dimension(regionSize(BC_DIR),regionSize(SECOND_DIR),&
             regionSize(THIRD_DIR),regionSize(STRUCTSIZE)),&
             intent(IN) :: region
-       type(block_metadata_t), intent(IN) :: blockDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
        integer,intent(IN) :: idest
      end subroutine gr_bcPutRegion
      subroutine gr_bcPutRegionsMixedGds(gridDataStruct,axis,secondDir,thirdDir,endPoints,&
           regionSize,&
           regionDataC,regionDataFN,regionDataFT1,regionDataFT2,&
-          blockDesc,idest)
-       use block_metadata, ONLY : block_metadata_t
+          tileDesc,idest)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        integer, intent(in) :: gridDataStruct,axis, secondDir,thirdDir
        integer,dimension(LOW:HIGH,MDIM),intent(IN) :: endPoints
        integer,intent(IN) :: regionSize(REGION_DIM)
        real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
-       type(block_metadata_t), intent(IN) :: blockDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
        integer,intent(IN) :: idest
      end subroutine gr_bcPutRegionsMixedGds
   end interface

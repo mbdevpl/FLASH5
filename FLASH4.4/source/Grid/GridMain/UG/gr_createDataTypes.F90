@@ -25,9 +25,9 @@ subroutine gr_createDataTypes()
 
   use Grid_data, ONLY : gr_exch,&
        gr_numDataStruct,gr_gridDataStruct, gr_gridDataStructSize
-  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
-  use block_metadata, ONLY: block_metadata_t
-  use leaf_iterator, ONLY: leaf_iterator_t
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
+  use Grid_tile, ONLY: Grid_tile_t
+  use Grid_iterator, ONLY: Grid_iterator_t
 
 implicit none
 
@@ -36,8 +36,8 @@ implicit none
 
   include "Flash_mpi.h"
 
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
   integer :: currentDataTypes
   
   integer :: ierr, flashRealExtent, size, stride, flashCont,i
@@ -50,15 +50,15 @@ implicit none
   ! mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype newtype)
   ! left and right, xdir
   i=1
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, ALL_BLKS)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 
-     blkLimits(:,:)=blockDesc%limits
-     blkLimitsGC(:,:)=blockDesc%limitsGC
+     blkLimits(:,:)=tileDesc%limits
+     blkLimitsGC(:,:)=tileDesc%grownLimits
      guard(:) = blkLimits(LOW,:)-blkLimitsGC(LOW,:)
      blkExtent(:)=blkLimitsGC(HIGH,:)-blkLimitsGC(LOW,:)+1
-     
+
      if(NDIM==1) then
         call MPI_TYPE_CONTIGUOUS(gr_gridDataStructSize(i)*guard(IAXIS), &
              FLASH_REAL, gr_exch(i,IAXIS), ierr)
@@ -122,7 +122,7 @@ implicit none
      end if
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 end subroutine gr_createDataTypes
    
    

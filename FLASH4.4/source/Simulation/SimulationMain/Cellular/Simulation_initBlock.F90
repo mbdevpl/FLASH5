@@ -7,7 +7,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  Simulation_initBlock(integer, INTENT(in)::blockID)
+!!  Simulation_initBlock(real, pointer :: solnData,
+!!                       type(Grid_tile_t) :: tileDesc  )
 !!
 !!
 !! DESCRIPTION
@@ -18,7 +19,8 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockID:        integer  the number of the block to initialize
+!! solnData :: pointer to state data in the tile
+!! tileDesc :: tile descriptor
 !!
 !!
 !! PARAMETERS
@@ -63,7 +65,7 @@
 !!REORDER(4): solnData
 
 
-subroutine Simulation_initBlock(solnData,block)
+subroutine Simulation_initBlock(solnData,tileDesc)
 
   use Simulation_data, ONLY: sim_smallRho, sim_smallx, sim_radiusPerturb, sim_usePseudo1d, &
      sim_xhe4, sim_xc12, sim_xo16, &
@@ -77,7 +79,7 @@ subroutine Simulation_initBlock(solnData,block)
     Multispecies_getSumFrac
   use Grid_interface, ONLY : Grid_getCellCoords
   use Eos_interface, ONLY : Eos
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
@@ -87,7 +89,7 @@ subroutine Simulation_initBlock(solnData,block)
 #include "Multispecies.h"
   
   real,dimension(:,:,:,:),pointer :: solnData
-  type(block_metadata_t), intent(in) :: block
+  type(Grid_tile_t), intent(in) :: tileDesc
 
 !  Local variables
 
@@ -97,40 +99,49 @@ subroutine Simulation_initBlock(solnData,block)
   real, dimension(SPECIES_BEGIN:SPECIES_END) ::  massFraction
 
   real,allocatable,dimension(:) :: xCoordsCell,yCoordsCell,zCoordsCell
-  integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
-  integer :: sizeX,sizeY,sizeZ
 
   integer :: i, j, k, n
 
   integer :: icount
-  integer, parameter :: ifail = -1
+  integer, parameter :: ifail=-1
   real, allocatable  :: rvec(:)                   ! for the random number generator
-  integer            :: rvecSize=0             ! number of random numbers needed,
+  integer            :: rvecSize                  ! number of random numbers needed,
                                                      ! calculated below
   integer, parameter :: iseed = -867690
   integer            :: iseedUse
 
   ! variables needed for the eos call
   real :: temp_zone, rho_zone, vel_zone
-  real :: ptot, eint, etot
+  real :: ptot, eint, etot, abar, zbar, gamma
   real, dimension(EOS_NUM)  :: eosData
+
+  integer :: lo(1:MDIM)
+  integer :: hi(1:MDIM)
+
 
   iseedUse = iseed
 ! ----------------------------------------------------------------------------------------------
 
+  lo(:) = tileDesc%limits(LOW,  :)
+  hi(:) = tileDesc%limits(HIGH, :)
+  rvecSize=1
   ! Get the indices of the blocks
-  blkLimits = block%limits
-  blkLimitsGC = block%limitsGC
-  allocate(xCoordsCell(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS))); xCoordsCell = 0.0
-  allocate(yCoordsCell(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS))); yCoordsCell = 0.0
-  allocate(zCoordsCell(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS))); zCoordsCell = 0.0
-  sizeX = SIZE(xCoordsCell)
-  sizeY = SIZE(yCoordsCell)
-  sizeZ = SIZE(zCoordsCell)
 
-  call Grid_getCellCoords(KAXIS, block, CENTER, useGuardCell, zCoordsCell, sizeZ)
-  call Grid_getCellCoords(JAXIS, block, CENTER, useGuardCell, yCoordsCell, sizeY)
-  call Grid_getCellCoords(IAXIS, block, CENTER, useGuardCell, xCoordsCell, sizeX)
+  allocate(xCoordsCell(lo( IAXIS):hi(IAXIS))); xCoordsCell = 0.0
+  allocate(yCoordsCell(lo( JAXIS):hi(JAXIS))); yCoordsCell = 0.0
+  allocate(zCoordsCell(lo( KAXIS):hi(KAXIS))); zCoordsCell = 0.0
+
+  do i=1,NDIM
+     rvecSize=rvecSize*(hi(i)-lo(i)+1)
+  end do
+  
+#if NDIM==3  
+  call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, lo, hi, zCoordsCell)
+#endif
+#if NDIM>1  
+  call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, lo, hi, yCoordsCell)
+#endif 
+  call Grid_getCellCoords(IAXIS,  CENTER, tileDesc%level, lo, hi, xCoordsCell)
 
   ! the initial composition
   massFraction(:)    = sim_smallx 
@@ -138,8 +149,13 @@ subroutine Simulation_initBlock(solnData,block)
   if (C12_SPEC > 0) massFraction(C12_SPEC) = max(sim_xc12,sim_smallx)
   if (O16_SPEC > 0) massFraction(O16_SPEC) = max(sim_xo16,sim_smallx)
 
+  call Multispecies_getSumInv(A,abar,massFraction)
+  abar = 1.0 / abar
+  call Multispecies_getSumFrac(Z,zbar,massFraction)
+  zbar = abar * zbar
+
   !..get a blocks worth of random numbers between 0.0 and 1.0
-  rvecSize = sizeX*sizeY*sizeZ
+  !! = sizeX*sizeY*sizeZ
   allocate(rvec(rvecSize))
   call sim_ranmar(iseedUse, rvec, rvecSize)
 
@@ -147,13 +163,13 @@ subroutine Simulation_initBlock(solnData,block)
 
   ! now fill the master arrays
 
-  do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
+  do k = lo(KAXIS), hi(KAXIS)
      if (NDIM == 3) zz = zCoordsCell(k)
 
-     do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
+     do j = lo(JAXIS),hi(JAXIS)
         if (NDIM >= 2) yy = yCoordsCell(j)
 
-        do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
+        do i = lo(IAXIS),hi(IAXIS)
            xx = xCoordsCell(i)
            icount = icount + 1
 
@@ -201,14 +217,14 @@ subroutine Simulation_initBlock(solnData,block)
            !  Need input of density and temperature
            eosData(EOS_TEMP) = temp_zone
            eosData(EOS_DENS) = rho_zone
-
+           
            call Eos(MODE_DENS_TEMP,1,eosData,massFraction)
 
            temp_zone = eosData(EOS_TEMP)
            rho_zone = eosData(EOS_DENS)
            ptot = eosData(EOS_PRES)
            eint = eosData(EOS_EINT)
-
+           gamma = eosData(EOS_GAMC)
            ! calculate kinetic energy and total energy
            !! this was NOT done in flash2
            etot = eint + 0.5*vel_zone**2

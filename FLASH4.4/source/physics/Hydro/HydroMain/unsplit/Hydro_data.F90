@@ -92,6 +92,8 @@ Module Hydro_data
   ! Everybody should know these!
   integer, save :: hy_meshNumProcs, hy_meshMe
   integer, save :: hy_globalComm
+  
+  logical, save :: hy_enableTiling
 
   ! Constants for non-dimensionalization
   real, save :: hy_xref, hy_tref, hy_dref
@@ -145,7 +147,7 @@ Module Hydro_data
   real, save, allocatable, dimension(:,:) :: hy_WpGP
   real, save, allocatable, dimension(:,:) :: hy_WmGP
 
-
+  
 
   !! ************************************************************!
   !!                Extra parameters for MHD                    *!

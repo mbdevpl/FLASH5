@@ -27,7 +27,6 @@ Subroutine hy_unitConvert(U,blkLimitsGC,convertDir)
 
   use Hydro_data,     ONLY : hy_dref, hy_eref, hy_pref, &
                              hy_vref, hy_bref
-  use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
 
   implicit none
 

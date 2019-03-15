@@ -118,6 +118,11 @@ nblockx                        = 1
 nblocky                        = 2
 #nblockz                        = 1
 
+gr_useTiling = .TRUE.
+gr_tileSizeX = 4
+gr_tileSizeY = 2
+gr_tileSizeZ = 1
+
 # Uniform Grid specific parameters 
 iGridSize =  256  #global number of gridpoints along x, excluding gcells
 jGridSize =  512  #global number of gridpoints along y, excluding gcells
