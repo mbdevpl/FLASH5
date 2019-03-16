@@ -46,19 +46,15 @@ pm40:+grid:Grid=PM40:
 pm3:+pm40
 chombo_ug:-unit=Grid/GridMain/Chombo/UG:-index-reorder:Grid=Chombo:-maxblocks=1:-nofbs:-makefile=chombo:chomboCompatibleHydro=True
 chombo_amr:-unit=Grid/GridMain/Chombo/AMR:-index-reorder:Grid=Chombo:-nofbs:-makefile=chombo:chomboCompatibleHydro=True
-
-amrext:-unit=Grid/GridMain/AMR/paramesh/AmrexTransition:-index-reorder
+amrex:Grid=Amrex:-unit=Grid/GridMain/AMR/Amrex:-index-reorder
 
 Mode3:+uhd:-unit=Grid/GridMain/AMR/Amrex:+serialio:-unit=IO/IOMain/hdf5/serial/AM:--index-reorder
-Mode2:+uhd:+amrext:FlashAmrexMode=2
 Mode1:+uhd:--index-reorder
 
 Mode3test:+uhd:-gridinterpolation=native:-unit=Grid/GridMain/AMR/Amrex:+serialio:-unit=IO/IOMain/hdf5/serial/AM:--index-reorder:-parfile=demo_simplehydro_2d.par
-Mode2test:+Mode2:-gridinterpolation=native:-parfile=demo_simplehydro_2d.par
 Mode1test:+uhd:-gridinterpolation=native:--index-reorder:-parfile=demo_simplehydro_2d.par
 
 Mode3simple:-unit=physics/Hydro/HydroMain/simpleUnsplit/HLL:-gridinterpolation=native:-unit=Grid/GridMain/AMR/Amrex:+serialio:-unit=IO/IOMain/hdf5/serial/AM:--index-reorder:-parfile=demo_simplehydro_2d.par
-Mode2simple:-unit=physics/Hydro/HydroMain/simpleUnsplit/HLL:-gridinterpolation=native:+amrext:FlashAmrexMode=2:-parfile=demo_simplehydro_2d.par
 Mode1simple:-unit=physics/Hydro/HydroMain/simpleUnsplit/HLL:-gridinterpolation=native:--index-reorder:-parfile=demo_simplehydro_2d.par
 
 # pm4dev_clean indicates a version of Paramesh closer to the one
@@ -214,3 +210,6 @@ ddt:use_ddt=True:--defines=DDT:--with-unit=source/monitors/Debugger/DebuggerMain
 xnet:--with-unit=physics/sourceTerms/Burn/BurnMain/nuclearBurn/XNet:xnet=True
 xnet_alpha:+xnet:xnetData=Data_alpha
 xnet_160:+xnet:xnetData=Data_SN160
+
+#Shortcut to use Aprox13
+a13:--with-unit=physics/sourceTerms/Burn/BurnMain/nuclearBurn/Aprox13

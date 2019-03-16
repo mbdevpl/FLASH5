@@ -20,66 +20,54 @@
 !!  information directly from AMReX.
 !!
 !!  The blocks counted include LEAF as well as covered blocks.
-!!  This is contrary to the convention for block iterators, where
-!!  only LEAF blocks are exposed in the public Grid_getLeafIterator
-!!  interface. But it is consistent with the functionality of the
-!!  PARAMESH version, and used in this way in the friendly IO unit.
+!!  This is consistent with the functionality of the PARAMESH version, and used
+!!  in this way in the friendly IO unit.
 !!
 !!  An alternative version Grid_getLocalNumLeafBlks is coded below,
 !!  but currently (2018-02-26) not yet made public via Grid_interface.
 !!***
 
+#include "constants.h"
 
 subroutine Grid_getLocalNumBlks(numBlocks)
-
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
-  use gr_iterator, ONLY : gr_iterator_t
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+                             Grid_releaseTileIterator
+  use Grid_iterator,  ONLY : Grid_iterator_t
 
   implicit none
 
-  integer,intent(out) :: numBlocks
+  integer, intent(OUT) :: numBlocks
 
-  type(gr_iterator_t)  :: itor
-  integer :: lb
+  type(Grid_iterator_t) :: itor
 
-  lb = 0
+  numBlocks = 0
 
-  call gr_getBlkIterator(itor)
-  do while (itor%is_valid())
-     lb = lb + 1
+  call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.)
+  do while (itor%isValid())
+     numBlocks = numBlocks + 1
      call itor%next()
-  enddo
-  call gr_releaseBlkIterator(itor)
-
-  numBlocks = lb
-
-  return
+  end do
+  call Grid_releaseTileIterator(itor)
 end subroutine Grid_getLocalNumBlks
 
-
-
 subroutine Grid_getLocalNumLeafBlks(numBlocks)
-
-  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
-  use leaf_iterator, ONLY : leaf_iterator_t
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+                             Grid_releaseTileIterator
+  use Grid_iterator,  ONLY : Grid_iterator_t
 
   implicit none
 
-  integer,intent(out) :: numBlocks
+  integer, intent(OUT) :: numBlocks
 
-  type(leaf_iterator_t)  :: itor
-  integer :: lb
+  type(Grid_iterator_t) :: itor
 
-  lb = 0
+  numBlocks = 0
 
-  call Grid_getLeafIterator(itor)
-  do while (itor%is_valid())
-     lb = lb + 1
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while (itor%isValid())
+     numBlocks = numBlocks + 1
      call itor%next()
-  enddo
-  call Grid_releaseLeafIterator(itor)
-
-  numBlocks = lb
-
-  return
+  end do
+  call Grid_releaseTileIterator(itor)
 end subroutine Grid_getLocalNumLeafBlks
+

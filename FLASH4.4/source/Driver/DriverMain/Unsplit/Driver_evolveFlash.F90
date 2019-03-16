@@ -72,19 +72,13 @@ subroutine Driver_evolveFlash()
                                   Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
                                   Grid_getDeltas,&
-                                  Grid_getBlkPtr,&
-                                  Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
-  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
 #ifdef FLASH_GRID_AMREX
   ! DEV: Temporary ugliness for debugging
   use gr_amrexInterface,   ONLY : gr_writeData
 #endif
 
 #include "Flash.h"
-#ifdef FLASH_GRID_AMREXTRANSITION
-  use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
-#endif
   use Burn_interface,      ONLY : Burn
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
@@ -94,14 +88,6 @@ subroutine Driver_evolveFlash()
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
-
-#ifdef FLASH_GRID_AMREXTRANSITION
-!!$  use amrex_amr_module,    ONLY : amrex_real
-!!$  use amrex_box_module,    ONLY : amrex_box
-!  use amrex_box_module
-!  use amrex_fab_module
-  use amrex_multifab_module
-#endif
 
   implicit none
 
@@ -228,12 +214,6 @@ subroutine Driver_evolveFlash()
      print*,'returned from burn myPE=',dr_globalMe
 #endif
      
-#ifdef FLASH_GRID_AMREXTRANSITION
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
-     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
-#endif
-
      dr_dtOld = dr_dt
 
      !----

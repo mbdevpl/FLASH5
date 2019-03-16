@@ -19,25 +19,27 @@ Module Gravity_interface
   end interface
 
   interface Gravity_accelOneRow
-     subroutine Gravity_accelOneRow (pos,sweepDir,blockDesc, numCells, grav, Uin,&
-           varIndex, extraAccelVars)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine Gravity_accelOneRow (pos,sweepDir,tileDesc, lo, hi, grav, Uin,&
+                                     potentialIndex, extraAccelVars)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t),intent(IN) :: blockDesc
-       integer, intent(IN) :: sweepDir,numCells
-       integer, dimension(2),INTENT(in) ::pos
-       real, dimension(numCells),INTENT(inout) :: grav
-       real,    POINTER,    OPTIONAL :: Uin(:,:,:,:)
-       integer, intent(IN), optional :: varIndex 
-       integer, intent(IN),OPTIONAL      :: extraAccelVars(MDIM)
+       integer,           intent(IN)             :: pos(2)
+       integer,           intent(IN)             :: sweepDir
+       type(Grid_tile_t), intent(IN)             :: tileDesc
+       integer,           intent(IN)             :: lo
+       integer,           intent(IN)             :: hi
+       real,              intent(INOUT)          :: grav(lo:hi)
+       real,              POINTER,      OPTIONAL :: Uin(:,:,:,:)
+       integer,           intent(IN),   OPTIONAL :: potentialIndex
+       integer,           intent(IN),   OPTIONAL :: extraAccelVars(MDIM)
      end subroutine Gravity_accelOneRow
   end interface
 
   interface Gravity_accelOneBlock
-     subroutine Gravity_accelOneBlock ( block, ngcellcomp, gvec, potentialIndex)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine Gravity_accelOneBlock (tileDesc, ngcellcomp, gvec, potentialIndex)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t) :: block
+       type(Grid_tile_t) :: tileDesc
       integer, intent(in)             :: ngcellcomp
        real, dimension(:,:,:,:),intent(out)  :: gvec
        integer, intent(in),optional    :: potentialIndex

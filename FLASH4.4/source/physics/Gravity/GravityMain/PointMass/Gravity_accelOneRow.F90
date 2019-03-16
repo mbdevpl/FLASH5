@@ -33,6 +33,7 @@
 !! 
 !!***
 
+#include "Flash.h"
 #include "constants.h"
 
 subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
@@ -46,8 +47,6 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
     Grid_getCellCoords
 
   implicit none
-
-#include "Flash.h"
 
   integer, intent(IN) :: sweepDir,blockID,numCells
   integer, dimension(2),INTENT(in) ::pos
@@ -141,7 +140,7 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
 
 end subroutine Gravity_accelOneRow_blkid
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
+subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
                                 potentialIndex, extraAccelVars)
 
 !=======================================================================
@@ -150,12 +149,11 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
        useGravity
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
     Grid_getCellCoords
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use Driver_interface, ONLY : Driver_abortFlash
   implicit none
 
-#include "Flash.h"
-
-  type(block_metadata_t),intent(in) :: blockDesc
+  type(Grid_tile_t),intent(in) :: tileDesc
   integer, intent(IN) :: sweepDir,numCells
   integer, dimension(2),INTENT(in) ::pos
   real, dimension(numCells),INTENT(inout) :: grav
@@ -176,6 +174,8 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   logical :: gcell = .true.
 
 !==============================================================================
+
+  call Driver_abortFlash("[Gravity_accelOneRow] Update to work with tiling")
 
   if (.NOT.useGravity) return
 

@@ -43,13 +43,12 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
                                         amrex_ref_ratio
   use amrex_multifabutil_module, ONLY : amrex_average_down
 
-  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
-  use gr_interface,              ONLY : gr_getBlkIterator, &
-                                        gr_releaseBlkIterator
+  use Grid_interface,            ONLY : Grid_getTileIterator, &
+                                        Grid_releaseTileIterator
   use gr_amrexInterface,         ONLY : gr_primitiveToConserve, &
                                         gr_conserveToPrimitive
-  use gr_iterator,               ONLY : gr_iterator_t
-  use block_metadata,            ONLY : block_metadata_t
+  use Grid_iterator,             ONLY : Grid_iterator_t
+  use Grid_tile,                 ONLY : Grid_tile_t
   use gr_physicalMultifabs,      ONLY : unk, &
                                         facevarx, facevary, facevarz
   use Driver_interface,          ONLY : Driver_abortFlash
@@ -63,10 +62,12 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
   integer :: lev
   integer :: finest_level
 
-  type(gr_iterator_t)    :: itor
-  type(block_metadata_t) :: blockDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
-  real,   pointer :: solnData(:,:,:,:) => null()
+  real, pointer :: solnData(:,:,:,:)
+
+  nullify(solnData)
 
   if (       (gridDataStruct /= CENTER) .AND. (gridDataStruct /= CENTER_FACES) &
        .AND. (gridDataStruct /= FACES)  .AND. (gridDataStruct /= FACEX) &
@@ -84,23 +85,23 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
     ! Convert primitive form to conservative form on leaves only as
     ! averaging will propagate conservative form down to ancestors
     if (convertPtoC) then
-      call gr_getBlkIterator(itor, LEAF)
-      do while (itor%is_valid())
-        call itor%blkMetaData(blockDesc)
-        call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+      call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+      do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        call tileDesc%getDataPtr(solnData, CENTER)
         
-        call gr_primitiveToConserve(blockDesc%limitsGC(LOW,  :), &
-                                    blockDesc%limitsGC(HIGH, :), &
+        call gr_primitiveToConserve(tileDesc%grownLimits(LOW,  :), &
+                                    tileDesc%grownLimits(HIGH, :), &
                                     solnData, &
-                                    blockDesc%limitsGC(LOW,  :), &
-                                    blockDesc%limitsGC(HIGH, :), &
+                                    tileDesc%blkLimitsGC(LOW,  :), &
+                                    tileDesc%blkLimitsGC(HIGH, :), &
                                     NUNK_VARS, &
                                     UNK_VARS_BEGIN, NUNK_VARS)
 
-        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
         call itor%next()
       end do
-      call gr_releaseBlkIterator(itor)
+      call Grid_releaseTileIterator(itor)
     end if
 
     ! Average from finest down to coarsest
@@ -115,23 +116,23 @@ subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
 
     ! Revert conservative form back to primitive form on all blocks
     if (convertCtoP) then
-      call gr_getBlkIterator(itor)
-      do while (itor%is_valid())
-        call itor%blkMetaData(blockDesc)
-        call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+      call Grid_getTileIterator(itor, ALL_BLKS, tiling=.TRUE.)
+      do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        call tileDesc%getDataPtr(solnData, CENTER)
 
-        call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
-                                    blockDesc%limitsGC(HIGH, :), &
+        call gr_conserveToPrimitive(tileDesc%grownLimits(LOW,  :), &
+                                    tileDesc%grownLimits(HIGH, :), &
                                     solnData, &
-                                    blockDesc%limitsGC(LOW,  :), &
-                                    blockDesc%limitsGC(HIGH, :), &
+                                    tileDesc%blkLimitsGC(LOW,  :), &
+                                    tileDesc%blkLimitsGC(HIGH, :), &
                                     NUNK_VARS, &
                                     UNK_VARS_BEGIN, NUNK_VARS)
 
-        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
         call itor%next()
       end do
-      call gr_releaseBlkIterator(itor)
+      call Grid_releaseTileIterator(itor)
     end if
 
   end if

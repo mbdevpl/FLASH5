@@ -80,6 +80,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
   use block_metadata, ONLY : block_metadata_t
 
   use Gravity_data, ONLY : useGravity, grv_vector
+  use Driver_interface, ONLY : Driver_abortFlash
 
   implicit none
 
@@ -97,6 +98,7 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 
   real :: grv_val
 
+  call Driver_abortFlash("[Gravity_accelOneRow] Update to work with tiling")
 
   if (useGravity) then
      grv_val = grv_vector(sweepDir)

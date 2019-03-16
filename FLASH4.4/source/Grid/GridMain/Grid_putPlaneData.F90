@@ -245,10 +245,10 @@
 subroutine Grid_putPlaneData(blockDesc, gridDataStruct, structIndex, beginCount, &
      plane, startingPos, datablock, dataSize)
 
-  use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
+!  use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
-  use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+!  use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
+!  use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -268,258 +268,259 @@ subroutine Grid_putPlaneData(blockDesc, gridDataStruct, structIndex, beginCount,
   integer, dimension(2), intent(in) :: dataSize
   real, dimension(datasize(1), dataSize(2)),intent(in) :: datablock
   real, pointer, dimension(:,:,:,:) :: solnData
-
-
-  integer :: i, var, xb, xe, yb, ye, zb, ze, x, y, z
-  integer,dimension(MDIM)::begOffset,dataLen
-
-
-  integer :: imax, jmax, kmax
-  logical :: isget
-  logical :: getIntPtr
-
-#ifdef DEBUG_GRID
-  isget=.true.
-  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
   
-  !plane specific stuff
-  if(NDIM == 1) then
-     print *, "Error: Grid_putPlaneData"
-     call Driver_abortFlash("Grid_putPlaneData.  Can not put plane data for 1d problem")
-  end if
+  call Driver_abortFlash("[Grid_putPlaneData] DEPRECATED")
 
-  if((plane == XZPLANE) .and. (NDIM < 3)) then
-     print *, "Error: Grid_putPlaneData"
-     call Driver_abortFlash("Grid_putPlaneData.  Can not put xzplane data for 2d problem")
-  end if
-
-  if((plane == YZPLANE) .and. (NDIM < 3)) then
-     print *, "Error: Grid_putPlaneData"
-     call Driver_abortFlash("Grid_putPlaneData.  Can not put yzplane data for 2d problem")
-  end if
-
-  !verify beginCount is set to a valid value
-  if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
-     print *, "Error: Grid_putPlaneData: beginCount set to improper value"
-     print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
-     call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
-  end if
-
-  !verify that dataSize isn't too big
-
-  if (plane == XYPLANE .and. (dataSize(1) > imax .or. dataSize(2) > jmax)) then
-     print *, "Error: Grid_putPlaneData: dataSize(1) or dataSize(2) too big"
-     print *,"You are requesting more cells than block has in a dimension"
-     call Driver_abortFlash("Grid_putPlaneData: dataSize(1) or dataSize(2) too big")
-  end if
-
-  if (plane==XZPLANE .and. &
-     (dataSize(1) > imax .or. &
-     dataSize(2) > kmax)) then
-     print *, "Error: Grid_putPlaneData: dataSize(1) or dataSize(2) too big"
-     print *,"You are requesting more cells than block has in a dimension"
-     call Driver_abortFlash("Grid_putPlaneData: dataSize(1) or dataSize(2) too big")
-  end if
-
-  if ((plane==YZPLANE) .and. &
-     ((dataSize(1) > jmax) .or. &
-     (dataSize(2) > kmax))) then
-     print *, "Error: Grid_putPlaneData: dataSize(1) or dataSize(2) too big"
-     print *,"You are requesting more cells than block has in a dimension"
-     call Driver_abortFlash("Grid_putPlaneData: dataSize(1) or dataSize(2) too big")
-  end if
-
-
-
-
-  !verify that there is enough space in datablock
-  if ((dataSize(1)  < 1) .or. &
-       (dataSize(2) < 1)) then
-     
-     print *, "Error: Grid_putPlaneData: dataSize(1) or (2) too small"
-     print *,"You are requesting more < 1 cell in a dimension of block, 1 is the min"
-     call Driver_abortFlash("Grid_putPlaneData: dataSize(1) or (2) too small")
-  end if
-  
-
-
-
-  !verify that indicies aren't too big or too small for the block
-  if(beginCount == EXTERIOR) then
-    
-     if (startingPos(1) > imax) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(1) index larger than block")
-     end if
-
-     if ((NDIM > 1) .and. (startingPos(2) > jmax)) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(2) index larger than block")
-     end if
-    
-     if ((NDIM > 2) .and. (startingPos(3) > kmax)) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(3) index larger than block")
-     end if
-    
-     if (startingPos(1) < 1) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(1) index smaller than 1")
-     end if
-
-     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(2) index smaller than 1")
-     end if
-    
-     if ((NDIM > 2) .and. (startingPos(3) < 1)) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(3) index smaller than 1")
-     end if
-        
-  else !beginCount == INTERIOR
-
-     if ((startingPos(1) + gr_iguard -1) > imax) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(1) index larger than block")
-     end if
-
-     if ((NDIM > 1) .and. ((startingPos(2) + gr_jguard -1) > jmax)) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(2) index larger than block")
-     end if
-    
-     if ((NDIM > 2) .and. ((startingPos(3) + gr_kguard -1) > kmax)) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(3) index larger than block")
-     end if
-    
-     if (startingPos(1) < 1) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(1) index smaller than 1")
-     end if
-
-     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(2) index smaller than 1")
-     end if
-    
-     if ((NDIM > 2) .and. (startingPos(3) < 1)) then
-        call Driver_abortFlash("Grid_putPlaneData startingPos(3) index smaller than 1")
-     end if
-
-  end if
-  
-
-  !more verification of indicies
-  !check size and starting pos
-  if(beginCount == EXTERIOR) then
-     if(plane == XYPLANE) then
-        if ((startingPos(IAXIS) + dataSize(1) -1) > imax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-        if ((startingPos(JAXIS) + dataSize(2) -1) > jmax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-     end if
-
-     if(plane == XZPLANE) then
-        if ((startingPos(IAXIS) + dataSize(1) -1) > imax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-        if ((startingPos(KAXIS) + dataSize(2) -1) > kmax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-     end if
-
-     if(plane == YZPLANE) then
-        if ((startingPos(JAXIS) + dataSize(1) -1) > jmax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-        if ((startingPos(KAXIS) + dataSize(2) -1) > kmax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-     end if
-
-  !if INTERIOR counting, check same things   
-  else   if(beginCount == INTERIOR) then
-     if(plane == XYPLANE) then
-        if ((startingPos(IAXIS) + dataSize(1) + gr_iguard -1) > imax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-        if ((startingPos(JAXIS) + dataSize(2) + gr_jguard -1) > jmax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-     end if
-
-     if(plane == XZPLANE) then
-        if ((startingPos(IAXIS) + dataSize(1) + gr_iguard -1) > imax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-        if ((startingPos(KAXIS) + dataSize(2) + gr_kguard -1) > kmax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-     end if
-
-     if(plane == YZPLANE) then
-        if ((startingPos(JAXIS) + dataSize(1) + gr_jguard -1) > jmax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-        if ((startingPos(KAXIS) + dataSize(2) + gr_kguard -1) > kmax) then
-           print *, "Error: Grid_putPlaneData"
-           call Driver_abortFlash("Grid_putPlaneData indicies too large")
-        end if
-     end if
-  end if
-
-#endif  
-
-  call gr_getDataOffsets(blockDesc,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
-
-
-  yb=1
-  ye=1
-  zb=1
-  ze=1
-  xb = startingPos(IAXIS) + begOffset(IAXIS)
-  if(NDIM>1)yb = startingPos(JAXIS) + begOffset(JAXIS)
-  if(NDIM>2)zb = startingPos(KAXIS) + begOffset(KAXIS)
-  
-  if (plane == XYPLANE) then
-     xe = xb + dataSize(1) -1
-     if(NDIM>1)ye = yb + dataSize(2) -1
-     ze=zb
-  elseif(plane == XZPLANE) then
-     xe = xb + dataSize(1) -1
-     if(NDIM>2)ze = zb + dataSize(2) -1
-     ye = yb
-  elseif(plane == YZPLANE) then
-     xe = xb
-     if(NDIM>1)ye = yb + dataSize(1) -1
-     if(NDIM>2)ze = zb + dataSize(2) -1
-  else
-     call Driver_abortFlash("Grid_getPlaneData : invalid plane spec")
-  end if
-
-  if(getIntPtr) then
-     call gr_getInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
-     if(plane==XYPLANE)solnData(structIndex,xb:xe,yb:ye,zb) = datablock(:,:)
-     if(plane==XZPLANE)solnData(structIndex,xb:xe,yb,zb:ze) = datablock(:,:)
-     if(plane==YZPLANE)solnData(structIndex,xb,yb:ye,zb:ze) = datablock(:,:)
-     call gr_releaseInteriorBlkPtr(blockDesc,solnData,gridDataStruct)
-  else
-     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
-!!$     if(gridDataStruct==SCRATCH) then
-!!$        if(plane==XYPLANE)solnData(xb:xe,yb:ye,zb,structIndex) = datablock(:,:)
-!!$        if(plane==XZPLANE)solnData(xb:xe,yb,zb:ze,structIndex) = datablock(:,:)
-!!$        if(plane==YZPLANE)solnData(xb,yb:ye,zb:ze,structIndex) = datablock(:,:)
-!!$     else
-!!$     end if
-     if(plane==XYPLANE)solnData(structIndex,xb:xe,yb:ye,zb) = datablock(:,:)
-     if(plane==XZPLANE)solnData(structIndex,xb:xe,yb,zb:ze) = datablock(:,:)
-     if(plane==YZPLANE)solnData(structIndex,xb,yb:ye,zb:ze) = datablock(:,:)
-     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
-  end if
-
-  return
+!  integer :: i, var, xb, xe, yb, ye, zb, ze, x, y, z
+!  integer,dimension(MDIM)::begOffset,dataLen
+!
+!
+!  integer :: imax, jmax, kmax
+!  logical :: isget
+!  logical :: getIntPtr
+!
+!#ifdef DEBUG_GRID
+!  isget=.true.
+!  call gr_checkDataType(blockDesc,gridDataStruct,imax,jmax,kmax,isget)
+!  
+!  !plane specific stuff
+!  if(NDIM == 1) then
+!     print *, "Error: Grid_putPlaneData"
+!     call Driver_abortFlash("Grid_putPlaneData.  Can not put plane data for 1d problem")
+!  end if
+!
+!  if((plane == XZPLANE) .and. (NDIM < 3)) then
+!     print *, "Error: Grid_putPlaneData"
+!     call Driver_abortFlash("Grid_putPlaneData.  Can not put xzplane data for 2d problem")
+!  end if
+!
+!  if((plane == YZPLANE) .and. (NDIM < 3)) then
+!     print *, "Error: Grid_putPlaneData"
+!     call Driver_abortFlash("Grid_putPlaneData.  Can not put yzplane data for 2d problem")
+!  end if
+!
+!  !verify beginCount is set to a valid value
+!  if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
+!     print *, "Error: Grid_putPlaneData: beginCount set to improper value"
+!     print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
+!     call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
+!  end if
+!
+!  !verify that dataSize isn't too big
+!
+!  if (plane == XYPLANE .and. (dataSize(1) > imax .or. dataSize(2) > jmax)) then
+!     print *, "Error: Grid_putPlaneData: dataSize(1) or dataSize(2) too big"
+!     print *,"You are requesting more cells than block has in a dimension"
+!     call Driver_abortFlash("Grid_putPlaneData: dataSize(1) or dataSize(2) too big")
+!  end if
+!
+!  if (plane==XZPLANE .and. &
+!     (dataSize(1) > imax .or. &
+!     dataSize(2) > kmax)) then
+!     print *, "Error: Grid_putPlaneData: dataSize(1) or dataSize(2) too big"
+!     print *,"You are requesting more cells than block has in a dimension"
+!     call Driver_abortFlash("Grid_putPlaneData: dataSize(1) or dataSize(2) too big")
+!  end if
+!
+!  if ((plane==YZPLANE) .and. &
+!     ((dataSize(1) > jmax) .or. &
+!     (dataSize(2) > kmax))) then
+!     print *, "Error: Grid_putPlaneData: dataSize(1) or dataSize(2) too big"
+!     print *,"You are requesting more cells than block has in a dimension"
+!     call Driver_abortFlash("Grid_putPlaneData: dataSize(1) or dataSize(2) too big")
+!  end if
+!
+!
+!
+!
+!  !verify that there is enough space in datablock
+!  if ((dataSize(1)  < 1) .or. &
+!       (dataSize(2) < 1)) then
+!     
+!     print *, "Error: Grid_putPlaneData: dataSize(1) or (2) too small"
+!     print *,"You are requesting more < 1 cell in a dimension of block, 1 is the min"
+!     call Driver_abortFlash("Grid_putPlaneData: dataSize(1) or (2) too small")
+!  end if
+!  
+!
+!
+!
+!  !verify that indicies aren't too big or too small for the block
+!  if(beginCount == EXTERIOR) then
+!    
+!     if (startingPos(1) > imax) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(1) index larger than block")
+!     end if
+!
+!     if ((NDIM > 1) .and. (startingPos(2) > jmax)) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(2) index larger than block")
+!     end if
+!    
+!     if ((NDIM > 2) .and. (startingPos(3) > kmax)) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(3) index larger than block")
+!     end if
+!    
+!     if (startingPos(1) < 1) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(1) index smaller than 1")
+!     end if
+!
+!     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(2) index smaller than 1")
+!     end if
+!    
+!     if ((NDIM > 2) .and. (startingPos(3) < 1)) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(3) index smaller than 1")
+!     end if
+!        
+!  else !beginCount == INTERIOR
+!
+!     if ((startingPos(1) + gr_iguard -1) > imax) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(1) index larger than block")
+!     end if
+!
+!     if ((NDIM > 1) .and. ((startingPos(2) + gr_jguard -1) > jmax)) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(2) index larger than block")
+!     end if
+!    
+!     if ((NDIM > 2) .and. ((startingPos(3) + gr_kguard -1) > kmax)) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(3) index larger than block")
+!     end if
+!    
+!     if (startingPos(1) < 1) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(1) index smaller than 1")
+!     end if
+!
+!     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(2) index smaller than 1")
+!     end if
+!    
+!     if ((NDIM > 2) .and. (startingPos(3) < 1)) then
+!        call Driver_abortFlash("Grid_putPlaneData startingPos(3) index smaller than 1")
+!     end if
+!
+!  end if
+!  
+!
+!  !more verification of indicies
+!  !check size and starting pos
+!  if(beginCount == EXTERIOR) then
+!     if(plane == XYPLANE) then
+!        if ((startingPos(IAXIS) + dataSize(1) -1) > imax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!        if ((startingPos(JAXIS) + dataSize(2) -1) > jmax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!     end if
+!
+!     if(plane == XZPLANE) then
+!        if ((startingPos(IAXIS) + dataSize(1) -1) > imax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!        if ((startingPos(KAXIS) + dataSize(2) -1) > kmax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!     end if
+!
+!     if(plane == YZPLANE) then
+!        if ((startingPos(JAXIS) + dataSize(1) -1) > jmax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!        if ((startingPos(KAXIS) + dataSize(2) -1) > kmax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!     end if
+!
+!  !if INTERIOR counting, check same things   
+!  else   if(beginCount == INTERIOR) then
+!     if(plane == XYPLANE) then
+!        if ((startingPos(IAXIS) + dataSize(1) + gr_iguard -1) > imax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!        if ((startingPos(JAXIS) + dataSize(2) + gr_jguard -1) > jmax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!     end if
+!
+!     if(plane == XZPLANE) then
+!        if ((startingPos(IAXIS) + dataSize(1) + gr_iguard -1) > imax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!        if ((startingPos(KAXIS) + dataSize(2) + gr_kguard -1) > kmax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!     end if
+!
+!     if(plane == YZPLANE) then
+!        if ((startingPos(JAXIS) + dataSize(1) + gr_jguard -1) > jmax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!        if ((startingPos(KAXIS) + dataSize(2) + gr_kguard -1) > kmax) then
+!           print *, "Error: Grid_putPlaneData"
+!           call Driver_abortFlash("Grid_putPlaneData indicies too large")
+!        end if
+!     end if
+!  end if
+!
+!#endif  
+!
+!  call gr_getDataOffsets(blockDesc,gridDataStruct,startingPos,dataLen,beginCount,begOffset,getIntPtr)
+!
+!
+!  yb=1
+!  ye=1
+!  zb=1
+!  ze=1
+!  xb = startingPos(IAXIS) + begOffset(IAXIS)
+!  if(NDIM>1)yb = startingPos(JAXIS) + begOffset(JAXIS)
+!  if(NDIM>2)zb = startingPos(KAXIS) + begOffset(KAXIS)
+!  
+!  if (plane == XYPLANE) then
+!     xe = xb + dataSize(1) -1
+!     if(NDIM>1)ye = yb + dataSize(2) -1
+!     ze=zb
+!  elseif(plane == XZPLANE) then
+!     xe = xb + dataSize(1) -1
+!     if(NDIM>2)ze = zb + dataSize(2) -1
+!     ye = yb
+!  elseif(plane == YZPLANE) then
+!     xe = xb
+!     if(NDIM>1)ye = yb + dataSize(1) -1
+!     if(NDIM>2)ze = zb + dataSize(2) -1
+!  else
+!     call Driver_abortFlash("Grid_getPlaneData : invalid plane spec")
+!  end if
+!
+!  if(getIntPtr) then
+!     call gr_getInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
+!     if(plane==XYPLANE)solnData(structIndex,xb:xe,yb:ye,zb) = datablock(:,:)
+!     if(plane==XZPLANE)solnData(structIndex,xb:xe,yb,zb:ze) = datablock(:,:)
+!     if(plane==YZPLANE)solnData(structIndex,xb,yb:ye,zb:ze) = datablock(:,:)
+!     call gr_releaseInteriorBlkPtr_blk(blockDesc,solnData,gridDataStruct)
+!  else
+!     call Grid_getBlkPtr(blockDesc,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
+!!!$     if(gridDataStruct==SCRATCH) then
+!!!$        if(plane==XYPLANE)solnData(xb:xe,yb:ye,zb,structIndex) = datablock(:,:)
+!!!$        if(plane==XZPLANE)solnData(xb:xe,yb,zb:ze,structIndex) = datablock(:,:)
+!!!$        if(plane==YZPLANE)solnData(xb,yb:ye,zb:ze,structIndex) = datablock(:,:)
+!!!$     else
+!!!$     end if
+!     if(plane==XYPLANE)solnData(structIndex,xb:xe,yb:ye,zb) = datablock(:,:)
+!     if(plane==XZPLANE)solnData(structIndex,xb:xe,yb,zb:ze) = datablock(:,:)
+!     if(plane==YZPLANE)solnData(structIndex,xb,yb:ye,zb:ze) = datablock(:,:)
+!     call Grid_releaseBlkPtr(blockDesc,solnData,gridDataStruct)
+!  end if
+!
+!  return
 end subroutine Grid_putPlaneData

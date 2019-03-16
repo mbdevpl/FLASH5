@@ -33,30 +33,31 @@
 
 subroutine Grid_initDomain( restart,particlesInitialized)
 
-  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator, &
-       Grid_fillGuardCells, Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator, &
+       Grid_fillGuardCells
   
   use Grid_data, ONLY : gr_gid, gr_eosModeInit, gr_eosMode, gr_eosModeNow, gr_globalMe,&
        gr_globalNumProcs
   use Eos_interface, ONLY : Eos_wrapped
   use Simulation_interface, ONLY : Simulation_initBlock, Simulation_initRestart
-  use block_metadata, ONLY : block_metadata_t
-  use leaf_iterator, ONLY : leaf_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
-  type(block_metadata_t) :: block
-  type(leaf_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
   
   logical, intent(in) :: restart
   logical, intent(inout) :: particlesInitialized
 
   integer :: blockID=1, ngid
   
-  integer, dimension(LOW:HIGH, MDIM) :: blkLimits,blkLimitsGC
+  integer, dimension(LOW:HIGH, MDIM) :: blkLimitsGC
   real, pointer:: solnData(:,:,:,:)
 
+  nullify(solnData)
 
   call gr_createDataTypes()
 
@@ -74,16 +75,19 @@ subroutine Grid_initDomain( restart,particlesInitialized)
      !  zero data in case we don't initialize all data in
      !  Simulation_initBlock... in particular the total vs. internal
      !  energies can cause problems in the eos call that follows
-     call Grid_getLeafIterator(itor)
-     call itor%blkMetaData(block)
-     call Grid_getBlkPtr(block, solnData,CENTER)
-     solnData = 0.0
-     blkLimits(:,:) = block%limits
-     call Simulation_initBlock(solnData,block)
+     call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.)
+     do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        call tileDesc%getDataPtr(solnData, CENTER)
 
-     call Eos_wrapped(gr_eosModeInit, blkLimits, solnData)
-     call Grid_releaseBlkPtr(block, solnData,CENTER)
-     call Grid_releaseLeafIterator(itor)
+        solnData(:,:,:,:) = 0.0
+        call Simulation_initBlock(solnData, tileDesc)
+        call Eos_wrapped(gr_eosModeInit, tileDesc%limits, solnData)
+
+        call tileDesc%releaseDataPtr(solnData, CENTER)
+        call itor%next()
+     end do
+     call Grid_releaseTileIterator(itor)
   else
      ! Do no call the EOS here any more when restarting, since those calls
      ! may (depending on the Eos implementation, or whether Eos has

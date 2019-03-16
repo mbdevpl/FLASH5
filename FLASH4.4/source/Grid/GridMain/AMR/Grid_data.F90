@@ -110,6 +110,9 @@ Module Grid_data
 
 #endif
 
+  logical, save :: gr_enableTiling
+  integer, save :: gr_tileSize(1:MDIM)
+
   integer,save :: gr_lrefineDel, gr_maxRefine, gr_minRefine
   logical,save :: gr_enforceMaxRefinement
   logical,save :: gr_lrefineMaxRedDoByLogR, gr_lrefineMaxRedDoByTime

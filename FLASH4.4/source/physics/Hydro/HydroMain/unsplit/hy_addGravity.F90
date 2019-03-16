@@ -43,14 +43,12 @@
 !!REORDER(4):U
 
 Subroutine hy_addGravity&
-     (blockDesc,blkLimits,loGC,hiGC,dt,gravX,gravY,gravZ)
+     (tileDesc,blkLimits,loGC,hiGC,dt,gravX,gravY,gravZ)
 
   use Hydro_data,      ONLY : hy_useGravity,        &
                               hy_useGravHalfUpdate
 
-  use Grid_interface,  ONLY : Grid_getBlkPtr,       &
-                              Grid_releaseBlkPtr
-  use block_metadata,  ONLY : block_metadata_t
+  use Grid_tile,       ONLY : Grid_tile_t
 
   implicit none
 
@@ -59,7 +57,7 @@ Subroutine hy_addGravity&
 #include "UHD.h"
 
   !! ---- Argument List ----------------------------------
-  type(block_metadata_t),intent(IN) :: blockDesc
+  type(Grid_tile_t), intent(IN)   :: tileDesc
 
   integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
   integer, intent(IN), dimension(MDIM):: loGC, hiGC
@@ -73,10 +71,12 @@ Subroutine hy_addGravity&
   real, pointer, dimension(:,:,:,:) :: U
   real, dimension(3) :: velNew
 
+  nullify(U)
+  
   hdt = 0.5 * dt
 
   !! Get block pointer for storages of Riemann states
-  call Grid_getBlkPtr(blockDesc,U,CENTER)
+  call tileDesc%getDataPtr(U, CENTER)
 
   do k=blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
      do j=blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
@@ -100,6 +100,6 @@ Subroutine hy_addGravity&
   enddo
 
   !! Release block pointer for storages of Riemann states
-  call Grid_releaseBlkPtr(blockDesc,U,CENTER)
+  call tileDesc%releaseDataPtr(U, CENTER)
 
 end Subroutine hy_addGravity

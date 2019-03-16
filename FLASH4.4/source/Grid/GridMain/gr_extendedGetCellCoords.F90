@@ -95,6 +95,9 @@
 #define DEBUG_GRID
 #endif
 
+#include "Flash.h"
+#include "constants.h"
+
 subroutine gr_extendedGetCellCoords(axis, block, pe, edge, guardcell, coordinates, size)
 
   use Grid_data, ONLY : gr_meshMe
@@ -110,9 +113,18 @@ subroutine gr_extendedGetCellCoords(axis, block, pe, edge, guardcell, coordinate
   logical, intent(in) :: guardcell
   real,intent(out), dimension(size) :: coordinates
 
+  integer :: lo(1:MDIM)
+  integer :: hi(1:MDIM)
+
+  lo(:) = block%limits(LOW,  :)
+  hi(:) = block%limits(HIGH, :)
+  if (guardcell) then
+      lo(1:NDIM) = lo(1:NDIM) - NGUARD
+      hi(1:NDIM) = hi(1:NDIM) + NGUARD
+  end if
 
   if (pe.EQ.gr_meshMe) then
-     call Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
+     call Grid_getCellCoords(axis, edge, block%level, lo, hi, coordinates)
   else
      call Driver_abortFlash('Calling gr_extendedGetCellCoords for'// & 
              &      ' remote blocks is not supported in this Grid implementation.')

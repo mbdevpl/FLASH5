@@ -102,9 +102,9 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   use tree, ONLY : surr_blks, nodetype
   use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx, gr_flxx, gr_flxy, gr_flxz
   use gr_specificData, ONLY : gr_iloFl, gr_jloFl, gr_kloFl
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
-  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
 #ifdef FLASH_HYDRO_UNSPLIT
 #if NDIM >=2
   use gr_specificData, ONLY : gr_xflx_yface, gr_yflx_xface
@@ -124,8 +124,8 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
   real,pointer, dimension(:,:,:,:) :: fluxx,fluxy,fluxz
 
-  type(leaf_iterator_t)  :: itor
-  type(block_metadata_t) :: blockDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
   integer :: blockID
 
@@ -167,15 +167,15 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
      ztrue = (axis==KAXIS)
   end if
   
-  call Grid_getLeafIterator(itor, level=level)
+  call Grid_getTileIterator(itor, LEAF, level=level, tiling=.FALSE.)
 
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
-     if ((level == UNSPEC_LEVEL) .AND. (blockDesc%level == 1)) then
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     if ((level == UNSPEC_LEVEL) .AND. (tileDesc%level == 1)) then
         call itor%next()
         CYCLE !Skip blocks at level 1.
      end if
-     blockID=blockDesc%id
+     blockID=tileDesc%id
      fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
      fluxy(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxy(:,:,:,:,blockID)
      fluxz(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxz(:,:,:,:,blockID)
@@ -285,7 +285,7 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
      nullify(fluxz)
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
   return
 end subroutine Grid_putFluxData
-   
+

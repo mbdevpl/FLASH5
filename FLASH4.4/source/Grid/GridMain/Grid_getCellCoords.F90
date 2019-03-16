@@ -107,14 +107,68 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
-
-  use Grid_data, ONLY : gr_globalDomain,gr_delta, gr_maxRefine
-  use Driver_interface, ONLY : Driver_abortFlash
-  use block_metadata, ONLY : block_metadata_t
-
 #include "constants.h"
 #include "Flash.h"
+
+subroutine Grid_getCellCoords(axis, edge, level, lo, hi, coordinates)
+  use Grid_interface,   ONLY : Grid_getDeltas
+  use Grid_data,        ONLY : gr_globalDomain
+  use Driver_interface, ONLY : Driver_abortFlash
+
+  implicit none
+
+  integer, intent(in)  :: axis
+  integer, intent(in)  :: edge
+  integer, intent(in)  :: level
+  integer, intent(in)  :: lo(1:MDIM)
+  integer, intent(in)  :: hi(1:MDIM)
+  real,    intent(out) :: coordinates(:)
+
+  real    :: shift
+  integer :: nElements
+  real    :: deltas(1:MDIM)
+  integer :: i
+
+#ifdef DEBUG_GRID
+  if((axis /= IAXIS) .AND. (axis /= JAXIS) .AND. (axis /= KAXIS)) then
+     call Driver_abortFlash("[Grid_getCellCoords] invalid axis, must be IAXIS, JAXIS or KAXIS ")
+  end if
+#endif
+ 
+  ! Calculate number of cells
+  nElements = hi(axis) - lo(axis) + 1
+  if      (edge == FACES)  then
+      shift = 2.0
+      ! Get number of faces
+      nElements = nElements + 1
+  else if (edge == LEFT_EDGE) then
+      shift = 2.0
+  else if (edge == CENTER) then
+      shift = 1.5
+  else if (edge == RIGHT_EDGE) then
+      shift = 1.0
+  else
+      call Driver_abortFlash('[Grid_getCellCoords] Invalid edge')
+  end if
+
+  if (SIZE(coordinates) < nElements) then
+      call Driver_abortFlash("[Grid_getCellCoords] coordinates is too small")
+  end if
+
+  call Grid_getDeltas(level, deltas)
+
+  associate (x0 => gr_globalDomain(LOW, axis), &
+             dx => deltas(axis))
+      do i = 1, nElements
+          coordinates(i) = x0 + (lo(axis) + i - shift) * dx
+      end do
+  end associate
+end subroutine Grid_getCellCoords
+
+subroutine Grid_getCellCoords_blk(axis, block, edge, guardcell, coordinates, size)
+!  use Grid_data, ONLY : gr_globalDomain,gr_delta, gr_maxRefine
+  use Driver_interface, ONLY : Driver_abortFlash
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -126,51 +180,50 @@ subroutine Grid_getCellCoords(axis, block, edge, guardcell, coordinates, size)
 
   integer, dimension(MDIM)::cid,stride
   integer::first,i
-
-  cid    = block%cid
-  stride = block%stride
-  ! Do some error checking here
+ 
+  coordinates(:) = 0.0
+  call Driver_abortFlash("[Grid_getCellCoords] Deprecated.  Use non-block based version")
   
-
-#ifdef DEBUG_GRID
-  print*,' get coordinates', axis, blockID, edge, guardcell,size
-  if((blockID<1).or.(blockID>MAXBLOCKS)) then
-     call Driver_abortFlash("Grid_getCellCoords :invalid blockID ")
-  end if
-  if(.not.((edge==LEFT_EDGE).or.(edge==RIGHT_EDGE).or.(edge==FACES).or.&
-       &(edge==CENTER))) then
-     call Driver_abortFlash("Get Coords : invalid edge specification, must be LEFT_EDGE &
-          RIGHT_EDGE, or CENTER")
-  end if
-
-!!!  This can be refined further to make it geometry specific
-
-  if(.not.((axis==IAXIS).or.(axis==JAXIS).or.(axis==KAXIS))) then
-     call Driver_abortFlash("Get Coords : invalid axis, must be IAXIS, JAXIS or KAXIS ")
-  end if
-  
-#endif
-
-
-  first=cid(axis)-1
-  if(guardcell) first=first-stride(axis)*NGUARD
-  if((edge==CENTER).and.(stride(axis)==1))then
-     do i = 1,size
-        coordinates(i)= gr_globalDomain(LOW,axis) + (first+0.5)*gr_delta(axis,gr_maxRefine)
-        first=first+stride(axis)
-     end do
-  else
-     if(edge==RIGHT_EDGE)first=first+stride(axis)
-     if((edge==CENTER).and.(stride(axis)>1))first=first+stride(axis)/2
-     do i = 1,size
-        coordinates(i)= gr_globalDomain(LOW,axis) + first*gr_delta(axis,gr_maxRefine)
-        first=first+stride(axis)
-     end do
-  end if
-  return
-end subroutine Grid_getCellCoords
-
-
-
-
+!  cid    = block%cid
+!  stride = block%stride
+!  ! Do some error checking here
+!  
+!
+!#ifdef DEBUG_GRID
+!  print*,' get coordinates', axis, blockID, edge, guardcell,size
+!  if((blockID<1).or.(blockID>MAXBLOCKS)) then
+!     call Driver_abortFlash("Grid_getCellCoords :invalid blockID ")
+!  end if
+!  if(.not.((edge==LEFT_EDGE).or.(edge==RIGHT_EDGE).or.(edge==FACES).or.&
+!       &(edge==CENTER))) then
+!     call Driver_abortFlash("Get Coords : invalid edge specification, must be LEFT_EDGE &
+!          RIGHT_EDGE, or CENTER")
+!  end if
+!
+!!!!  This can be refined further to make it geometry specific
+!
+!  if(.not.((axis==IAXIS).or.(axis==JAXIS).or.(axis==KAXIS))) then
+!     call Driver_abortFlash("Get Coords : invalid axis, must be IAXIS, JAXIS or KAXIS ")
+!  end if
+!  
+!#endif
+!
+!
+!  first=cid(axis)-1
+!  if(guardcell) first=first-stride(axis)*NGUARD
+!  if((edge==CENTER).and.(stride(axis)==1))then
+!     do i = 1,size
+!        coordinates(i)= gr_globalDomain(LOW,axis) + (first+0.5)*gr_delta(axis,gr_maxRefine)
+!        first=first+stride(axis)
+!     end do
+!  else
+!     if(edge==RIGHT_EDGE)first=first+stride(axis)
+!     if((edge==CENTER).and.(stride(axis)>1))first=first+stride(axis)/2
+!     do i = 1,size
+!        coordinates(i)= gr_globalDomain(LOW,axis) + first*gr_delta(axis,gr_maxRefine)
+!        first=first+stride(axis)
+!     end do
+!  end if
+!  return
+end subroutine Grid_getCellCoords_blk
 

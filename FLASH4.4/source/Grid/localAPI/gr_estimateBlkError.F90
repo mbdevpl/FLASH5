@@ -38,14 +38,13 @@
 !!
 !!***
 
-subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
-
-  use block_metadata, ONLY : block_metadata_t
+subroutine gr_estimateBlkError(error, tileDesc, iref, refine_filter)
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
   integer, intent(IN) :: iref
-  type(block_metadata_t),intent(IN) :: blockDesc
+  type(Grid_tile_t),intent(IN) :: tileDesc
   real, intent(IN) ::  refine_filter
   real,intent(INOUT) :: error
 

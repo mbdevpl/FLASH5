@@ -209,6 +209,32 @@ subroutine Grid_init()
   ! angle value parameters that are expressed in degrees to radians.
   call gr_initGeometry()
 
+!------------------------------------------------------------------------------
+! Load into local Grid variables all runtime parameters needed by gr_amrexInit
+!------------------------------------------------------------------------------
+  call RuntimeParameters_get("gr_useTiling", gr_enableTiling)
+  call RuntimeParameters_get("gr_tileSizeX", gr_tileSize(IAXIS))
+  call RuntimeParameters_get("gr_tileSizeY", gr_tileSize(JAXIS))
+  call RuntimeParameters_get("gr_tileSizeZ", gr_tileSize(KAXIS))
+
+  ! DEV: Unable to set an upper limit on these runtime parameters using
+  ! N[XYZ]B.  Therefore, we are checking here.
+  if (gr_tileSize(IAXIS) > NXB) then
+      print*,'WARNING: Tile size along x-axis cannot exceed block size along x'
+      print*,'         Setting tile size to block size in x'
+      gr_tileSize(IAXIS) = NXB
+  end if
+  if (gr_tileSize(JAXIS) > NYB) then
+      print*,'WARNING: Tile size along y-axis cannot exceed block size along y'
+      print*,'         Setting tile size to block size in y'
+      gr_tileSize(JAXIS) = NYB
+  end if
+  if (gr_tileSize(KAXIS) > NZB) then
+      print*,'WARNING: Tile size along z-axis cannot exceed block size along z'
+      print*,'         Setting tile size to block size in z'
+      gr_tileSize(KAXIS) = NZB
+  end if
+
 !----------------------------------------------------------------------------------
 ! Initialize AMReX
 !----------------------------------------------------------------------------------
@@ -224,7 +250,6 @@ subroutine Grid_init()
 
   ASSERT(NDIM==amrex_spacedim)
   ASSERT(N_DIM==amrex_spacedim)
-
 
   ! Save BC information for AMReX callbacks
   lo_bc_amrex(:, :) = amrex_bc_int_dir
@@ -248,7 +273,7 @@ subroutine Grid_init()
 !----------------------------------------------------------------------------------
 ! Store interface-accessible data as local Grid data variables for optimization
 !----------------------------------------------------------------------------------
-  !Store computational domain limits in a convenient array.  Used later in Grid_getBlkBC.
+  !Store computational domain limits in a convenient array
   call Grid_getDomainBoundBox(gr_globalDomain)
 
   call Grid_getMaxRefinement(gr_lRefineMax, mode=1)

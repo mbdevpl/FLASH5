@@ -66,15 +66,16 @@
 
 subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
 
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+                             Grid_releaseTileIterator
   use Grid_data, ONLY : gr_smallrho,gr_smalle, gr_meshMe
   use gr_specificData, ONLY : gr_sanitizeDataMode, gr_sanitizeVerbosity
   use Logfile_interface, ONLY : Logfile_stamp
   use physicaldata, ONLY:unk, gcell_on_cc
   use tree, ONLY:nodetype
   use paramesh_dimensions, ONLY: il_bnd,iu_bnd,jl_bnd,ju_bnd,kl_bnd,ku_bnd, kl_bndi, ndim
-  use gr_iterator, ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,     ONLY : Grid_tile_t
 
   implicit none
 #include "constants.h"
@@ -93,8 +94,8 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   integer :: kwrite,locs(3),kReorder(1:ku_bnd-kl_bnd+1),nReorder
   character(len=32), dimension(4,2) :: block_buff
   character(len=32)                 :: number_to_str
-  type(gr_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
 
 111 format (a,a,a1,(1x,a18,'=',a),(1x,a2,'=',a5),(1x,a5,'=',a),(1x,a4,'=',a))
 112 format (i3,1x,24(1x,1G8.2))
@@ -113,11 +114,11 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
   ku = ku_bnd - kskip
 
   nReorder = 0
-  
-  call gr_getBlkIterator(itor, nodetype=ntype)
-  do while (itor%is_valid())
-     call itor%blkMetaData(blockDesc)
-     blockID = blockDesc%id
+
+  call Grid_getTileIterator(itor, ntype, tiling=.FALSE.)
+  do while (itor%isValid())
+     call itor%currentTile(tileDesc)
+     blockID = tileDesc%id
 
 #ifdef DENS_VAR
      if (gcell_on_cc(DENS_VAR) .OR. gr_sanitizeDataMode == 2) then
@@ -266,7 +267,7 @@ subroutine gr_sanitizeDataAfterInterp(ntype, info, layers)
      call itor%next()
   end do
 
-  call gr_releaseBlkIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   return 
 

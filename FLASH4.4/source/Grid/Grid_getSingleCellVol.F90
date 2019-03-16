@@ -60,26 +60,14 @@
 
 #include "constants.h"
 
-subroutine Grid_getSingleCellVol(blockID, beginCount, point, cellvolume)
-  implicit none
+subroutine Grid_getSingleCellVol(point, level, cellvolume)
+  use Driver_interface, ONLY : Driver_abortFlash
 
-  integer, intent(in) :: blockID
-  integer, intent(in) :: beginCount
-  integer, intent(in) :: point(MDIM)
-  real, intent(out)   :: cellvolume
-
+  integer, intent(in)  :: point(1:MDIM)
+  integer, intent(in)  :: level
+  real,    intent(out) :: cellvolume
+  
   cellvolume = 0.0
-  return
+  call Driver_abortFlash("[Grid_getSingleCellVol] DEPRECATED")
 end subroutine Grid_getSingleCellVol
 
-subroutine Grid_getSingleCellVol_Itor(blockDesc, point, cellvolume, indexing)
-  implicit none
-
-  type(block_metadata_t), intent(in) :: blockDesc
-  integer, intent(in) :: point(MDIM)
-  real, intent(out)   :: cellvolume
-  integer, intent(in),OPTIONAL :: indexing
-
-  cellvolume = 0.0
-  return
-end subroutine Grid_getSingleCellVol_Itor

@@ -59,7 +59,9 @@ module block_1lev_iterator
         procedure, public :: is_valid
         procedure, public :: next
         procedure, public :: grid_index
+        procedure, public :: local_tile_index
         procedure, public :: tilebox
+        procedure, public :: growntilebox
         procedure, public :: fabbox
         procedure, public :: destroy_iterator
     end type block_1lev_iterator_t
@@ -104,46 +106,65 @@ contains
     !! SEE ALSO
     !!  constants.h
     !!****
-  function init_iterator_mf(nodetype, mf, level, tiling) result(this)
+  function init_iterator_mf(nodetype, mf, level, tiling, tileSize) result(this)
     use amrex_multifab_module, ONLY : amrex_multifab
+    use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
-        type(block_1lev_iterator_t)        :: this
-        integer, intent(IN)           :: nodetype
-        type(amrex_multifab),intent(IN),TARGET :: mf
-        integer, intent(IN), optional :: level
-        logical, intent(IN), optional :: tiling
+    type(block_1lev_iterator_t)              :: this
+    integer,              intent(IN)         :: nodetype
+    type(amrex_multifab), intent(IN), TARGET :: mf
+    integer,              intent(IN)         :: level
+    logical,              intent(IN)         :: tiling
+    integer,              intent(IN)         :: tileSize(1:MDIM)
 
-        this%nodetype = nodetype
-        if (present(level)) then
-            this%level = level
-        end if
- 
-        if (c_associated(mf%p)) then
+    integer :: finest_level
 
-           allocate(this%mfi)
-
-        ! Initial iterator is not primed.  Advance to first compatible block.
-           call amrex_mfiter_build(this%mfi,mf,tiling=tiling)
-           this%mf => mf
-!!$        print*,'block_1lev_iterator: init_iterator_mf  on this=',this%isValid,this%level,associated(this%mfi)
-           this%isValid = .TRUE.
-           call this%next()
-        else
+    ! level and finest_level are 1-based
+    this%finest_grid_level = amrex_get_finest_level()
+    finest_level = this%finest_grid_level + 1
+    if (level > finest_level) then
 #ifdef DEBUG_ITERATOR
-         print*,"[init_iterator] INFO: multifab mf is not valid, this level is",this%level
+       print*,"[init_iterator] INFO: skipping level",level," finest_level is",finest_level
 #endif
-      end if
+       RETURN                 !Skip the rest of initialization, leaving isValid false.
+    end if
+
+    this%nodetype = nodetype
+    this%level = level
+ 
+    if (c_associated(mf%p)) then
+
+       allocate(this%mfi)
+
+    ! Initial iterator is not primed.  Advance to first compatible block.
+       if (tiling) then
+          !DEV: TODO Do we need to error check tileSize against block size
+          ! or does AMReX do this already?
+          call amrex_mfiter_build(this%mfi,mf,tileSize=tileSize)
+       else
+          call amrex_mfiter_build(this%mfi,mf,tiling=.FALSE.)
+       end if
+       this%mf => mf
+!!$    print*,'block_1lev_iterator: init_iterator_mf  on this=',this%isValid,this%level,associated(this%mfi)
+       this%isValid = .TRUE.
+       call this%next()
+    else
+#ifdef DEBUG_ITERATOR
+       print*,"[init_iterator] INFO: multifab mf is not valid, this level is",this%level
+#endif
+    end if
   end function init_iterator_mf
 
-    function init_iterator(nodetype, level, tiling) result(this)
+    function init_iterator(nodetype, level, tiling, tileSize) result(this)
       use Driver_interface,      ONLY : Driver_abortFlash
       use gr_physicalMultifabs,  ONLY : unk
       use amrex_amrcore_module,  ONLY : amrex_get_finest_level
 
-      integer, intent(IN)           :: nodetype
-      integer, intent(IN)           :: level
-      logical, intent(IN), optional :: tiling
-      type(block_1lev_iterator_t)   :: this
+      integer, intent(IN)         :: nodetype
+      integer, intent(IN)         :: level
+      logical, intent(IN)         :: tiling
+      integer, intent(IN)         :: tileSize(1:MDIM)
+      type(block_1lev_iterator_t) :: this
 
       integer :: finest_level
 
@@ -168,7 +189,12 @@ contains
       if (c_associated(this%mf%p)) then
 
          allocate(this%mfi)
-         call amrex_mfiter_build(this%mfi, this%mf, tiling=tiling)
+         if (tiling) then
+            ! DEV: TODO Do we need to error check tileSize against block size
+            call amrex_mfiter_build(this%mfi, this%mf, tileSize=tileSize)
+         else
+            call amrex_mfiter_build(this%mfi, this%mf, tiling=.FALSE.)
+         end if
 
          ! Set to True so that next() works
          this%isValid = .TRUE.
@@ -323,6 +349,26 @@ contains
       idx = this%mfi%grid_index()
     end function grid_index
 
+    !!****m* block_1lev_iterator_t/local_tile_index
+    !!
+    !! NAME
+    !!  local_tile_index
+    !!
+    !! SYNPOSIS
+    !!  idx = itor%local_tile_index()
+    !!
+    !! DESCRIPTION
+    !!  Advance the iterator to the next block managed by process and that meets
+    !!  the iterator constraints given at instantiation.
+    !!
+    !!****
+    function local_tile_index(this) result(idx)
+      class(block_1lev_iterator_t), intent(IN) :: this
+      integer                                  :: idx
+
+      idx = this%mfi%local_tile_index()
+    end function local_tile_index
+
     !!****m* block_1lev_iterator_t/tilebox
     !!
     !! NAME
@@ -349,6 +395,36 @@ contains
 
       bx = this%mfi%tilebox()
     end function tilebox
+
+    !!****m* block_1lev_iterator_t/growntilebox
+    !!
+    !! NAME
+    !!  growntilebox
+    !!
+    !! SYNPOSIS
+    !!  box = itor%growntilebox()
+    !!
+    !! DESCRIPTION
+    !!  Obtain the box with guardcells of the block/tile currently
+    !!  "loaded" into the iterator.  For tiles, the guardcells are those
+    !!  guardcells of the tile's parent block that are adjacent to the
+    !!  tile.  In this sense, each guardcell of the parent block is associated
+    !!  with only one tile.
+    !!
+    !! RETURN VALUE
+    !!  An AMReX box object.  The index space of the box is the index
+    !!  space of the multifab used to construct the underlying MFIter.
+    !!  The spatial indices of the box use AMReX's 0-based scheme.
+    !!
+    !!****
+    function growntilebox(this) result(bx)
+      use amrex_box_module, ONLY : amrex_box
+
+      class(block_1lev_iterator_t), intent(in) :: this
+      type(amrex_box)                          :: bx
+
+      bx = this%mfi%growntilebox()
+    end function growntilebox
 
     !!****m* block_1lev_iterator_t/fabbox
     !!
