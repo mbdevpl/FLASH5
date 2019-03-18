@@ -21,16 +21,16 @@
 !!  the diagnostic data like total energy, pressure, mass etc.
 !!
 !!  To determine exactly which runtime parameters control these
-!!  files, please check the Config file in IO/IOMain or the 
+!!  files, please check the Config file in IO/IOMain or the
 !!  setup_params file in the object directory.
 !!
 !!
-!! 
+!!
 !! ARGUMENTS
 !!
 !!
 !!
-!!*** 
+!!***
 subroutine IO_init()
 
   use IO_data
@@ -58,18 +58,18 @@ subroutine IO_init()
 !!  save attribute is necessary for the XLF compiler when the variables are
 !!  "OUT" argument for an overloaded function
   integer, save :: step
-  real,save :: simTime,currentRedshift 
+  real,save :: simTime,currentRedshift
 
   integer :: error !catch errors in IO_getPrevScalar calls
   character(len=4) :: isErr
   logical :: havePlotVars
-  
+
   integer, parameter :: nonrep_locunk1(0:NONREP_COUNT) = NONREP_LOCUNK1
   integer :: nonrep_maxlocs(0:NONREP_COUNT) = NONREP_MAXLOCS ! this should be a parameter but that was cuasing gfortran to choke
   character(len=*), parameter :: nonrep_rpcount_flat = NONREP_RPCOUNT_FLAT
   integer, parameter :: nonrep_rpcount_start(1:NONREP_COUNT+1) = NONREP_RPCOUNT_START
   integer :: nonrep, nonrep_globs(0:NONREP_COUNT)
-  
+
   io_forcedFilename = "forced"
 
   io_lastWallClockCheckpoint = MPI_Wtime()
@@ -78,9 +78,9 @@ subroutine IO_init()
   call Driver_getMype(GLOBAL_COMM, io_globalMe)
   call Driver_getMype(MESH_COMM, io_meshMe)
   call Driver_getMype(MESH_ACROSS_COMM, io_acrossMe)
-  
+
   call Driver_getNumProcs(GLOBAL_COMM, io_globalNumProcs)
-  call Driver_getNumProcs(MESH_COMM, io_meshNumProcs)  
+  call Driver_getNumProcs(MESH_COMM, io_meshNumProcs)
   call Driver_getNumProcs(MESH_ACROSS_COMM, io_acrossNumProcs)
 
   call Driver_getComm(GLOBAL_COMM,io_globalComm)
@@ -99,10 +99,10 @@ subroutine IO_init()
   call RuntimeParameters_get('checkpointFileIntervalTime',   io_checkpointFileIntervalTime)
   call RuntimeParameters_get('checkpointFileIntervalStep',   io_checkpointFileIntervalStep)
   call RuntimeParameters_get('checkpointFileIntervalZ', io_checkpointFileIntervalZ)
-  
+
 
   call RuntimeParameters_get('tinitial', io_tinitial)
-  
+
   call RuntimeParameters_get('restart',  io_restart)
   call RuntimeParameters_get('rolling_checkpoint', io_rollingCheckpoint)
   call RuntimeParameters_get('wall_clock_checkpoint', io_wallClockCheckpoint)
@@ -119,7 +119,7 @@ subroutine IO_init()
 
 
   ! get the runtime parameters
-  call RuntimeParameters_get('stats_file', io_statsFileName)  
+  call RuntimeParameters_get('stats_file', io_statsFileName)
   call RuntimeParameters_get('basenm', io_baseName)
   !! if basenm is changed from default and stats_file isn't, then make it conform
   if ((io_baseName .NE. 'flash_') .AND.                    &
@@ -129,7 +129,7 @@ subroutine IO_init()
      call RuntimeParameters_set('stats_file',io_statsFileName)
   endif
   call RuntimeParameters_get('io_writeMscalarIntegrals', io_writeMscalarIntegrals)
- 
+
   call RuntimeParameters_get("output_directory", io_outputDir)
   call RuntimeParameters_get('geometry', io_geometry)
   call RuntimeParameters_get('chkGuardCellsInput', io_chkGuardCellsInput)
@@ -144,7 +144,7 @@ subroutine IO_init()
   !accounting for various dimension problems
   io_jguard = io_jguard*K2D
   io_kguard = io_kguard*K3D
-  
+
 
 !!#endif
 
@@ -184,7 +184,12 @@ subroutine IO_init()
      do i=1, nonrep_globs(nonrep) ! generate the name for each element of this array
         call Grid_formatNonRep(nonrep, i, io_unklabelsGlobal(j))
         if(NONREP_MESHOFGLOB(i,io_acrossNumProcs) == io_acrossMe) then
-           io_unkToGlobal(nonrep_locunk1(nonrep)-1 + NONREP_GLOB2LOC(i,io_acrossMe,io_acrossNumProcs)) = j
+           ! io_unkToGlobal(nonrep_locunk1(nonrep)-1 + NONREP_GLOB2LOC(i,io_acrossMe,io_acrossNumProcs)) = j
+           call Driver_abortFlash('Aborting - code was commented out due to compiler error at ' // FILE_AT_LINE)
+           !IO_init.F90:187:41:
+           ! io_unkToGlobal(nonrep_locunk1(nonrep)-1 + NONREP_GLOB2LOC(i,io_acrossMe,io_acrossNumProcs)) = j
+           !                              1
+           ! Error: Index in dimension 1 is out of bounds at (1)
         end if
         j = j + 1
      end do
@@ -212,13 +217,13 @@ subroutine IO_init()
      call Logfile_stamp('   meshCopyCount*{number of local MGDR NONREPs} This number comes from the MGDR ')
      call Logfile_stamp('   NONREP command in Config File')
 
-     call Driver_abortFlash('[' // FILE_AT_LINE // '] ERROR: Unused UNK ' // & 
+     call Driver_abortFlash('[' // FILE_AT_LINE // '] ERROR: Unused UNK ' // &
           'due to NONREP Config directive and IO unit. LOOK AT THE LOG FILE.')
   end if
 #endif
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   ! get all the IO plot vars.  These are the variables that will be written to plotfiles
 
   !check if we have a phantom variable
@@ -251,7 +256,7 @@ subroutine IO_init()
         if (io_plotVarStr(i) .NE. "none") &
              call Logfile_stamp(io_plotVarStr(i),"[IO_init] ignoring unrecognized plot variable")
      end if
-  end do  
+  end do
   io_nPlotVars = j
 
 
@@ -265,7 +270,7 @@ subroutine IO_init()
 
 
   ! get all the IO scratch plot grid vars.  These are the scratch grid vars to
-  ! be written to the checkpoint and plotfiles 
+  ! be written to the checkpoint and plotfiles
   call RuntimeParameters_get("plot_grid_var_1", io_plotGridVarStr(1))
   call RuntimeParameters_get('plot_grid_var_2', io_plotGridVarStr(2))
   call RuntimeParameters_get('plot_grid_var_3', io_plotGridVarStr(3))
@@ -292,7 +297,7 @@ subroutine IO_init()
   do i=1, io_maxPlotGridVars
      call Simulation_mapStrToInt(trim(io_plotGridVarStr(i)), io_plotGridVar(i),MAPBLOCK_SCRATCH)
      if(io_plotGridVar(i) /= NONEXISTENT) then
-        print *, "got the plotvarstr ", io_plotGridVarStr(i) 
+        print *, "got the plotvarstr ", io_plotGridVarStr(i)
         io_nPlotGridVars = io_nPlotGridVars + 1
      end if
   end do
@@ -303,7 +308,7 @@ subroutine IO_init()
   !get the runtime parameter for the number of files to split
   !and hdf5 file into
   call RuntimeParameters_get('outputSplitNum', io_outputSplitNum)
- 
+
   if((mod(io_meshNumProcs, io_outputSplitNum) /= 0)) then
      call Driver_abortFlash('mod(io_meshNumProcs, io_outputSplitNum) /= 0!')
   end if
@@ -391,7 +396,7 @@ subroutine IO_init()
 
      call RuntimeParameters_get('checkpointFileNumber', io_checkpointFileNumber)
      call IO_readCheckpoint()
-     
+
   end if
 
   if(io_restart) then
@@ -422,7 +427,7 @@ subroutine IO_init()
            call Driver_abortFlash("ERROR: Error in lookup of nextCheckpointZ scalar.")
         end if
      end if
-     
+
      call IO_getPrevScalar("nextPlotfileTime", io_nextPlotfileTime)
      call IO_getPrevScalar("nextPlotFileZ", io_nextPlotFileZ, error)
      !we can survive this one, too.
@@ -436,19 +441,19 @@ subroutine IO_init()
   else
      call RuntimeParameters_get("nbegin", step)
      call RuntimeParameters_get("tinitial",simTime)
-     
+
      io_nextCheckpointTime = 0.0 !any number to make sure logical expression below is valid, overwritten below
      io_nextPlotfileTime = 0.0   !any number to make sure logical expression below is valid, overwritten below
      io_nextPlotFileZ = 0.0     !prevent uninitialized data errors when runtime checking for such is enabled
      io_splitNumBlks = 0
      io_splitParts = 0
   end if
-  
-  !initialize the next step at which point to 
-  !write a checkpoint file 
+
+  !initialize the next step at which point to
+  !write a checkpoint file
   io_nextCheckPointStep = step + io_checkpointFileIntervalStep
- 
-  !calculate next simulation time in which to 
+
+  !calculate next simulation time in which to
   !write a checkpoint file
   if (.not. io_restart .or. (io_nextCheckpointTime <= simTime) .or. &
        (io_nextCheckpointTime > simTime + io_checkpointFileIntervalTime)) then
@@ -458,9 +463,9 @@ subroutine IO_init()
         io_nextCheckpointTime = 0.e0
      end if
   end if
-  
- 
-  
+
+
+
   if(.not. io_restart )then !.or. (io_nextCheckpointZ >= currentRedshift) .or. &
        !(io_nextCheckpointZ < currentRedshift +io_checkpointFileIntervalZ)) then
      if(io_checkpointFileIntervalZ < HUGE(1.)) then
@@ -473,7 +478,7 @@ subroutine IO_init()
   !initialize next step at which to write a plotfile
   io_nextPlotFileStep = step + io_plotfileIntervalStep
 
-  !calculate next simulation time in which to 
+  !calculate next simulation time in which to
   !write a plotfile file
   if (.not. io_restart .or. (io_nextPlotFileTime <= simTime) .or. &
        (io_nextPlotFileTime > simTime + io_plotFileIntervalTime)) then
@@ -502,13 +507,13 @@ subroutine IO_init()
   !------------------------------------------------------------------------------
   if (io_memoryStatFreq > 0) call io_memoryReport()
 
-  !Set the initial state of io_outputInStack.  This variable is used by 
-  !io_restrictBeforeWrite.F90.  It is .false. for most of the simulation, 
+  !Set the initial state of io_outputInStack.  This variable is used by
+  !io_restrictBeforeWrite.F90.  It is .false. for most of the simulation,
   !and is only briefly .true. when an IO_output routine is in the call stack.
   io_outputInStack = .false.
 
   if (io_summaryOutputOnly) then
-     !Ensure that the variables nextCheckpointTime, nextCheckpointZ, 
+     !Ensure that the variables nextCheckpointTime, nextCheckpointZ,
      !nextPlotfileTime and nextPlotFileZ retain their original values so that
      !they will contain expected values if we write an emergency checkpoint
      !file, e.g. with .dump_restart.
