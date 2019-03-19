@@ -56,6 +56,9 @@
 !!    Reference:  Yee, Vinokur & Djomehri, J. Comp. Phys 162 
 !!
 !!***
+! solnData depends on the ordering on unk
+!!REORDER(4): solnData
+
 subroutine Simulation_initBlock(solnData,blockDesc)
 
   use Simulation_data, ONLY : sim_gamma, sim_uAmbient, sim_vAmbient,&
@@ -262,18 +265,18 @@ subroutine Simulation_initBlock(solnData,blockDesc)
            call Eos(MODE_DENS_EI,vecLen,sim_eosData,sim_eosMassFr)
            p=sim_eosData(EOS_PRES)
            game=p/(rho*e) +1.0
-           solndata(DENS_VAR,i,j,k)=rho
-           solndata(VELX_VAR,i,j,k)=u
-           solndata(VELY_VAR,i,j,k)=v
-           solndata(VELZ_VAR,i,j,k)=w
-           solndata(ENER_VAR,i,j,k)=etot
-           solndata(EINT_VAR,i,j,k)=e
-           solndata(PRES_VAR,i,j,k)=p
-           solndata(GAME_VAR,i,j,k)=game
+           solnData(DENS_VAR,i,j,k)=rho
+           solnData(VELX_VAR,i,j,k)=u
+           solnData(VELY_VAR,i,j,k)=v
+           solnData(VELZ_VAR,i,j,k)=w
+           solnData(ENER_VAR,i,j,k)=etot
+           solnData(EINT_VAR,i,j,k)=e
+           solnData(PRES_VAR,i,j,k)=p
+           solnData(GAME_VAR,i,j,k)=game
 
 #if NSPECIES > 0
            do n=0,NSPECIES-1
-              solndata(SPECIES_BEGIN+n,i,j,k)=xn(n+1)
+              solnData(SPECIES_BEGIN+n,i,j,k)=xn(n+1)
            end do
 #endif
 
