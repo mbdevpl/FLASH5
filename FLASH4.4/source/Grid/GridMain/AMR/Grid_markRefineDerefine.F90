@@ -12,9 +12,13 @@
 !!  This routine is used with AMR only where individual 
 !!  blocks are marked for refinement or derefinement based upon
 !!  some refinement criterion. The Uniform Grid does not need
-!!  this routine, and uses the stub.
+!!  this routine, and uses the stub. The AMReX-based Grid
+!!  currently does not understand this way of implementing
+!!  refinement criteria either, and uses callbacks instead,
+!!  which are implemented as private functions of the Grid unit.
 !!
-!!  This routine is normally called by the implementation of
+!!  With the PARAMESH-based Grid implementation,
+!!  this routine is normally called by the implementation of
 !!  Grid_updateRefinement. It may also get called repeatedly
 !!  during the initial construction of the Grid from
 !!  Grid_initDomain.
