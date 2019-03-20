@@ -587,8 +587,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
            else
               write(extraHydroInfoStr,808) extraHydroInfo
            end if
-!!$           write (tailFmt,'(A1,I2,A)') "(",iout,"(:,1X,ES9.3),1x,A10)"
-!!$           write (tailStr,tailFmt) (tstepOutput(i),i=1,iout), adjustl(extraHydroInfoStr)
+           write (tailFmt,'(A1,I2,A)') "(",iout,"(:,1X,ES9.3),1x,A10)"
+           write (tailStr,tailFmt) (tstepOutput(i),i=1,iout), adjustl(extraHydroInfoStr)
 
            if (.not. dr_useRedshift) then
               if (.not. dr_useSTS) then
