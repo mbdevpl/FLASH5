@@ -686,11 +686,14 @@ Module hy_interface
 
 
     interface
-       subroutine hy_shockDetectBlk(Uin,blkLimitsGC,Uout,blkLimits,del )
+       subroutine hy_shockDetectBlk(Uin,loI,blkLimitsGC,Uout,loO,blkLimits,del )
        implicit none
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
-       real, dimension(:,:,:,:),INTENT(IN) :: Uin
-       real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
+       integer, intent(IN)  :: loI(*), loO(*)
+       real,    intent(IN)  :: UIN(loI(1):,loI(2):,loI(3):,loI(4):)
+       real,    intent(OUT) :: UOUT(loO(1):,loO(2):,loO(3):,loO(4):)
+!       real, dimension(:,:,:,:),INTENT(IN) :: Uin
+!       real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
        real,dimension(MDIM),INTENT(IN) :: del
      end subroutine hy_shockDetectBlk
   end interface
