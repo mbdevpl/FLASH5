@@ -284,6 +284,7 @@ subroutine Grid_getBlkData(blockDesc, gridDataStruct, structIndex, beginCount, &
   logical :: isget
   logical :: getIntPtr
 
+  datablock(:,:,:) = 0.0
   call Driver_abortFlash("[Grid_getBlkData] DEPRECATED: Use Grid_getCell* routines")
   
 !#ifdef DEBUG_GRID

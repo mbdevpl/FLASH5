@@ -483,25 +483,6 @@ module gr_interface
      End Subroutine gr_xyzToBlock
   end interface
 
-  interface
-    subroutine gr_getBlkIterator(itor, nodetype, level, tiling)
-      use gr_iterator, ONLY : gr_iterator_t
-      implicit none
-      type(gr_iterator_t), intent(OUT)          :: itor
-      integer,             intent(IN), optional :: nodetype
-      integer,             intent(IN), optional :: level
-      logical,             intent(IN), optional :: tiling
-    end subroutine gr_getBlkIterator
-  end interface
-
-  interface
-    subroutine gr_releaseBlkIterator(itor)
-      use gr_iterator, ONLY : gr_iterator_t
-      implicit none
-      type(gr_iterator_t), intent(INOUT) :: itor
-    end subroutine gr_releaseBlkIterator
-  end interface
-
   interface gr_getDataOffsets
      subroutine gr_getDataOffsets_blk(block, gridDataStruct, startingPos, &
                                   length, beginCount, begOffset, getIntPtr)

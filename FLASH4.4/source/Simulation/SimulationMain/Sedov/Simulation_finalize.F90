@@ -22,11 +22,9 @@
 #include "constants.h"
 
 subroutine Simulation_finalize()
-  use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_dump
   use Simulation_data, ONLY: sim_fileUnitOutNum, sim_fileUnitOutAna
   use Simulation_data, ONLY : sim_globalMe, &
         nLargestMaxSummary,  &
-        sim_testInitialized, &
         sim_testFirstVals, &
         sim_testLastVals, &
         sim_testLargestVals, &
@@ -43,18 +41,6 @@ subroutine Simulation_finalize()
   integer :: fileUnit
   integer :: ut_getFreeFileUnit
   real    :: tols(4)
-
-#if NDIM==1
-  integer :: blkcnt
-  integer :: blklst(MAXBLOCKS)
-
-  integer :: lb
-
-  call Grid_getListOfBlocks(LEAF,blklst,blkcnt)
-  do lb = 1, blkcnt
-     call Grid_dump((/DENS_VAR,PRES_VAR,VELX_VAR,EINT_VAR/),4, blklst(lb),gcell=.FALSE.)
-  end do
-#endif
 
   close(sim_fileUnitOutNum)
   close(sim_fileUnitOutAna)

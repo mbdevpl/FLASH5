@@ -240,6 +240,7 @@ subroutine Grid_getPointData(blockDesc, gridDataStruct, structIndex, beginCount,
   integer, dimension(MDIM), intent(in) :: position
   real, intent(out) :: datablock
   
+  datablock = 0.0
   call Driver_abortFlash("[Grid_getPointData] DEPRECATED.")
 
 !  real,dimension(1,1,1) :: cellvalues

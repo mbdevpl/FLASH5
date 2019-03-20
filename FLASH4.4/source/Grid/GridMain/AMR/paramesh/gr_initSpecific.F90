@@ -127,8 +127,6 @@ subroutine gr_initSpecific()
   use paramesh_comm_data, ONLY : amr_mpi_meshComm
   use tree, ONLY : lrefine_min, lrefine_max, nfaces, nchild
 
-  use gr_amrextInterface, ONLY : gr_amrextAmrexInit
-
   implicit none
   
   real :: dx, dy, dz
@@ -294,8 +292,6 @@ subroutine gr_initSpecific()
 #endif
 
   if(gr_meshMe == MASTER_PE) call printRefinementInfo()
-
-  call gr_amrextAmrexInit()
 
 contains
 

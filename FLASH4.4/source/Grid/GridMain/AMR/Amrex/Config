@@ -5,19 +5,8 @@ CONFLICTS IO/IOMain/hdf5/serial/UG
 CONFLICTS IO/IOMain/hdf5/parallel/PM
 CONFLICTS IO/IOMain/hdf5/serial/PM
 
-# DEVNOTE: TEMPORARY SITUATION
-# there are three setup/runtime "scenarios" or "modes":
-# (1) defined(FLASH_GRID_PARAMESH);
-# (2) defined(FLASH_GRID_PARAMESH) && defined(FLASH_GRID_AMREXTRANSITION);
-# (3) defined(FLASH_GRID_AMREX)
-
-# add pre-processor symbol FLASH_GRID_AMREX
+# add pre-processor symbol
 PPDEFINE FLASH_GRID_AMREX
-
-# The following is defined for AMR/Amrex and .../AmrexTransition as well
-# Here defined(FLASH_GRID_ANYAMREX) == (defined(FLASH_GRID_AMREX) ||
-#                                       defined(FLASH_GRID_AMREXTRANSITION))
-PPDEFINE FLASH_GRID_ANYAMREX
 
 IF withHydro
    REQUIRES physics/Hydro/HydroMain/amrexAux

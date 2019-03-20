@@ -180,7 +180,8 @@ subroutine Grid_getCellCoords_blk(axis, block, edge, guardcell, coordinates, siz
 
   integer, dimension(MDIM)::cid,stride
   integer::first,i
-
+ 
+  coordinates(:) = 0.0
   call Driver_abortFlash("[Grid_getCellCoords] Deprecated.  Use non-block based version")
   
 !  cid    = block%cid
