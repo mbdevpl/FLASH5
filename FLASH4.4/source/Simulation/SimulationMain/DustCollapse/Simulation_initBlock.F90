@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Simulation_initBlock(block_metadata_t(IN) :: blockDesc)
+!!  call Simulation_initBlock(Grid_tile_t(IN) :: tileDesc)
 !!
 !!
 !!
@@ -24,7 +24,7 @@
 !! 
 !! ARGUMENTS
 !!
-!!  blockDesc -           describes the block (or tile) to update
+!!  tileDesc -           describes the block (or tile) to initialize
 !!
 !! PARAMETERS
 !!
@@ -37,15 +37,15 @@
 
 !!REORDER(4): solnData
 
-subroutine Simulation_initBlock(solnData, blockDesc)
+subroutine Simulation_initBlock(solnData, tileDesc)
+
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_interface, ONLY : Grid_getDeltas
 
   use Simulation_data, ONLY : sim_smalle, sim_smallp, sim_tAmbient,&
                               sim_gamma,  sim_smlrho, &
                               sim_pProf,sim_vProf,sim_rhoProf,sim_rProf,N_prof, &
                               sim_iCtr, sim_jCtr, sim_kCtr
-
-  use block_metadata, ONLY : block_metadata_t
-  use Grid_interface, ONLY : Grid_getDeltas, Grid_getBlkBoundBox
 
   implicit none
 
@@ -53,7 +53,7 @@ subroutine Simulation_initBlock(solnData, blockDesc)
 #include "Flash.h"
 
   real, dimension(:,:,:,:), pointer :: solnData
-  type(block_metadata_t), intent(in) :: blockDesc
+  type(Grid_tile_t), intent(in) :: tileDesc
   
   real,dimension(MDIM) :: size, coord
   
@@ -64,17 +64,16 @@ subroutine Simulation_initBlock(solnData, blockDesc)
   real            Nintinv, sum_rho, sum_p, sum_vx, sum_vy, sum_vz, & 
        &                Nintinv1
   real            xxmin, xxmax, yymin, yymax, zzmin, zzmax,ek
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits
   real, dimension(LOW:HIGH,MDIM) :: bndBox
   real, dimension(MDIM) :: delta
 !==========================================================================
 
 !               Initialize scalar quantities we will need.
 
-  blkLimits = blockDesc%limits
-  blkLimitsGC = blockDesc%limitsGC
-  call Grid_getBlkBoundBox(blockDesc,bndBox)
-  call Grid_getDeltas(blockDesc%level,delta)
+  blkLimits = tileDesc%limits
+  call tileDesc % boundBox(bndBox)
+  call Grid_getDeltas(tileDesc%level,delta)
 
   imin = blkLimits(LOW,IAXIS); imax = blkLimits(HIGH,IAXIS)
   jmin = blkLimits(LOW,JAXIS); jmax = blkLimits(HIGH,JAXIS)
