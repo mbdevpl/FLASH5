@@ -39,13 +39,13 @@
 
 subroutine Simulation_initBlock(solnData, tileDesc)
 
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_interface, ONLY : Grid_getDeltas
+
   use Simulation_data, ONLY : sim_smalle, sim_smallp, sim_tAmbient,&
                               sim_gamma,  sim_smlrho, &
                               sim_pProf,sim_vProf,sim_rhoProf,sim_rProf,N_prof, &
                               sim_iCtr, sim_jCtr, sim_kCtr
-
-  use Grid_tile, ONLY : Grid_tile_t
-  use Grid_interface, ONLY : Grid_getDeltas
 
   implicit none
 

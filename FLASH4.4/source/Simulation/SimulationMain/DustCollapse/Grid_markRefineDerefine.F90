@@ -49,6 +49,14 @@
 
 subroutine Grid_markRefineDerefine()
 
+  use Particles_interface, ONLY: Particles_sinkMarkRefineDerefine
+  use Logfile_interface, ONLY : Logfile_stampVarMask
+  use Grid_iterator,  ONLY : Grid_iterator_t
+  use Grid_tile,      ONLY : Grid_tile_t
+  use Grid_interface, ONLY : Grid_fillGuardCells,  &
+                             Grid_getTileIterator, &
+                             Grid_releaseTileIterator
+
   use Grid_data, ONLY : gr_refine_cutoff, gr_derefine_cutoff,&
                         gr_refine_filter,&
                         gr_numRefineVars,gr_refine_var,gr_refineOnParticleCount,&
@@ -59,21 +67,14 @@ subroutine Grid_markRefineDerefine()
                         gr_lrefineCenterI,gr_lrefineCenterJ,gr_lrefineCenterK,&
                         gr_eosModeNow, gr_eosMode, &
                         gr_meshMe, gr_meshComm
-
-  use tree, ONLY : newchild, refine, derefine, stay, nodetype,&
-       lrefine,lrefine_max, parent, nchild,child
-  use Logfile_interface, ONLY : Logfile_stampVarMask
-  use Grid_interface, ONLY : Grid_fillGuardCells,  &
-                             Grid_getTileIterator, &
-                             Grid_releaseTileIterator
-  use gr_interface,   ONLY : gr_markRefineDerefine
-  use Grid_iterator,  ONLY : Grid_iterator_t
-  use Grid_tile,      ONLY : Grid_tile_t
-  use gr_parameshInterface,   ONLY : gr_pmGetListOfBlocks
-  use Particles_interface, only: Particles_sinkMarkRefineDerefine
-
   use Simulation_data, ONLY : sim_initDens, sim_ictr,sim_jctr,&
-       sim_kctr, sim_initRad
+                              sim_kctr, sim_initRad
+
+  use gr_interface, ONLY : gr_markRefineDerefine
+  use gr_parameshInterface, ONLY : gr_pmGetListOfBlocks
+  use tree, ONLY : newchild, refine, derefine, stay, nodetype,&
+                   lrefine,lrefine_max, parent, nchild,child
+
 
 #include "Flash_mpi_implicitNone.fh"
 
