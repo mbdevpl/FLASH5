@@ -22,6 +22,12 @@ subroutine hy_shockDetect
   real, dimension(:,:,:,:),pointer :: Uin
   real,dimension(:,:,:,:), pointer :: Uout
 
+  !! DEV: All executabe statements that follow could be skipped
+  !! completely if the hy_shockDetectOn flag is TRUE; this is not
+  !! done here as a reminder that the corresponding loop in FLASH4
+  !! code [LOOP 0 in hy_uhd_unsplit.F90] was doing more than just
+  !! shock detection.
+
   call Grid_getTileIterator(itor,LEAF)
   do while(itor%isValid())
      call itor%currentTile(tileDesc)
