@@ -38,6 +38,7 @@ subroutine Grid_unitTest(fileUnit,perfect)
   use Grid_tile, ONLY : Grid_tile_t
   use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
                                    amrex_max_level
+!   use ut_testDriverMod
 !  use gr_amrexLsInterface, ONLY : Grid_amrexLsSolvePoissonUnk
 
 #include "Flash.h"
@@ -69,9 +70,9 @@ subroutine Grid_unitTest(fileUnit,perfect)
   integer blkpoints, blkpointsaux,blkCountaux
   real L2_err, L2_erraux, Linf_err, Linf_erraux, Tvol, Tvolaux, vcell
   integer :: refinelevel
-  real, parameter :: tol = 1.e-6
-  real, parameter :: tolInf = 4.1e-2
-  real, parameter :: tol2  = 2.24e-2
+  real, parameter :: tol = 1.e-10
+  real, parameter :: tolInf = 4.1e-3
+  real, parameter :: tol2  = 2.24e-3
 
   integer TA(2),count_rate,ierr
   real :: ET
@@ -215,7 +216,11 @@ subroutine Grid_unitTest(fileUnit,perfect)
      write(*,'(A,1g16.8)') " ||Phi - PhiAnalytical||inf =" ,Linf_err
      write(*,'(A,1g16.8)') " ||Phi - PhiAnalytical||2   =" ,L2_err
      write(*,*) " Total Volume =",Tvol
-     write(*,*) " Total Number of Leaf Blocks=", blkCountaux
+     write(*,*) " Total Number of Tiles on Leaf Blocks=", blkCountaux
+     open(117, file = 'testResult.dat')  
+     if (perfect) write(117,*) "Passed"
+     if (.not.perfect) write(117,*) "Failed"
+     close(117) 
      write(*,*) ' ' 
   endif
   return
