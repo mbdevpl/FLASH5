@@ -31,15 +31,15 @@
 !!
 !!  The set of variables read from Uin does not overlap with the set
 !!  of variables updated in Uout. As long as it stays that way, there
-!!  is problem with violationg Fortran's no-aliasing assumptions,
-!!  and thus not need to turn those dummy arguments into POINTERs
+!!  is no problem with violationg Fortran's no-aliasing assumptions,
+!!  and thus no need to turn those dummy arguments into POINTERs
 !!  or give them TARGET attributes.
 !!
 !!***
 
 !!REORDER(4): Uin,Uout
 
-Subroutine hy_shockDetectBlk(Uin,blkLimitsGC,Uout,blkLimits,del )
+Subroutine hy_shockDetectBlk(Uin,loI,blkLimitsGC,Uout,loO,blkLimits,del )
 
 
   use Hydro_data,        ONLY : hy_cfl, hy_cfl_original,&
@@ -59,8 +59,11 @@ Subroutine hy_shockDetectBlk(Uin,blkLimitsGC,Uout,blkLimits,del )
 
   !! ---- Argument List ----------------------------------
   integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
-  real, dimension(:,:,:,:),INTENT(IN) :: Uin
-  real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
+  integer, intent(IN)  :: loI(*), loO(*)
+  real,    intent(IN)  :: UIN(loI(1):,loI(2):,loI(3):,loI(4):)  !CAPITALIZATION INTENTIONAL!
+  real,    intent(OUT) :: UOUT(loO(1):,loO(2):,loO(3):,loO(4):) !CAPITALIZATION INTENTIONAL!
+!  real, dimension(:,:,:,:),INTENT(IN) :: Uin
+!  real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
   real,dimension(MDIM),INTENT(IN) :: del
   !! -----------------------------------------------------
 
