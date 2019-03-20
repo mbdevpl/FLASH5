@@ -63,8 +63,8 @@ subroutine Grid_markRefineDerefine()
   use tree, ONLY : newchild, refine, derefine, stay, nodetype,&
        lrefine,lrefine_max, parent, nchild,child
   use Logfile_interface, ONLY : Logfile_stampVarMask
-  use Grid_interface, ONLY : Grid_fillGuardCells
-  use Grid_interface, ONLY : Grid_getTileIterator, &
+  use Grid_interface, ONLY : Grid_fillGuardCells,  &
+                             Grid_getTileIterator, &
                              Grid_releaseTileIterator
   use gr_interface,   ONLY : gr_markRefineDerefine
   use Grid_iterator,  ONLY : Grid_iterator_t
@@ -74,7 +74,6 @@ subroutine Grid_markRefineDerefine()
 
   use Simulation_data, ONLY : sim_initDens, sim_ictr,sim_jctr,&
        sim_kctr, sim_initRad
-  use Grid_interface, ONLY : Grid_fillGuardCells
 
 #include "Flash_mpi_implicitNone.fh"
 
