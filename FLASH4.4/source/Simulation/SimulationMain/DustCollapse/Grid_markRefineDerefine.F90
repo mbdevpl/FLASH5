@@ -12,9 +12,13 @@
 !!  This routine is used with AMR only where individual 
 !!  blocks are marked for refinement or derefinement based upon
 !!  some refinement criterion. The Uniform Grid does not need
-!!  this routine, and uses the stub.
+!!  this routine, and uses the stub. The AMReX-based Grid
+!!  currently does not understand this way of implementing
+!!  refinement criteria either, and uses callbacks instead,
+!!  which are implemented as private functions of the Grid unit.
 !!
-!!  This routine is normally called by the implementation of
+!!  With the PARAMESH-based Grid implementation,
+!!  this routine is normally called by the implementation of
 !!  Grid_updateRefinement. It may also get called repeatedly
 !!  during the initial construction of the Grid from
 !!  Grid_initDomain.
@@ -45,6 +49,14 @@
 
 subroutine Grid_markRefineDerefine()
 
+  use Particles_interface, ONLY: Particles_sinkMarkRefineDerefine
+  use Logfile_interface, ONLY : Logfile_stampVarMask
+  use Grid_iterator,  ONLY : Grid_iterator_t
+  use Grid_tile,      ONLY : Grid_tile_t
+  use Grid_interface, ONLY : Grid_fillGuardCells,  &
+                             Grid_getTileIterator, &
+                             Grid_releaseTileIterator
+
   use Grid_data, ONLY : gr_refine_cutoff, gr_derefine_cutoff,&
                         gr_refine_filter,&
                         gr_numRefineVars,gr_refine_var,gr_refineOnParticleCount,&
@@ -55,24 +67,22 @@ subroutine Grid_markRefineDerefine()
                         gr_lrefineCenterI,gr_lrefineCenterJ,gr_lrefineCenterK,&
                         gr_eosModeNow, gr_eosMode, &
                         gr_meshMe, gr_meshComm
-
-  use tree, ONLY : newchild, refine, derefine, stay, nodetype,&
-       lrefine,lrefine_max, parent, nchild,child
-  use Logfile_interface, ONLY : Logfile_stampVarMask
-  use Grid_interface, ONLY : Grid_fillGuardCells
-  use gr_interface,   ONLY : gr_markRefineDerefine
-  use Particles_interface, only: Particles_sinkMarkRefineDerefine
-
   use Simulation_data, ONLY : sim_initDens, sim_ictr,sim_jctr,&
-       sim_kctr, sim_initRad
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_getListOfBlocks,&
-                             Grid_releaseBlkPtr,Grid_fillGuardCells
-  implicit none
+                              sim_kctr, sim_initRad
+
+  use gr_interface, ONLY : gr_markRefineDerefine
+  use gr_parameshInterface, ONLY : gr_pmGetListOfBlocks
+  use tree, ONLY : newchild, refine, derefine, stay, nodetype,&
+                   lrefine,lrefine_max, parent, nchild,child
+
+
+#include "Flash_mpi_implicitNone.fh"
 
 #include "constants.h"
-#include "Flash_mpi.h"
 #include "Flash.h"
   
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
   real :: ref_cut,deref_cut,ref_filter
   integer       :: l,i,iref,blkCount,lb,j
   logical,save :: gcMaskArgsLogged = .FALSE.
@@ -153,14 +163,18 @@ subroutine Grid_markRefineDerefine()
 
   call gr_markInRadius(sim_ictr, sim_jctr, sim_kctr, sim_initRad, lrefine_max)
 
-  call Grid_getListOfBlocks(ACTIVE_BLKS, blkList, blkCount)
-
-  do i = 1, blkCount
-     lb = blkList(i)
-     call Grid_getBlkPtr(lb,solnData,CENTER)
+  call Grid_getTileIterator(itor, ACTIVE_BLKS, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     call tileDesc % getDataPtr(solnData,CENTER)
+     lb = tileDesc % id
      maxdens(lb) = maxval(solnData(DENS_VAR,:,:,:))
-     call Grid_releaseBlkPtr(lb,solnData)
+     call tileDesc % releaseDataPtr(solnData,CENTER)
+     call itor%next()
   end do
+  call Grid_releaseTileIterator(itor)
+
+  call gr_pmGetListOfBlocks(ACTIVE_BLKS, blkList, blkCount)
 
 ! Communicate maxdens of parents to their leaf children.
 ! Maximally refined children collect messages from parents.
