@@ -24,10 +24,13 @@ subroutine gr_amrexFinalize()
                                           facevarx, facevary, facevarz, &
                                           fluxes, &
                                           flux_registers
+    use Grid_data,                 ONLY : gr_meshMe
  
+#include "constants.h"
+
     integer :: lev
 
-    write(*,*) "[gr_amrexFinalize] Finalizing"
+    if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexFinalize] Finalizing"
   
     ! NOTE: Arrays of multifabs use AMReX's 0-based level indexing scheme
     do lev = 0, amrex_max_level
