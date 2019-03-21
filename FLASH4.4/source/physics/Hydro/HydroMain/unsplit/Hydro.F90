@@ -1,47 +1,51 @@
 #define DEBUG_GRID_GCMASK
 
+#include "Flash.h"
 #include "constants.h"
-
 
 subroutine Hydro(simTime, dt, dtOld, sweeporder)
 
-  use Grid_interface,      ONLY : Grid_fillGuardCells
-  use Grid_interface,      ONLY : Grid_getMaxRefinement
-  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
+  use Grid_interface,      ONLY : Grid_fillGuardCells, &
+                                  Grid_getMaxRefinement, &
+                                  Grid_getDeltas, &
+                                  Grid_zeroFluxData, &
+                                  Grid_getTileIterator, &
+                                  Grid_releaseTileIterator, &
+                                  Grid_conserveFluxes, &
+                                  Grid_putFluxData
   use Driver_interface,    ONLY : Driver_getSimTime
-  use Logfile_interface, ONLY : Logfile_stampVarMask
+  use Logfile_interface,   ONLY : Logfile_stampVarMask
   use Timers_interface,    ONLY : Timers_start, Timers_stop
   use Hydro_interface,     ONLY : Hydro_prepareBuffers, Hydro_freeBuffers
-  use Hydro_data, ONLY : hy_fluxCorrect,       &
-                         hy_fluxCorrectPerLevel, &
-                         hy_gref,              &
-                         hy_useGravity,        &
-                         hy_units,             &
-                         hy_gcMaskSize,        &
-                         hy_gcMask,hy_gcMaskSD,&
-                         hy_eosModeGc,         &
-                         hy_eosModeAfter,      &
-                         hy_updateHydroFluxes, &
-                         hy_cfl,               &
-                         hy_cfl_original,      &
-                         hy_dtmin,             &
-                         hy_simTime,           &
-                         hy_simGeneration,     &
-                         hy_shockDetectOn
-
-  use Hydro_data,       ONLY : hy_useHydro, hy_gpotAlreadyUpToDate
-  use hy_interface, ONLY : hy_gravityStep
-
-#include "Flash.h"
-#ifdef FLASH_GRID_AMREXTRANSITION
-  use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
-#endif
+  use Hydro_data,          ONLY : hy_fluxCorrect,       &
+                                  hy_fluxCorrectPerLevel, &
+                                  hy_useGravity,          &
+                                  hy_gcMaskSize,          &
+                                  hy_gcMask,hy_gcMaskSD,  &
+                                  hy_eosModeGc,           &
+                                  hy_updateHydroFluxes,   &
+                                  hy_cfl,                 &
+                                  hy_cfl_original,        &
+                                  hy_dtmin,               &
+                                  hy_simTime,             &
+                                  hy_simGeneration,       &
+                                  hy_shockDetectOn,       &
+                                  hy_useHydro,            &
+                                  hy_gpotAlreadyUpToDate, &
+                                  hy_enableTiling
+  use hy_interface,        ONLY : hy_gravityStep, &
+                                  hy_computeFluxes, &
+                                  hy_updateSolution
+  use Grid_iterator,       ONLY : Grid_iterator_t
+  use Grid_tile,           ONLY : Grid_tile_t
 
   implicit none
 
   real, intent(IN) ::  simTime, dt, dtOld
   integer, optional, intent(IN):: sweeporder
 
+  integer, save :: sweepDummy = SWEEP_ALL
+  
 !!  logical :: gcMask(hy_gcMaskSize)
 
 #ifdef DEBUG_GRID_GCMASK
@@ -49,7 +53,19 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
-  integer:: maxLev
+  integer:: level, maxLev
+  
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
+  
+  real, pointer :: Uin(:,:,:,:)
+  real, pointer :: Uout(:,:,:,:)
+  real :: del(1:MDIM)
+
+  logical :: useTiling
+
+  nullify(Uin)
+  nullify(Uout)
 
   hy_gpotAlreadyUpToDate = .FALSE. ! reset this flag, may be set .TRUE. below if warranted.
 
@@ -59,20 +75,15 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
 
   call Timers_start("Head")
 
-#ifdef FLASH_GRID_PARAMESH2
-  call Driver_abortFlash("The unsplit Hydro solver only works with PARAMESH 3 or 4!")
-#endif
-
 #ifdef FLASH_GRID_UG
   hy_fluxCorrect = .false.
   maxLev = 1
 #else
-  call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
+  ! mode=1 means lrefine_max, which does not change during sim.
+  call Grid_getMaxRefinement(maxLev, mode=1) 
 #endif
 
   call Hydro_prepareBuffers()
-
-
 
   !! ***************************************************************************
   !! Shock detection before hydro (etc.)                                       *
@@ -94,17 +105,8 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
      hy_cfl = hy_cfl_original
 
 
-#ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
-#endif
      call hy_shockDetect()
-#ifdef FLASH_GRID_AMREXTRANSITION
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
-     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
-#endif
   endif
-
 
   !! ***************************************************************************
   !! Call guardcell filling with Eos before hydro                              *
@@ -118,11 +120,6 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   call Grid_fillGuardCells(CENTER,ALLDIR,doEos=.true.,eosMode=hy_eosModeGc,&
        maskSize=hy_gcMaskSize, mask=hy_gcMask,makeMaskConsistent=.true.,&
        doLogMask=.NOT.gcMaskLogged)
-#ifdef FLASH_GRID_AMREXTRANSITION
-  call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
-  call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
-#endif
-
 
   call Timers_stop("Head")
 
@@ -146,11 +143,166 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
   !! ***************************************************************************
   !! First part of advancement                                                 *
   !! ***************************************************************************
-  !! Loop over the blocks
-  call hy_advance(simTime, dt, dtOld)
+  call Grid_zeroFluxData
+
+#ifdef USE_NOFLUXCORR_SHORTCUT
+  if (.NOT. hy_fluxCorrect) then
+     ! ***** FIRST VARIANT: OPTIMIZED (somewhat) FOR hy_fluxCorrect==.FALSE. *****
+  
+     ! The use of the Uin => Uout optimization trick means that this variant
+     ! cannot use tiling.  To use tiling in the absence of flux correction, 
+     ! don't define USE_NOFLUXCORR_SHORTCUT
+     call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+     call Timers_start("advance")
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+
+        call tileDesc%getDataPtr(Uin, CENTER)
+        call tileDesc%deltas(del)
+        Uout => Uin             ! hy_computeFluxes will ALSO update the solution through the Uout pointer!
+        call hy_computeFluxes(tileDesc, Uin, Uout, del, simTime, dt, dtOld, sweepDummy)
+        call tileDesc%releaseDataPtr(Uin, CENTER)
+        nullify(Uout)
+
+        call itor%next()
+     end do
+     call Timers_stop("advance")
+     call Grid_releaseTileIterator(itor)
+  else if (.NOT. hy_fluxCorrectPerLevel) then
+#else
+  if      (.NOT. hy_fluxCorrectPerLevel) then
+#endif
+     ! ***** SECOND VARIANT: FOR hy_fluxCorrectPerLevel==.FALSE. *****
+
+     call Timers_start("compute fluxes")
+     call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+
+        level = tileDesc%level
+        call tileDesc%deltas(del)
+        call tileDesc%getDataPtr(Uin, CENTER)
+        if (level==maxLev) then
+           Uout => Uin             ! hy_computeFluxes will ALSO update the solution through the Uout pointer!
+        else
+           nullify(Uout)           ! Uout is not needed yet.
+        end if
+        call hy_computeFluxes(tileDesc, Uin, Uout, del, simTime, dt, dtOld, sweepDummy)
+        call tileDesc%releaseDataPtr(Uin, CENTER)
+        nullify(Uout)
+
+        call itor%next()
+     end do
+     call Timers_stop("compute fluxes")
+     call Grid_releaseTileIterator(itor)
+
+     if (hy_fluxCorrect) then
+        call Grid_putFluxData(level=UNSPEC_LEVEL)
+        call Timers_start("conserveFluxes")
+        call Grid_conserveFluxes(ALLDIR,UNSPEC_LEVEL)
+        call Timers_stop("conserveFluxes")
+     end if
+
+     call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+     call Timers_start("update solution")
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+
+        level = tileDesc%level
+        if (level==maxLev) then
+           call itor%next()
+           CYCLE
+        end if
+
+        call tileDesc%getDataPtr(Uout, CENTER)
+
+        call tileDesc%deltas(del)
+        Uin => Uout
+        call hy_updateSolution(tileDesc,Uin, Uout, del,simTime, dt, dtOld,  sweepDummy)
+        call tileDesc%releaseDataPtr(Uout, CENTER)
+        nullify(Uin)
+
+        call itor%next()
+     end do
+     call Timers_stop("update solution")
+     call Grid_releaseTileIterator(itor)
+  else
+     ! ***** THIRD VARIANT: FOR hy_fluxCorrectPerLevel==.TRUE. *****
+     useTiling = hy_enableTiling
+     do level= maxLev,1,-1
+#ifdef DEBUG_DRIVER
+        print*,' ***************   HYDRO LEVEL', level,'  **********************'
+#endif
+
+        call Timers_start("compute fluxes")
+        call Grid_getDeltas(level, del)
+        call Grid_getTileIterator(itor, LEAF, level=level, tiling=useTiling)
+        do while(itor%isValid())
+           call itor%currentTile(tileDesc)
+
+           call tileDesc%getDataPtr(Uin, CENTER)
+           if ((level==maxLev) .AND. (.NOT. useTiling)) then
+              ! hy_computeFluxes will ALSO update the solution through the Uout pointer! 
+              ! This is not compatible with tiling/stencil-based computations as
+              ! the values computed in the interior of some tiles will use values
+              ! already computed for this time step as opposed to from the last step
+              Uout => Uin
+           else
+               ! Otherwise, no need to store solutions yet
+              nullify(Uout)
+           end if
+           call hy_computeFluxes(tileDesc, Uin, Uout, &
+                                 del, simTime, dt, dtOld, sweepDummy)
+           call tileDesc%releaseDataPtr(Uin, CENTER)
+           nullify(Uout)
+
+           call itor%next()
+        end do
+        call Timers_stop("compute fluxes")
+        call Grid_releaseTileIterator(itor)
+
+        if (hy_fluxCorrect .AND. (level > 1))  call Grid_putFluxData(level)
+
+        if ((level==maxLev) .AND. (.NOT. useTiling)) then
+           ! We already have the updated solution in this special, optimized case
+           ! and there is no need to do flux correction.
+           CYCLE
+        end if
+
+        if (hy_fluxCorrect) then
+           call Timers_start("conserveFluxes")
+           call Grid_conserveFluxes(ALLDIR,level)
+           call Timers_stop("conserveFluxes")
+        end if
+
+        call Grid_getTileIterator(itor, LEAF, level=level, tiling=.TRUE.)
+        call Timers_start("update solution")
+        do while(itor%isValid())
+           call itor%currentTile(tileDesc)
+
+           call tileDesc%getDataPtr(Uout, CENTER)
+           Uin => Uout
+           call hy_updateSolution(tileDesc, Uin, Uout, &
+                                  del, simTime, dt, dtOld, sweepDummy)
+           call tileDesc%releaseDataPtr(Uout, CENTER)
+           nullify(Uin)
+
+           call itor%next()
+        end do
+        call Timers_stop("update solution")
+        call Grid_releaseTileIterator(itor)
+
+#ifdef DEBUG_DRIVER
+        print*, 'return from Hydro/MHD timestep'  ! DEBUG
+        print*,'returning from hydro myPE=',dr_globalMe
+#endif
+     end do
+  end if
+  
   if(.not.hy_fluxCorrectPerLevel)then
      call hy_updateBoundaries()
   end if
+
   call Hydro_freeBuffers()
 
 
@@ -161,17 +313,9 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
 
 #ifdef GPOT_VAR
   if (hy_useGravity) then
-#ifdef FLASH_GRID_AMREXTRANSITION
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF,reverse=.TRUE.)
-     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
-#endif
      ! The following call invokes Gravity_potential and related stuff,
      ! to prepare for retrieving updated accelerations below.
      call hy_prepareNewGravityAccel(gcMaskLogged)
-#ifdef FLASH_GRID_AMREXTRANSITION
-     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, LEAF)
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF)
-#endif
   endif
 #endif
 

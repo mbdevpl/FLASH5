@@ -48,7 +48,7 @@ else
 MAKEFLAGS = -s 
 endif
 
-EXE = flash4
+EXE = flash5
 
 .PHONY: default
 

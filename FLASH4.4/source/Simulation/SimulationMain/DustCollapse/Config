@@ -12,13 +12,13 @@ LINKIF gr_markRefineDerefineCallback.F90 Grid/GridMain/AMR/Amrex
 
 
 
-#D sim_tAmbient	Initial ambient temperature (everywhere)
+D sim_tAmbient	Initial ambient temperature (everywhere)
 PARAMETER sim_tAmbient     REAL    1.
 
-#D sim_initRad          Initial radius of cloud
+D sim_initRad          Initial radius of cloud
 PARAMETER sim_initRad        REAL    0.05
 
-#D sim_initDens		Initial density of cloud
+D sim_initDens		Initial density of cloud
 PARAMETER sim_initDens         REAL    1.
 
 #D  sim_i/sim_j/sim_kctr	Coordinates of the center of the cloud

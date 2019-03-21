@@ -178,12 +178,29 @@ ENDIF
 USESETUPVARS nDim
 USESETUPVARS Grid
 
-
 # DO NOT Use SCRATCHVAR array for interface states and fluxes
-# - We now use scratch buffers privately allocated from hy_uhd_unsplit instead.
-#SCRATCHCENTERVAR VAR1
-#SCRATCHCENTERVAR VAR2
-
+# - We now use scratch buffers privately allocated from hy_uhd_unsplit instead
+#
+# Several scratch center variables are used in unsplit and they are formally
+# declared in the file UHD.h.
+#
+# We need to communicate to the other units, such as the Grid unit, how
+# many of these variables will be needed by unsplit.  Therefore, the
+# number of variables declared here must match the number in UHD.h.
+# The names of these variables as they appear here and therefore in Flash.h
+# are not important as Hydro code should use the names in UHD.h.
+IF Grid in ['', 'Amrex']
+SCRATCHCENTERVAR dummySCtr1
+SCRATCHCENTERVAR dummySCtr2
+ENDIF
+#IF Grid in ['', 'Amrex'] and ThreeT # and MHD
+#SCRATCHCENTERVAR dummySCtr3
+#SCRATCHCENTERVAR dummySCtr4
+#SCRATCHCENTERVAR dummySCtr5
+#SCRATCHCENTERVAR dummySCtr6
+#SCRATCHCENTERVAR dummySCtr7
+#SCRATCHCENTERVAR dummySCtr8
+#ENDIF
 
 # Number of guard cells at each boundary
 USESETUPVARS SupportPpmUpwind

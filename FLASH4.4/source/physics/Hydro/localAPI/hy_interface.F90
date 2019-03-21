@@ -26,6 +26,37 @@ Module hy_interface
 #include "UHD.h"
 
   interface
+     subroutine hy_hllComputeFluxes ( tileLimits, Uin, plo, flX, flY, flZ, loFl, del, dt )
+       implicit none
+       integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
+       integer, intent(IN)  :: plo(*)
+       real,    intent(IN)  :: Uin(plo(1):,plo(2):,plo(3):,plo(4):)
+       integer, intent(IN)  :: loFl(*)
+       real,    intent(OUT) :: flX(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(OUT) :: flY(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(OUT) :: flZ(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(IN)  :: del(1:MDIM)
+       real,    intent(IN)  :: dt
+     end subroutine hy_hllComputeFluxes
+  end interface
+
+  interface
+     subroutine hy_hllUpdateSolution( tileLimits, Uin, plo, Uout, flX, flY, flZ, loFl, del, dt )
+       implicit none
+       integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
+       integer, intent(IN)  :: plo(*)
+       real,    intent(IN)  :: Uin(plo(1):,plo(2):,plo(3):,plo(4):)
+       real,    intent(OUT) :: Uout(plo(1):,plo(2):,plo(3):,plo(4):)
+       integer, intent(IN)  :: loFl(*)
+       real,    intent(IN)  :: flX(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(IN)  :: flY(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(IN)  :: flZ(loFl(1):,loFl(2):,loFl(3):,loFl(4):)
+       real,    intent(IN)  :: del(1:MDIM)
+       real,    intent(IN)  :: dt
+     end subroutine hy_hllUpdateSolution
+  end interface
+
+  interface
      subroutine hy_avgState(sweepDir,VL,VR,Vavg)
        implicit none
        integer, intent(IN) :: sweepDir
@@ -37,15 +68,15 @@ Module hy_interface
 
 
   interface
-     subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del, &
+     subroutine hy_getRiemannState(tileDesc,U,blkLimits,loGC,hiGC,dt,del, &
                                        ogravX,ogravY,ogravZ,&
                                        scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                        hy_SpcR,&
                                        hy_SpcL,hy_SpcSig,normalFieldUpdate)
 
-       use block_metadata, ONLY : block_metadata_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits !, blkLimitsGC
        integer, intent(IN), dimension(MDIM):: loGC, hiGC
        real,    intent(IN)   :: dt
@@ -73,22 +104,14 @@ Module hy_interface
   end interface
 
   interface
-     subroutine hy_advance(simTime, dt, dtOld)
-       implicit none
-       real, intent(IN) ::  simTime, dt, dtOld
-     end subroutine hy_advance
-  end interface
-
-  interface
-     subroutine hy_getFaceFlux ( block,blkLimits,blkLimitsGC,datasize,del,&
+     subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
                                      loFl, xflux,yflux,zflux,&
                                      scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,&
                                      hy_SpcR,hy_SpcL,hy_SpcSig,lastCall)
-       use block_metadata, ONLY : block_metadata_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN)  :: block
+       type(Grid_tile_t), intent(IN)  :: tileDesc
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
-       integer, dimension(MDIM), intent(IN)         :: datasize
        real,    dimension(MDIM), intent(IN)         :: del
        integer, dimension(MDIM+1),intent(IN)        :: loFl
        real, intent(OUT) :: XFLUX (loFl(1):, loFl(2): ,loFl(3):, loFl(4): )!CAPITALIZED TO PREVENT INDEX REORDERING!
@@ -104,7 +127,7 @@ Module hy_interface
 
 
   interface
-     Subroutine hy_dataReconstOneStep(block,U,loGC,hiGC,order,ix,iy,iz, &
+     Subroutine hy_dataReconstOneStep(tileDesc,U,loGC,hiGC,order,ix,iy,iz, &
                                           dt,del,ogravX,ogravY,ogravZ,&
                                           DivU,FlatCoeff,   &
                                           TransX_updateOnly,&
@@ -114,10 +137,10 @@ Module hy_interface
                                           lambda,leftEig,rghtEig,&
                                           cellCfl,&
                                           hy_SpcR,hy_SpcL,hy_SpcSig)
-       use block_metadata,   ONLY : block_metadata_t
+       use Grid_tile,   ONLY : Grid_tile_t
 
        implicit none
-       type(block_metadata_t),intent(IN) :: block
+       type(Grid_tile_t),intent(IN) :: tileDesc
        real,dimension(:,:,:,:),pointer :: U
        integer, intent(IN), dimension(MDIM):: loGC, hiGC
        integer,intent(IN) :: order,ix,iy,iz
@@ -355,13 +378,11 @@ Module hy_interface
      end subroutine hy_LLF
   end interface
 
-
-
   interface
-     subroutine hy_setMinTimeStep(block,i,j,k,delta,speed)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_setMinTimeStep(tileDesc,i,j,k,delta,speed)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, INTENT(in) :: i,j,k
        real, INTENT(in) :: delta,speed
      end subroutine hy_setMinTimeStep
@@ -425,38 +446,17 @@ Module hy_interface
      end subroutine hy_TVDslopeUpwind
   end interface
 
-
-
   interface
-     subroutine hy_unsplit( blockDesc,Uin,blkLimitsGC,&
-                      Uout,blkLimits,&
-                      del,dt, dtOld )
-       use block_metadata,   ONLY : block_metadata_t
-       implicit none
-
-       type(block_metadata_t), intent(IN) :: blockDesc
-       real,    INTENT(IN) :: dt, dtOld
-       integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
-       real, dimension(:,:,:,:),pointer :: Uin
-       real,dimension(:,:,:,:), pointer :: Uout
-       real,dimension(MDIM),INTENT(IN) :: del
-     end subroutine hy_unsplit
-  end interface
-
-
-
-  interface
-     subroutine hy_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&    
+     subroutine hy_unsplitUpdate(tileDesc,Uin,Uout,rangeSwitch,dt,del,blkLimits,&    
                                      blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                      scrch_Ptr)
-       use block_metadata, ONLY : block_metadata_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN)   :: blockDesc
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        real,dimension(:,:,:,:),pointer :: Uin, Uout
        integer,intent(IN) :: rangeSwitch
        real, intent(IN)   :: dt
        real, intent(IN)   :: del(MDIM)
-       integer,dimension(MDIM),intent(IN) :: dataSize
        integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
        integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
        integer, dimension(MDIM+1),intent(IN)        :: loFl
@@ -468,34 +468,6 @@ Module hy_interface
        real, pointer, dimension(:,:,:,:) :: scrch_Ptr
      end subroutine hy_unsplitUpdate
   end interface
-
-
-
-
-
-    interface
-       subroutine hy_unsplitUpdateMultiTemp&
-            (block,rangeSwitch,blkLimits,datasize,dt,del,xflux,yflux,zflux, scrch_Ptr)
-       use block_metadata, ONLY : block_metadata_t
-       implicit none
-       type(block_metadata_t), intent(IN)   :: block
-       integer,intent(IN) :: rangeSwitch
-       integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
-       integer,intent(IN) :: datasize(MDIM)      
-       real, intent(IN) :: dt
-       real, intent(IN) :: del(MDIM)
-#ifdef FIXEDBLOCKSIZE
-         real, intent(in) :: xflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-         real, intent(in) :: yflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-         real, intent(in) :: zflux(NFLUXES,GRID_IHI_GC,GRID_JHI_GC,GRID_KHI_GC)
-#else
-         real, intent(in) :: xflux(NFLUXES,datasize(IAXIS),datasize(JAXIS),datasize(KAXIS))  
-         real, intent(in) :: yflux(NFLUXES,datasize(IAXIS),datasize(JAXIS),datasize(KAXIS))  
-         real, intent(in) :: zflux(NFLUXES,datasize(IAXIS),datasize(JAXIS),datasize(KAXIS))
-#endif
-         real, pointer, dimension(:,:,:,:) :: scrch_Ptr
-       end subroutine hy_unsplitUpdateMultiTemp
-    end interface
 
     interface
        subroutine hy_multiTempAfter(blockCount, blockList, dt)
@@ -552,11 +524,11 @@ Module hy_interface
 
 
   interface
-     subroutine hy_energyFix(block,U,blkLimits,dt,dtOld,del,eosMode)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_energyFix(tileDesc,U,blkLimits,dt,dtOld,del,eosMode)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        
-       type(block_metadata_t), intent(IN) :: block
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        real, pointer, dimension(:,:,:,:) :: U
        integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
        real, intent(IN) :: dt,dtOld
@@ -580,10 +552,10 @@ Module hy_interface
 
   interface
      subroutine hy_addViscousFluxes&
-          (block,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
-       use block_metadata, ONLY : block_metadata_t
+          (tileDesc,blkLimitsGC,ix,iy,iz,Flux,mu,sweepDir)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, INTENT(IN) :: ix,iy,iz
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
@@ -605,10 +577,10 @@ Module hy_interface
 
   interface
      subroutine hy_addThermalFluxes&
-          (block,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
-       use block_metadata, ONLY : block_metadata_t
+          (tileDesc,blkLimitsGC,ix,iy,iz,Flux,kappa,sweepDir)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, INTENT(IN) :: ix,iy,iz
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
@@ -680,14 +652,13 @@ Module hy_interface
 
     interface
        subroutine hy_putGravity&
-            (blockDesc,blGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
+            (tileDesc,blGC,Uin,dt,dtOld,gravX,gravY,gravZ,potentialIndex,&
              lastCall)
-         use block_metadata, ONLY : block_metadata_t
+         use Grid_tile, ONLY : Grid_tile_t
          implicit none
-         type(block_metadata_t), intent(IN)   :: blockDesc
+         type(Grid_tile_t), intent(IN)   :: tileDesc
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blGC
          real,dimension(:,:,:,:),pointer :: Uin
-         integer, dimension(MDIM), intent(IN) :: dataSize
          real,    intent(IN) :: dt, dtOld
          real,dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS), blGC(LOW,JAXIS):blGC(HIGH,JAXIS), blGC(LOW,KAXIS):blGC(HIGH,KAXIS)),&
               intent(OUT) :: gravX,gravY,gravZ
@@ -700,10 +671,10 @@ Module hy_interface
 
     interface
        Subroutine hy_addGravity&
-            (blockDesc,blkLimits,loGC,hiGC,dt,gravX,gravY,gravZ)
-         use block_metadata, ONLY : block_metadata_t
+            (tileDesc,blkLimits,loGC,hiGC,dt,gravX,gravY,gravZ)
+         use Grid_tile, ONLY : Grid_tile_t
          implicit none
-         type(block_metadata_t), intent(IN)   :: blockDesc
+         type(Grid_tile_t), intent(IN)   :: tileDesc
          integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits
          integer, intent(IN), dimension(MDIM):: loGC, hiGC
          real,    intent(IN) :: dt
@@ -715,11 +686,14 @@ Module hy_interface
 
 
     interface
-       subroutine hy_shockDetectBlk(Uin,blkLimitsGC,Uout,blkLimits,del )
+       subroutine hy_shockDetectBlk(Uin,loI,blkLimitsGC,Uout,loO,blkLimits,del )
        implicit none
        integer,dimension(LOW:HIGH,MDIM),INTENT(IN) :: blkLimits,blkLimitsGC
-       real, dimension(:,:,:,:),INTENT(IN) :: Uin
-       real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
+       integer, intent(IN)  :: loI(*), loO(*)
+       real,    intent(IN)  :: UIN(loI(1):,loI(2):,loI(3):,loI(4):)
+       real,    intent(OUT) :: UOUT(loO(1):,loO(2):,loO(3):,loO(4):)
+!       real, dimension(:,:,:,:),INTENT(IN) :: Uin
+!       real,dimension(:,:,:,:),INTENT(INOUT) :: Uout
        real,dimension(MDIM),INTENT(IN) :: del
      end subroutine hy_shockDetectBlk
   end interface
@@ -779,8 +753,8 @@ Module hy_interface
        real, intent(IN) ::  simTime, dt, dtOld
      end subroutine Hy_gravityStep
      
-     subroutine hy_gravityStepBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_gravityStepBlk(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
+       use Grid_tile, ONLY : Grid_tile_t
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        
        real, pointer, dimension(:,:,:,:) :: Uout
@@ -788,24 +762,9 @@ Module hy_interface
        
        real,dimension(MDIM),intent(IN) :: del
        integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
-       type(block_metadata_t), intent(IN) :: blockDesc
+       type(Grid_tile_t), intent(IN) :: tileDesc
      end subroutine hy_gravityStepBlk
   end interface
-
-#ifdef FLASH_UGLM_MHD
-    interface
-       Subroutine hy_updateSourceGLM(block,dt,del,blkLimits,blkLimitsGC,C_hyp,C_par)
-       use block_metadata, ONLY : block_metadata_t
-         implicit none
-         type(block_metadata_t), intent(IN)   :: block
-         real,    intent(IN) :: dt
-         real,    dimension(MDIM),   intent(IN) :: del
-         integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
-         real,    intent(IN) :: C_hyp,C_par
-       end Subroutine hy_updateSourceGLM
-    end interface
-#endif
-
 
   ! Dongwook thinks that the following two interfaces should be taken care of for
   ! general implementation later.
@@ -833,10 +792,10 @@ Module hy_interface
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
   interface
      subroutine hy_addResistiveFluxes&
-          (block,blkLimitsGC,ix,iy,iz,Flux,eta,sweepDir)
-       use block_metadata, ONLY : block_metadata_t
+          (tileDesc,blkLimitsGC,ix,iy,iz,Flux,eta,sweepDir)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
+       type(Grid_tile_t), intent(IN)   :: tileDesc
        integer, INTENT(IN) :: block,ix,iy,iz
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
@@ -857,13 +816,12 @@ Module hy_interface
 
 
   interface
-     subroutine hy_addOhmicHeating&
-          (block,blkLimits,ix,iy,iz,Qohm,eta)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_addOhmicHeating(tileDesc,blkLimits,ix,iy,iz,Qohm,eta)
+       use Grid_tile, ONLY : Grid_tile_t
      implicit none
-     type(block_metadata_t), intent(IN)   :: block
-     integer, INTENT(IN) :: block,ix,iy,iz
+     type(Grid_tile_t), intent(IN) :: tileDesc
      integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits
+     integer, INTENT(IN) :: ix,iy,iz
      real, intent(INOUT) :: Qohm
      real, intent(IN)    :: eta  
      end subroutine hy_addOhmicHeating
@@ -871,11 +829,10 @@ Module hy_interface
 
 
   interface
-     subroutine hy_staggeredDivb(block,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_staggeredDivb(tileDesc,dt,del,blkLimits,blkLimitsGC,halfTimeAdvance)
+       use Grid_tile, ONLY : Grid_tile_t 
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
-       integer, intent(IN) :: block
+       type(Grid_tile_t), intent(IN) :: tileDesc
        real,    intent(IN) :: dt
        real,    dimension(MDIM),   intent(IN) :: del
        integer, dimension(LOW:HIGH,MDIM), intent(IN) :: blkLimits,blkLimitsGC
@@ -899,10 +856,10 @@ Module hy_interface
 
 
   interface
-     subroutine hy_getElectricFields( block,blkLimits,blkLimitsGC,del,flx,fly,flz)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_getElectricFields(tileDesc,blkLimits,blkLimitsGC,del,flx,fly,flz)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(IN)   :: block
+       type(Grid_tile_t), intent(IN) :: tileDesc
        integer, intent(IN), dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
        real,    intent(IN), dimension(MDIM)  :: del  
 #ifdef FIXEDBLOCKSIZE
@@ -924,15 +881,12 @@ Module hy_interface
 
 
   interface
-     subroutine hy_getCurrents( &
-        block, rangeSwitch, blkLimits,datasize, del, Jp, Jm, mode_switch,&
-        scrch_Ptr,&
-        ix,iy,iz)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine hy_getCurrents(tileDesc, rangeSwitch, blkLimits,datasize, del, Jp, Jm, &
+                               mode_switch, scrch_Ptr,ix,iy,iz)
+       use Grid_tile, ONLY : Grid_tile_t
         implicit none
-        ! Arguments:
-         type(block_metadata_t), intent(IN)   :: block
-        integer,intent(in) :: block, rangeSwitch
+         type(Grid_tile_t), intent(IN) :: tileDesc
+        integer,intent(in) :: rangeSwitch
         integer,intent(in) :: blkLimits  (LOW:HIGH,MDIM)
         integer,intent(in) :: datasize(MDIM), mode_switch
         real,   intent(in) :: del(MDIM)
@@ -980,11 +934,11 @@ Module hy_interface
 
 
   interface
-     Subroutine hy_addBiermannBatteryTerms(block,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
-       use block_metadata, ONLY : block_metadata_t
+     Subroutine hy_addBiermannBatteryTerms(tileDesc,blkLimitsGC,ix,iy,iz,Flux,sweepDir)
+       use Grid_tile, ONLY : Grid_tile_t 
        implicit none
        integer, INTENT(IN) :: ix,iy,iz
-       type(block_metadata_t), intent(IN)   :: block
+       type(Grid_tile_t), intent(IN) :: tileDesc
        
        integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimitsGC 
        real, dimension(HY_VARINUM), intent(INOUT) :: Flux
@@ -1012,38 +966,24 @@ Module hy_interface
 !endif #ifdef FLASH_USM_MHD
 
   interface
-     subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+     subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
-       use block_metadata, ONLY : block_metadata_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t) :: blockDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       type(Grid_tile_t) :: tileDesc
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder
        real,dimension(MDIM),intent(IN) :: del
      end subroutine hy_computeFluxes
-
-     subroutine hy_advanceBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
-          sweepOrder )
-       use block_metadata, ONLY : block_metadata_t
-       implicit none
-       type(block_metadata_t) :: blockDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
-       real, pointer, dimension(:,:,:,:) :: Uout,Uin
-       real,    INTENT(IN) :: timeEndAdv, dt, dtOld
-       integer, INTENT(IN) :: sweepOrder
-       real,dimension(MDIM),intent(IN) :: del
-     end subroutine hy_advanceBlk
   end interface
 
     interface
-     subroutine hy_updateSolution(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv, dt, dtOld,  &
+     subroutine hy_updateSolution(tileDesc, Uin, Uout, del,timeEndAdv, dt, dtOld,  &
           sweepOrder )
-       use block_metadata, ONLY : block_metadata_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t) :: blockDesc
-       integer, dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits, blkLimitsGC
+       type(Grid_tile_t) :: tileDesc
        real, pointer, dimension(:,:,:,:) :: Uout,Uin
        real,    INTENT(IN) :: timeEndAdv, dt, dtOld
        integer, INTENT(IN) :: sweepOrder

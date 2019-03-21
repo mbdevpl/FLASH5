@@ -110,6 +110,9 @@ Module Grid_data
 
   integer, save :: gr_interpolator
 
+  logical, save :: gr_enableTiling
+  integer, save :: gr_tileSize(1:MDIM)
+
 #ifdef GRID_WITH_MONOTONIC
   integer, save :: gr_intpolStencilWidth
 #else

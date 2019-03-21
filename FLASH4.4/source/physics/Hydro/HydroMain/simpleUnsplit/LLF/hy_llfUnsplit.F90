@@ -63,7 +63,7 @@
 #endif
 #define DEBUG_GRID_GCMASK
 
-Subroutine hy_llfUnsplit ( tileLimits, Uin, Uout, del, dt )
+Subroutine hy_llfUnsplit ( tileLimits, Uin, plo, Uout, del, dt )
 
   use Grid_interface, ONLY : Grid_genGetBlkPtr,         &
                              Grid_genReleaseBlkPtr
@@ -100,8 +100,6 @@ Subroutine hy_llfUnsplit ( tileLimits, Uin, Uout, del, dt )
 
   use Driver_interface, ONLY : Driver_abortFlash
 
-  use hy_simpleInterface, ONLY : hy_hllUnsplitUpdate
-
   use Eos_interface, ONLY : Eos_wrapped
 
   use Logfile_interface, ONLY : Logfile_stampVarMask
@@ -117,10 +115,12 @@ Subroutine hy_llfUnsplit ( tileLimits, Uin, Uout, del, dt )
 
 
   !! ---- Argument List ----------------------------------
-  integer, dimension(LOW:HIGH,MDIM),INTENT(IN) ::  tileLimits
-  real,pointer,dimension(:,:,:,:) :: Uin, Uout
-  real,dimension(MDIM), INTENT(IN) :: del
-  real,    INTENT(IN) :: dt
+  integer, intent(IN)  :: tileLimits(LOW:HIGH, 1:MDIM)
+  integer, intent(IN)  :: plo(*)
+  real,    intent(IN)  :: UIN(plo(1):,plo(2):,plo(3):,plo(4):)  !CAPITALIZATION INTENTIONAL!
+  real,    intent(OUT) :: UOUT(plo(1):,plo(2):,plo(3):,plo(4):) !CAPITALIZATION INTENTIONAL!
+  real,    intent(IN)  :: del(1:MDIM)
+  real,    intent(IN)  :: dt
   !! -----------------------------------------------------
 
 !!$  integer, dimension(MDIM) :: datasize

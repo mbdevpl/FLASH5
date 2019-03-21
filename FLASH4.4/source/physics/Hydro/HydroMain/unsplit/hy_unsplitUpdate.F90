@@ -10,7 +10,6 @@
 !!                        integer(IN) :: rangeSwitch,
 !!                        real(IN)    :: dt,
 !!                        real(IN)    :: del(MDM),
-!!                        integer(IN) :: dataSize(MDIM),
 !!                        integer(IN) :: blkLimits(2,MDIM),
 !!                        integer(IN) :: blkLimitsGC(2,MDIM),
 !!                        real(IN)    :: xflux(:,:,:,:), 
@@ -43,7 +42,6 @@
 !!                  are guard cells! Guard cells should not be modified by this routine.
 !!   dt           - timestep
 !!   del          - coordinate spacings in {X,Y,Z} directions
-!!   dataSize     - size of the current block
 !!   blkLimits    - an array that holds the lower and upper indices of the section
 !!                  of block without the guard cells
 !!   blkLimitsGC    - an array that holds the lower and upper indices of the section
@@ -72,11 +70,11 @@
 #include "Eos.h"
 #include "UHD.h"
 
-  Subroutine hy_unsplitUpdate(blockDesc,Uin,Uout,rangeSwitch,dt,del,dataSize,blkLimits,&
+  Subroutine hy_unsplitUpdate(tileDesc,Uin,Uout,rangeSwitch,dt,del,blkLimits,&
                                   blGC,loFl,xflux,yflux,zflux,gravX,gravY,gravZ,&
                                   scrch_Ptr)
 
-    use block_metadata,   ONLY : block_metadata_t
+    use Grid_tile,            ONLY : Grid_tile_t
     use Hydro_data,           ONLY : hy_smalldens,hy_order,hy_irenorm,hy_numXN, &
                                      hy_meshMe, &
                                      hy_geometry, hy_gcMaskSize, &
@@ -100,9 +98,12 @@
   use hy_interface,       ONLY : hy_getCurrents
 #endif
 #endif
-    use Grid_interface,       ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                                     Grid_getCellCoords, Grid_getBlkData,&
-                                     Grid_renormAbundance, Grid_limitAbundance
+    use Driver_interface,     ONLY : Driver_abortFlash
+    use Grid_interface,       ONLY : Grid_getCellCoords, &
+                                     Grid_getCellFaceAreas, &
+                                     Grid_getCellVolumes, &
+                                     Grid_renormAbundance, &
+                                     Grid_limitAbundance
 #ifdef FLASH_UHD_3T
 #ifdef FLASH_USM_MHD
     use Eos_interface,        ONLY : Eos_getAbarZbar
@@ -112,11 +113,10 @@
     implicit none
 
     !! ---- Arguments ---------------------------------
-    type(block_metadata_t), intent(IN) :: blockDesc
+    type(Grid_tile_t), intent(IN) :: tileDesc
     integer,intent(IN) :: rangeSwitch
     real, intent(IN)   :: dt
     real, intent(IN)   :: del(MDIM)
-    integer,dimension(MDIM),intent(IN) :: dataSize
     integer,intent(IN) :: blkLimits(LOW:HIGH,MDIM)
     integer,intent(IN) :: blGC(LOW:HIGH,MDIM)
     integer, dimension(MDIM+1),intent(IN)        :: loFl
@@ -147,7 +147,6 @@
   real, dimension(1,1,1,1) :: UOld
 #endif
 
-    integer :: iSize, jSize, kSize
     real, dimension(blGC(LOW,IAXIS):blGC(HIGH,IAXIS)) :: xCenter, xLeft, xRight
 #if NDIM == 3
     real, dimension(blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)) :: yCenter
@@ -210,10 +209,6 @@
 
     hdt = 0.5*dt
 
-    iSize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1
-    jSize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1
-    kSize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1
-
     if (rangeSwitch==UPDATE_SPECMS_INTERIOR) then
        call unsplitUpdateSpecMs
        return                   ! We are already done, RETURN now.
@@ -262,38 +257,26 @@
     endif
 
 
-!!$    ! Get block pointers
-!!$    call Grid_getBlkPtr(block,U,CENTER)
-
     if (hy_geometry /= CARTESIAN) then
-       faceAreas = 0.
-       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize+1, jsize, ksize/) )
+       call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
 #if NDIM > 1
        if (hy_geometry == SPHERICAL) then
-          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize+1, ksize/) )
+           call Driver_abortFlash("[hy_unsplitUpdate] Implement with Grid_getCellFaceAreas")
+!          call Grid_getBlkData(tileDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
+!            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
+!            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!            (/isize, jsize+1, ksize/) )
        end if
 #endif
-
-       cellVolumes = 0.
-       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize, ksize/) )
+       call Grid_getCellVolumes(tileDesc%level, &
+                                lbound(cellVolumes), ubound(cellVolumes), &
+                                cellVolumes)
     endif
-
-    
+ 
 !!$#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
 !!$    if (hy_forceHydroLimit) then
 !!$       Uin(MAGX_VAR:MAGZ_VAR,:,:,:) = 0.
@@ -302,28 +285,65 @@
 
 
 #if (NSPECIES+NMASS_SCALARS) > 0
+    ! Use do loop nest to only set the portion of the tile
+    ! that we are working on.
+!!    call Driver_abortFlash("[hy_unsplitUpdate] Update this to work with tiles")
     do ispu =  SPECIES_BEGIN, MASS_SCALARS_END !SPECIES_END
        isph= ispu-NPROP_VARS
-       SpOld(isph,:,:,:) = Uin(ispu,:,:,:)
+       SpOld(isph, blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(ispu,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
     enddo
-    Uold(1,  :,:,:) = Uin(DENS_VAR,:,:,:)
-    Uold(2,  :,:,:) = Uin(PRES_VAR,:,:,:)
-    Uold(3:5,:,:,:) = Uin(VELX_VAR:VELZ_VAR,:,:,:)
-    Uold(6,  :,:,:) = Uin(GAME_VAR,:,:,:)
+    Uold(1,  blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(DENS_VAR,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+    Uold(2,  blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(PRES_VAR,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))    
+    Uold(3:5,blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(VELX_VAR:VELZ_VAR,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+    Uold(6,  blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS)) = Uin(GAME_VAR,&
+             blGC(LOW,IAXIS):blGC(HIGH,IAXIS),&
+             blGC(LOW,JAXIS):blGC(HIGH,JAXIS),&
+             blGC(LOW,KAXIS):blGC(HIGH,KAXIS))
+
 #endif
 
 #ifdef DEBUG_HYDRO_POSITIVITY
-    call    Grid_getCellCoords(IAXIS,blockDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+    call Driver_abortFlash("[hy_unsplitUpdate] This has not been tested")
+    call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                            blGC(LOW, :), blGC(HIGH, :), xCenter)
 #else
     if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,blockDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xCenter)
     end if
 #endif
     if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,blockDesc, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,blockDesc, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xLeft)
+       call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xRight)
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          call Grid_getCellCoords(JAXIS,blockDesc, CENTER,.false.,yCenter, size(yCenter))
+          call Driver_abortFlash("[hy_unsplitUpdate] This has not been tested")
+          call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                  blkLimits(LOW, :), blkLimits(HIGH, :), &
+                                  yCenter)
        end if
     endif
 !!$
@@ -628,7 +648,7 @@
                    speciesArr => Uin(SPECIES_BEGIN:SPECIES_END,i,j,k)
                    call MagneticResistivity(Uin(TEMP_VAR,i,j,k),Uin(DENS_VAR,i,j,k),&
                         speciesArr,res_eta(i,j,k))
-                   call hy_addOhmicHeating(blockDesc,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
+                   call hy_addOhmicHeating(tileDesc,blkLimits,i,j,k,Qohm,res_eta(i,j,k))
                    Qohm = Qohm*Uin(DENS_VAR,i,j,k)
                 endif
 #endif
@@ -667,7 +687,7 @@
 
                    ! correct the energy fluxes with current terms
                    !! Note: hy_getCurrent sets Jp and Jm for many cells, unless called with mode_switch=4.
-                   call hy_getCurrents(blockDesc, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
+                   call hy_getCurrents(tileDesc, rangeSwitch, blkLimits,datasize, del, Jp, Jm, 4,&
                                            scrch_Ptr,&
                                            i, j, k)
                    Sphys(HY_ENER) = ( Jp(1,i,j,k) - Jm(1,i,j,k) ) / dx
@@ -906,6 +926,8 @@
 
     !! ---------------------------------------------------------------
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
+    ! Set with explicit do loops over appropriate tile-based region
+    call Driver_abortFlash("[hy_unsplitUpdate] Update this to work with tiles")
     if (hy_forceHydroLimit) then
        Uout(MAGX_VAR:MAGZ_VAR,:,:,:) = 0.
     endif
@@ -914,7 +936,7 @@
 #if (NSPECIES+NMASS_SCALARS) > 0
   ! Renormalize or limit abundances
     if (hy_irenorm == 1) then
-       call Grid_renormAbundance(blockDesc,blkLimits,Uout)
+       call Grid_renormAbundance(tileDesc,blkLimits,Uout)
     else
        call Grid_limitAbundance(blkLimits,Uout)
     endif
@@ -963,40 +985,34 @@
       endif
 
 
-!!$    ! Get block pointers
-!!$    call Grid_getBlkPtr(blockDesc,U,CENTER)
-!!$
     if (hy_geometry /= CARTESIAN) then
-       faceAreas = 0.
-       call Grid_getBlkData(blockDesc, CELL_FACEAREA, ILO_FACE, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreas(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)+1,&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize+1, jsize, ksize/) )
+       call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
 #if NDIM > 1
+    ! DEV: FIXME Include this again and see if we can use faceAreas and
+    !            cellVolumes instead
        if (hy_geometry == SPHERICAL) then
-          call Grid_getBlkData(blockDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize+1, ksize/) )
+           call Driver_abortFlash("[hy_unsplitUpdate] Implement with Grid_getCellFaceAreas")
+!          call Grid_getBlkData(tileDesc, CELL_FACEAREA, JLO_FACE, GLOBALIDX1, &
+!            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
+!            faceAreasY(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),&
+!            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)+1,  &
+!            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
+!            (/isize, jsize+1, ksize/) )
        end if
 #endif
 
-       cellVolumes = 0.
-       call Grid_getBlkData(blockDesc, CELL_VOLUME, 0, GLOBALIDX1, &
-            (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-            cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-            blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-            blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)), &
-            (/isize, jsize, ksize/) )
+       call Grid_getCellVolumes(tileDesc%level, &
+                                lbound(cellVolumes), ubound(cellVolumes), &
+                                cellVolumes)
     endif
 
     
 
     if (.NOT. hy_fullSpecMsFluxHandling) then
+       ! Set these with explicit loop nests over a tile-based region
+       call Driver_abortFlash("[hy_unsplitUpdate] Update these to work with tiles")
        do ispu =  SPECIES_BEGIN, MASS_SCALARS_END
           isph= ispu-NPROP_VARS
           SpOld(isph,:,:,:) = Uout(ispu,:,:,:)
@@ -1008,11 +1024,17 @@
     end if
 
     if (hy_geometry /= CARTESIAN) then
-       call Grid_getCellCoords(IAXIS,blockDesc, CENTER,    .true.,xCenter, dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,blockDesc, LEFT_EDGE, .true.,xLeft,   dataSize(IAXIS))
-       call Grid_getCellCoords(IAXIS,blockDesc, RIGHT_EDGE,.true.,xRight,  dataSize(IAXIS))
+       call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xCenter)
+       call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xLeft)
+       call Grid_getCellCoords(IAXIS, RIGHT_EDGE, tileDesc%level, &
+                               blGC(LOW, :), blGC(HIGH, :), xRight)
        if (NDIM == 3 .AND. hy_geometry == SPHERICAL) then
-          call Grid_getCellCoords(JAXIS,blockDesc, CENTER,.false.,yCenter, size(yCenter))
+          call Driver_abortFlash("[hy_unsplitUpdate] This has not been tested")
+          call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                  blkLimits(LOW, :), blkLimits(HIGH, :), &
+                                  yCenter)
        end if
     endif
 

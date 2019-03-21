@@ -1,0 +1,31 @@
+USESETUPVARS Grid
+#USESETUPVARS ThreeT
+
+#IF Grid in ['', 'UG', 'PM4DEV', 'Amrex']
+# Several flux variables are used in simpleUnsplit and they are formally
+# declared in the file UHD.h.
+#
+# We need to communicate to the other units, such as the Grid unit, how
+# many flux variables will be needed by simpleUnsplit.  Therefore, then
+# number of variables declared here must match the number in UHD.h.
+# The names of these variables as they appear here and therefore in Flash.h
+# are not important as Hydro code should use the names in UHD.h.
+FLUX dummyFlux1
+FLUX dummyFlux2
+FLUX dummyFlux3
+FLUX dummyFlux4
+FLUX dummyFlux5
+# For the present implementation of simpleUnsplit, we are only using the first
+# five fluxes declared in UHD.h
+#FLUX dummyFlux6
+#FLUX dummyFlux7
+#FLUX dummyFlux8
+#ENDIF
+
+# For simpleHydro, we do not currently use 3T
+#IF Gridin ['', 'UG', 'PM4DEV', 'Amrex'] and ThreeT
+#FLUX dummyFlux9
+#FLUX dummyFlux10
+#FLUX dummyFlux11
+#ENDIF
+

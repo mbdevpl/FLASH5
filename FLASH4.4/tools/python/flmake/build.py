@@ -45,7 +45,7 @@ def build_main(ns, rc):
         desc = json.load(desc_file)
     desc['build'] = desc_cmd_metadata()
     desc_build = desc['build']
-    flash_executable = os.path.join(gvars.project_build_dir, "flash4")
+    flash_executable = os.path.join(gvars.project_build_dir, "flash5")
     with open(flash_executable, 'rb') as f:
         desc_build['flash_executable_hash'] = hashlib.sha1(f.read()).hexdigest()
     desc_build['flash_executable_mtime'] = os.path.getmtime(flash_executable)

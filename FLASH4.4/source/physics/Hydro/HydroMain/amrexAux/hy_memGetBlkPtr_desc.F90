@@ -5,9 +5,9 @@
 !!
 !! SYNOPSIS
 !!
-!!  call hy_memGetBlkPtr(block_metadata(IN)  :: blockDesc,
-!!                 real(pointer)(:,:,:,:) :: dataPtr,
-!!                 integer(IN),optional   :: gridDataStruct)
+!!  call hy_memGetBlkPtr(Grid_tile(IN)          :: blockDesc,
+!!                       real(pointer)(:,:,:,:) :: dataPtr,
+!!                       integer(IN),optional   :: gridDataStruct)
 !!
 !! DESCRIPTION
 !!
@@ -50,32 +50,29 @@
 #define DEBUG_GRID
 #endif
 
-subroutine hy_memGetBlkPtr_desc(blockDesc,dataPtr, gridDataStruct)
+subroutine hy_memGetBlkPtr_desc(tileDesc,dataPtr, gridDataStruct)
 
 #include "constants.h"
 #include "Flash.h"
 #include "FortranLangFeatures.fh"
 
-  use Grid_interface, ONLY : Grid_getBlkPtr
-  use block_metadata,   ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
   implicit none
 
-  type(block_metadata_t), intent(IN) :: blockDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   real, POINTER_INTENT_OUT :: dataPtr(:,:,:,:)
   integer, optional,intent(in) :: gridDataStruct
 
-  call Grid_getBlkPtr(blockDesc,dataPtr,gridDataStruct)
-
-  return
+  call tileDesc%getDataPtr(dataPtr, gridDataStruct)
 end subroutine hy_memGetBlkPtr_desc
 
 
 ! Note: there is currently no Amrex-based implementation of the
 !       following interface:
 !!$subroutine hy_memGetBlk5Ptr_desc(blockDesc,data5Ptr, gridDataStruct)
-!!$  use block_metadata,   ONLY : block_metadata_t
+!!$  use Grid_tile,   ONLY : Grid_tile_t
 !!$  implicit none
-!!$  type(block_metadata_t), intent(IN) :: blockDesc
+!!$  type(Grid_tile_t), intent(IN) :: blockDesc
 !!$  real, dimension(:,:,:,:,:), pointer :: data5Ptr
 !!$  integer, optional,intent(in) :: gridDataStruct
 !!$end subroutine hy_memGetBlk5Ptr_desc

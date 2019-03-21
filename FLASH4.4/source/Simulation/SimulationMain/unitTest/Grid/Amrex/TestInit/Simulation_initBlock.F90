@@ -25,100 +25,74 @@
 !!
 !!***
 
-subroutine Simulation_initBlock(initData, block)
-    use block_metadata, ONLY : block_metadata_t, bmd_print
-    use Grid_interface, ONLY : Grid_getSingleCellCoords, Grid_getBlkPtr, Grid_releaseBlkPtr
-    implicit none
-    
-    real,                   intent(IN), pointer :: initData(:, :, :, :)
-    type(block_metadata_t), intent(IN)          :: block
-
 #include "constants.h"
 #include "Flash.h"
   
-    integer :: i = 1
-    integer :: j = 1
-    integer :: k = 1
-    integer :: var = 1
-    real, dimension(:,:,:,:), pointer :: faceDataX, faceDataY, faceDataZ
-    integer :: idx(1:MDIM)
-    real    :: coords(1:MDIM)
+subroutine Simulation_initBlock(initData, tileDesc)
+    use Grid_tile, ONLY : Grid_tile_t 
 
-    associate(lo => block%limitsGC(LOW,  :), &
-              hi => block%limitsGC(HIGH, :))
-        do         k = lo(KAXIS), hi(KAXIS)
-            do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-                    do var=UNK_VARS_BEGIN, UNK_VARS_END
-                        initData(i, j, k, var) = 1.1d0 * var
+    implicit none
+    
+    real,              intent(IN), pointer :: initData(:, :, :, :)
+    type(Grid_tile_t), intent(IN)          :: tileDesc
+
+    real, pointer :: faceData(:,:,:,:)
+    
+    integer :: i, j, k, var
+
+    nullify(faceData)
+
+
+    associate(lo => tileDesc%limits(LOW,  :), &
+              hi => tileDesc%limits(HIGH, :))
+        do           var = UNK_VARS_BEGIN, UNK_VARS_END
+            do         k = lo(KAXIS), hi(KAXIS)
+                do     j = lo(JAXIS), hi(JAXIS)
+                    do i = lo(IAXIS), hi(IAXIS)
+                        initData(i, j, k, var) = 1.1 * var
                     end do
                 end do
             end do
         end do
 !Set face centererd data in interiors
 #if NFACE_VARS>0
-        !Set faceDataX
-        call Grid_getBlkPtr(block,faceDataX,FACEX)
-        do         k = lo(KAXIS), hi(KAXIS)
-            do     j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)+1
-                    idx = [i - lo(IAXIS) + 1, &
-                           j - lo(JAXIS) + 1, &
-                           k - lo(KAXIS) + 1]
-                    call Grid_getSingleCellCoords(idx, block, &
-                                                  LEFT_EDGE, INTERIOR, coords)  !Coord of LEFT_EDGE
-                    do var=1,NFACE_VARS
-                        faceDataX(i, j, k, var) = &
-!                              DBLE((coords(IAXIS) + coords(JAXIS)) * var)
-                             DBLE(1.3*i*i)
+        call tileDesc%getDataPtr(faceData, FACEX)
+        do           var = 1, NFACE_VARS
+            do         k = lo(KAXIS), hi(KAXIS)
+                do     j = lo(JAXIS), hi(JAXIS)
+                    do i = lo(IAXIS), hi(IAXIS)+1
+                        faceData(i, j, k, var) = 1.3*i*i * var
                     end do
                 end do
             end do
         end do
-        call Grid_releaseBlkPtr(block,faceDataX,FACEX)
+        call tileDesc%releaseDataPtr(faceData, FACEX)
 #if NDIM>1
-        !Set faceDataY
-        call Grid_getBlkPtr(block,faceDataY,FACEY)
-        do         k = lo(KAXIS), hi(KAXIS)
-            do     j = lo(JAXIS), hi(JAXIS)+1
-                do i = lo(IAXIS), hi(IAXIS)
-                    idx = [i - lo(IAXIS) + 1, &
-                           j - lo(JAXIS) + 1, &
-                           k - lo(KAXIS) + 1]
-                    call Grid_getSingleCellCoords(idx, block, &
-                                                  LEFT_EDGE, INTERIOR, coords)  !Coord of LEFT_EDGE
-                    do var=1,NFACE_VARS
-                        faceDataY(i, j, k, var) = &
-!                              DBLE((coords(IAXIS) + coords(JAXIS)) * var)
-                             DBLE(i*i+1.2**j*j)
+        call tileDesc%getDataPtr(faceData, FACEY)
+        do           var = 1, NFACE_VARS
+            do         k = lo(KAXIS), hi(KAXIS)
+                do     j = lo(JAXIS), hi(JAXIS)+1
+                    do i = lo(IAXIS), hi(IAXIS)
+                        faceData(i, j, k, var) = (i*i + 1.2*j*j) * var
                     end do
                 end do
             end do
         end do
-        call Grid_releaseBlkPtr(block,faceDataY,FACEY)
+        call tileDesc%releaseDataPtr(faceData, FACEY)
 #endif
 #if NDIM>2
-        !Set faceDataZ
-        call Grid_getBlkPtr(block,faceDataZ,FACEZ)
+        call tileDesc%getDataPtr(faceData, FACEZ)
+        do       var = 1, NFACE_VARS
         do         k = lo(KAXIS), hi(KAXIS)+1
             do     j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
-                    idx = [i - lo(IAXIS) + 1, &
-                           j - lo(JAXIS) + 1, &
-                           k - lo(KAXIS) + 1]
-                    call Grid_getSingleCellCoords(idx, block, &
-                                                  LEFT_EDGE, INTERIOR, coords)  !Coord of LEFT_EDGE
-                    do var=1,NFACE_VARS
-                        faceDataZ(i, j, k, var) = &
-!                              DBLE((coords(IAXIS) + coords(JAXIS)) * var+ coords(KAXIS))
-                             DBLE(i*i+j*j+1.1*k*k)
+                        faceData(i, j, k, var) = (i*i + j*j + 1.1*k*k) * var
                     end do
                 end do
             end do
         end do
-        call Grid_releaseBlkPtr(block,faceDataZ,FACEZ)
+        call tileDesc%releaseDataPtr(faceData, FACEZ)
 #endif
-
 #endif
     end associate
 end subroutine Simulation_initBlock

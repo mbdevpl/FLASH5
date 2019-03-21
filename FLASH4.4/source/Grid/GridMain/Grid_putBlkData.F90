@@ -239,12 +239,12 @@
 subroutine Grid_putBlkData(block, gridDataStruct, structIndex, beginCount, &
      startingPos, datablock, dataSize)
 
-  use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
+!  use Grid_data, ONLY : gr_iguard, gr_jguard, gr_kguard
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
+!  use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr
   use block_metadata, ONLY : block_metadata_t
 
-  use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
+!  use gr_interface, ONLY : gr_getInteriorBlkPtr, gr_releaseInteriorBlkPtr
 
   implicit none
 
@@ -258,211 +258,212 @@ subroutine Grid_putBlkData(block, gridDataStruct, structIndex, beginCount, &
   real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(in) :: datablock
   real, pointer, dimension(:,:,:,:) :: solnData
 
+  call Driver_abortFlash("[Grid_putBlkData] DEPRECATED")
 
-  integer :: i, var, xb, xe, yb, ye, zb, ze
-  integer,dimension(MDIM) :: begOffset
-  integer :: imax, jmax, kmax
-  logical :: isget
-  logical :: getIntPtr
-
-#ifdef DEBUG_GRID
-  isget = .true.
-  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
-
-
-  !verify beginCount is set to a valid value
-  if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
-     print *, "Grid_putBlkData: beginCount set to improper value"
-     print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
-     call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
-  end if
-
-
-
-  !verify that there is enough space in datablock
-  if ((dataSize(1) > imax) .or. &
-       (dataSize(2)> jmax) .or. &
-       (dataSize(3) > kmax)) then
-     
-     print *, "Grid_putBlkData: dataSize(1) (2) or (3) too big"
-     print *,"You are requesting more cells than block has in a dimension"
-     call Driver_abortFlash("Grid_putBlkData: dataSize(1) (2) or (3) too big")
-  end if
-
-
-  !verify that there is enough space in datablock
-  if ((dataSize(1)  < 1) .or. &
-       (dataSize(2) < 1) .or. &
-       (dataSize(3) < 1)) then
-     
-     print *, "Grid_putBlkData: dataSize(1) (2) or (3) too small"
-     print *,"You are requesting more < 1 cell in a dimension of block, 1 is the min"
-     call Driver_abortFlash("Grid_putBlkData: dataSize(1) (2) or (3) too small")
-  end if
-  
-
-
-  !verify that indicies aren't too big or too small for the block
-  if(beginCount == EXTERIOR) then
-    
-     if (startingPos(1) > imax) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(1) index larger than block")
-     end if
-
-     if ((NDIM > 1) .and. (startingPos(2) > jmax)) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(2) index larger than block")
-     end if
-    
-     if ((NDIM > 2) .and. (startingPos(3) > kmax)) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(3) index larger than block")
-     end if
-    
-     if (startingPos(1) < 1) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(1) index smaller than 1")
-     end if
-
-     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(2) index smaller than 1")
-     end if
-    
-     if ((NDIM > 2) .and. (startingPos(3) < 1)) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(3) index smaller than 1")
-     end if
-        
-  else !beginCount == INTERIOR
-
-     if ((startingPos(1) + gr_iguard -1) > imax) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(1) index larger than block")
-     end if
-
-     if ((NDIM > 1) .and. ((startingPos(2) + gr_jguard -1) > jmax)) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(2) index larger than block")
-     end if
-    
-     if ((NDIM > 2) .and. ((startingPos(3) + gr_kguard -1) > kmax)) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(3) index larger than block")
-     end if
-    
-     if (startingPos(1) < 1) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(1) index smaller than 1")
-     end if
-
-     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(2) index smaller than 1")
-     end if
-    
-     if ((NDIM > 2) .and. (startingPos(3) < 1)) then
-        call Driver_abortFlash("Grid_putBlkData startingPos(3) index smaller than 1")
-     end if
-
-  end if
-  
-
-
-  !more verification of indicies
-  !check size and starting pos
-  if(beginCount == EXTERIOR) then
-
-     if ((startingPos(IAXIS) + dataSize(1) -1) > imax) then
-        print *, "Error: Grid_putBlkData"
-        call Driver_abortFlash("Grid_putBlkData indicies too large")
-     end if
-     
-
-     if(NDIM > 1) then
-        if ((startingPos(JAXIS) + dataSize(2) -1) > jmax) then
-           print *, "Error: Grid_putBlkData"
-           call Driver_abortFlash("Grid_putBlkData indicies too large")
-        end if
-     end if
-
-     if(NDIM > 2) then
-        if ((startingPos(KAXIS) + dataSize(3) -1) > kmax) then
-           print *, "Error: Grid_putBlkData"
-           call Driver_abortFlash("Grid_putBlkData indicies too large")
-        end if
-     end if
-  else if(beginCount == INTERIOR) then
-
-     if ((startingPos(IAXIS) + dataSize(1) + gr_iguard -1) > imax) then
-        print *, "Error: Grid_putBlkData"
-        call Driver_abortFlash("Grid_putBlkData indicies too large")
-     end if
-     
-
-     if(NDIM > 2) then
-        if ((startingPos(JAXIS) + dataSize(2) + gr_jguard -1) > jmax) then
-           print *, "Error: Grid_putBlkData"
-           call Driver_abortFlash("Grid_putBlkData indicies too large")
-        end if
-     end if
-     
-     if(NDIM > 3) then
-        if ((startingPos(KAXIS) + dataSize(3) + gr_kguard -1) > kmax) then
-           print *, "Error: Grid_putBlkData"
-           call Driver_abortFlash("Grid_putBlkData indicies too large")
-        end if
-     end if
-  end if
-
-#endif
-
-  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataSize,beginCount,begOffset,getIntPtr)
-
-  zb = 1
-  ze = 1
-#if NDIM > 2
-  
-  zb = startingPos(KAXIS) + begOffset(KAXIS)
-  ze = zb + dataSize(KAXIS) -1
-     
-#endif
-
-  yb = 1
-  ye = 1
-#if NDIM > 1
-  
-  yb = startingPos(JAXIS) + begOffset(JAXIS)
-  ye = yb + dataSize(JAXIS) -1
-  
-#endif
-  
-  xb = startingPos(IAXIS) + begOffset(IAXIS)
-  xe = xb + dataSize(IAXIS) -1
-
-  if(getIntPtr) then
-!!$     select case (gridDataStruct)
-!!$     case(CENTER)
-!!$        unk(structIndex,xb:xe,yb:ye,zb:ze,blockid) = datablock(:,:,:) 
-!!$     case(FACEX)
-!!$        facevarx(structIndex,xb:xe,yb:ye,zb:ze,blockid) = datablock(:,:,:) 
-!!$     case(FACEY)
-!!$        facevary(structIndex,xb:xe,yb:ye,zb:ze,blockid) = datablock(:,:,:) 
-!!$     case(FACEZ)
-!!$        facevarz(structIndex,xb:xe,yb:ye,zb:ze,blockid) = datablock(:,:,:) 
-!!$     case(SCRATCH)
-!!$        scratch(xb:xe,yb:ye,zb:ze,structIndex,blockid) = datablock(:,:,:) 
-!!$#ifdef FLASH_GRID_PARAMESH
-!!$     case(WORK)
-!!$        work(xb:xe,yb:ye,zb:ze,blockid,1) = datablock(:,:,:) 
-!!$#endif
-!!$     end select
-     
-     call gr_getInteriorBlkPtr(block,solnData,gridDataStruct)
-     solnData(structIndex,xb:xe,yb:ye,zb:ze)=datablock(:,:,:)
-     call gr_releaseInteriorBlkPtr(block,solnData,gridDataStruct)
-  else
-     
-     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
-     solnData(structIndex,xb:xe,yb:ye,zb:ze)=datablock(:,:,:)
-!!$     if(gridDataStruct==SCRATCH) then
-!!$        solnData(xb:xe,yb:ye,zb:ze,structIndex)=datablock(:,:,:)
-!!$     else
-!!$     end if
-     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
-  end if
-  
-  return
+!  integer :: i, var, xb, xe, yb, ye, zb, ze
+!  integer,dimension(MDIM) :: begOffset
+!  integer :: imax, jmax, kmax
+!  logical :: isget
+!  logical :: getIntPtr
+!
+!#ifdef DEBUG_GRID
+!  isget = .true.
+!  call gr_checkDataType(block,gridDataStruct,imax,jmax,kmax,isget)
+!
+!
+!  !verify beginCount is set to a valid value
+!  if((beginCount /= INTERIOR) .and. (beginCount /= EXTERIOR)) then
+!     print *, "Grid_putBlkData: beginCount set to improper value"
+!     print *, "beginCount must = INTERIOR or EXTERIOR (defined in constants.h)"
+!     call Driver_abortFlash("beginCount must = INTERIOR or EXTERIOR (defined in constants.h)")
+!  end if
+!
+!
+!
+!  !verify that there is enough space in datablock
+!  if ((dataSize(1) > imax) .or. &
+!       (dataSize(2)> jmax) .or. &
+!       (dataSize(3) > kmax)) then
+!     
+!     print *, "Grid_putBlkData: dataSize(1) (2) or (3) too big"
+!     print *,"You are requesting more cells than block has in a dimension"
+!     call Driver_abortFlash("Grid_putBlkData: dataSize(1) (2) or (3) too big")
+!  end if
+!
+!
+!  !verify that there is enough space in datablock
+!  if ((dataSize(1)  < 1) .or. &
+!       (dataSize(2) < 1) .or. &
+!       (dataSize(3) < 1)) then
+!     
+!     print *, "Grid_putBlkData: dataSize(1) (2) or (3) too small"
+!     print *,"You are requesting more < 1 cell in a dimension of block, 1 is the min"
+!     call Driver_abortFlash("Grid_putBlkData: dataSize(1) (2) or (3) too small")
+!  end if
+!  
+!
+!
+!  !verify that indicies aren't too big or too small for the block
+!  if(beginCount == EXTERIOR) then
+!    
+!     if (startingPos(1) > imax) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(1) index larger than block")
+!     end if
+!
+!     if ((NDIM > 1) .and. (startingPos(2) > jmax)) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(2) index larger than block")
+!     end if
+!    
+!     if ((NDIM > 2) .and. (startingPos(3) > kmax)) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(3) index larger than block")
+!     end if
+!    
+!     if (startingPos(1) < 1) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(1) index smaller than 1")
+!     end if
+!
+!     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(2) index smaller than 1")
+!     end if
+!    
+!     if ((NDIM > 2) .and. (startingPos(3) < 1)) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(3) index smaller than 1")
+!     end if
+!        
+!  else !beginCount == INTERIOR
+!
+!     if ((startingPos(1) + gr_iguard -1) > imax) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(1) index larger than block")
+!     end if
+!
+!     if ((NDIM > 1) .and. ((startingPos(2) + gr_jguard -1) > jmax)) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(2) index larger than block")
+!     end if
+!    
+!     if ((NDIM > 2) .and. ((startingPos(3) + gr_kguard -1) > kmax)) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(3) index larger than block")
+!     end if
+!    
+!     if (startingPos(1) < 1) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(1) index smaller than 1")
+!     end if
+!
+!     if ((NDIM > 1) .and. (startingPos(2) < 1)) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(2) index smaller than 1")
+!     end if
+!    
+!     if ((NDIM > 2) .and. (startingPos(3) < 1)) then
+!        call Driver_abortFlash("Grid_putBlkData startingPos(3) index smaller than 1")
+!     end if
+!
+!  end if
+!  
+!
+!
+!  !more verification of indicies
+!  !check size and starting pos
+!  if(beginCount == EXTERIOR) then
+!
+!     if ((startingPos(IAXIS) + dataSize(1) -1) > imax) then
+!        print *, "Error: Grid_putBlkData"
+!        call Driver_abortFlash("Grid_putBlkData indicies too large")
+!     end if
+!     
+!
+!     if(NDIM > 1) then
+!        if ((startingPos(JAXIS) + dataSize(2) -1) > jmax) then
+!           print *, "Error: Grid_putBlkData"
+!           call Driver_abortFlash("Grid_putBlkData indicies too large")
+!        end if
+!     end if
+!
+!     if(NDIM > 2) then
+!        if ((startingPos(KAXIS) + dataSize(3) -1) > kmax) then
+!           print *, "Error: Grid_putBlkData"
+!           call Driver_abortFlash("Grid_putBlkData indicies too large")
+!        end if
+!     end if
+!  else if(beginCount == INTERIOR) then
+!
+!     if ((startingPos(IAXIS) + dataSize(1) + gr_iguard -1) > imax) then
+!        print *, "Error: Grid_putBlkData"
+!        call Driver_abortFlash("Grid_putBlkData indicies too large")
+!     end if
+!     
+!
+!     if(NDIM > 2) then
+!        if ((startingPos(JAXIS) + dataSize(2) + gr_jguard -1) > jmax) then
+!           print *, "Error: Grid_putBlkData"
+!           call Driver_abortFlash("Grid_putBlkData indicies too large")
+!        end if
+!     end if
+!     
+!     if(NDIM > 3) then
+!        if ((startingPos(KAXIS) + dataSize(3) + gr_kguard -1) > kmax) then
+!           print *, "Error: Grid_putBlkData"
+!           call Driver_abortFlash("Grid_putBlkData indicies too large")
+!        end if
+!     end if
+!  end if
+!
+!#endif
+!
+!  call gr_getDataOffsets(block,gridDataStruct,startingPos,dataSize,beginCount,begOffset,getIntPtr)
+!
+!  zb = 1
+!  ze = 1
+!#if NDIM > 2
+!  
+!  zb = startingPos(KAXIS) + begOffset(KAXIS)
+!  ze = zb + dataSize(KAXIS) -1
+!     
+!#endif
+!
+!  yb = 1
+!  ye = 1
+!#if NDIM > 1
+!  
+!  yb = startingPos(JAXIS) + begOffset(JAXIS)
+!  ye = yb + dataSize(JAXIS) -1
+!  
+!#endif
+!  
+!  xb = startingPos(IAXIS) + begOffset(IAXIS)
+!  xe = xb + dataSize(IAXIS) -1
+!
+!  if(getIntPtr) then
+!!!$     select case (gridDataStruct)
+!!!$     case(CENTER)
+!!!$        unk(structIndex,xb:xe,yb:ye,zb:ze,blockid) = datablock(:,:,:) 
+!!!$     case(FACEX)
+!!!$        facevarx(structIndex,xb:xe,yb:ye,zb:ze,blockid) = datablock(:,:,:) 
+!!!$     case(FACEY)
+!!!$        facevary(structIndex,xb:xe,yb:ye,zb:ze,blockid) = datablock(:,:,:) 
+!!!$     case(FACEZ)
+!!!$        facevarz(structIndex,xb:xe,yb:ye,zb:ze,blockid) = datablock(:,:,:) 
+!!!$     case(SCRATCH)
+!!!$        scratch(xb:xe,yb:ye,zb:ze,structIndex,blockid) = datablock(:,:,:) 
+!!!$#ifdef FLASH_GRID_PARAMESH
+!!!$     case(WORK)
+!!!$        work(xb:xe,yb:ye,zb:ze,blockid,1) = datablock(:,:,:) 
+!!!$#endif
+!!!$     end select
+!     
+!     call gr_getInteriorBlkPtr_blk(block,solnData,gridDataStruct)
+!     solnData(structIndex,xb:xe,yb:ye,zb:ze)=datablock(:,:,:)
+!     call gr_releaseInteriorBlkPtr_blk(block,solnData,gridDataStruct)
+!  else
+!     
+!     call Grid_getBlkPtr(block,solnData,gridDataStruct,localFlag=(beginCount==EXTERIOR.OR.beginCount==INTERIOR))
+!     solnData(structIndex,xb:xe,yb:ye,zb:ze)=datablock(:,:,:)
+!!!$     if(gridDataStruct==SCRATCH) then
+!!!$        solnData(xb:xe,yb:ye,zb:ze,structIndex)=datablock(:,:,:)
+!!!$     else
+!!!$     end if
+!     call Grid_releaseBlkPtr(block,solnData,gridDataStruct)
+!  end if
+!  
+!  return
   
 end subroutine Grid_putBlkData
 

@@ -39,14 +39,14 @@
 subroutine IO_writeIntegralQuantities ( isFirst, simTime)
 
   use IO_data, ONLY : io_restart, io_statsFileName
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_getSingleCellVol, &
-    Grid_releaseBlkPtr, Grid_getCellCoords, Grid_getLeafIterator, Grid_releaseLeafIterator
+  use Grid_interface, ONLY : Grid_getCellVolumes, &
+    Grid_getCellCoords, Grid_getTileIterator, Grid_releaseTileIterator
   use Simulation_data, ONLY: sim_xctr, sim_yctr, sim_zctr, sim_a1, sim_a3, &
        sim_a1inv, sim_a3inv, sim_initGeometry
 
   use IO_data, ONLY : io_globalMe
-  use block_metadata, ONLY: block_metadata_t
-  use leaf_iterator, ONLY : leaf_iterator_t
+  use Grid_tile, ONLY: Grid_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
   
   implicit none
 
@@ -64,9 +64,9 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   
   character (len=MAX_STRING_LENGTH), save :: fname 
   
-  integer :: blkLimits(LOW:HIGH, MDIM), blkLimitsGC(LOW:HIGH, MDIM)
+  integer :: lo(MDIM), hi(MDIM)
   real, dimension(:), allocatable :: xCenter, yCenter, zCenter
-  integer     :: xSize, ySize, zSize
+  real, dimension(:,:,:), allocatable :: cellVolumes 
   real        :: radius2, xdist, ydist, zdist
   real        :: radiusInside2, a3x90, a3x90Inv
 
@@ -75,13 +75,13 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   real :: lsum(nGlobalSum) !Global summed quantities
 
   integer :: i, j, k, ii, jj, kk
-  real :: dvol             !, del(MDIM)
   real, DIMENSION(:,:,:,:), POINTER :: solnData
+  real  :: dvol
 
-  integer :: point(MDIM)
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t) :: blockDesc
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
 
+  NULLIFY(solnData)
   ! define a variable that is 90% of the polar radius
   a3x90 = 0.9*sim_a3
   a3x90Inv = 0.9*sim_a3inv
@@ -90,43 +90,37 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
   gsum  = 0.
   lsum = 0.
   
-  call Grid_getLeafIterator(itor)
-  do while (itor%is_valid())
-     call itor%blkMetaData(blockDesc)
-     blkLimits(:,:)=blockDesc%limits
-     blkLimitsGC(:,:)=blockDesc%limitsGC
-     xSize = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
-     ySize = blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1
-     zSize = blkLimits(HIGH,KAXIS) - blkLimits(LOW,KAXIS) + 1
-     allocate(xCenter(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)))
-     allocate(yCenter(blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)))
-     allocate(zCenter(blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while (itor%isValid())
+     call itor%currentTile(tileDesc)
+     lo(:) = tileDesc%limits(LOW,:)
+     hi(:) = tileDesc%limits(HIGH,:)
+     allocate(xCenter(lo(IAXIS):hi(IAXIS)))
+     allocate(yCenter(lo(JAXIS):hi(JAXIS)))
+     allocate(zCenter(lo(KAXIS):hi(KAXIS)))
+     allocate(cellVolumes(lo(IAXIS):hi(IAXIS),lo(JAXIS):hi(JAXIS), lo(KAXIS):hi(KAXIS)))
 
      ! get a pointer to the current block of data
-     call Grid_getBlkPtr(blockDesc, solnData)
+     call tileDesc%getDataPtr(solnData, CENTER)
 
      !! Get the cell coordinates
-     call Grid_getCellCoords(IAXIS,blockDesc,CENTER, .false., xCenter, xSize)
-     call Grid_getCellCoords(JAXIS,blockDesc,CENTER, .false., yCenter, ySize)
-     call Grid_getCellCoords(KAXIS,blockDesc,CENTER, .false., zCenter, zSize)
+     call Grid_getCellCoords(IAXIS,CENTER,tileDesc%level, lo, hi, xCenter)
+     call Grid_getCellCoords(JAXIS,CENTER,tileDesc%level, lo, hi, yCenter)
+     call Grid_getCellCoords(KAXIS,CENTER,tileDesc%level, lo, hi, zCenter)
 
+
+     !! Get the cell volume for all cells
+     call Grid_getCellVolumes(tileDesc%level, lo, hi, cellVolumes)
 
      ! Sum contributions from the indicated blkLimits of cells.
-     do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
+     do       k = lo(KAXIS), hi(KAXIS)
         zdist = (zCenter(k) - sim_zctr)
-        do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
+        do    j = lo(JAXIS), hi(JAXIS)
            ydist = (yCenter(j) - sim_yctr)
-           do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
+           do i = lo(IAXIS), hi(IAXIS)
               xdist = (xCenter(i) - sim_xctr)
 
-
-              point(IAXIS) = i
-              point(JAXIS) = j
-              point(KAXIS) = k
-
-              !! Get the cell volume for a single cell
-              call Grid_getSingleCellVol(blockDesc,  point, dvol, EXTERIOR)
-
+              dvol = cellVolumes(i,j,k)
               ! mass   
 #ifdef DENS_VAR
               lsum(1) = lsum(1) + solnData(DENS_VAR,i,j,k)*dvol 
@@ -205,11 +199,11 @@ subroutine IO_writeIntegralQuantities ( isFirst, simTime)
         enddo
      enddo
 
-     call Grid_releaseBlkPtr(blockDesc, solnData)
-     deallocate(xCenter,yCenter,zCenter)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
+     deallocate(xCenter,yCenter,zCenter,cellVolumes)
      call itor%next()
   enddo
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
  
   ! Now the MASTER_PE sums the local contributions from all of
   ! the processors and writes the total to a file.
