@@ -62,8 +62,6 @@ subroutine gr_findMean(iSrc, iType, bGuardcell, mean)
   nullify(solnData)
 
   mean = 0.0
-  
-  call Driver_abortFlash("[gr_findMean] This has not been tested yet after updates")
 
   if (iType /= 2) then
      call Driver_abortFlash("[gr_findMean] Can only do arithmetic mean with iType=1")

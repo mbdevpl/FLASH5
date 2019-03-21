@@ -15,14 +15,14 @@
 !! DESCRIPTION
 !!
 !!  Initializes fluid data (density, pressure, velocity, etc.) for
-!!  a specified block.
+!!  a specified tile.
 !!
 !!  Reference:
 !!
 !! 
 !! ARGUMENTS
 !!
-!!  blockID -          the number of the block to update
+!!  tile -          the tile to update
 !!  
 !!
 !! 
@@ -31,14 +31,12 @@
 
 !!-----!! Do not REORDER(4): solnData
 
-subroutine Simulation_initBlock(solnData,block)
+subroutine Simulation_initBlock(solnData,tileDesc)
 
 !  use Simulation_data
   use Simulation_data, ONLY :sim_xMin,sim_xMax,sim_yMin,sim_yMax,sim_zMin,sim_zMax
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
-    Grid_getCellCoords, Grid_getBlkPtr, Grid_releaseBlkPtr, &
-    Grid_getBlkBoundBox, Grid_getBlkCenterCoords, Grid_getDeltas
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
@@ -47,12 +45,12 @@ subroutine Simulation_initBlock(solnData,block)
 
   !!$ Arguments -----------------------
   real,dimension(:,:,:,:),pointer :: solnData
-  type(block_metadata_t), intent(in) :: block
-  integer :: blockID
+  type(Grid_tile_t), intent(in) :: tileDesc
+  integer :: tileDescID
   !!$ ---------------------------------
  
   integer :: i, j, k
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(MDIM) :: lo, hi
 
   real,allocatable, dimension(:) ::xCenter,yCenter,zCenter
   integer :: sizeX,sizeY,sizeZ
@@ -60,19 +58,25 @@ subroutine Simulation_initBlock(solnData,block)
   real :: Lx, Ly, Lz, xi, yi, zi, Phi_ijk, F_ijk
 
 
-  real, parameter :: pfb_waven_x = 2.
-  real, parameter :: pfb_waven_y = 1.
-  real, parameter :: pfb_waven_z = 2.
-  real, parameter :: pfb_alpha_x = 0.
+  real :: pfb_waven_x
+  real :: pfb_waven_y
+  real :: pfb_waven_z
+  real :: pfb_alpha_x
 
   logical :: gcell = .true.
 
   !----------------------------------------------------------------------
-  blkLimits = block%limits
-  blkLimitsGC = block%limitsGC
-  allocate(xCenter(blkLimitsGC(LOW, IAXIS):blkLimitsGC(HIGH, IAXIS)))
-  allocate(yCenter(blkLimitsGC(LOW, JAXIS):blkLimitsGC(HIGH, JAXIS)))
-  allocate(zCenter(blkLimitsGC(LOW, KAXIS):blkLimitsGC(HIGH, KAXIS)))
+  lo=tileDesc%limits(LOW,:)
+  hi=tileDesc%limits(HIGH,:)
+  pfb_waven_x = 2.
+  pfb_waven_y = 1.
+  pfb_waven_z = 2.
+  pfb_alpha_x = 0.
+  if (NDIM < 3) pfb_waven_z=0.
+  if (NDIM < 2) pfb_waven_y=0.
+  allocate(xCenter(lo(IAXIS):hi(IAXIS)))
+  allocate(yCenter(lo(JAXIS):hi(JAXIS)))
+  allocate(zCenter(lo(KAXIS):hi(KAXIS)))
   xCenter = 0.0
   yCenter = 0.0
   zCenter = 0.0
@@ -81,16 +85,15 @@ subroutine Simulation_initBlock(solnData,block)
   sizeY = SIZE(yCenter)
   sizeZ = SIZE(zCenter)
   
-  call Grid_getCellCoords(IAXIS, block, CENTER, gcell, xCenter, sizeX)
-  if (NDIM >= 2) call Grid_getCellCoords(JAXIS, block, CENTER, gcell, yCenter, sizeY)
-  if (NDIM == 3) call Grid_getCellCoords(KAXIS, block, CENTER, gcell, zCenter, sizeZ)
+  call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, lo, hi, xCenter)
+  if (NDIM >= 2) call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, lo, hi, yCenter)
+  if (NDIM == 3) call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, lo, hi, zCenter)
 
 #ifdef DEBUG_SIMULATION
-98 format('initBlock:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
-99 format('initBlock:',A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
+98 format('initTile:',A4,'(',I3,':   ,',   I3,':   ,',   I3,':   ,',   I3,':   )')
+99 format('initTile:',A4,'(',I3,':',I3,',',I3,':',I3,',',I3,':',I3,',',I3,':',I3,')')
   print 99,"solnData" ,(lbound(solnData ,i),ubound(solnData ,i),i=1,4)
-  print*,'blkLim  :',blkLimits
-  print*,'blkLimGC:',blkLimitsGC
+  print*,'blkLim  :',lo,hi
 #endif
 !------------------------------------------------------------------------------
 
@@ -98,9 +101,9 @@ subroutine Simulation_initBlock(solnData,block)
   Ly = sim_yMax - sim_yMin  
   Lz = sim_zMax - sim_zMin
 
-  do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
-     do j = blkLimitsGC(LOW,JAXIS), blkLimitsGC(HIGH,JAXIS)
-        do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH,IAXIS)
+  do       k = lo(KAXIS), hi(KAXIS)
+     do    j = lo(JAXIS), hi(JAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
           xi=xCenter(i)
           yi=yCenter(j)
           zi=zCenter(k)
@@ -120,17 +123,9 @@ subroutine Simulation_initBlock(solnData,block)
   enddo
 
 
-  ! set values for u,v velocities and pressure
-  solnData(:,:,:,DIFF_VAR) = 0.0
-  solnData(:,:,:,NSOL_VAR) = 0.0
-
-!!$  write(*,*) 'BlockID=',blockID
-!!$  write(*,*) 'Center coordinates=',coord
-!!$  write(*,*) 'Size =',bsize
- 
-
-  ! Release pointer
-!  call Grid_releaseBlkPtr(blockID,solnData,CENTER)
+  ! set values for other variables
+  solnData(lo(IAXIS):hi(IAXIS), lo(JAXIS):hi(JAXIS), lo(KAXIS):hi(KAXIS), DIFF_VAR) = 0.0
+  solnData(lo(IAXIS):hi(IAXIS), lo(JAXIS):hi(JAXIS), lo(KAXIS):hi(KAXIS), NSOL_VAR) = 0.0
 
   return
 

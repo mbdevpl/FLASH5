@@ -61,9 +61,9 @@ subroutine Driver_evolveFlash()
 
 
   if (perfect) then
-    write(fileUnit,'("all results conformed with expected values.")')
+    write(fileUnit,'(A)') 'SUCCESS all results conformed with expected values.'
   else
-    write(fileUnit,'("test failed.")')
+    write(fileUnit,'(A)') 'FAILURE'
   endif
 
   close(fileUnit)
