@@ -284,6 +284,8 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 !     gcMaskArgsLogged = .TRUE.
 
      ! DEV: TODO What happens with particles here?
+     !Devnote: call Particles_update refinement in case particle-block association changed
+     call Particles_updateRefinement(1)
 
      if (present(gridChanged)) then
         gridChanged = gr_amrexDidRefinement
