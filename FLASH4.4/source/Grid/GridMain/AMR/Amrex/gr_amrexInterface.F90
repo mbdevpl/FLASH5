@@ -24,6 +24,9 @@
 #include "constants.h"
 
 module gr_amrexInterface
+
+  character(len=64),parameter :: gr_amrexGitVersionStr=AMREX_GIT_VERSION
+
   interface
     subroutine gr_amrexInit()
       implicit none
