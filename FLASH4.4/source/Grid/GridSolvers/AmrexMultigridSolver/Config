@@ -36,4 +36,3 @@ PARAMETER gr_amrexLs_consolidation	BOOLEAN TRUE
 
 D Variable for solution of Poisson equation
 VARIABLE phi
-VARIABLE dens
