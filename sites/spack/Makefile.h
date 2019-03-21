@@ -22,6 +22,24 @@ LINK    = mpif90 -std=c++11 -fopenmp
 PP      = -D
 
 
+IS_FCOMP_GNU := $(shell ${FCOMP} --version | grep "GNU\\|GCC" | wc -l)
+IS_CCOMP_GNU := $(shell ${CCOMP} --version | grep "GNU\\|GCC" | wc -l)
+# @echo Is Fortran compiler GNU?
+# @echo $(value IS_FCOMP_GNU)
+$(info Is Fortran compiler GNU? $(value IS_FCOMP_GNU))
+$(info Is C compiler GNU? $(value IS_CCOMP_GNU))
+
+IS_FCOMP_PGI := $(shell ${FCOMP} --version | grep "PGI" | wc -l)
+IS_CCOMP_PGI := $(shell ${CCOMP} --version | grep "PGI" | wc -l)
+$(info Is Fortran compiler PGI? $(value IS_FCOMP_PGI))
+$(info Is C compiler PGI? $(value IS_CCOMP_PGI))
+
+
+ifneq (${IS_FCOMP_GNU}, 0)
+
+ifneq (${IS_FCOMP_PGI}, 0)
+$(error Fortran compiler detected as both GNU and PGI!)
+endif
 
 FFLAGS_OPT = -g -c -O2 -fdefault-real-8 -fdefault-double-8 \
 $(shell echo -I${CPATH} | sed 's|:| -I|g') \
@@ -39,13 +57,37 @@ FFLAGS_TEST = -g -ggdb -c -fdefault-real-8 -fdefault-double-8 \
 $(shell echo -I${CPATH} | sed 's|:| -I|g') \
 -ffree-line-length-none
 
+else
+ifneq (${IS_FCOMP_PGI}, 0)
+
+LINK = mpif90 -mp
+
+FFLAGS_OPT = -g -c -O2 -r8 -i4 \
+$(shell echo -I${CPATH} | sed 's|:| -I|g')
+
+FFLAGS_DEBUG = -g -c -O0 -r8 -i4 \
+$(shell echo -I${CPATH} | sed 's|:| -I|g')
+
+FFLAGS_TEST = -g -c -r8 -i4 \
+$(shell echo -I${CPATH} | sed 's|:| -I|g')
+
+else
+$(error Fortran compiler detected as neither GNU nor PGI!)
+endif
+endif
+
 FFLAGS_HYPRE =
 FFLAGS_AMREX =
 FFLAGS_AMREX2D = -DN_DIM=2 -DNZB=1
 
-
 F90FLAGS =
 
+
+ifneq (${IS_CCOMP_GNU}, 0)
+
+ifneq (${IS_CCOMP_PGI}, 0)
+$(error C compiler detected as both GNU and PGI!)
+endif
 
 #The macro _FORTIFY_SOURCE adds some lightweight checks for buffer
 #overflows at both compile time and run time (only active at -O1 or higher)
@@ -60,6 +102,21 @@ CFLAGS_DEBUG = -g -ggdb -c -O0 \
 -Wunsafe-loop-optimizations -Wpadded -fstack-protector-all
 
 CFLAGS_TEST = -g -c
+
+else
+ifneq (${IS_CCOMP_PGI}, 0)
+
+CFLAGS_OPT = -g -c -O2
+
+CFLAGS_DEBUG = -g -c -O0
+
+CFLAGS_TEST = -g -c
+
+else
+$(error C compiler detected as neither GNU nor PGI!)
+endif
+endif
+
 
 
 # Platform symbol
