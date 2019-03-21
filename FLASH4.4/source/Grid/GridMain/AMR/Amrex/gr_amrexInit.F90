@@ -195,7 +195,7 @@ subroutine gr_amrexInit()
   end if
 #endif
 #endif
-  
+
   if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexInit] Finished"
 end subroutine gr_amrexInit
 
