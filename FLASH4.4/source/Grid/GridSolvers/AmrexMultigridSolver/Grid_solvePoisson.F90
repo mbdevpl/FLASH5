@@ -17,8 +17,8 @@
 !!
 !! ARGUMENTS
 !!
-!!  iSoln    - the index for the solution variable (potential when used for self-gravity)
-!!  iSrc     - the index of the source variable (density when used for self-gravity)
+!!  iSoln    - the index for the solution variable (must be a cell centered variable)
+!!  iSrc     - the index of the source variable (must be a cell centered variable)
 !!  bcTypes  - the boundary condition type; only the first entry is used.
 !!             Only the first 2*NDIM elements are significant. They are interpreted
 !!             in the order (X left, X right, Y left, Y right, Z left, Z right).
@@ -26,17 +26,16 @@
 !!               GRID_PDE_BND_PERIODIC (1)
 !!               GRID_PDE_BND_DIRICHLET (2) (homogeneous or constant Dirichlet)
 !!               GRID_PDE_BND_NEUMANN (3) (homogeneous or constant Neumann)
-!!               GRID_PDE_BND_ISOLATED (0)
 !!
 !!  bcValues - the values to boundary conditions, currently not used (treated as 0)
-!!  poisfact      - scaling factor to be used in calculation
+!!  poisfact      - scaling factor to be used in calculation, currently not used (treated as 1)
 !!
 !!
 !! SIDE EFFECTS
 !!
 !!  
 !! NOTES:
-!!  Currently, solver only works for GRID_PDE_BND_PERIODIC i.e. periodic boundary conditions
+!!  Currently, solver only works for periodic, Neumann and Dirichlet BCs
 !!  Other BCs to be implemented later
 !!  Relative and absolute tolerences for multigrid sovle - 1.e-10, 0.0
 !!
@@ -88,6 +87,11 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
 #include "constants.h"   
   
   call Timers_start("Grid_solvePoisson")
+  if(poisfact .ne. 1) then
+    if(gr_globalMe .eq. MASTER_PE) print*,"[WARNING] [Grid_solvePoisson] Variable poisfact &
+                                                                    was set not 1. It is being ignored and set to 1!!!"
+    poisfact =1.
+  endif
      maxLevel = amrex_get_finest_level() !! TODO :: Check with Jared if this is the best wat to get max level of current 
                                                                    !! grid. There is likely a flash ssubroutine for same Grid_getMaxRefinement?
 !   Allocate space for multifab array storing phi (solution) and rhs
@@ -120,7 +124,7 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        case (GRID_PDE_BND_DIRICHLET)
           amrexPoissonBcTypes(i)=amrex_lo_dirichlet
        case default
-          call Driver_abortFlash('Only periodic BC implemented for AMReX poisson solver!')
+          call Driver_abortFlash('BC not implemented for AMReX poisson solver!')
        end select
      end do
      call poisson % set_domain_bc([amrexPoissonBcTypes(1),amrexPoissonBcTypes(3),amrexPoissonBcTypes(5)], &
@@ -137,9 +141,9 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        call multigrid % set_max_iter(gr_amrexLs_max_iter)
        call multigrid % set_max_fmg_iter(gr_amrexLs_max_fmg_iter)
 
-       print*, "Calling multigrid solve, maxlev", maxLevel
+       if(gr_globalMe .eq. MASTER_PE) print*, "Calling multigrid solve, maxlev", maxLevel
        err = multigrid % solve(solution, rhs, 1.e-10_amrex_real, 0.0_amrex_real)
-        print*, err
+       if(gr_globalMe .eq. MASTER_PE) print*, err
        call amrex_multigrid_destroy(multigrid)
        call amrex_poisson_destroy(poisson)
   else
@@ -168,7 +172,7 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
          call poisson % set_coarse_fine_bc(solution(ilev-1), gr_amrexLs_ref_ratio)
        end if
           ! Note that to the linear solver, the level is ZERO.  In
-          ! this test problem, when lev > 0, solution(lev) is going to
+          ! this problem, when lev > 0, solution(lev) is going to
           ! be ignored because fine level grids are completed
           ! surrounded by coarse level.  If fine level grids do touch
           ! phyical domain, the multifab must have bc values at
@@ -182,7 +186,6 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact)
        call multigrid % set_max_fmg_iter(gr_amrexLs_max_fmg_iter)
 
        err = multigrid % solve([solution(ilev)], [rhs(ilev)],1.e-10_amrex_real, 0.0_amrex_real)
-       !err = multigrid % solve(solution, rhs, 1.e-10_amrex_real, 0.0_amrex_real)
        if(gr_globalMe .eq. MASTER_PE) print*, err
        call amrex_poisson_destroy(poisson)
        call amrex_multigrid_destroy(multigrid)
