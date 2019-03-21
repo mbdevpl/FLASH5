@@ -29,9 +29,9 @@ subroutine gr_amrexInit()
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
   use Driver_interface,            ONLY : Driver_abortFlash
   use Logfile_interface,           ONLY : Logfile_stamp
-  use Grid_data,                   ONLY : gr_meshMe,   &
-                                          gr_geometry, &
-                                          gr_domainBC
+  use Grid_data,                   ONLY : gr_geometry, &
+                                          gr_domainBC, &
+                                          gr_meshMe
   use gr_amrexInterface,           ONLY : gr_initNewLevelCallback, &
                                           gr_makeFineLevelFromCoarseCallback, &
                                           gr_remakeLevelCallback, &
@@ -196,6 +196,6 @@ subroutine gr_amrexInit()
 #endif
 #endif
 
-  write(*,*) "[gr_amrexInit] Finished"
+  if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexInit] Finished"
 end subroutine gr_amrexInit
 
