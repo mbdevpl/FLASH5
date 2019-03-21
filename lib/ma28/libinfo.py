@@ -1,4 +1,5 @@
 import os
+import stat
 
 #Create an executable build script which builds the ma28 library.
 #The "gmake clean" ensures we always rebuild the library which is
@@ -17,7 +18,7 @@ def create_build_script(absLibDir,buildFlag):
     fileObj.write('make BUILDFLAG=' + buildFlag + '\n')
     fileObj.write('cd ..\n')
     fileObj.close()
-    os.chmod(buildScript, 0744)
+    os.chmod(buildScript, os.stat(buildScript).st_mode | stat.S_IXUSR)
 
 
 #We use this function to create a custom build file for our internal library.
