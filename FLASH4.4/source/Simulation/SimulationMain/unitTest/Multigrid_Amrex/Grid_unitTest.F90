@@ -30,15 +30,15 @@ subroutine Grid_unitTest(fileUnit,perfect)
   use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, GRID_PDE_BND_DIRICHLET, GRID_PDE_BND_NEUMANN,&
 !       Grid_getBlkIndexLimits, &
        Grid_solvePoisson, &
-       Grid_getBlkPtr,Grid_releaseBlkPtr, &
        Grid_getDeltas, Grid_fillGuardCells, &
-       Grid_getLeafIterator, Grid_releaseLeafIterator
+       Grid_getTileIterator, Grid_releaseTileIterator
   use gr_interface ,ONLY : gr_findMean
   use Grid_data, ONLY : gr_meshMe, gr_meshComm
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
-use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
                                    amrex_max_level
+!   use ut_testDriverMod
 !  use gr_amrexLsInterface, ONLY : Grid_amrexLsSolvePoissonUnk
 
 #include "Flash.h"
@@ -52,17 +52,16 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   logical, intent(inout)        :: perfect  ! Flag to indicate errors
 
   real,dimension(:,:,:,:),pointer :: solnData
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
 
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: tileLimits
   integer, dimension(2*MDIM) :: bcTypes
   real,dimension(2,2*MDIM) :: bcValues
 
   logical :: gcMask(NUNK_VARS), evaluateData
 
   real :: poisfact
-  integer,dimension(MAXBLOCKS) :: blkList
   integer :: blkCount=0,lb,i,j,k
   real:: del(MDIM)
   real meanASOL,meanPFFT
@@ -71,14 +70,15 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   integer blkpoints, blkpointsaux,blkCountaux
   real L2_err, L2_erraux, Linf_err, Linf_erraux, Tvol, Tvolaux, vcell
   integer :: refinelevel
-  real, parameter :: tol = 1.e-6
-  real, parameter :: tolInf = 4.1e-2
-  real, parameter :: tol2  = 2.24e-2
+  real, parameter :: tol = 1.e-10
+  real, parameter :: tolInf = 4.1e-3
+  real, parameter :: tol2  = 2.24e-3
 
   integer TA(2),count_rate,ierr
   real :: ET
 
   ! -------------------------------------------------------------------
+  nullify(solnData)
   bcTypes(:)=GRID_PDE_BND_NEUMANN  
   bcTypes(3:4)=GRID_PDE_BND_DIRICHLET
   bcValues(:,:)=0.
@@ -102,20 +102,16 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
   blkpoints = 0.
   Linf_err = 0.
   Tvol = 0.
-  ! Get Block iterator
-!   itor = block_iterator_t(LEAF)
-  call Grid_getLeafIterator(itor)
-  do while (itor%is_valid())
-     call itor%blkMetaData(block)
-     !get the index limits of the block
-     blkLimits   = block%limits
-     blkLimitsGC = block%limitsGC
+  ! Get Tile iterator
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while (itor%isValid())
+     call itor%currentTile(tileDesc)
+     !get the index limits of the tile
+     tileLimits   = tileDesc%limits
 
-     ! get a pointer to the current block of data
-!     call Grid_getBlkPtr(block, solnData)
-     call Grid_getBlkPtr(block,solnData,CENTER)
-
-     call Grid_getDeltas(block%level,del)
+     ! get a pointer to the current tile of data
+     call tileDesc%getDataPtr(solnData, CENTER)
+     call tileDesc%deltas(del)
 
      select case (NDIM)
      case(1)
@@ -128,38 +124,38 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
 
      blkCount = blkCount + 1
      blkpoints = blkpoints + &
-          (blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1) * &
-          (blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1) * &
-          (blkLimits(HIGH,KAXIS) - blkLimits(LOW,KAXIS) + 1)
+          (tileLimits(HIGH,IAXIS) - tileLimits(LOW,IAXIS) + 1) * &
+          (tileLimits(HIGH,JAXIS) - tileLimits(LOW,JAXIS) + 1) * &
+          (tileLimits(HIGH,KAXIS) - tileLimits(LOW,KAXIS) + 1)
 
-     Tvol = Tvol + vcell*real( (blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1) * &
-          (blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1) * &
-          (blkLimits(HIGH,KAXIS) - blkLimits(LOW,KAXIS) + 1))
+     Tvol = Tvol + vcell*real( (tileLimits(HIGH,IAXIS) - tileLimits(LOW,IAXIS) + 1) * &
+          (tileLimits(HIGH,JAXIS) - tileLimits(LOW,JAXIS) + 1) * &
+          (tileLimits(HIGH,KAXIS) - tileLimits(LOW,KAXIS) + 1))
 
-     solnData(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),           &
-          blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),           & 
-          blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),DIFF_VAR)   =       &
-          abs(  solnData(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),     &
-          blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),     & 
-          blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),NSOL_VAR)   - &
-          solnData(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),     &
-          blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),     & 
-          blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),ASOL_VAR)   )
+     solnData(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS),           &
+          tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS),           & 
+          tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS),DIFF_VAR)   =       &
+          abs(  solnData(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS),     &
+          tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS),     & 
+          tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS),NSOL_VAR)   - &
+          solnData(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS),     &
+          tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS),     & 
+          tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS),ASOL_VAR)   )
 
      ! L2 norm of error:
-     L2_err = L2_err + sum( vcell*solnData(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),           &
-          blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),           & 
-          blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),DIFF_VAR)**2.)
+     L2_err = L2_err + sum( vcell*solnData(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS),           &
+          tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS),           & 
+          tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS),DIFF_VAR)**2.)
 
      ! Linf norm of error:
-     Linf_err = max(Linf_err,maxval(solnData(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS),   &
-          blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS),           & 
-          blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS),DIFF_VAR) ))
+     Linf_err = max(Linf_err,maxval(solnData(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS),   &
+          tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS),           & 
+          tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS),DIFF_VAR) ))
 
-     call Grid_releaseBlkPtr(block,solnData,CENTER)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
      call itor%next()
   enddo
- call Grid_releaseLeafIterator(itor)
+ call Grid_releaseTileIterator(itor)
 ! #if defined(__GFORTRAN__) && (__GNUC__ <= 4)
 !   call destroy_iterator(itor)
 ! #endif
@@ -220,7 +216,11 @@ use amrex_amr_module,     ONLY : amrex_init_from_scratch, &
      write(*,'(A,1g16.8)') " ||Phi - PhiAnalytical||inf =" ,Linf_err
      write(*,'(A,1g16.8)') " ||Phi - PhiAnalytical||2   =" ,L2_err
      write(*,*) " Total Volume =",Tvol
-     write(*,*) " Total Number of Leaf Blocks=", blkCountaux
+     write(*,*) " Total Number of Tiles on Leaf Blocks=", blkCountaux
+     open(117, file = 'testResult.dat')  
+     if (perfect) write(117,*) "Passed"
+     if (.not.perfect) write(117,*) "Failed"
+     close(117) 
      write(*,*) ' ' 
   endif
   return
