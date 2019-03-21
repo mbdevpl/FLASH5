@@ -68,7 +68,7 @@ subroutine gr_amrexInit()
   integer :: is_periodic(MDIM)
   integer :: is_periodic_am(MDIM)
 
-  write(*,*) "[gr_amrexInit] Starting"
+  if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexInit] Starting"
   call Logfile_stamp("AMREX_GIT_VERSION="//trim(gr_amrexGitVersionStr), '[gr_amrexInit]')
  
   !!!!!----- INITIALIZE AMReX & CONFIGURE MANUALLY
