@@ -28,6 +28,7 @@ subroutine gr_amrexInit()
 
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
   use Driver_interface,            ONLY : Driver_abortFlash
+  use Logfile_interface,           ONLY : Logfile_stamp
   use Grid_data,                   ONLY : gr_geometry, &
                                           gr_domainBC
   use gr_amrexInterface,           ONLY : gr_initNewLevelCallback, &
@@ -35,6 +36,7 @@ subroutine gr_amrexInit()
                                           gr_remakeLevelCallback, &
                                           gr_clearLevelCallback, &
                                           gr_markRefineDerefineCallback
+  use gr_amrexInterface,           ONLY : gr_amrexGitVersionStr
 
   implicit none
 
@@ -66,7 +68,8 @@ subroutine gr_amrexInit()
   integer :: is_periodic(MDIM)
   integer :: is_periodic_am(MDIM)
 
-  write(*,*) "[gr_amrexInit] Starting"
+  if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexInit] Starting"
+  call Logfile_stamp("AMREX_GIT_VERSION="//trim(gr_amrexGitVersionStr), '[gr_amrexInit]')
  
   !!!!!----- INITIALIZE AMReX & CONFIGURE MANUALLY
   ! Do not parse command line or any file for configuration
