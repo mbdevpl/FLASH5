@@ -221,7 +221,6 @@ subroutine Driver_evolveFlash()
 
 !!!!!! Stuff from here has been MOVED TO Hydro !!!!!!
 
-!  3. Burn/sourceTerm
      call Burn(dr_dt)
 
 #ifdef DEBUG_DRIVER
@@ -234,6 +233,14 @@ subroutine Driver_evolveFlash()
      call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
 #endif
 
+        ! #. Advance Particles
+        call Timers_start("Particles_advance")
+        call Particles_advance(dr_dtOld, dr_dt)
+        call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
+        call Timers_stop("Particles_advance")
+#ifdef DEBUG_DRIVER
+        print*, 'return from Particles_advance '  ! DEBUG
+#endif
      dr_dtOld = dr_dt
 
      !----
