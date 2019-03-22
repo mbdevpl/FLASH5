@@ -28,6 +28,7 @@ subroutine hy_shockDetect
   !! code [LOOP 0 in hy_uhd_unsplit.F90] was doing more than just
   !! shock detection.
 
+  nullify(Uout)
   call Grid_getTileIterator(itor,LEAF)
   do while(itor%isValid())
      call itor%currentTile(tileDesc)

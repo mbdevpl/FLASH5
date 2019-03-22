@@ -163,6 +163,7 @@ subroutine Grid_markRefineDerefine()
 
   call gr_markInRadius(sim_ictr, sim_jctr, sim_kctr, sim_initRad, lrefine_max)
 
+  nullify(solnData)
   call Grid_getTileIterator(itor, ACTIVE_BLKS, tiling=.FALSE.)
   do while(itor%isValid())
      call itor%currentTile(tileDesc)
