@@ -1,19 +1,21 @@
 #       Configuration file for the Sedov explosion problem
 #       (Sedov, L. I., 1959, Similarity and Dimensional Methods
 #       in Mechanics [New York:  Academic])
+USESETUPVARS Grid
 
 REQUIRES Driver
 REQUIRES physics/Hydro
 REQUIRES physics/Eos
 
-#IF withParticles
-   PARTICLETYPE passive INITMETHOD lattice MAPMETHOD quadratic ADVMETHOD rungekutta
-
-   REQUIRES Particles/ParticlesMain
-#  Right now only one Init and map method implemented in Amrex Particles
-   REQUESTS IO/IOMain/
-   REQUESTS IO/IOParticles
-#ENDIF
+IF withParticles
+#  Works only when using Amrex Grid. Particles do not work with paramesh. Must set setup variable Grid=Amrex
+  IF Grid=='Amrex'
+    PARTICLETYPE passive INITMETHOD lattice MAPMETHOD quadratic ADVMETHOD rungekutta
+    REQUIRES Particles/ParticlesMain
+  ELSE
+    SETUPERROR ERROR! Particles not available for Paramesh, UG! Use Amrex grid and variable Grid=Amrex in setup line
+  ENDIF
+ENDIF
 
 LINKIF Grid_markRefineDerefine.F90 Grid/GridMain/AMR/paramesh
 LINKIF gr_expandDomain.F90         Grid/GridMain/AMR/paramesh
