@@ -16,18 +16,8 @@ IF Grid=='Amrex'
   REQUESTS Particles/ParticlesMapping/MeshOwned
   REQUESTS Grid/GridParticles/GridParticlesMapFromMesh/MeshOwned
   REQUESTS Grid/GridParticles/GridParticlesMove/MeshOwned
-ELSEIF Grid=="PM4DEV"
-  REQUESTS Particles/ParticlesMain/passive/ParticlesOwned
-  REQUESTS Particles/ParticlesInitialization/ParticlesOwned
-  REQUESTS Particles/ParticlesMapping/ParticlesOwned
-  REQUESTS Grid/GridParticles/GridParticlesMapFromMesh/ParticlesOwned
-  REQUESTS Grid/GridParticles/GridParticlesMove/ParticlesOwned
 ELSE
-  REQUESTS Particles/ParticlesInitialization/ParticlesOwned 
-  REQUESTS Particles/ParticlesMapping/ParticlesOwned 
-  REQUESTS Grid/GridParticles/GridParticlesMapFromMesh/ParticlesOwned
-  REQUESTS Grid/GridParticles/GridParticlesMove/ParticlesOwned
-#  REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/UG
+  SETUPERROR ERROR!! Particles work only with Amrex grid. Make sure to set variable Grid=Amrex in setup line.
 ENDIF
 
 

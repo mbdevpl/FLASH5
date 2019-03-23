@@ -2,19 +2,17 @@
 #       (Sedov, L. I., 1959, Similarity and Dimensional Methods
 #       in Mechanics [New York:  Academic])
 USESETUPVARS Grid
+USESETUPVARS withParticles
 
 REQUIRES Driver
 REQUIRES physics/Hydro
 REQUIRES physics/Eos
 
 IF withParticles
-#  Works only when using Amrex Grid. Particles do not work with paramesh. Must set setup variable Grid=Amrex
-  IF Grid=='Amrex'
+#  Works only when using Amrex Grid. Particles do not work with paramesh yet. Must set setup variable Grid=Amrex
     PARTICLETYPE passive INITMETHOD lattice MAPMETHOD quadratic ADVMETHOD rungekutta
+    REQUIRES Grid/GridMain/AMR/Amrex
     REQUIRES Particles/ParticlesMain
-  ELSE
-    SETUPERROR ERROR! Particles not available for Paramesh, UG! Use Amrex grid and variable Grid=Amrex in setup line
-  ENDIF
 ENDIF
 
 LINKIF Grid_markRefineDerefine.F90 Grid/GridMain/AMR/paramesh
