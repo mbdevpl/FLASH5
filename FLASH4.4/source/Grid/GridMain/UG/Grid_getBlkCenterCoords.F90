@@ -53,33 +53,15 @@ subroutine Grid_getBlkCenterCoords(block,blockCenter)
 
   type(block_metadata_t), intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockCenter
-!  integer :: i
 
+  blockCenter(:) = 0.0
   call Driver_abortFlash("[Grid_getBlkCenterCoords] Implement for tiling")
 
 !  real,dimension(2,MDIM) :: bndBox
 !  call Grid_getBlkBoundBox(block, bndBox)
 !
-!  blockCenter = 0.0
-!
 !  blockCenter(1) = bndBox(1,1) + (bndBox(2,1) - bndBox(1,1))/2
 !  if(NDIM>1) blockCenter(2) = bndBox(1,2) + (bndBox(2,2) - bndBox(1,2))/2
 !  if(NDIM>2) blockCenter(3) = bndBox(1,3) + (bndBox(2,3) - bndBox(1,3))/2
-!
-!
-!  return
 end subroutine Grid_getBlkCenterCoords
-
-
-
-
-
-
-
-
-
-
-
-
-
 
