@@ -29,7 +29,6 @@ module Grid_tile
         procedure, public :: faceBCs
         procedure, public :: getDataPtr
         procedure, public :: releaseDataPtr
-        procedure, public :: enclosingBlock
     end type Grid_tile_t
 
 contains
@@ -104,15 +103,6 @@ contains
            onBoundary = gr_blkBC
         end if
     end subroutine faceBCs
-
-    function enclosingBlock(this)
-        use Driver_interface, ONLY : Driver_abortFlash
-
-        class(Grid_tile_t), intent(IN) :: this
-        type(Grid_tile_t)              :: enclosingBlock
-            
-        call Driver_abortFlash("[enclosingBlock] not implemented yet")
-    end function enclosingBlock
 
     ! DEV: If the client code requests a pointer to data that is not 
     ! included in the problem, this routine will return a null pointer
