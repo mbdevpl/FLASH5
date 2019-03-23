@@ -92,6 +92,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use block_metadata,            ONLY : block_metadata_t
   use Eos_interface,             ONLY : Eos_wrapped
   use Timers_interface,          ONLY : Timers_start, Timers_stop
+  use Particles_interface,       ONLY : Particles_updateRefinement
  
   implicit none
 
@@ -285,7 +286,7 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 
      ! DEV: TODO What happens with particles here?
      !Devnote: call Particles_update refinement in case particle-block association changed
-     call Particles_updateRefinement(1)
+     call Particles_updateRefinement(i)
 
      if (present(gridChanged)) then
         gridChanged = gr_amrexDidRefinement
