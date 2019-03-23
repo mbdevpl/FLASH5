@@ -94,14 +94,6 @@ subroutine Driver_evolveFlash()
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
 
-#ifdef FLASH_GRID_AMREXTRANSITION
-!!$  use amrex_amr_module,    ONLY : amrex_real
-!!$  use amrex_box_module,    ONLY : amrex_box
-!  use amrex_box_module
-!  use amrex_fab_module
-  use amrex_multifab_module
-#endif
-
   implicit none
 
 #include "constants.h"
@@ -227,20 +219,6 @@ subroutine Driver_evolveFlash()
      print*,'returned from burn myPE=',dr_globalMe
 #endif
      
-#ifdef FLASH_GRID_AMREXTRANSITION
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=LEAF, reverse=.TRUE.)
-     call gr_amrextBuildMultiFabsFromF4Grid(CENTER, maxLev, ACTIVE_BLKS)
-     call Grid_copyF4DataToMultiFabs(CENTER, nodetype=ACTIVE_BLKS)
-#endif
-
-        ! #. Advance Particles
-        call Timers_start("Particles_advance")
-        call Particles_advance(dr_dtOld, dr_dt)
-        call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
-        call Timers_stop("Particles_advance")
-#ifdef DEBUG_DRIVER
-        print*, 'return from Particles_advance '  ! DEBUG
-#endif
      dr_dtOld = dr_dt
 
      !----
@@ -264,6 +242,9 @@ subroutine Driver_evolveFlash()
 !!$     call gr_writeData(dr_nstep, dr_simTime)
 #endif
      call Timers_stop("IO_output")
+#ifdef DEBUG_DRIVER
+     print*,'done IO =',dr_globalMe
+#endif
      
      
      call Timers_start("Grid_updateRefinement")
@@ -271,6 +252,9 @@ subroutine Driver_evolveFlash()
      call Timers_stop("Grid_updateRefinement")
      
      if (gridChanged) dr_simGeneration = dr_simGeneration + 1
+#ifdef DEBUG_DRIVER
+     print*,'called and completed update refinement myPE=',dr_globalMe
+#endif
      
      ! backup needed old
      if (.not. useSTS_local) dr_dtOld = dr_dt

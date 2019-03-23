@@ -248,6 +248,7 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
        call itor%next()
     end do
     call gr_releaseBlkIterator(itor)
+
     if(.not.isPtDataStructCreated) then
         call Particles_createDataStructs()
 !        isPtDataStructCreated = .true.
