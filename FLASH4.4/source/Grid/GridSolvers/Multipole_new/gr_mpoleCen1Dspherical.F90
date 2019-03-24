@@ -31,12 +31,8 @@ subroutine gr_mpoleCen1Dspherical (idensvar)
   use Grid_data,         ONLY : gr_meshMe,   &
                                 gr_meshComm
 
-!  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-!                                Grid_releaseBlkPtr,     &
-!                                Grid_getBlkBoundBox,    &
-!                                Grid_getDeltas,         &
-!                                Grid_getLeafIterator,   &
-!                                Grid_releaseLeafIterator
+  use Grid_interface,    ONLY : Grid_getTileIterator,   &
+                                Grid_releaseTileIterator
 
   use gr_mpoleData,      ONLY : gr_mpoleDrInnerZone,    &
                                 gr_mpoleDrInnerZoneInv, &
@@ -45,8 +41,8 @@ subroutine gr_mpoleCen1Dspherical (idensvar)
                                 gr_mpoleThirdPi,        &
                                 gr_mpoleTotalMass
   
-!  use block_metadata,    ONLY : block_metadata_t
-!  use leaf_iterator,     ONLY : leaf_iterator_t
+  use Grid_tile,         ONLY : Grid_tile_t
+  use Grid_iterator,     ONLY : Grid_iterator_t
 
   implicit none
   
@@ -58,189 +54,177 @@ subroutine gr_mpoleCen1Dspherical (idensvar)
   
   integer, intent (in) :: idensvar
 
-  call Driver_abortFlash("[gr_mpoleCen1Dspherical] Implement with tiling!")
-!  logical :: insideBlock
-!  logical :: invokeRecv
-!
-!  
-!  
-!  integer :: error
-!  integer :: i,imin,imax
-!  integer :: messageTag
-!
-!  integer :: status      (MPI_STATUS_SIZE)
-!  integer :: blkLimits   (LOW:HIGH,1:MDIM)
-!  
-!
-!  real    :: bndBoxILow
-!  real    :: cellDensity
-!  real    :: cellMass
-!  real    :: cellVolume
-!  real    :: DeltaI
-!  real    :: DeltaIcube
-!  real    :: DeltaIHalf
-!  real    :: localMsum
-!  real    :: Rsph, minRsph
-!  real    :: totalMsum
-!
-!  real    :: delta  (1:MDIM)
-!  real    :: bndBox (LOW:HIGH,1:MDIM)
-!
-!  real, pointer :: solnData (:,:,:,:)
-!  integer :: lev
-!  type(block_metadata_t) :: block
-!  type(leaf_iterator_t) :: itor
-!!
-!!
-!!     ...Sum quantities over all locally held leaf blocks.
-!!
-!!
-!  nullify(solnData)
-!
-!  localMsum = ZERO
-!
-!  call Grid_getLeafIterator(itor)
-!  do while(itor%is_valid())
-!     call itor%blkMetaData(block)
-!     lev=block%level
-!     
-!     blkLimits=block%limits
-! 
-!     call Grid_getBlkBoundBox     (block, bndBox)
-!     call Grid_getDeltas          (lev, delta)
-!     call Grid_getBlkPtr          (block, solnData)
-!
-!     imin = blkLimits (LOW, IAXIS)
-!     imax = blkLimits (HIGH,IAXIS)
-!
-!     DeltaI     = delta (IAXIS)
-!     DeltaIHalf = DeltaI * HALF
-!     DeltaIcube = DeltaI * DeltaI * DeltaI
-!     bndBoxILow = bndBox (LOW,IAXIS)
-!!
-!!
-!!          ...The 1D spherical case. In this case each point is characterized by
-!!             its radius Rsph from the center (stored in the i-index). The cell
-!!             volume is:
-!!
-!!                          (4/3) * pi * (R^3 - r^3)
-!!
-!!             where r is the left-most (smaller) and R is the right-most (larger)
-!!             cell distance. Since our radial measure is based on the cell's
-!!             center, we have: r = Rsph - D/2 and R = Rsph + D/2 with D being
-!!             the cell's radial delta value. Hence the cell volume becomes:
-!!
-!!                      4 * pi * (Rsph)^2 * D  +  (pi/3) * D^3
-!!
-!!
-!     Rsph = bndBoxILow + DeltaIHalf
-!
-!     do i = imin,imax
-!        cellVolume  = gr_mpoleFourPi * Rsph * Rsph * DeltaI + gr_mpoleThirdPi * DeltaIcube
-!        cellDensity = solnData (idensvar,i,1,1)
-!        cellMass    = cellDensity * cellVolume
-!        localMsum   = localMsum + cellMass
-!        Rsph        = Rsph + DeltaI
-!     end do
-!
-!     call Grid_releaseBlkPtr (block, solnData)
-!     call itor%next()
-!  end do
-!  call Grid_releaseLeafIterator(itor)
-!!
-!!
-!!     ...Calculate the total sum and give a copy to each processor.
-!!
-!!
-!  call  MPI_AllReduce (localMsum,   &
-!                       totalMsum,   &
-!                       1,           &
-!                       FLASH_REAL,  & 
-!                       MPI_Sum,     &
-!                       gr_meshComm, &
-!                       error        )
-!!
-!!
-!!     ...Analyze total mass obtained. If nonsense, abort.
-!!
-!!
-!  gr_mpoleTotalMass = totalMsum
-!     
-!  if (abs (gr_mpoleTotalMass) < tiny (gr_mpoleTotalMass)) then
-!      call Driver_abortFlash ('[gr_mpoleCen1Dspherical] ERROR:  gr_mpoleTotalMass <= 0')
-!  end if
-!!
-!!
-!!     ...Find the local blockID to which the center of multipole expansion
-!!        belongs. Determine the inner zone atomic length, since the
-!!        inner zone is defined around the center of multipole expansion.
-!!        Whatever processor is doing the relevant calculation sends its
-!!        final data (inner zone atomic length) to the master, which then
-!!        broadcasts the info.
-!!
-!!
-!  messageTag = 1
-!  invokeRecv = .true.
-!
-!  call Grid_getLeafIterator(itor)
-!  do while(itor%is_valid())
-!     call itor%blkMetaData(block)
-!     
-!     call Grid_getBlkBoundBox (block, bndBox)
+  logical :: insideBlock
+  logical :: invokeRecv
+  
+  integer :: error
+  integer :: i,imin,imax
+  integer :: messageTag
+
+  integer :: status      (MPI_STATUS_SIZE)
+
+  real    :: bndBoxILow
+  real    :: cellDensity
+  real    :: cellMass
+  real    :: cellVolume
+  real    :: DeltaI
+  real    :: DeltaIcube
+  real    :: DeltaIHalf
+  real    :: localMsum
+  real    :: Rsph, minRsph
+  real    :: totalMsum
+
+  real    :: delta  (1:MDIM)
+  real    :: bndBox (LOW:HIGH,1:MDIM)
+
+  real, pointer :: solnData (:,:,:,:)
+  type(Grid_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
 !
 !
-!     minRsph  = bndBox (LOW ,IAXIS)
+!     ...Sum quantities over all locally held leaf blocks.
 !
-!     insideBlock = (minRsph == gr_mpoleDomainRmin)
 !
-!     if (insideBlock) then
+  nullify(solnData)
+
+  localMsum = ZERO
+
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     
+     call tileDesc%boundBox(bndBox)
+     call tileDesc%deltas(delta)
+     call tileDesc%getDataPtr(solnData, CENTER)
+
+     imin = tileDesc%limits(LOW, IAXIS)
+     imax = tileDesc%limits(HIGH,IAXIS)
+
+     DeltaI     = delta (IAXIS)
+     DeltaIHalf = DeltaI * HALF
+     DeltaIcube = DeltaI * DeltaI * DeltaI
+     bndBoxILow = bndBox (LOW,IAXIS)
 !
-!        lev=block%level
-!        call Grid_getDeltas          (lev, delta)
-!        blkLimits=block%limits
 !
-!         gr_mpoleDrInnerZone = HALF * delta (IAXIS)
+!          ...The 1D spherical case. In this case each point is characterized by
+!             its radius Rsph from the center (stored in the i-index). The cell
+!             volume is:
 !
-!         if (gr_meshMe /= MASTER_PE) then
+!                          (4/3) * pi * (R^3 - r^3)
 !
-!             call MPI_Send (gr_mpoleDrInnerZone, &
-!                            1,                   &
-!                            FLASH_REAL,          &
-!                            MASTER_PE,           &
-!                            messageTag,          &
-!                            gr_meshComm,         &
-!                            error                )
-!         else
-!             invokeRecv = .false.
-!         end if
+!             where r is the left-most (smaller) and R is the right-most (larger)
+!             cell distance. Since our radial measure is based on the cell's
+!             center, we have: r = Rsph - D/2 and R = Rsph + D/2 with D being
+!             the cell's radial delta value. Hence the cell volume becomes:
 !
-!         exit
+!                      4 * pi * (Rsph)^2 * D  +  (pi/3) * D^3
 !
-!     end if
-!     call itor%next()
-!  end do
-!  call Grid_releaseLeafIterator(itor)
 !
-!  if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
+     Rsph = bndBoxILow + DeltaIHalf
+
+     do i = imin,imax
+        cellVolume  = gr_mpoleFourPi * Rsph * Rsph * DeltaI + gr_mpoleThirdPi * DeltaIcube
+        cellDensity = solnData (idensvar,i,1,1)
+        cellMass    = cellDensity * cellVolume
+        localMsum   = localMsum + cellMass
+        Rsph        = Rsph + DeltaI
+     end do
+
+     call tileDesc%releaseDataPtr(solnData, CENTER)
+     call itor%next()
+  end do
+  call Grid_releaseTileIterator(itor)
 !
-!       call MPI_Recv (gr_mpoleDrInnerZone, &
-!                      1,                   &
-!                      FLASH_REAL,          &
-!                      MPI_ANY_SOURCE,      &
-!                      messageTag,          &
-!                      gr_meshComm,         &
-!                      status,              &
-!                      error                )
-!  end if
 !
-!  call MPI_Bcast (gr_mpoleDrInnerZone, &
-!                  1,                   &
-!                  FLASH_REAL,          &
-!                  MASTER_PE,           &
-!                  gr_meshComm,         &
-!                  error                )
+!     ...Calculate the total sum and give a copy to each processor.
 !
-!  gr_mpoleDrInnerZoneInv = ONE / gr_mpoleDrInnerZone
+!
+  call  MPI_AllReduce (localMsum,   &
+                       totalMsum,   &
+                       1,           &
+                       FLASH_REAL,  & 
+                       MPI_Sum,     &
+                       gr_meshComm, &
+                       error        )
+!
+!
+!     ...Analyze total mass obtained. If nonsense, abort.
+!
+!
+  gr_mpoleTotalMass = totalMsum
+     
+  if (abs (gr_mpoleTotalMass) < tiny (gr_mpoleTotalMass)) then
+      call Driver_abortFlash ('[gr_mpoleCen1Dspherical] ERROR:  gr_mpoleTotalMass <= 0')
+  end if
+!
+!
+!     ...Find the local blockID to which the center of multipole expansion
+!        belongs. Determine the inner zone atomic length, since the
+!        inner zone is defined around the center of multipole expansion.
+!        Whatever processor is doing the relevant calculation sends its
+!        final data (inner zone atomic length) to the master, which then
+!        broadcasts the info.
+!
+!
+  messageTag = 1
+  invokeRecv = .true.
+
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     
+     call tileDesc%boundBox(bndBox)
+
+     minRsph  = bndBox (LOW ,IAXIS)
+
+     insideBlock = (minRsph == gr_mpoleDomainRmin)
+
+     if (insideBlock) then
+
+        call tileDesc%deltas(delta)
+
+         gr_mpoleDrInnerZone = HALF * delta (IAXIS)
+
+         if (gr_meshMe /= MASTER_PE) then
+
+             call MPI_Send (gr_mpoleDrInnerZone, &
+                            1,                   &
+                            FLASH_REAL,          &
+                            MASTER_PE,           &
+                            messageTag,          &
+                            gr_meshComm,         &
+                            error                )
+         else
+             invokeRecv = .false.
+         end if
+
+         exit
+
+     end if
+     call itor%next()
+  end do
+  call Grid_releaseTileIterator(itor)
+
+  if ((gr_meshMe == MASTER_PE) .and. invokeRecv) then
+
+       call MPI_Recv (gr_mpoleDrInnerZone, &
+                      1,                   &
+                      FLASH_REAL,          &
+                      MPI_ANY_SOURCE,      &
+                      messageTag,          &
+                      gr_meshComm,         &
+                      status,              &
+                      error                )
+  end if
+
+  call MPI_Bcast (gr_mpoleDrInnerZone, &
+                  1,                   &
+                  FLASH_REAL,          &
+                  MASTER_PE,           &
+                  gr_meshComm,         &
+                  error                )
+
+  gr_mpoleDrInnerZoneInv = ONE / gr_mpoleDrInnerZone
 !
 !
 !     ...Ready!
