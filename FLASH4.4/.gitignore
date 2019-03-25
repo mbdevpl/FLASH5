@@ -12,5 +12,7 @@ sod_2d*
 # Specific files
 lib/ma28/Makefile.h
 lib/ma28/build.csh
+lib/ma28/source/*__genmod.mod
+lib/ma28/source/*__genmod.f90
 tools/sfocu/sfocu
 source/physics/sourceTerms/Burn/BurnMain/nuclearBurn/MesaNet/kernel/external_codes_with_mesa/min_net/run
