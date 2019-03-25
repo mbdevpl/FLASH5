@@ -174,9 +174,9 @@ Module Grid_interface
 
   interface Grid_getBlkCenterCoords
      subroutine Grid_getBlkCenterCoords(blockDesc,blockCenter)
-       use block_metadata, ONLY : block_metadata_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(in) :: blockDesc
+       type(Grid_tile_t), intent(in) :: blockDesc
        real, dimension(MDIM), intent(out) :: blockCenter
      end subroutine Grid_getBlkCenterCoords
   end interface
