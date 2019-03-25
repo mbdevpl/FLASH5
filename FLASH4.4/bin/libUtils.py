@@ -238,7 +238,7 @@ class LibUnion(dict):
         exec(open('./build.py').read())
      elif os.path.isfile('build.csh'):
         GVars.out.put('running %s/build.csh'%libDir)
-        os.system('source ./build.csh')
+        os.system('./build.csh')
      else:
         raise SetupError(USAGE % locals())
      os.chdir(pwd)
