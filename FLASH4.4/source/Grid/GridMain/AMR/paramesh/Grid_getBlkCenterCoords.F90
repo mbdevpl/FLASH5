@@ -44,12 +44,12 @@
 subroutine Grid_getBlkCenterCoords(block, blockCenter)
 
   use tree, ONLY : coord
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
   implicit none
 
 #include "constants.h"
 
-  type(block_metadata_t),intent(in) :: block
+  type(Grid_tile_t),intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockCenter
   blockCenter=coord(:,block%id)
 

@@ -1,4 +1,6 @@
 #	Runtime parameters for the dust collapse problem.
+# ./setup -makefile=gnu DustCollapse -auto -1d +Mode1 +serialIO +uhd +newMpole -debug -objdir=Comparison_DustCollapse_AMR_newMpole_1dSph_pm4dev
+# ./setup -makefile=gnu DustCollapse -auto -1d +Mode3 +serialIO +uhd +newMpole -debug -objdir=Comparison_DustCollapse_AMR_newMpole_1dSph_AMReX
 
 #	Parameters for initial model
 
@@ -41,9 +43,10 @@ checkpointFileIntervalStep    =  25000
 
 plotFileIntervalTime     = 1000.
 
-nend = 2 #            = 25000
+nend            = 25000
 
-tmax            = 0.0637
+#tmax            = 0.0637
+tmax            = 0.0358
 
 refine_var_1	= "dens"
 refine_var_2	= "none"
@@ -61,10 +64,16 @@ smallt          = 1.E-7
 
 dtinit           = 1.E-5
 dtmax           = 1.E-2
-nriem           = 100
 cvisc           = 0.
 eintSwitch     = 1.E-4
 memory_stat_freq = 1
 
 convertToConsvdForMeshCalls   = .true.
-#monotone        = .true.
+flux_correct    = .FALSE.
+
+order           = 3
+slopeLimiter    = "mc"   # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
+
+use_avisc       = .FALSE.
+use_flattening  = .TRUE.
+use_steepening	= .TRUE. # use contact steepening (originally for PPM)
