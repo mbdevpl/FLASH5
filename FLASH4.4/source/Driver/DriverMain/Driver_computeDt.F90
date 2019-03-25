@@ -359,8 +359,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
        FLASH_REAL, MPI_MIN, dr_globalComm, error)
 
 
-!!$  ! IncompNS:
-!!$  call IncompNS_computeDt(dtLocal(1,INS),lminloc(:,INS))
 
 
   ! DEV: we disabled temperature timestep limiter for now.  
@@ -681,47 +679,4 @@ subroutine Driver_computeDt(nbegin, nstep, &
   return
 end subroutine Driver_computeDt
 
-
-!!$     call Burn_computeDt ( blockID,  &
-!!$                           blkLimits,blkLimitsGC,  &
-!!$                           solnData,               &
-!!$                           dtLocal(1,BURN), lminloc(:,BURN) )
-           
-!!$     call Gravity_computeDt ( blockID, dr_globalMe, &
-!!$                           xCenter,xLeft,xRight, dx, uxgrid, &
-!!$                           yCenter,yLeft,yRight, dy, uygrid, &
-!!$                           zCenter,zLeft,zRight, dz, uzgrid, &
-!!$                           blkLimits,blkLimitsGC,  &
-!!$                           solnData,      &
-!!$                           dtLocal(1,GRAV), lminloc(:,GRAV) )
-     
-     
-!!$     call Heat_computeDt ( blockID,  &
-!!$                           xCenter, dx, uxgrid, &
-!!$                           yCenter, dy, uygrid, &
-!!$                           zCenter, dz, uzgrid, &
-!!$                           blkLimits,blkLimitsGC,  &
-!!$                           solnData,      &
-!!$                           dtLocal(1,HEAT), lminloc(:,HEAT) )
-!!$
-!!$     call RadTrans_computeDt(blockID, blkLimits,blkLimitsGC, &
-!!$          solnData, dtLocal(1,RADTRANS), lminloc(:,RADTRANS) )
-!!$
-!!$     call Particles_computeDt &
-!!$          ( blockID, dtLocal(1,PART), lminloc(:,PART))
-!!$
-!!$
-!!$     call Diffuse_computeDt ( blockID,  &
-!!$                           xCenter,xLeft,xRight, dx, uxgrid, &
-!!$                           yCenter,yLeft,yRight, dy, uygrid, &
-!!$                           zCenter,zLeft,zRight, dz, uzgrid, &
-!!$                           blkLimits,blkLimitsGC,  &
-!!$                           solnData,      &
-!!$                           dtLocal(1,DIFF), lminloc(:,DIFF) )
-!!$     
-
-!!$      !! Super time step
-!!$      if (dr_useSTS) then
-!!$         dtLocal(1,STS) = dr_dtSTS
-!!$      endif
 

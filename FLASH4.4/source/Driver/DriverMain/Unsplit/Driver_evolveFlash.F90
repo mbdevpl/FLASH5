@@ -66,10 +66,7 @@ subroutine Driver_evolveFlash()
                                   Timers_getSummary
   use Diffuse_interface,   ONLY : Diffuse
   use Particles_interface, ONLY : Particles_advance, Particles_dump
-  use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
-                                  Grid_getListOfBlocks, &
-                                  Grid_getBlkIndexLimits, &
-                                  Grid_updateRefinement,&
+  use Grid_interface,      ONLY : Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
                                   Grid_getDeltas,&
                                   Grid_getMaxRefinement
@@ -84,7 +81,6 @@ subroutine Driver_evolveFlash()
                                   Hydro_gravPotIsAlreadyUpdated
   use Gravity_interface,   ONLY : Gravity_potential
   use IO_interface,        ONLY : IO_output,IO_outputFinal
-  use RadTrans_interface,  ONLY : RadTrans
   use Eos_interface,       ONLY : Eos_logDiagnostics
   use Simulation_interface, ONLY: Simulation_adjustEvolution
   use Profiler_interface, ONLY : Profiler_start, Profiler_stop
@@ -120,25 +116,12 @@ subroutine Driver_evolveFlash()
 #else
   logical,save :: gcMaskLogged =.TRUE.
 #endif
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
-  integer :: blockCount
-  integer,dimension(MAXBLOCKS)::blks
   real,pointer,dimension(:,:,:,:) :: Uout, Uin
   real,dimension(MDIM) :: del
 
   integer:: ib, blockID, level, maxLev
 
-!!$  real(amrex_real)  :: time     !testing...
   logical :: nodal(3)
-!!$  type(amrex_multifab), allocatable :: phiborder(:)
-!  type(amrex_octree_iter) :: oti
-!!$  type(amrex_box) :: abx, atbx
-!!$  real(amrex_real), contiguous, pointer, dimension(:,:,:,:) :: pin,pout,pux,puy,puz,pfx,pfy,pfz, &
-!!$       pf, pfab
-!!$  type(amrex_fab) :: uface(NDIM)
-!!$  type(amrex_multifab), allocatable :: fluxes(:,:)
-
-
   endRunPl = .false.
   endRun = .false.
 
@@ -176,8 +159,6 @@ subroutine Driver_evolveFlash()
         
      end if
      
-!!     call Simulation_adjustEvolution(blockCount, blockList, dr_nstep, dr_dt, dr_simTime)
-     
      call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
      
      dr_simTime = dr_simTime + dr_dt
@@ -206,8 +187,6 @@ subroutine Driver_evolveFlash()
      print*,'returned from hydro myPE=',dr_globalMe
 #endif
 
-!!!!!! Stuff from here has been MOVED TO Hydro !!!!!!
-
      call Burn(dr_dt)
 
 #ifdef DEBUG_DRIVER
@@ -231,12 +210,8 @@ subroutine Driver_evolveFlash()
              dr_dtSTS, dr_nstep+1, dr_nbegin, endRunPl, PLOTFILE_AND_PARTICLEFILE)
      endif
 
-#ifdef FLASH_GRID_AMREX
-     ! DEV: Temporary ugliness for debugging
-     ! DEV: Moved to IO_writePlotfile for convenient control of frequency with runtime parameters! - KW
-!!$     call gr_writeData(dr_nstep, dr_simTime)
-#endif
      call Timers_stop("IO_output")
+
 #ifdef DEBUG_DRIVER
      print*,'done IO =',dr_globalMe
 #endif
