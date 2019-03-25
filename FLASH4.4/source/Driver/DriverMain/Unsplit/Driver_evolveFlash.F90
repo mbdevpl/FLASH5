@@ -52,9 +52,6 @@ subroutine Driver_evolveFlash()
                                   dr_useSTSforDiffusion,                 &
                                   dr_tstepChangeFactor,                  &
                                   dr_allowDtSTSDominate,dr_meshComm
-#ifdef DEBUG_GRID_GCMASK
-  use Hydro_data,          ONLY : hy_gcMask, hy_gcMaskSize
-#endif
   use Driver_interface,    ONLY : Driver_sourceTerms, Driver_computeDt, &
                                   Driver_superTimeStep, &
                                   Driver_logMemoryUsage, &
@@ -172,11 +169,6 @@ subroutine Driver_evolveFlash()
      !!ChageForAMRex -- from the iterator and then use the case statement to transfer control to the
      !!ChageForAMRex -- right implementation.
      
-#ifdef DEBUG_GRID_GCMASK
-     if (.NOT.gcMaskLogged) then
-        call Logfile_stampVarMask(hy_gcMask, .FALSE., '[Driver_evolveFlash]', 'gcNeed')
-     end if
-#endif
      
      !! Guardcell filling routine - the call has been moved into Hydro.
 !!$     call Grid_fillGuardCells(CENTER,ALLDIR)
