@@ -10,7 +10,7 @@ def create_build_script(absLibDir,buildFlag):
       os.remove(buildScript)
     
     fileObj = open(buildScript, 'w')
-    fileObj.write('#!/bin/csh\n')
+    fileObj.write('#!/bin/sh\n')
     fileObj.write('#  Dont forget to make this file executable!\n\n')
     fileObj.write('cd source\n')
     fileObj.write('make clean\n')
