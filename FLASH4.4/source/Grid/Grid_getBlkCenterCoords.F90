@@ -40,11 +40,11 @@
 #include "Flash.h"
 
 subroutine Grid_getBlkCenterCoords(blockDesc, blockCenter)
-  use block_metadata,        ONLY : block_metadata_t
+  use Grid_tile,        ONLY : Grid_tile_t
 
   implicit none
 
-  type(block_metadata_t), intent(IN)  :: blockDesc
+  type(Grid_tile_t), intent(IN)  :: blockDesc
   real,    intent(OUT) :: blockCenter(MDIM)
   blockCenter=0.0
 end subroutine Grid_getBlkCenterCoords
