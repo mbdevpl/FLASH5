@@ -7,17 +7,12 @@ Driver += Flash.o \
 	Driver_getTimeStamp.o \
 	Driver_putTimeStamp.o \
 	Driver_evolveFlash.o \
-	Driver_finalizeSourceTerms.o \
 	Driver_init.o \
 	Driver_initFlash.o \
-	Driver_initMaterialProperties.o \
 	Driver_initNumericalTools.o \
 	Driver_initParallel.o \
 	Driver_sendOutputData.o \
 	Driver_computeDt.o \
-	Driver_initSourceTerms.o \
-	Driver_sourceTerms.o \
-	Driver_diagnostics.o \
 	Driver_getDt.o \
 	Driver_getNStep.o \
 	Driver_verifyInitDt.o \

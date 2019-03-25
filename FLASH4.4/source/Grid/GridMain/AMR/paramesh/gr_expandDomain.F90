@@ -51,10 +51,8 @@ subroutine gr_expandDomain (particlesInitialized)
 #endif
   use Simulation_interface, ONLY : Simulation_initBlock
   use Particles_interface, ONLY : Particles_accumCount, &
-    Particles_initPositions, &
-    Particles_updateRefinement
+    Particles_initPositions
   use Driver_interface, ONLY : Driver_abortFlash
-  use RadTrans_interface, ONLY: RadTrans_sumEnergy
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile,     ONLY : Grid_tile_t
 
@@ -173,14 +171,6 @@ subroutine gr_expandDomain (particlesInitialized)
      end do
      call Grid_releaseTileIterator(itor)
 
-#ifdef ERAD_VAR
-     ! Sum radiation energy density over all meshes. This call is
-     ! needed for mesh replication.
-
-     ! DEVNOTE: The interface of this function has not yet been changed
-     ! It should create its own iterator.  How to get count?
-     call RadTrans_sumEnergy(ERAD_VAR, count, whichBlocks)
-#endif
 
      ! This is here for safety, in case the user did not take care to make things
      ! thermodynamically consistent in the initial state.- KW
@@ -199,28 +189,28 @@ subroutine gr_expandDomain (particlesInitialized)
 
      call Timers_stop("eos")
 
-     if(gr_refineOnParticleCount ) then
-
-        !!   This loop initializes the particle positions if
-        !!   their count is one of the refinement criteria.
-        !!   If the initialization routine intends to keep
-        !!   the already initialized particles around, instead
-        !!   of reinitializing them as the grid is refined,
-        !!   it should return retainParticles true.
-        !!   In case of initializing particles from a file,
-        !!   if the whole file has been read in
-        !!   then particlesPosnsDone should be true, otherwise false.
-        !!
-        if(.not.retainParticles) then
-           particlesPosnsDone=.false.
-        end if
-        call Particles_initPositions(particlesPosnsDone,retainParticles)
-#ifdef DEBUG_PARTICLES
-        if (gr_meshMe == MASTER_PE .OR. gr_meshNumProcs .LE. 4) then
-           print*,'gr_expandDomain after Particles_initPositions on',gr_meshMe,':',particlesPosnsDone,retainParticles
-        end if
-#endif
-     end if
+!!$     if(gr_refineOnParticleCount ) then
+!!$
+!!$        !!   This loop initializes the particle positions if
+!!$        !!   their count is one of the refinement criteria.
+!!$        !!   If the initialization routine intends to keep
+!!$        !!   the already initialized particles around, instead
+!!$        !!   of reinitializing them as the grid is refined,
+!!$        !!   it should return retainParticles true.
+!!$        !!   In case of initializing particles from a file,
+!!$        !!   if the whole file has been read in
+!!$        !!   then particlesPosnsDone should be true, otherwise false.
+!!$        !!
+!!$        if(.not.retainParticles) then
+!!$           particlesPosnsDone=.false.
+!!$        end if
+!!$        call Particles_initPositions(particlesPosnsDone,retainParticles)
+!!$#ifdef DEBUG_PARTICLES
+!!$        if (gr_meshMe == MASTER_PE .OR. gr_meshNumProcs .LE. 4) then
+!!$           print*,'gr_expandDomain after Particles_initPositions on',gr_meshMe,':',particlesPosnsDone,retainParticles
+!!$        end if
+!!$#endif
+!!$     end if
      dr_simGeneration = dr_simGeneration + 1
      if (ntimes .le. lrefine_max+1) then
         ! Guard cell filling and Eos_wrapped are done in Grid_markRefineDerefine as needed.
@@ -231,7 +221,7 @@ subroutine gr_expandDomain (particlesInitialized)
 #ifndef FLASH_GRID_PARAMESH2
         if (grid_changed .NE. 0) mpi_pattern_id = -abs(mpi_pattern_id) !make it different from recognized values
 #endif
-        if(gr_refineOnParticleCount.and.retainParticles) call Particles_updateRefinement(lnblocks)
+!!$        if(gr_refineOnParticleCount.and.retainParticles) call Particles_updateRefinement(lnblocks)
         cur_treedepth = max(maxval(lrefine),min(cur_treedepth+1,lrefine_max))
 
         gr_gcellsUpToDate = .false.

@@ -135,11 +135,11 @@ subroutine Driver_init()
   call RuntimeParameters_get("dr_shortenLastStepBeforeTMax",dr_shortenLastStepBeforeTMax)
   call RuntimeParameters_get("dr_printTStepLoc", dr_printTStepLoc)
 
-  call RuntimeParameters_get("useDiffuse", dr_useDiffuse)
-
+!!$  call RuntimeParameters_get("useDiffuse", dr_useDiffuse)
+  dr_useDiffuse=.false.
   !! Runtime parameters for super-time-stepping
   call RuntimeParameters_get("useSTS",   dr_useSTS)
-  call RuntimeParameters_get("useSTSforDiffusion",   dr_useSTSforDiffusion)
+!!$  call RuntimeParameters_get("useSTSforDiffusion",   dr_useSTSforDiffusion)
   if (dr_useSTS .and. dr_useSTSforDiffusion) then
      ! Check for proper use of super-time-stepping
      if (.not. dr_useDiffuse) then

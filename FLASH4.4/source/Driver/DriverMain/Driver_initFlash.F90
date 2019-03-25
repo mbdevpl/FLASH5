@@ -46,7 +46,6 @@ subroutine Driver_initFlash()
 
 
   use Driver_interface, ONLY : Driver_init, &
-    Driver_initMaterialProperties, Driver_initSourceTerms, &
     Driver_verifyInitDt, Driver_abortFlash, Driver_setupParallelEnv, &
     Driver_initNumericalTools
   use RuntimeParameters_interface, ONLY : RuntimeParameters_init, RuntimeParameters_get
@@ -65,15 +64,11 @@ subroutine Driver_initFlash()
 
   use Eos_interface, ONLY : Eos_init, Eos_logDiagnostics
   use Hydro_interface, ONLY : Hydro_init
+  use Burn_interface, ONLY : Burn_init
   use Simulation_interface, ONLY : Simulation_init, Simulation_freeUserArrays
   use IO_interface, ONLY :IO_init, IO_outputInitial
-  use Opacity_interface, ONLY : Opacity_init
-  use ProtonImaging_interface, ONLY : ProtonImaging_init
-  use ProtonEmission_interface, ONLY : ProtonEmission_init
-  use ThomsonScattering_interface, ONLY : ThomsonScattering_init
   use Profiler_interface, ONLY : Profiler_init
 
-  use IncompNS_interface, ONLY : IncompNS_init
 
   implicit none
 
@@ -125,7 +120,7 @@ subroutine Driver_initFlash()
   call Grid_init()
   print*,'done'
 
-  call Driver_initMaterialProperties()
+!!  call Driver_initMaterialProperties()
   if(dr_globalMe==MASTER_PE)print*,'MaterialProperties initialized'
 
   call RuntimeParameters_get('dtInit',dr_dtInit)
@@ -144,7 +139,7 @@ subroutine Driver_initFlash()
      !Eos must come before Grid
      call Eos_init()
 
-     call Driver_initSourceTerms( dr_restart)
+  !!   call Driver_initSourceTerms( dr_restart)
      if(dr_globalMe==MASTER_PE)print*,'Source terms initialized'
 
      !must come before Grid since simulation specific values must go on the Grid
@@ -164,7 +159,7 @@ subroutine Driver_initFlash()
 
      call Eos_init()
 
-     call Driver_initSourceTerms( dr_restart)
+!!     call Driver_initSourceTerms( dr_restart)
      if(dr_globalMe==MASTER_PE)print*,'Source terms initialized'
 
      call Simulation_init()
@@ -174,19 +169,12 @@ subroutine Driver_initFlash()
 
   end if
 
-  call Opacity_init()
-  call ProtonImaging_init()
-  call ProtonEmission_init()
-  call ThomsonScattering_init()
 
   !Hydro_init must go before Driver
   if(dr_globalMe==MASTER_PE) print *, 'Ready to call Hydro_init'
   call Hydro_init()           ! Hydrodynamics, MHD, RHD
   if(dr_globalMe==MASTER_PE)print*,'Hydro initialized'
-
-  ! INS init must go before Driver
-  call IncompNS_init(dr_restart)
-
+  call Burn_init()
 
   call Gravity_init()         ! Gravity
   if(dr_globalMe==MASTER_PE)print*,'Gravity initialized'
@@ -201,10 +189,7 @@ subroutine Driver_initFlash()
   call Particles_initData(dr_restart,dr_particlesInitialized)
 
   if(.not. dr_restart) then
-     print*,'calling gravity potential'
      call Gravity_potential()
-     print*,'done with that'
-     call Particles_initForces()
   end if
 
   ! If we want to free any arrays created during simulation

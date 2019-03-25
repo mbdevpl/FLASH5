@@ -73,13 +73,9 @@ subroutine Driver_computeDt(nbegin, nstep, &
                                Grid_getTileIterator, &
                                Grid_releaseTileIterator
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
-  use Heat_interface, ONLY : Heat_computeDt
-  use Diffuse_interface, ONLY : Diffuse_computeDt 
   use Burn_interface, ONLY : Burn_computeDt
-  use RadTrans_interface, ONLY: RadTrans_computeDt
   use Particles_interface, ONLY: Particles_computeDt
 
-  use IncompNS_interface, ONLY : IncompNS_computeDt
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile,     ONLY : Grid_tile_t 
 
