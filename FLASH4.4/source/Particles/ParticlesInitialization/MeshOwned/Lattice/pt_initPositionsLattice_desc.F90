@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!    call pt_initPositionsLattice(integer(in)  :: block,
+!!    call pt_initPositionsLattice(integer(in)  :: tileDesc,
 !!                                 logical(OUT) :: success)
 !!
 !! DESCRIPTION
@@ -15,7 +15,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  block:        local block (block_metadata_t) containing particles to create
+!!  tileDesc:        local tile (Grid_tile_t) containing particles to create
 !!  success:        returns .TRUE. if positions for all particles
 !!                  that should be assigned to this block have been
 !!                  successfully initialized.
@@ -35,7 +35,7 @@
 !!***
 
 
-subroutine pt_initPositionsLattice_desc (block,success)
+subroutine pt_initPositionsLattice_desc (tileDesc,success)
 
   use Particles_data, ONLY:  pt_numLocal, particles, pt_maxPerProc, &
        pt_xmin, pt_ymin, pt_zmin,pt_xmax, pt_ymax, pt_zmax,&
@@ -49,9 +49,9 @@ subroutine pt_initPositionsLattice_desc (block,success)
        pt_initialRadius
   use Particles_data, ONLY : pt_geometry
 
-  use Grid_interface, ONLY : Grid_getBlkBoundBox, Grid_mapMeshToParticles
+  use Grid_interface, ONLY : Grid_mapMeshToParticles
   use Logfile_interface, ONLY:  Logfile_stamp
-  use block_metadata,        ONLY : block_metadata_t
+  use Grid_tile,        ONLY : Grid_tile_t
   use amrex_particlecontainer_module, ONLY : amrex_particle,&
                                                             amrex_get_next_particle_id, amrex_get_cpu
    use amrex_particlecontainer_module, ONLY : amrex_particlecontainer_build, amrex_particlecontainer_destroy
@@ -62,7 +62,7 @@ subroutine pt_initPositionsLattice_desc (block,success)
 #include "Flash.h"
 #include "Particles.h"
 
-  type(block_metadata_t)    :: block
+  type(Grid_tile_t)    :: tileDesc
   logical,intent(OUT) :: success
 
   integer       :: i, j, k
@@ -87,16 +87,13 @@ subroutine pt_initPositionsLattice_desc (block,success)
   p = pt_numLocal
   
   !Block information used by ParticleContainer functions
-  level_amrex = block%level-1
-  grd_index=block%grid_index
-  !!DevNote Hard set tile index =0 for no tiling. This should come from block%a_new_field_for_tile_index
-  tile_index=0
-  print*,"level, grid_index, tile_index: ",level_amrex,grd_index,tile_index
-  print*,"blklimits", block%limits
+  level_amrex = tileDesc%level-1
+  grd_index=tileDesc%grid_index
+  tile_index=tileDesc%tile_index
   
-  ! Get grid geometry for this block 
+  ! Get grid geometry for this tile 
 
-  call Grid_getBlkBoundBox(block,boundBox)
+  call tileDesc%boundBox(boundBox)
   bxl = boundBox(LOW,IAXIS)
   bxu = boundBox(HIGH,IAXIS)
   
@@ -167,7 +164,7 @@ subroutine pt_initPositionsLattice_desc (block,success)
               !! Check space allocation
               if (p > pt_maxPerProc) then
                  print *,' '
-                 print *,'Block with grid_index', block%grid_index,' on',pt_meshMe,' would get too many additional particles;'
+                 print *,'tile with grid_index', tileDesc%grid_index,' on',pt_meshMe,' would get too many additional particles;'
                  print *,'                 proc',pt_meshMe,' already had', pt_numLocal,' particles.'
                  print *,'PARAMETER pt_maxPerProc is set to ',pt_maxPerProc
                  call Logfile_stamp(pt_meshMe,&
@@ -179,7 +176,7 @@ subroutine pt_initPositionsLattice_desc (block,success)
               !! particle is defined, set up data structure
               
               
-              particles(BLK_PART_PROP,p) = real(block%grid_index)
+              particles(BLK_PART_PROP,p) = real(tileDesc%grid_index)
               particles(PROC_PART_PROP,p) = real(pt_meshMe)
 #ifdef MASS_PART_PROP
               particles(MASS_PART_PROP,p) = 1.

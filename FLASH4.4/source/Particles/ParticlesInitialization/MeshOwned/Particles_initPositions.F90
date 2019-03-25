@@ -83,16 +83,15 @@
 subroutine Particles_initPositions (partPosInitialized,updateRefine)
 
 
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-       Grid_getLeafIterator, Grid_releaseLeafIterator
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
   use Driver_interface, ONLY : Driver_abortFlash
   use pt_interface, ONLY : pt_initPositions,pt_createTag
   use Particles_data, ONLY : pt_posInitialized,pt_numLocal,useParticles,&
        pt_typeInfo, particles, pt_meshNumProcs, pt_meshMe, &
        pt_containers
 
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata,        ONLY : block_metadata_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,        ONLY : Grid_tile_t
   use pt_interface, ONLY :  pt_initLocal, pt_initPositionsLattice
   use amrex_particlecontainer_module, ONLY : amrex_particlecontainer, amrex_particle
 
@@ -108,17 +107,15 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
   integer       :: p
   integer       :: numLocalThisType, numNewLocalThisType, numLocalPreviousTypes
   integer       :: numPreviousLocal
-  integer       :: blockID
   logical       :: IsInBlock
   real          :: xpos, ypos, zpos, bxl, byl, bzl, bxu, byu, bzu
   real          :: xvel, yvel, zvel
 
 ! NOTE dxParticle is particle spacing, not grid spacing
   real, dimension(MDIM) :: dxParticle = 0.0
-  real, dimension(2,MDIM):: boundBox
   real, contiguous, pointer :: solnData(:,:,:,:)
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t)    :: block
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)    :: tileDesc
 !----------------------------------------------------------------------
 
   if(.not.useParticles) then
@@ -159,13 +156,13 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
 
      numNewLocalThisType = 0
      numPreviousLocal = pt_numLocal
-     call Grid_getLeafIterator(itor)
-     do while(itor%is_valid())
-        call itor%blkMetaData(block)
-        call Grid_getBlkPtr(block, solnData)
+  call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)   !!Tiling off so that block association is correct
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+        call tileDesc%getDataPtr(solnData, CENTER)
         select case(pt_typeInfo(PART_INITMETHOD,i))
         case(LATTICE)
-           call pt_initPositionsLattice(block,partPosInitialized)
+           call pt_initPositionsLattice(tileDesc,partPosInitialized)
 !DevNote :: Following two options to be implemented later
 !         case(WITH_DENSITY, CELLMASS, REJECTION)
 !            call pt_initPositionsWithDensity(blockID,partPosInitialized)
@@ -177,11 +174,11 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
         numNewLocalThisType = pt_numLocal - numPreviousLocal
         pt_typeInfo(PART_LOCAL,i) = numNewLocalThisType + numLocalThisType
         
-        call Grid_releaseBlkPtr(block, solnData)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
         nullify(solnData)
         call itor%next()
      enddo
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
 
 #ifdef TYPE_PART_PROP

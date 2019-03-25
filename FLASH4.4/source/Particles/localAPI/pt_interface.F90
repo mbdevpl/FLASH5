@@ -28,10 +28,10 @@ Module pt_interface
        logical,intent(OUT) :: success
      end subroutine pt_initPositionsLattice
 
-     subroutine pt_initPositionsLattice_desc(block,success)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine pt_initPositionsLattice_desc(tileDesc,success)
+       use Grid_tile,        ONLY : Grid_tile_t 
        implicit none
-       type(block_metadata_t), intent(IN) :: block
+       type(Grid_tile_t)    :: tileDesc
        logical,intent(OUT) :: success
      end subroutine pt_initPositionsLattice_desc
   end interface

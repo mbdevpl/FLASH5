@@ -60,11 +60,10 @@ subroutine pt_advanceRK(dtOld,dtNew, p_beg, p_end, ind)
        useParticles, pt_typeInfo, &
        pt_gcMaskForAdvance, pt_gcMaskSizeForAdvance, pt_meshMe, &
        pt_posAttrib, pt_velNumAttrib,pt_velAttrib
-  use Grid_interface, ONLY : Grid_getBlkPtr,Grid_releaseBlkPtr,&
-       Grid_getLeafIterator, Grid_releaseLeafIterator, Grid_mapMeshToParticles
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator, Grid_mapMeshToParticles
   use Particles_data, ONLY : pt_containers
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata,        ONLY : block_metadata_t
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile,        ONLY : Grid_tile_t
   use amrex_particlecontainer_module, ONLY : amrex_particle, amrex_particlecontainer,&
         amrex_particlecontainer_build, amrex_particlecontainer_destroy
   use amrex_amr_module, ONLY : amrex_get_amrcore
@@ -87,13 +86,13 @@ subroutine pt_advanceRK(dtOld,dtNew, p_beg, p_end, ind)
   integer :: part_props=NPART_PROPS
 
   integer :: mapType 
-  type(leaf_iterator_t) :: itor
-  type(block_metadata_t)    :: block
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)    :: tileDesc
   type(amrex_particle), pointer :: particles(:)
   type(amrex_particle) :: oneParticle
   type(amrex_particle), pointer :: particlesSaveVelocity(:)
   type(amrex_particlecontainer) :: pcSaveVelocity
-  integer :: tile_index, j
+  integer :: j
 !!------------------------------------------------------------------------------
   
   ! Don't do anything if runtime parameter isn't set
@@ -101,11 +100,10 @@ subroutine pt_advanceRK(dtOld,dtNew, p_beg, p_end, ind)
 
   mapType=pt_typeInfo(PART_MAPMETHOD,ind)
 
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-    call itor%blkMetaData(block)
-    tile_index = 0 ! Set 0 beccause no tiling in flash now. Should come from block%tile_index if tiling=.true.
-    particles => pt_containers(ind)%get_particles(block%level-1,block%grid_index, tile_index)
+  call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+  do while(itor%isValid())
+    call itor%currentTile(tileDesc)
+    particles => pt_containers(ind)%get_particles(tileDesc%level-1,tileDesc%grid_index, tileDesc%tile_index)
     p_count = size(particles)
 
   ! Update the particle positions to temporary ("predicted") values
@@ -117,26 +115,25 @@ subroutine pt_advanceRK(dtOld,dtNew, p_beg, p_end, ind)
     enddo
     call itor%next()
   enddo             ! leaf itor enddo
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
 
   ! Now save the original velocity values in a temporary amrex_particlecontainer
   
   call amrex_particlecontainer_build(pcSaveVelocity, amrex_get_amrcore())
-    call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-    call itor%blkMetaData(block)
-    tile_index = 0 ! Set 0 beccause no tiling in flash now. Should come from block%tile_index if tiling=.true.
-    particles => pt_containers(ind)%get_particles(block%level-1,block%grid_index, tile_index)
+    call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+  do while(itor%isValid())
+    call itor%currentTile(tileDesc)
+    particles => pt_containers(ind)%get_particles(tileDesc%level-1,tileDesc%grid_index, tileDesc%tile_index)
     p_count = size(particles)
   ! Copy values of particle velocities
     do i = 1, p_count
         oneParticle = particles(i)
-        call pcSaveVelocity%add_particle(block%level-1,block%grid_index, tile_index, oneParticle)
+        call pcSaveVelocity%add_particle(tileDesc%level-1,tileDesc%grid_index, tileDesc%tile_index, oneParticle)
     enddo
     call itor%next()
   enddo             ! leaf itor enddo
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
 
   ! Map the updated gas velocity field at the temporary positions to
@@ -147,12 +144,11 @@ subroutine pt_advanceRK(dtOld,dtNew, p_beg, p_end, ind)
        pt_posAttrib,pt_velNumAttrib,pt_velAttrib,mapType)
 
   ! Adjust particle positions, using the second point velocities
-  call Grid_getLeafIterator(itor)
-  do while(itor%is_valid())
-    call itor%blkMetaData(block)
-    tile_index = 0 ! Set 0 beccause no tiling in flash now. Should come from block%tile_index if tiling=.true.
-    particles => pt_containers(ind)%get_particles(block%level-1,block%grid_index, tile_index)
-    particlesSaveVelocity => pcSaveVelocity%get_particles(block%level-1,block%grid_index, tile_index)
+  call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+  do while(itor%isValid())
+    call itor%currentTile(tileDesc)
+    particles => pt_containers(ind)%get_particles(tileDesc%level-1,tileDesc%grid_index, tileDesc%tile_index)
+    particlesSaveVelocity => pcSaveVelocity%get_particles(tileDesc%level-1,tileDesc%grid_index, tileDesc%tile_index)
     p_count = size(particles)
     do i = 1, p_count
         do j=1,NDIM
@@ -162,7 +158,7 @@ subroutine pt_advanceRK(dtOld,dtNew, p_beg, p_end, ind)
     enddo
     call itor%next()
   enddo             ! leaf itor enddo
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   ! done with this temporary amrex_particlecontainer
   call amrex_particlecontainer_destroy(pcSaveVelocity)
