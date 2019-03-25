@@ -25,15 +25,6 @@ Module Particles_interface
   end interface
 
   interface
-    subroutine Particles_dump(blockCount,blockList,nstep,time,dt)
-      integer, intent(IN) :: blockCount
-      integer, intent(IN) :: blockList(blockCount)
-      integer, intent(IN) :: nstep
-      real, intent(IN)    :: time, dt
-    end subroutine Particles_dump
-  end interface
-
-  interface
     subroutine Particles_finalize()
     end subroutine Particles_finalize
   end interface
