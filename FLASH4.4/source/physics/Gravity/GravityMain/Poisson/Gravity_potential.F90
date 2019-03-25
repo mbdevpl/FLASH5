@@ -6,9 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Gravity_potential(integer(IN) :: blockCount,
-!!                                     integer(IN) :: blockList(blockCount),
-!!                            optional,integer(IN) :: potentialIndex)
+!!  call Gravity_potential(   optional,integer(IN) :: potentialIndex)
 !!
 !! DESCRIPTION
 !!
@@ -25,8 +23,6 @@
 !!
 !! ARGUMENTS
 !!
-!!   blockCount   : The number of blocks in the list
-!!   blockList(:) : The list of blocks on which to calculate potential
 !!   potentialIndex : If present, determines which variable in UNK to use
 !!                    for storing the updated potential.  If not present,
 !!                    GPOT_VAR is assumed.

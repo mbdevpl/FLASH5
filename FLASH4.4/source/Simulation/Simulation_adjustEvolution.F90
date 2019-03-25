@@ -5,9 +5,7 @@
 !!
 !!
 !! SYNOPSIS
-!!  Simulation_adjustEvolution( integer(IN) :: blkcnt,
-!!                              integer(IN) :: blklst(blkcnt),
-!!                              integer(IN) :: nstep,
+!!  Simulation_adjustEvolution( integer(IN) :: nstep,
 !!                              real(IN) :: dt,
 !!                              real(IN) :: stime )
 !!
@@ -16,8 +14,6 @@
 !!  the simulation while it is running.
 !!  
 !! ARGUMENTS
-!!  blkcnt - number of blocks
-!!  blklist - block list
 !!  nstep - current cycle number
 !!  dt - current time step length
 !!  stime - current simulation time

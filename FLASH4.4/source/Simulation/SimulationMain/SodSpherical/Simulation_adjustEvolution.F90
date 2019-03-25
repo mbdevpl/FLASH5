@@ -5,9 +5,7 @@
 !!
 !!
 !! SYNOPSIS
-!!  Simulation_adjustEvolution( integer(IN) :: blkcnt,
-!!                              integer(IN) :: blklst(blkcnt),
-!!                              integer(IN) :: nstep,
+!!  Simulation_adjustEvolution( integer(IN) :: nstep,
 !!                              real(IN) :: dt,
 !!                              real(IN) :: stime )
 !!
@@ -16,29 +14,21 @@
 !!  the simulation while it is running.
 !!  
 !! ARGUMENTS
-!!  blkcnt - number of blocks
-!!  blklist - block list
 !!  nstep - current cycle number
 !!  dt - current time step length
 !!  stime - current simulation time
 !!
 !!***
-subroutine Simulation_adjustEvolution(blkcnt, blklst, nstep, dt, stime)
+subroutine Simulation_adjustEvolution(nstep, dt, stime)
 
 #include "constants.h"
 #include "Flash.h"
 
   use Simulation_data
 
-  use Grid_interface, ONLY: Grid_getBlkIndexLimits
-  use Grid_interface, ONLY: Grid_getBlkPtr
-  use Grid_interface, ONLY: Grid_releaseBlkPtr
-  use Grid_interface, ONLY: Grid_getBlkBC
 
   implicit none
 
-  integer, intent(in) :: blkcnt
-  integer, intent(in) :: blklst(blkcnt)
   integer, intent(in) :: nstep
   real,    intent(in) :: dt
   real,    intent(in) :: stime
