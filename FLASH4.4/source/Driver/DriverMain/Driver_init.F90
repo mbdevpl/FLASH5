@@ -105,6 +105,10 @@ subroutine Driver_init()
   logical :: threadBlockListBuild, threadWithinBlockBuild
   integer :: error !catch errors in IO_getPrevScalar calls
 
+  ! Initialize for writing first checkpoint
+  dr_dtNew = 0.0
+  dr_dtSTS = 0.0
+
   ! get the parameters needed by Driver
   call RuntimeParameters_get("eachProcWritesOwnAbortLog", dr_eachProcWritesOwnAbortLog)
   call RuntimeParameters_get("dr_abortPause", dr_abortPause)

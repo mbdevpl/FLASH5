@@ -31,13 +31,14 @@
 !!
 !!***
 
+#include "Flash.h"
+#include "constants.h"
 
 subroutine gr_updateData()
-
-  use Grid_interface, ONLY : Grid_getBlkBoundBox
-  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
-  use gr_iterator, ONLY : gr_iterator_t
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_interface,        ONLY : Grid_getTileIterator, &
+                                    Grid_releaseTileIterator
+  use Grid_iterator,         ONLY : Grid_iterator_t
+  use Grid_tile,             ONLY : Grid_tile_t
   use amrex_geometry_module, ONLY : amrex_problo
   use amrex_box_module,      ONLY : amrex_box
   use amrex_boxarray_module, ONLY : amrex_boxarray
@@ -49,16 +50,14 @@ subroutine gr_updateData()
   use Grid_data, ONLY: gr_meshMe, gr_boxContainingLeafNodes
 
   implicit none
-#include "constants.h"
-#include "Flash.h"
-
+  
   integer :: nBlocks, i
   real :: bnd_box_x,bnd_box_y,bnd_box_z
 
-  type(gr_iterator_t)    :: itor
-  type(block_metadata_t) :: blockDesc
-  type(amrex_box)        :: bx
-  type(amrex_boxarray)   :: fba
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
+  type(amrex_box)       :: bx
+  type(amrex_boxarray)  :: fba
   integer :: lb, lev
   integer :: rr
   logical :: blockHasChildren
@@ -78,19 +77,19 @@ subroutine gr_updateData()
   allocate(gr_ioBlkBsize       (         MDIM,nBlocks))
   allocate(gr_ioBlkCoords      (         MDIM,nBlocks))
 
-  call gr_getBlkIterator(itor)  ; lb = 1
-  do while (itor%is_valid())
-     call itor%blkMetaData(blockDesc)
+  call Grid_getTileIterator(itor, ALL_BLKS, tiling=.FALSE.)  ; lb = 1
+  do while (itor%isValid())
+     call itor%currentTile(tileDesc)
      gr_ioBlkNodeType(lb) = LEAF ! DEV: NOT ALWAYS TRUE!!!
-     gr_ioBlkLrefine(lb)  = blockDesc % level
-     lev                  = blockDesc % level - 1
+     gr_ioBlkLrefine(lb)  = tileDesc % level
+     lev                  = tileDesc % level - 1
      if (lev .GE. amrex_max_level) then
         blockHasChildren = .FALSE.
      else
         fba = amrex_get_boxarray(lev+1)
         rr = amrex_ref_ratio(lev)
-        bx = amrex_box(blockDesc % limits(LOW,1:NDIM )-1, &
-                       blockDesc % limits(HIGH,1:NDIM)-1)
+        bx = amrex_box(tileDesc % limits(LOW,1:NDIM )-1, &
+                       tileDesc % limits(HIGH,1:NDIM)-1)
         call bx%refine(rr)   !Note: this modifies bx, do not use naively after this!
         blockHasChildren = fba%intersects(bx)
      end if
@@ -100,13 +99,13 @@ subroutine gr_updateData()
         gr_ioBlkNodeType(lb) = LEAF
      end if
 
-     call Grid_getBlkBoundBox(blockDesc, gr_ioBlkBoundBox(:,:,lb))
+     call tileDesc%boundBox(gr_ioBlkBoundBox(:,:,lb))
      gr_ioBlkBsize(:,lb) =  gr_ioBlkBoundBox(HIGH,:,lb) - gr_ioBlkBoundBox(LOW,:,lb)
      gr_ioBlkCoords(:,lb)= (gr_ioBlkBoundBox(HIGH,:,lb)+gr_ioBlkBoundBox(LOW,:,lb))*0.5
 
      call itor%next()              ; lb = lb+1
   enddo
-  call gr_releaseBlkIterator(itor)
+  call Grid_releaseTileIterator(itor)
 
   nBlocks = lb-1
   if (gr_ioLocalNumBlocks .NE. nBlocks) then

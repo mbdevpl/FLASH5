@@ -111,6 +111,7 @@ Subroutine Hydro_init()
   call RuntimeParameters_get("smlrho",              hy_smalldens)
   call RuntimeParameters_get("smallp",              hy_smallpres)
   call RuntimeParameters_get("smallE",              hy_smallE)
+  call RuntimeParameters_get("smallu",              hy_smallu)
   call RuntimeParameters_get('irenorm',             hy_irenorm)
   call RuntimeParameters_get('RiemannSolver',       hy_RiemannSolver_str)
   call RuntimeParameters_get('shockDetect',         hy_shockDetectOn)
@@ -682,4 +683,7 @@ print*,'C_hyp & C_par=',hy_C_hyp,hy_C_par
      call hy_initGP(hy_RinvGP, hy_WpGP, hy_WmGP, blkLimitsGC)
   endif
 
+  call RuntimeParameters_get("gr_useTiling", hy_enableTiling)
+
 End Subroutine Hydro_init
+

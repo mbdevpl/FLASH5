@@ -8,10 +8,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  call hy_computeFluxes(block_metadata_t(IN) :: blockDesc,
-!!                        integer(IN)          :: blkLimitsGC(LOW:HIGH,MDIM),
+!!  call hy_computeFluxes(Grid_tile_t(IN)      :: tileDesc,
 !!       real,POINTER(in),dimension(:,:,:,:)   :: Uin,
-!!                        integer(IN)          :: blkLimits(LOW:HIGH,MDIM),
 !!       real,POINTER(in),dimension(:,:,:,:)   :: Uout,
 !!                        real(IN)             :: del(MDM),
 !!                        real(IN)             :: timeEndAdv,
@@ -75,11 +73,11 @@
 
 !!REORDER(4): scrch_Ptr, scrchFace[XYZ]Ptr, fl[xyz]
 
-Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
-
+Subroutine hy_computeFluxes(tileDesc, Uin, Uout, del,timeEndAdv,dt,dtOld,sweepOrder)
+  use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface, ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use block_metadata,   ONLY : block_metadata_t
+  use Grid_tile,    ONLY : Grid_tile_t 
   use hy_interface, ONLY : hy_getRiemannState,  &
                                hy_getFaceFlux,      &
                                hy_unsplitUpdate,    &
@@ -108,7 +106,6 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
                          hy_fullRiemannStateArrays,    &
                          hy_fullSpecMsFluxHandling
 
-  use Grid_interface, ONLY : Grid_getFluxPtr, Grid_releaseFluxPtr
   implicit none
 
 #include "constants.h"
@@ -122,33 +119,38 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
   real, pointer, dimension(:,:,:,:) :: Uin
 
   real,dimension(MDIM),intent(IN) :: del
-  integer,dimension(LOW:HIGH,MDIM),intent(IN) :: blkLimits,blkLimitsGC
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
   integer :: loFl(MDIM+1)
-  type(block_metadata_t), intent(IN) :: blockDesc
-  
-  integer, dimension(MDIM) :: datasize
+  type(Grid_tile_t), intent(IN) :: tileDesc
 
-  real, pointer, dimension(:,:,:,:)   :: flx => null()
-  real, pointer, dimension(:,:,:,:)   :: fly => null()
-  real, pointer, dimension(:,:,:,:)   :: flz => null()
+  real, pointer, dimension(:,:,:,:)   :: flx
+  real, pointer, dimension(:,:,:,:)   :: fly
+  real, pointer, dimension(:,:,:,:)   :: flz
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
-  real, allocatable :: faceAreas(:,:,:)
   real, target, dimension(0,0,0,0)   :: empty4
 
-  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr => null()
-  real, pointer, dimension(:,:,:,:) :: scrch_Ptr     => null()
-  real, pointer, dimension(:,:,:,:,:) :: hy_SpcR     => null()
-  real, pointer, dimension(:,:,:,:,:) :: hy_SpcL     => null()
-  real, pointer, dimension(:,:,:,:,:) :: hy_SpcSig   => null()
+  real, pointer, dimension(:,:,:,:) :: scrchFaceXPtr
+  real, pointer, dimension(:,:,:,:) :: scrchFaceYPtr
+  real, pointer, dimension(:,:,:,:) :: scrchFaceZPtr
+  real, pointer, dimension(:,:,:,:) :: scrch_Ptr    
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcR  
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcL  
+  real, pointer, dimension(:,:,:,:,:) :: hy_SpcSig
 
   integer :: updateMode ! will be set to one of UPDATE_ALL, UPDATE_INTERIOR, UPDATE_BOUND
 
-  nullify(flx)
-  nullify(fly)
-  nullify(flz)
+  integer :: halo(LOW:HIGH, 1:MDIM)
+
+  scrchFaceXPtr => null()
+  scrchFaceYPtr => null()
+  scrchFaceZPtr => null()
+  scrch_Ptr     => null()
+  flx           => null() 
+  fly           => null()
+  flz           => null()
+  hy_SpcR       => null() 
+  hy_SpcL       => null()
+  hy_SpcSig     => null()
 
   call Timers_start("loop1 body")
 
@@ -158,12 +160,19 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      updateMode = UPDATE_NONE
   end if
 
-     loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
-     loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
-     lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
+  ! We need data for the tile interior as well as for NGUARD layers of GCs 
+  ! around the interior (tile + halo)
+  halo(:, :) = tileDesc%limits(:, :)
+  halo(LOW,  1:NDIM) = halo(LOW,  1:NDIM) - NGUARD
+  halo(HIGH, 1:NDIM) = halo(HIGH, 1:NDIM) + NGUARD
+  loxGC = halo(LOW,IAXIS); hixGC = halo(HIGH,IAXIS)
+  loyGC = halo(LOW,JAXIS); hiyGC = halo(HIGH,JAXIS)
+  lozGC = halo(LOW,KAXIS); hizGC = halo(HIGH,KAXIS)
 
 #if defined(GPRO_VAR)||defined(VOLX_VAR)||defined(VOLY_VAR)||defined(VOLZ_VAR)||defined(CFL_VAR)
      if (hy_updateHydroFluxes) then
+        ! Set with explicit loop nests over a tile-based region
+        call Driver_abortFlash("Update this to work with tiles")
 #ifdef GPRO_VAR
         ! A tagging variable for Gaussian Process (GP) method.
         Uin(GPRO_VAR,:,:,:) = 0.
@@ -197,15 +206,14 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 #endif
 
      if ( hy_units .NE. "NONE" .and. hy_units .NE. "none" ) then
-        call hy_unitConvert(Uin,blkLimitsGC,FWDCONVERT)
+        call Driver_abortFlash("Confirm that grownLimits is correct")
+        call hy_unitConvert(Uin, tileDesc%grownLimits, FWDCONVERT)
      endif
-
-     datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
      if (updateMode == UPDATE_ALL) then
         allocate(scrch_Ptr    (2,            loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      else
-        call hy_memGetBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
+        call hy_memGetBlkPtr(tileDesc,scrch_Ptr,SCRATCH_CTR)
      end if
      allocate(scrchFaceXPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
      allocate(scrchFaceYPtr(HY_NSCRATCH_VARS,loxGC:hixGC-1, loyGC:hiyGC-K2D, lozGC:hizGC-K3D))
@@ -214,9 +222,21 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 
 #if (NSPECIES+NMASS_SCALARS) > 0
      if (hy_fullSpecMsFluxHandling) then
-        allocate(  hy_SpcR(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
-        allocate(  hy_SpcL(HY_NSPEC,                                   loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC,NDIM))
-        allocate(hy_SpcSig(HY_NSPEC,blkLimits(LOW,IAXIS)-2:blkLimits(HIGH,IAXIS)+2, loyGC:hiyGC, lozGC:hizGC,NDIM))
+        allocate(  hy_SpcR(HY_NSPEC, &
+                           loxGC:hixGC, &
+                           loyGC:hiyGC, &
+                           lozGC:hizGC, &
+                           NDIM))
+        allocate(  hy_SpcL(HY_NSPEC, &
+                           loxGC:hixGC, &
+                           loyGC:hiyGC, &
+                           lozGC:hizGC, &
+                           NDIM))
+        allocate(hy_SpcSig(HY_NSPEC, &
+                           tileDesc%limits(LOW,IAXIS)-2:tileDesc%limits(HIGH,IAXIS)+2, &
+                           loyGC:hiyGC, &
+                           lozGC:hizGC, &
+                           NDIM))
      end if
 #endif
 
@@ -232,7 +252,7 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_putGravity(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ)
+        call hy_putGravity(tileDesc,halo,Uin,dt,dtOld,gravX,gravY,gravZ)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
@@ -266,10 +286,12 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 #ifdef DEBUG_UHD
         print*,'going into RiemannState'
 #endif
-        call hy_getRiemannState(blockDesc,Uin,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,del, &
-                                    gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:),&
-                                    scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
-                                    hy_SpcR,hy_SpcL,hy_SpcSig)
+        call hy_getRiemannState(tileDesc, Uin, tileDesc%limits, &
+                                halo(LOW,:), halo(HIGH,:), &
+                                dt, del, &
+                                gravX, gravY, gravZ,&
+                                scrchFaceXPtr, scrchFaceYPtr, scrchFaceZPtr,&
+                                hy_SpcR, hy_SpcL, hy_SpcSig)
 #ifdef DEBUG_UHD
         print*,'returning from RiemannState'
         print*,'_unsplit Aft "call getRiemannState": associated(Uin ) is',associated(Uin )
@@ -285,27 +307,25 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
         !    included to Riemann states in conservative formulation in hy_getRiemannState.
 
      endif !! End of if (hy_updateHydroFluxes) then
-     call Grid_getFluxPtr(blockDesc,flx,fly,flz)
+     call tileDesc%getDataPtr(flx, FLUXX)
+     call tileDesc%getDataPtr(fly, FLUXY)
+     call tileDesc%getDataPtr(flz, FLUXZ)
      loFl = lbound(flx)
      if (.NOT. associated(fly)) fly => empty4
      if (.NOT. associated(flz)) flz => empty4
-     allocate(  faceAreas(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
 
 !!$     call hy_memGetBlkPtr(blockID,scrch_Ptr,SCRATCH_CTR) 
 
      !! ************************************************************************
-     !! Calculate high order Godunov fluxes
-     !! Initialize arrays with zero
-     flx = 0.
-     fly = 0.
-     flz = 0.
+     !! Calculate high order Godunov fluxes by making Riemann solver calls
      call Timers_start("getFaceFlux")
 #ifdef DEBUG_UHD
      print*,'getting face flux'
 #endif
-     call hy_getFaceFlux(blockDesc,blkLimits,blkLimitsGC,datasize,del,&
-                             loFl, flx,fly,flz,&
-                             scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,scrch_Ptr,hy_SpcR,hy_SpcL)
+     call hy_getFaceFlux(tileDesc, tileDesc%limits, halo, del, &
+                         loFl, flx, fly, flz, &
+                         scrchFaceXPtr, scrchFaceYPtr, scrchFaceZPtr, &
+                         scrch_Ptr, hy_SpcR, hy_SpcL)
 #ifdef DEBUG_UHD
      print*,'got face flux'
      print*,'_unsplit Aft "call getFaceFlux": associated(Uin ) is',associated(Uin )
@@ -317,21 +337,26 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
 #ifdef DEBUG_UHD
         print*,'and now update'
 #endif
-        call hy_unsplitUpdate(blockDesc,Uin,Uout,updateMode,dt,del,datasize,blkLimits,&
-             blkLimitsGC,loFl,flx,fly,flz,gravX,gravY,gravZ,&
-             scrch_Ptr)
+        call hy_unsplitUpdate(tileDesc, Uin, Uout, updateMode, &
+                              dt, del, &
+                              tileDesc%limits, halo, &
+                              loFl, flx, fly, flz, &
+                              gravX, gravY, gravZ, &
+                              scrch_Ptr)
         call Timers_stop("unsplitUpdate")
 #ifndef GRAVITY /* if gravity is included we delay energy fix until we update gravity at n+1 state */
         !! Correct energy if necessary
-        call hy_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
+        call hy_energyFix(tileDesc, Uout, tileDesc%limits, dt, dtOld, &
+                          del, hy_unsplitEosMode)
 
 #ifdef DEBUG_UHD
         print*,'_unsplit Aft "call energyFix": associated(Uin ) is',associated(Uin )
         print*,'_unsplit Aft "call energyFix": associated(Uout) is',associated(Uout)
 #endif
         if ( hy_units .NE. "none" .and. hy_units .NE. "NONE" ) then
-        !! Convert unit
-           call hy_unitConvert(Uout,blkLimitsGC,BWDCONVERT)
+           !! Convert unit
+           call Driver_abortFlash("Confirm that grownLimits is correct")
+           call hy_unitConvert(Uout, tileDesc%grownLimits, BWDCONVERT)
         endif
 
      !#ifndef FLASH_EOS_GAMMA
@@ -344,24 +369,25 @@ Subroutine hy_computeFluxes(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
         print*,'_unsplit bef Eos_wrapped: lbound(Uout):',lbound(Uout)
         print*,'_unsplit bef Eos_wrapped: ubound(Uout):',ubound(Uout)
 #endif
-        call Eos_wrapped(hy_eosModeAfter, blkLimits, Uout,CENTER)
+        call Eos_wrapped(hy_eosModeAfter, tileDesc%limits, Uout,CENTER)
      !#endif
 #endif /* ifndef GRAVITY */
 
         deallocate(scrch_Ptr)
      else
-        call hy_memReleaseBlkPtr(blockDesc,scrch_Ptr,SCRATCH_CTR)
+        call hy_memReleaseBlkPtr(tileDesc,scrch_Ptr,SCRATCH_CTR)
      end if
      !! ************************************************************************
      !! Unsplit update for conservative variables from n to n+1 time step
 
      
-     call Grid_releaseFluxPtr(blockDesc,flx,fly,flz)
+     call tileDesc%releaseDataPtr(flx, FLUXX)
+     call tileDesc%releaseDataPtr(fly, FLUXY)
+     call tileDesc%releaseDataPtr(flz, FLUXZ)
      
      deallocate(gravX)
      deallocate(gravY)
      deallocate(gravZ)
-     deallocate(faceAreas)
      
      deallocate(scrchFaceXPtr)
      deallocate(scrchFaceYPtr)

@@ -25,7 +25,9 @@ subroutine gr_createDataTypes()
 
   use Grid_data, ONLY : gr_exch,&
        gr_numDataStruct,gr_gridDataStruct, gr_gridDataStructSize
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
+  use Grid_tile, ONLY: Grid_tile_t
+  use Grid_iterator, ONLY: Grid_iterator_t
 
 implicit none
 
@@ -34,27 +36,32 @@ implicit none
 
   include "Flash_mpi.h"
 
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t) :: tileDesc
   integer :: currentDataTypes
-
+  
   integer :: ierr, flashRealExtent, size, stride, flashCont,i
   integer :: exch1, exch2
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC
-  integer :: blockID = 1
+
   integer, dimension(MDIM) :: guard, blkExtent
   ! x exchange
   ! the datatype for the first dimension is contiguous in memory 
   ! mpi_type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype newtype)
   ! left and right, xdir
-  
+  i=1
+  call Grid_getTileIterator(itor, ALL_BLKS)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
 
-  do i = 1,gr_numDataStruct
-     call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC, gr_gridDataStruct(i))
+     blkLimits(:,:)=tileDesc%limits
+     blkLimitsGC(:,:)=tileDesc%grownLimits
      guard(:) = blkLimits(LOW,:)-blkLimitsGC(LOW,:)
      blkExtent(:)=blkLimitsGC(HIGH,:)-blkLimitsGC(LOW,:)+1
-     
+
      if(NDIM==1) then
         call MPI_TYPE_CONTIGUOUS(gr_gridDataStructSize(i)*guard(IAXIS), &
-                                 FLASH_REAL, gr_exch(i,IAXIS), ierr)
+             FLASH_REAL, gr_exch(i,IAXIS), ierr)
         call MPI_TYPE_COMMIT(gr_exch(i,IAXIS), ierr)
      else
         
@@ -84,7 +91,7 @@ implicit none
            ! for left and right, xdir
            ! using an hvector 
            call MPI_TYPE_EXTENT(FLASH_REAL, flashRealExtent, ierr)
-
+           
            call MPI_TYPE_HVECTOR(blkExtent(KAXIS), 1,  &
                 blkExtent(IAXIS)*blkExtent(JAXIS)*gr_gridDataStructSize(i)*&
                 flashRealExtent, & 
@@ -113,8 +120,10 @@ implicit none
            
         end if
      end if
+     call itor%next()
   end do
-  
+  call Grid_releaseTileIterator(itor)
 end subroutine gr_createDataTypes
-
-
+   
+   
+   

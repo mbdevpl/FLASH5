@@ -39,12 +39,12 @@
 !!***
 
 
-Subroutine hy_gravityStepBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
+Subroutine hy_gravityStepBlk(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,timeEndAdv,dt,dtOld)
 
-  use Eos_interface, ONLY : Eos_wrapped
+  use Eos_interface,    ONLY : Eos_wrapped
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use block_metadata,   ONLY : block_metadata_t
-  use hy_interface, ONLY : hy_getRiemannState,  &
+  use Grid_tile,        ONLY : Grid_tile_t
+  use hy_interface,     ONLY : hy_getRiemannState,  &
                                hy_getFaceFlux,      &
                                hy_unsplitUpdate,    &
                                hy_unitConvert,      &
@@ -84,10 +84,8 @@ Subroutine hy_gravityStepBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
   real,dimension(MDIM),intent(IN) :: del
   integer,dimension(LOW:HIGH,MDIM),intent(INoUt) ::blkLimits,blkLimitsGC 
   integer :: loxGC,hixGC,loyGC,hiyGC,lozGC,hizGC
-  type(block_metadata_t), intent(IN) :: blockDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   
-  integer, dimension(MDIM) :: datasize
-
   real, allocatable, dimension(:,:,:)   :: gravX, gravY, gravZ
 
   call Timers_start("loop5 body")
@@ -96,8 +94,6 @@ Subroutine hy_gravityStepBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
      loxGC = blkLimitsGC(LOW,IAXIS); hixGC =blkLimitsGC(HIGH,IAXIS)
      loyGC = blkLimitsGC(LOW,JAXIS); hiyGC =blkLimitsGC(HIGH,JAXIS)
      lozGC = blkLimitsGC(LOW,KAXIS); hizGC =blkLimitsGC(HIGH,KAXIS)
-
-     datasize(1:MDIM)=blkLimitsGC(HIGH,1:MDIM)-blkLimitsGC(LOW,1:MDIM)+1
 
      allocate(gravX(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
      allocate(gravY(loxGC:hixGC, loyGC:hiyGC, lozGC:hizGC))
@@ -112,20 +108,20 @@ Subroutine hy_gravityStepBlk(blockDesc, blkLimitsGC, Uin, blkLimits, Uout, del,t
      gravY = 0.
      gravZ = 0.
      if (hy_useGravity) then
-        call hy_putGravity(blockDesc,blkLimitsGC,Uin,dataSize,dt,dtOld,gravX,gravY,gravZ,&
+        call hy_putGravity(tileDesc,blkLimitsGC,Uin,dt,dtOld,gravX,gravY,gravZ,&
              lastCall=.TRUE.)
         gravX = gravX/hy_gref
         gravY = gravY/hy_gref
         gravZ = gravZ/hy_gref
 
-        call hy_addGravity(blockDesc,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,&
+        call hy_addGravity(tileDesc,blkLimits,blkLimitsGC(LOW,:),blkLimitsGC(HIGH,:),dt,&
              gravX(:,:,:),gravY(:,:,:),gravZ(:,:,:))
      endif
 
 
      !! *********************************************************************
      !! Correct energy if necessary
-     call hy_energyFix(blockDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
+     call hy_energyFix(tileDesc,Uout,blkLimits,dt,dtOld,del,hy_unsplitEosMode)
      
 #ifdef DEBUG_UHD
      print*,'_l5 Aft "call energyFix": associated(Uin ) is',associated(Uin )

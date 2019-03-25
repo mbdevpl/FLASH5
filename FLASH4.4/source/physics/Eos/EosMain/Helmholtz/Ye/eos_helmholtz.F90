@@ -254,7 +254,7 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
        eos_forceConstantInput
   use eos_vecData, ONLY:  tempRow, denRow, etotRow, abarRow, zbarRow, &
        gamcRow, ptotRow, deaRow, dezRow, stotRow, dsdRow, dstRow, &
-       detRow, dptRow, dpdRow, dedRow, pelRow, neRow, etaRow, cvRow, cpRow
+       detRow, dptRow, dpdRow, dedRow, pelRow, neRow, etaRow, detatRow, cvRow, cpRow
 
   implicit none
 
@@ -267,7 +267,7 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
   real, INTENT(inout), dimension(vecLen*EOS_NUM) :: eosData
   real, optional,INTENT(in), dimension(vecLen*NSPECIES) :: massFrac !UNUSED
   ! must correspond to dimensions of Eos_wrapped
-  logical,optional, dimension(EOS_VARS+1:EOS_NUM),INTENT(in)::mask
+  logical,optional,target, dimension(EOS_VARS+1:EOS_NUM),INTENT(in)::mask
 
   ! This is the variable that is used internally -- set to false unless mask comes in.
   logical, dimension(EOS_VARS+1:EOS_NUM) :: maskInternal
@@ -277,7 +277,7 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
   integer :: pres, temp, dens, gamc, eint
   integer :: abar, zbar
   integer :: entr, dst, dsd
-  integer :: dpt, dpd, det, ded, dea, dez, pel, ne, eta, c_v, c_p
+  integer :: dpt, dpd, det, ded, dea, dez, pel, ne, eta, detat, c_v, c_p
   real    :: abarInv, zbarFrac
 
   ! declare some local storage for the results of the Newton iteration
@@ -643,6 +643,10 @@ subroutine eos_helmholtz(mode,vecLen,eosData,massFrac,mask)
      if(mask(EOS_ETA))then 
         eta = (EOS_ETA-1)*vecLen
         eosData(eta+1:eta+vecLen) = etaRow(1:vecLen)
+     end if
+     if(mask(EOS_DETAT))then
+        detat = (EOS_DETAT-1)*vecLen
+        eosData(detat+1:detat+vecLen) = detatRow(1:vecLen)
      end if
      
      if(mask(EOS_CV))then

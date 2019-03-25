@@ -20,10 +20,9 @@ Grid += gr_amrexInterface.o \
         gr_copyFabInteriorToRegion.o \
         gr_copyGuardcellRegionToFab.o \
         block_1lev_iterator.o \
-        gr_writeData.o
+        gr_writeData.o \
+        gr_markInRadius.o
 
 Grid += gr_specificData.o gr_initSpecific.o \
         gr_updateData.o
-
-Grid += gr_amrextInterface.o
 

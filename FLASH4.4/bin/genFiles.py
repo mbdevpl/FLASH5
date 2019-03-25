@@ -26,16 +26,16 @@ def generateFlashDefines(configInfo):
     """ Generate Flash.h using template """
 
     # sub routine
-    def makeDefines(list, strname, num):
+    def makeDefines(tmpList, strname, num):
       # if dictionary then extract keys
-      if type(list) == type({}): list = list.keys()
-      list = map(string.upper,list)
+      if isinstance(tmpList,dict): tmpLlist = list(tmpList.keys())
+      tmpList = list(map(str.upper,tmpList))
       ans = []
       i = num
-      for up_str in list:
+      for up_str in tmpList:
         i += 1
         ans.append("#define %s_%s %d" % (up_str,strname,i))
-      return string.join(ans,"\n")+"\n"
+      return "\n".join(ans)+"\n"
 
 
 
@@ -127,15 +127,15 @@ def generateFlashDefines(configInfo):
         '#define %s_NONREP_LOC2UNK(loc) (%s)\n' % (name, rec['nlocs'] > 0 and ('(loc)-1+'+(tp2fmt[rec['tp']] % (rec['locf'] % 1))) or '-1') + \
         '#define %s_NONREP_MAXLOCS %d\n' % (name, rec['nlocs']) + \
         '#define %s_NONREP_RPCOUNT "%s"\n' % (name, rec['rpcount']) \
-        for i,(name,rec) in enumerate(nonrep.iteritems()) \
+        for i,(name,rec) in enumerate(nonrep.items()) \
     ], [ \
         '#define NONREP_COUNT %d\n' % len(nonrep), \
-        '#define NONREP_NAMEF_FLAT_LWR "%s"\n' % ''.join([ rec['namef'] for rec in nonrep.itervalues() ]).lower(), \
-        '#define NONREP_NAMEF_START (/%s/)\n' % ','.join([ str(x+1) for x in starts([ len(rec['namef']) for rec in nonrep.itervalues() ]) ]), \
-        '#define NONREP_MAXLOCS (/%s/)\n' % ','.join(['0'] + [ str(rec['nlocs']) for rec in nonrep.itervalues() ]), \
-        '#define NONREP_LOCUNK1 (/%s/)\n' % ','.join(['0'] + [ rec['nlocs'] > 0 and (tp2fmt[rec['tp']] % (rec['locf'] % 1)) or '-1' for rec in nonrep.itervalues() ]), \
-        '#define NONREP_RPCOUNT_FLAT "%s"\n' % ''.join([ rec['rpcount'] for rec in nonrep.itervalues() ]), \
-        '#define NONREP_RPCOUNT_START (/%s/)\n' % ','.join([ str(x+1) for x in starts([ len(rec['rpcount']) for rec in nonrep.itervalues() ]) ]) \
+        '#define NONREP_NAMEF_FLAT_LWR "%s"\n' % ''.join([ rec['namef'] for rec in nonrep.values() ]).lower(), \
+        '#define NONREP_NAMEF_START (/%s/)\n' % ','.join([ str(x+1) for x in starts([ len(rec['namef']) for rec in nonrep.values() ]) ]), \
+        '#define NONREP_MAXLOCS (/%s/)\n' % ','.join(['0'] + [ str(rec['nlocs']) for rec in nonrep.values() ]), \
+        '#define NONREP_LOCUNK1 (/%s/)\n' % ','.join(['0'] + [ rec['nlocs'] > 0 and (tp2fmt[rec['tp']] % (rec['locf'] % 1)) or '-1' for rec in nonrep.values() ]), \
+        '#define NONREP_RPCOUNT_FLAT "%s"\n' % ''.join([ rec['rpcount'] for rec in nonrep.values() ]), \
+        '#define NONREP_RPCOUNT_START (/%s/)\n' % ','.join([ str(x+1) for x in starts([ len(rec['rpcount']) for rec in nonrep.values() ]) ]) \
     ]))
     
     # write the file if it really changed
@@ -203,7 +203,7 @@ def generatePm3RPDefines(configInfo):
     tpl["nunk_vars"] = tpl["nvars"] + tpl["nspecies"] + tpl["nmass_scalars"]
     tpl["nfluxes"] = tpl["nflux"] + tpl["nspecies"] + tpl["nmass_scalars"]
 
-    if configInfo['PPDEFINES'].has_key('NBOUNDARIES') and configInfo['PPDEFINES']['NBOUNDARIES']:
+    if 'NBOUNDARIES' in configInfo['PPDEFINES'] and configInfo['PPDEFINES']['NBOUNDARIES']:
         tpl["nboundaries"] = configInfo['PPDEFINES']['NBOUNDARIES']
     else:
         tpl["nboundaries"] = 2*tpl["ndim"]
@@ -220,7 +220,7 @@ def writeSimulationFiles(configInfo):
     ## This function generates all the Simulation_*.F90 files
     ## which setup needs to generate.
 
-    ## mapIntToStr: maps a variable enumerated constant to string.
+    ## mapIntToStr: maps a variable enumerated constant to str.
     ## mapStrToVar: reverse of above map 
     ## mapParticlesVar: returns the variable a particle property maps to
     ##
@@ -288,7 +288,7 @@ def writeSimulationFiles(configInfo):
     #Returns a list of EOS Fortran code.
     def makeEosPrintableString(eosVarDict, eosStr):
         tplList = []; tmp1 = []; tmp2 = []
-        for (var, (eosIn, eosOut)) in eosVarDict.items():
+        for (var, (eosIn, eosOut)) in list(eosVarDict.items()):
             fixedStr = eosStr + '(EOSMAP_' + var
             tmp1.append(fixedStr + ',EOSIN) = ' + eosIn)
             tmp2.append(fixedStr + ',EOSOUT) = ' + eosOut)
@@ -310,7 +310,7 @@ def writeSimulationFiles(configInfo):
     vars.extend([v.lower() for v in configInfo['massscalars']])
     # compute their corresponding keys starting from 1
     keys = []
-    for x in xrange(len(vars)):
+    for x in range(len(vars)):
         keys.append("(MAPBLOCK_UNK  * MAPBLOCKSIZE) + %2d" % (x+1))
 
     # add fluxes and their keys
@@ -361,7 +361,7 @@ def writeSimulationFiles(configInfo):
     def partition(xs):
         d = {}
         for u,v in xs:
-            if d.has_key(u):
+            if u in d:
                 d[u].append(v)
             else:
                 d[u] = [ v ];
@@ -378,22 +378,19 @@ def writeSimulationFiles(configInfo):
     tpl = Template(os.path.join(GVars.binDir,globals.SimStrToIntTemplate))
     tpl["values"] = vars
     tpl["keys"] = keys
-    tpl["select_key_from_strlwr_and_map"] = map( \
-        lambda tab_txt: '    '*tab_txt[0] + tab_txt[1], \
-        chain( \
+    tpl["select_key_from_strlwr_and_map"] = ['    '*tab_txt[0] + tab_txt[1] for tab_txt in chain( \
             [ (0,"select case(strlwr)") ], \
-            chain(*map( \
+            chain(*list(map( \
                 (lambda v_ks: (lambda v,ks: chain( \
                     [ (0,'case("%s")' % v) ], \
                         [ (1,'select case(map)') ], \
                         [ (1,'case((%s)/MAPBLOCKSIZE); key = %s' % (k,k)) for k in ks ], \
                         [ (1,'end select') ] \
                 ))(v_ks[0],v_ks[1])), \
-                partition(zip(vars, keys)).iteritems() \
-            )), \
+                iter(partition(list(zip(vars, keys))).items()) \
+            ))), \
             [ (0,'end select') ] \
-        ) \
-    )
+        )]
     tpl.generate(os.path.join(GVars.flashHomeDir,GVars.objectDir,globals.SimStrToIntFilename))
     del tpl
     tpl = Template(os.path.join(GVars.binDir,globals.SimParticlesVarTemplate))
@@ -404,13 +401,13 @@ def writeSimulationFiles(configInfo):
 
     # now for renormGroup code
     tpl = Template(os.path.join(GVars.binDir,globals.RenormGroupTemplate))
-    it = configInfo['massscalars_map'].items()
+    it = list(configInfo['massscalars_map'].items())
     tpl["mscalars"] = [x.upper()+"_MSCALAR" for (x,y) in it]
     tpl["groups"] = [y for (x,y) in it]
     # ideally the group_names formatting should be done in the template
     # but I did not build a way to escape the ! in the list specification
     # So this is a hack around the template scheme of things
-    tpl["group_names"] = " \n   !! ".join([ "%s -> %d" % (x,y) for (x,y) in configInfo["massscalars_group_map"].items()])
+    tpl["group_names"] = " \n   !! ".join([ "%s -> %d" % (x,y) for (x,y) in list(configInfo["massscalars_group_map"].items())])
     tpl.generate(os.path.join(GVars.flashHomeDir,GVars.objectDir,globals.RenormGroupFilename))
 
     # now for variable type code
@@ -429,24 +426,24 @@ def writeSimulationFiles(configInfo):
         #We can slide in alternative particle methods by honouring the
         #particlesmethod command.
         for particleType in configInfo['particletype']:
-            if GVars.particleMethods.has_key(particleType):
+            if particleType in GVars.particleMethods:
                 configInfoIndex = configInfo['particletype'].index(particleType)
                 overwriteData = GVars.particleMethods.get(particleType)
 
-                print "NOTE: particlemethods option given on command line!"
-                print "  Editing particleType:", particleType
+                print("NOTE: particlemethods option given on command line!")
+                print("  Editing particleType:", particleType)
                 for (name,value) in overwriteData:
                     if (name == "INIT"):
-                        print "  Init method was:", configInfo['initmethod'][configInfoIndex], "now:", value
+                        print("  Init method was:", configInfo['initmethod'][configInfoIndex], "now:", value)
                         configInfo['initmethod'][configInfoIndex] = value
                     elif (name == "MAP"):
-                        print "  Map method was:", configInfo['mapmethod'][configInfoIndex], "now:", value
+                        print("  Map method was:", configInfo['mapmethod'][configInfoIndex], "now:", value)
                         configInfo['mapmethod'][configInfoIndex] = value
                     elif (name == "ADV"):
-                        print "  adv method was:", configInfo['advmethod'][configInfoIndex], "now:", value
+                        print("  adv method was:", configInfo['advmethod'][configInfoIndex], "now:", value)
                         configInfo['advmethod'][configInfoIndex] = value
                     else:
-                        print "  Ignoring unknown option:", name
+                        print("  Ignoring unknown option:", name)
         
         tpl["particleInitVect"] = configInfo['initmethod']
         tpl["particleMapVect"] = configInfo['mapmethod']
@@ -469,30 +466,30 @@ def writeSimulationFiles(configInfo):
     dEosMap["_SCRATCH_FACEZ_VAR"] = makeEosVarDict()
 
     #EOS variables are associated with the following KEYWORDS.
-    unkType_VAR = zip(configInfo['variable'], 
+    unkType_VAR = list(zip(configInfo['variable'], 
                       configInfo['eosmapin_unkvars'],
-                      configInfo['eosmapout_unkvars'])
-    unkType_MSCALAR = zip(configInfo['massscalars'], 
+                      configInfo['eosmapout_unkvars']))
+    unkType_MSCALAR = list(zip(configInfo['massscalars'], 
                           configInfo['eosmapin_ms'],
-                          configInfo['eosmapout_ms'])
-    unkType_FACE = zip(configInfo['facevar'], 
+                          configInfo['eosmapout_ms']))
+    unkType_FACE = list(zip(configInfo['facevar'], 
                        configInfo['eosmapin_facevars'],
-                       configInfo['eosmapout_facevars'])
-    unkType_SCRATCH = zip(configInfo['scratchvar'], 
+                       configInfo['eosmapout_facevars']))
+    unkType_SCRATCH = list(zip(configInfo['scratchvar'], 
                           configInfo['eosmapin_scratchvars'],
-                          configInfo['eosmapout_scratchvars'])
-    unkType_SCRATCHCENTER = zip(configInfo['scratchcentervar'], 
+                          configInfo['eosmapout_scratchvars']))
+    unkType_SCRATCHCENTER = list(zip(configInfo['scratchcentervar'], 
                           configInfo['eosmapin_scratchcentervars'],
-                          configInfo['eosmapout_scratchcentervars'])
-    unkType_SCRATCHFACEX = zip(configInfo['scratchfacexvar'], 
+                          configInfo['eosmapout_scratchcentervars']))
+    unkType_SCRATCHFACEX = list(zip(configInfo['scratchfacexvar'], 
                           configInfo['eosmapin_scratchfacexvars'],
-                          configInfo['eosmapout_scratchfacexvars'])
-    unkType_SCRATCHFACEY = zip(configInfo['scratchfaceyvar'], 
+                          configInfo['eosmapout_scratchfacexvars']))
+    unkType_SCRATCHFACEY = list(zip(configInfo['scratchfaceyvar'], 
                           configInfo['eosmapin_scratchfaceyvars'],
-                          configInfo['eosmapout_scratchfaceyvars'])
-    unkType_SCRATCHFACEZ = zip(configInfo['scratchfacezvar'], 
+                          configInfo['eosmapout_scratchfaceyvars']))
+    unkType_SCRATCHFACEZ = list(zip(configInfo['scratchfacezvar'], 
                           configInfo['eosmapin_scratchfacezvars'],
-                          configInfo['eosmapout_scratchfacezvars'])
+                          configInfo['eosmapout_scratchfacezvars']))
 
     #Use KEYWORD data to fill the values in the appropriate dictionary.
     associateEosVars(dEosMap["_VAR"], 
@@ -532,7 +529,7 @@ def writeSimulationFiles(configInfo):
     #Get length of an EOS list.  NOTE: All 3 lists have the same length.
     #We subtract 2 because our lists contains 2 printed comments.
     #We divide by 2 because the single list contains IN and OUT.
-    tpl["len_eos_lists"] = (len(tpl["eos_unk"])-2)/2
+    tpl["len_eos_lists"] = int((len(tpl["eos_unk"])-2)/2)
     tpl.generate(os.path.join(GVars.flashHomeDir,GVars.objectDir,globals.EosMapFilename))
     del tpl
 
@@ -551,12 +548,12 @@ def generateMakefile(configInfo, machDir):
     fDefines = ' '.join(["$(MDEFS)" + item for item in GVars.defines])
 
     setupVarDict = GVars.setupVars.getdict()
-    threadKeysFound = [x for x in setupVarDict.keys()
+    threadKeysFound = [x for x in list(setupVarDict.keys())
                        if x in ["threadBlockList","threadWithinBlock","threadRayTrace","threadProtonTrace"]]
     useopenmp = 0
     for key in threadKeysFound:
         #Set USEOPENMP = 1 in Makefile if at least one thread setup variable is True.
-        if type(setupVarDict[key]) == types.BooleanType and setupVarDict[key]:
+        if isinstance(setupVarDict[key],bool) and setupVarDict[key]:
             useopenmp = 1
             break
 
@@ -607,7 +604,7 @@ def generateBuildstampGenerator():
     tpl["date"] = time.asctime(time.localtime(time.time()))
     tpl["uname"] = os.uname()
     tpl.generate(OUTFILE)
-    os.chmod(OUTFILE, 0744)
+    os.chmod(OUTFILE, 0o744)
 
 ################################################# Internally called code
 
@@ -660,7 +657,7 @@ def setRedirectFlags(makefile, buildFlag, libConfigInfo):
         GVars.out.push()
         libFlags = libConfigInfo.getLibFlags(lib, buildFlag=buildFlag,
                                args=args, makefilename=makefilename)
-        if not libFlags or not libFlags.has_key("LIB"):
+        if not libFlags or "LIB" not in libFlags:
             GVars.out.put('ERROR: A Config in your simulation requires the %s library\n'\
                           'but I cannot find any info about it. ' % lib,globals.ERROR)
             if not args:
@@ -676,18 +673,18 @@ def setRedirectFlags(makefile, buildFlag, libConfigInfo):
         else:
             # the fact that we prepend (not append) and the specific order of the libraries
             # should ensure that the ordering here is correct
-            for key,val in libFlags.items(): 
-                if newDef.has_key(key): newDef[key].insert(1,val)
+            for key,val in list(libFlags.items()): 
+                if key in newDef: newDef[key].insert(1,val)
         GVars.out.pop()
             
     outList = []
-    for compiler in newDef.keys():
+    for compiler in list(newDef.keys()):
         if (len(newDef[compiler])==1) and \
            (newDef[compiler][0]=='$(%s)'%compiler): continue
         macros = newDef[compiler]
         #want "main" macros like LIB_OPT to be at the end of the line
         macros = macros[1:]+[macros[0]]
-        outList.append('%s := %s\n' % (compiler, string.join(macros)))
+        outList.append('%s := %s\n' % (compiler, " ".join(macros)))
 
     return "".join(outList)
 

@@ -52,10 +52,12 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
 #include "constants.h"
 
   use physicaldata, ONLY : unk
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkData
+  use Grid_interface, ONLY : Grid_getCellVolumes, Grid_getTileIterator, Grid_releaseTileIterator
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_data, ONLY : gr_meshComm
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_iterator, ONLY : Grid_iterator_t
 
   implicit none
 
@@ -69,10 +71,10 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
   real    :: cvol
   logical :: include_in_sum
   integer :: totalblockshere
-  integer, dimension(2,MDIM)   :: blkLimitsGC, blkLimits
+  integer, dimension(LOW:HIGH,MDIM)   ::  blkLimits
   real, allocatable :: cellVolumes(:,:,:)
-
-
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
 !===============================================================================
 
   call Timers_start("Grid_computeVarNorm")
@@ -85,40 +87,44 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
     call Driver_abortFlash('only L1 and L2 norms supported in Grid_computeVarNorm!')
   endif
 
-  call Grid_getBlkIndexLimits(1,blkLimits,blkLimitsGC)
-  allocate(cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
-       blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
-       blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
-
   include_in_sum = ((level == 1) .or. (level == 0))
   ! leafOnly must be ignored for UG
   if (include_in_sum) then
-     totalblockshere = totalblockshere + 1
-     call Grid_getBlkData(1, CELL_VOLUME, 0, EXTERIOR, &
-          (/blkLimits(LOW,IAXIS),blkLimits(LOW,JAXIS),blkLimits(LOW,KAXIS)/), &
-          cellVolumes, &
-          (/blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1, &
-            blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1, &
-            blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1/) )
-     bsum = 0.
-     if (ivar >= 0) then
-        do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)  ! working on interior only
-           do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
-              do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
-                 cvol = cellVolumes(i,j,k)
-                 bsum = bsum + abs(unk(ivar,i,j,k,1))**normType * cvol
-                 lvol = lvol + cvol
+     call Grid_getTileIterator(itor, LEAF, level=1)
+     do while (itor%isValid())
+        call itor%currentTile(tileDesc)
+        blkLimits(:,:) = tileDesc%limits
+        allocate(cellVolumes(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS), &
+                             blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS), &
+                             blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
+
+        totalblockshere = totalblockshere + 1
+        call Grid_getCellVolumes(tileDesc%level, &
+                                 lbound(cellVolumes), ubound(cellVolumes), &
+                                 cellVolumes)
+        bsum = 0.
+        if (ivar >= 0) then
+           do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)  ! working on interior only
+              do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
+                 do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
+                    cvol = cellVolumes(i,j,k)
+                    bsum = bsum + abs(unk(ivar,i,j,k,1))**normType * cvol
+                    lvol = lvol + cvol
+                 enddo
               enddo
            enddo
-        enddo
-!!     else
-        ! DEV: Issue warning?
-     endif
-     lsum = lsum + bsum
+!!        else
+           ! DEV: Issue warning?
+        endif
+        lsum = lsum + bsum
+
+        deallocate(cellVolumes)
+
+        call itor%next()
+     end do
+     call Grid_releaseTileIterator(itor)
   endif
 
-  deallocate(cellVolumes)
-  
   call mpi_allreduce ( lsum, sum, 1, FLASH_REAL, & 
        MPI_SUM, gr_meshComm, ierr )
   !call mpi_allreduce ( lvol, vol, 1, FLASH_REAL,

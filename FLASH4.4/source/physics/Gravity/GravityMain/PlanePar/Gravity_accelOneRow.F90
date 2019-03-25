@@ -34,7 +34,10 @@
 !! 
 !!***
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
+#include "Flash.h"
+#include "constants.h"
+
+subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
                                 potentialIndex, extraAccelVars)
 
 !========================================================================
@@ -44,9 +47,6 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
     Grid_getCellCoords
 
   implicit none
-
-#include "Flash.h"
-#include "constants.h"
 
   integer, intent(IN) :: sweepDir,blockID,numCells
   integer, dimension(2),INTENT(in) ::pos
@@ -72,7 +72,6 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
   integer :: sizeX,sizeY,sizeZ
   logical :: gcell=.true.
 
-!
 !==============================================================================
   if (.NOT.useGravity) return
 
@@ -119,6 +118,138 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockID, numCells, grav, &
   call Grid_getCellCoords(IAXIS, blockId, CENTER, gcell, xCenter, sizeX)
   call Grid_getCellCoords(IAXIS, blockId, LEFT_EDGE, gcell, xLeft, sizeX)
   call Grid_getCellCoords(IAXIS, blockId, RIGHT_EDGE, gcell, xRight, sizeX)
+
+  j = pos(1); k=pos(2)
+  grav(1:numCells) = 0.
+  do i = 1, numCells
+        
+     select case (sweepDir)
+
+     case (SWEEP_X)
+        call grv_accelOneZone(xCenter (i), yCenter(j), zCenter(k), gc)
+        call grv_accelOneZone(xLeft(i), yCenter(j), zCenter(k), gl)
+        call grv_accelOneZone(xRight(i), yCenter(j), zCenter(k), gr)
+
+     case (SWEEP_Y)
+        call grv_accelOneZone(xCenter(j), yCenter (i), zCenter(k), gc)
+        call grv_accelOneZone(xCenter(j), yLeft(i), zCenter(k), gl)
+        call grv_accelOneZone(xCenter(j), yRight(i), zCenter(k), gr)
+
+     case (SWEEP_Z)
+        call grv_accelOneZone(xCenter(j), yCenter(k), zCenter (i), gc)
+        call grv_accelOneZone(xCenter(j), yCenter(k), zLeft(i), gl)
+        call grv_accelOneZone(xCenter(j), yCenter(k), zRight(i), gr)
+        
+     end select
+
+     grav_zone = (gl + 4.*gc + gr)/6.
+     grav(i) = grav_zone(sweepDir)
+
+  enddo
+#ifndef FIXEDBLOCKSIZE
+  deallocate(xCenter)
+  deallocate(xLeft)
+  deallocate(xRight)
+  deallocate(yCenter)
+  deallocate(yLeft)
+  deallocate(yRight)
+  deallocate(zCenter)
+  deallocate(zLeft)
+  deallocate(zRight)
+#endif
+!
+!==============================================================================
+!
+  return
+end subroutine Gravity_accelOneRow_blkid
+
+
+subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
+                                potentialIndex, extraAccelVars)
+
+!========================================================================
+
+  use Gravity_data, ONLY: useGravity
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use Grid_tile, ONLY : Grid_tile_t
+  use Driver_interface, ONLY : Driver_abortFlash
+
+  implicit none
+
+  integer, intent(IN) :: sweepDir,numCells
+  type(Grid_tile_t),intent(IN) :: tileDesc
+  integer, dimension(2),INTENT(in) ::pos
+  real, dimension(numCells),INTENT(inout) :: grav
+  real,    POINTER,   OPTIONAL      :: Uin(:,:,:,:)
+  integer,intent(IN),optional :: potentialIndex
+  integer,intent(IN),OPTIONAL :: extraAccelVars(MDIM)
+
+  real, DIMENSION(MDIM) :: grav_zone
+  real, DIMENSION(MDIM) :: gc, gl, gr
+
+#ifdef FIXEDBLOCKSIZE
+  real,dimension(GRID_KHI_GC) :: zCenter,zLeft,zRight
+  real,dimension(GRID_JHI_GC) :: yCenter,yLeft,yRight
+  real,dimension(GRID_IHI_GC) :: xCenter,xLeft,xRight
+#else
+  real,allocatable,dimension(:) ::xCenter,xLeft,xRight
+  real,allocatable,dimension(:) ::yCenter,yLeft,yRight
+  real,allocatable,dimension(:) ::zCenter,zLeft,zRight
+#endif
+  
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimitsGC
+  integer :: i,j,k
+  integer :: sizeX,sizeY,sizeZ
+  logical :: gcell=.true.
+
+  call Driver_abortFlash("[Gravity_accelOneRow] Update to work with tiling")!
+!
+!==============================================================================
+  if (.NOT.useGravity) return
+
+#ifndef FIXEDBLOCKSIZE
+  blkLimitsGC=blockDesc%limitsGC
+  sizeX=blkLimitsGC(HIGH,IAXIS)
+  sizeY=blkLimitsGC(HIGH,JAXIS)
+  sizeZ=blkLimitsGC(HIGH,KAXIS)
+  allocate(xCenter(sizeX))
+  allocate(xLeft(sizeX))
+  allocate(xRight(sizeX))
+  allocate(yCenter(sizeY))
+  allocate(yLeft(sizeY))
+  allocate(yRight(sizeY))
+  allocate(zCenter(sizeZ))
+  allocate(zLeft(sizeZ))
+  allocate(zRight(sizeZ))
+#else
+  sizeX=GRID_IHI_GC
+  sizeY=GRID_JHI_GC
+  sizeZ=GRID_KHI_GC
+#endif
+  zLeft = 0.
+  zCenter = 0.
+  zRight = 0.
+  yLeft = 0.
+  yCenter = 0.
+  yRight = 0.
+  xLeft = 0.
+  xCenter = 0.
+  xRight = 0.
+
+  if (NDIM == 3) then
+     call Grid_getCellCoords(KAXIS, blockDesc, CENTER, gcell,zCenter, sizeZ)
+     call Grid_getCellCoords(KAXIS, blockDesc, LEFT_EDGE, gcell, zLeft, sizeZ)
+     call Grid_getCellCoords(KAXIS, blockDesc, RIGHT_EDGE, gcell,zRight, sizeZ)
+  end if
+  if (NDIM > 1) then
+     call Grid_getCellCoords(JAXIS, blockDesc, CENTER, gcell,yCenter, sizeY)
+     call Grid_getCellCoords(JAXIS, blockDesc, LEFT_EDGE, gcell, yLeft, sizeY)
+     call Grid_getCellCoords(JAXIS, blockDesc, RIGHT_EDGE, gcell,yRight, sizeY)
+  end if
+
+  call Grid_getCellCoords(IAXIS, blockDesc, CENTER, gcell, xCenter, sizeX)
+  call Grid_getCellCoords(IAXIS, blockDesc, LEFT_EDGE, gcell, xLeft, sizeX)
+  call Grid_getCellCoords(IAXIS, blockDesc, RIGHT_EDGE, gcell, xRight, sizeX)
 
   j = pos(1); k=pos(2)
   grav(1:numCells) = 0.

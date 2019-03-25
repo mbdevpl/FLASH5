@@ -1,12 +1,12 @@
-!!****if* source/Simulation/SimulationMain/unitTest/Gravity/Poisson3_active/Gravity_potentialListOfBlocks
+!!****if* source/Simulation/SimulationMain/unitTest/Gravity/Poisson3_active/Gravity_potential
 !!
 !!  NAME 
 !!
-!!     Gravity_potentialListOfBlocks
+!!     Gravity_potential
 !!
 !!  SYNOPSIS
 !!
-!!  call Gravity_potentialListOfBlocks(integer(IN) :: blockCount,
+!!  call Gravity_potential(integer(IN) :: blockCount,
 !!                                     integer(IN) :: blockList(blockCount),
 !!                            optional,integer(IN) :: potentialIndex)
 !!
@@ -30,7 +30,7 @@
 
 !!REORDER(4): solnVec
 
-subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
+subroutine Gravity_potential( potentialIndex)
 
   use Gravity_data, ONLY : grav_poisfact, grav_temporal_extrp, grav_boundary, &
        grav_unjunkPden, &
@@ -70,8 +70,8 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
   integer       :: density
 
 
-  !NOTE: The difference between this version of Gravity_potentialListOfBlocks.F90
-  !and the default Gravity_potentialListOfBlocks.F90 are the additional code blocks marked 
+  !NOTE: The difference between this version of Gravity_potential.F90
+  !and the default Gravity_potential.F90 are the additional code blocks marked 
   !with "ADDITION".
   !----------------------- ADDITION ---------------------------
   real, external :: getMassMesh, getMassParticles
@@ -230,7 +230,7 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
 
 
   return
-end subroutine Gravity_potentialListOfBlocks
+end subroutine Gravity_potential
 
 
 

@@ -28,7 +28,7 @@
 !!
 !!***
 
-!#define DEBUG_DRIVER
+!!#define DEBUG_DRIVER
 #ifdef DEBUG_ALL
 #define DEBUG_DRIVER
 #endif
@@ -72,22 +72,17 @@ subroutine Driver_evolveFlash()
                                   Grid_updateRefinement,&
                                   Grid_fillGuardCells,&
                                   Grid_getDeltas,&
-                                  Grid_getBlkPtr,&
-                                  Grid_releaseBlkPtr,&
                                   Grid_getMaxRefinement
-  use Grid_interface,      ONLY : Grid_copyF4DataToMultiFabs
 #ifdef FLASH_GRID_AMREX
   ! DEV: Temporary ugliness for debugging
   use gr_amrexInterface,   ONLY : gr_writeData
 #endif
 
 #include "Flash.h"
-#ifdef FLASH_GRID_AMREXTRANSITION
-  use gr_amrextInterface,  ONLY : gr_amrextBuildMultiFabsFromF4Grid
-#endif
+  use Burn_interface,      ONLY : Burn
   use Hydro_interface,     ONLY : Hydro, &
                                   Hydro_gravPotIsAlreadyUpdated
-  use Gravity_interface,   ONLY : Gravity_potentialListOfBlocks
+  use Gravity_interface,   ONLY : Gravity_potential
   use IO_interface,        ONLY : IO_output,IO_outputFinal
   use RadTrans_interface,  ONLY : RadTrans
   use Eos_interface,       ONLY : Eos_logDiagnostics

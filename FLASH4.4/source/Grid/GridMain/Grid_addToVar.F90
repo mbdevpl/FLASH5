@@ -38,39 +38,64 @@
 !!
 !!***
 
-subroutine Grid_addToVar(srcVar, destVar, multFactor, reset)
-  use Grid_interface, ONLY : Grid_getListOfBlocks, Grid_getBlkPtr, &
-       Grid_getBlkIndexLimits, Grid_releaseBlkPtr
+!!REORDER(4): solnData
 
 #include "Flash.h"
 #include "constants.h"  
 #include "Particles.h"
 
+subroutine Grid_addToVar(srcVar, destVar, multFactor, reset)
+  use Grid_interface,   ONLY : Grid_getTileIterator, &
+                               Grid_releaseTileIterator
+  use Grid_tile,        ONLY : Grid_tile_t
+  use Grid_iterator,    ONLY : Grid_iterator_t
+  use Driver_interface, ONLY : Driver_abortFlash
+
   implicit none
+
   integer, intent(in) :: srcVar, destVar
   real,    intent(in) :: multFactor
   logical, intent(in) :: reset
-  integer :: blockList(MAXBLOCKS), blockCount
-  integer :: blkLimits(LOW:HIGH,MDIM), blkLimitsGC(LOW:HIGH,MDIM)
-  integer :: blk, k, j, i, n
+
   real, dimension(:,:,:,:), pointer :: solnData
 
-  call Grid_getListOfBlocks(LEAF, blockList, blockCount)
-  do blk = 1, blockCount
-     call Grid_getBlkPtr(blockList(blk), solnData)
-     if (reset) then 
-        solnData(destVar,:,:,:) = 0.0
+  type(Grid_tile_t)     :: tileDesc
+  type(Grid_iterator_t) :: itor
+
+  integer :: i, j, k
+ 
+  nullify(solnData)
+
+  call Driver_abortFlash("[Grid_addToVar] This update has not been tested")
+
+  call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+
+     call tileDesc%getDataPtr(solnData, CENTER)
+
+     if (reset) then
+        ! DEV: TODO Why no just set the destVar by overwriting rather than
+        !       adding?  We can save an entire loop over interiors with that.
+        do       k = tileDesc%limits(LOW, KAXIS), tileDesc%limits(HIGH, KAXIS)
+           do    j = tileDesc%limits(LOW, JAXIS), tileDesc%limits(HIGH, JAXIS)
+              do i = tileDesc%limits(LOW, IAXIS), tileDesc%limits(HIGH, IAXIS)
+                 solnData(destVar,i,j,k) = 0.0
+              end do
+           end do
+        end do
      end if
-     call Grid_getBlkIndexLimits(blockList(blk), &
-          blkLimits, blkLimitsGC, CENTER)
-     do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
-        do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
-           do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
-              solnData(destVar,i,j,k) = solnData(destVar,i,j,k) + &
-                   multFactor*solnData(srcVar,i,j,k)
+     do       k = tileDesc%limits(LOW, KAXIS), tileDesc%limits(HIGH, KAXIS)
+        do    j = tileDesc%limits(LOW, JAXIS), tileDesc%limits(HIGH, JAXIS)
+           do i = tileDesc%limits(LOW, IAXIS), tileDesc%limits(HIGH, IAXIS)
+              solnData(destVar,i,j,k) =              solnData(destVar, i, j, k) & 
+                                        + multFactor*solnData(srcVar,  i, j, k)
            end do
         end do
      end do
-     call Grid_releaseBlkPtr(blockList(blk), solnData)
+
+     call tileDesc%releaseDataPtr(solnData, CENTER)
   end do
+  call Grid_releaseTileIterator(itor)
 end subroutine Grid_addToVar
+

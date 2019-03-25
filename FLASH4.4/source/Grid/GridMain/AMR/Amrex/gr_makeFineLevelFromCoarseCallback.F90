@@ -68,16 +68,15 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                           amrex_mfiter_destroy
     use amrex_fluxregister_module, ONLY : amrex_fluxregister_build
     use amrex_fillpatch_module,    ONLY : amrex_fillcoarsepatch
-    use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
 
     use Grid_data,                 ONLY : gr_doFluxCorrection, &
                                           gr_amrexDidRefinement, &
+                                          gr_interpolator, &
                                           lo_bc_amrex, hi_bc_amrex
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_preinterpolationWork, &
                                           gr_postinterpolationWork, &
-                                          gr_fillPhysicalBC, &
-                                          gr_fillPhysicalFaceBC
+                                          gr_fillPhysicalBC
     use gr_physicalMultifabs,      ONLY : unk, &
                                           gr_scratchCtr, &
                                           facevarx, facevary, facevarz, &
@@ -129,14 +128,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 #endif
 #endif
 
-    ! Create FABs for needed by Hydro.
-    !! DEV : Control of gr_scratchCtr allocation is very hacky...
-#ifdef HY_VAR2_SCRATCHCTR_VAR
-# ifdef HY_XN06_SCRATCHCTR_VAR
-    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, HY_XN06_SCRATCHCTR_VAR, 0)
-# else
-    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, HY_VAR2_SCRATCHCTR_VAR, 0)
-# endif
+#if NSCRATCH_CENTER_VARS > 0
+    call amrex_multifab_build(gr_scratchCtr(lev), ba, dm, NSCRATCH_CENTER_VARS, 0)
 #endif
 
 #if NFLUXES > 0
@@ -166,7 +159,7 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
                                          amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                          time, &
                                          UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS, &
-                                         amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                         amrex_ref_ratio(lev-1), gr_interpolator, &
                                          lo_bc_amrex, hi_bc_amrex, &
                                          gr_preinterpolationWork, &
                                          gr_postinterpolationWork)
@@ -174,30 +167,30 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
 #if NFACE_VARS > 0
     call amrex_fillcoarsepatch(facevarx(lev), time,     facevarx(lev-1),  &
                                               time+0.1, facevarx(lev-1),  &
-                                              amrex_geom(lev-1), gr_fillPhysicalFaceBC,  &
-                                              amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
+                                              amrex_geom(lev-1), gr_fillPhysicalBC,  &
+                                              amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                               time, &
                                               1, 1, NFACE_VARS, &
-                                              amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                              amrex_ref_ratio(lev-1), gr_interpolator, &
                                               lo_bc_amrex, hi_bc_amrex) 
 #if NDIM >= 2
     call amrex_fillcoarsepatch(facevary(lev), time,     facevary(lev-1),  &
                                               time+0.1, facevary(lev-1),  &
-                                              amrex_geom(lev-1), gr_fillPhysicalFaceBC,  &
-                                              amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
+                                              amrex_geom(lev-1), gr_fillPhysicalBC,  &
+                                              amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                               time, &
                                               1, 1, NFACE_VARS, &
-                                              amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                              amrex_ref_ratio(lev-1), gr_interpolator, &
                                               lo_bc_amrex, hi_bc_amrex) 
 #endif
 #if NDIM == 3
     call amrex_fillcoarsepatch(facevarz(lev), time,     facevarz(lev-1),  &
                                               time+0.1, facevarz(lev-1),  &
-                                              amrex_geom(lev-1), gr_fillPhysicalFaceBC,  &
-                                              amrex_geom(lev  ), gr_fillPhysicalFaceBC,  &
+                                              amrex_geom(lev-1), gr_fillPhysicalBC,  &
+                                              amrex_geom(lev  ), gr_fillPhysicalBC,  &
                                               time, &
                                               1, 1, NFACE_VARS, &
-                                              amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                              amrex_ref_ratio(lev-1), gr_interpolator, &
                                               lo_bc_amrex, hi_bc_amrex) 
 #endif
 #endif

@@ -7,7 +7,7 @@
 !!
 !!  call Grid_dump(integer(IN) :: var(num),
 !!                 integer(IN) :: num,
-!!                 integer(IN) :: blockID,
+!!  type(block_metadata_t)(IN) :: block,
 !!                 logical(IN) :: gcell)
 !!
 !! DESCRIPTION 

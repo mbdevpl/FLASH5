@@ -36,10 +36,10 @@ FLUX F11VOLU
 # Use SCRATCHVAR for temporary storages
 USESETUPVARS physicsMode,nDim
 
-IF physicsMode <> 'hydro' and (nDim=='' or nDim == 2)
+IF physicsMode != 'hydro' and (nDim=='' or nDim == 2)
  SCRATCHVAR Ez
 ENDIF
-IF physicsMode <> 'hydro' and nDim == 3
+IF physicsMode != 'hydro' and nDim == 3
  SCRATCHVAR Ex
  SCRATCHVAR Ey
  SCRATCHVAR Ez
@@ -48,7 +48,7 @@ ENDIF
 
 USESETUPVARS FullScratchUseInUSM
 
-IF FullScratchUseInUSM or (physicsMode <> 'hydro' and (nDim=='' or nDim >= 2))
+IF FullScratchUseInUSM or (physicsMode != 'hydro' and (nDim=='' or nDim >= 2))
 
  PPDEFINE FLASH_UHD_NEED_SCRATCHVARS
 
@@ -56,7 +56,7 @@ IF FullScratchUseInUSM or (physicsMode <> 'hydro' and (nDim=='' or nDim >= 2))
  # Use memory allocation mechanism implemented within the Hydro unit instead.
 ENDIF
 
-IF physicsMode <> 'hydro' and (nDim=='' or nDim >= 2)
+IF physicsMode != 'hydro' and (nDim=='' or nDim >= 2)
  # Use FACEVAR for cell interface magnetic fields
  FACEVAR Mag  # Face-centered divergence-free magnetic fields at each n time step
  FACEVAR Magi # Interface states for face-centered div-free magnetic fields at each n+1/2 time step
@@ -95,7 +95,7 @@ PARAMETER hy_biermannCoef      REAL     1.0             # Coefficient of Bierman
 PARAMETER conserveAngField     BOOLEAN  FALSE           # Turn on/off alternate formulation for toroidal induction  
 
 # Needed for PARAMESH_PREPROCESSOR.FH and amr_set_runtime_parameters
-IF (nDim=='' or nDim > 1) and physicsMode <> 'hydro'
+IF (nDim=='' or nDim > 1) and physicsMode != 'hydro'
  PPDEFINE	FLASH_NFIELD_DIVF 	1 	# Number of variables for divergence-free prolongagion 
 						# (only for MAG, not MAGI)
  PPDEFINE	FLASH_MHD_DIM		1

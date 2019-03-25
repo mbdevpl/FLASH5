@@ -6,7 +6,7 @@
 !! SYNOPSIS
 !!
 !!  Grid_getSingleCellCoords(integer(in)       ::  ind(MDIM), 
-!!                           integer(in)       ::  blockid,
+!!                   type(block_metadta_t)(IN) :: block,
 !!                           integer(in)       ::  edge,
 !!                           integer(in)       ::  beginCount,
 !!                           real(OUT)         ::  coords(MDIM))
@@ -20,7 +20,7 @@
 !!
 !!  ind - array holding the indices of the cell whose coordinates to return
 !! 
-!!  blockid - local block number
+!!   block - block metadata
 !!
 !!  edge - indicates if user wants the left, center or right edge of the block
 !!         options are LEFT_EDGE, RIGHT_EDGE, or CENTER.  These constants are
@@ -52,55 +52,38 @@
 #define DEBUG_GRID
 #endif
 
-
-subroutine Grid_getSingleCellCoords(ind, blockId,edge, beginCount,coords)
-
-  use Grid_data,ONLY :gr_iCoords,gr_jCoords,gr_kCoords,gr_guard
-  use Driver_interface, ONLY : Driver_abortFlash
-
-  implicit none
-
 #include "constants.h"
 #include "Flash.h"
 
+subroutine Grid_getSingleCellCoords(ind, level, edge, coords)
+  use Driver_interface, ONLY : Driver_abortFlash
+  use Grid_data,        ONLY : gr_iCoords, gr_jCoords, gr_kCoords, &
+                               gr_guard
 
+  implicit none
 
-  integer,dimension(MDIM), intent(in) :: ind
-  integer, intent(in) :: blockId, edge
-  integer, intent(in) :: beginCount
-  real, dimension(MDIM), intent(out) :: coords
+  integer, intent(in)  :: ind(1:MDIM)
+  integer, intent(in)  :: level
+  integer, intent(in)  :: edge
+  real,    intent(out) :: coords(1:MDIM)
 
-#ifdef DEBUG_GRID
-  print*,' inside Grid_getSingleCellCoords', ind, blockId, edge, beginCount,coords
-  if((blockid /= 1)) then
-     print*,"Get Coords :invalid blockid "
-     call Driver_abortFlash("Grid_getSingleCellCoords :invalid blockid ")
-  end if
-  if((edge/=LEFT_EDGE).and.(edge/=CENTER).and.(edge/=RIGHT_EDGE))&
-       call Driver_abortFlash('Grid_getSingleCellCoords : invalid edge')
+  coords(:) = 0.0
+  call Driver_abortFlash("[Grid_getSingleCellCoords] DEPRECATED")
 
-  print*, 'leaving the DEBUG_GRID statement'
-#endif
-
-  if(beginCount == EXTERIOR) then
-     coords(IAXIS) = gr_iCoords(edge,ind(IAXIS),1)
-     coords(JAXIS) = gr_jCoords(edge,ind(JAXIS),1)
-     coords(KAXIS) = gr_kCoords(edge,ind(KAXIS),1)
-  else if(beginCount == INTERIOR) then
-     coords(IAXIS) = gr_iCoords(edge,ind(IAXIS)+gr_guard(IAXIS),1)
-     coords(JAXIS) = gr_jCoords(edge,ind(JAXIS)+gr_guard(JAXIS),1)
-     coords(KAXIS) = gr_kCoords(edge,ind(KAXIS)+gr_guard(KAXIS),1)
-  else
-     call Driver_abortFlash("Grid_getSingleCellCoords: beginCount has incorrect value")
-  end if
-  return
+!#ifdef DEBUG_GRID
+!  print*,' inside Grid_getSingleCellCoords', ind, level, edge, coords
+!  if((level /= 1)) then
+!     print*,"Grid_getSingleCellCoords: invalid level"
+!     call Driver_abortFlash("[Grid_getSingleCellCoords] invalid level")
+!  end if
+!  if((edge/=LEFT_EDGE).and.(edge/=CENTER).and.(edge/=RIGHT_EDGE))&
+!       call Driver_abortFlash('Grid_getSingleCellCoords : invalid edge')
+!
+!  print*, 'leaving the DEBUG_GRID statement'
+!#endif
+!
+!  coords(IAXIS) = gr_iCoords(edge,ind(IAXIS)+gr_guard(IAXIS),1)
+!  coords(JAXIS) = gr_jCoords(edge,ind(JAXIS)+gr_guard(JAXIS),1)
+!  coords(KAXIS) = gr_kCoords(edge,ind(KAXIS)+gr_guard(KAXIS),1)
 end subroutine Grid_getSingleCellCoords
-
-
-
-
-
-
-
-
 

@@ -67,9 +67,9 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                         amrex_geom, &
                                         amrex_ref_ratio
   use amrex_fillpatch_module,    ONLY : amrex_fillpatch
-  use amrex_interpolater_module, ONLY : amrex_interp_cell_cons
   
-  use Grid_interface,            ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
+  use Grid_interface,            ONLY : Grid_getTileIterator, &
+                                        Grid_releaseTileIterator
   use Grid_data,                 ONLY : gr_nrefs, &
 !                                        gr_maxRefine, &
                                         gr_refine_var, &
@@ -79,17 +79,16 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
                                         gr_smallrho, &
                                         gr_smalle, &
                                         gr_amrexDidRefinement, &
+                                        gr_interpolator, &
                                         lo_bc_amrex, hi_bc_amrex
-  use gr_interface,              ONLY : gr_getBlkIterator, &
-                                        gr_releaseBlkIterator
   use gr_amrexInterface,         ONLY : gr_conserveToPrimitive, &
                                         gr_cleanDensityData, &
                                         gr_cleanEnergyData, &
                                         gr_fillPhysicalBC, &
                                         gr_restrictAllLevels
   use gr_physicalMultifabs,      ONLY : unk
-  use gr_iterator,               ONLY : gr_iterator_t
-  use block_metadata,            ONLY : block_metadata_t
+  use Grid_iterator,             ONLY : Grid_iterator_t
+  use Grid_tile,                 ONLY : Grid_tile_t
   use Eos_interface,             ONLY : Eos_wrapped
   use Timers_interface,          ONLY : Timers_start, Timers_stop
   use Particles_interface,       ONLY : Particles_updateRefinement
@@ -111,9 +110,11 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   
   logical :: needConversion
 
-  type(gr_iterator_t)            :: itor
-  type(block_metadata_t)         :: blockDesc
-  real,                  pointer :: solnData(:, :, :, :) => null()
+  type(Grid_iterator_t)         :: itor
+  type(Grid_tile_t)             :: tileDesc
+  real,                 pointer :: solnData(:, :, :, :)
+
+  nullify(solnData)
 
   if (mod(nstep, gr_nrefs) == 0) then
 #ifdef DEBUG_GRID
@@ -162,22 +163,22 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      ! on all levels with leaf blocks.
      ! DEV: TODO Should we restrict GC fill to only refinement variables?
      lev = 0
-     call amrex_fillpatch(unk(lev), 1.0d0, unk(lev), &
-                                    0.0d0, unk(lev), &
+     call amrex_fillpatch(unk(lev), 1.0, unk(lev), &
+                                    0.0, unk(lev), &
                                     amrex_geom(lev), gr_fillPhysicalBC, &
-                                    0.0d0, UNK_VARS_BEGIN, &
+                                    0.0, UNK_VARS_BEGIN, &
                                     UNK_VARS_BEGIN, NUNK_VARS)
 
      do lev=1, amrex_get_finest_level()
-        call amrex_fillpatch(unk(lev), 1.0d0, unk(lev-1), &
-                                       0.0d0, unk(lev-1), &
+        call amrex_fillpatch(unk(lev), 1.0, unk(lev-1), &
+                                       0.0, unk(lev-1), &
                                        amrex_geom(lev-1), gr_fillPhysicalBC, &
-                                       1.0e0, unk(lev  ), &
-                                       0.0d0, unk(lev  ), &
+                                       1.0, unk(lev  ), &
+                                       0.0, unk(lev  ), &
                                        amrex_geom(lev  ), gr_fillPhysicalBC, &
-                                       0.0d0, UNK_VARS_BEGIN, &
+                                       0.0, UNK_VARS_BEGIN, &
                                        UNK_VARS_BEGIN, NUNK_VARS, &
-                                       amrex_ref_ratio(lev-1), amrex_interp_cell_cons, &
+                                       amrex_ref_ratio(lev-1), gr_interpolator, &
                                        lo_bc_amrex, hi_bc_amrex)
      end do
 
@@ -189,66 +190,66 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      ! parent blocks.
      ! DEV: TODO Add masking as in Grid_fillGuardCell?
      if (needConversion)then
-       call gr_getBlkIterator(itor)
-       do while (itor%is_valid())
-          call itor%blkMetaData(blockDesc)
-          call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+       call Grid_getTileIterator(itor, ALL_BLKS, tiling=.TRUE.)
+       do while (itor%isValid())
+          call itor%currentTile(tileDesc)
+          call tileDesc%getDataPtr(solnData, CENTER)
 
           call gr_cleanDensityData(gr_smallrho, &
-                                   blockDesc%limitsGC(LOW,  :), &
-                                   blockDesc%limitsGC(HIGH, :), &
+                                   tileDesc%grownLimits(LOW,  :), &
+                                   tileDesc%grownLimits(HIGH, :), &
                                    solnData, &
-                                   blockDesc%limitsGC(LOW,  :), &
-                                   blockDesc%limitsGC(HIGH, :), &
+                                   tileDesc%blkLimitsGC(LOW,  :), &
+                                   tileDesc%blkLimitsGC(HIGH, :), &
                                    NUNK_VARS)
-          call gr_conserveToPrimitive(blockDesc%limitsGC(LOW,  :), &
-                                      blockDesc%limitsGC(HIGH, :), &
+          call gr_conserveToPrimitive(tileDesc%grownLimits(LOW,  :), &
+                                      tileDesc%grownLimits(HIGH, :), &
                                       solnData, &
-                                      blockDesc%limitsGC(LOW,  :), &
-                                      blockDesc%limitsGC(HIGH, :), &
+                                      tileDesc%blkLimitsGC(LOW,  :), &
+                                      tileDesc%blkLimitsGC(HIGH, :), &
                                       NUNK_VARS, &
                                       UNK_VARS_BEGIN, NUNK_VARS)
           call gr_cleanEnergyData(gr_smalle, &
-                                  blockDesc%limitsGC(LOW,  :), &
-                                  blockDesc%limitsGC(HIGH, :), &
+                                  tileDesc%grownLimits(LOW,  :), &
+                                  tileDesc%grownLimits(HIGH, :), &
                                   solnData, &
-                                  blockDesc%limitsGC(LOW,  :), &
-                                  blockDesc%limitsGC(HIGH, :), &
+                                  tileDesc%blkLimitsGC(LOW,  :), &
+                                  tileDesc%blkLimitsGC(HIGH, :), &
                                   NUNK_VARS)
 
-          call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
+          call Eos_wrapped(gr_eosMode, tileDesc%grownLimits, solnData)
  
-          call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+          call tileDesc%releaseDataPtr(solnData, CENTER)
           call itor%next()
        end do
-       call gr_releaseBlkIterator(itor)
+       call Grid_releaseTileIterator(itor)
      else
-       call gr_getBlkIterator(itor)
-       do while (itor%is_valid())
-          call itor%blkMetaData(blockDesc)
-          call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+       call Grid_getTileIterator(itor, ALL_BLKS, tiling=.TRUE.)
+       do while (itor%isValid())
+          call itor%currentTile(tileDesc)
+          call tileDesc%getDataPtr(solnData, CENTER)
 
           call gr_cleanDensityData(gr_smallrho, &
-                                   blockDesc%limitsGC(LOW,  :), &
-                                   blockDesc%limitsGC(HIGH, :), &
+                                   tileDesc%grownLimits(LOW,  :), &
+                                   tileDesc%grownLimits(HIGH, :), &
                                    solnData, &
-                                   blockDesc%limitsGC(LOW,  :), &
-                                   blockDesc%limitsGC(HIGH, :), &
+                                   tileDesc%blkLimitsGC(LOW,  :), &
+                                   tileDesc%blkLimitsGC(HIGH, :), &
                                    NUNK_VARS)
           call gr_cleanEnergyData(gr_smalle, &
-                                  blockDesc%limitsGC(LOW,  :), &
-                                  blockDesc%limitsGC(HIGH, :), &
+                                  tileDesc%grownLimits(LOW,  :), &
+                                  tileDesc%grownLimits(HIGH, :), &
                                   solnData, &
-                                  blockDesc%limitsGC(LOW,  :), &
-                                  blockDesc%limitsGC(HIGH, :), &
+                                  tileDesc%blkLimitsGC(LOW,  :), &
+                                  tileDesc%blkLimitsGC(HIGH, :), &
                                   NUNK_VARS)
 
-          call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
+          call Eos_wrapped(gr_eosMode, tileDesc%grownLimits, solnData)
 
-          call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+          call tileDesc%releaseDataPtr(solnData, CENTER)
           call itor%next()
        end do
-       call gr_releaseBlkIterator(itor)
+       call Grid_releaseTileIterator(itor)
      end if
 
      ! Let AMReX regrid with callbacks
@@ -266,17 +267,17 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
      ! run EoS on blocks that were parents but that are now leaves due
      ! to the removal of a level.
      if (gr_amrexDidRefinement) then
-       call gr_getBlkIterator(itor, LEAF, tiling=.FALSE.)
-       do while (itor%is_valid())
-          call itor%blkMetaData(blockDesc)
+       call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
+       do while (itor%isValid())
+          call itor%currentTile(tileDesc)
 
-          call Grid_getBlkPtr(blockDesc, solnData, CENTER)
-          call Eos_wrapped(gr_eosMode, blockDesc%limitsGC, solnData)
-          call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
+          call tileDesc%getDataPtr(solnData, CENTER)
+          call Eos_wrapped(gr_eosMode, tileDesc%grownLimits, solnData)
+          call tileDesc%releaseDataPtr(solnData, CENTER)
 
           call itor%next()
        end do
-       call gr_releaseBlkIterator(itor)
+       call Grid_releaseTileIterator(itor)
      end if
 
      call Timers_stop("Grid_updateRefinement")

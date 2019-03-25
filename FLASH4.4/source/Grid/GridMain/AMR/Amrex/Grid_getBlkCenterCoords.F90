@@ -4,15 +4,15 @@
 !!  Grid_getBlkCenterCoords
 !!
 !! SYNOPSIS
-!!  Grid_getBlkCenterCoords(integer(IN) :: blockId,
+!!  Grid_getBlkCenterCoords(integer(IN) :: blockDesc
 !!                          real(OUT)   :: blockCenter(MDIM))
 !!  
 !! DESCRIPTION 
 !!   Gets the coordinates of the center of the block identified by
-!!   blockId.  Returns the coordinates in an array blockCenter
+!!   blockDesc.  Returns the coordinates in an array blockCenter
 !!
 !! ARGUMENTS
-!!  blockId - local id number of the block. for UG always 1
+!!  blockDesc - block_metadata_t of the block. for UG always 1
 !!  blockCenter - returned array of size MDIM holding the blockCenter coords
 !!
 !! Example
@@ -37,15 +37,31 @@
 !!***
 
 #include "constants.h"
+#include "Flash.h"
 
-subroutine Grid_getBlkCenterCoords(blockId, blockCenter)
-  use Driver_interface, ONLY : Driver_abortFlash
+subroutine Grid_getBlkCenterCoords(blockDesc, blockCenter)
+
+  use amrex_amrcore_module,  ONLY : amrex_geom
+  use amrex_geometry_module, ONLY : amrex_problo
+
+  use block_metadata,        ONLY : block_metadata_t
 
   implicit none
 
-  integer, intent(IN)  :: blockId
+  type(block_metadata_t), intent(IN)  :: blockDesc
   real,    intent(OUT) :: blockCenter(MDIM)
+  real                 :: boundBox(LOW:HIGH, MDIM)
 
-  call Driver_abortFlash("[Grid_getBlkCenterCoords] Not implemented for AMReX")
+  integer :: i = 0
+
+  ! DEV: FIXME How to manage matching amrex_real to FLASH real
+  boundBox = 1.0d0
+  associate(x0   => amrex_problo, &
+            dx   => amrex_geom(blockDesc%level - 1)%dx, &
+            lo   => blockDesc%limits(LOW,  :), &
+            hi   => blockDesc%limits(HIGH, :))
+    ! lo is 1-based cell-index of lower-left cell in block 
+    ! hi is 1-based cell-index of upper-right cell in block
+    blockCenter(1:NDIM) = x0(1:NDIM) + dx(1:NDIM) * (hi(1:NDIM)+lo(1:NDIM)-1) /2.0
+  end associate
 end subroutine Grid_getBlkCenterCoords
-

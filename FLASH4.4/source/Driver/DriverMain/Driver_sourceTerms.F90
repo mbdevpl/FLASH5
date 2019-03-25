@@ -48,7 +48,7 @@ subroutine Driver_sourceTerms(blockCount, blockList, dt, pass)
 
   call Polytrope(blockCount, blockList, dt)
   call Flame_step(blockCount, blockList, dt)
-  call Burn(blockCount, blockList, dt) 
+  call Burn(dt) 
   call Heat(blockCount, blockList, dt, dr_simTime) 
   call Ionize(blockCount, blockList, dt, dr_simTime)
   call Deleptonize(blockCount, blockList, dt, dr_simTime)

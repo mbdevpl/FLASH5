@@ -15,9 +15,17 @@ IF withParticles
     REQUIRES Particles/ParticlesMain
 ENDIF
 
+USESETUPVARS FlashAmrexMode
+
 LINKIF Grid_markRefineDerefine.F90 Grid/GridMain/AMR/paramesh
-LINKIF gr_expandDomain.F90         Grid/GridMain/AMR/paramesh
-LINKIF Grid_dump.F90               Grid/GridMain/AMR/paramesh
+IF FlashAmrexMode == 2
+   LINKIF gr_expandDomain.F90.M2      Grid/GridMain/AMR/paramesh/AmrexTransition
+ENDIF
+
+USESETUPVARS threadBlockList
+IF threadBlockList and withHydro
+   LINKIF hy_advance.F90.tryOMP	physics/Hydro/HydroMain/unsplit
+ENDIF
 
 D sim_pAmbient       Initial ambient pressure
 PARAMETER sim_pAmbient     REAL    1.E-5
@@ -44,7 +52,7 @@ PARAMETER sim_yctr          REAL    0.5
 D sim_zctr            Explosion center coordinates
 PARAMETER sim_zctr          REAL    0.5
 
-D sim_nsubzones       Number of `sub-zones' in cells for applying 1d profile
+D sim_nsubzones       Number of subzones in cells for applying 1d profile
 PARAMETER sim_nsubzones     INTEGER 7   [1 ...]
 
 D sim_forceCenterDerefine  Try to force low refinement level around explosion center?

@@ -4,18 +4,15 @@
 !!  Grid_getBlkCenterCoords
 !!
 !! SYNOPSIS
-!!
-!!  Grid_getBlkCenterCoords(integer(IN) :: blockId,
-!!                         real(OUT)   :: blockCenter(MDIM))
-!!                      
+!!  Grid_getBlkCenterCoords(integer(IN) :: blockDesc
+!!                          real(OUT)   :: blockCenter(MDIM))
 !!  
 !! DESCRIPTION 
 !!   Gets the coordinates of the center of the block identified by
-!!   blockId.  Returns the coordinates in an array blockCenter
-!!
+!!   blockDesc.  Returns the coordinates in an array blockCenter
 !!
 !! ARGUMENTS
-!!  blockId - local id number of the block. for UG always 1
+!!  blockDesc - block_metadata_t of the block. for UG always 1
 !!  blockCenter - returned array of size MDIM holding the blockCenter coords
 !!
 !! Example
@@ -39,12 +36,15 @@
 !!
 !!***
 
+#include "constants.h"
+#include "Flash.h"
 
-subroutine Grid_getBlkCenterCoords(blockId, blockCenter)
+subroutine Grid_getBlkCenterCoords(blockDesc, blockCenter)
+  use block_metadata,        ONLY : block_metadata_t
 
   implicit none
-#include "constants.h"
-  integer,intent(in) :: blockId
-  real,dimension(MDIM),intent(out) :: blockCenter
+
+  type(block_metadata_t), intent(IN)  :: blockDesc
+  real,    intent(OUT) :: blockCenter(MDIM)
   blockCenter=0.0
 end subroutine Grid_getBlkCenterCoords

@@ -5,7 +5,7 @@
 !!
 !!
 !! SYNOPSIS
-!!  Simulation_init( )
+!!  call Simulation_init( )
 !!
 !!
 !! DESCRIPTION
@@ -13,27 +13,32 @@
 !!
 !! ARGUMENTS
 !!
-!!  
+!!  none
 !!
 !!***
 
 subroutine Simulation_init()
   
   use Simulation_data, ONLY : sim_xmin,sim_xmax,sim_ymin,sim_ymax,&
-                              sim_zmin,sim_zmax,sim_smallx,&
+                              sim_zmin,sim_zmax,sim_smallx,sim_smallE,&
                               sim_densMin,sim_tempMin,sim_xnMin,sim_presMin,&
                               sim_densMax, sim_tempMax, sim_xnMax, sim_presMax, &
                               sim_initialMass
-  use Driver_interface, ONLY : Driver_abortFlash
+  use Simulation_data, ONLY : sim_meshMe, sim_debug
+  use Driver_interface, ONLY : Driver_abortFlash, Driver_getMype
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
 
   implicit none
 
 # include "Flash.h"
+# include "constants.h"
 
   
 
   integer :: lrefine_max, factor, nblockx,nblocky,nblockz
+
+  call Driver_getMype(MESH_COMM,   sim_meshMe)
+  call RuntimeParameters_get('sim_debug',sim_debug)
 
   call eos_initTest
   
@@ -47,6 +52,7 @@ subroutine Simulation_init()
   call RuntimeParameters_get( 'zmax', sim_zmax)
   
   call RuntimeParameters_get( 'smallx', sim_smallx)
+  call RuntimeParameters_get( 'smallE', sim_smallE)
 
 ! sim_initialMass must be less than NSPECIES
   call RuntimeParameters_get( 'sim_initialMass', sim_initialMass)

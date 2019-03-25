@@ -46,7 +46,7 @@ ELSE
 ENDIF
 
 IF threadBlockList or threadWithinBlock
-  REQUIRES Driver/DriverMain/multithreaded
+  #REQUIRES Driver/DriverMain/multithreaded
   CONFLICTS Driver/DriverMain/INSfracstep
 ENDIF
 

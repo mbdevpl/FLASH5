@@ -6,9 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Burn_computeDt(integer(IN) :: blockID,
-!!                 integer(IN) :: blkLimits(2,MDIM)
-!!                 integer(IN) :: blkLimitsGC(2,MDIM)
+!!  Burn_computeDt(type(Grid_tile_t) :: tileDesc,
 !!                 real,pointer::  solnData(:,:,:,:),   
 !!                 real(INOUT) :: dt_burn, 
 !!                 real(INOUT) :: dt_minloc(5)) 
@@ -74,21 +72,20 @@
 
 !!REORDER(4): solnData
 
-subroutine Burn_computeDt(blockID,  &
-                           blkLimits,blkLimitsGC,        &
-                           solnData,   &
-                           dt_burn, dt_minloc)
+subroutine Burn_computeDt(tileDesc,  &
+                          solnData,   &
+                          dt_burn, dt_minloc)
 
   use Burn_data, ONLY: bn_enucDtFactor, bn_useBurn, bn_meshMe
   use Driver_interface, ONLY : Driver_abortFlash
+  use Grid_tile, ONLY : Grid_tile_t
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
   !! arguments
-  integer, intent(IN)   :: blockID
-  integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
+  type(Grid_tile_t)       :: tileDesc
   real, pointer           :: solnData(:,:,:,:) 
   real, intent(INOUT)     :: dt_burn
   integer, intent(INOUT)  :: dt_minloc(5)
@@ -100,6 +97,7 @@ subroutine Burn_computeDt(blockID,  &
 
   real, PARAMETER :: SMALL = TINY(1.0)
   real :: eint_zone, energyRatioInv
+  integer, dimension(1:MDIM) :: lo, hi
 
 !!===================================================================
 
@@ -109,11 +107,13 @@ subroutine Burn_computeDt(blockID,  &
 
   dt_temp = HUGE(0.0)
   dt_tempInv = SMALL
+  lo(:) = tileDesc%limits(LOW, :)
+  hi(:) = tileDesc%limits(HIGH, :)
 
   ! loop over all of the zones and compute the minimum eint/enuc
-  do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
-     do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
-        do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
+  do k = lo(KAXIS), hi(KAXIS)
+     do j = lo(JAXIS), hi(JAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
 
 #ifdef EINT_VAR
            ! compute the internal energy in the zone
@@ -137,7 +137,7 @@ subroutine Burn_computeDt(blockID,  &
               temploc(1) = i
               temploc(2) = j
               temploc(3) = k
-              temploc(4) = blockID
+              temploc(4) = tileDesc%level
               temploc(5) = bn_meshMe
            endif
 

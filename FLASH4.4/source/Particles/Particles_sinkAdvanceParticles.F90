@@ -26,7 +26,7 @@
 !!   ported to FLASH3.3/4 by Chalence Safranek-Shrader, 2010-2012
 !!   modified by Nathan Goldbaum, 2012
 !!   refactored for FLASH4 by John Bachan, 2012
-!!   removed call to AccelGasOnSinks (now called in Gravity_PotentialListOfBlocks)
+!!   removed call to AccelGasOnSinks (now called in Gravity_potential)
 !!   (CTSS, CF 2013)
 !!
 !!***

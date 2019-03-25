@@ -42,11 +42,11 @@ Module Simulation_interface
   end interface
 
   interface
-     subroutine Simulation_initBlock(solnData,blockDesc)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine Simulation_initBlock(solnData,tileDesc)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        real,dimension(:,:,:,:),pointer :: solnData
-       type(block_metadata_t), intent(in) :: blockDesc
+       type(Grid_tile_t), intent(in) :: tileDesc
      end subroutine Simulation_initBlock
   end interface
 
@@ -116,11 +116,11 @@ Module Simulation_interface
   end interface
 
   interface
-     subroutine Simulation_computeAnalytical(solnData, blockDesc, tcurr)
-       use block_metadata, ONLY : block_metadata_t
+     subroutine Simulation_computeAnalytical(solnData, tileDesc, tcurr)
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
        real,dimension(:,:,:,:),POINTER_INTENT_IN :: solnData
-       type(block_metadata_t), intent(in) :: blockDesc
+       type(Grid_tile_t), intent(in) :: tileDesc
        real   , intent (IN) :: tcurr
      end subroutine Simulation_computeAnalytical
   end interface

@@ -55,11 +55,13 @@
 !!          the non permanent mode when using PARAMESH 4.
 !!
 !!***
-subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,begOffset,getIntPtr)
-  use block_metadata, ONLY : block_metadata_t
 
 #include "constants.h"
 #include "Flash.h"
+
+subroutine gr_getDataOffsets_blk(block,gridDataStruct,startingPos,length,beginCount,begOffset,getIntPtr)
+  use block_metadata, ONLY : block_metadata_t
+
   implicit none
   type(block_metadata_t), intent(IN)  :: block
   integer, intent(IN)  :: gridDataStruct
@@ -70,6 +72,9 @@ subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,
   logical,intent(OUT) :: getIntPtr
 
   integer,dimension(LOW:HIGH,MDIM) :: blkLimits
+#ifdef FL_NON_PERMANENT_GUARDCELLS 
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimitsGC
+#endif
   integer :: i
   logical :: formBlk
 
@@ -86,7 +91,10 @@ subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,
        (gridDataStruct == FACEZ).or.(gridDataStruct==WORK)) then
      formBlk=.false.
      if(beginCount == EXTERIOR) then
-        blkLimits = block%limits
+        ! DEV: blkLimits was changed to localLimits below at commit 7c1fb877
+        ! Do we need the same change here?
+        blkLimits   = block%limits
+        blkLimitsGC = block%limitsGC
         do i = 1,NDIM
            formBlk = formBlk.or.(startingPos(i) < blkLimits(LOW,i))
            formBlk = formBlk.or.((startingPos(i)+length(i)-1)>blkLimits(HIGH,i))
@@ -103,6 +111,64 @@ subroutine gr_getDataOffsets(block,gridDataStruct,startingPos,length,beginCount,
   !! If operating with permanent guardcells, then the interior implies offset by gcell
   if(beginCount == INTERIOR) then
      blkLimits = block%localLimits
+     begOffset(1:NDIM) = blkLimits(LOW,1:NDIM)-1
+  end if
+  
+  return
+end subroutine gr_getDataOffsets_blk
+
+subroutine gr_getDataOffsets(tileDesc,gridDataStruct,startingPos,length,beginCount,begOffset,getIntPtr)
+  use Grid_tile, ONLY : Grid_tile_t
+
+  implicit none
+  type(Grid_tile_t), intent(IN) :: tileDesc
+  integer, intent(IN)  :: gridDataStruct
+  integer, intent(IN)  :: beginCount
+  integer,dimension(MDIM),intent(IN) :: startingPos
+  integer,dimension(MDIM),intent(IN) :: length
+  integer,dimension(MDIM),intent(OUT) :: begOffset
+  logical,intent(OUT) :: getIntPtr
+
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimits
+#ifdef FL_NON_PERMANENT_GUARDCELLS 
+  integer,dimension(LOW:HIGH,MDIM) :: blkLimitsGC
+#endif
+  integer :: i
+  logical :: formBlk
+
+  getIntPtr=.false.
+  begOffset = 0
+  !! We fetch data from the main data structure (unk etc in most cases) unless
+  !! in non-permanent mode when some of the guardcell need to be fetched too
+  
+  
+#ifdef FL_NON_PERMANENT_GUARDCELLS 
+  !! If running with PM4 and operating the non permanent guardcell mode, and
+  !! the grid data structure is not one of SCRATCH types
+  if((gridDataStruct == CENTER).or.(gridDataStruct == FACEX).or.(gridDataStruct ==FACEY).or.&
+       (gridDataStruct == FACEZ).or.(gridDataStruct==WORK)) then
+     formBlk=.false.
+     if(beginCount == EXTERIOR) then
+        ! DEV: blkLimits was changed to localLimits below at commit 7c1fb877
+        ! Do we need the same change here?
+        blkLimits   = block%limits
+        blkLimitsGC = block%limitsGC
+        do i = 1,NDIM
+           formBlk = formBlk.or.(startingPos(i) < blkLimits(LOW,i))
+           formBlk = formBlk.or.((startingPos(i)+length(i)-1)>blkLimits(HIGH,i))
+        end do
+        !! if all the data is from the interior of the block, we don't need to
+        !! form the block, just subtracting the number of guardcells from the starting
+        !! position gives the right offset.
+        if(.not.formBlk) begOffset(1:NDIM) = blkLimitsGC(LOW,1:NDIM)-blkLimits(LOW,1:NDIM)
+     end if !! If the beginCount is interior, then nothing needs to be done to the offset
+     getIntPtr=.not.formBlk
+     return        ! RETURN FROM HERE for dataStructs whose permanent storage is without guard cells
+  end if
+#endif
+  !! If operating with permanent guardcells, then the interior implies offset by gcell
+  if(beginCount == INTERIOR) then
+     blkLimits(:, :) = 1
      begOffset(1:NDIM) = blkLimits(LOW,1:NDIM)-1
   end if
   

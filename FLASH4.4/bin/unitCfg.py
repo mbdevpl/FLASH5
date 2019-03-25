@@ -10,7 +10,7 @@ from globals import *
 from utils import *
 from preProcess import preProcess
 
-import re, os.path, UserDict, types, string, copy
+import re, os.path, types, string, copy
 
 ######## FLASH UNIT CODE ############
 
@@ -25,7 +25,7 @@ TOP_UNIT    = "topUnit"
 ## parseKEYWORD(self,mobj)
 ##   mobj is the match object instance returned by regexp parser
 ##   you need to update self["KEYWORD"] appropriately
-class FlashUnit(UserDict.UserDict,preProcess):
+class FlashUnit(dict,preProcess):
     """Encapsulates unit information as expressed in Config files.
     Data is accessed through dictionary methods, ex:
 
@@ -59,17 +59,17 @@ class FlashUnit(UserDict.UserDict,preProcess):
                         "Only DEFAULT, PARAMETER, and 'D' keywords are allowed in a top-level Config.")
 
     def __init__(self, pathname, restrict, ignorePP=False):
-        UserDict.UserDict.__init__(self)
+        dict.__init__(self)
         preProcess.__init__(self,values=GVars.setupVars.getdict(), ignorePP=ignorePP)
 
         myClass = self.__class__
         if myClass.firstcall: self.init_class_vars()
         ivals = myClass.initvalues
-        for key in ivals.keys():
+        for key in list(ivals.keys()):
             self[key] = copy.copy(ivals[key])
 
         if not os.path.isdir(pathname): # given name does not make sense
-           raise SetupError('Unit %s not found '% pathname)
+            raise SetupError('Unit %s not found '% pathname)
 
         # else
         self.name = os.path.normpath(pathname) #something like 'IO/common/hdf5/'
@@ -116,7 +116,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
 
     def __cmp__(self, other):
         """Alphabetical comparison on unit names (like 'source/io/amr')"""
-        if type(other)==types.StringType:
+        if isinstance(other,str):
             return cmp(self.name, other)
         else:
             return cmp(self.name, other.name)
@@ -147,10 +147,10 @@ class FlashUnit(UserDict.UserDict,preProcess):
             if rawline and rawline[-1]=='\n': rawline = rawline[:-1]
 
             line=stripComments(line, self.COMMENT,self.QUOTE)
-            line=string.strip(line)
+            line=str.strip(line)
             if not line: continue
 
-            keyword = string.split(line)[0]
+            keyword = str.split(line)[0]
             pkeyword = prefix + keyword  # e.g. 'topUnitParse' + 'DEFAULT'
             if pkeyword not in parsers:
                 raise SetupError(errMsg % (keyword, self.filename, lineno))
@@ -158,7 +158,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
                 self.rawline = rawline #FIXME this is for STRING PARAM hack
                 mobj = self.match(keyword,line)
                 getattr(self,pkeyword)(mobj)
-            except SetupError, msg:
+            except SetupError as msg:
                 # Do not abort on multiple occurrence of same PARAMETER in the same file
                 # if we are only parsing for documentation purposes (ignorePP is true) - KW
                 if not self.ignorePP or not (str(msg)[-17:]==" already declared"):
@@ -186,7 +186,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
     def parseD(self, mobj):
         key, comment = mobj.groups()
         if key=='&':
-           if self['D'].has_key(self.DKey):
+           if self.DKey in self['D']:
               self['D'][self.DKey] = "%s %s" % (self['D'][self.DKey],comment)
            else: raise SetupError('Improper usage of comment continuation')
         else:
@@ -201,7 +201,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
         facevar = mobj.group("varname")
         eosmap = mobj.group("eosmap")
         if not eosmap: eosmap = "NONEXISTENT"
-        if self['FACEVAR'].has_key(facevar):
+        if facevar in self['FACEVAR']:
            raise SetupError('FACEVAR %s already declared'%facevar)
         self['FACEVAR'][facevar] = (eosmap.upper(),eosmap.upper())
 
@@ -229,7 +229,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
         if not eosmapout: eosmapout = "NONEXISTENT"
 
         if not vartype: vartype = "GENERIC"
-        if self['VARIABLE'].has_key(variable):
+        if variable in self['VARIABLE']:
             raise SetupError('VARIABLE %s already declared'%variable)
         self['VARIABLE'][variable] = (vartype.upper(), eosmapin.upper(), eosmapout.upper())
 
@@ -238,7 +238,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
 
     def parseLIBRARY(self, mobj):
         libname = mobj.group(1).lower()
-        libargs = string.join(mobj.group(2).split()) # trims and removes multiple spaces
+        libargs = " ".join(mobj.group(2).split()) # trims and removes multiple spaces
         self['LIBRARY'][libname] = libargs
 
     def initparseGUARDCELLS(self):
@@ -354,7 +354,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
         prop_type = mobj.group("type")
         if prop_type=="INTEGER":
             raise SetupError('Particle properties of type INTEGER are currently not supported, use REAL instead to store integer %s information!'%name)
-        if self['PARTICLEPROP'].has_key(name):
+        if name in self['PARTICLEPROP']:
             raise SetupError('PARTICLEPROP %s already declared'%name)
         self['PARTICLEPROP'][name] = prop_type
 
@@ -368,7 +368,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
         initMethod = mobj.group("initMethod")
         mapMethod = mobj.group("mapMethod")
         advMethod = mobj.group("advMethod")
-        if self['PARTICLETYPE'].has_key(particleType):
+        if particleType in self['PARTICLETYPE']:
             raise SetupError('PARTICLETYPE %s already declared' % particleType)
         self['PARTICLETYPE'][particleType] = (initMethod, mapMethod, advMethod)
 
@@ -381,7 +381,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
         name = mobj.group("name")
         type = mobj.group("type")
         varname = mobj.group("varname")
-        if self['PARTICLEMAP'].has_key(name):
+        if name in self['PARTICLEMAP']:
             raise SetupError('PARTICLEMAP %s already set'%name)
         self['PARTICLEMAP'][name] = (type, varname)
             
@@ -433,7 +433,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
         # do we need to REQUIRE it or not?
         ignore = False # do not ignore this unit
         reason = "Unknown"
-        for x in GVars.withoutUnits.keys():
+        for x in list(GVars.withoutUnits.keys()):
             if unit == x: 
                ignore = True
                reason = x
@@ -453,14 +453,14 @@ class FlashUnit(UserDict.UserDict,preProcess):
 
     def parsePARAMETER(self, mobj):
         name,type,constant,value,range = mobj.groups()
-        if self['PARAMETER'].has_key(name):
+        if name in self['PARAMETER']:
             raise SetupError('%s already declared'%name)
         if type=='STRING':
             #This is a hack. I "forgot" to accomodate parsers that would need
             #rawlines when I wrote the general framework. See init_class_vars.
             name, value,range = self.match('pstring', self.rawline).groups()
         else:
-            value = string.rstrip(value)
+            value = str.rstrip(value)
         self['PARAMETER'][name]=(type, value, constant, range)
 
     def initparseDEFAULT(self):
@@ -473,7 +473,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
         return [], r'EXCLUSIVE\s+(.+)$'
 
     def parseEXCLUSIVE(self, mobj):
-        units = string.split(mobj.group(1))
+        units = str.split(mobj.group(1))
 
         #look explicitly for the "*" which means only one directory
         #below can be chosen, ie all are exclusive
@@ -507,7 +507,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
     def parseLINKIF(self,mobj):
         # LINKIF spaces non-spaces spaces non-spaces spaces ENDOFLINE
         # first set of non-spaces is called "filename" and the second set "unitname"
-        parts = string.split(mobj.group(1))
+        parts = str.split(mobj.group(1))
         # We are appending a pair (filename,unitname)
         if not self.name.startswith(globals.SimSetupDirname):
           GVars.out.put("WARNING: \"LINKIF\" directive found in file \"%s\"" % os.path.join(self.name, self.FILEBASE))
@@ -545,7 +545,7 @@ class FlashUnit(UserDict.UserDict,preProcess):
         tpre = self.__class__.regexps[tp]
         tpparse = getattr(self, 'parse%s' % tp)
         locf = 'NONREP_%s_%X_%%06d' % (name, name.__hash__() & 0xffffffff)
-        for i in xrange(nlocs):
+        for i in range(nlocs):
             tpparse(tpre.match('%s %s' % (tp, locf % (i+1))))
         self['NONREP'][name] = { 'tp':tp, 'rpcount':pglob, 'nlocs':nlocs, 'locf':locf, 'namef':namef }
     # These methods are called when 'restrict' is TOP_UNIT
@@ -556,14 +556,14 @@ class FlashUnit(UserDict.UserDict,preProcess):
     topUnitParseCHILDORDER = parseCHILDORDER
 ######################################################
 
-class UnitUnion(UserDict.UserDict):
+class UnitUnion(dict):
     """Collates info from an ordered list of FlashUnit instances"""
 
     def __init__(self, units):
         """
         'units' is a list of FlashUnit instances
         """
-        UserDict.UserDict.__init__(self)
+        dict.__init__(self)
         self['DATAFILES'] = []
         self['FACEVAR'] = {}
         self['FLUX'] = {}
@@ -596,12 +596,12 @@ class UnitUnion(UserDict.UserDict):
         partproplocs = {} # for err msg
         speclocs = {} # dictionary storing which units define which species.
         mscalarlocs = {} # for err msg
-     	for unit in units:
+        for unit in units:
 
             # self['LIBRARY'] is a dictionary of lists of arguments
             # In perfect world all entries of this list will be the same
-            for lib in unit['LIBRARY'].keys():
-                if not self['LIBRARY'].has_key(lib): self['LIBRARY'][lib] = []
+            for lib in list(unit['LIBRARY'].keys()):
+                if lib not in self['LIBRARY']: self['LIBRARY'][lib] = []
                 self['LIBRARY'][lib].append(unit['LIBRARY'][lib])
 
             updateAndMergeVariablePropertyTuples(self['SCRATCHVAR'],unit['SCRATCHVAR'], "SCRATCHVAR")
@@ -617,7 +617,7 @@ class UnitUnion(UserDict.UserDict):
  
             self["NONREP"].update(unit["NONREP"])
             
-            for name,(group,eos1,eos2) in unit["MASS_SCALAR"].items():
+            for name,(group,eos1,eos2) in list(unit["MASS_SCALAR"].items()):
                 try:
                   currval = self["MASS_SCALARS"][name]
                   gotval = True
@@ -639,7 +639,7 @@ class UnitUnion(UserDict.UserDict):
             #name.  If so, let the user know which Config files contain
             #the same SPECIES definition.  Otherwise, add the species to
             #the main dictionary.
-            for (keyString, numElec) in unit['SPECIES'].items():
+            for (keyString, numElec) in list(unit['SPECIES'].items()):
                 if keyString in self['SPECIES']:
                     #We have defined the same species in multiple Config files.
                     msg = ['SPECIES %s defined twice' % keyString]
@@ -661,7 +661,7 @@ class UnitUnion(UserDict.UserDict):
                else:
                   self['GUARDCELLS']= max(unit['GUARDCELLS'], self['GUARDCELLS'])
 
-            for (prop,prop_type) in unit['PARTICLEPROP'].items():
+            for (prop,prop_type) in list(unit['PARTICLEPROP'].items()):
                 if unit['PARTICLEPROP'].get(prop,prop_type)!=prop_type:
                    msg = ['Integer/Real PARTICLEPROP MISMATCH with %s ' % prop]
                    msg.append('    has type %s in %s' % (prop_type,unit.name))
@@ -672,14 +672,14 @@ class UnitUnion(UserDict.UserDict):
                    partproplocs[prop] = unit.name
 
             if unit['PARTICLETYPE'] != None:
-                unitParticleTypeKeys = unit['PARTICLETYPE'].keys()
+                unitParticleTypeKeys = list(unit['PARTICLETYPE'].keys())
                 for particleType in unitParticleTypeKeys:       
-                    if self['PARTICLETYPE'].has_key(particleType):
+                    if particleType in self['PARTICLETYPE']:
                         raise SetupError('PARTICLETYPE %s already declared' % particleType)
                 #We've ensured we have no common keys, so copy the data across:
                 self['PARTICLETYPE'].update(unit['PARTICLETYPE'])
 
-            for prop, map in unit['PARTICLEMAP'].items():
+            for prop, map in list(unit['PARTICLEMAP'].items()):
                 if unit['PARTICLEMAP'].get(prop,map)!=map:
                    msg = ['PARTICLEMAP  mismatch with %s ' % prop]
                    raise SetupError("\n".join(msg))
@@ -702,7 +702,7 @@ class UnitUnion(UserDict.UserDict):
 
         ppd = self['PPDEFINES'] # Speeds up lookup time
         ppds = []
-        for x in ppd.keys():
+        for x in list(ppd.keys()):
             if ppd[x]:
                ppds.append("#define %s %s" % (x.upper(),ppd[x]))
             else: ppds.append("#define %s" % x.upper())
@@ -710,7 +710,7 @@ class UnitUnion(UserDict.UserDict):
         self['ppdefines'] = ppds
 
         #need this since order in which a dict returns it's keys is not determined.
-        self['variable']= self['VARIABLE'].keys()
+        self['variable']= list(self['VARIABLE'].keys())
         self['variable'].sort()
         tmpList = [ self['VARIABLE'][var] for var in self['variable'] ] 
         self['var_types'] = [x for (x,y,z) in tmpList] # list of corresponding TYPES
@@ -737,7 +737,7 @@ class UnitUnion(UserDict.UserDict):
 
         self['intproperty']  = []
         self['realproperty'] = []
-        pkeys = self['PARTICLEPROP'].keys()
+        pkeys = list(self['PARTICLEPROP'].keys())
         #DEV: not using intproperty right now
         self['intproperty'] = [x for x in pkeys if self['PARTICLEPROP'][x] == 'INTEGER']
         self['intproperty'].sort()
@@ -754,11 +754,14 @@ class UnitUnion(UserDict.UserDict):
           self['n_real_props'] = 1
 
 
-        listTuples = self['SPECIES'].items()
+        listTuples = list(self['SPECIES'].items())
         #Provide a custom compare function to the list's sort method.
         #Sorts list by the number of electrons (field 1) and then alphabetically (field 0).
         #The second condition is only evaluated if the first condition is false.
-        listTuples.sort( lambda x,y : cmp(int(x[1]),int(y[1])) or cmp(x[0],y[0]) )
+        try:
+            listTuples.sort( key = lambda x : (int(x[1]),x[0]) )
+        except: # for Python versions before 2.4, but those probably do not work for us anyway
+            listTuples.sort( cmp = lambda x,y : cmp(int(x[1]),int(y[1])) or cmp(x[0],y[0]) )
 
         totalSpecies = 0
         self['species'] = []        
@@ -775,8 +778,8 @@ class UnitUnion(UserDict.UserDict):
             #There is an inbuilt 4-character limit in Paramesh which truncates names.
             #Warn the user if they have exceeded this limit.
             #If there is only one ion for a particular element then we append no number.                
-            if (len(element) + lenAppendedNumber) > 4:
-                raise SetupError('Constructed element name for "%s" will exceed 4 character limit' % (element))
+#            if (len(element) + lenAppendedNumber) > 4:
+#                raise SetupError('Constructed element name for "%s" will exceed 4 character limit' % (element))
 
             #Place the unique name in the list.
             self['species'].append(element)
@@ -787,7 +790,7 @@ class UnitUnion(UserDict.UserDict):
         
         self['nspecies'] = totalSpecies
         self['nmassscalars'] = len(self['MASS_SCALARS'])
-        self['massscalars'] = self['MASS_SCALARS'].keys()
+        self['massscalars'] = list(self['MASS_SCALARS'].keys())
         self['massscalars'].sort()
         tmpList = [ self['MASS_SCALARS'][var] for var in self['massscalars'] ]
 ##        print 'tmpList is',tmpList
@@ -795,14 +798,14 @@ class UnitUnion(UserDict.UserDict):
         self['eosmapout_ms'] = [z for (x,y,z) in tmpList] # list of Eos_map roles for EOSMAPOUTs
 ##        print "self['eosmapin_ms'] is", self['eosmapin_ms'] 
 ##        print "self['eosmapout_ms'] is", self['eosmapout_ms'] 
-        msg = self['MASS_SCALAR_GROUPS'].keys()
+        msg = list(self['MASS_SCALAR_GROUPS'].keys())
         msg.sort()
 ##        print 'msg is', msg
         self['massscalars_map'] = {}
         self['massscalars_group_map'] = {}
 
 ##        print "self['MASS_SCALARS'].items() is",self['MASS_SCALARS'].items()
-        for name,(group,eos1,eos2) in self['MASS_SCALARS'].items():
+        for name,(group,eos1,eos2) in list(self['MASS_SCALARS'].items()):
             if not group: continue
 ##            print 'group is', group
             self['massscalars_map'][name] = msg.index(group)+1 # index return 0 based, our groups start at 1
@@ -812,7 +815,7 @@ class UnitUnion(UserDict.UserDict):
         # mass_scalars_group_map maps group names to numbers
 
         self['nfacevars'] = len(self['FACEVAR'])
-        self['facevar'] = self['FACEVAR'].keys()
+        self['facevar'] = list(self['FACEVAR'].keys())
         self['facevar'].sort()
 #        self['eos_facevars'] = [ self['FACEVAR'][var] for var in self['facevar'] ] # list of Eos_map roles.
         tmpList = [ self['FACEVAR'][var] for var in self['facevar'] ]
@@ -820,11 +823,11 @@ class UnitUnion(UserDict.UserDict):
         self['eosmapout_facevars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
 
-        self['flux'] = self['FLUX'].keys()
+        self['flux'] = list(self['FLUX'].keys())
         self['flux'].sort()
 
 
-        self['scratchvar'] = self['SCRATCHVAR'].keys()
+        self['scratchvar'] = list(self['SCRATCHVAR'].keys())
         self['scratchvar'].sort()
 #        self['eos_scratchvars'] = [ self['SCRATCHVAR'][var] for var in self['scratchvar'] ] # list of Eos_map roles.
         tmpList = [ self['SCRATCHVAR'][var] for var in self['scratchvar'] ]
@@ -832,26 +835,26 @@ class UnitUnion(UserDict.UserDict):
         self['eosmapout_scratchvars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
 
-        self['scratchcentervar'] = self['SCRATCHCENTERVAR'].keys()
+        self['scratchcentervar'] = list(self['SCRATCHCENTERVAR'].keys())
         self['scratchcentervar'].sort()
         tmpList = [ self['SCRATCHCENTERVAR'][var] for var in self['scratchcentervar'] ]
         self['eosmapin_scratchcentervars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
         self['eosmapout_scratchcentervars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
 
-        self['scratchfacexvar'] = self['SCRATCHFACEXVAR'].keys()
+        self['scratchfacexvar'] = list(self['SCRATCHFACEXVAR'].keys())
         self['scratchfacexvar'].sort()
         tmpList = [ self['SCRATCHFACEXVAR'][var] for var in self['scratchfacexvar'] ]
         self['eosmapin_scratchfacexvars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
         self['eosmapout_scratchfacexvars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
-        self['scratchfaceyvar'] = self['SCRATCHFACEYVAR'].keys()
+        self['scratchfaceyvar'] = list(self['SCRATCHFACEYVAR'].keys())
         self['scratchfaceyvar'].sort()
         tmpList = [ self['SCRATCHFACEYVAR'][var] for var in self['scratchfaceyvar'] ]
         self['eosmapin_scratchfaceyvars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
         self['eosmapout_scratchfaceyvars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
-        self['scratchfacezvar'] = self['SCRATCHFACEZVAR'].keys()
+        self['scratchfacezvar'] = list(self['SCRATCHFACEZVAR'].keys())
         self['scratchfacezvar'].sort()
         tmpList = [ self['SCRATCHFACEZVAR'][var] for var in self['scratchfacezvar'] ]
         self['eosmapin_scratchfacezvars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
@@ -869,8 +872,11 @@ class UnitUnion(UserDict.UserDict):
         self['advmethod'] = []
         #We create a sorted temporary list "tmpList", which we then copy into
         #a new list "particleList" with passive particles at the start.
-        tmpList = self['PARTICLETYPE'].items()
-        tmpList.sort( lambda x,y : cmp(x[0],y[0]))  #Sort by particle type.
+        tmpList = list(self['PARTICLETYPE'].items())
+        try:
+            tmpList.sort( key = lambda x : x[0] )  #Sort by particle type.
+        except: # for Python versions before 2.4, but those probably do not work for us anyway
+            tmpList.sort( cmp = lambda x,y : cmp(x[0],y[0]) )  #Sort by particle type.
 
         i = 0
         particleList = []
@@ -891,7 +897,7 @@ class UnitUnion(UserDict.UserDict):
 
 
         #build separate lists for the different grid-variable typed particle maps
-        pmkeys = self['PARTICLEMAP'].keys()
+        pmkeys = list(self['PARTICLEMAP'].keys())
 
         self['particlemaps_variable'] = []
         self['particlemaps_species'] = []

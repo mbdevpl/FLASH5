@@ -18,14 +18,14 @@
 !!
 !!   Code that is responsible for updating GPOT to the most
 !!   recent solution of the Poisson equation for gravity
-!!   (typically by calling Gravity_potentialListOfBlocks
+!!   (typically by calling Gravity_potential
 !!   at the end of each time advance iteration in
 !!   Driver_evolveFlash) MAY use this function to avoid
 !!   an unnecessary additional call to the Poisson solver.
 !!
 !!   An implementation of this interface should only return
 !!   TRUE when it is certain that an additional call to
-!!   Gravity_potentialListOfBlocks would not change
+!!   Gravity_potential would not change
 !!   results.
 !!
 !!   For any constant-in-time Gravity implementations,
@@ -39,7 +39,7 @@
 !!
 !!  Driver_evolveFlash
 !!  Hydro
-!!  Gravity_potentialListOfBlocks
+!!  Gravity_potential
 !!  Particles_advance
 !!
 !!***

@@ -11,7 +11,8 @@ Grid += gr_ptInterface.o gr_ptInit.o gr_ptMove.o gr_ptMoveSieve.o\
 	gr_interface.o gr_interfaceTypeDecl.o gr_pfftInterfaceTypeDecl.o \
 	gr_getInteriorBlkPtr.o gr_releaseInteriorBlkPtr.o gr_setBlockType.o \
 	gr_mgInterface.o gr_mgInit.o gr_mgFinalize.o gr_mgPfftInit.o gr_mgPfftFinalize.o \
-        gr_bicgInterface.o gr_bicgInit.o gr_bicgFinalize.o 
+        gr_bicgInterface.o gr_bicgInit.o gr_bicgFinalize.o \
+        gr_getDataOffsets.o 
 
 Grid += gr_hg_amr_1blk_bcset_work.o gr_pfftPoissonDirect.o
 
@@ -74,14 +75,10 @@ Grid += gr_bhInterface.o gr_bhInit.o gr_bhFinalize.o
 
 Grid += gr_xyzToBlockLevel.o gr_xyzToBlock.o
 
-Grid += gr_amrextInterface.o gr_amrextAmrexInit.o gr_amrextAmrexFinalize.o
-
 Grid += gr_forceDerefInRadius.o
 Grid += gr_markRefineDerefine.o gr_estimateBlkError.o
 
 Grid += gr_blockMatch.o
-
-Grid += gr_getBlkIterator.o gr_releaseBlkIterator.o
 
 gr_interface.o     : gr_interfaceTypeDecl.o
 gr_pfftInterface.o : gr_pfftInterfaceTypeDecl.o

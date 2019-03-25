@@ -24,7 +24,7 @@ REQUESTS Particles/ParticlesMapping/meshWeighting/MapToMesh
 #  the USESETUPVARS only works if the option is specified on the command line
 # So, if another version of Poisson is implemented, comment out these lines
 USESETUPVARS nDim
-IF nDim <> 3
+IF nDim != 3
   SETUPERROR unitTest/Gravity/Poisson3 and Poisson/Multipole must run in 3d.  Use ./setup unitTest/Gravity/Poisson3 -3d blah blah
 ENDIF
 

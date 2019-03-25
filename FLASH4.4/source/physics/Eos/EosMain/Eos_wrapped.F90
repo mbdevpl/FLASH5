@@ -227,7 +227,6 @@
 subroutine Eos_wrapped(mode,range,solnData, gridDataStruct)
 
   use Driver_interface, ONLY : Driver_abortFlash
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr
   use Logfile_interface, ONLY: Logfile_stampMessage 
   use Eos_interface, ONLY : Eos, Eos_putData, Eos_getData
   use Eos_data, ONLY : eos_threadWithinBlock
@@ -309,8 +308,6 @@ subroutine Eos_wrapped(mode,range,solnData, gridDataStruct)
         
   deallocate(eosData)
   deallocate(massFraction)
-
-  !$omp end parallel
 
   return
 end subroutine Eos_wrapped

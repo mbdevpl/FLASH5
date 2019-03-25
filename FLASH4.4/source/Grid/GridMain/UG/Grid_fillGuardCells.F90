@@ -131,13 +131,17 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
   use Grid_data, ONLY : gr_axisComm, gr_exch, gr_gridDataStruct, &
        gr_justExchangedGC,gr_domainBC, &
        gr_offset,gr_allPeriodic,gr_bndOrder, gr_meshMe
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
   use Driver_interface, ONLY : Driver_abortFlash
   use gr_bcInterface, ONLY : gr_bcApplyToAllBlks
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_iterator, ONLY: Grid_iterator_t
   implicit none
 #include "constants.h"
 #include "Flash.h"
 
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
   integer, intent(in) :: gridDataStruct
   integer, intent(in) :: idir
   integer, optional,intent(in) :: minLayers
@@ -153,7 +157,7 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
   ! integer that hold the boundary condition type (ie, PERIODIC)
   integer,dimension(MDIM) :: guard !DEV: unused - KW 2010-09-22
   integer,dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
-  integer :: blockID = 1
+
   integer :: i,j,k,beginDataType,endDataType
   integer :: axis,n,localGridDataStruct
   logical :: isWork=.false.
@@ -234,6 +238,7 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
         if(gr_meshMe == MASTER_PE)print*,'warning: trying to fill face along Y for 1D problem'
      end if
   case(FACEZ)
+
      if(NDIM>2) then
         beginDataType=FACEZ_DATATYPE
         endDataType=FACEZ_DATATYPE
@@ -241,31 +246,45 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
         if(gr_meshMe == MASTER_PE)print*,'warning: trying to fill face along Z for 2D problem'
      end if
   end select
-  
-!!$  guard(:)=blkLimits(LOW,:)-blkLimitsGC(LOW,:) !DEV: disabled since unused and undefined - KW 2010-09-22
-  do i = beginDataType,endDataType
-     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC,gr_gridDataStruct(i))
-     recvLeft(:,:)=1
-     sendLeft(:,:)=1
-     recvRight(:,:)=1
-     sendRight(:,:)=1 !! do a default initialization of all starting points
-     !! and then adjust individual ones as needed
-     !! index of interior cell which will be first GC in block to right
-     !! since the first index in the data strucutures in the variables,
-     !! The "x" entry in the data structure corresponds to IAXIS+1
-     do j = 1,NDIM
-        sendRight(j,j+1) = blkLimits(HIGH,j)-blkLimits(LOW,j)+2-gr_offset(i,j)
-        
-        !index of first interior cell to be sent to be GC on block to left
-        sendLeft(j, j+1) = blkLimits(LOW,j)+gr_offset(i,j)
-        
-        recvLeft(j, j+1) = blkLimits(HIGH,j)+1 !recv index of GC 
-        call gr_shiftData(gr_axisComm(j), gr_exch(i,j), &
-             sendRight(j,:), sendLeft(j,:), &
-             recvRight(j,:),recvLeft(j,:),gr_gridDataStruct(i))
-     end do
 
+  ! DEV: FIXME Should this be moved inside the loop?
+  call Grid_getTileIterator(itor, ALL_BLKS)
+  do i = beginDataType,endDataType
+     do while(itor%isValid())
+        call itor%currentTile(tileDesc)
+        blkLimits(:,:)=tileDesc%limits
+        blkLimitsGC(:,:)=tileDesc%grownLimits
+        guard(:)=blkLimits(LOW,:)-blkLimitsGC(LOW,:) 
+        recvLeft(:,1)=1
+        sendLeft(:,1)=1
+        recvRight(:,1)=1
+        sendRight(:,1)=1
+        do k=1,MDIM
+           recvLeft(:,k+1)=blkLimitsGC(LOW,k)
+           sendLeft(:,k+1)=blkLimitsGC(LOW,k)
+           recvRight(:,k+1)=blkLimitsGC(LOW,k)
+           sendRight(:,k+1)=blkLimitsGC(LOW,k)
+        end do
+        !! do a default initialization of all starting points
+        !! and then adjust individual ones as needed
+        !! index of interior cell which will be first GC in block to right
+        !! since the first index in the data strucutures in the variables,
+        !! The "x" entry in the data structure corresponds to IAXIS+1
+        
+        do j = 1,NDIM
+           sendRight(j,j+1) = blkLimits(HIGH,j) - guard(j) + 1
+           !index of first interior cell to be sent to be GC on block to left
+           sendLeft(j, j+1) = blkLimits(LOW,j) 
+           recvLeft(j, j+1) = blkLimits(HIGH,j)+1 !recv index of GC
+           
+           call gr_shiftData(gr_axisComm(j), gr_exch(i,j), &
+                sendRight(j,:), sendLeft(j,:), &
+                recvRight(j,:),recvLeft(j,:),gr_gridDataStruct(i))
+        end do
+        call itor%next()
+     end do
   end do
+  call Grid_releaseTileIterator(itor)
   if(.not.gr_allPeriodic) then
      do n = 0,NDIM-1
         axis = gr_bndOrder(NDIM-n)

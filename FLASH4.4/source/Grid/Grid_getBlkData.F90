@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkData(integer(IN) :: blockID,
+!!  Grid_getBlkData(type(block_metadata_t)(IN) :: block,
 !!                  integer(IN) :: gridDataStruct,
 !!                  integer(IN) :: structIndex,
 !!                  integer(IN) :: beginCount, 
@@ -32,7 +32,7 @@
 !!  
 !! ARGUMENTS 
 !!
-!!  blockID : the local blockid
+!!  block : block metadata
 !!
 !!
 !!  gridDataStruct : integer value specifying the type of data desired.
@@ -258,6 +258,7 @@
 subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
      startingPos, datablock, dataSize)
   use block_metadata, ONLY : block_metadata_t
+  use Driver_interface, ONLY : Driver_abortFlash
 
   implicit none
 #include "constants.h"
@@ -268,7 +269,7 @@ subroutine Grid_getBlkData(block, gridDataStruct, structIndex, beginCount, &
   integer, dimension(3), intent(in) :: dataSize
   real, dimension(datasize(1), dataSize(2), dataSize(3)),intent(out) :: datablock
   datablock = 0.0
-  return
 
+  call Driver_abortFlash("[Grid_getBlkData] DEPRECATED: Use Grid_getCell* routines")
 end subroutine Grid_getBlkData
 

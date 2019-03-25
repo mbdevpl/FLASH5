@@ -9,7 +9,7 @@
 !!
 !!  call Gravity_accelOneRow(integer(IN)  :: pos(2),
 !!                           integer(IN)  :: sweepDir,
-!!                           integer(IN)  :: blockID,
+!!                           integer(IN)  :: tileDesc,
 !!                           integer(IN)  :: numCells,
 !!                           real(INOUT)  :: grav(numCells),
 !!                           integer(IN),optional :: potentialIndex,
@@ -36,7 +36,7 @@
 !!  sweepDir   -       The sweep direction:  allowed values are 
 !!              SWEEP_X, SWEEP_Y, and SWEEP_Z. These values are defined
 !!              in constants.h.
-!!  blockID   -     The local identifier of the block to work on
+!!  blockID   -     The local block metadata
 !!  grav()   -       Array to receive result
 !!  numCells -       Number of cells to update in grav array
 !!  potentialIndex      -  if specified,  Variable # to take as potential.
@@ -66,14 +66,11 @@
 
 #include "constants.h"
 
-subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
-                                potentialIndex, extraAccelVars)
 
-
-  use Grid_interface, ONLY : Grid_getBlkPhysicalSize, Grid_getBlkPtr, &
-    Grid_releaseBlkPtr, Grid_getBlkIndexLimits
-!  use Driver_interface, ONLY : Driver_abortFlash
-  use Gravity_data, ONLY: grv_defaultGpotVar
+subroutine Gravity_accelOneRow(pos, sweepDir, tileDesc, lo, hi, grav, Uin, &
+                               potentialIndex, extraAccelVars)
+  use Gravity_data, ONLY : grv_defaultGpotVar
+  use Grid_tile,    ONLY : Grid_tile_t
 
   implicit none
 
@@ -83,34 +80,33 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
 #undef Grid_releaseBlkPtr
 #endif
 
-  integer, dimension(2), intent(in) :: pos
-  integer, intent(in)               :: sweepDir, blockID,  numCells
-  real, intent(inout)               :: grav(numCells)
-  integer, intent(IN),optional      :: potentialIndex
-  integer, intent(IN),OPTIONAL      :: extraAccelVars(MDIM)
+  integer,           intent(IN)                      :: pos(2)
+  integer,           intent(IN)                      :: sweepDir
+  type(Grid_tile_t), intent(IN)                      :: tileDesc
+  integer,           intent(IN)                      :: lo
+  integer,           intent(IN)                      :: hi
+  ! DEV:  For this implementation, grav could be changed to IN only
+  !       Check if this works in all cases and if so implement
+  real,              intent(INOUT)                   :: grav(lo:hi)
+  real,                            POINTER, OPTIONAL :: Uin(:,:,:,:)
+  integer,           intent(IN),            OPTIONAL :: potentialIndex
+  integer,           intent(IN),            OPTIONAL :: extraAccelVars(MDIM)
 
-  real            :: blockSize(MDIM)
-  real, POINTER, DIMENSION(:,:,:,:) :: solnVec
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
-  integer         :: ii, iimin, iimax
-  real            :: gpot(numCells), delxinv
-  integer         :: potVar, nxbBlock, nybBlock, nzbBlock
+  real,   POINTER :: solnVec(:,:,:,:)
+  integer         :: i
+  real            :: gpot(lo:hi)
+  real            :: delxinv
+  integer         :: potVar
   integer         :: sink_ax_index, sink_ay_index, sink_az_index
+  real            :: deltas(1:MDIM)
 
   !==================================================
-  
-  
-  call Grid_getBlkPhysicalSize(blockID, blockSize)
-  
-  
-  call Grid_getBlkPtr(blockID, solnVec)
 
-
-  call Grid_getBlkIndexLimits(blockId, blkLimits, blkLimitsGC)
-  nxbBlock = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
-  nybBlock = blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1
-  nzbBlock = blkLimits(HIGH,KAXIS) - blkLimits(LOW,KAXIS) + 1
-
+  nullify(solnVec)
+  
+  call tileDesc%deltas(deltas)
+  
+  call tileDesc%getDataPtr(solnVec, CENTER)
 
 !! IF a variable index is explicitly specified, assume that as the potential
 !! otherwise use the default current potential GPOT_VAR  
@@ -149,38 +145,53 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
 !!$     call Driver_abortFlash("Gravity_accelOneRow called with neither GPOT_VAR nor GPOL_VAR.")
 !!$  endif
 
-
-  iimin   = 1
-  iimax   = numCells
-  grav(iimin:iimax) = 0.0
+  grav(lo:hi) = 0.0
 
   !Get row of potential values and compute inverse of zone spacing  
   if (sweepDir == SWEEP_X) then                     ! x-direction
 
-     delxinv = real(nxbBlock) / blockSize(IAXIS)
-     
-     gpot(:) = solnVec(potVar,:,pos(1),pos(2))
+     delxinv = 1.0 / deltas(IAXIS)
+
+     do i = lo, hi 
+        gpot(i) = solnVec(potVar,i,pos(1),pos(2))
+     end do
 
      ! acceleration due to sink particles
-     if (sink_ax_index > 0) grav(iimin:iimax) = solnVec(sink_ax_index,:,pos(1),pos(2))
+     if (sink_ax_index > 0) then
+        do i = lo, hi
+           grav(i) = solnVec(sink_ax_index,i,pos(1),pos(2))
+        end do
+     end if
 
   elseif (sweepDir == SWEEP_Y) then                 ! y-direction
-     
-     delxinv = real(nybBlock) / blockSize(JAXIS)
-     
-     gpot(:) = solnVec(potVar,pos(1),:,pos(2))
+
+     delxinv = 1.0 / deltas(JAXIS)
+
+     do i = lo, hi 
+        gpot(i) = solnVec(potVar,pos(1),i,pos(2))
+     end do
 
      ! acceleration due to sink particles
-     if (sink_ay_index > 0) grav(iimin:iimax) = solnVec(sink_ay_index,pos(1),:,pos(2))
+     if (sink_ay_index > 0) then
+        do i = lo, hi
+           grav(i) = solnVec(sink_ay_index,pos(1),i,pos(2))
+        end do
+     end if
 
   else                                            ! z-direction
      
-     delxinv = real(nzbBlock) / blockSize(KAXIS)
-     
-     gpot(:) = solnVec(potVar,pos(1),pos(2),:)
+     delxinv = 1.0 / deltas(KAXIS)
+
+     do i = lo, hi 
+        gpot(i) = solnVec(potVar,pos(1),pos(2),i)
+     end do
 
      ! acceleration due to sink particles
-     if (sink_az_index > 0) grav(iimin:iimax) = solnVec(sink_az_index,pos(1),pos(2),:)
+     if (sink_az_index > 0) then
+        do i = lo, hi 
+           grav(i) = solnVec(sink_az_index,pos(1),pos(2),i)
+        end do
+     end if
 
   endif
   
@@ -194,164 +205,27 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
   
   delxinv = 0.5e0 * delxinv
   
-  do ii = iimin+1, iimax-1
-     grav(ii) = grav(ii) + delxinv * (gpot(ii-1) - gpot(ii+1))
+  ! DEV: TODO We should probably error check the indices to check that
+  !           we can actually compute something
+  do i = lo+1, hi-1
+     grav(i) = grav(i) + delxinv * (gpot(i-1) - gpot(i+1))
   enddo
+ 
+  ! DEV: We cannot compute the values at these locations.  If someone needs
+  !      data at these locations, they would need to decrease lo by one and
+  !      increase hi by one.  If this is impossible (e.g. lo is the 
+  !      blkLimitsGC), then we are sunk.
+  !
+  !      One way to deal with this is to set these values to something obviously
+  !      wrong such as a signaling NaN.
+  !
+  !      Check to see if there is code that uses this routine with lo/hi at 
+  !      blkLimitsGC and that requires some quasi-reasonable value here for 
+  !      actual computations.  Consider altering implementation to deal
+  !      better for all possible cases.
+  grav(lo) = grav(lo+1)     ! this is invalid data - must not be used
+  grav(hi) = grav(hi-1)
   
-  grav(iimin) = grav(iimin+1)     ! this is invalid data - must not be used
-  grav(iimax) = grav(iimax-1)
-  
-  
-  call Grid_releaseBlkPtr(blockID, solnVec)
-  
-  return
-   
-end subroutine Gravity_accelOneRow_blkid
-
-
-subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
-                                potentialIndex, extraAccelVars)
-
-
-  use Grid_interface, ONLY : Grid_getBlkPhysicalSize, Grid_getBlkPtr, &
-    Grid_releaseBlkPtr, Grid_getBlkIndexLimits
-!  use Driver_interface, ONLY : Driver_abortFlash
-  use Gravity_data, ONLY: grv_defaultGpotVar
-  use block_metadata, ONLY : block_metadata_t
-
-  implicit none
-
-#include "Flash.h"
-#ifdef Grid_releaseBlkPtr
-! disabling per-block drift logging for this routine because it is called too much
-#undef Grid_releaseBlkPtr
-#endif
-
-  type(block_metadata_t) :: blockDesc
-  integer, dimension(2), intent(in) :: pos
-  integer, intent(IN)               :: sweepDir,numCells
-  real, intent(inout)               :: grav(numCells)
-  real,    POINTER,   OPTIONAL      :: Uin(:,:,:,:)
-  integer, intent(IN),optional      :: potentialIndex
-  integer, intent(IN),OPTIONAL      :: extraAccelVars(MDIM)
-
-  real            :: blockSize(MDIM)
-  real, POINTER, DIMENSION(:,:,:,:) :: solnVec
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
-  integer         :: ii, iimin, iimax
-  real            :: gpot(numCells), delxinv
-  integer         :: potVar, nxbBlock, nybBlock, nzbBlock
-  integer         :: sink_ax_index, sink_ay_index, sink_az_index
-
-  !==================================================
-  
-  
-  call Grid_getBlkPhysicalSize(blockDesc, blockSize)
-  
-  
-  call Grid_getBlkPtr(blockDesc, solnVec)
-
-
-  call Grid_getBlkIndexLimits(blockDesc%Id, blkLimits, blkLimitsGC)
-  nxbBlock = blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1
-  nybBlock = blkLimits(HIGH,JAXIS) - blkLimits(LOW,JAXIS) + 1
-  nzbBlock = blkLimits(HIGH,KAXIS) - blkLimits(LOW,KAXIS) + 1
-
-
-!! IF a variable index is explicitly specified, assume that as the potential
-!! otherwise use the default current potential GPOT_VAR  
-  if(present(potentialIndex)) then
-     potVar=potentialIndex
-  else if (grv_defaultGpotVar > 0) then
-     potVar=grv_defaultGpotVar
-  else
-     potVar=GPOT_VAR
-  end if
-
-  sink_ax_index = 0
-  sink_ay_index = 0
-  sink_az_index = 0
-
-  if (present(extraAccelVars)) then
-  ! select the current or the old sink acceleration containers
-     sink_ax_index = extraAccelVars(1)
-     sink_ay_index = extraAccelVars(2)
-     sink_az_index = extraAccelVars(3)
-  else if (potVar .eq. GPOT_VAR) then
-#if defined(SGAX_VAR) && defined(SGAY_VAR) && defined(SGAZ_VAR)
-     sink_ax_index = SGAX_VAR
-     sink_ay_index = SGAY_VAR
-     sink_az_index = SGAZ_VAR
-#endif
-  else if (potVar .eq. GPOL_VAR) then
-#if defined(SGXO_VAR) && defined(SGYO_VAR) && defined(SGZO_VAR)
-     sink_ax_index = SGXO_VAR
-     sink_ay_index = SGYO_VAR
-     sink_az_index = SGZO_VAR
-#endif
-  endif
-!!$  if ((potVar .ne. GPOT_VAR) .and. (potVar .ne. GPOL_VAR)) then
-!!$     print *, "Gravity_accelOneRow called with neither GPOT_VAR nor GPOL_VAR."
-!!$     call Driver_abortFlash("Gravity_accelOneRow called with neither GPOT_VAR nor GPOL_VAR.")
-!!$  endif
-
-
-  iimin   = 1
-  iimax   = numCells
-  grav(iimin:iimax) = 0.0
-
-  !Get row of potential values and compute inverse of zone spacing  
-  if (sweepDir == SWEEP_X) then                     ! x-direction
-
-     delxinv = real(nxbBlock) / blockSize(IAXIS)
-     
-     gpot(:) = solnVec(potVar,:,pos(1),pos(2))
-
-     ! acceleration due to sink particles
-     if (sink_ax_index > 0) grav(iimin:iimax) = solnVec(sink_ax_index,:,pos(1),pos(2))
-
-  elseif (sweepDir == SWEEP_Y) then                 ! y-direction
-     
-     delxinv = real(nybBlock) / blockSize(JAXIS)
-     
-     gpot(:) = solnVec(potVar,pos(1),:,pos(2))
-
-     ! acceleration due to sink particles
-     if (sink_ay_index > 0) grav(iimin:iimax) = solnVec(sink_ay_index,pos(1),:,pos(2))
-
-  else                                            ! z-direction
-     
-     delxinv = real(nzbBlock) / blockSize(KAXIS)
-     
-     gpot(:) = solnVec(potVar,pos(1),pos(2),:)
-
-     ! acceleration due to sink particles
-     if (sink_az_index > 0) grav(iimin:iimax) = solnVec(sink_az_index,pos(1),pos(2),:)
-
-  endif
-  
-  !-------------------------------------------------------------------------------
-  
-  !               Compute gravitational acceleration
-  
-  
-  !**************** first-order differences
-  !                 preserves conservation
-  
-  delxinv = 0.5e0 * delxinv
-  
-  do ii = iimin+1, iimax-1
-     grav(ii) = grav(ii) + delxinv * (gpot(ii-1) - gpot(ii+1))
-  enddo
-  
-  grav(iimin) = grav(iimin+1)     ! this is invalid data - must not be used
-  grav(iimax) = grav(iimax-1)
-  
-  
-  call Grid_releaseBlkPtr(blockDesc, solnVec)
-  
-  return
-   
+  call tileDesc%releaseDataPtr(solnVec, CENTER)
 end subroutine Gravity_accelOneRow
-
 

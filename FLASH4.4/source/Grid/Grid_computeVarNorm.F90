@@ -50,5 +50,6 @@ subroutine Grid_computeVarNorm (level, normType, ivar, norm, leafOnly)
 
   integer, intent(IN)  :: normType, level, ivar, leafOnly
   real, intent(OUT)    :: norm
-  
+
+  norm = 0.0
 end subroutine Grid_computeVarNorm

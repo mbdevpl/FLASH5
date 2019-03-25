@@ -46,7 +46,7 @@ module eos_vecData
 
 
   !..electron-positron contributions -- most UNUSED and REMOVED
-  real, dimension(NROWMAX), save :: pelRow, neRow, etaRow
+  real, dimension(NROWMAX), save :: pelRow, neRow, etaRow, detatRow
   !REMOVED real, dimension(NROWMAX), save:: etaeleRow, xneRow,                &
   !REMOVED                                  peleRow, seleRow, eeleRow,        &
   !REMOVED                                  pposRow, sposRow, eposRow,        &
@@ -95,7 +95,7 @@ module eos_vecData
 
 
   !..electron-positron contributions -- all UNUSED and REMOVED from allocation
-  real, allocatable, dimension(:), save :: pelRow, neRow, etaRow
+  real, allocatable, dimension(:), save :: pelRow, neRow, etaRow, detatRow
   !REMOVED  real, allocatable, dimension(:), save ::   etaeleRow, xneRow                     &
   !REMOVED                                             peleRow, seleRow, eeleRow,            &
   !REMOVED                                             pposRow, sposRow, eposRow,            &
@@ -126,8 +126,7 @@ module eos_vecData
 
 !All variables in this module must be threadprivate!!!
 !$omp threadprivate(tempRow, denRow, etotRow, abarRow, zbarRow, gamcRow, ptotRow, &
-!$omp deaRow, dezRow, detRow, dptRow, dpdRow, dedRow, pelRow, neRow, etaRow, cvRow, &
-!$omp cpRow, dstRow, dsdRow, stotRow)
-
+!$omp deaRow, dezRow, detRow, dptRow, dpdRow, dedRow, pelRow, neRow, etaRow, detatRow, &
+!$omp cvRow, cpRow, dstRow, dsdRow, stotRow)
 end module eos_vecData
 

@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_getDeltas(integer(IN):: blockId, 
+!!  call Grid_getDeltas(integer(IN):: level, 
 !!                      real(OUT)::del(MDIM))
 !!  
 !! DESCRIPTION 
@@ -25,15 +25,17 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getDeltas(blockId,del)
+subroutine Grid_getDeltas(level,del)
   use Grid_data, ONLY : gr_delta
+  use Driver_interface, ONLY : Driver_abortFlash
   implicit none
 #include "constants.h"
 
-  integer, intent(IN) :: blockId
+  integer, intent(IN) :: level
   real, dimension(MDIM),intent(OUT) :: del
-  
-  del = gr_delta
+
+  if(level /= 1) call Driver_abortFlash("any value of level other than 1 is not valied")
+  del = gr_delta(:,1)
   return
 end subroutine Grid_getDeltas
 

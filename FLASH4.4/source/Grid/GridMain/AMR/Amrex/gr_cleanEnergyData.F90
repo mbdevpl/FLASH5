@@ -82,17 +82,26 @@ subroutine gr_cleanEnergyData(smallE, &
 
   integer :: i, j, k
 
-#ifdef ENER_VAR               
+900 format("         Value at",I3,",",I3,",",I3," set to smalle")
+#ifdef ENER_VAR
   ! DEV: TODO Determine how to implement all modes and all levels of 
   !           verbosity
   do     k = lo(KAXIS), hi(KAXIS) 
     do   j = lo(JAXIS), hi(JAXIS) 
       do i = lo(IAXIS), hi(IAXIS)
-        if (d(i,j,k,ENER_VAR) < smallE) then
+        if (d(i,j,k,ENER_VAR) < smallE*0.999999999) then
+           ! The factor 0.999999999 is used to avoid triggering aborts
+           ! when some physics code, in particular in the Eos unit,
+           ! has put a floor of smallE under a very low internal
+           ! energy and this then becomes even slightly smaller as a
+           ! result of rounding. If it is intended that situations
+           ! like that produce messages or aborts, it should be the
+           ! responsibility of the physics unit that applied the
+           ! smallE floor to take care that that happens.
           if      (gr_sanitizeDataMode == 3) then
             write(*,*) "WARNING: [gr_cleanEnergyData]"
-            write(*,*) "         Total energy data less than smalle"
-            write(*,*) "         Value set to smalle"
+            write(*,*) "         Total energy data less than smalle:", d(i,j,k,ENER_VAR)
+            write(*,900)         i, j, k
             d(i,j,k,ENER_VAR) = max(d(i,j,k,ENER_VAR), smallE)
           else if (gr_sanitizeDataMode == 4) then
             call Driver_abortFlash("[gr_cleanEnergyData] ENER data less than smalle")
@@ -106,11 +115,12 @@ subroutine gr_cleanEnergyData(smallE, &
   do     k = lo(KAXIS), hi(KAXIS) 
     do   j = lo(JAXIS), hi(JAXIS) 
       do i = lo(IAXIS), hi(IAXIS)
-        if (d(i,j,k,EINT_VAR) < smallE) then
+        if (d(i,j,k,EINT_VAR) < smallE*0.999999999) then
+           ! For the factor 0.999999999 see above.
           if      (gr_sanitizeDataMode == 3) then
             write(*,*) "WARNING: [gr_cleanEnergyData]"
-            write(*,*) "         Internal energy data less than smalle"
-            write(*,*) "         Value set to smalle"
+            write(*,*) "         Internal energy data less than smalle:", d(i,j,k,EINT_VAR)
+            write(*,900)         i, j, k
             d(i,j,k,EINT_VAR) = max(d(i,j,k,EINT_VAR), smallE)
           else if (gr_sanitizeDataMode == 4) then
             call Driver_abortFlash("[gr_cleanEnergyData] EINT data less than smalle")

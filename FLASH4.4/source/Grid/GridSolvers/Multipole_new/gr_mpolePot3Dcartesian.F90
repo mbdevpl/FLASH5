@@ -26,11 +26,8 @@
 
 subroutine gr_mpolePot3Dcartesian (ipotvar)
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,         &
-       Grid_releaseBlkPtr,     &
-       Grid_getBlkBoundBox,    &
-       Grid_getDeltas,         &
-       Grid_getBlkIndexLimits
+  use Grid_interface,    ONLY : Grid_getTileIterator,   &
+                                Grid_releaseTileIterator
 
   use gr_mpoleData,      ONLY : gr_mpoleGravityConstant,        &
        gr_mpoleSymmetryAxis3D,         &
@@ -66,9 +63,10 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
        gr_mpoleQDampingR,              &
        gr_mpoleQDampingI,              &
        gr_mpoleMomentR,                &
-       gr_mpoleMomentI,                &
-       gr_mpoleBlockCount,             &
-       gr_mpoleBlockList
+       gr_mpoleMomentI
+
+  use Grid_tile,    ONLY : Grid_tile_t
+  use Grid_iterator,     ONLY : Grid_iterator_t
 
   implicit none
 
@@ -81,7 +79,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   logical :: i2, j2, k2
   logical :: innerZonePotential
 
-  integer :: blockNr, blockID
+  
   integer :: c,s
   integer :: DrUnit
   integer :: imax, imin, iC, iCmax, iF, iFmax, iB
@@ -91,9 +89,9 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   integer :: Q, Qlocal, Qlower, Qupper
   integer :: type
   integer :: zone
-
-  integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
+  
+  integer :: tileLimits   (LOW:HIGH,1:MDIM)
+  
 
   real    :: bndBoxILow, bndBoxJLow, bndBoxKLow
   real    :: dampI, Idamp
@@ -121,16 +119,23 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   real, parameter :: sixth = 1./6.
 
   real, pointer   :: solnData (:,:,:,:)
-  !  
+
+  integer :: lev
+  type(Grid_tile_t) :: tileDesc
+  type(Grid_iterator_t) :: itor
+
+  NULLIFY(solnData)
   !
-  !     ...Sum quantities over all locally held leaf blocks.
+  !     ...Sum quantities over all locally held leaf tiles.
   !
   !
 
+  call Grid_getTileIterator(itor, LEAF, tiling = .FALSE.)
+
   !$omp parallel if (gr_mpoleMultiThreading) &
   !$omp default(private) &
-  !$omp shared( blockID,ipotvar,&
-  !$omp         bndBox,delta,solnData,blkLimits,blkLimitsGC,&
+  !$omp shared( tileDesc,itor,ipotvar,&
+  !$omp         lev,bndBox,delta,solnData,tileLimits,&
   !$omp         imin,jmin,kmin,imax,jmax,kmax,&
   !$omp         iCmax,jCmax,kCmax,iFmax,jFmax,kFmax,&
   !$omp         DeltaI,DeltaJ,DeltaK,DeltaIHalf,DeltaJHalf,DeltaKHalf,&
@@ -144,25 +149,25 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   !$omp         gr_mpoleInnerZoneDrRadii,gr_mpoleInnerZoneQlower,gr_mpoleInnerZoneQupper,&
   !$omp         gr_mpoleInnerZoneResolution,gr_mpoleInnerZoneResolutionInv,&
   !$omp         gr_mpoleOuterZoneQshift,gr_mpoleXcenter,gr_mpoleYcenter,gr_mpoleZcenter,&
-  !$omp         gr_mpoleQDampingR,gr_mpoleQDampingI, gr_mpoleMomentR,gr_mpoleMomentI,&
-  !$omp         gr_mpoleBlockCount,gr_mpoleBlockList )
-
-  do blockNr = 1,gr_mpoleBlockCount
+  !$omp         gr_mpoleQDampingR,gr_mpoleQDampingI, gr_mpoleMomentR,gr_mpoleMomentI)
+  
+  do while(itor%isValid())
 
      !$omp single
-     blockID = gr_mpoleBlockList (blockNr)
+     call itor%currentTile(tileDesc)
+     lev=tileDesc%level
+     tileLimits=tileDesc%limits
+     
+     call tileDesc%boundBox(bndBox)
+     call tileDesc%deltas(delta)
+     call tileDesc%getDataPtr(solnData, CENTER)
 
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
-     call Grid_getBlkPtr          (blockID, solnData)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
-
-     imin       = blkLimits (LOW, IAXIS)
-     jmin       = blkLimits (LOW, JAXIS)
-     kmin       = blkLimits (LOW, KAXIS)  
-     imax       = blkLimits (HIGH,IAXIS)
-     jmax       = blkLimits (HIGH,JAXIS)
-     kmax       = blkLimits (HIGH,KAXIS)
+     imin       = tileLimits (LOW, IAXIS)
+     jmin       = tileLimits (LOW, JAXIS)
+     kmin       = tileLimits (LOW, KAXIS)  
+     imax       = tileLimits (HIGH,IAXIS)
+     jmax       = tileLimits (HIGH,JAXIS)
+     kmax       = tileLimits (HIGH,KAXIS)
 
      iCmax      = imax - imin + 1      ! # of local (inner) cells in i direction
      jCmax      = jmax - jmin + 1      ! # of local (inner) cells in j direction
@@ -602,7 +607,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
               facePotential = - gr_mpoleGravityConstant * facePotential 
               !
               !
-              !        ...Add the current face potential to the relevant cell(s) of the potential block.
+              !        ...Add the current face potential to the relevant cell(s) of the potential tile.
               !           Note, that a face can only be shared by up to 2 cells and no more. The most
               !           common case (shared on the i-index) is tested first.
               !
@@ -645,15 +650,18 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
      !$omp end workshare
      !
      !
-     !    ...Get ready for retrieving next LEAF block for the current processor.
+     !    ...Get ready for retrieving next tile for the current processor.
      !
      !
      !$omp single
-     call Grid_releaseBlkPtr (blockID, solnData)
+     call tileDesc%releaseDataPtr(solnData, CENTER)
+     call itor%next()
      !$omp end single
-
   end do
+
   !$omp end parallel
+
+  call Grid_releaseTileIterator(itor)
   !
   !
   !    ...Ready!

@@ -12,34 +12,34 @@
 !!
 !!***
 
+#include "constants.h"
+
 subroutine gr_amrexInit()
   use iso_c_binding
   
   use amrex_init_module,           ONLY : amrex_init
   use amrex_amrcore_module,        ONLY : amrex_amrcore_init, &
                                           amrex_init_virtual_functions, &
-                                          amrex_max_level, &
                                           amrex_ref_ratio
-  use amrex_octree_module,         ONLY : amrex_octree_init
   use amrex_parmparse_module,      ONLY : amrex_parmparse, &
                                           amrex_parmparse_build, &
                                           amrex_parmparse_destroy
   use amrex_geometry_module,       ONLY : amrex_pmask
 
-  use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
-                                          RuntimeParameters_mapStrToInt
+  use RuntimeParameters_interface, ONLY : RuntimeParameters_get
   use Driver_interface,            ONLY : Driver_abortFlash
+  use Logfile_interface,           ONLY : Logfile_stamp
   use Grid_data,                   ONLY : gr_geometry, &
-                                          gr_domainBC
+                                          gr_domainBC, &
+                                          gr_meshMe
   use gr_amrexInterface,           ONLY : gr_initNewLevelCallback, &
                                           gr_makeFineLevelFromCoarseCallback, &
                                           gr_remakeLevelCallback, &
                                           gr_clearLevelCallback, &
                                           gr_markRefineDerefineCallback
+  use gr_amrexInterface,           ONLY : gr_amrexGitVersionStr
 
   implicit none
-
-#include "constants.h"
 
   ! From AMReX_CoordSys.H
   ! DEVNOTE: These should be define in AMReX interface.  Name must 
@@ -51,32 +51,29 @@ subroutine gr_amrexInit()
   type(amrex_parmparse) :: pp_geom
   type(amrex_parmparse) :: pp_amr
 
-  character(len=MAX_STRING_LENGTH) :: buffer = ""
+  character(len=MAX_STRING_LENGTH) :: buffer
 
-  integer :: verbosity = 0
-  integer :: nblockX = 1
-  integer :: nblockY = 1
-  integer :: nblockZ = 1
-  integer :: max_refine = 0
-  integer :: nrefs = 1
-  integer :: coord_sys = -1
-  real    :: xmin = 0.0d0
-  real    :: xmax = 1.0d0
-  real    :: ymin = 0.0d0
-  real    :: ymax = 1.0d0
-  real    :: zmin = 0.0d0
-  real    :: zmax = 1.0d0
-  integer :: is_periodic(MDIM) = 0
-  integer :: is_periodic_am(MDIM) = 0
+  integer :: verbosity
+  integer :: nBlockX
+  integer :: nBlockY
+  integer :: nBlockZ
+  integer :: max_refine
+  integer :: nrefs
+  integer :: coord_sys
+  real    :: xmin
+  real    :: xmax
+  real    :: ymin
+  real    :: ymax
+  real    :: zmin
+  real    :: zmax
+  integer :: is_periodic(MDIM)
+  integer :: is_periodic_am(MDIM)
 
-  write(*,*) "[gr_amrexInit] Starting"
+  if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexInit] Starting"
+  call Logfile_stamp("AMREX_GIT_VERSION="//trim(gr_amrexGitVersionStr), '[gr_amrexInit]')
  
   !!!!!----- INITIALIZE AMReX & CONFIGURE MANUALLY
   ! Do not parse command line or any file for configuration
- 
-  ! DEVNOTE: Let FLASH driver construct communicators and then configure AMReX
-  ! to use it here.
-  call amrex_init(arg_parmparse=.FALSE.)
  
   call amrex_parmparse_build(pp_geom, "geometry")
 
@@ -106,7 +103,7 @@ subroutine gr_amrexInit()
   call pp_geom%addarr("prob_lo", [xmin, ymin, zmin])
   call pp_geom%addarr("prob_hi", [xmax, ymax, zmax])
  
-  is_periodic = 0
+  is_periodic(:) = 0
   if (     (gr_domainBC(LOW,  IAXIS) == PERIODIC) &
       .OR. (gr_domainBC(HIGH, IAXIS) == PERIODIC)) then
     is_periodic(IAXIS) = 1
@@ -134,19 +131,20 @@ subroutine gr_amrexInit()
 
   call RuntimeParameters_get("nblockx", nBlockX)
   call RuntimeParameters_get("nblocky", nBlockY)
-  call RuntimeParameters_get("nblockz", nblockZ)
+  call RuntimeParameters_get("nblockz", nBlockZ)
   call pp_amr%addarr("n_cell", [NXB * nBlockX, &
                                 NYB * nBlockY, &
                                 NZB * nBlockZ])
 
   ! Setup AMReX in octree mode
-  call pp_amr%add   ("max_grid_size_x",     NXB) 
-  call pp_amr%add   ("max_grid_size_y",     NYB) 
-  call pp_amr%add   ("max_grid_size_z",     NZB) 
+  call pp_amr%add   ("max_grid_size_x",     NXB)
+  call pp_amr%add   ("max_grid_size_y",     NYB)
+  call pp_amr%add   ("max_grid_size_z",     NZB)
   call pp_amr%add   ("blocking_factor_x", 2*NXB)
   call pp_amr%add   ("blocking_factor_y", 2*NYB)
   call pp_amr%add   ("blocking_factor_z", 2*NZB)
   call pp_amr%add   ("refine_grid_layout", 0)
+  call pp_amr%add   ("grid_eff",  1.0)
  
   ! According to Weiqun n_proper=1 is an appropriate setting that will result in
   ! correct nesting.
@@ -161,7 +159,9 @@ subroutine gr_amrexInit()
   call amrex_parmparse_destroy(pp_amr)
 #endif
 
-  call amrex_octree_init()
+  ! DEV: TODO Let FLASH driver construct communicators and then configure AMReX
+  ! to use it here.
+  call amrex_init(arg_parmparse=.FALSE.)
   call amrex_amrcore_init()
  
   !!!!!----- REGISTER REFINE CALLBACKS WITH AMReX
@@ -195,7 +195,7 @@ subroutine gr_amrexInit()
   end if
 #endif
 #endif
-  
-  write(*,*) "[gr_amrexInit] Finished"
+
+  if(gr_meshMe==MASTER_PE) write(*,*) "[gr_amrexInit] Finished"
 end subroutine gr_amrexInit
 

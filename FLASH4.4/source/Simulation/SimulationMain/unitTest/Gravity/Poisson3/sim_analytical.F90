@@ -6,7 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  sim_analytical(integer(IN) :: blockID)
+!!  sim_analytical(integer(IN) :: tileDesc)
 !!
 !! DESCRIPTION
 !!
@@ -18,7 +18,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockID -- current grid block
+!!  tileDesc -- current grid block
 !!
 !! NOTES
 !!
@@ -27,42 +27,44 @@
 !!
 !!***
 
-subroutine sim_analytical(blockID)
+!!REORDER(4): solnData
+subroutine sim_analytical(tileDesc)
 
   use Simulation_data, ONLY:  sim_Newton, sim_pi, &
        &  sim_e, sim_a1, sim_a3, sim_a1inv, sim_a3inv, &
        &  sim_xctr, sim_yctr, sim_zctr, &
        &  sim_density, sim_nsubinv, sim_nsubzones, sim_initGeometry
 
-  use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getCellCoords, &
-       Grid_putPointData, Grid_getDeltas
-
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use Grid_tile,      ONLY : Grid_tile_t
+  
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
   ! Passed variables
-  integer, intent(IN) :: blockID
+  type(Grid_tile_t), intent(IN) :: tileDesc
 
   ! local variables
-  integer, dimension(MDIM) :: startingPos
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
+  integer :: lo(1:MDIM)
+  integer :: hi(1:MDIM)
 
   integer       :: sizeX, sizeY, sizeZ
   integer       :: k, kk, i, ii, j, jj
   real          :: a1squared, a3squared, a1squaredInv, a3squaredInv
   real          :: AA1ch, AA3ch, Ich, distTerm
-  real          :: DD, Mass, phiSum, potentialAnalytical
+  real          :: DD, Mass, phiSum
   real, dimension(MDIM)    :: deltas
   real          :: dx, dy, dz, xx, yy, zz, dzz, dyy, dxx
   real          :: xdist, ydist, zdist, rInv, rFunc, r2, z2
   real          :: lambda, h, hinv, H0, atan_h, h1, h3
-  logical       :: gcell = .true.
-
 
   real, dimension(:), allocatable :: xLeft, yLeft, zLeft
 
+  real, pointer :: solnData(:,:,:,:)
+
+  nullify(solnData)
 
   ! Convenience variables
   a1squared = sim_a1**2
@@ -87,40 +89,36 @@ subroutine sim_analytical(blockID)
   DD = sim_pi*sim_Newton*sim_density
   Mass = 4.0/3.0*sim_pi*a1squared*sim_a3*sim_density
 
-  call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC)
-  sizeX = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS) + 1
-  allocate(xLeft(sizex))
-  sizeY = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS) + 1
-  allocate(yLeft(sizeY))
-  sizeZ = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS) + 1
-  allocate(zLeft(sizeZ))
+  lo = tileDesc%limits(LOW,  :)
+  hi = tileDesc%limits(HIGH, :)
+  allocate(xLeft(lo(IAXIS):hi(IAXIS)))
+  allocate(yLeft(lo(JAXIS):hi(JAXIS)))
+  allocate(zLeft(lo(KAXIS):hi(KAXIS)))
 
   if (NDIM == 3) then  
-     call Grid_getCellCoords(KAXIS, blockId, LEFT_EDGE, gcell, zLeft, sizeZ)
+     call Grid_getCellCoords(KAXIS, LEFT_EDGE, tileDesc%level, lo, hi, zLeft)
   endif
   if (NDIM >= 2) then    
-     call Grid_getCellCoords(JAXIS, blockId, LEFT_EDGE, gcell, yLeft, sizeY)
+     call Grid_getCellCoords(JAXIS, LEFT_EDGE, tileDesc%level, lo, hi, yLeft)
   endif
-  call Grid_getCellCoords(IAXIS, blockId, LEFT_EDGE, gcell, xLeft, sizeX)
+  call Grid_getCellCoords(IAXIS, LEFT_EDGE, tileDesc%level, lo, hi, xLeft)
 
   ! delta x is constant throughout each block
-  call Grid_getDeltas(blockID, deltas)
+  call tileDesc%deltas(deltas)
   dx = deltas(IAXIS)
   dy = deltas(JAXIS)
   dz = deltas(KAXIS)
 
+  call tileDesc%getDataPtr(solnData, CENTER)
+
   !! Loop over all LEAF elements and generate the analytical solution
 !  print *,'sim_nsubinv,nsubzones',sim_nsubinv,sim_nsubzones
-  do k = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
+  do       k = lo(KAXIS), hi(KAXIS)
      dzz = dz * sim_nsubinv
-     startingPos(KAXIS) = k
-     do j = blkLimitsGC(LOW,JAXIS), blkLimitsGC(HIGH,JAXIS)
+     do    j = lo(JAXIS), hi(JAXIS)
         dyy = dy * sim_nsubinv
-        startingPos(JAXIS) = j
-        do i = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH,IAXIS)
+        do i = lo(IAXIS), hi(IAXIS)
            dxx = dx * sim_nsubinv
-           startingPos(IAXIS) = i
-
 
            phiSum = 0.0
 
@@ -139,10 +137,16 @@ subroutine sim_analytical(blockID)
 
                     select case (sim_initGeometry)
 
-                    case (CYLINDRICAL)   ! 2d axisymmetric
+                    case (POLAR)   ! 2d axisymmetric?
 
                        rFunc = (xdist*sim_a1inv)**2 + (ydist*sim_a3inv)**2
                        r2 = xdist**2 + ydist**2
+
+                    case (CYLINDRICAL)   ! 2d axisymmetric
+
+                       rFunc = (xdist*sim_a1inv)**2 + (ydist*sim_a3inv)**2
+                       r2 = xdist**2
+                       z2 = ydist**2
 
                     case (CARTESIAN)       ! 3d cartesian
 
@@ -178,13 +182,12 @@ subroutine sim_analytical(blockID)
               enddo
            enddo
 
-           potentialAnalytical = -phiSum/(sim_nsubzones**3)   
-
-           call Grid_putPointData(blockID, CENTER, APOT_VAR, EXTERIOR, startingPos, potentialAnalytical)
-        end do
-
+           solnData(APOT_VAR, i, j, k) = -phiSum/(sim_nsubzones**3)   
+        enddo
      enddo
   enddo
+
+  call tileDesc%releaseDataPtr(solnData, CENTER)
 
   ! Cleanup
   deallocate(xLeft)

@@ -81,7 +81,7 @@
 
 subroutine bn_burner(tstep,temp,density,xIn,xOut,sdotRate)
 
-  use Burn_dataEOS, ONLY:  btemp, den
+  use Burn_dataEOS, ONLY:  btemp, bden
   use Burn_data, ONLY: bn_algebra, bn_odeStepper, bn_useBurnTable, &
        & xmass, ymass, xoktot, xbadtot, bion, sneut, aion
 
@@ -122,7 +122,7 @@ subroutine bn_burner(tstep,temp,density,xIn,xOut,sdotRate)
 
   !..set the the material and network variables
   btemp = temp
-  den  = density
+  bden  = density
 
   do i=1,NSPECIES
      xmass(i) = xIn(i)

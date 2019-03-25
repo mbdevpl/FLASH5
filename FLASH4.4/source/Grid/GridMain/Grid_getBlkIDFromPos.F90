@@ -1,3 +1,4 @@
+
 !!****if* source/Grid/GridMain/Grid_getBlkIDFromPos
 !!
 !! NAME
@@ -50,7 +51,8 @@ subroutine Grid_getBlkIDFromPos(pos,ansBlockID, ansProcID,comm)
   use gr_interface, ONLY : gr_xyzToBlock
 #else
   use Grid_data, ONLY : gr_minCellSizes, gr_globalDomain, gr_meshMe
-  use Grid_interface, ONLY : Grid_getListOfBlocks,Grid_getBlkCornerID
+  use Grid_interface, ONLY : Grid_getBlkCornerID
+  use gr_parameshInterface, ONLY : gr_pmGetListOfBlocks
   use Driver_interface, ONLY : Driver_abortFlash
 #endif
 
@@ -80,7 +82,7 @@ subroutine Grid_getBlkIDFromPos(pos,ansBlockID, ansProcID,comm)
   if (.NOT.present(comm)) then
      call Driver_abortFlash('The specific routine Grid_getBlkIDFromPos requires a communicator argument!')
   end if
-  call Grid_getListOfBlocks(LEAF,blkList,blkCount)
+  call gr_pmGetListOfBlocks(LEAF,blkList,blkCount)
   ansBlockID=NONEXISTENT
   ansProcID=NONEXISTENT
   temp(1:NDIM)=(gr_globalDomain(HIGH,1:NDIM) - pos(1:NDIM))

@@ -26,11 +26,12 @@
 
 subroutine gr_mpolePot1Dspherical (ipotvar)
 
-  use Grid_interface,    ONLY : Grid_getBlkPtr,        &
-                                Grid_releaseBlkPtr,    &
-                                Grid_getBlkBoundBox,   &
-                                Grid_getDeltas,        &
-                                Grid_getBlkIndexLimits
+!  use Grid_interface,    ONLY : Grid_getBlkPtr,        &
+!                                Grid_releaseBlkPtr,    &
+!                                Grid_getBlkBoundBox,   &
+!                                Grid_getDeltas,        &
+!                                Grid_getLeafIterator,   &
+!                                Grid_releaseLeafIterator
 
   use gr_mpoleData,      ONLY : gr_mpoleGravityConstant,        &
                                 gr_mpoleDrInv,                  &
@@ -52,9 +53,11 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
                                 gr_mpoleOuterZoneQshift,        &
                                 gr_mpoleQDampingI,              &
                                 gr_mpoleMomentR,                &
-                                gr_mpoleMomentI,                &
-                                gr_mpoleBlockCount,             &
-                                gr_mpoleBlockList
+                                gr_mpoleMomentI
+
+  use Driver_interface,  ONLY : Driver_abortFlash
+!  use block_metadata,    ONLY : block_metadata_t
+!  use leaf_iterator,     ONLY : leaf_iterator_t
 
   implicit none
   
@@ -64,161 +67,173 @@ subroutine gr_mpolePot1Dspherical (ipotvar)
   
   integer, intent (in) :: ipotvar
 
-  logical :: innerZonePotential
-
-  integer :: blockNr, blockID
-  integer :: DrUnit
-  integer :: i, n
-  integer :: imax, imin
-  integer :: Q, Qlocal, Qlower, Qupper
-  integer :: type
-  integer :: zone
-
-  integer :: blkLimits   (LOW:HIGH,1:MDIM)
-  integer :: blkLimitsGC (LOW:HIGH,1:MDIM)
-
-  real    :: bndBoxILow
-  real    :: DeltaI, DeltaIHalf, DeltaIFourth
-  real    :: potential
-  real    :: Qfloat, QfracI, QfracR
-  real    :: Rcenter, Rsph
-  real    :: RdotI, IdotR
-  real    :: rlocal, rinDrs, rinvI
-  real    :: sclInv, lgnInv, expInv
-
-  real    :: delta           (1:MDIM)
-  real    :: bndBox (LOW:HIGH,1:MDIM)
-
-  real, pointer :: solnData (:,:,:,:)
+  call Driver_abortFlash("[gr_mpolePot1Dspherical] Implement with tiling!")
+!  logical :: innerZonePotential
+!
+!  
+!  integer :: DrUnit
+!  integer :: i, n
+!  integer :: imax, imin
+!  integer :: Q, Qlocal, Qlower, Qupper
+!  integer :: type
+!  integer :: zone
+!
+!  integer :: blkLimits   (LOW:HIGH,1:MDIM)
 !  
 !
-!     ...Sum quantities over all locally held leaf blocks.
+!  real    :: bndBoxILow
+!  real    :: DeltaI, DeltaIHalf, DeltaIFourth
+!  real    :: potential
+!  real    :: Qfloat, QfracI, QfracR
+!  real    :: Rcenter, Rsph
+!  real    :: RdotI, IdotR
+!  real    :: rlocal, rinDrs, rinvI
+!  real    :: sclInv, lgnInv, expInv
+!
+!  real    :: delta           (1:MDIM)
+!  real    :: bndBox (LOW:HIGH,1:MDIM)
+!
+!  real, pointer :: solnData (:,:,:,:)
+!!  
+!  integer :: lev
+!  type(block_metadata_t) :: block
+!  type(leaf_iterator_t) :: itor
+!
+!  nullify(solnData)
+!
+!!
+!!     ...Sum quantities over all locally held leaf blocks.
+!!
+!!
+!
+!  ! Replaced `!$omp do schedule(static)` with `!$omp single` below as temporary fix until we determine
+!  ! the proper way to parallelize leaf iterator loops with OpenMP - JAH
+!  !$omp single
+!  call Grid_getLeafIterator(itor)
+!  do while(itor%is_valid())
+!     call itor%blkMetaData(block)
+!     lev=block%level
+!     blkLimits=block%limits
+!     
+!     call Grid_getBlkBoundBox     (block, bndBox)
+!     call Grid_getDeltas          (lev, delta)
+!     call Grid_getBlkPtr          (block, solnData)
+!
+!     imin = blkLimits (LOW, IAXIS)
+!     imax = blkLimits (HIGH,IAXIS)
+!
+!     DeltaI       = delta (IAXIS)
+!     DeltaIHalf   = DeltaI * HALF
+!     DeltaIFourth = DeltaI * FOURTH
+!
+!     bndBoxILow = bndBox (LOW,IAXIS)
+!
+!     solnData (ipotvar , imin:imax , 1,1) = ZERO
+!!
+!!
+!!          ...The 1D spherical case:
+!!
+!!
+!!                                    |                   |            O --> multipole expansion origin
+!!                O----n----i----n----|----n----i----n----|---         i --> cell center
+!!                                    |                   |            n --> Rsph: 1/4 cell size off center
+!!
+!!
+!!             The potentials will not be evaluated at the cell centers but rather
+!!             at 2 points off 1/4 cell size off the center's position. It is not
+!!             possible to use the cell faces for potential averaging, due to the 
+!!             r = 0 condition at the multipole expansion origin. Only L = 0
+!!             solid harmonics are calculated and combined with the moments.
+!!
+!!
+!     Rcenter = bndBoxILow + DeltaIHalf
+!
+!     do i = imin, imax                                  ! loop over all cells in block
+!
+!        do n = -1,1,2                                   ! loop over the two points off the cell center
+!
+!           Rsph = Rcenter + real (n) * DeltaIFourth     ! radius off by 1/4 cell size from cell center
+!!
+!!
+!!        ...Find the radial bin.
+!!
+!!
+!           innerZonePotential = Rsph <= gr_mpoleInnerZoneMaxR
 !
 !
-!$omp do schedule (static)
-  do blockNr = 1,gr_mpoleBlockCount
-
-     blockID = gr_mpoleBlockList (blockNr)
-
-     call Grid_getBlkBoundBox     (blockID, bndBox)
-     call Grid_getDeltas          (blockID, delta)
-     call Grid_getBlkPtr          (blockID, solnData)
-     call Grid_getBlkIndexLimits  (blockID, blkLimits, blkLimitsGC)
-
-     imin = blkLimits (LOW, IAXIS)
-     imax = blkLimits (HIGH,IAXIS)
-
-     DeltaI       = delta (IAXIS)
-     DeltaIHalf   = DeltaI * HALF
-     DeltaIFourth = DeltaI * FOURTH
-
-     bndBoxILow = bndBox (LOW,IAXIS)
-
-     solnData (ipotvar , imin:imax , 1,1) = ZERO
+!           if (innerZonePotential) then
 !
+!               rinDrs = Rsph * gr_mpoleDrInnerZoneInv
+!               DrUnit = int (ceiling (rinDrs))
+!               Qlower = gr_mpoleInnerZoneQlower (DrUnit)
+!               Qupper = gr_mpoleInnerZoneQupper (DrUnit)
+!               QfracR = ZERO
+!               QfracI = ONE
 !
-!          ...The 1D spherical case:
+!               do Q = Qlower,Qupper
+!                  if (rinDrs <= gr_mpoleInnerZoneDrRadii (Q)) exit
+!               end do
 !
+!           else
 !
-!                                    |                   |            O --> multipole expansion origin
-!                O----n----i----n----|----n----i----n----|---         i --> cell center
-!                                    |                   |            n --> Rsph: 1/4 cell size off center
+!               do zone = gr_mpoleMinRadialZone , gr_mpoleMaxRadialZones
+!                  if (Rsph - gr_mpoleZoneRmax (zone) <= ZERO) exit
+!               end do
 !
+!               rlocal = Rsph - gr_mpoleZoneRmax (zone - 1)
+!               type   = gr_mpoleZoneType        (zone)
+!               sclInv = gr_mpoleZoneScalarInv   (zone)
+!               expInv = gr_mpoleZoneExponentInv (zone)
 !
-!             The potentials will not be evaluated at the cell centers but rather
-!             at 2 points off 1/4 cell size off the center's position. It is not
-!             possible to use the cell faces for potential averaging, due to the 
-!             r = 0 condition at the multipole expansion origin. Only L = 0
-!             solid harmonics are calculated and combined with the moments.
+!               if (type == ZONE_EXPONENTIAL) then
+!                   Qfloat = (rlocal * sclInv * gr_mpoleDrInv) ** expInv
+!               else if (type == ZONE_LOGARITHMIC) then
+!                   lgnInv = gr_mpoleZoneLogNormInv (zone)
+!                   Qfloat = expInv * log (rlocal * sclInv * gr_mpoleDrInv * lgnInv + ONE)
+!               end if
 !
+!               Qlocal = ceiling (Qfloat)
+!               QfracI = real (Qlocal) - Qfloat
+!               QfracR = ONE - QfracI
+!               Q      = gr_mpoleZoneQmax (zone - 1) + Qlocal + gr_mpoleOuterZoneQshift
 !
-     Rcenter = bndBoxILow + DeltaIHalf
-
-     do i = imin, imax                                  ! loop over all cells in block
-
-        do n = -1,1,2                                   ! loop over the two points off the cell center
-
-           Rsph = Rcenter + real (n) * DeltaIFourth     ! radius off by 1/4 cell size from cell center
+!           end if
+!!
+!!
+!!        ...Calculate and add the current potential to the current cell.
+!!
+!!
+!           rinvI = ONE / Rsph
 !
+!           RdotI =   QfracI * gr_mpoleQDampingI (Q)   * gr_mpoleMomentI (1,Q  )   &
+!                   + QfracR * gr_mpoleQDampingI (Q+1) * gr_mpoleMomentI (1,Q+1)
 !
-!        ...Find the radial bin.
+!           IdotR = rinvI * (  QfracI * gr_mpoleMomentR (1,Q-1) &
+!                            + QfracR * gr_mpoleMomentR (1,Q)   )
 !
+!           potential = - gr_mpoleGravityConstant * (RdotI + IdotR)
 !
-           innerZonePotential = Rsph <= gr_mpoleInnerZoneMaxR
-
-
-           if (innerZonePotential) then
-
-               rinDrs = Rsph * gr_mpoleDrInnerZoneInv
-               DrUnit = int (ceiling (rinDrs))
-               Qlower = gr_mpoleInnerZoneQlower (DrUnit)
-               Qupper = gr_mpoleInnerZoneQupper (DrUnit)
-               QfracR = ZERO
-               QfracI = ONE
-
-               do Q = Qlower,Qupper
-                  if (rinDrs <= gr_mpoleInnerZoneDrRadii (Q)) exit
-               end do
-
-           else
-
-               do zone = gr_mpoleMinRadialZone , gr_mpoleMaxRadialZones
-                  if (Rsph - gr_mpoleZoneRmax (zone) <= ZERO) exit
-               end do
-
-               rlocal = Rsph - gr_mpoleZoneRmax (zone - 1)
-               type   = gr_mpoleZoneType        (zone)
-               sclInv = gr_mpoleZoneScalarInv   (zone)
-               expInv = gr_mpoleZoneExponentInv (zone)
-
-               if (type == ZONE_EXPONENTIAL) then
-                   Qfloat = (rlocal * sclInv * gr_mpoleDrInv) ** expInv
-               else if (type == ZONE_LOGARITHMIC) then
-                   lgnInv = gr_mpoleZoneLogNormInv (zone)
-                   Qfloat = expInv * log (rlocal * sclInv * gr_mpoleDrInv * lgnInv + ONE)
-               end if
-
-               Qlocal = ceiling (Qfloat)
-               QfracI = real (Qlocal) - Qfloat
-               QfracR = ONE - QfracI
-               Q      = gr_mpoleZoneQmax (zone - 1) + Qlocal + gr_mpoleOuterZoneQshift
-
-           end if
+!           solnData (ipotvar,i,1,1) = solnData (ipotvar,i,1,1) + potential
 !
-!
-!        ...Calculate and add the current potential to the current cell.
-!
-!
-           rinvI = ONE / Rsph
-
-           RdotI =   QfracI * gr_mpoleQDampingI (Q)   * gr_mpoleMomentI (1,Q  )   &
-                   + QfracR * gr_mpoleQDampingI (Q+1) * gr_mpoleMomentI (1,Q+1)
-
-           IdotR = rinvI * (  QfracI * gr_mpoleMomentR (1,Q-1) &
-                            + QfracR * gr_mpoleMomentR (1,Q)   )
-
-           potential = - gr_mpoleGravityConstant * (RdotI + IdotR)
-
-           solnData (ipotvar,i,1,1) = solnData (ipotvar,i,1,1) + potential
-
-        end do
-        Rcenter = Rcenter + DeltaI
-     end do
-!
-!
-!    ...Form the potential average in each cell.
-!
-!
-     solnData (ipotvar,imin:imax,1,1) = HALF * solnData (ipotvar,imin:imax,1,1)
-!
-!
-!    ...Get ready for retrieving next LEAF block for the current processor.
-!
-!
-     call Grid_releaseBlkPtr (blockID, solnData)
-
-  end do
-!$omp end do
+!        end do
+!        Rcenter = Rcenter + DeltaI
+!     end do
+!!
+!!
+!!    ...Form the potential average in each cell.
+!!
+!!
+!     solnData (ipotvar,imin:imax,1,1) = HALF * solnData (ipotvar,imin:imax,1,1)
+!!
+!!
+!!    ...Get ready for retrieving next LEAF block for the current processor.
+!!
+!!
+!     call Grid_releaseBlkPtr (block, solnData)
+!     call itor%next()
+!  end do
+!  call Grid_releaseLeafIterator(itor)
+!  !$omp end single
 !
 !
 !    ...Ready!

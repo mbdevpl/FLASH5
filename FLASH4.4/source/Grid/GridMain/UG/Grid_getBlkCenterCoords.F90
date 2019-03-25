@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_getBlkCenterCoords(integer(IN) :: blockId,
+!!  Grid_getBlkCenterCoords(type(block_metadta_t)(IN) :: block,
 !!                         real(OUT)   :: blockCenter(MDIM))
 !!                      
 !!  
@@ -41,45 +41,27 @@
 !!
 !!***
 
-#ifdef DEBUG_ALL
-#define DEBUG_GRID
-#endif
+#include "constants.h"
+#include "Flash.h"
 
-
-subroutine Grid_getBlkCenterCoords(blockId,blockCenter)
-  use Grid_interface, ONLY : Grid_getBlkBoundBox
+subroutine Grid_getBlkCenterCoords(block,blockCenter)
+  use Driver_interface, ONLY : Driver_abortFlash
+!  use Grid_interface, ONLY : Grid_getBlkBoundBox
+  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
-#include "constants.h"
-#include "Flash.h"
-  integer,intent(in) :: blockId
+  type(block_metadata_t), intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockCenter
-  integer :: i
 
-  real,dimension(2,MDIM) :: bndBox
-  call Grid_getBlkBoundBox(blockId, bndBox)
+  blockCenter(:) = 0.0
+  call Driver_abortFlash("[Grid_getBlkCenterCoords] Implement for tiling")
 
-  blockCenter = 0.0
-
-  blockCenter(1) = bndBox(1,1) + (bndBox(2,1) - bndBox(1,1))/2
-  if(NDIM>1) blockCenter(2) = bndBox(1,2) + (bndBox(2,2) - bndBox(1,2))/2
-  if(NDIM>2) blockCenter(3) = bndBox(1,3) + (bndBox(2,3) - bndBox(1,3))/2
-
-
-  return
+!  real,dimension(2,MDIM) :: bndBox
+!  call Grid_getBlkBoundBox(block, bndBox)
+!
+!  blockCenter(1) = bndBox(1,1) + (bndBox(2,1) - bndBox(1,1))/2
+!  if(NDIM>1) blockCenter(2) = bndBox(1,2) + (bndBox(2,2) - bndBox(1,2))/2
+!  if(NDIM>2) blockCenter(3) = bndBox(1,3) + (bndBox(2,3) - bndBox(1,3))/2
 end subroutine Grid_getBlkCenterCoords
-
-
-
-
-
-
-
-
-
-
-
-
-
 

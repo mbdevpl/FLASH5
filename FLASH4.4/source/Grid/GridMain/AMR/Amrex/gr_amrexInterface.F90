@@ -15,9 +15,18 @@
 !!  
 !!***
 
+#include "AMReX_Config.H"
+#if N_DIM != AMREX_SPACEDIM
+# error AMREX_SPACEDIM of the AMReX library does not match the NDIM of FLASH!
+#endif
+
+
 #include "constants.h"
 
 module gr_amrexInterface
+
+  character(len=64),parameter :: gr_amrexGitVersionStr=AMREX_GIT_VERSION
+
   interface
     subroutine gr_amrexInit()
       implicit none
@@ -99,7 +108,7 @@ module gr_amrexInterface
       real(wp),       value :: time
     end subroutine gr_fillPhysicalBC
   end interface
-  
+
   interface
     subroutine gr_fillPhysicalFaceBC(pmf, scomp, ncomp, time, pgeom) bind(c)
       use iso_c_binding,     ONLY : c_ptr, c_int
@@ -112,7 +121,7 @@ module gr_amrexInterface
       real(wp),       value :: time
     end subroutine gr_fillPhysicalFaceBC
   end interface
- 
+
   interface
     subroutine gr_getFinestLevel(level)
       implicit none
@@ -121,10 +130,11 @@ module gr_amrexInterface
   end interface
 
   interface
-    subroutine gr_writeData(stepno, t_new)
+    subroutine gr_writeData(stepno, t_new, argBaseName)
       implicit none
       integer, intent(IN) :: stepno
       real,    intent(IN) :: t_new
+      character(len=*), intent(IN), optional :: argBaseName
     end subroutine gr_writeData
   end interface
  
@@ -256,11 +266,12 @@ module gr_amrexInterface
   end interface
 
   interface
-    subroutine gr_copyFabInteriorToRegion(fab, face, axis, interior, &
+    subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
                                           scomp, ncomp, region)
       use amrex_fort_module, ONLY : wp => amrex_real
       implicit none
       real(wp), pointer, contiguous, intent(IN)    :: fab(:, :, :, :)
+      integer,                       intent(IN)    :: gds
       integer,                       intent(IN)    :: face
       integer,                       intent(IN)    :: axis
       integer,                       intent(IN)    :: interior(LOW:HIGH, 1:MDIM)
@@ -271,11 +282,12 @@ module gr_amrexInterface
   end interface
  
   interface
-    subroutine gr_copyGuardcellRegionToFab(region, face, axis, guardcells, &
+    subroutine gr_copyGuardcellRegionToFab(region, gds, face, axis, guardcells, &
                                            scomp, ncomp, fab)
       use amrex_fort_module, ONLY : wp => amrex_real
       implicit none
       real(wp), intent(IN),    pointer, contiguous :: region(:, :, :, :)
+      integer,  intent(IN)                         :: gds
       integer,  intent(IN)                         :: face
       integer,  intent(IN)                         :: axis
       integer,  intent(IN)                         :: guardcells(LOW:HIGH, 1:MDIM)

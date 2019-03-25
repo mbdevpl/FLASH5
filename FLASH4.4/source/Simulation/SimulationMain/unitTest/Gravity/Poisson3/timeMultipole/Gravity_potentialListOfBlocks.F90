@@ -1,12 +1,12 @@
-!!****if* source/Simulation/SimulationMain/unitTest/Gravity/Poisson3/timeMultipole/Gravity_potentialListOfBlocks
+!!****if* source/Simulation/SimulationMain/unitTest/Gravity/Poisson3/timeMultipole/Gravity_potential
 !!
 !!  NAME 
 !!
-!!     Gravity_potentialListOfBlocks
+!!     Gravity_potential
 !!
 !!  SYNOPSIS
 !!
-!!  call Gravity_potentialListOfBlocks(integer(IN) :: blockCount,
+!!  call Gravity_potential(integer(IN) :: blockCount,
 !!                                     integer(IN) :: blockList(blockCount),
 !!                            optional,integer(IN) :: potentialIndex)
 !!
@@ -53,7 +53,7 @@
 
 !!REORDER(4): solnVec
 
-subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
+subroutine Gravity_potential( potentialIndex)
 
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
   use Gravity_data, ONLY : grav_poisfact, grav_temporal_extrp, grav_boundary, &
@@ -234,4 +234,4 @@ subroutine Gravity_potentialListOfBlocks(blockCount,blockList, potentialIndex)
   call Timers_stop ("gravity")
   
   return
-end subroutine Gravity_potentialListOfBlocks
+end subroutine Gravity_potential

@@ -197,9 +197,7 @@ subroutine Grid_init()
 !!  end do
 
 #ifdef FIXEDBLOCKSIZE
-  gr_gIndexSize(IAXIS)=gr_axisNumProcs(IAXIS)*NXB
-  gr_gIndexSize(JAXIS)=gr_axisNumProcs(JAXIS)*NYB
-  gr_gIndexSize(KAXIS)=gr_axisNumProcs(KAXIS)*NZB
+  call Driver_abortFlash("Uniform Grid is not supported in fixedblocksize mode")
 #else
 
   if (any((gr_gIndexSize / gr_axisNumProcs) <=  0)) then
@@ -264,8 +262,15 @@ subroutine Grid_init()
   call gr_sbInit()
 
   gr_region=0.0
-end subroutine Grid_init
 
+  call RuntimeParameters_get("gr_useTiling", gr_enableTiling)
+  if (gr_enableTiling) then
+     write(*,*) "[Grid_init] WARNING: Tiling is not implemented in Uniform Grid mode"
+     write(*,*) "                     Execution will proceed without tiling"
+     ! DEV: TODO Should we print this to the log as well?
+     gr_enableTiling = .FALSE.
+  end if
+end subroutine Grid_init
 
 subroutine gr_create_surr_blks
   use Grid_data, ONLY : surr_blks, gr_axisNumProcs, gr_meshMe, gr_domainBC, &

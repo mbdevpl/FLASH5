@@ -2,7 +2,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_getBlkCornerID(integer(IN)  :: blockId,
+!!  call Grid_getBlkCornerID(type(block_metadta_t)(IN) :: block,
 !!                           integer(OUT) :: cornerID(MDIM),
 !!                           integer(OUT) :: stride(MDIM),
 !!                 optional, integer(OUT) :: cornerIDHigh(MDIM),
@@ -27,7 +27,7 @@
 !! 
 !! ARGUMENTS 
 !!
-!!  blockId :: the local blockID
+!!   block - block metadata
 !!  cornerID :: global integer indices of start of the interior zone
 !!              of the block
 !!     
@@ -52,13 +52,14 @@
 #define DEBUG_GRID
 #endif
 
-subroutine Grid_getBlkCornerID(blockId, cornerID, stride, cornerIDHigh, inRegion)
+subroutine Grid_getBlkCornerID(block, cornerID, stride, cornerIDHigh, inRegion)
   use Grid_data, ONLY : gr_blkCornerID,gr_lIndexSize, gr_axisMe
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
-  integer,intent(IN) :: blockId
+  type(block_metadata_t), intent(in) :: block
   integer,dimension(MDIM), intent(OUT) :: cornerID, stride
   integer, optional, dimension(MDIM),intent(OUT) :: cornerIDHigh
   logical, optional, intent(IN) :: inRegion

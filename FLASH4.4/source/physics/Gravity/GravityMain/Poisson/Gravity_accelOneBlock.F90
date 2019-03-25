@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Gravity_accelOneBlock(integer, intent(in) :: blockID, 
+!!  Gravity_accelOneBlock(Grid_tile_t, intent(in) :: tileDesc, 
 !!                        integer, intent(in) :: ngcellcomp,
 !!                        real(:,:,:,:)),intent(out) :: gvec, 
 !!                        integer, intent(in),optional :: potentialIndex)
@@ -31,7 +31,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockID            -  The local identifier of the block to work on
+!!  block            -  The local block metadata
 !!  gvec(:,:,:,:)   -  Array to receive gravitational acceleration
 !!                        as as NDIM-dimensional vector.  It is assumed
 !!                        the the space provided is the size of the block
@@ -47,25 +47,25 @@
 !!
 !!***
 
-subroutine Gravity_accelOneBlock ( blockID, ngcellcomp, gvec, potentialIndex)
+subroutine Gravity_accelOneBlock ( tileDesc, ngcellcomp, gvec, potentialIndex)
 
 
-  use Grid_interface, ONLY : Grid_getBlkPtr, Grid_releaseBlkPtr, &
-                             Grid_getDeltas, Grid_getBlkIndexLimits, &
-                             Grid_getGeometry
+  use Grid_interface, ONLY : Grid_getGeometry
   use Driver_interface, ONLY : Driver_abortFlash
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
 #include "Flash.h"
 #include "constants.h"
 
-  integer, intent(in)                    :: blockID,  ngcellcomp
+  type(Grid_tile_t) :: tileDesc
+  integer, intent(in)                    :: ngcellcomp
   real, dimension(:,:,:,:), intent(out)  :: gvec
   integer, intent(in),optional           :: potentialIndex
 
   real, pointer, dimension(:,:,:,:) :: solnData
-  integer, dimension(2,MDIM)        :: blkLimits, blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM)        :: blkLimits, blkLimitsGC
   real, dimension(MDIM)             :: delta, inv_2delta
   integer         :: sizeI, sizeJ, sizeK
   integer         :: potVar, geom, istat
@@ -73,6 +73,8 @@ subroutine Gravity_accelOneBlock ( blockID, ngcellcomp, gvec, potentialIndex)
   real, dimension(:), allocatable     :: inv_r, inv_sintheta
   integer :: i,j,k
   
+  call Driver_abortFlash("[Gravity_accelOneBlock] Implement for tiling")
+
   !==================================================
 
   ! If a variable index is explicitly specified, assume that as the potential
@@ -84,12 +86,15 @@ subroutine Gravity_accelOneBlock ( blockID, ngcellcomp, gvec, potentialIndex)
   end if
 
   ! get block data and block info
-  call Grid_getBlkPtr(blockID, solnData)
-  call Grid_getDeltas(blockID, delta)
+  call tileDesc%getDataPtr(solnData, CENTER)
+  call tileDesc%deltas(delta)
   inv_2delta(1:NDIM) = 0.5/delta(1:NDIM)
-  call Grid_getBlkIndexLimits(blockID, blkLimits, blkLimitsGC)
+  blkLimits = tileDesc%limits
+  blkLimitsGC = tileDesc%blkLimitsGC
   call Grid_getGeometry(geom)
 
+  ! DEV: FIXME Should this be tile and halo or grown tile?
+  call Driver_abortFlash("[Gravity_accelOneBlock] Implement for tiling")
   sizeI = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
   sizeJ = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
   sizeK = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
@@ -97,9 +102,11 @@ subroutine Gravity_accelOneBlock ( blockID, ngcellcomp, gvec, potentialIndex)
   ! pull out potential for better cache locality
   allocate( gpot(sizeI,sizeJ,sizeK), STAT=istat)
   if (istat/=0) call Driver_abortFlash("unable to allocate gpot in Gravity_accelOneBlock")
+  ! DEV: TODO For tiling, we might need to write this as an explicit
+  !           loop nest
   gpot(:,:,:) = solnData(potVar, :,:,:)
 
-  call Grid_releaseBlkPtr(blockID, solnData)
+  call tileDesc%releaseDataPtr(solnData, CENTER)
 
   ! now calculate gravity, depending on geometry
   select case (geom)

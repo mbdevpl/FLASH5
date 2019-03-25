@@ -28,10 +28,8 @@
 
 subroutine Simulation_adjustEvolution(blkcnt, blklst, nstep, dt, stime)
   use Simulation_interface, ONLY: Simulation_computeAnalytical
-  use Grid_interface,   ONLY : Grid_dump
   use Timers_interface, ONLY : Timers_start, Timers_stop
 
-  use Driver_data, ONLY: dr_simTime, dr_initialSimTime
   implicit none
 
   integer, intent(in) :: blkcnt
@@ -45,12 +43,6 @@ subroutine Simulation_adjustEvolution(blkcnt, blklst, nstep, dt, stime)
   integer :: lb
 
   call Timers_start("adjustEvo")
-
-  if (dr_simTime .LE. dr_initialSimTime) then
-     do lb = 1, blkcnt
-        call Grid_dump((/DENS_VAR,PRES_VAR,VELX_VAR,EINT_VAR/),4, blklst(lb),gcell=.FALSE.)
-     end do
-  end if
 
 
 !!$  ! We want the NEW time that we are advancing TO.

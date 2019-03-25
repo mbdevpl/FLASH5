@@ -40,7 +40,11 @@ subroutine eos_initTest()
                           eos_testPresMode, &
                           eos_testEintMode, &
                           eos_testTempMode
-                          
+  use eos_testData, ONLY: eos_testTolerance
+  use eos_testData, ONLY: eos_test1allB, &
+                          eos_test2allB, &
+                          eos_test3allB, &
+                          eos_test4allB
 
   implicit none
 
@@ -51,5 +55,11 @@ subroutine eos_initTest()
   call RuntimeParameters_get ("eos_testTempMode", eos_testTempModeStr)
   call RuntimeParameters_mapStrToInt(eos_testTempModeStr, eos_testTempMode)
 
+  call RuntimeParameters_get ("eos_testTolerance", eos_testTolerance)
+
+  eos_test1allB = .TRUE.
+  eos_test2allB = .TRUE.
+  eos_test3allB = .TRUE.
+  eos_test4allB = .TRUE.
 
 end subroutine eos_initTest

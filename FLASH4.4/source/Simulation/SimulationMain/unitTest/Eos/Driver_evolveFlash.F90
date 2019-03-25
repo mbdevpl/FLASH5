@@ -6,7 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Driver_evolveFlash()
+!!  call Driver_evolveFlash()
 !!
 !! DESCRIPTION
 !!
@@ -20,8 +20,12 @@ subroutine Driver_evolveFlash()
 
   use Driver_data, ONLY: dr_globalMe 
   use Eos_interface, ONLY : Eos_unitTest
-  use Grid_interface, ONLY : Grid_getMaxRefinement, Grid_getBlkPtr
-    use block_iterator, ONLY : block_iterator_t
+  use Logfile_interface,   ONLY : Logfile_stamp, Logfile_close
+  use Timers_interface,    ONLY : Timers_getSummary
+  use IO_interface,        ONLY : IO_writeCheckpoint, IO_outputFinal
+  use Grid_interface, ONLY : Grid_getMaxRefinement, Grid_getBlkPtr,Grid_releaseBlkPtr
+  use gr_interface, ONLY : gr_getBlkIterator, gr_releaseBlkIterator
+  use gr_iterator, ONLY : gr_iterator_t
   use block_metadata, ONLY : block_metadata_t
 
   implicit none
@@ -38,8 +42,8 @@ subroutine Driver_evolveFlash()
   integer,dimension(4) :: prNum
   integer :: temp,i
   integer,dimension(LOW:HIGH,MDIM)::tileLimits
-  type(block_iterator_t) :: itor
-  type(block_metadata_t) :: block
+  type(gr_iterator_t) :: itor
+  type(block_metadata_t) :: blockDesc
   integer:: level, maxLev
   real,pointer,dimension(:,:,:,:) :: Uout
 
@@ -47,6 +51,8 @@ subroutine Driver_evolveFlash()
   ! stays true if no errors are found
   perfect = .true.
   
+  call Logfile_stamp( 'Entering testing loop' , '[Driver_evolveFlash]')
+
   temp = dr_globalMe
 
   do i = 1,4
@@ -62,20 +68,22 @@ subroutine Driver_evolveFlash()
 
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
   do level=1,maxLev
-     itor = block_iterator_t(LEAF, level=level)
+     call gr_getBlkIterator(itor, level=level)
      do while(itor%is_valid())
-        call itor%blkMetaData(block)
+        call itor%blkMetaData(blockDesc)
         
-        tileLimits = block%limits
-        call Grid_getBlkPtr(block, Uout)
+        tileLimits = blockDesc%limits
+        call Grid_getBlkPtr(blockDesc, Uout)
 
         print *, "Preparing to call Eos_unitTest"
         thisBlock=.true.
-        Call Eos_unitTest(fileUnit,thisBlock, Uout, tileLimits)
+        Call Eos_unitTest(fileUnit,thisBlock, Uout, tileLimits, blockDesc)
         print *, "    Returned from Eos_unitTest"
         perfect=perfect.and.thisBlock
+        call Grid_releaseBlkPtr(blockDesc, Uout)
         call itor%next()
      end do
+     call gr_releaseBlkIterator(itor)
   end do
   
   if (perfect) then
@@ -84,6 +92,13 @@ subroutine Driver_evolveFlash()
   
   close(fileUnit)
   
+  call Logfile_stamp( 'Exiting testing loop' , '[Driver_evolveFlash]')
+  !if we write files, do final output
+  call IO_writeCheckpoint()
+  call IO_outputFinal()
+  call Timers_getSummary( 0)
+  call Logfile_stamp( "FLASH run complete.", "LOGFILE_END")
+  call Logfile_close()
   
   return
   

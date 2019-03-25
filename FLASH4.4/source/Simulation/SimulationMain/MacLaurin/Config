@@ -10,7 +10,7 @@ REQUIRES physics/Gravity/GravityMain/Poisson
 #  the USESETUPVARS only works if the option is specified on the command line
 # So, if another version of Poisson is implemented, comment out these lines
 USESETUPVARS nDim
-IF nDim <> 3
+IF nDim != 3
   SETUPERROR Maclaurin and Poisson/Multipole must run in 3d.  Use ./setup Maclaurin -auto -3d blah blah
 ENDIF
 

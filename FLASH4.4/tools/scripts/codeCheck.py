@@ -59,11 +59,11 @@ simply prevents this violation / fix from being applied to any file.
 """
 
    pmTwo = "source/Grid/GridMain/paramesh/Paramesh2"
-   pmFour0Kernel = "source/Grid/GridMain/paramesh/paramesh4/Paramesh4.0/PM4_package"
-   pmFourAny = "source/Grid/GridMain/paramesh/paramesh4/"
-   pmFourDev = "source/Grid/GridMain/paramesh/paramesh4/Paramesh4dev/"
-   pmFourDevKernel = "source/Grid/GridMain/paramesh/paramesh4/Paramesh4dev/PM4_package"
-   pmInterp = "source/Grid/GridMain/paramesh/interpolation/"
+   pmFour0Kernel = "source/Grid/GridMain/AMR/paramesh/paramesh4/Paramesh4.0/PM4_package"
+   pmFourAny = "source/Grid/GridMain/AMR/paramesh/paramesh4/"
+   pmFourDev = "source/Grid/GridMain/AMR/paramesh/paramesh4/Paramesh4dev/"
+   pmFourDevKernel = "source/Grid/GridMain/AMR/paramesh/paramesh4/Paramesh4dev/PM4_package"
+   pmInterp = "source/Grid/GridMain/AMR/paramesh/interpolation/"
    PPM   = "source/physics/Hydro/HydroMain/split/PPM/PPMKernel"
    PPMexp = "source/physics/Hydro/HydroMain/split/PPM_exp"
    SPPM   = "source/physics/Hydro/HydroMain/split/SPPM/"
@@ -1036,10 +1036,8 @@ simply prevents this violation / fix from being applied to any file.
        fd.write("%s subroutine (or module or C function) starting with %s not found\n" % (prefix,info))
 
    def commonBlock_F90(self,lines):
-       exceptions = ["source/Grid/GridMain/paramesh/interpolation/Paramesh3/prolong/amr_prolong_gen_work1_fun.F90",
-                     "source/Grid/GridMain/paramesh/interpolation/Paramesh3/prolong/amr_prolong_gen_unk1_fun.F90",
-                     "source/Grid/GridMain/paramesh/interpolation/Paramesh4/prolong/amr_prolong_gen_work1_fun.F90",
-                     "source/Grid/GridMain/paramesh/interpolation/Paramesh4/prolong/amr_prolong_gen_unk1_fun.F90"]
+       exceptions = ["source/Grid/GridMain/AMR/paramesh/interpolation/Paramesh4/prolong/amr_prolong_gen_work1_fun.F90",
+                     "source/Grid/GridMain/AMR/paramesh/interpolation/Paramesh4/prolong/amr_prolong_gen_unk1_fun.F90"]
 
        if self.filename in exceptions:
           return []

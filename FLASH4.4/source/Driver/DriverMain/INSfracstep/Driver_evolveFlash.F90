@@ -47,7 +47,7 @@ subroutine Driver_evolveFlash()
   use Grid_interface,    ONLY : Grid_getLocalNumBlks, &
                                 Grid_getListOfBlocks, &
                                 Grid_updateRefinement
-!  use Gravity_interface, ONLY :  Gravity_potentialListOfBlocks
+!  use Gravity_interface, ONLY :  Gravity_potential
   use IO_interface,      ONLY : IO_output,IO_outputFinal
 !  use Cosmology_interface, ONLY:  Cosmology
   use Simulation_interface, ONLY: Simulation_adjustEvolution

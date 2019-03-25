@@ -59,6 +59,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    use iso_c_binding
    use amrex_fort_module,      ONLY : wp => amrex_real
    use amrex_box_module,       ONLY : amrex_box
+   use amrex_boxarray_module,  ONLY : amrex_boxarray
    use amrex_tagbox_module,    ONLY : amrex_tagboxarray
    use amrex_multifab_module,  ONLY : amrex_mfiter, &
                                       amrex_mfiter_build, &
@@ -85,6 +86,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    type(amrex_tagboxarray) :: tag
    type(amrex_mfiter)      :: mfi                                                             
    type(amrex_box)         :: bx
+   type(amrex_boxarray)    :: fba
    type(block_metadata_t)  :: blockDesc
 
    real(wp),               contiguous, pointer :: solnData(:,:,:,:)
@@ -94,6 +96,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    real :: refineCut, derefineCut, refineFilter
 
    logical :: refine, derefine, stay
+   logical :: blockHasChildren
 
    integer :: iref
    integer :: i, j, k, l
@@ -184,6 +187,17 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
         end if
 #endif
 
+! Cf.  ~/projects/amrex/Src/F_Interfaces/Octree/AMReX_octree_fi.cpp for the following logic
+        if (lev .GE. amrex_max_level) then
+           print*,'Should this be called??? - lev = ',lev
+           blockHasChildren = .FALSE.
+        else
+           fba = amrex_get_boxrray(lev+1)
+           rr = amrex_ref_ratio(lev)
+           call bx%refine(rr)   !Note: this modifies bx, do not use naively after this!
+           blockHasChildren = fba%intersects(bx)
+        end if
+
 #ifdef DEBUG_TAGDATA
         ! Makes this 1-based cell indexing
         solnData(loGC(1):, loGC(2):, loGC(3):, 1:) => unk(lev)%dataptr(mfi)
@@ -219,6 +233,13 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
            call gr_estimateBlkError(error, blockDesc, iref, refineFilter)
 
            derefineCut = gr_derefine_cutoff(l)
+           if (lev == amrex_max_level) then
+              refineCut = derefineCut ! Make it harder not to stay at this level
+           else if (blockHasChildren) then
+              refineCut = derefineCut ! Make it harder to derefine children
+           else
+              refineCut   = gr_refine_cutoff(l)
+           end if
 
            if (.not.refine.and. .not.stay &
                 &          .and.(error .le. derefineCut)) then
@@ -231,7 +252,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
             ! cell is marked as having sufficient or insufficient resolution.
             ! There is no means to indicate derefine/stay/refine as with
             ! Paramesh.
-           if (error > gr_refine_cutoff(l)) then
+           if (error > refineCut) then
               derefine = .FALSE.
               refine = .TRUE.
 

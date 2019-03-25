@@ -5,7 +5,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call hy_memGetBlkPtr(block_metadata(IN)  :: blockDesc,
+!!  call hy_memGetBlkPtr(Grid_tile_t(IN)  :: tileDesc,
 !!                 real(pointer)(:,:,:,:) :: dataPtr,
 !!                 integer(IN),optional   :: gridDataStruct)
 !!
@@ -51,61 +51,36 @@
 #define DEBUG_GRID
 #endif
 
-subroutine hy_memGetBlkPtr_desc(blockDesc,dataPtr, gridDataStruct)
+subroutine hy_memGetBlkPtr_desc(tileDesc,dataPtr, gridDataStruct)
 
 #include "constants.h"
 #include "Flash.h"
 #include "FortranLangFeatures.fh"
 
   use hy_memInterface, ONLY : hy_memGetBlkPtr
-  use block_metadata,   ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
   implicit none
 
-  type(block_metadata_t), intent(IN) :: blockDesc
+  type(Grid_tile_t), intent(IN) :: tileDesc
   real, POINTER_INTENT_OUT :: dataPtr(:,:,:,:)
   integer, optional,intent(in) :: gridDataStruct
 
   real, dimension(:,:,:,:), pointer :: medPtr
   integer,dimension(MDIM+1) :: lo
-  integer :: blockID
 #ifdef INDEXREORDER
   integer, parameter :: iX = 1
 #else
   integer, parameter :: iX = 2
 #endif
 
+  call hy_memGetBlkPtr(tileDesc%id, medPtr, gridDataStruct)
 
-  blockID = blockDesc%id
-
-  call hy_memGetBlkPtr(blockID,medPtr,gridDataStruct)
-
+  ! DEV: How to set this if we eventually have tiling with Paramesh?
   lo = lbound(medPtr)
-  lo(iX:ix+MDIM-1) = lo(iX:ix+MDIM-1) + blockDesc%limitsGC(LOW,:) &
-                                       -blockDesc%localLimitsGC(LOW,:)
+  lo(iX:ix+MDIM-1) = lo(iX:ix+MDIM-1) + tileDesc%grownLimits(LOW,:) - 1
 
   dataPtr(lo(1):,lo(2):,lo(3):,lo(4):) => medPtr
 
   return
 end subroutine hy_memGetBlkPtr_desc
 
-
-subroutine hy_memGetBlk5Ptr_desc(blockDesc,data5Ptr, gridDataStruct)
-
-  use hy_memInterface, ONLY : hy_memGetBlkPtr
-  use block_metadata,   ONLY : block_metadata_t
-  implicit none
-
-  type(block_metadata_t), intent(IN) :: blockDesc
-
-  real, dimension(:,:,:,:,:), pointer :: data5Ptr
-  integer, optional,intent(in) :: gridDataStruct
-
-  integer :: blockID
-
-  blockID = blockDesc%id
-
-  call hy_memGetBlkPtr(blockID,data5Ptr,gridDataStruct)
-
-  !! DEV: Should probably do some index-shifting as in hy_memGetBlkPtr_desc above.
-
-end subroutine hy_memGetBlk5Ptr_desc

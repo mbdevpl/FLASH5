@@ -8,15 +8,18 @@
 !!  call gr_estimateBlkError(real(INOUT) :: error,
 !!                   integer(IN) :: iref,
 !!                   real(IN)    :: refine_filter)
-!!  
+!!
 !!  DESCRIPTION
-!!  
+!!
 !!  For one block, estimate the error associated with the given variable to
 !!  help determine if the block needs refinement or derefinement.
 !!
-!!  ARGUMENTS 
+!!  ARGUMENTS
 !!
-!!    error - indexed by block IDs.
+!!    error - the computed error, a scalar value for the current variable
+!!            (given by iref) and current block.
+!!
+!!    blockDesc - describes the block.
 !!
 !!    iref - index of the refinement variable in data structure "unk"
 !!
@@ -24,12 +27,14 @@
 !!                    don't diverge numerically 
 !! 
 !!  NOTES
-!!  
-!!    See Grid_markRefineDerefine
+!!
+!!    In the case of the PARAMESH Grid implementation, this routine is
+!!    called from gr_estimateError.
 !!
 !!  SEE ALSO
-!!  
+!!
 !!    Grid_markRefineDerefine
+!!    Grid_markRefineDerefineCallback
 !!
 !!***
 
@@ -37,30 +42,23 @@
 
 #include "Flash.h"
 
-subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
-
-  use Grid_data, ONLY: gr_geometry,  gr_maxRefine, &
-       gr_meshComm, gr_meshMe,gr_domainBC
-  use Grid_interface, ONLY : Grid_getBlkBC, &
-                             Grid_getBlkPtr, Grid_releaseBlkPtr
-#ifndef FLASH_GRID_ANYAMREX
-  use Grid_interface, ONLY : Grid_getDeltas
-  use gr_specificData, ONLY : gr_oneBlock
-  use Grid_data, ONLY: gr_delta
-#endif
-  use block_metadata, ONLY : block_metadata_t
+subroutine gr_estimateBlkError(error, tileDesc, iref, refine_filter)
+  use Grid_interface, ONLY : Grid_getCellCoords
+  use Grid_data, ONLY: gr_geometry, &
+       gr_meshComm, gr_meshMe
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
 #include "constants.h" 
 
   integer, intent(IN) :: iref
-  type(block_metadata_t),intent(IN) :: blockDesc
+  type(Grid_tile_t),intent(IN) :: tileDesc
   real, intent(IN) ::  refine_filter
   real,intent(INOUT) :: error
   
   integer, parameter :: SQNDIM = NDIM*NDIM
-  integer, parameter :: WITH_GC = .TRUE.
+  logical, parameter :: WITH_GC = .TRUE.
 
   real,dimension(MDIM) ::  del, del_f, delta
   integer,dimension(MDIM) :: ncell
@@ -73,16 +71,13 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
   real num,denom
 
   integer i,j,k
-  integer ierr,grd
+  integer grd
   integer,dimension(MDIM)::bstart,bend 
-  integer nsend,nrecv
 
   integer :: kk
 
   real, pointer :: solnData(:,:,:,:)
-  integer :: idest, iopt, nlayers, icoord
-  logical :: lcc, lfc, lec, lnc, l_srl_only, ldiag
-  integer :: blkLevel, blkID
+  integer :: blkLevel
 
 !==============================================================================
 
@@ -108,33 +103,22 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
      
   !==============================================================================
 
+     nullify(solnData)
 
-#ifndef FLASH_GRID_ANYAMREX
-#define XCOORD(I) (gr_oneBlock(blkID)%firstAxisCoords(CENTER,I))
-#define YCOORD(I) (gr_oneBlock(blkID)%secondAxisCoords(CENTER,I))
-#else
 #define XCOORD(I) (xCenter(I))
 #define YCOORD(I) (yCenter(I))
-#endif
 
-#ifndef FLASH_GRID_ANYAMREX
-     blkID       = blockDesc%id
-#endif
-     blkLevel    = blockDesc%level
-     blkLimits   = blockDesc%limits
-     blkLimitsGC = blockDesc%limitsGC
-     call Grid_getBlkPtr(blockDesc, solnData, CENTER)
+     blkLevel    = tileDesc%level
+     blkLimits   = tileDesc%limits
+     blkLimitsGC = tileDesc%blkLimitsGC
+     call tileDesc%getDataPtr(solnData, CENTER)
 
 !!$     if (nodetype(lb).eq.1.or.nodetype(lb).eq.2) then
 
 
         del=0.0
         ncell(:)=blkLimits(HIGH,:)-blkLimits(LOW,:)+1
-#ifdef FLASH_GRID_ANYAMREX
-        call Grid_getDeltas(blkLevel,delta)
-#else
-        delta(:) = gr_delta(:,blkLevel)
-#endif
+        call tileDesc%deltas(delta)
         del(IAXIS:NDIM) = 0.5e0/delta(IAXIS:NDIM)
         del_f(JAXIS:NDIM) = del(JAXIS:NDIM)
         allocate(delu(NDIM,blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS),&
@@ -146,15 +130,21 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
              blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
 
 
-#ifdef FLASH_GRID_ANYAMREX
-        allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-        allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
+        ! Skipping the following allocations and calls in some
+        ! situations where not needed, based on geometry
+        if ((gr_geometry == SPHERICAL) &
+             .OR. (NDIM > 1 .AND. gr_geometry == POLAR) &
+             .OR. (NDIM == 3 .AND. gr_geometry .NE. CARTESIAN)) then
+           allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
+           allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
 
-        call Grid_getCellCoords(IAXIS, blockDesc, CENTER, WITH_GC, &
-                                xCenter, SIZE(xCenter))
-        call Grid_getCellCoords(JAXIS, blockDesc, CENTER, WITH_GC, &
-                                yCenter, SIZE(yCenter))
-#endif
+           call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                                   blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), &
+                                   xCenter)
+           call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                   blkLimitsGC(LOW, :), blkLimitsGC(HIGH, :), &
+                                   yCenter)
+        end if
 
         ! Compute first derivatives
         do k = blkLimitsGC(LOW,KAXIS)+K3D*1,blkLimitsGC(HIGH,KAXIS)-K3D*1
@@ -206,8 +196,7 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
            end do
         end do
         
-        call Grid_releaseBlkPtr(blockDesc, solnData, CENTER)
-        nullify(solnData)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
         
         ! Compute second derivatives
         bstart=1
@@ -218,7 +207,7 @@ subroutine gr_estimateBlkError(error, blockDesc, iref, refine_filter)
         !    grd=NGUARD-1
         ! No guardcells
         !    grd=NGUARD
-        call Grid_getBlkBC(blockDesc,face,bdry)
+        call tileDesc%faceBCs(face,bdry)
         
         do i=1,NDIM
            if (face(LOW,i) == NOT_BOUNDARY)then

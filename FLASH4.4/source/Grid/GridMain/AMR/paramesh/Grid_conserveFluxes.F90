@@ -6,7 +6,7 @@
 !! SYNOPSIS
 !!
 !!  call Grid_conserveFluxes(integer(IN) :: axis,
-!!                           integer(IN) :: level)
+!!                           integer(IN) :: coarse_level)
 !!  
 !! DESCRIPTION 
 !!  
@@ -27,7 +27,7 @@
 !!         IAXIS, JAXIS, KAXIS, or in all directions if ALLDIR.
 !!         These constants are defined in constants.h.
 !!
-!!  level - refinement level. Selects the level (coarse level) for
+!!  coarse_level - refinement level. Selects the level (coarse level) for
 !!          which fluxes are updated.
 !!          Can be UNSPEC_LEVEL for all levels (except, as an
 !!          optimizing shortcut, the highest possible one).
@@ -38,15 +38,15 @@
 !!REORDER(5): gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 #include "Flash.h"
 #include "constants.h"
-subroutine Grid_conserveFluxes( axis, level)
+subroutine Grid_conserveFluxes( axis, coarse_level)
   use paramesh_interfaces, ONLY : amr_flux_conserve
   use physicaldata, ONLY : flux_x, flux_y, flux_z, nfluxes
   use tree, ONLY : surr_blks, nodetype, lrefine_max
   use gr_specificData, ONLY : gr_xflx, gr_yflx, gr_zflx, gr_flxx, gr_flxy, gr_flxz
   use gr_specificData, ONLY : gr_iloFl, gr_jloFl, gr_kloFl
-  use leaf_iterator, ONLY : leaf_iterator_t
-  use block_metadata, ONLY : block_metadata_t
-  use Grid_interface, ONLY : Grid_getLeafIterator, Grid_releaseLeafIterator
+  use Grid_iterator, ONLY : Grid_iterator_t
+  use Grid_tile, ONLY : Grid_tile_t
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
 
 #ifndef FLASH_GRID_PARAMESH2
   use physicaldata, ONLY: no_permanent_guardcells
@@ -62,7 +62,7 @@ subroutine Grid_conserveFluxes( axis, level)
 #endif
 
   implicit none
-  integer, intent(in) ::  axis, level
+  integer, intent(in) ::  axis, coarse_level
   integer :: gridDataStruct
   integer :: presVar, np
   integer,save,dimension(1),target :: presDefault = (/-1/)
@@ -70,16 +70,15 @@ subroutine Grid_conserveFluxes( axis, level)
   integer :: sx,ex,sy,ey,sz,ez
   real,pointer, dimension(:,:,:,:) :: fluxx,fluxy,fluxz
 
-  type(leaf_iterator_t)  :: itor
-  type(block_metadata_t) :: blockDesc
+  type(Grid_iterator_t)  :: itor
+  type(Grid_tile_t) :: tileDesc
   integer :: blockID
   logical :: xtrue,ytrue,ztrue
   integer, dimension(MDIM) :: datasize
 
 
-  !! Dev - AD for AMReX this should be if(level==maxlev) return
   !! Dev:  Disabled immediate return for now, let the caller control this. - KW
-  !if(level > 1) return
+  !if(coarse_level > 1) return
 
   if (axis == ALLDIR) then
      call amr_flux_conserve(gr_meshMe, 0, 0)
@@ -123,14 +122,14 @@ subroutine Grid_conserveFluxes( axis, level)
      ztrue = (axis==KAXIS)
   end if
 
-  call Grid_getLeafIterator(itor, level=level)
-  do while(itor%is_valid())
-     call itor%blkMetaData(blockDesc)
-     if ((level == UNSPEC_LEVEL) .AND. (blockDesc%level == lrefine_max)) then
+  call Grid_getTileIterator(itor, LEAF, level=coarse_level, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+     if ((coarse_level == UNSPEC_LEVEL) .AND. (tileDesc%level == lrefine_max)) then
         call itor%next()
         CYCLE !Skip blocks at highest level.
      end if
-     blockID=blockDesc%id
+     blockID=tileDesc%id
      
      fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
      fluxy(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxy(:,:,:,:,blockID)
@@ -229,10 +228,10 @@ subroutine Grid_conserveFluxes( axis, level)
 !!$#endif
         if (surr_blks(1,2,2,1,blockID) > 0 .AND. &
             surr_blks(3,2,2,1,blockID) == PARENT_BLK) &
-                   fluxz(:,sx:ex,sy:ey,sz  ) = flux_z(:,:,1,:nfluxes,blockID)
+                   fluxz(:,sx:ex,sy:ey,sz  ) = flux_z(:nfluxes,:,:,1,blockID)
         if (surr_blks(1,2,2,3,blockID) > 0 .AND. &
             surr_blks(3,2,2,3,blockID) == PARENT_BLK) &
-                   fluxz(:,sx:ex,sy:ey,ez+1) = flux_z(:,:,2,:nfluxes,blockID)
+                   fluxz(:,sx:ex,sy:ey,ez+1) = flux_z(:nfluxes,:,:,2,blockID)
 !!$        fluxz(:,sx:ex,sy:ey,sz+1) = gr_zflx(:,:,1,:,blockID)
 !!$        fluxz(:,sx:ex,sy:ey,ez  ) = gr_zflx(:,:,2,:,blockID)
 #if NDIM > 2
@@ -254,7 +253,7 @@ subroutine Grid_conserveFluxes( axis, level)
      end if
      call itor%next()
   end do
-  call Grid_releaseLeafIterator(itor)
+  call Grid_releaseTileIterator(itor)
   return
 end subroutine Grid_conserveFluxes
    

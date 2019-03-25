@@ -83,6 +83,7 @@ subroutine io_writeData (fileID)
   
   use io_typeInterface, ONLY : io_xfer_tree_data
 
+  use block_metadata, ONLY : block_metadata_t
   implicit none
 
 
@@ -94,6 +95,7 @@ subroutine io_writeData (fileID)
   integer(io_fileID_t), INTENT(in) :: fileID
 
   type (tree_data_t) :: tree_data
+  type(block_metadata_t) :: block
   integer :: blockID = 1
   integer :: jproc, i, j
   integer :: globalNumBlocks, globalOffset, ngid 
@@ -179,11 +181,11 @@ subroutine io_writeData (fileID)
   globalNumBlocks = io_globalNumProcs
   globalOffset = io_globalMe
 
-  call Grid_getBlkBoundBox(1, boundBox)
+  call Grid_getBlkBoundBox(block, boundBox)
 
-  call Grid_getBlkCenterCoords(1, blockCenterCoords)
+  call Grid_getBlkCenterCoords(block, blockCenterCoords)
 
-  call Grid_getBlkPhysicalSize(1, blockSize)
+  call Grid_getBlkPhysicalSize(block, blockSize)
   bsize(:,1) = blockSize(:)
 
   if (NDIM == 1) then

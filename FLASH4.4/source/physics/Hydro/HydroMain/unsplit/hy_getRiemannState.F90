@@ -65,7 +65,7 @@
 
 !!REORDER(4):U, V0, scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr, B[xyz]
 
-Subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
+Subroutine hy_getRiemannState(tileDesc,U,blkLimits,loGC,hiGC,dt,del,&
                                   ogravX,ogravY,ogravZ,&
                                   scrchFaceXPtr,scrchFaceYPtr,scrchFaceZPtr,&
                                   hy_SpcR,hy_SpcL,hy_SpcSig,&
@@ -104,10 +104,8 @@ Subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                                    hy_eigenValue,         &
                                    hy_eigenVector,        &
                                    hy_upwindTransverseFlux
-  use Grid_interface,       ONLY : Grid_getBlkPtr,     &
-                                   Grid_releaseBlkPtr, &
-                                   Grid_getCellCoords
-  use block_metadata,       ONLY : block_metadata_t
+  use Grid_interface,   ONLY : Grid_getCellCoords
+  use Grid_tile,        ONLY : Grid_tile_t 
 
   implicit none
 
@@ -115,7 +113,7 @@ Subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
 #include "UHD.h"
 
   !! Arguments type declaration ------------------------------------------------------------
-  type(block_metadata_t), intent(IN)   :: block
+  type(Grid_tile_t), intent(IN)   :: tileDesc
   integer, intent(IN),dimension(LOW:HIGH,MDIM):: blkLimits !, blkLimitsGC
   integer, intent(IN),dimension(MDIM)  :: loGC, hiGC
   real,    intent(IN)   :: dt
@@ -272,9 +270,6 @@ Subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
 !!$  sGeo_magz=0.
 !!$  sGeo_magp=0.
 
-  !! Get block pointer to UNK data
-!!  call Grid_getBlkPtr(blockID,U,CENTER)
-
 
 !!$  ! MHD only-------------------------------------------------------------------------------
 !!$#if defined(FLASH_USM_MHD) && (NFACE_VARS > 0) && (NDIM > 1)
@@ -293,10 +288,12 @@ Subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
      dataSize(1:MDIM)=hiGC(1:MDIM)-loGC(1:MDIM)+1
      if (hy_geometry /= CARTESIAN) then
         ! Grab cell x-coords for this block  
-        call Grid_getCellCoords(IAXIS,block, CENTER,.true.,xCenter,dataSize(IAXIS))
+        call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, &
+                                loGC, hiGC, xCenter)
 #if NDIM > 1
         if (hy_geometry == SPHERICAL) &
-             call Grid_getCellCoords(JAXIS,block, CENTER,.true.,yCenter, dataSize(JAXIS))
+             call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, &
+                                     loGC, hiGC, yCenter)
 #endif
      endif
 
@@ -609,7 +606,7 @@ Subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                  if (hy_fullSpecMsFluxHandling .AND. hy_numXN > 0 &
                       .AND. present(hy_spcR)) then
                     call hy_dataReconstOnestep&
-                      (block,U,loGC,hiGC,    &
+                      (tileDesc,U,loGC,hiGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
                        DivU,FlatCoeff,         &
@@ -625,7 +622,7 @@ Subroutine hy_getRiemannState(block,U,blkLimits,loGC,hiGC,dt,del,&
                        hy_SpcR,hy_SpcL,hy_SpcSig)
                  else
                     call hy_dataReconstOnestep&
-                      (block,U,loGC,hiGC,    &
+                      (tileDesc,U,loGC,hiGC,    &
                        order,i,j,k,dt,del,     &
                        ogravX,ogravY,ogravZ,   &
                        DivU,FlatCoeff,         &
