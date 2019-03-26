@@ -4,15 +4,13 @@ REQUIRES Grid/GridMain
 REQUIRES flashUtilities/sorting
 #REQUESTS Particles
 
+EXCLUSIVE ParticlesOwned MeshOwned 
 USESETUPVARS Grid
 
-IF Grid=='UG'
-  REQUESTS Grid/GridParticles/GridParticlesMove/UG/Directional
-ELSEIF Grid == 'PM2'
-  REQUIRES Grid/GridParticles/GridParticlesMove/Sieve
+IF Grid in ["Amrex"]
+ REQUIRES Grid/GridParticles/GridParticlesMove/MeshOwned
 ELSE
-  REQUESTS Grid/GridParticles/GridParticlesMove/paramesh
-  REQUESTS Grid/GridParticles/GridParticlesMove/Sieve
+ REQUIRES Grid/GridParticles/GridParticlesMove/ParticlesOwned
 ENDIF
 
 D gr_ptRemove  boolean.  This is a switch which determines the action if the number

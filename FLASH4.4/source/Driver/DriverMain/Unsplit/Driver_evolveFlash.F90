@@ -65,7 +65,7 @@ subroutine Driver_evolveFlash()
   use Timers_interface,    ONLY : Timers_start, Timers_stop, &
                                   Timers_getSummary
   use Diffuse_interface,   ONLY : Diffuse
-  use Particles_interface, ONLY : Particles_advance, Particles_dump
+  use Particles_interface, ONLY : Particles_advance
   use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
                                   Grid_getListOfBlocks, &
                                   Grid_getBlkIndexLimits, &
@@ -212,6 +212,15 @@ subroutine Driver_evolveFlash()
 
 #ifdef DEBUG_DRIVER
      print*,'returned from burn myPE=',dr_globalMe
+#endif
+
+        ! #. Advance Particles
+        call Timers_start("Particles_advance")
+        call Particles_advance(dr_dtOld, dr_dt)
+        call Driver_driftUnk(__FILE__,__LINE__,driftUnk_flags)
+        call Timers_stop("Particles_advance")
+#ifdef DEBUG_DRIVER
+        print*, 'return from Particles_advance '  ! DEBUG
 #endif
      
      dr_dtOld = dr_dt
