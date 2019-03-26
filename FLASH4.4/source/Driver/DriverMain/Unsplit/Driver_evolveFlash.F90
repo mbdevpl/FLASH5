@@ -65,7 +65,7 @@ subroutine Driver_evolveFlash()
   use Timers_interface,    ONLY : Timers_start, Timers_stop, &
                                   Timers_getSummary
   use Diffuse_interface,   ONLY : Diffuse
-  use Particles_interface, ONLY : Particles_advance
+  use Particles_interface, ONLY : Particles_advance, Particles_dump
   use Grid_interface,      ONLY : Grid_getLocalNumBlks, &
                                   Grid_getListOfBlocks, &
                                   Grid_getBlkIndexLimits, &
