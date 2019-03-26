@@ -60,15 +60,23 @@
 subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
                                       zeroFullRegister)
     use amrex_fort_module,         ONLY : wp => amrex_real
+    use amrex_box_module,          ONLY : amrex_box
+    use amrex_fab_module,          ONLY : amrex_fab, &
+                                          amrex_fab_build
     use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
                                           amrex_ref_ratio
     ! DEV: See note below related to Intel ICE
     use amrex_fluxregister_module, ONLY : amrex_fluxregister
 
     use Driver_interface,          ONLY : Driver_abortFlash
-    use Grid_interface,            ONLY : Grid_getGeometry
+    use Grid_interface,            ONLY : Grid_getGeometry, &
+                                          Grid_getTileIterator, &
+                                          Grid_releaseTileIterator, &
+                                          Grid_getCellFaceAreas
     use gr_physicalMultifabs,      ONLY : flux_registers, &
                                           fluxes
+    use Grid_iterator,             ONLY : Grid_iterator_t
+    use Grid_tile,                 ONLY : Grid_tile_t
 
     implicit none
 
@@ -81,6 +89,23 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
     integer  :: fine
     integer  :: geometry
     real(wp) :: coef
+
+    real, pointer     :: fluxData(:,:,:,:)
+    real, pointer     :: fabData(:,:,:,:)
+    type(amrex_box)   :: box
+    type(amrex_fab)   :: fluxFabs(1:NDIM)
+    real, allocatable :: faceAreas(:,:,:)
+
+    type(Grid_iterator_t) :: itor
+    type(Grid_tile_t)     :: tileDesc
+
+    integer :: lo(4)
+    integer :: hi(4)
+
+    integer :: i, j, k, var
+
+    nullify(fluxData)
+    nullify(fabData)
 
     if (NFLUXES < 1) then
         RETURN
@@ -116,30 +141,145 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
         end if
     end if
 
-    call Grid_getGeometry(geometry)
+    call Grid_getTileIterator(itor, ALL_BLKS, level=fine_level, tiling=.FALSE.)
+    do while (itor%isValid())
+       call itor%currentTile(tileDesc)
 
-    select case (geometry)
-    case (CARTESIAN)
-      ! The scaling factor=1/r^(NDIM-1) used here assumes that the refinement
-      ! ratio, r, between levels is always 2
-      if (amrex_ref_ratio(coarse) /= 2) then
-        call Driver_abortFlash("[Grid_addFineToFluxRegister] refinement ratio not 2")
-      end if
+       call tileDesc%getDataPtr(fluxData, FLUXX)
+       lo(:) = lbound(fluxData)
+       hi(:) = ubound(fluxData)
+       box%lo(:) = lo(1:MDIM) - 1
+       box%hi(:) = hi(1:MDIM) - 1
+       box%nodal = [.TRUE., .FALSE., .FALSE.]
+       call amrex_fab_build(fluxFabs(IAXIS), box, NFLUXES)    
+       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                          lo(JAXIS):hi(JAXIS), &
+                          lo(KAXIS):hi(KAXIS)))
+       call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
 
-#if   NDIM == 2
-        coef = coef * 0.5_wp
-#elif NDIM == 3
-        coef = coef * 0.25_wp
+       fabData(lo(1):, lo(2):, lo(3):, 1:) => fluxFabs(IAXIS)%dataPtr()
+       do        var = 1, NFLUXES
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                   if (faceAreas(i,j,k) == 0.0) then
+                      write(*,*) "Divide by zero!", i, j, k
+                      STOP
+                   end if
+                   fabData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                           * faceAreas(i, j, k)
+                end do
+             end do
+          end do
+       end do
+       nullify(fabData)
+
+       deallocate(faceAreas)
+       call tileDesc%releaseDataPtr(fluxData, FLUXX)
+
+#if   NDIM >= 2
+       call tileDesc%getDataPtr(fluxData, FLUXY)
+       lo(:) = lbound(fluxData)
+       hi(:) = ubound(fluxData)
+       box%lo(:) = lo(1:MDIM) - 1
+       box%hi(:) = hi(1:MDIM) - 1
+       box%nodal = [.FALSE., .TRUE., .FALSE.]
+       call amrex_fab_build(fluxFabs(JAXIS), box, NFLUXES)    
+       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                          lo(JAXIS):hi(JAXIS), &
+                          lo(KAXIS):hi(KAXIS)))
+       call Grid_getCellFaceAreas(JAXIS, tileDesc%level, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
+
+       fabData(lo(1):, lo(2):, lo(3):, 1:) => fluxFabs(JAXIS)%dataPtr()
+       do        var = 1, NFLUXES
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                   if (faceAreas(i,j,k) == 0.0) then
+                      write(*,*) "Divide by zero!", i, j, k
+                      STOP
+                   end if
+                   fabData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                           * faceAreas(i, j, k)
+                end do
+             end do
+          end do
+       end do
+       nullify(fabData)
+
+       deallocate(faceAreas)
+       call tileDesc%releaseDataPtr(fluxData, FLUXY)
 #endif
 
-        ! When compiling with ifort (IFORT) 17.0.0 20160721, the following line
-        ! results in an ICE.  
-        ! /tmp/ifortACzzAq.i90: catastrophic error: **Internal compiler error: segmentation violation signal raised**
-        !
-        !This error is overcome by importing amrex_flux_register above
-        call flux_registers(fine)%fineadd(fluxes(fine, 1:NDIM), coef)
-    case default
-        call Driver_abortFlash("[Grid_addFineToFluxRegister] Only works with Cartesian")
-    end select
+#if   NDIM == 3
+       call tileDesc%getDataPtr(fluxData, FLUXZ)
+       lo(:) = lbound(fluxData)
+       hi(:) = ubound(fluxData)
+       box%lo(:) = lo(1:MDIM) - 1
+       box%hi(:) = hi(1:MDIM) - 1
+       box%nodal = [.FALSE., .FALSE., .TRUE.]
+       call amrex_fab_build(fluxFabs(KAXIS), box, NFLUXES)    
+       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                          lo(JAXIS):hi(JAXIS), &
+                          lo(KAXIS):hi(KAXIS)))
+       call Grid_getCellFaceAreas(KAXIS, tileDesc%level, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
+
+       fabData(lo(1):, lo(2):, lo(3):, 1:) => fluxFabs(KAXIS)%dataPtr()
+       do        var = 1, NFLUXES
+          do       k = lo(KAXIS), hi(KAXIS)
+             do    j = lo(JAXIS), hi(JAXIS)
+                do i = lo(IAXIS), hi(IAXIS)
+                   if (faceAreas(i,j,k) == 0.0) then
+                      write(*,*) "Divide by zero!", i, j, k
+                      STOP
+                   end if
+                   fabData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                           * faceAreas(i, j, k) &
+                end do
+             end do
+          end do
+       end do
+       nullify(fabData)
+
+       deallocate(faceAreas)
+       call tileDesc%releaseDataPtr(fluxData, FLUXZ)
+#endif
+
+       call flux_registers(fine)%fineadd(fluxFabs, tileDesc%grid_index, coef)
+
+       call itor%next()
+    end do
+    call Grid_releaseTileIterator(itor)
+!    call Grid_getGeometry(geometry)
+!
+!    select case (geometry)
+!    case (CARTESIAN)
+!      ! The scaling factor=1/r^(NDIM-1) used here assumes that the refinement
+!      ! ratio, r, between levels is always 2
+!      if (amrex_ref_ratio(coarse) /= 2) then
+!        call Driver_abortFlash("[Grid_addFineToFluxRegister] refinement ratio not 2")
+!      end if
+!
+!#if   NDIM == 2
+!        coef = coef * 0.5_wp
+!#elif NDIM == 3
+!        coef = coef * 0.25_wp
+!#endif
+!
+!        ! When compiling with ifort (IFORT) 17.0.0 20160721, the following line
+!        ! results in an ICE.  
+!        ! /tmp/ifortACzzAq.i90: catastrophic error: **Internal compiler error: segmentation violation signal raised**
+!        !
+!        !This error is overcome by importing amrex_flux_register above
+!        call flux_registers(fine)%fineadd(fluxes(fine, 1:NDIM), coef)
+!    case default
+!        call Driver_abortFlash("[Grid_addFineToFluxRegister] Only works with Cartesian")
+!    end select
 end subroutine Grid_addFineToFluxRegister
 
