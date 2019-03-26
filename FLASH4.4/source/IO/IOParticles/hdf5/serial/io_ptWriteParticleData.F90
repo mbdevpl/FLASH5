@@ -115,8 +115,8 @@ subroutine io_ptWriteParticleData( fileID, globalNumParticles, &
 !! This call returns particles sorted by block numbers and also the 
 !! the number of particles that each block has.
 
-  call Grid_sortParticles(particles,NPART_PROPS,l_numParticles,particleTypes,&
-       pt_maxPerProc,particlesPerBlk, BLK_PART_PROP)
+!  call Grid_sortParticles(particles,NPART_PROPS,l_numParticles,particleTypes,&
+!       pt_maxPerProc,particlesPerBlk, BLK_PART_PROP)
 
   if((io_globalMe == MASTER_PE) .and. (.not. particlesToCheckpoint)) then
     
