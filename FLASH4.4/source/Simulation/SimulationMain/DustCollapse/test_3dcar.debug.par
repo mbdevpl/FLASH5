@@ -47,6 +47,7 @@ grav_boundary_type = "isolated"
 
 cfl		= 0.8
 
+lrefine_min     = 4
 lrefine_max     = 4
 basenm          = "dustcoll_"
 restart         = .false.
@@ -82,7 +83,6 @@ eintSwitch     = 1.E-4
 
 memory_stat_freq = 1
 convertToConsvdForMeshCalls   = .true.
-flux_correct    = .FALSE.
 
 ## -------------------------------------------------------------##
 ##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
