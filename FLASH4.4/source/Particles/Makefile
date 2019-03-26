@@ -3,6 +3,7 @@
 Particles +=  \
 	Particles_advance.o \
 	Particles_computeDt.o \
+	Particles_dump.o  \
 	Particles_finalize.o \
 	Particles_getGlobalNum.o \
 	Particles_getLocalNum.o \
