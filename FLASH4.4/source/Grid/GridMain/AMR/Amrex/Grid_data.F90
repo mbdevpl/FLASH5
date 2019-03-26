@@ -71,13 +71,13 @@ Module Grid_data
   integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vartypes
   logical, save :: gr_justExchangedGC
 !  logical, save :: gr_isolatedBoundaries
-!  logical, save :: gr_useParticles,gr_refineOnParticleCount,gr_refineOnPdens
+  logical, save :: gr_useParticles,gr_refineOnParticleCount,gr_refineOnPdens
 !  integer, save :: gr_minParticlesPerBlk, gr_maxParticlesPerBlk
   integer, save :: gr_globalComm, gr_globalMe, gr_globalNumProcs
   integer, save :: gr_meshComm, gr_meshMe, gr_meshNumProcs
   integer, save :: gr_meshAcrossComm, gr_meshAcrossMe, gr_meshAcrossNumProcs
 
-!  logical, save :: gr_useEnergyDeposition
+  logical, save :: gr_useEnergyDeposition
   real, save, dimension(LOW:HIGH,MDIM) :: gr_boxContainingLeafNodes
 
   integer, save :: gr_eosMode
