@@ -12,6 +12,7 @@ Particles +=  \
 	Particles_putLocalNum.o \
 	Particles_updateAttributes.o \
 	Particles_sendOutputData.o \
+	Particles_updateRefinement.o\
 	Particles_unitTest.o \
 	Particles_mapFromMesh.o \
 	Particles_mapToMeshOneBlk.o \
