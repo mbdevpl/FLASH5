@@ -87,14 +87,6 @@ module gr_interface
        integer,dimension(MDIM),intent(IN) :: negh
        integer,dimension(BLKNO:PROCNO),intent(OUT) :: neghID
      end subroutine gr_findNeghID
-     subroutine gr_findNeghID_blkid(blockid,pos,negh,neghID)
-       implicit none
-       integer, intent(IN) :: blockid
-       real,dimension(MDIM), intent(IN) :: pos
-       integer,dimension(MDIM),intent(IN) :: negh
-       integer,dimension(BLKNO:PROCNO),intent(OUT) :: neghID
-     end subroutine gr_findNeghID_blkid
-
   end interface gr_findNeghID
 
   interface
