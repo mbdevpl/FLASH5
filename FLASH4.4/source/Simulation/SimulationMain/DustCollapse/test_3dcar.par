@@ -1,5 +1,6 @@
 #	Runtime parameters for the dust collapse problem.
 # ./setup -makefile=gnu DustCollapse -auto -3d +Mode1 +serialIO +uhd +newMpole -debug -parfile=coldstart_pm_3d.par -objdir=Comparison_DustCollapse_AMR_newMpole_3d_pm4dev
+# ./setup -makefile=gnu DustCollapse -auto -3d +Mode3 +serialIO +uhd +newMpole -debug -parfile=coldstart_pm_3d.par -objdir=Comparison_DustCollapse_AMR_newMpole_3d_AMReX
 
 #	Parameters for initial model
 
