@@ -47,11 +47,11 @@
 subroutine Grid_getBlkCenterCoords(block,blockCenter)
   use Driver_interface, ONLY : Driver_abortFlash
 !  use Grid_interface, ONLY : Grid_getBlkBoundBox
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 
-  type(block_metadata_t), intent(in) :: block
+  type(Grid_tile_t), intent(in) :: block
   real,dimension(MDIM),intent(out) :: blockCenter
 
   blockCenter(:) = 0.0

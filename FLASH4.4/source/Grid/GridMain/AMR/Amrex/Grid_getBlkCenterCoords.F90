@@ -44,12 +44,13 @@ subroutine Grid_getBlkCenterCoords(blockDesc, blockCenter)
   use amrex_amrcore_module,  ONLY : amrex_geom
   use amrex_geometry_module, ONLY : amrex_problo
 
-  use block_metadata,        ONLY : block_metadata_t
+  use Grid_tile,        ONLY : Grid_tile_t
 
   implicit none
 
-  type(block_metadata_t), intent(IN)  :: blockDesc
+  type(Grid_tile_t), intent(IN)  :: blockDesc
   real,    intent(OUT) :: blockCenter(MDIM)
+
   real                 :: boundBox(LOW:HIGH, MDIM)
 
   integer :: i = 0
