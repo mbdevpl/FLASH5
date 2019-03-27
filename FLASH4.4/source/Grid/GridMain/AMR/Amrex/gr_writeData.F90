@@ -10,7 +10,7 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
     use amrex_plotfile_module, ONLY : amrex_write_plotfile
 
     use gr_physicalMultifabs,  ONLY : unk, facevarx, facevary, facevarz
-    use Particles_data, ONLY:  pt_containers, useParticles
+    use gr_ptInterface, ONLY:  gr_ptWritePCs
     use IO_data, ONLY : io_unklabels
 
     implicit none
@@ -67,12 +67,8 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
                               t_new, stepno_arr, amrex_ref_ratio)
 
 
-    if(useParticles) then
-        do i=1,SIZE(pt_containers)
-            write(current_var,'(I2.2)') i
-            call pt_containers(i)%write(filename, "ParticleType"//current_var, .true.)
-        end do
-    endif
+    call gr_ptWritePCs(filename, .true.)
+
 
 #if(NFACE_VARS > 0)
     deallocate(varname)
