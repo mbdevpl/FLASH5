@@ -120,7 +120,6 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
 
   real, pointer   :: solnData (:,:,:,:)
 
-  integer :: lev
   type(Grid_tile_t) :: tileDesc
   type(Grid_iterator_t) :: itor
 
@@ -135,7 +134,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   !$omp parallel if (gr_mpoleMultiThreading) &
   !$omp default(private) &
   !$omp shared( tileDesc,itor,ipotvar,&
-  !$omp         lev,bndBox,delta,solnData,tileLimits,&
+  !$omp         bndBox,delta,solnData,tileLimits,&
   !$omp         imin,jmin,kmin,imax,jmax,kmax,&
   !$omp         iCmax,jCmax,kCmax,iFmax,jFmax,kFmax,&
   !$omp         DeltaI,DeltaJ,DeltaK,DeltaIHalf,DeltaJHalf,DeltaKHalf,&
@@ -155,7 +154,6 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
 
      !$omp single
      call itor%currentTile(tileDesc)
-     lev=tileDesc%level
      tileLimits=tileDesc%limits
      
      call tileDesc%boundBox(bndBox)
