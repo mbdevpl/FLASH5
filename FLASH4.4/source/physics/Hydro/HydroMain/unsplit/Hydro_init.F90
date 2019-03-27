@@ -145,6 +145,11 @@ Subroutine Hydro_init()
   call RuntimeParameters_get("addThermalFlux",      hy_addThermalFlux)
   call RuntimeParameters_get("hy_fPresInMomFlux",   hy_fPresInMomFlux)    
   call RuntimeParameters_get("conserveAngMom",      hy_conserveAngMom) 
+#ifdef FLASH_GRID_AMREX
+  if (hy_fPresInMomFlux /= 0.0) then
+    call Driver_abortFlash("[Hydro_init] hy_fPresInMomFlux must be zero with AMReX for now")
+  end if
+#endif
 
   if (NDIM == 3) then
      call RuntimeParameters_get("use_3dFullCTU",    hy_use3dFullCTU)
