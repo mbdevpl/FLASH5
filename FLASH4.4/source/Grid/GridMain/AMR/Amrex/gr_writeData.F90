@@ -10,6 +10,8 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
     use amrex_plotfile_module, ONLY : amrex_write_plotfile
 
     use gr_physicalMultifabs,  ONLY : unk, facevarx, facevary, facevarz
+    use gr_ptInterface, ONLY:  gr_ptWritePCs
+    use IO_data, ONLY : io_unklabels
 
     implicit none
 
@@ -55,7 +57,7 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
 
     do i = 1, SIZE(varname)
         write(current_var,'(I4.4)') i
-        call amrex_string_build(varname(i), "var"//TRIM(current_var))
+        call amrex_string_build(varname(i), io_unklabels(i))
     end do
 
     allocate(stepno_arr(0:nlevs-1))
@@ -64,9 +66,12 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
     call amrex_write_plotfile(filename, nlevs, unk, varname, amrex_geom, &
                               t_new, stepno_arr, amrex_ref_ratio)
 
-    deallocate(varname)
-    print*,"nfacevar", NFACE_VARS
+
+    call gr_ptWritePCs(filename, .true.)
+
+
 #if(NFACE_VARS > 0)
+    deallocate(varname)
     allocate(varname(NFACE_VARS))
     print*,"varname size --", SIZE(varname)
     do i = 1, SIZE(varname)
@@ -87,8 +92,8 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
     call amrex_write_plotfile(filename, nlevs, facevarz, varname, amrex_geom, &
                               t_new, stepno_arr, amrex_ref_ratio)
 #endif
-    deallocate(varname)
 #endif
+    deallocate(varname)
     deallocate(stepno_arr)
 end subroutine gr_writeData
 
