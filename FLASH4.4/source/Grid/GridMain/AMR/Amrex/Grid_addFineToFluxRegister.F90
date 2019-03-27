@@ -144,6 +144,8 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
         end if
     end if
 
+    call Grid_getGeometry(geometry)
+
     call Grid_getTileIterator(itor, ALL_BLKS, level=fine_level, tiling=.FALSE.)
     do while (itor%isValid())
        call itor%currentTile(tileDesc)
@@ -167,9 +169,19 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
-                   if (faceAreas(i,j,k) == 0.0) then
-                      write(*,*) "Divide by zero!", i, j, k
-                      STOP
+                   ! Basic sanity check of faceAreas
+                   if (geometry == CYLINDRICAL) then
+                      if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
+                         write(*,*) "face area != 0 for r==0", i, j, k
+                         STOP
+                      end if
+                      if ((faceAreas(i,j,k) == 0.0) .AND. (i /= 1)) then
+                         write(*,*) "Zero face area for r > 0", i, j, k
+                         STOP
+                      end if
+                   end if
+                   if ((faceAreas(i,j,k) == 0.0) .AND. (fluxData(i,j,k,var) /= 0.0)) then
+                      write(*,*) "Non-zero flux density at r=0", i, j, k, var, fluxData(i,j,k,var)
                    end if
                    fabData(i, j, k, var) =    fluxData(i, j, k, var) &
                                            * faceAreas(i, j, k)
@@ -263,8 +275,6 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
        call itor%next()
     end do
     call Grid_releaseTileIterator(itor)
-!    call Grid_getGeometry(geometry)
-!
 !    select case (geometry)
 !    case (CARTESIAN)
 !      ! The scaling factor=1/r^(NDIM-1) used here assumes that the refinement
