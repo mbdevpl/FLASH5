@@ -8,7 +8,7 @@
 !!
 !!  call Gravity_accelOneRow(integer(IN)  :: pos(2),
 !!                           integer(IN)  :: sweepDir,
-!!                           integer(IN)  :: blockID,
+!!                           integer(IN)/Grid_tile_t  :: blockID/tileDesc
 !!                           integer(IN)  :: numCells,
 !!                           real(INOUT)  :: grav(numCells),
 !!                           integer(IN),optional :: potentialIndex,
@@ -25,7 +25,7 @@
 !!  sweepDir :    The sweep direction:  allowed values are 
 !!              SWEEP_X, SWEEP_Y, and SWEEP_Z. These values are defined
 !!              in constants.h.
-!!  blockID  :  The local identifier of the block to work on
+!!  tileDesc/blkID  :  The local identifier of the block to work on, still supports blockID for paramesh, soon to disappear
 !!  numCells :  Number of cells to update in grav()
 !!  grav()   :   Array to receive result
 !!  potentialIndex :  optional, not applicable in pointmass gravity

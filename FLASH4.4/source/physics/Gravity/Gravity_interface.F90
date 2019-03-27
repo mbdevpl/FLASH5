@@ -10,14 +10,6 @@ Module Gravity_interface
 #include "Flash.h"
 #include "FortranLangFeatures.fh"
 
-  interface Gravity_accel
-     subroutine Gravity_accel (component,accelIndex, potentialIndex)
-       integer, INTENT(in) ::  component
-       integer, intent(in) :: accelIndex
-       integer, intent(IN), optional :: potentialIndex
-     end subroutine Gravity_accel
-  end interface
-
   interface Gravity_accelOneRow
      subroutine Gravity_accelOneRow (pos,sweepDir,tileDesc, lo, hi, grav, Uin,&
                                      potentialIndex, extraAccelVars)

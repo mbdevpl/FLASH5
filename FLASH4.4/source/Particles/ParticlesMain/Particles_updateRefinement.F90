@@ -35,7 +35,7 @@ subroutine Particles_updateRefinement(oldLocalNumBlocks)
        pt_indexList, pt_indexCount
   use Grid_interface,ONLY : Grid_moveParticles
   use Logfile_interface,ONLY : Logfile_stamp
-  use Particles_interface, only: Particles_sinkMoveParticles
+!   use Particles_interface, only: Particles_sinkMoveParticles
   
   implicit none 
   integer,intent(INOUT) :: oldLocalNumBlocks
@@ -55,7 +55,7 @@ subroutine Particles_updateRefinement(oldLocalNumBlocks)
   call Grid_moveParticles(particles,NPART_PROPS,pt_maxPerProc, pt_numLocal, &
        pt_indexList, pt_indexCount,&
        regrid)
-  call Particles_sinkMoveParticles(regrid)
+!   call Particles_sinkMoveParticles(regrid)
 
   return
 end subroutine Particles_updateRefinement

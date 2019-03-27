@@ -1,4 +1,0 @@
-DEFAULT PredCorr
-#EXCLUSIVE PredCorr GenAlpha
-
-PARAMETER sminteg3dflexdt   REAL 1.0

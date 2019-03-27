@@ -7,8 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Hydro_computeDt(integer(IN) :: blockID, 
-!!  
+!!  Hydro_computeDt(Grid_tile_t(IN) :: tileDesc,
 !!                  real(IN) ::  x(:), 
 !!                  real(IN) :: dx(:), 
 !!                  real(IN) :: uxgrid(:),
@@ -34,8 +33,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockID --      local block ID
-!!   
+!!  tileDesc -- meta-information about the tile/block
 !!  x, y, z --      coordinates
 !!  dx, dy, dz --   deltas in each {x, y z} directions
 !!  uxgrid, uygrid, uzgrid-- velocity of grid expansion in {x, y z} directions
@@ -52,7 +50,7 @@
 !!
 !!***
 
-subroutine Hydro_computeDt (blockID,  &
+subroutine Hydro_computeDt (tileDesc,  &
                            x, dx, uxgrid, &
                            y, dy, uygrid, &
                            z, dz, uzgrid, &
@@ -60,7 +58,8 @@ subroutine Hydro_computeDt (blockID,  &
                            solnData,   &
                            dtCheck, dtMinLoc, &
                            extraInfo)
-     
+  
+       use Grid_tile, ONLY : Grid_tile_t
   
 #include "Flash.h"
 #include "constants.h"
@@ -68,7 +67,7 @@ subroutine Hydro_computeDt (blockID,  &
   implicit none
 
 
-  integer, intent(IN) :: blockID 
+  type(Grid_tile_t), intent(IN) :: tileDesc
   integer, intent(IN),dimension(2,MDIM)::blkLimits,blkLimitsGC
   real,INTENT(INOUT)    :: dtCheck
   integer,INTENT(INOUT)    :: dtMinLoc(5)

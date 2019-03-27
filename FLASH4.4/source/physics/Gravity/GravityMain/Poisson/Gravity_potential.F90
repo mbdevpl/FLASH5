@@ -6,9 +6,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Gravity_potential(integer(IN) :: blockCount,
-!!                                     integer(IN) :: blockList(blockCount),
-!!                            optional,integer(IN) :: potentialIndex)
+!!  call Gravity_potential(   optional,integer(IN) :: potentialIndex)
 !!
 !! DESCRIPTION
 !!
@@ -25,8 +23,6 @@
 !!
 !! ARGUMENTS
 !!
-!!   blockCount   : The number of blocks in the list
-!!   blockList(:) : The list of blocks on which to calculate potential
 !!   potentialIndex : If present, determines which variable in UNK to use
 !!                    for storing the updated potential.  If not present,
 !!                    GPOT_VAR is assumed.
@@ -92,8 +88,7 @@ subroutine Gravity_potential( potentialIndex)
        useGravity, updateGravity, grv_meshComm
   use Driver_interface, ONLY : Driver_abortFlash
   use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Particles_interface, ONLY: Particles_updateGridVar, &
-       Particles_sinkAccelGasOnSinksAndSinksOnGas
+  use Particles_interface, ONLY: Particles_updateGridVar
   use Grid_interface, ONLY : GRID_PDE_BND_PERIODIC, GRID_PDE_BND_NEUMANN, &
        GRID_PDE_BND_ISOLATED, GRID_PDE_BND_DIRICHLET, &
        Grid_getTileIterator, Grid_releaseTileIterator, &
@@ -221,7 +216,7 @@ subroutine Gravity_potential( potentialIndex)
            end do
         end do
 
-        ! CTSS - We should also be storing the old sink particle accelerations:
+
 #if defined(SGXO_VAR) && defined(SGYO_VAR) && defined(SGZO_VAR)
         if (saveLastPot) then   !... but only if we are saving the old potential - kW
            call Driver_abortFlash("[Gravity_potential] Not tested third!")
@@ -312,10 +307,10 @@ subroutine Gravity_potential( potentialIndex)
   end if
 #endif
 
-  if (.NOT. present(potentialIndex)) then
-     ! Compute acceleration of the sink particles caused by gas and vice versa
-     call Particles_sinkAccelGasOnSinksAndSinksOnGas()
-  end if
+!!$  if (.NOT. present(potentialIndex)) then
+!!$     ! Compute acceleration of the sink particles caused by gas and vice versa
+!!$     call Particles_sinkAccelGasOnSinksAndSinksOnGas()
+!!$  end if
   
   
 #ifdef USEBARS
