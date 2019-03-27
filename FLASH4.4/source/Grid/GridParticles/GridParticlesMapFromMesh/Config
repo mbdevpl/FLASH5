@@ -1,0 +1,9 @@
+EXCLUSIVE ParticlesOwned MeshOwned
+USESETUPVARS Grid
+
+IF Grid in ["Amrex"]
+ REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/MeshOwned
+ELSE
+ REQUIRES Grid/GridParticles/GridParticlesMapFromMesh/ParticlesOwned
+ENDIF
+

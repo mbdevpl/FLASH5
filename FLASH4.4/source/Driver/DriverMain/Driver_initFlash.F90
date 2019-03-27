@@ -59,8 +59,7 @@ subroutine Driver_initFlash()
 
 #include "Flash.h"
   use Multispecies_interface, ONLY : Multispecies_init
-  use Particles_interface, ONLY : Particles_init,  Particles_initData, &
-       Particles_initForces
+  use Particles_interface, ONLY : Particles_init,Particles_initData,Particles_initForces
 
   use Eos_interface, ONLY : Eos_init, Eos_logDiagnostics
   use Hydro_interface, ONLY : Hydro_init
