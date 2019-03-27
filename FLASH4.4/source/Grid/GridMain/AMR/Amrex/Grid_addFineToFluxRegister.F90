@@ -62,7 +62,8 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
     use amrex_fort_module,         ONLY : wp => amrex_real
     use amrex_box_module,          ONLY : amrex_box
     use amrex_fab_module,          ONLY : amrex_fab, &
-                                          amrex_fab_build
+                                          amrex_fab_build, &
+                                          amrex_fab_destroy
     use amrex_amrcore_module,      ONLY : amrex_get_finest_level, &
                                           amrex_ref_ratio
     ! DEV: See note below related to Intel ICE
@@ -102,7 +103,7 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
     integer :: lo(4)
     integer :: hi(4)
 
-    integer :: i, j, k, var
+    integer :: i, j, k, var, axis
 
     nullify(fluxData)
     nullify(fabData)
@@ -252,6 +253,10 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
 #endif
 
        call flux_registers(fine)%fineadd(fluxFabs, tileDesc%grid_index, coef)
+
+       do axis = 1, NDIM
+          call amrex_fab_destroy(fluxFabs(axis))
+       end do
 
        call itor%next()
     end do
