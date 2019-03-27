@@ -84,14 +84,14 @@ subroutine Grid_getCellFaceAreas(axis, level, lo, hi, areas)
       end associate
    case (CYLINDRICAL)
       if      (axis == IAXIS) then
-         ! Get coordinates of faces
-         allocate(faceCoords(lo(axis):hi(axis)))
+         ! Get radial coordinate of face centers
+         allocate(faceCoords(lo(IAXIS):hi(IAXIS)))
 
          ! Convert face indices to indices of cells associated with faces 
          loCell(:) = lo(:)
          hiCell(:) = hi(:)
          hiCell(axis) = hiCell(axis) - 1
-         call Grid_getCellCoords(axis, FACES, level, loCell, hiCell, faceCoords)
+         call Grid_getCellCoords(IAXIS, FACES, level, loCell, hiCell, faceCoords)
 
          associate(dz   => deltas(JAXIS), &
                    dPhi => deltas(KAXIS), &
@@ -112,14 +112,14 @@ subroutine Grid_getCellFaceAreas(axis, level, lo, hi, areas)
          end associate
          deallocate(faceCoords)
       else if (axis == JAXIS) then
-         ! Get coordinates of faces
-         allocate(faceCoords(lo(axis):hi(axis)))
+         ! Get radial coordinate of face centers
+         allocate(faceCoords(lo(IAXIS):hi(IAXIS)+1))
 
          ! Convert face indices to indices of cells associated with faces 
          loCell(:) = lo(:)
          hiCell(:) = hi(:)
          hiCell(axis) = hiCell(axis) - 1
-         call Grid_getCellCoords(axis, FACES, level, loCell, hiCell, faceCoords)
+         call Grid_getCellCoords(IAXIS, FACES, level, loCell, hiCell, faceCoords)
 
          associate(dPhi => deltas(KAXIS), &
                    r    => faceCoords)
