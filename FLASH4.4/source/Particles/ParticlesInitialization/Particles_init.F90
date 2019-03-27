@@ -45,7 +45,7 @@ subroutine Particles_init ( restart)
     RuntimeParameters_mapStrToInt
   use Logfile_interface, ONLY : Logfile_stamp
   use pt_interface, ONLY : pt_mapStringParamToInt, pt_picInit, pt_setMask, pt_setDataStructures
-  use Particles_interface, ONLY : Particles_specifyMethods, Particles_sinkInit
+  use Particles_interface, ONLY : Particles_specifyMethods
   implicit none
   
 #include "constants.h"
@@ -253,7 +253,7 @@ subroutine Particles_init ( restart)
 
   call pt_picInit()
   ! initialize sink particles
-  call Particles_sinkInit(restart)
+! !   call Particles_sinkInit(restart)
   return
 
 end subroutine Particles_init

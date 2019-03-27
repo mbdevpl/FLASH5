@@ -6,8 +6,8 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Eos_guardCells(integer(IN)  :: eosmode,
-!!                      integer(IN)  :: blockid,
+!!  call Eos_guardCells(integer(IN)    :: eosmode,
+!!              pointer,real(:,:,:,:)  :: U,
 !!                      logical(IN)  :: corners,
 !!             optional,integer(IN)  :: layers(MDIM),
 !!             optional,logical(IN)  :: skipSrl)
@@ -26,7 +26,7 @@
 !!            These quantities are defined in constants.h.
 !!            The argument is passed unchanged and unexamined to Eos_wrapped calls.
 !!
-!!  blockid : ID of block in current processor
+!!  U : pointer to data structure for one block worth for state variables
 !!
 !!  corners : indicates whether Eos should be called on corner
 !!            guard cells (i.e., diagonal guard cells)
@@ -41,12 +41,14 @@
 !!
 !!***
 
-subroutine Eos_guardCells(eosMode, blockID,corners,layers,skipSrl)
+subroutine Eos_guardCells(eosMode, Uin,corners,layers,skipSrl)
 
 #include "constants.h"
   implicit none
 
-  integer,intent(IN) :: eosMode,blockID
+  integer,intent(IN) :: eosMode
+  real,dimension(:,:,:,:),pointer::Uin
+  
   logical,intent(IN) :: corners
   integer,dimension(MDIM),optional, intent(IN) :: layers
   logical,optional, intent(IN) :: skipSrl

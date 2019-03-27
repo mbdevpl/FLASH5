@@ -82,8 +82,6 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
                                             hy_MarquinaModified,&
                                             hy_setMinTimeStep
 
-  use Conductivity_interface,        ONLY : Conductivity
-  use Viscosity_interface,           ONLY : Viscosity
   use Timers_interface,              ONLY : Timers_start, Timers_stop
 
 #if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
@@ -237,26 +235,26 @@ subroutine hy_getFaceFlux (tileDesc,blkLimits,blkLimitsGC,del,&
               !! copy species to a temporary array
               speciesArr(:) = U(SPECIES_BEGIN:SPECIES_END,i,j,k)
 
-              if (hy_useViscosity) then
-                 !! Get viscosity
-                 call Viscosity(U(TEMP_VAR,i,j,k),U(DENS_VAR,i,j,k),&
-                      speciesArr,viscDynamic(i,j,k),viscKinematicUnused)
-              endif
-
-              if (hy_useConductivity .and. hy_addThermalFlux) then
-                 !! Get heat conductivity
-                 call Conductivity(U(TEMP_VAR,i,j,k),U(DENS_VAR,i,j,k),&
-                      speciesArr,cond(i,j,k),dcffUnused,2)
-              endif
-#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
-              if (hy_useMagneticResistivity) then
-                 !! Get magnetic viscosity
-                 !!call MagneticResistivity(U(TEMP_VAR,i,j,k),U(DENS_VAR,i,j,k),&
-                 !!     speciesArr,magResist(i,j,k))
-                 call MagneticResistivity(U(:,i,j,k),magResist(i,j,k))
-
-              endif
-#endif
+!!$              if (hy_useViscosity) then
+!!$                 !! Get viscosity
+!!$                 call Viscosity(U(TEMP_VAR,i,j,k),U(DENS_VAR,i,j,k),&
+!!$                      speciesArr,viscDynamic(i,j,k),viscKinematicUnused)
+!!$              endif
+!!$
+!!$              if (hy_useConductivity .and. hy_addThermalFlux) then
+!!$                 !! Get heat conductivity
+!!$                 call Conductivity(U(TEMP_VAR,i,j,k),U(DENS_VAR,i,j,k),&
+!!$                      speciesArr,cond(i,j,k),dcffUnused,2)
+!!$              endif
+!!$#if defined(FLASH_USM_MHD) || defined(FLASH_UGLM_MHD)
+!!$              if (hy_useMagneticResistivity) then
+!!$                 !! Get magnetic viscosity
+!!$                 !!call MagneticResistivity(U(TEMP_VAR,i,j,k),U(DENS_VAR,i,j,k),&
+!!$                 !!     speciesArr,magResist(i,j,k))
+!!$                 call MagneticResistivity(U(:,i,j,k),magResist(i,j,k))
+!!$
+!!$              endif
+!!$#endif
            enddo
         enddo
      enddo

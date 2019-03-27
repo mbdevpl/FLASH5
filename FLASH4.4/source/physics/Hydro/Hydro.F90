@@ -7,9 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Hydro( integer(IN) :: blockCount, 
-!!         integer(IN) :: blockList(blockCount), 
-!!         real(IN)    :: timeEndAdv, 
+!!  Hydro( real(IN)    :: timeEndAdv, 
 !!         real(IN)    :: dt, 
 !!         real(IN)    :: dtOld, 
 !!         integer(IN) :: sweepOrder )
@@ -23,19 +21,12 @@
 !!  1d sweeps first in the x direction, then the y, then z direction, 
 !!  while SWEEP_ZYX means to performs the 1d sweeps in the opposite order.
 !!
-!!  The blockList and blockCount arguments tell this routine on 
-!!  which blocks and on how many to operate.  blockList is an 
-!!  integer array of size blockCount that contains the local 
-!!  block numbers of blocks on which to advance.
-!!
 !!  dt gives the timestep through which this update should advance,
 !!  and timeEndAdv tells the time that this update will reach when
 !!  it finishes.  dtOld gives the previously taken timestep.  
 !!
 !! ARGUMENTS
 !!
-!!  blockCount -  the number of blocks in blockList
-!!  blockList -   array holding local IDs of blocks on which to advance
 !!  timeEndAdv -  end time
 !!  dt -          timestep
 !!  dtOld -       old timestep

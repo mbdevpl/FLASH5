@@ -60,7 +60,6 @@ subroutine Grid_markRefineDerefine()
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Grid_interface, ONLY : Grid_fillGuardCells
   use gr_interface,   ONLY : gr_markRefineDerefine
-  use Particles_interface, only: Particles_sinkMarkRefineDerefine
   implicit none
 
 #include "constants.h"
@@ -135,7 +134,6 @@ subroutine Grid_markRefineDerefine()
        call gr_unmarkRefineByLogRadius(gr_lrefineCenterI,&
        gr_lrefineCenterJ,gr_lrefineCenterK)
   
-  call Particles_sinkMarkRefineDerefine()
 
   ! When the flag arrays are passed to Paramesh for processing, only leaf
   ! blocks should be marked. - KW
