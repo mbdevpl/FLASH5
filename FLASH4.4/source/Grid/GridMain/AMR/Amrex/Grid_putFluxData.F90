@@ -42,15 +42,13 @@
 !!                  as is the case in 1D).
 !!                  The pressureSlots argument in the corresponding Grid_getFluxData
 !!                  call should generally match the one in the Grid_putFluxData call.
-!!  areaLeft - areas of left and right faces, only used if special scaling is
-!!             requested with the pressureSlot argument.
 !!
 !! SEE ALSO
 !!   Grid_getFluxPtr/Grid_releaseFluxPtr
 !!   Grid_conserveFluxes
 !!***
 
-subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
+subroutine Grid_putFluxData(level, axis, pressureSlots)
   use Driver_interface,     ONLY : Driver_abortFlash
   use Grid_interface,       ONLY : Grid_addFineToFluxRegister
 
@@ -59,20 +57,25 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   integer, intent(IN)                   :: level
   integer, intent(IN), optional         :: axis
   integer, intent(IN), optional, target :: pressureSlots(:)
-  real,    intent(IN), optional         :: areaLeft(:,:,:)
+
+  logical, allocatable :: isDensity(:)
+
+  integer :: i
 
   if (present(axis)) then
     call Driver_abortFlash("[Grid_putFluxData] axis not accepted with AMReX")
   end if
-  if (present(pressureSlots)) then
-    ! DEV: TODO This routine should take an isFluxDensity array as an argument
-    ! so that the routine can determine which need to be scaled and which do not
-    call Driver_abortFlash("[Grid_putFluxData] pressureSlots not accepted with AMReX")
-  end if
-  if (present(areaLeft)) then
-    call Driver_abortFlash("[Grid_putFluxData] areaLeft not accepted with AMReX")
-  end if
 
-  call Grid_addFineToFluxRegister(level, zeroFullRegister=.TRUE.)
+  if (present(pressureSlots)) then
+    allocate(isDensity(SIZE(pressureSlots)))
+    do i = 1, SIZE(isDensity)
+       isDensity(i) = (pressureSlots(i) > 0)
+    end do
+
+    call Grid_addFineToFluxRegister(level, isDensity=isDensity, zeroFullRegister=.TRUE.)
+    deallocate(isDensity)
+  else
+    call Grid_addFineToFluxRegister(level, zeroFullRegister=.TRUE.)
+  end if
 end subroutine Grid_putFluxData
 

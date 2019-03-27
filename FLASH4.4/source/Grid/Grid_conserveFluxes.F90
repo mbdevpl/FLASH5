@@ -38,9 +38,12 @@
 !!  act as if it were UNSPEC_LEVEL.
 !!
 !!***
-subroutine Grid_conserveFluxes( axis, coarse_level)
 
-implicit none
-  integer, intent(in) ::  axis, coarse_level
-
+subroutine Grid_conserveFluxes(axis, coarse_level, pressureSlots)
+  implicit none
+  
+  integer, intent(IN)                   :: axis
+  integer, intent(IN)                   :: coarse_level
+  integer, intent(IN), OPTIONAL, target :: pressureSlots(:)
 end subroutine Grid_conserveFluxes
+

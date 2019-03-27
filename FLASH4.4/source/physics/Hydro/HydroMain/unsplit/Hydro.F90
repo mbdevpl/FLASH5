@@ -24,6 +24,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
                                   hy_gcMask,hy_gcMaskSD,  &
                                   hy_eosModeGc,           &
                                   hy_updateHydroFluxes,   &
+                                  hy_fluxCorVars,         &
                                   hy_cfl,                 &
                                   hy_cfl_original,        &
                                   hy_dtmin,               &
@@ -261,7 +262,9 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
         call Timers_stop("compute fluxes")
         call Grid_releaseTileIterator(itor)
 
-        if (hy_fluxCorrect .AND. (level > 1))  call Grid_putFluxData(level)
+        if (hy_fluxCorrect .AND. (level > 1)) then
+           call Grid_putFluxData(level, pressureSlots=hy_fluxCorVars)
+        end if
 
         if ((level==maxLev) .AND. (.NOT. useTiling)) then
            ! We already have the updated solution in this special, optimized case
@@ -271,7 +274,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
 
         if (hy_fluxCorrect) then
            call Timers_start("conserveFluxes")
-           call Grid_conserveFluxes(ALLDIR,level)
+           call Grid_conserveFluxes(ALLDIR, level, pressureSlots=hy_fluxCorVars)
            call Timers_stop("conserveFluxes")
         end if
 

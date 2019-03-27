@@ -131,8 +131,10 @@ Module Grid_interface
   end interface
 
   interface Grid_conserveFluxes
-     subroutine Grid_conserveFluxes(axis, coarse_level)
-       integer, intent(in) :: axis, coarse_level
+     subroutine Grid_conserveFluxes(axis, coarse_level, pressureSlots)
+       integer, intent(IN)                   :: axis
+       integer, intent(IN)                   :: coarse_level
+       integer, intent(IN), OPTIONAL, target :: pressureSlots(:)
      end subroutine Grid_conserveFluxes
   end interface
 
@@ -454,12 +456,11 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_putFluxData(level,axis, pressureSlots, areaLeft)
+     subroutine Grid_putFluxData(level,axis, pressureSlots)
        implicit none
        integer, intent(IN) :: level
        integer, intent(IN),optional :: axis
        integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
-       real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
      end subroutine Grid_putFluxData
   end interface
 

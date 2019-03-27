@@ -38,7 +38,7 @@
 #include "Flash.h"
 #include "constants.h"
 
-subroutine Grid_conserveFluxes(axis, coarse_level)
+subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
     use amrex_fort_module,    ONLY : wp => amrex_real
     use amrex_amrcore_module, ONLY : amrex_get_finest_level
 
@@ -54,8 +54,9 @@ subroutine Grid_conserveFluxes(axis, coarse_level)
 
     implicit none
 
-    integer, intent(IN) :: axis
-    integer, intent(IN) :: coarse_level
+    integer, intent(IN)                   :: axis
+    integer, intent(IN)                   :: coarse_level
+    integer, intent(IN), optional, target :: isDensity(:)
 
     integer :: fine
     integer :: coarse
@@ -77,6 +78,10 @@ subroutine Grid_conserveFluxes(axis, coarse_level)
     if (axis /= ALLDIR) then
         call Driver_abortFlash("[Grid_conserveFluxes] AMReX requires axis==ALLDIR")
     end if
+    ! DEV: Accept this for now as Hydro is calling it, but ignore the contents
+!    if (present(isDensity)) then
+!        call Driver_abortFlash("[Grid_conserveFluxes] isDensity not implemented")
+!    end if
     
     ! FLASH uses 1-based level index / AMReX uses 0-based index
     coarse = coarse_level - 1

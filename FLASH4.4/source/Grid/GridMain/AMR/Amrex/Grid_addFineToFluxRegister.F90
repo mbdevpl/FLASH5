@@ -132,9 +132,11 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
         coef = 1.0_wp
     end if
 
-    if (present(isDensity)) then
-        call Driver_abortFlash("[Grid_addFineToFluxRegister] isDensity not implemented")
-    end if
+    ! DEV: Accept this for now as Hydro is calling it, but ignore the contents
+    !      for now
+!    if (present(isDensity)) then
+!        call Driver_abortFlash("[Grid_addFineToFluxRegister] isDensity not implemented")
+!    end if
 
     if (present(zeroFullRegister)) then
         if (zeroFullRegister) then

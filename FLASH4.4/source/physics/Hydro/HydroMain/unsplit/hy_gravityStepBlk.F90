@@ -63,7 +63,6 @@ Subroutine hy_gravityStepBlk(tileDesc, blkLimitsGC, Uin, blkLimits, Uout, del,ti
                          hy_eosModeAfter,     &
                          hy_updateHydroFluxes,&
                          hy_geometry,         &
-                         hy_fluxCorVars,      &
                          hy_cfl,              &
                          hy_cfl_original,     &
                          hy_numXN,            &
