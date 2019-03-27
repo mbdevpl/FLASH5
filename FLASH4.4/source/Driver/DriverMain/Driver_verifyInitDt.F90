@@ -41,7 +41,6 @@ subroutine Driver_verifyInitDt()
                              Grid_releaseTileIterator, &
                              Grid_getCellCoords
   use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
-  use Diffuse_interface, ONLY: Diffuse_computeDt
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile,     ONLY : Grid_tile_t
 
@@ -187,13 +186,6 @@ subroutine Driver_verifyInitDt()
              solnData,      &
              dtCheck(1), dtMinLoc, &
              extraInfo=extraHydroInfo)
-!!$     call Diffuse_computeDt ( blockList(i), &
-!!$          xCoord, xLeft,xRight, dx, uxgrid, &
-!!$          yCoord, yLeft,yRight, dy, uygrid, &
-!!$          zCoord, zLeft,zRight, dz, uzgrid, &
-!!$          lim,limGC,  &
-!!$          solnData,      &
-!!$          dtCheck(2), dtMinLoc )
         
         call tileDesc%releaseDataPtr(solnData, CENTER)
  

@@ -103,7 +103,6 @@
 !!
 !!  .... initiale temp_zone, rho_zone
 !!
-!!  call Grid_getBlkIndexLimits(blockId,blockRange,blockExtent)
 !!  do k = blockRange(LOW,KAXIS), blockRange(HIGH,KAXIS)
 !!     do j = blockRange(LOW,JAXIS),blockRange(HIGH,JAXIS)
 !!        do i = blockRange(LOW,IAXIS),blockRange(HIGH,IAXIS)
@@ -116,14 +115,7 @@
 !!           ptot = eosData(EOS_PRES)
 !!           eint = eosData(EOS_EINT)
 !!           gamma = eosData(EOS_GAMC)
-!!           
-!!           call Grid_putPointData(blockId,CENTER,TEMP_VAR,EXTERIOR,iPosition,temp_zone)
-!!           call Grid_putPointData(blockId,CENTER,DENS_VAR,EXTERIOR,iPosition,rho_zone)
-!!           call Grid_putPointData(blockId,CENTER,PRES_VAR,EXTERIOR,iPosition,ptot)
-!!           call Grid_putPointData(blockId,CENTER,EINT_VAR,EXTERIOR,iPosition,eint)
-!!              if you want ENER_VAR, calculate it from EINT_VAR and kinetic energy
-!!           call Grid_putPointData(blockId,CENTER,GAMC_VAR,EXTERIOR,iPosition,gamma)
-!!           call Grid_putPointData(blockId,CENTER,GAME_VAR,EXTERIOR,iPosition,(ptot/(etot*sim_rhoAmbient) + 1.0))
+!!           solndata(PRES_VAR,i,j,k)=ptot ....
 !!
 !!         enddo  ! end of k loop
 !!     enddo     ! end of j loop
@@ -142,7 +134,6 @@
 !!  integer,dimension(2,MDIM) :: blkLimits,blkLimitsGC
 !!
 !!   ! in the Eos_unitTest, this loops over all blocks.... here is a snippet from inside
-!!     call Grid_getBlkIndexLimits(blockID,blkLimits,blkLimitsGC)
 !!
 !!    !  Allocate the necessary arrays for an entire block of data
 !!    isize = (blkLimits(HIGH,IAXIS) - blkLimits(LOW,IAXIS) + 1)
@@ -160,7 +151,6 @@
 !!    temp = (EOS_TEMP-1)*vecLen
 !!
 !!
-!!    call Grid_getBlkPtr(blockID,solnData)
 !!    do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
 !!        do j = blkLimits(LOW,JAXIS), blkLimits(HIGH, JAXIS)
 !!           do i = 1,vecLen

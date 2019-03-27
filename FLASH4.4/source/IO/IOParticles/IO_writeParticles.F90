@@ -56,7 +56,7 @@ subroutine IO_writeParticles( particlesToCheckpoint)
   use Logfile_interface, ONLY : Logfile_stamp
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Particles_interface, ONLY : Particles_getLocalNum, &
-    Particles_updateAttributes, Particles_manageLost, Particles_sinkSyncWithParticles
+    Particles_updateAttributes, Particles_manageLost
   use Simulation_interface, ONLY : Simulation_mapIntToStr
   use IOParticles_data, ONLY : io_particleFileNumber, &
        io_particleFileIntervalTime, io_nextParticleFileTime, &
@@ -273,7 +273,7 @@ subroutine IO_writeParticles( particlesToCheckpoint)
   call Particles_manageLost(PART_COLLAPSE)
 
   ! see if we need to detach sink particles to allow for sink off-domain support
-  call Particles_sinkSyncWithParticles(sink_to_part=.false.)
+! !   call Particles_sinkSyncWithParticles(sink_to_part=.false.)
 
   return
 

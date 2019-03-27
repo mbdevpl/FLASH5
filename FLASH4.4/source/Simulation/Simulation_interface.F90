@@ -126,10 +126,8 @@ Module Simulation_interface
   end interface
 
   interface
-     subroutine Simulation_adjustEvolution(blkcnt, blklst, nstep, dt, stime)
+     subroutine Simulation_adjustEvolution( nstep, dt, stime)
        implicit none
-       integer, intent(in) :: blkcnt
-       integer, intent(in) :: blklst(blkcnt)
        integer, intent(in) :: nstep
        real, intent(in) :: dt
        real, intent(in) :: stime

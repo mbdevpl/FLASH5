@@ -6,7 +6,7 @@
 !!  
 !! SYNOPSIS
 !!
-!!  Gravity_computeDt(integer(IN)        :: blockID,
+!!  Gravity_computeDt(real(:,:,:,:)  :: Uin,
 !!                    real (OUT)         :: dt_grav,
 !!                    integer(:)(INOUT)  :: dt_minloc(5))
 !!
@@ -25,18 +25,16 @@
 !!                 indices, b = local block ID, and p = PE #.
 !!                 This routine should only modify these values
 !!                 if it changes dt_grav.
-!!  blockID:       The local ID of the block to compute the
-!!                 limiter on.
 !!
 !!***
 
-subroutine Gravity_computeDt (blockID, dt_grav, dt_minloc)
+subroutine Gravity_computeDt (Uin, dt_grav, dt_minloc)
 
 !==============================================================================
 
   implicit none
   
-  integer, intent(IN)    ::  blockID
+  real,dimension(:,:,:,:) :: Uin
   
   integer, intent(INOUT) ::  dt_minloc(5)
   real,intent(OUT)       ::  dt_grav

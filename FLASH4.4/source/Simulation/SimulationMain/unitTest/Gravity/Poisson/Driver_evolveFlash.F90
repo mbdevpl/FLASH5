@@ -33,7 +33,6 @@ subroutine Driver_evolveFlash()
   use Logfile_interface, ONLY : Logfile_stamp, Logfile_close
   use Timers_interface, ONLY : Timers_start, Timers_stop, &
     Timers_getSummary
-  use Grid_interface, ONLY : Grid_getListOfBlocks
   use Gravity_interface, ONLY :Gravity_potential
   use IO_interface, ONLY :IO_writeCheckpoint, IO_writePlotfile
   implicit none
@@ -45,8 +44,6 @@ subroutine Driver_evolveFlash()
 
   integer, parameter :: stepsPerAdvance = 2
 
-  integer :: blockCount
-  integer :: blockList(MAXBLOCKS)
 
   
   ! for logfile output
@@ -83,8 +80,6 @@ subroutine Driver_evolveFlash()
   print*,'started calculation'
   call Timers_start("calculation")
 
-  call Grid_getListOfBlocks(ALL_BLKS, blockList, blockCount)
-  print*,'get Potential'
 
   call Gravity_potential()
   print*,'got Potential'

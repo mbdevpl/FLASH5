@@ -45,7 +45,6 @@ subroutine Driver_initFlash()
        dr_initialWCTime, dr_restart, dr_dtInit, dr_redshift,dr_particlesInitialized
 
   use Driver_interface, ONLY : Driver_init, &
-    Driver_initMaterialProperties,&
     Driver_verifyInitDt, Driver_abortFlash, Driver_setupParallelEnv
   use RuntimeParameters_interface, ONLY : RuntimeParameters_init, RuntimeParameters_get
   use Logfile_interface, ONLY : Logfile_init
@@ -55,9 +54,7 @@ subroutine Driver_initFlash()
   use Timers_interface, ONLY : Timers_init, Timers_start, Timers_stop
 
   use Grid_interface, ONLY : Grid_init, Grid_initDomain
-  use Particles_interface, ONLY : Particles_init,  Particles_initData, &
-       Particles_initForces
- 
+  use Particles_interface, ONLY : Particles_init,  Particles_initData 
   use Eos_interface, ONLY : Eos_init
   use Hydro_interface, ONLY : Hydro_init
   use Simulation_interface, ONLY : Simulation_init
@@ -107,7 +104,6 @@ subroutine Driver_initFlash()
 
   call Grid_init( )
   
-  call Driver_initMaterialProperties( )
   if(dr_globalMe==MASTER_PE)print*,'MaterialProperties initialized'
   
 

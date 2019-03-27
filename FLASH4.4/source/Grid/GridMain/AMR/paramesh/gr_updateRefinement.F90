@@ -72,7 +72,6 @@ subroutine gr_updateRefinement( gridChanged)
   use paramesh_interfaces, ONLY : amr_refine_derefine, &
                                   amr_prolong
   use Eos_interface, ONLY : Eos_wrapped
-  use Particles_interface, ONLY : Particles_updateRefinement 
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile,     ONLY : Grid_tile_t
 
@@ -247,9 +246,9 @@ subroutine gr_updateRefinement( gridChanged)
   ! If particles are not included this will simply be a stub (empty) routine.
   
   
-  call Timers_start("updateParticleRefinement")
-  call Particles_updateRefinement(oldLocalNumBlocks)
-  call Timers_stop("updateParticleRefinement")
+!!$  call Timers_start("updateParticleRefinement")
+!!$  call Particles_updateRefinement(oldLocalNumBlocks)
+!!$  call Timers_stop("updateParticleRefinement")
   
   if (present(gridChanged)) gridChanged = (grid_changed .NE. 0)
 

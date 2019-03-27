@@ -28,7 +28,7 @@
 subroutine Particles_sendOutputData()
 
   use Particles_data, ONLY : pt_numLocal
-  use Particles_interface, ONLY : Particles_getGlobalNum, Particles_sinkSyncWithParticles
+  use Particles_interface, ONLY : Particles_getGlobalNum
   use IO_interface, ONLY : IO_setScalar
   implicit none
 
@@ -39,7 +39,7 @@ subroutine Particles_sendOutputData()
   ! pull in sink particles
   ! (called here, such that globalnumparticles is set properly in Particles_getGlobalNum)
   ! note that sinks are detached again in IO_writeParticles, if we run off-domain sinks
-  call Particles_sinkSyncWithParticles(sink_to_part=.true.)
+!   call Particles_sinkSyncWithParticles(sink_to_part=.true.)
 
   call Particles_getGlobalNum(globalNumParticles)
   call IO_setScalar("globalNumParticles", globalNumParticles)
