@@ -95,254 +95,260 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
     ! level index corresponding to a finer mesh
     if (coarse >= amrex_get_finest_level())     RETURN
 
-    call Grid_getTileIterator(itor, ALL_BLKS, level=coarse_level, tiling=.FALSE.)
-    do while (itor%isValid())
-       call itor%currentTile(tileDesc)
+    call Grid_getGeometry(geometry)
 
-       call tileDesc%getDataPtr(fluxData, FLUXX)
-       lo(:) = lbound(fluxData)
-       hi(:) = ubound(fluxData)
-       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
-                          lo(JAXIS):hi(JAXIS), &
-                          lo(KAXIS):hi(KAXIS)))
-       call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
-                                  lbound(faceAreas), ubound(faceAreas), &
-                                  faceAreas)
-
-       do        var = 1, NFLUXES
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+    select case (geometry)
+    case (CARTESIAN)
+        ! The AMReX flux registers are dealing with fluxes and 
+        ! *not* flux densities.  In Grid_putFluxData, flux densities at the fine
+        ! level were scaled to fluxes with the assumption that the cell lengths
+        ! at the coarse level are one.  Therefore, reconversion to flux densities
+        ! is automatic here.
+        call flux_registers(fine)%overwrite(fluxes(coarse, :), 1.0_wp)
+    case (CYLINDRICAL)
+       !!!!!----- CONVERT ALL FLUX DENSITIES TO FLUX
+       ! Convert all flux density data on the coarse level to flux because
+       ! we don't know where the fine/coarse boundaries are and therefore 
+       ! can't know which results need to be converted back to flux densities
+       call Grid_getTileIterator(itor, ALL_BLKS, level=coarse_level, tiling=.FALSE.)
+       do while (itor%isValid())
+          call itor%currentTile(tileDesc)
+   
+          call tileDesc%getDataPtr(fluxData, FLUXX)
+          lo(:) = lbound(fluxData)
+          hi(:) = ubound(fluxData)
+          allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                             lo(JAXIS):hi(JAXIS), &
+                             lo(KAXIS):hi(KAXIS)))
+          call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
+                                     lbound(faceAreas), ubound(faceAreas), &
+                                     faceAreas)
+   
+          do        var = 1, NFLUXES
+             do       k = lo(KAXIS), hi(KAXIS)
+                do    j = lo(JAXIS), hi(JAXIS)
+                   do i = lo(IAXIS), hi(IAXIS)
 #ifdef DEBUG_GRID
-                   ! Basic sanity check of faceAreas
-                   if (geometry == CYLINDRICAL) then
-                      if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
-                         write(*,*) "face area != 0 for r==0", i, j, k
-                         STOP
+                      ! Basic sanity check of faceAreas
+                      if (geometry == CYLINDRICAL) then
+                         if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
+                            write(*,*) "face area != 0 for r==0", i, j, k
+                            STOP
+                         end if
+                         if ((faceAreas(i,j,k) == 0.0) .AND. (i /= 1)) then
+                            write(*,*) "Zero face area for r > 0", i, j, k
+                            STOP
+                         end if
                       end if
-                      if ((faceAreas(i,j,k) == 0.0) .AND. (i /= 1)) then
-                         write(*,*) "Zero face area for r > 0", i, j, k
-                         STOP
-                      end if
-                   end if
 #endif
 
-                   ! There is potentially non-zero flux density data at r=0 that
-                   ! should remain unchanged during the whole flux correction
-                   ! process.  Therefore, don't transform the r=0 flux density data.  
-                   if (faceAreas(i, j, k) /= 0.0) then
+                      ! There is potentially non-zero flux density data at r=0 that
+                      ! should remain unchanged during the whole flux correction
+                      ! process.  Therefore, don't transform the r=0 flux density data.  
+                      if (faceAreas(i, j, k) /= 0.0) then
+                         fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                                  * faceAreas(i, j, k)
+                      end if
+                   end do
+                end do
+             end do
+          end do
+   
+          deallocate(faceAreas)
+          call tileDesc%releaseDataPtr(fluxData, FLUXX)
+
+#if   NDIM >= 2
+          call tileDesc%getDataPtr(fluxData, FLUXY)
+          lo(:) = lbound(fluxData)
+          hi(:) = ubound(fluxData)
+          allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                             lo(JAXIS):hi(JAXIS), &
+                             lo(KAXIS):hi(KAXIS)))
+          call Grid_getCellFaceAreas(JAXIS, tileDesc%level, &
+                                     lbound(faceAreas), ubound(faceAreas), &
+                                     faceAreas)
+   
+          do        var = 1, NFLUXES
+             do       k = lo(KAXIS), hi(KAXIS)
+                do    j = lo(JAXIS), hi(JAXIS)
+                   do i = lo(IAXIS), hi(IAXIS)
+#ifdef DEBUG_GRID
+                      if (faceAreas(i,j,k) == 0.0) then
+                         write(*,*) "Zero face area along J at", i, j, k
+                         STOP
+                      end if
+#endif
                       fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
                                                * faceAreas(i, j, k)
-                   end if
+                   end do
                 end do
              end do
           end do
-       end do
-
-       deallocate(faceAreas)
-       call tileDesc%releaseDataPtr(fluxData, FLUXX)
-
-#if   NDIM >= 2
-       call tileDesc%getDataPtr(fluxData, FLUXY)
-       lo(:) = lbound(fluxData)
-       hi(:) = ubound(fluxData)
-       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
-                          lo(JAXIS):hi(JAXIS), &
-                          lo(KAXIS):hi(KAXIS)))
-       call Grid_getCellFaceAreas(JAXIS, tileDesc%level, &
-                                  lbound(faceAreas), ubound(faceAreas), &
-                                  faceAreas)
-
-       do        var = 1, NFLUXES
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-#ifdef DEBUG_GRID
-                   if (faceAreas(i,j,k) == 0.0) then
-                      write(*,*) "Zero face area along J at", i, j, k
-                      STOP
-                   end if
-#endif
-                   fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                            * faceAreas(i, j, k)
-                end do
-             end do
-          end do
-       end do
-
-       deallocate(faceAreas)
-       call tileDesc%releaseDataPtr(fluxData, FLUXY)
+   
+          deallocate(faceAreas)
+          call tileDesc%releaseDataPtr(fluxData, FLUXY)
 #endif
 
 #if   NDIM == 3
-       call tileDesc%getDataPtr(fluxData, FLUXZ)
-       lo(:) = lbound(fluxData)
-       hi(:) = ubound(fluxData)
-       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
-                          lo(JAXIS):hi(JAXIS), &
-                          lo(KAXIS):hi(KAXIS)))
-       call Grid_getCellFaceAreas(KAXIS, tileDesc%level, &
-                                  lbound(faceAreas), ubound(faceAreas), &
-                                  faceAreas)
-
-       do        var = 1, NFLUXES
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+          call tileDesc%getDataPtr(fluxData, FLUXZ)
+          lo(:) = lbound(fluxData)
+          hi(:) = ubound(fluxData)
+          allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                             lo(JAXIS):hi(JAXIS), &
+                             lo(KAXIS):hi(KAXIS)))
+          call Grid_getCellFaceAreas(KAXIS, tileDesc%level, &
+                                     lbound(faceAreas), ubound(faceAreas), &
+                                     faceAreas)
+   
+          do        var = 1, NFLUXES
+             do       k = lo(KAXIS), hi(KAXIS)
+                do    j = lo(JAXIS), hi(JAXIS)
+                   do i = lo(IAXIS), hi(IAXIS)
 #ifdef DEBUG_GRID
-                    if (faceAreas(i,j,k) == 0.0) then
-                       write(*,*) "Zero face area along K at", i, j, k
-                       STOP
-                    end if
+                      if (faceAreas(i,j,k) == 0.0) then
+                         write(*,*) "Zero face area along K at", i, j, k
+                         STOP
+                      end if
 #endif
-                    fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                             * faceAreas(i, j, k)
+                      fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                               * faceAreas(i, j, k)
+                   end do
                 end do
              end do
           end do
+   
+          deallocate(faceAreas)
+          call tileDesc%releaseDataPtr(fluxData, FLUXZ)
+#endif
+
+          call itor%next()
        end do
+       call Grid_releaseTileIterator(itor)
 
-       deallocate(faceAreas)
-       call tileDesc%releaseDataPtr(fluxData, FLUXZ)
-#endif
-
-       call itor%next()
-    end do
-    call Grid_releaseTileIterator(itor)
-
-    ! This should not overwrite any of the r=0 flux density data as those
-    ! faces are at the domain boundary rather than a fine/coarse boundary
-    call flux_registers(fine)%overwrite(fluxes(coarse, :), 1.0_wp)
-
-    call Grid_getTileIterator(itor, ALL_BLKS, level=coarse_level, tiling=.FALSE.)
-    do while (itor%isValid())
-       call itor%currentTile(tileDesc)
-
-       call tileDesc%getDataPtr(fluxData, FLUXX)
-       lo(:) = lbound(fluxData)
-       hi(:) = ubound(fluxData)
-       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
-                          lo(JAXIS):hi(JAXIS), &
-                          lo(KAXIS):hi(KAXIS)))
-       call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
-                                  lbound(faceAreas), ubound(faceAreas), &
-                                  faceAreas)
-
-       do        var = 1, NFLUXES
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+       !!!!!----- CONSERVE FLUXES
+       ! This should not overwrite any of the r=0 flux density data as those
+       ! faces are at the domain boundary rather than a fine/coarse boundary
+       call flux_registers(fine)%overwrite(fluxes(coarse, :), 1.0_wp)
+  
+       !!!!!----- CONVERT ALL FLUXES BACK TO FLUX DENSITIES
+       call Grid_getTileIterator(itor, ALL_BLKS, level=coarse_level, tiling=.FALSE.)
+       do while (itor%isValid())
+          call itor%currentTile(tileDesc)
+   
+          call tileDesc%getDataPtr(fluxData, FLUXX)
+          lo(:) = lbound(fluxData)
+          hi(:) = ubound(fluxData)
+          allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                             lo(JAXIS):hi(JAXIS), &
+                             lo(KAXIS):hi(KAXIS)))
+          call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
+                                     lbound(faceAreas), ubound(faceAreas), &
+                                     faceAreas)
+   
+          do        var = 1, NFLUXES
+             do       k = lo(KAXIS), hi(KAXIS)
+                do    j = lo(JAXIS), hi(JAXIS)
+                   do i = lo(IAXIS), hi(IAXIS)
 #ifdef DEBUG_GRID
-                   ! Basic sanity check of faceAreas
-                   if (geometry == CYLINDRICAL) then
-                      if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
-                         write(*,*) "face area != 0 for r==0", i, j, k
-                         STOP
+                      ! Basic sanity check of faceAreas
+                      if (geometry == CYLINDRICAL) then
+                         if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
+                            write(*,*) "face area != 0 for r==0", i, j, k
+                            STOP
+                         end if
+                         if ((faceAreas(i,j,k) == 0.0) .AND. (i /= 1)) then
+                            write(*,*) "Zero face area for r > 0", i, j, k
+                            STOP
+                         end if
                       end if
-                      if ((faceAreas(i,j,k) == 0.0) .AND. (i /= 1)) then
-                         write(*,*) "Zero face area for r > 0", i, j, k
-                         STOP
-                      end if
-                   end if
 #endif
+   
+                      ! Again, leave the flux density data at r=0 alone so
+                      ! that the original data is untouched by the whole
+                      ! flux conservation process
+                      if (faceAreas(i, j, k) /= 0.0) then
+                         fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                                  / faceAreas(i, j, k)
+                      end if
+                   end do
+                end do
+             end do
+          end do
+   
+          deallocate(faceAreas)
+          call tileDesc%releaseDataPtr(fluxData, FLUXX)
 
-                   ! Again, leave the flux density data at r=0 alone so
-                   ! that the original data is untouched by the whole
-                   ! flux conservation process
-                   if (faceAreas(i, j, k) /= 0.0) then
+#if   NDIM >= 2
+          call tileDesc%getDataPtr(fluxData, FLUXY)
+          lo(:) = lbound(fluxData)
+          hi(:) = ubound(fluxData)
+          allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                             lo(JAXIS):hi(JAXIS), &
+                             lo(KAXIS):hi(KAXIS)))
+          call Grid_getCellFaceAreas(JAXIS, tileDesc%level, &
+                                     lbound(faceAreas), ubound(faceAreas), &
+                                     faceAreas)
+   
+          do        var = 1, NFLUXES
+             do       k = lo(KAXIS), hi(KAXIS)
+                do    j = lo(JAXIS), hi(JAXIS)
+                   do i = lo(IAXIS), hi(IAXIS)
+#ifdef DEBUG_GRID
+                      if (faceAreas(i,j,k) == 0.0) then
+                         write(*,*) "Zero face area along J at", i, j, k
+                         STOP
+                      end if
+#endif
                       fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
                                                / faceAreas(i, j, k)
-                   end if
+                   end do
                 end do
              end do
           end do
-       end do
-
-       deallocate(faceAreas)
-       call tileDesc%releaseDataPtr(fluxData, FLUXX)
-
-#if   NDIM >= 2
-       call tileDesc%getDataPtr(fluxData, FLUXY)
-       lo(:) = lbound(fluxData)
-       hi(:) = ubound(fluxData)
-       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
-                          lo(JAXIS):hi(JAXIS), &
-                          lo(KAXIS):hi(KAXIS)))
-       call Grid_getCellFaceAreas(JAXIS, tileDesc%level, &
-                                  lbound(faceAreas), ubound(faceAreas), &
-                                  faceAreas)
-
-       do        var = 1, NFLUXES
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-#ifdef DEBUG_GRID
-                   if (faceAreas(i,j,k) == 0.0) then
-                      write(*,*) "Zero face area along J at", i, j, k
-                      STOP
-                   end if
-#endif
-                   fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                            / faceAreas(i, j, k)
-                end do
-             end do
-          end do
-       end do
-
-       deallocate(faceAreas)
-       call tileDesc%releaseDataPtr(fluxData, FLUXY)
+   
+          deallocate(faceAreas)
+          call tileDesc%releaseDataPtr(fluxData, FLUXY)
 #endif
 
 #if   NDIM == 3
-       call tileDesc%getDataPtr(fluxData, FLUXZ)
-       lo(:) = lbound(fluxData)
-       hi(:) = ubound(fluxData)
-       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
-                          lo(JAXIS):hi(JAXIS), &
-                          lo(KAXIS):hi(KAXIS)))
-       call Grid_getCellFaceAreas(KAXIS, tileDesc%level, &
-                                  lbound(faceAreas), ubound(faceAreas), &
-                                  faceAreas)
-
-       do        var = 1, NFLUXES
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+          call tileDesc%getDataPtr(fluxData, FLUXZ)
+          lo(:) = lbound(fluxData)
+          hi(:) = ubound(fluxData)
+          allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                             lo(JAXIS):hi(JAXIS), &
+                             lo(KAXIS):hi(KAXIS)))
+          call Grid_getCellFaceAreas(KAXIS, tileDesc%level, &
+                                     lbound(faceAreas), ubound(faceAreas), &
+                                     faceAreas)
+   
+          do        var = 1, NFLUXES
+             do       k = lo(KAXIS), hi(KAXIS)
+                do    j = lo(JAXIS), hi(JAXIS)
+                   do i = lo(IAXIS), hi(IAXIS)
 #ifdef DEBUG_GRID
-                   if (faceAreas(i,j,k) == 0.0) then
-                      write(*,*) "Zero face area along K at", i, j, k
-                      STOP
-                   end if
+                      if (faceAreas(i,j,k) == 0.0) then
+                         write(*,*) "Zero face area along K at", i, j, k
+                         STOP
+                      end if
 #endif
-                   fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                            / faceAreas(i, j, k)
+                      fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                               / faceAreas(i, j, k)
+                   end do
                 end do
              end do
           end do
-       end do
-
-       deallocate(faceAreas)
-       call tileDesc%releaseDataPtr(fluxData, FLUXZ)
+   
+          deallocate(faceAreas)
+          call tileDesc%releaseDataPtr(fluxData, FLUXZ)
 #endif
 
-       call itor%next()
-    end do
-    call Grid_releaseTileIterator(itor)
-
-!    call Grid_getGeometry(geometry)
-!
-!    select case (geometry)
-!    case (CARTESIAN)
-!        ! The AMReX flux registers are dealing with fluxes and 
-!        ! *not* flux densities.  In Grid_putFluxData, flux densities at the fine
-!        ! level were scaled to fluxes with the assumption that the cell lengths
-!        ! at the coarse level are one.  Therefore, reconversion to flux densities
-!        ! is automatic here.
-!        call flux_registers(fine)%overwrite(fluxes(coarse, :), 1.0_wp)
-!    case default
-!        ! DEV: TODO This routine should take an isFluxDensity array as an argument
-!        ! so that the routine can determine which need to be scaled and which do not
-!        call Driver_abortFlash("[Grid_conserveFluxes] Only works with Cartesian")
-!    end select
+          call itor%next()
+       end do
+       call Grid_releaseTileIterator(itor)
+    case default
+       ! DEV: TODO This routine should take an isFluxDensity array as an argument
+       ! so that the routine can determine which need to be scaled and which do not
+       call Driver_abortFlash("[Grid_conserveFluxes] Only works with Cartesian")
+    end select
 end subroutine Grid_conserveFluxes
 

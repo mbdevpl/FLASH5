@@ -150,170 +150,172 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
 
     call Grid_getGeometry(geometry)
 
-    call Grid_getTileIterator(itor, ALL_BLKS, level=fine_level, tiling=.FALSE.)
-    do while (itor%isValid())
-       call itor%currentTile(tileDesc)
+    select case (geometry)
+    case (CARTESIAN)
+       ! The scaling factor=1/r^(NDIM-1) used here assumes that the refinement
+       ! ratio, r, between levels is always 2
+       if (amrex_ref_ratio(coarse) /= 2) then
+         call Driver_abortFlash("[Grid_addFineToFluxRegister] refinement ratio not 2")
+       end if
 
-       call tileDesc%getDataPtr(fluxData, FLUXX)
-       lo(:) = lbound(fluxData)
-       hi(:) = ubound(fluxData)
-       box%lo(:) = lo(1:MDIM) - 1
-       box%hi(:) = hi(1:MDIM) - 1
-       box%nodal = [.TRUE., .FALSE., .FALSE.]
-       call amrex_fab_build(fluxFabs(IAXIS), box, NFLUXES)    
-       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
-                          lo(JAXIS):hi(JAXIS), &
-                          lo(KAXIS):hi(KAXIS)))
-       call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
-                                  lbound(faceAreas), ubound(faceAreas), &
-                                  faceAreas)
-
-       fabData(lo(1):, lo(2):, lo(3):, 1:) => fluxFabs(IAXIS)%dataPtr()
-       do        var = 1, NFLUXES
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
-#ifdef DEBUG_GRID
-                   ! Basic sanity check of faceAreas
-                   if (geometry == CYLINDRICAL) then
-                      if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
-                         write(*,*) "face area != 0 for r==0", i, j, k
-                         STOP
-                      end if
-                      if ((faceAreas(i,j,k) == 0.0) .AND. (i /= 1)) then
-                         write(*,*) "Zero face area for r > 0", i, j, k
-                         STOP
-                      end if
-                   end if
+#if   NDIM == 2
+       coef = coef * 0.5_wp
+#elif NDIM == 3
+       coef = coef * 0.25_wp
 #endif
 
-                   ! There is potentially non-zero flux density data at r=0 that
-                   ! should remain unchanged during the whole flux correction
-                   ! process.  With this multiplication, we are forcing that
-                   ! data zero in the flux registers.  However, when we conserve
-                   ! fluxes, the data at r=0 should not be overwritten as it is
-                   ! at the domain boundary rather than a fine/coarse boundary.
-                   ! Therefore, the original flux density data in fluxData shall
-                   ! be intact still if we handle the data carefully in 
-                   ! Grid_conserveFluxes.
-                   fabData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                           * faceAreas(i, j, k)
+       ! When compiling with ifort (IFORT) 17.0.0 20160721, the following line
+       ! results in an ICE.  
+       ! /tmp/ifortACzzAq.i90: catastrophic error: **Internal compiler error: segmentation violation signal raised**
+       !
+       !This error is overcome by importing amrex_flux_register above
+       call flux_registers(fine)%fineadd(fluxes(fine, 1:NDIM), coef)
+    case (CYLINDRICAL)
+       call Grid_getTileIterator(itor, ALL_BLKS, level=fine_level, tiling=.FALSE.)
+       do while (itor%isValid())
+          call itor%currentTile(tileDesc)
+
+          call tileDesc%getDataPtr(fluxData, FLUXX)
+          lo(:) = lbound(fluxData)
+          hi(:) = ubound(fluxData)
+          box%lo(:) = lo(1:MDIM) - 1
+          box%hi(:) = hi(1:MDIM) - 1
+          box%nodal = [.TRUE., .FALSE., .FALSE.]
+          call amrex_fab_build(fluxFabs(IAXIS), box, NFLUXES)    
+          allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                             lo(JAXIS):hi(JAXIS), &
+                             lo(KAXIS):hi(KAXIS)))
+          call Grid_getCellFaceAreas(IAXIS, tileDesc%level, &
+                                     lbound(faceAreas), ubound(faceAreas), &
+                                     faceAreas)
+
+          fabData(lo(1):, lo(2):, lo(3):, 1:) => fluxFabs(IAXIS)%dataPtr()
+          do        var = 1, NFLUXES
+             do       k = lo(KAXIS), hi(KAXIS)
+                do    j = lo(JAXIS), hi(JAXIS)
+                   do i = lo(IAXIS), hi(IAXIS)
+#ifdef DEBUG_GRID
+                      ! Basic sanity check of faceAreas
+                      if (geometry == CYLINDRICAL) then
+                         if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
+                            write(*,*) "face area != 0 for r==0", i, j, k
+                            STOP
+                         end if
+                         if ((faceAreas(i,j,k) == 0.0) .AND. (i /= 1)) then
+                            write(*,*) "Zero face area for r > 0", i, j, k
+                            STOP
+                         end if
+                      end if
+#endif
+
+                      ! There is potentially non-zero flux density data at r=0 that
+                      ! should remain unchanged during the whole flux correction
+                      ! process.  With this multiplication, we are forcing that
+                      ! data zero in the flux registers.  However, when we conserve
+                      ! fluxes, the data at r=0 should not be overwritten as it is
+                      ! at the domain boundary rather than a fine/coarse boundary.
+                      ! Therefore, the original flux density data in fluxData shall
+                      ! be intact still if we handle the data carefully in 
+                      ! Grid_conserveFluxes.
+                      fabData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                              * faceAreas(i, j, k)
+                   end do
                 end do
              end do
           end do
-       end do
-       nullify(fabData)
-
-       deallocate(faceAreas)
-       call tileDesc%releaseDataPtr(fluxData, FLUXX)
+          nullify(fabData)
+   
+          deallocate(faceAreas)
+          call tileDesc%releaseDataPtr(fluxData, FLUXX)
 
 #if   NDIM >= 2
-       call tileDesc%getDataPtr(fluxData, FLUXY)
-       lo(:) = lbound(fluxData)
-       hi(:) = ubound(fluxData)
-       box%lo(:) = lo(1:MDIM) - 1
-       box%hi(:) = hi(1:MDIM) - 1
-       box%nodal = [.FALSE., .TRUE., .FALSE.]
-       call amrex_fab_build(fluxFabs(JAXIS), box, NFLUXES)    
-       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
-                          lo(JAXIS):hi(JAXIS), &
-                          lo(KAXIS):hi(KAXIS)))
-       call Grid_getCellFaceAreas(JAXIS, tileDesc%level, &
-                                  lbound(faceAreas), ubound(faceAreas), &
-                                  faceAreas)
-
-       fabData(lo(1):, lo(2):, lo(3):, 1:) => fluxFabs(JAXIS)%dataPtr()
-       do        var = 1, NFLUXES
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+          call tileDesc%getDataPtr(fluxData, FLUXY)
+          lo(:) = lbound(fluxData)
+          hi(:) = ubound(fluxData)
+          box%lo(:) = lo(1:MDIM) - 1
+          box%hi(:) = hi(1:MDIM) - 1
+          box%nodal = [.FALSE., .TRUE., .FALSE.]
+          call amrex_fab_build(fluxFabs(JAXIS), box, NFLUXES)    
+          allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                             lo(JAXIS):hi(JAXIS), &
+                             lo(KAXIS):hi(KAXIS)))
+          call Grid_getCellFaceAreas(JAXIS, tileDesc%level, &
+                                     lbound(faceAreas), ubound(faceAreas), &
+                                     faceAreas)
+   
+          fabData(lo(1):, lo(2):, lo(3):, 1:) => fluxFabs(JAXIS)%dataPtr()
+          do        var = 1, NFLUXES
+             do       k = lo(KAXIS), hi(KAXIS)
+                do    j = lo(JAXIS), hi(JAXIS)
+                   do i = lo(IAXIS), hi(IAXIS)
 #ifdef DEBUG_GRID
-                   if (faceAreas(i,j,k) == 0.0) then
-                      write(*,*) "Zero face area along J at", i, j, k
-                      STOP
-                   end if
+                      if (faceAreas(i,j,k) == 0.0) then
+                         write(*,*) "Zero face area along J at", i, j, k
+                         STOP
+                      end if
 #endif
-                   fabData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                           * faceAreas(i, j, k)
+                      fabData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                              * faceAreas(i, j, k)
+                   end do
                 end do
              end do
           end do
-       end do
-       nullify(fabData)
-
-       deallocate(faceAreas)
-       call tileDesc%releaseDataPtr(fluxData, FLUXY)
+          nullify(fabData)
+   
+          deallocate(faceAreas)
+          call tileDesc%releaseDataPtr(fluxData, FLUXY)
 #endif
 
 #if   NDIM == 3
-       call tileDesc%getDataPtr(fluxData, FLUXZ)
-       lo(:) = lbound(fluxData)
-       hi(:) = ubound(fluxData)
-       box%lo(:) = lo(1:MDIM) - 1
-       box%hi(:) = hi(1:MDIM) - 1
-       box%nodal = [.FALSE., .FALSE., .TRUE.]
-       call amrex_fab_build(fluxFabs(KAXIS), box, NFLUXES)    
-       allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
-                          lo(JAXIS):hi(JAXIS), &
-                          lo(KAXIS):hi(KAXIS)))
-       call Grid_getCellFaceAreas(KAXIS, tileDesc%level, &
-                                  lbound(faceAreas), ubound(faceAreas), &
-                                  faceAreas)
-
-       fabData(lo(1):, lo(2):, lo(3):, 1:) => fluxFabs(KAXIS)%dataPtr()
-       do        var = 1, NFLUXES
-          do       k = lo(KAXIS), hi(KAXIS)
-             do    j = lo(JAXIS), hi(JAXIS)
-                do i = lo(IAXIS), hi(IAXIS)
+          call Driver_abortFlash("[Grid_addFineToFluxRegister] 3D Cylindrical not tested")
+          call tileDesc%getDataPtr(fluxData, FLUXZ)
+          lo(:) = lbound(fluxData)
+          hi(:) = ubound(fluxData)
+          box%lo(:) = lo(1:MDIM) - 1
+          box%hi(:) = hi(1:MDIM) - 1
+          box%nodal = [.FALSE., .FALSE., .TRUE.]
+          call amrex_fab_build(fluxFabs(KAXIS), box, NFLUXES)    
+          allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
+                             lo(JAXIS):hi(JAXIS), &
+                             lo(KAXIS):hi(KAXIS)))
+          call Grid_getCellFaceAreas(KAXIS, tileDesc%level, &
+                                     lbound(faceAreas), ubound(faceAreas), &
+                                     faceAreas)
+   
+          fabData(lo(1):, lo(2):, lo(3):, 1:) => fluxFabs(KAXIS)%dataPtr()
+          do        var = 1, NFLUXES
+             do       k = lo(KAXIS), hi(KAXIS)
+                do    j = lo(JAXIS), hi(JAXIS)
+                   do i = lo(IAXIS), hi(IAXIS)
 #ifdef DEBUG_GRID
-                   if (faceAreas(i,j,k) == 0.0) then
-                      write(*,*) "Zero face area along K at", i, j, k
-                      STOP
-                   end if
+                      if (faceAreas(i,j,k) == 0.0) then
+                         write(*,*) "Zero face area along K at", i, j, k
+                         STOP
+                      end if
 #endif
-                   fabData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                           * faceAreas(i, j, k) &
+                      fabData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                              * faceAreas(i, j, k) &
+                   end do
                 end do
              end do
           end do
-       end do
-       nullify(fabData)
-
-       deallocate(faceAreas)
-       call tileDesc%releaseDataPtr(fluxData, FLUXZ)
+          nullify(fabData)
+   
+          deallocate(faceAreas)
+          call tileDesc%releaseDataPtr(fluxData, FLUXZ)
 #endif
 
-       call flux_registers(fine)%fineadd(fluxFabs, tileDesc%grid_index, coef)
-
-       do axis = 1, NDIM
-          call amrex_fab_destroy(fluxFabs(axis))
+          call flux_registers(fine)%fineadd(fluxFabs, tileDesc%grid_index, coef)
+   
+          do axis = 1, NDIM
+             call amrex_fab_destroy(fluxFabs(axis))
+          end do
+   
+          call itor%next()
        end do
-
-       call itor%next()
-    end do
-    call Grid_releaseTileIterator(itor)
-!    select case (geometry)
-!    case (CARTESIAN)
-!      ! The scaling factor=1/r^(NDIM-1) used here assumes that the refinement
-!      ! ratio, r, between levels is always 2
-!      if (amrex_ref_ratio(coarse) /= 2) then
-!        call Driver_abortFlash("[Grid_addFineToFluxRegister] refinement ratio not 2")
-!      end if
-!
-!#if   NDIM == 2
-!        coef = coef * 0.5_wp
-!#elif NDIM == 3
-!        coef = coef * 0.25_wp
-!#endif
-!
-!        ! When compiling with ifort (IFORT) 17.0.0 20160721, the following line
-!        ! results in an ICE.  
-!        ! /tmp/ifortACzzAq.i90: catastrophic error: **Internal compiler error: segmentation violation signal raised**
-!        !
-!        !This error is overcome by importing amrex_flux_register above
-!        call flux_registers(fine)%fineadd(fluxes(fine, 1:NDIM), coef)
-!    case default
-!        call Driver_abortFlash("[Grid_addFineToFluxRegister] Only works with Cartesian")
-!    end select
+       call Grid_releaseTileIterator(itor)
+    case default
+        call Driver_abortFlash("[Grid_addFineToFluxRegister] Unsupported geometry")
+    end select
 end subroutine Grid_addFineToFluxRegister
 
