@@ -171,6 +171,9 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
        !This error is overcome by importing amrex_flux_register above
        call flux_registers(fine)%fineadd(fluxes(fine, 1:NDIM), coef)
     case (CYLINDRICAL)
+       ! DEV: TODO This is a first brute force implementation that was made to
+       !           get the functionality up and to establish a first
+       !           baseline/test.  Clearly, it needs to be improved greatly.
        call Grid_getTileIterator(itor, ALL_BLKS, level=fine_level, tiling=.FALSE.)
        do while (itor%isValid())
           call itor%currentTile(tileDesc)

@@ -106,6 +106,9 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
         ! is automatic here.
         call flux_registers(fine)%overwrite(fluxes(coarse, :), 1.0_wp)
     case (CYLINDRICAL)
+       ! DEV: TODO This is a first brute force implementation that was made to
+       !           get the functionality up and to establish a first
+       !           baseline/test.  Clearly, it needs to be improved greatly.
        !!!!!----- CONVERT ALL FLUX DENSITIES TO FLUX
        ! Convert all flux density data on the coarse level to flux because
        ! we don't know where the fine/coarse boundaries are and therefore 
