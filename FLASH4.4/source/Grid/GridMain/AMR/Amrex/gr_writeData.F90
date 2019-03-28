@@ -11,7 +11,7 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
 
     use gr_physicalMultifabs,  ONLY : unk, facevarx, facevary, facevarz
     use gr_ptInterface, ONLY:  gr_ptWritePCs
-    use IO_data, ONLY : io_unklabels
+! !     use IO_data, ONLY : io_unklabels
 
     implicit none
 
@@ -57,7 +57,7 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
 
     do i = 1, SIZE(varname)
         write(current_var,'(I4.4)') i
-        call amrex_string_build(varname(i), io_unklabels(i))
+        call amrex_string_build(varname(i), "var"//TRIM(current_var))
     end do
 
     allocate(stepno_arr(0:nlevs-1))
