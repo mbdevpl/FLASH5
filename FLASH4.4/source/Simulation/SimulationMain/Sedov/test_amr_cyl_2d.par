@@ -41,8 +41,11 @@ xmax		= 0.5
 ymin		= -0.5
 ymax		= 0.5
 
-sim_smallestNormRadius = 0.16
-#sim_largestNormRadius  = 1.0
+# Log integral quantities using all levels and all cells
+sim_oneLevelIntegralsOnly = .FALSE.
+sim_smallestNormRadius = -1.0
+sim_largestNormRadius  =  1.0e20
+
 sim_earliestLSTime     = 0.021
 sim_latestLSTime       = 0.026
 

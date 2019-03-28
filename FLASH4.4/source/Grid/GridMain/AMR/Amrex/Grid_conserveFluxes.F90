@@ -35,6 +35,10 @@
 !!
 !!***
 
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
 #include "Flash.h"
 #include "constants.h"
 
@@ -109,12 +113,27 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
-                    if (faceAreas(i,j,k) == 0.0) then
-                       write(*,*) "Divide by zero!", i, j, k
-                       STOP
-                    end if
-                    fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                             * faceAreas(i, j, k)
+#ifdef DEBUG_GRID
+                   ! Basic sanity check of faceAreas
+                   if (geometry == CYLINDRICAL) then
+                      if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
+                         write(*,*) "face area != 0 for r==0", i, j, k
+                         STOP
+                      end if
+                      if ((faceAreas(i,j,k) == 0.0) .AND. (i /= 1)) then
+                         write(*,*) "Zero face area for r > 0", i, j, k
+                         STOP
+                      end if
+                   end if
+#endif
+
+                   ! There is potentially non-zero flux density data at r=0 that
+                   ! should remain unchanged during the whole flux correction
+                   ! process.  Therefore, don't transform the r=0 flux density data.  
+                   if (faceAreas(i, j, k) /= 0.0) then
+                      fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                               * faceAreas(i, j, k)
+                   end if
                 end do
              end do
           end do
@@ -138,12 +157,14 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
-                  if (faceAreas(i,j,k) == 0.0) then
-                     write(*,*) "Divide by zero!", i, j, k
-                     STOP
-                  end if
-                    fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                             * faceAreas(i, j, k)
+#ifdef DEBUG_GRID
+                   if (faceAreas(i,j,k) == 0.0) then
+                      write(*,*) "Zero face area along J at", i, j, k
+                      STOP
+                   end if
+#endif
+                   fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                            * faceAreas(i, j, k)
                 end do
              end do
           end do
@@ -168,10 +189,12 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
+#ifdef DEBUG_GRID
                     if (faceAreas(i,j,k) == 0.0) then
-                       write(*,*) "Divide by zero!", i, j, k
+                       write(*,*) "Zero face area along K at", i, j, k
                        STOP
                     end if
+#endif
                     fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
                                              * faceAreas(i, j, k)
                 end do
@@ -187,6 +210,8 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
     end do
     call Grid_releaseTileIterator(itor)
 
+    ! This should not overwrite any of the r=0 flux density data as those
+    ! faces are at the domain boundary rather than a fine/coarse boundary
     call flux_registers(fine)%overwrite(fluxes(coarse, :), 1.0_wp)
 
     call Grid_getTileIterator(itor, ALL_BLKS, level=coarse_level, tiling=.FALSE.)
@@ -207,12 +232,27 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
-                    if (faceAreas(i,j,k) == 0.0) then
-                       write(*,*) "Divide by zero!", i, j, k
-                       STOP
-                    end if
+#ifdef DEBUG_GRID
+                   ! Basic sanity check of faceAreas
+                   if (geometry == CYLINDRICAL) then
+                      if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
+                         write(*,*) "face area != 0 for r==0", i, j, k
+                         STOP
+                      end if
+                      if ((faceAreas(i,j,k) == 0.0) .AND. (i /= 1)) then
+                         write(*,*) "Zero face area for r > 0", i, j, k
+                         STOP
+                      end if
+                   end if
+#endif
+
+                   ! Again, leave the flux density data at r=0 alone so
+                   ! that the original data is untouched by the whole
+                   ! flux conservation process
+                   if (faceAreas(i, j, k) /= 0.0) then
                       fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
                                                / faceAreas(i, j, k)
+                   end if
                 end do
              end do
           end do
@@ -236,12 +276,14 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
-                    if (faceAreas(i,j,k) == 0.0) then
-                       write(*,*) "Divide by zero!", i, j, k
-                       STOP
-                    end if
-                    fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                             / faceAreas(i, j, k)
+#ifdef DEBUG_GRID
+                   if (faceAreas(i,j,k) == 0.0) then
+                      write(*,*) "Zero face area along J at", i, j, k
+                      STOP
+                   end if
+#endif
+                   fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                            / faceAreas(i, j, k)
                 end do
              end do
           end do
@@ -266,12 +308,14 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
-                    if (faceAreas(i,j,k) == 0.0) then
-                       write(*,*) "Divide by zero!", i, j, k
-                       STOP
-                    end if
-                    fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                             / faceAreas(i, j, k)
+#ifdef DEBUG_GRID
+                   if (faceAreas(i,j,k) == 0.0) then
+                      write(*,*) "Zero face area along K at", i, j, k
+                      STOP
+                   end if
+#endif
+                   fluxData(i, j, k, var) =    fluxData(i, j, k, var) &
+                                            / faceAreas(i, j, k)
                 end do
              end do
           end do

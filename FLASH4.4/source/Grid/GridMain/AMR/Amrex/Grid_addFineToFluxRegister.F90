@@ -54,6 +54,10 @@
 !!
 !!***
 
+#ifdef DEBUG_ALL
+#define DEBUG_GRID
+#endif
+
 #include "Flash.h"
 #include "constants.h"
 
@@ -169,6 +173,7 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
+#ifdef DEBUG_GRID
                    ! Basic sanity check of faceAreas
                    if (geometry == CYLINDRICAL) then
                       if ((i == 1) .AND. (faceAreas(i,j,k) /= 0.0)) then
@@ -180,9 +185,17 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
                          STOP
                       end if
                    end if
-                   if ((faceAreas(i,j,k) == 0.0) .AND. (fluxData(i,j,k,var) /= 0.0)) then
-                      write(*,*) "Non-zero flux density at r=0", i, j, k, var, fluxData(i,j,k,var)
-                   end if
+#endif
+
+                   ! There is potentially non-zero flux density data at r=0 that
+                   ! should remain unchanged during the whole flux correction
+                   ! process.  With this multiplication, we are forcing that
+                   ! data zero in the flux registers.  However, when we conserve
+                   ! fluxes, the data at r=0 should not be overwritten as it is
+                   ! at the domain boundary rather than a fine/coarse boundary.
+                   ! Therefore, the original flux density data in fluxData shall
+                   ! be intact still if we handle the data carefully in 
+                   ! Grid_conserveFluxes.
                    fabData(i, j, k, var) =    fluxData(i, j, k, var) &
                                            * faceAreas(i, j, k)
                 end do
@@ -214,10 +227,12 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
+#ifdef DEBUG_GRID
                    if (faceAreas(i,j,k) == 0.0) then
-                      write(*,*) "Divide by zero!", i, j, k
+                      write(*,*) "Zero face area along J at", i, j, k
                       STOP
                    end if
+#endif
                    fabData(i, j, k, var) =    fluxData(i, j, k, var) &
                                            * faceAreas(i, j, k)
                 end do
@@ -250,10 +265,12 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
           do       k = lo(KAXIS), hi(KAXIS)
              do    j = lo(JAXIS), hi(JAXIS)
                 do i = lo(IAXIS), hi(IAXIS)
+#ifdef DEBUG_GRID
                    if (faceAreas(i,j,k) == 0.0) then
-                      write(*,*) "Divide by zero!", i, j, k
+                      write(*,*) "Zero face area along K at", i, j, k
                       STOP
                    end if
+#endif
                    fabData(i, j, k, var) =    fluxData(i, j, k, var) &
                                            * faceAreas(i, j, k) &
                 end do
