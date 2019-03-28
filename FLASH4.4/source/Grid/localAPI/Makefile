@@ -79,6 +79,7 @@ Grid += gr_forceDerefInRadius.o
 Grid += gr_markRefineDerefine.o gr_estimateBlkError.o
 
 Grid += gr_blockMatch.o
+Grid += gr_ptWritePCs.o
 
 gr_interface.o     : gr_interfaceTypeDecl.o
 gr_pfftInterface.o : gr_pfftInterfaceTypeDecl.o
