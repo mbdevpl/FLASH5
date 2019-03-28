@@ -5,7 +5,7 @@
 !!
 !!  SYNOPSIS
 !!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
-!!                            integer(IN)  :: blockDesc  )
+!!                            Grid_tile_t(IN)  :: tileDesc  )
 !!                               
 !!
 !!  DESCRIPTION
@@ -29,7 +29,7 @@
 !!    
 !!  ARGUMENTS
 !!  solnData  -        pointer to solution data
-!!  blockDesc -        describes the block to initialize
+!!  tileDesc -        describes the tile to initialize
 !!
 !!  PARAMETERS
 !!    rho_ambient       \
@@ -56,7 +56,10 @@
 !!    Reference:  Yee, Vinokur & Djomehri, J. Comp. Phys 162 
 !!
 !!***
-subroutine Simulation_initBlock(solnData,blockDesc)
+! solnData depends on the ordering on unk
+!!REORDER(4): solnData
+
+subroutine Simulation_initBlock(solnData,tileDesc)
 
   use Simulation_data, ONLY : sim_gamma, sim_uAmbient, sim_vAmbient,&
        sim_vortexStrength, sim_xctrTrue, sim_yctrTrue, sim_nxSubint, &
@@ -67,7 +70,7 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 
   use Grid_interface, ONLY :Grid_getCellCoords
   use Eos_interface, ONLY : Eos_wrapped, Eos
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
 
   implicit none
 #include "constants.h"
@@ -75,7 +78,7 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 #include "Eos.h"
 
   real,                   pointer    :: solnData(:,:,:,:)
-  type(block_metadata_t), intent(in) :: blockDesc
+  type(Grid_tile_t), intent(in) :: tileDesc
 
   real :: xctr_closest, yctr_closest
   real :: temp_coeff, temp_exp, gm1i, rbari
@@ -88,8 +91,8 @@ subroutine Simulation_initBlock(solnData,blockDesc)
   integer :: i, j, k, n
   integer :: ii, jj
   real :: entropy, dst, dsd
-  integer,dimension(LOW:HIGH,MDIM) :: blkLimits,blkLimitsGC,eosRange
-  integer :: sizeX,sizeY,sizeZ,vecLen=1
+  integer,dimension(LOW:HIGH,MDIM) :: tileLimits,tileLimitsGC,eosRange
+  integer :: sizeX,sizeY,sizeZ,lev,vecLen=1
   logical :: gcell=.true.
 
   real,allocatable,dimension(:)::xCenter,xLeft,xRight
@@ -100,19 +103,19 @@ subroutine Simulation_initBlock(solnData,blockDesc)
   real,allocatable,dimension(:)::xn
 #endif
 
-  blkLimitsGC(:,:) = blockDesc%limitsGC
-  blkLimits(:,:) = blockDesc%limits
+  tileLimitsGC(:,:) = tileDesc%grownLimits
+  tileLimits(:,:) = tileDesc%limits
+  lev = tileDesc%level
 
-
-  allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-  allocate(xRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-  allocate(xLeft(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-  allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-  allocate(yRight(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-  allocate(yLeft(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-  allocate(zCenter(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-  allocate(zRight(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-  allocate(zLeft(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+  allocate(xCenter(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)))
+  allocate(xRight(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)))
+  allocate(xLeft(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)))
+  allocate(yCenter(tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS)))
+  allocate(yRight(tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS)))
+  allocate(yLeft(tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS)))
+  allocate(zCenter(tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)))
+  allocate(zRight(tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)))
+  allocate(zLeft(tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)))
 
   sizeX=SIZE(xCenter)
   sizeY=SIZE(yCenter)
@@ -127,27 +130,27 @@ subroutine Simulation_initBlock(solnData,blockDesc)
 #endif
 
   if (NDIM > 2) then
-     call Grid_getCellCoords (KAXIS, blockDesc, CENTER, gcell, zCenter, sizeZ)
-     call Grid_getCellCoords (KAXIS, blockDesc, LEFT_EDGE, gcell, zLeft, sizeZ)
-     call Grid_getCellCoords (KAXIS, blockDesc, RIGHT_EDGE, gcell, zRight, sizeZ)
+     call Grid_getCellCoords (KAXIS, CENTER, lev, tileLimits(LOW,:), tileLimits(HIGH,:), zCenter)
+     call Grid_getCellCoords (KAXIS, LEFT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), zLeft)
+     call Grid_getCellCoords (KAXIS, RIGHT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), zRight)
   end if
   if(NDIM>1) then
-     call Grid_getCellCoords (JAXIS, blockDesc, CENTER, gcell, yCenter, sizeY)
-     call Grid_getCellCoords (JAXIS, blockDesc, LEFT_EDGE, gcell, yLeft, sizeY)
-     call Grid_getCellCoords (JAXIS, blockDesc, RIGHT_EDGE, gcell, yRight, sizeY)
+     call Grid_getCellCoords (JAXIS, CENTER, lev, tileLimits(LOW,:), tileLimits(HIGH,:), yCenter)
+     call Grid_getCellCoords (JAXIS, LEFT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), yLeft)
+     call Grid_getCellCoords (JAXIS, RIGHT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), yRight)
   end if
-  call Grid_getCellCoords (IAXIS, blockDesc, CENTER, gcell, xCenter, sizeX)
-  call Grid_getCellCoords (IAXIS, blockDesc, LEFT_EDGE, gcell, xLeft, sizeX)
-  call Grid_getCellCoords (IAXIS, blockDesc, RIGHT_EDGE, gcell, xRight, sizeX)
+  call Grid_getCellCoords (IAXIS, CENTER, lev, tileLimits(LOW,:), tileLimits(HIGH,:), xCenter)
+  call Grid_getCellCoords (IAXIS, LEFT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), xLeft)
+  call Grid_getCellCoords (IAXIS, RIGHT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), xRight)
 ! Initialize the flowfield.
 
   temp_coeff = sim_vortexStrength/(2.0*PI)
   gm1i = 1.0/(sim_gamma-1.0)
   rbari = 1.0/sim_rbar
 
-  do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
-     do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
-        do i = blkLimits(LOW,IAXIS),blkLimits(HIGH,IAXIS)
+  do k = tileLimits(LOW,KAXIS),tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS),tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS),tileLimits(HIGH,IAXIS)
            
            !     these are cell sizes and cell subinterval sizes.
            dx_loc = (xRight(i) - xLeft(i))/sim_nxSubint
@@ -262,18 +265,18 @@ subroutine Simulation_initBlock(solnData,blockDesc)
            call Eos(MODE_DENS_EI,vecLen,sim_eosData,sim_eosMassFr)
            p=sim_eosData(EOS_PRES)
            game=p/(rho*e) +1.0
-           solndata(DENS_VAR,i,j,k)=rho
-           solndata(VELX_VAR,i,j,k)=u
-           solndata(VELY_VAR,i,j,k)=v
-           solndata(VELZ_VAR,i,j,k)=w
-           solndata(ENER_VAR,i,j,k)=etot
-           solndata(EINT_VAR,i,j,k)=e
-           solndata(PRES_VAR,i,j,k)=p
-           solndata(GAME_VAR,i,j,k)=game
+           solnData(DENS_VAR,i,j,k)=rho
+           solnData(VELX_VAR,i,j,k)=u
+           solnData(VELY_VAR,i,j,k)=v
+           solnData(VELZ_VAR,i,j,k)=w
+           solnData(ENER_VAR,i,j,k)=etot
+           solnData(EINT_VAR,i,j,k)=e
+           solnData(PRES_VAR,i,j,k)=p
+           solnData(GAME_VAR,i,j,k)=game
 
 #if NSPECIES > 0
            do n=0,NSPECIES-1
-              solndata(SPECIES_BEGIN+n,i,j,k)=xn(n+1)
+              solnData(SPECIES_BEGIN+n,i,j,k)=xn(n+1)
            end do
 #endif
 
