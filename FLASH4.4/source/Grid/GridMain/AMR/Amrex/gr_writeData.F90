@@ -65,7 +65,6 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
                               t_new, stepno_arr, amrex_ref_ratio)
 
     deallocate(varname)
-    print*,"nfacevar", NFACE_VARS
 #if(NFACE_VARS > 0)
     allocate(varname(NFACE_VARS))
     print*,"varname size --", SIZE(varname)
