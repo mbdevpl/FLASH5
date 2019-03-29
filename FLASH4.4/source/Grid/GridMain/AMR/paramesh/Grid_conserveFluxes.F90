@@ -155,9 +155,6 @@ subroutine Grid_conserveFluxes( axis, coarse_level)
      
      fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
      fluxy(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxy(:,:,:,:,blockID)
-!!     print*,'SHAPE (fluxy) is',SHAPE (fluxy),' for blockID,blkLev=',blockID, blkLev
-!!     print*,'LBOUND(fluxy) is',LBOUND(fluxy)
-!!     print*,'UBOUND(fluxy) is',UBOUND(fluxy)
      fluxz(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxz(:,:,:,:,blockID)
 !!$     if (present(pressureSlots)) then
 !!$        presP => pressureSlots
@@ -195,6 +192,7 @@ subroutine Grid_conserveFluxes( axis, coarse_level)
         !   - other conditions are satisfied (geometry and direction), and
         !   - face area is nonzero, and
         !   - case is i, ii, or iv.
+        !     (Note - This could probably be reduced to case iv only!)
 
         loCase4 = (surr_blks(1,1,1+K2D,1+K3D,blockID) > 0 .AND. &
             surr_blks(3,1,1+K2D,1+K3D,blockID) == PARENT_BLK)
@@ -215,23 +213,6 @@ subroutine Grid_conserveFluxes( axis, coarse_level)
            call Grid_getCellFaceAreas(IAXIS, blkLev, &
                                   lbound(faceAreas), ubound(faceAreas), &
                                   faceAreas)
-           if (blkLev == 4 .AND. blockID == 28 .OR. &
-               blkLev == 3 .AND. blockID == 70) then
-           print*,'SHAPE (fluxx) IS',SHAPE (fluxx),' for blockID,blkLev=',blockID, blkLev
-           print*,'LBOUND(fluxx) IS',LBOUND(fluxx)
-           print*,'UBOUND(fluxx) IS',UBOUND(fluxx)
-!!$           print*,'SHAPE (fluxy) IS',SHAPE (fluxy),' for blockID,blkLev=',blockID, blkLev
-!!$           print*,'LBOUND(fluxy) IS',LBOUND(fluxy)
-!!$           print*,'UBOUND(fluxy) IS',UBOUND(fluxy)
-           print*,'SHAPE (faceA) IS',SHAPE (faceAreas),' for blockID,blkLev=',blockID, blkLev
-           print*,'LBOUND(faceA) IS',LBOUND(faceAreas)
-           print*,'UBOUND(faceA) IS',UBOUND(faceAreas)
-           print*,'SHAPE (areaL) IS',SHAPE (areaLeft),' for blockID,blkLev=',blockID, blkLev
-           print*,'LBOUND(areaL) IS',LBOUND(areaLeft)
-           print*,'UBOUND(areaL) IS',UBOUND(areaLeft)
-           print*,'areaL sx  :',areaLeft(sx,sy,sz)  ,fluxx(1,sx,sy,sz),fluxx(2,sx,sy,sz)
-           print*,'areaL ex+1:',areaLeft(ex+1,sy,sz),fluxx(1,ex+1,sy,sz),fluxx(2,ex+1,sy,sz)
-           end if
            do presVar = 1,nfluxes
               if (loCase4) then
                  where (areaLeft(sx,sy:ey,sz:ez).NE.0.0) &
@@ -241,11 +222,6 @@ subroutine Grid_conserveFluxes( axis, coarse_level)
                  fluxx(presVar,ex+1,sy:ey,sz:ez) = fluxx(presVar,ex+1,sy:ey,sz:ez) / areaLeft(ex+1,sy:ey,sz:ez)
               end if
            end do
-           if (blkLev == 4 .AND. blockID == 28 .OR. &
-               blkLev == 3 .AND. blockID == 70) then
-              print*,'AREAL SX  :',areaLeft(sx,sy,sz)  ,fluxx(1,sx,sy,sz),fluxx(2,sx,sy,sz)
-              print*,'AREAL EX+1:',areaLeft(ex+1,sy,sz),fluxx(1,ex+1,sy,sz),fluxx(2,ex+1,sy,sz)
-           end if
            deallocate(faceAreas)
         end if
      end if

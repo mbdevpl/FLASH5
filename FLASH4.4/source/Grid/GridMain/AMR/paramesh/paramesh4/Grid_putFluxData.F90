@@ -244,47 +244,19 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeftIGNORE)
            call Grid_getCellFaceAreas(IAXIS, blkLev, &
                                   lbound(faceAreas), ubound(faceAreas), &
                                   faceAreas)
-           if (blkLev == 4 .AND. blockID == 28 .OR. &
-               blkLev == 3 .AND. blockID == 70) then
-           print*,'SHAPE (fluxx) is',SHAPE (fluxx),' for blockID,blkLev=',blockID, blkLev
-           print*,'LBOUND(fluxx) is',LBOUND(fluxx)
-           print*,'UBOUND(fluxx) is',UBOUND(fluxx)
-!!$           print*,'SHAPE (fluxy) is',SHAPE (fluxy),' for blockID,blkLev=',blockID, blkLev
-!!$           print*,'LBOUND(fluxy) is',LBOUND(fluxy)
-!!$           print*,'UBOUND(fluxy) is',UBOUND(fluxy)
-           print*,'SHAPE (faceA) is',SHAPE (faceAreas),' for blockID,blkLev=',blockID, blkLev
-           print*,'LBOUND(faceA) is',LBOUND(faceAreas)
-           print*,'UBOUND(faceA) is',UBOUND(faceAreas)
-           print*,'SHAPE (areaL) is',SHAPE (areaLeft),' for blockID,blkLev=',blockID, blkLev
-           print*,'LBOUND(areaL) is',LBOUND(areaLeft)
-           print*,'UBOUND(areaL) is',UBOUND(areaLeft)
-           print*,'areaL sx  :',areaLeft(sx,sy,sz)  ,fluxx(1,sx,sy,sz),fluxx(2,sx,sy,sz)
-           print*,'areaL ex+1:',areaLeft(ex+1,sy,sz),fluxx(1,ex+1,sy,sz),fluxx(2,ex+1,sy,sz)
-           end if
            
            do presVar = 1,nfluxes
               if (.NOT.(surr_blks(1,1,1+K2D,1+K3D,blockID) > 0 .AND. &
                    surr_blks(3,1,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
-!!$                 print*,'flux_x L bef:',blockID,blkLev,presVar,flux_x(presVar,1,:,:,blockID)
                  where (areaLeft(sx,sy:ey,sz:ez).NE.0.0)
                     flux_x(presVar,1,:,:,blockID) = flux_x(presVar,1,:,:,blockID) * areaLeft(sx,sy:ey,sz:ez)
                  end where
-!!$                 print*,'flux_x L aft:',blockID,blkLev,presVar,flux_x(presVar,1,:,:,blockID)
               end if
               if (.NOT.(surr_blks(1,3,1+K2D,1+K3D,blockID) > 0 .AND. &
                    surr_blks(3,3,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
-!!$                 print*,'flux_x R bef:',blockID,blkLev,presVar,flux_x(presVar,2,:,:,blockID)
                  flux_x(presVar,2,:,:,blockID) = flux_x(presVar,2,:,:,blockID) * areaLeft(ex+1,sy:ey,sz:ez)
-!!$                 print*,'flux_x R aft:',blockID,blkLev,presVar,flux_x(presVar,2,:,:,blockID)
               end if
            end do
-           if (blkLev == 4 .AND. blockID == 28 .OR. &
-               blkLev == 3 .AND. blockID == 70) then
-!!$              print*,'AREAL SX  :',areaLeft(sx,sy,sz)  ,fluxx(1,sx,sy,sz),fluxx(2,sx,sy,sz)
-!!$              print*,'AREAL EX+1:',areaLeft(ex+1,sy,sz),fluxx(1,ex+1,sy,sz),fluxx(2,ex+1,sy,sz)
-              print*,'AREAL SX  :',areaLeft(sx,sy,sz)  ,flux_x(1,1,sy,sz,blockID),flux_x(2,1,sy,sz,blockID)
-              print*,'AREAL EX+1:',areaLeft(ex+1,sy,sz),flux_x(1,2,sy,sz,blockID),flux_x(2,2,sy,sz,blockID)
-           end if
            deallocate(faceAreas)
         end if
         
