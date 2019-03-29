@@ -96,7 +96,7 @@
 !!REORDER(4): fluxx,fluxy,fluxz
 !!REORDER(5): gr_xflx_[yz]face, gr_yflx_[xz]face, gr_zflx_[xy]face
 #include "Flash.h"
-subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
+subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeftIGNORE)
 
   use physicaldata, ONLY : flux_x, flux_y, flux_z, nfluxes
   use tree, ONLY : surr_blks, nodetype
@@ -104,7 +104,9 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   use gr_specificData, ONLY : gr_iloFl, gr_jloFl, gr_kloFl
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile, ONLY : Grid_tile_t
-  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator
+  use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator, &
+                             Grid_getCellFaceAreas
+  use Grid_data,      ONLY : gr_geometry
 #ifdef FLASH_HYDRO_UNSPLIT
 #if NDIM >=2
   use gr_specificData, ONLY : gr_xflx_yface, gr_yflx_xface
@@ -121,7 +123,7 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   integer, intent(IN) :: level
   integer, intent(IN),optional :: axis
   integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
-  real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
+  real, intent(IN), OPTIONAL :: areaLeftIGNORE(:,:,:)
   real,pointer, dimension(:,:,:,:) :: fluxx,fluxy,fluxz
 
   type(Grid_iterator_t) :: itor
@@ -134,7 +136,13 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
   integer,pointer,dimension(:) :: presP
   integer :: sx,ex,sy,ey,sz,ez
   logical :: xtrue,ytrue,ztrue
+  logical :: multFluxx,multFluxy,multFluxz !whether to multiply by area
   integer, dimension(MDIM) :: datasize
+  integer, dimension(MDIM) :: offs
+  integer                  :: offx, offy, offz
+  integer                  :: blkLev
+  real,allocatable,target :: faceAreas(:,:,:)
+  real,pointer            :: areaLeft(:,:,:)
 
   !! Dev - AD for AMReX, it should be if((level==1).or.(NFLUXES<1))return
   if(NFLUXES<1)return
@@ -167,6 +175,17 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
      ztrue = (axis==KAXIS)
   end if
   
+  select case (gr_geometry)
+  case(CARTESIAN)
+     multFluxx = .false.
+     multFluxy = .false.
+     multFluxz = .false.
+  case default
+     multFluxx = .TRUE.
+     multFluxy = .TRUE.
+     multFluxz = .TRUE.
+  end select
+
   call Grid_getTileIterator(itor, LEAF, level=level, tiling=.FALSE.)
 
   do while(itor%isValid())
@@ -176,9 +195,13 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
         CYCLE !Skip blocks at level 1.
      end if
      blockID=tileDesc%id
+     blkLev =tileDesc%level
      fluxx(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxx(:,:,:,:,blockID)
      fluxy(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxy(:,:,:,:,blockID)
      fluxz(1:,gr_iloFl:,gr_jloFl:,gr_kloFl:) => gr_flxz(:,:,:,:,blockID)
+
+     offs(:) = tileDesc%blkLimitsGC(LOW,1:MDIM) - 1
+     offx = offs(IAXIS); offy = offs(JAXIS); offz = offs(KAXIS)
 
      if(xtrue) then
         flux_x(:nfluxes,1,:,:,blockID) = fluxx(:,sx,sy:ey,sz:ez) 
@@ -197,21 +220,73 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
 !!$#endif
 !!$#endif
         
-        do np = 1,size(presP,1)
-           presVar = presP(np)
-           if (presVar > 0) then
+        ! With PARAMESH, there are four cases for the (same-level) neighbor in
+        ! a certain direction of a *LEAF* block at refinement level blkLev:
+        !
+        ! Case | surr_blks(1,...) | surr_blks(3,...)  || Description: what's there?
+        ! ======================= | ================= || ============================
+        ! i.   !      <= -20      |  [ LEAF ? ]       || domain boundary (non-PERIODIC)
+        ! ii.  |        -1        |  [  ignored  ]    || coarser block
+        ! iii. | neighBlkID > 0   |  1  (LEAF)        || same refinement leaf block
+        ! iv.  | neighBlkID > 0   |  2  (PARENT)      || finer blocks
+
+        ! * We copy to flux_{x,y,z} in cases i,ii,iii,iv (e.g., above)
+        ! * We multiply with face areas if
+        !   - other conditions are satisfied (geometry and direction), and
+        !   - face area is nonzero, and
+        !   - case is i, ii, or iv.
+
+        if (multFluxx) then
+
+           allocate(faceAreas(offx+sx:offx+ex+1,offy+sy:offy+ey,offz+sz:offz+ez))
+           areaLeft(sx:,sy:,sz:)  => faceAreas
+           
+           call Grid_getCellFaceAreas(IAXIS, blkLev, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
+           if (blkLev == 4 .AND. blockID == 28 .OR. &
+               blkLev == 3 .AND. blockID == 70) then
+           print*,'SHAPE (fluxx) is',SHAPE (fluxx),' for blockID,blkLev=',blockID, blkLev
+           print*,'LBOUND(fluxx) is',LBOUND(fluxx)
+           print*,'UBOUND(fluxx) is',UBOUND(fluxx)
+!!$           print*,'SHAPE (fluxy) is',SHAPE (fluxy),' for blockID,blkLev=',blockID, blkLev
+!!$           print*,'LBOUND(fluxy) is',LBOUND(fluxy)
+!!$           print*,'UBOUND(fluxy) is',UBOUND(fluxy)
+           print*,'SHAPE (faceA) is',SHAPE (faceAreas),' for blockID,blkLev=',blockID, blkLev
+           print*,'LBOUND(faceA) is',LBOUND(faceAreas)
+           print*,'UBOUND(faceA) is',UBOUND(faceAreas)
+           print*,'SHAPE (areaL) is',SHAPE (areaLeft),' for blockID,blkLev=',blockID, blkLev
+           print*,'LBOUND(areaL) is',LBOUND(areaLeft)
+           print*,'UBOUND(areaL) is',UBOUND(areaLeft)
+           print*,'areaL sx  :',areaLeft(sx,sy,sz)  ,fluxx(1,sx,sy,sz),fluxx(2,sx,sy,sz)
+           print*,'areaL ex+1:',areaLeft(ex+1,sy,sz),fluxx(1,ex+1,sy,sz),fluxx(2,ex+1,sy,sz)
+           end if
+           
+           do presVar = 1,nfluxes
               if (.NOT.(surr_blks(1,1,1+K2D,1+K3D,blockID) > 0 .AND. &
                    surr_blks(3,1,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
+!!$                 print*,'flux_x L bef:',blockID,blkLev,presVar,flux_x(presVar,1,:,:,blockID)
                  where (areaLeft(sx,sy:ey,sz:ez).NE.0.0)
                     flux_x(presVar,1,:,:,blockID) = flux_x(presVar,1,:,:,blockID) * areaLeft(sx,sy:ey,sz:ez)
                  end where
+!!$                 print*,'flux_x L aft:',blockID,blkLev,presVar,flux_x(presVar,1,:,:,blockID)
               end if
               if (.NOT.(surr_blks(1,3,1+K2D,1+K3D,blockID) > 0 .AND. &
                    surr_blks(3,3,1+K2D,1+K3D,blockID) == nodetype(blockID))) then
+!!$                 print*,'flux_x R bef:',blockID,blkLev,presVar,flux_x(presVar,2,:,:,blockID)
                  flux_x(presVar,2,:,:,blockID) = flux_x(presVar,2,:,:,blockID) * areaLeft(ex+1,sy:ey,sz:ez)
+!!$                 print*,'flux_x R aft:',blockID,blkLev,presVar,flux_x(presVar,2,:,:,blockID)
               end if
+           end do
+           if (blkLev == 4 .AND. blockID == 28 .OR. &
+               blkLev == 3 .AND. blockID == 70) then
+!!$              print*,'AREAL SX  :',areaLeft(sx,sy,sz)  ,fluxx(1,sx,sy,sz),fluxx(2,sx,sy,sz)
+!!$              print*,'AREAL EX+1:',areaLeft(ex+1,sy,sz),fluxx(1,ex+1,sy,sz),fluxx(2,ex+1,sy,sz)
+              print*,'AREAL SX  :',areaLeft(sx,sy,sz)  ,flux_x(1,1,sy,sz,blockID),flux_x(2,1,sy,sz,blockID)
+              print*,'AREAL EX+1:',areaLeft(ex+1,sy,sz),flux_x(1,2,sy,sz,blockID),flux_x(2,2,sy,sz,blockID)
            end if
-        end do
+           deallocate(faceAreas)
+        end if
         
      end if
      
@@ -230,9 +305,15 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
 !!$        gr_yflx_zface(:,:,:,2,blockID) = fluxy(:,sx:ex,sy+1:ey,ez)
 !!$#endif
 !!$#endif
-        do np = 1,size(presP,1)
-           presVar = presP(np)
-           if (presVar > 0) then
+        if (multFluxy) then
+           allocate(faceAreas(offx+sx:offx+ex,offy+sy:offy+ey+1,offz+sz:offz+ez))
+           areaLeft(sx:,sy:,sz:)  => faceAreas
+           
+           call Grid_getCellFaceAreas(JAXIS, blkLev, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
+
+           do presVar = 1,nfluxes
               if (.NOT.(surr_blks(1,2,1,1+K3D,blockID) > 0 .AND. &
                    surr_blks(3,2,1,1+K3D,blockID) == nodetype(blockID))) then
                  where (areaLeft(sx:ex,sy,sz:ez).NE.0.0)
@@ -246,8 +327,9 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
                     
                  end where
               end if
-           end if
-        end do
+           end do
+           deallocate(faceAreas)
+        end if
      end if
 #endif
      
@@ -265,9 +347,14 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
 !!$        gr_zflx_yface(:,:,1,:,blockID) = fluxz(:,sx:ex,sy,sz+1:ez)
 !!$        gr_zflx_yface(:,:,2,:,blockID) = fluxz(:,sx:ex,ey,sz+1:ez)
 !!$#endif
-        do np = 1,size(presP,1)
-           presVar = presP(np)
-           if (presVar > 0) then
+        if (multFluxz) then
+           allocate(faceAreas(offx+sx:offx+ex,offy+sy:offy+ey,offz+sz:offz+ez+1))
+           areaLeft(sx:,sy:,sz:)  => faceAreas
+           
+           call Grid_getCellFaceAreas(KAXIS, blkLev, &
+                                  lbound(faceAreas), ubound(faceAreas), &
+                                  faceAreas)
+           do presVar = 1,nfluxes
               if (.NOT.(surr_blks(1,2,2,1,blockID) > 0 .AND. &
                    surr_blks(3,2,2,1,blockID) == nodetype(blockID))) then
                  flux_z(presVar,:,:,1,blockID) = flux_z(presVar,:,:,1,blockID) * areaLeft(sx:ex,sy:ey,sz)
@@ -276,8 +363,9 @@ subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
                    surr_blks(3,2,2,3,blockID) == nodetype(blockID))) then
                  flux_z(presVar,:,:,2,blockID) = flux_z(presVar,:,:,2,blockID) * areaLeft(sx:ex,sy:ey,ez+1)
               end if
-           end if
-        end do
+           end do
+           deallocate(faceAreas)
+        end if
      end if
 #endif
      nullify(fluxx)
