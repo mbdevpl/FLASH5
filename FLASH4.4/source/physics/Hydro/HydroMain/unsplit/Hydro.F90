@@ -263,7 +263,11 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
         call Grid_releaseTileIterator(itor)
 
         if (hy_fluxCorrect .AND. (level > 1)) then
-           call Grid_putFluxData(level, pressureSlots=hy_fluxCorVars)
+           ! DEV: Determine if we need to allow for the flexibility of storing
+           !      a mixture of fluxes and flux densities here and at
+           !      Grid_conserveFluxes
+           !      call Grid_putFluxData(level, pressureSlots=hy_fluxCorVars)
+           call Grid_putFluxData(level)
         end if
 
         if ((level==maxLev) .AND. (.NOT. useTiling)) then
@@ -274,7 +278,7 @@ subroutine Hydro(simTime, dt, dtOld, sweeporder)
 
         if (hy_fluxCorrect) then
            call Timers_start("conserveFluxes")
-           call Grid_conserveFluxes(ALLDIR, level, pressureSlots=hy_fluxCorVars)
+           call Grid_conserveFluxes(ALLDIR, level)
            call Timers_stop("conserveFluxes")
         end if
 

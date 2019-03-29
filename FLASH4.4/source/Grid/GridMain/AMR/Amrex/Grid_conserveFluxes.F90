@@ -82,10 +82,11 @@ subroutine Grid_conserveFluxes(axis, coarse_level, isDensity)
     if (axis /= ALLDIR) then
         call Driver_abortFlash("[Grid_conserveFluxes] AMReX requires axis==ALLDIR")
     end if
-    ! DEV: Accept this for now as Hydro is calling it, but ignore the contents
-!    if (present(isDensity)) then
-!        call Driver_abortFlash("[Grid_conserveFluxes] isDensity not implemented")
-!    end if
+
+    ! DEV: Determine if this is needed for FLASH5 and implement if necessary. 
+    if (present(isDensity)) then
+        call Driver_abortFlash("[Grid_conserveFluxes] isDensity not implemented")
+    end if
     
     ! FLASH uses 1-based level index / AMReX uses 0-based index
     coarse = coarse_level - 1
