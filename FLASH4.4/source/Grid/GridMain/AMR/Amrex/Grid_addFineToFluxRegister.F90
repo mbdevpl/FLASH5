@@ -180,8 +180,10 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
           call tileDesc%getDataPtr(fluxData, FLUXX)
           lo(:) = lbound(fluxData)
           hi(:) = ubound(fluxData)
-          box%lo(:) = lo(1:MDIM) - 1
-          box%hi(:) = hi(1:MDIM) - 1
+          box%lo(:) = 1
+          box%hi(:) = 1
+          box%lo(1:NDIM) = lo(1:NDIM) - 1
+          box%hi(1:NDIM) = hi(1:NDIM) - 1
           box%nodal = [.TRUE., .FALSE., .FALSE.]
           call amrex_fab_build(fluxFabs(IAXIS), box, NFLUXES)    
           allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
@@ -234,8 +236,10 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
           call tileDesc%getDataPtr(fluxData, FLUXY)
           lo(:) = lbound(fluxData)
           hi(:) = ubound(fluxData)
-          box%lo(:) = lo(1:MDIM) - 1
-          box%hi(:) = hi(1:MDIM) - 1
+          box%lo(:) = 1
+          box%hi(:) = 1
+          box%lo(1:NDIM) = lo(1:NDIM) - 1
+          box%hi(1:NDIM) = hi(1:NDIM) - 1
           box%nodal = [.FALSE., .TRUE., .FALSE.]
           call amrex_fab_build(fluxFabs(JAXIS), box, NFLUXES)    
           allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
@@ -273,8 +277,10 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
           call tileDesc%getDataPtr(fluxData, FLUXZ)
           lo(:) = lbound(fluxData)
           hi(:) = ubound(fluxData)
-          box%lo(:) = lo(1:MDIM) - 1
-          box%hi(:) = hi(1:MDIM) - 1
+          box%lo(:) = 1
+          box%hi(:) = 1
+          box%lo(1:NDIM) = lo(1:NDIM) - 1
+          box%hi(1:NDIM) = hi(1:NDIM) - 1
           box%nodal = [.FALSE., .FALSE., .TRUE.]
           call amrex_fab_build(fluxFabs(KAXIS), box, NFLUXES)    
           allocate(faceAreas(lo(IAXIS):hi(IAXIS), &
