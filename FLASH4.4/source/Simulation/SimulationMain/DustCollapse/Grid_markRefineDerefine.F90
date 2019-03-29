@@ -49,7 +49,6 @@
 
 subroutine Grid_markRefineDerefine()
 
-  use Particles_interface, ONLY: Particles_sinkMarkRefineDerefine
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Grid_iterator,  ONLY : Grid_iterator_t
   use Grid_tile,      ONLY : Grid_tile_t
@@ -163,6 +162,7 @@ subroutine Grid_markRefineDerefine()
 
   call gr_markInRadius(sim_ictr, sim_jctr, sim_kctr, sim_initRad, lrefine_max)
 
+  nullify(solnData)
   call Grid_getTileIterator(itor, ACTIVE_BLKS, tiling=.FALSE.)
   do while(itor%isValid())
      call itor%currentTile(tileDesc)
@@ -254,7 +254,6 @@ subroutine Grid_markRefineDerefine()
        call gr_unmarkRefineByLogRadius(gr_lrefineCenterI,&
        gr_lrefineCenterJ,gr_lrefineCenterK)
   
-  call Particles_sinkMarkRefineDerefine()
 
   ! When the flag arrays are passed to Paramesh for processing, only leaf
   ! blocks should be marked. - KW

@@ -7,7 +7,7 @@
 !!
 !!  call Eos_wrapped(  integer(IN) :: mode,
 !!                     integer(IN) :: range(HIGH, MDIM),
-!!                     integer(IN) :: blockID,
+!!           pointer,real(:,:,:,:) :: solnData,
 !!            optional,integer(IN) :: gridDataStruct )
 !!
 !! DESCRIPTION
@@ -46,7 +46,7 @@
 !!          of block on which Eos is to be applies. The example shows how
 !!          the array describes the block section.
 !!
-!!   blockID: current block number
+!!   solnData : pointer to the state data on which EOS is to be applied
 !!
 !!   gridDataStruct : the grid data structure on whose data Eos is to be applied
 !!

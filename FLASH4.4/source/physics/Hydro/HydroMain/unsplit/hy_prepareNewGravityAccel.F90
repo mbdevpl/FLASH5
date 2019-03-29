@@ -57,9 +57,6 @@ subroutine hy_prepareNewGravityAccel(gcMaskLogged)
   use Logfile_interface, ONLY : Logfile_stampVarMask
   use Gravity_interface, ONLY : Gravity_potential
 
-#if defined(GRAVITY) && defined(GPOT_VAR)
-  use Particles_interface, ONLY : Particles_sinkAccelGasOnSinksAndSinksOnGas
-#endif
 
   use Hydro_data, ONLY : hy_useGravity,hy_useCosmology, &
                          hy_gpotAlreadyUpToDate, &
@@ -90,7 +87,7 @@ subroutine hy_prepareNewGravityAccel(gcMaskLogged)
         hy_gpotAlreadyUpToDate = (hy_gpotVar==GPOT_VAR)
         gcMask(hy_gpotVar) = .true.
         if (hy_useCosmology) then
-           call Particles_sinkAccelGasOnSinksAndSinksOnGas((/0,0,0/),accelVars=hy_extraAccelVars)
+!!$           call Particles_sinkAccelGasOnSinksAndSinksOnGas((/0,0,0/),accelVars=hy_extraAccelVars)
         else
 #ifdef SGAX_VAR
            if (hy_extraAccelVars(1).NE.SGAX_VAR .AND. hy_extraAccelVars(1)>0) &

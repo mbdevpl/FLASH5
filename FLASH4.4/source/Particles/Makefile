@@ -9,9 +9,7 @@ Particles +=  \
 	Particles_getLocalNum.o \
 	Particles_init.o \
 	Particles_initPositions.o \
-	Particles_longRangeForce.o \
 	Particles_putLocalNum.o \
-	Particles_shortRangeForce.o \
 	Particles_updateAttributes.o \
 	Particles_sendOutputData.o \
 	Particles_updateRefinement.o\
@@ -25,14 +23,5 @@ Particles +=  \
 	Particles_initData.o \
 	Particles_initForces.o \
 	Particles_manageLost.o \
-	Particles_addNew.o \
-	Particles_sinkAccelGasOnSinksAndSinksOnGas.o \
-	Particles_sinkAdvanceParticles.o \
-	Particles_sinkCreateAccrete.o \
-	Particles_sinkComputeDt.o \
-	Particles_sinkInit.o \
-	Particles_sinkMarkRefineDerefine.o \
-	Particles_sinkMoveParticles.o \
-	Particles_sinkSortParticles.o \
-	Particles_sinkSyncWithParticles.o \
-	Particles_clean.o 	
+	Particles_clean.o \
+	Particles_createDataStructs.o

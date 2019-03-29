@@ -12,6 +12,7 @@
 !!                           real, INTENT(in)    :: bndBox(2,MDIM),
 !!                           real, INTENT(in)    :: deltaCell(MDIM),
 !!                           real, pointer       :: solnVec(:,:,:,:),
+!!                           int  , INTENT(in)    :: blkLimits(LOW:HIGH,MDIM),
 !!                           real, INTENT(OUT)   :: partAttribVec(numAttrib))
 !!
 !! DESCRIPTION
@@ -51,6 +52,7 @@
 !!   pos       : The physical coordinates of the particle
 !!   bndBox    : the bounding box of the block containing the particle
 !!   deltaCell : the dx,dy,dz of the block
+!!   blkLimits : containes low and high index limits of the block (without GuardCells)
 !!   solnVec   : Pointer to the solution data block in which particle is found
 !!   partAttribVec  : calculated particle attribute values 
 !!
@@ -64,7 +66,7 @@
 !!***
 
 subroutine pt_mapFromMeshQuadratic (numAttrib, attrib, pos, bndBox,&
-     deltaCell,solnVec, partAttribVec)
+     deltaCell, blkLimits, solnVec, partAttribVec)
   
 
   implicit none
@@ -77,6 +79,7 @@ subroutine pt_mapFromMeshQuadratic (numAttrib, attrib, pos, bndBox,&
   integer, dimension(2, numAttrib),intent(IN) :: attrib
   real,dimension(MDIM), INTENT(in)    :: pos,deltaCell
   real, dimension(LOW:HIGH,MDIM), intent(IN) :: bndBox
+  integer,dimension(LOW:HIGH, MDIM), INTENT(in)    :: blkLimits
   real, pointer       :: solnVec(:,:,:,:)
   real,dimension(numAttrib), intent(OUT) :: partAttribVec
 

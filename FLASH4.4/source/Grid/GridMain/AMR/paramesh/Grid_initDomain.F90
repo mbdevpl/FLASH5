@@ -64,7 +64,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
        nchild, nfaces,&
        newchild, refine, derefine, stay, lnblocks
 
-  use Particles_interface, ONLY : Particles_updateRefinement
   use Simulation_interface, ONLY : Simulation_initRestart
   use IO_interface, ONLY : IO_getScalar, IO_writeCheckpoint
   use Timers_interface, ONLY : Timers_start, Timers_stop
@@ -130,7 +129,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
            call gr_updateData()
            if (gr_useParticles) then
               call Timers_start("updateParticleRefinement")
-              call Particles_updateRefinement(oldLocalNumBlocks)
               call Timers_stop("updateParticleRefinement")
            end if
         else
@@ -200,7 +198,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
         print*,'now the maximum refine is ',gr_maxRefine
         if (gr_useParticles) then
            call Timers_start("updateParticleRefinement")
-           call Particles_updateRefinement(oldLocalNumBlocks)
            call Timers_stop("updateParticleRefinement")
         end if
      end if

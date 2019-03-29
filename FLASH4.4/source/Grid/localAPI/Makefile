@@ -1,4 +1,4 @@
-Grid += gr_ptInterface.o gr_ptInit.o gr_ptMove.o\
+Grid += gr_ptInterface.o gr_ptInit.o gr_ptMove.o gr_ptMoveSieve.o\
         gr_ptFinalize.o gr_ptMarkRefineDerefine.o \
         gr_ptMoveOffBlk.o\
         gr_ptFillBlkParticleInfo.o gr_ensureValidNeighborInfo.o \
@@ -80,6 +80,7 @@ Grid += gr_forceDerefInRadius.o
 Grid += gr_markRefineDerefine.o gr_estimateBlkError.o
 
 Grid += gr_blockMatch.o
+Grid += gr_ptWritePCs.o
 
 gr_interface.o     : gr_interfaceTypeDecl.o
 gr_pfftInterface.o : gr_pfftInterfaceTypeDecl.o

@@ -78,7 +78,7 @@ module gr_interface
      end subroutine gr_findWhichChild
   end interface
 
-  interface
+  interface gr_findNeghID
      subroutine gr_findNeghID(block,pos,negh,neghID)
        use block_metadata, ONLY : block_metadata_t
        implicit none
@@ -87,7 +87,7 @@ module gr_interface
        integer,dimension(MDIM),intent(IN) :: negh
        integer,dimension(BLKNO:PROCNO),intent(OUT) :: neghID
      end subroutine gr_findNeghID
-  end interface
+  end interface gr_findNeghID
 
   interface
      subroutine gr_getCellFaceArea(xb,xe,yb,ye,zb,ze,face,blockDesc,dataBlock,beginCount)

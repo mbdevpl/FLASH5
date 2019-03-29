@@ -25,13 +25,19 @@ subroutine Grid_getCellVolumes(level, lo, hi, volumes)
                                    lo(JAXIS):hi(JAXIS), &
                                    lo(KAXIS):hi(KAXIS))
 
-   real, allocatable :: centerCoords(:)
+   real, allocatable :: centerCoords(:), rf(:)
+#if NDIM >= 2
+   real, allocatable :: thf(:)
+#endif
 
    real    :: deltas(1:MDIM)
+   real    :: cellvolume
    integer :: i, j, k
 
-   if (      (gr_geometry /= CARTESIAN) &
-       .AND. (gr_geometry /= CYLINDRICAL .OR. NDIM /= 2)) then
+   if (.NOT.(     (gr_geometry == CARTESIAN)                   &
+             .OR. (gr_geometry == SPHERICAL   .AND. NDIM < 3)  &
+             .OR. (gr_geometry == CYLINDRICAL .AND. NDIM == 2) &
+             )     ) then
      volumes(:, :, :) = 0.0
      call Driver_abortFlash("[Grid_getCellVolumes] Not tested yet")
    end if
@@ -81,6 +87,41 @@ subroutine Grid_getCellVolumes(level, lo, hi, volumes)
       end associate
 
       deallocate(centerCoords)
+
+   case (SPHERICAL)
+      allocate(rf          (lo(IAXIS):hi(IAXIS)+1))
+      call Grid_getCellCoords(IAXIS, FACES, level, lo, hi, rf  )
+#if NDIM >= 2
+      allocate(thf         (lo(JAXIS):hi(JAXIS)+1))
+      call Grid_getCellCoords(JAXIS, FACES, level, lo, hi, thf )
+#endif
+
+      associate(dr   => deltas(IAXIS), &
+                dPhi => deltas(KAXIS))
+         do       k = lo(KAXIS), hi(KAXIS)
+            do    j = lo(JAXIS), hi(JAXIS)
+               do i = lo(IAXIS), hi(IAXIS)
+                  cellvolume = dr *  &
+                        ( rf(i  ) *  rf(i  )  +  &
+                          rf(i  ) *  rf(i+1)  +  &
+                          rf(i+1) *  rf(i+1) )
+#if   NDIM == 1
+                  volumes(i, j, k) = cellvolume * 4.*PI/3.
+#elif NDIM == 2
+                  volumes(i, j, k) = cellvolume * ( cos(thf(i)) - cos(thf(i+1)) ) * 2.*PI/3.
+#elif NDIM == 3
+                  volumes(i, j, k) = cellvolume * ( cos(thf(i)) - cos(thf(i+1)) ) *   &
+                                     dPhi / 3.0
+#endif
+               end do
+            end do
+         end do
+      end associate
+
+      deallocate(rf)
+#if NDIM >= 2
+      deallocate(thf)
+#endif
    end select
 end subroutine Grid_getCellVolumes
 

@@ -360,4 +360,15 @@ module gr_ptInterface
      end subroutine gr_ptResetIndices
   end interface
 
+  interface
+    subroutine gr_ptWritePCs(fname, isCheckpoint)
+
+    implicit none
+
+    character(len=*), intent(IN) :: fname
+    logical,  intent(IN) :: isCheckpoint
+
+    end subroutine gr_ptWritePCs
+  end interface
+
 end module gr_ptInterface

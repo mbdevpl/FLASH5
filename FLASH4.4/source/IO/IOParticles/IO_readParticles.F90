@@ -36,9 +36,9 @@ subroutine IO_readParticles()
 
   use IOParticles_data, ONLY : useParticles
   use io_ptInterface, ONLY : io_ptReadParticleData
-  use Particles_interface, only: Particles_sinkSyncWithParticles
+!   use Particles_interface, only: Particles_sinkSyncWithParticles
   implicit none
 
   call io_ptReadParticleData()
-  call Particles_sinkSyncWithParticles(sink_to_part=.false.)
+!   call Particles_sinkSyncWithParticles(sink_to_part=.false.)
 end subroutine IO_readParticles

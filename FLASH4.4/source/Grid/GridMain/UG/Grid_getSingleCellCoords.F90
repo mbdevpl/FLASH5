@@ -67,6 +67,7 @@ subroutine Grid_getSingleCellCoords(ind, level, edge, coords)
   integer, intent(in)  :: edge
   real,    intent(out) :: coords(1:MDIM)
 
+  coords(:) = 0.0
   call Driver_abortFlash("[Grid_getSingleCellCoords] DEPRECATED")
 
 !#ifdef DEBUG_GRID

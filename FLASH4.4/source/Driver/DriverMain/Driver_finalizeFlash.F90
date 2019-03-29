@@ -19,8 +19,7 @@
 subroutine Driver_finalizeFlash()
 
   use Eos_interface, ONLY : Eos_finalize
-  use Driver_interface, ONLY : Driver_finalizeSourceTerms
-  use NSE_interface, ONLY: NSE_finalize
+  use Burn_interface, ONLY : Burn_finalize
   use RuntimeParameters_interface, ONLY : RuntimeParameters_finalize
   use Multispecies_interface, ONLY : Multispecies_finalize
   use Particles_interface, ONLY : Particles_finalize
@@ -28,12 +27,9 @@ subroutine Driver_finalizeFlash()
   use Hydro_interface, ONLY : Hydro_finalize
   use Driver_data, ONLY: dr_globalMe, dr_restart
   use Simulation_interface, ONLY : Simulation_finalize
-  use ProtonImaging_interface, ONLY : ProtonImaging_finalize
-  use ProtonEmission_interface, ONLY : ProtonEmission_finalize
   use IO_interface, ONLY : IO_finalize
   use Timers_interface, ONLY: Timers_finalize
   use Gravity_interface, ONLY: Gravity_finalize
-  use IncompNS_interface, ONLY: IncompNS_finalize
 implicit none
 #include "mpif.h"
 
@@ -46,9 +42,7 @@ implicit none
 
   call Multispecies_finalize()
 
-  call Driver_finalizeSourceTerms( dr_restart) ! some of these exist only as stubs
-
-  call NSE_finalize()             ! NSE material property
+  call Burn_finalize()             ! NSE material property
 
   call Grid_finalize()            ! Grid package
  
@@ -58,14 +52,7 @@ implicit none
   
   call Eos_finalize()             ! Equation of State
 
-  call ProtonImaging_finalize()   ! Proton Imaging
-
-  call ProtonEmission_finalize()  ! Proton Emission
-
   call Gravity_finalize()         ! Gravity
-
-  call IncompNS_finalize()        ! INS 
-
   call IO_finalize()
 
   call Simulation_finalize()

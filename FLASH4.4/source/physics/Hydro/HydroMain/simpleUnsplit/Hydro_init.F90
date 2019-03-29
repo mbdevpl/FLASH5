@@ -133,9 +133,11 @@ Subroutine Hydro_init()
 
 
   !! Non-ideal diffusions ------------------------------------------------------
-  call RuntimeParameters_get("useViscosity",    hy_useViscosity)
-  call RuntimeParameters_get("useConductivity", hy_useConductivity)
-
+!!$  call RuntimeParameters_get("useViscosity",    hy_useViscosity)
+!!$  call RuntimeParameters_get("useConductivity", hy_useConductivity)
+  hy_useViscosity=.false.
+  hy_useConductivity=.false.
+  
   hy_useDiffuse = .false.
   if (hy_useViscosity .or. hy_useConductivity) then
      hy_useDiffuse = .true.

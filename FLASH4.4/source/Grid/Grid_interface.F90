@@ -172,9 +172,9 @@ Module Grid_interface
 
   interface Grid_getBlkCenterCoords
      subroutine Grid_getBlkCenterCoords(blockDesc,blockCenter)
-       use block_metadata, ONLY : block_metadata_t
+       use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       type(block_metadata_t), intent(in) :: blockDesc
+       type(Grid_tile_t), intent(in) :: blockDesc
        real, dimension(MDIM), intent(out) :: blockCenter
      end subroutine Grid_getBlkCenterCoords
   end interface
@@ -586,8 +586,21 @@ Module Grid_interface
      end subroutine Grid_sortParticles
   end interface
 
-  interface
-     subroutine Grid_mapMeshToParticles (particles, part_props,part_blkID,&
+  interface Grid_mapMeshToParticles
+     subroutine Grid_mapMeshToParticles_pc (ptContainerPos, part_props,part_blkID,&
+                                         posAttrib,&
+                                         numAttrib, attrib,&
+                                         mapType,gridDataStruct)
+       implicit none
+       integer, INTENT(in) :: ptContainerPos, part_props, part_blkID
+       integer, intent(IN) :: numAttrib
+       integer, dimension(PART_ATTR_DS_SIZE,numAttrib),INTENT(in) :: attrib
+       integer,dimension(MDIM), intent(IN) :: posAttrib
+       integer, INTENT(IN) :: mapType
+       integer, optional, intent(IN) :: gridDataStruct
+     end subroutine Grid_mapMeshToParticles_pc
+
+      subroutine Grid_mapMeshToParticles (particles, part_props,part_blkID,&
                                          numParticles,&
                                          posAttrib,&
                                          numAttrib, attrib,&
