@@ -98,16 +98,15 @@
 !!   hy_sweep
 !!***
 
-subroutine Grid_putFluxData(level, axis, pressureSlots, areaLeft)
+#include "Flash.h"
+
+subroutine Grid_putFluxData(level, axis, pressureSlots)
 
   implicit none
-
-#include "Flash.h"
 
   integer, intent(IN) :: level
   integer, intent(IN),optional :: axis
   integer, intent(IN), OPTIONAL,target :: pressureSlots(:)
-  real, intent(IN), OPTIONAL :: areaLeft(:,:,:)
 
   return
 end subroutine Grid_putFluxData

@@ -66,9 +66,7 @@ subroutine gr_writeData(stepno, t_new, argBaseName)
     call amrex_write_plotfile(filename, nlevs, unk, varname, amrex_geom, &
                               t_new, stepno_arr, amrex_ref_ratio)
 
-
     call gr_ptWritePCs(filename, .true.)
-
 
 #if(NFACE_VARS > 0)
     deallocate(varname)

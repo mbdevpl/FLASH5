@@ -220,18 +220,24 @@ subroutine Grid_init()
   ! DEV: Unable to set an upper limit on these runtime parameters using
   ! N[XYZ]B.  Therefore, we are checking here.
   if (gr_tileSize(IAXIS) > NXB) then
-      print*,'WARNING: Tile size along x-axis cannot exceed block size along x'
-      print*,'         Setting tile size to block size in x'
+      if (gr_meshMe==MASTER_PE) then
+         print*,'WARNING: Tile size along x-axis cannot exceed block size along x'
+         print*,'         Setting tile size to block size in x'
+      end if
       gr_tileSize(IAXIS) = NXB
   end if
   if (gr_tileSize(JAXIS) > NYB) then
-      print*,'WARNING: Tile size along y-axis cannot exceed block size along y'
-      print*,'         Setting tile size to block size in y'
+      if (gr_meshMe==MASTER_PE) then
+         print*,'WARNING: Tile size along y-axis cannot exceed block size along y'
+         print*,'         Setting tile size to block size in y'
+      end if
       gr_tileSize(JAXIS) = NYB
   end if
   if (gr_tileSize(KAXIS) > NZB) then
-      print*,'WARNING: Tile size along z-axis cannot exceed block size along z'
-      print*,'         Setting tile size to block size in z'
+      if (gr_meshMe==MASTER_PE) then
+         print*,'WARNING: Tile size along z-axis cannot exceed block size along z'
+         print*,'         Setting tile size to block size in z'
+      end if
       gr_tileSize(KAXIS) = NZB
   end if
 

@@ -54,6 +54,10 @@ module block_1lev_iterator
         integer,              private          :: level    = INVALID_LEVEL
         logical,              private          :: isValid  = .FALSE.
         integer,              private          :: finest_grid_level
+        ! DEV: FIXME This dummy parameter has been placed into the class due to
+        !      an internal compiler error with GNU Fortran 6.4.0.
+        !      This workaround was found online in relation to the particular
+        !      error message and happily worked (See Issue 93).
         integer,              allocatable      :: dummy
     contains
         procedure, public :: is_valid
