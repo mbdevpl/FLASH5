@@ -1,3 +1,10 @@
+NOTE - The following contents represent, for historical purposes,
+the Release Notes of FLASH 4.4, which is the FLASH4 version on
+which the current FLASH5 code has been based.
+
+THESE NOTES HAVE NOT BEEN UPDATED FOR FLASH5 CHANGES.
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!  New in FLASH 4.4 (since FLASH 4.3) - October 2016  !!!!! 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -770,7 +777,7 @@ and continues to be funded by DOE NNSA and NSF.  We
 acknowledge support received from Lawrence Livermore National
 Laboratory and the University of Chicago.
 
-All publications resulting from the use of the FLASH Code must
+All publications resulting from the use of the FLASH 4 Code must
 acknowledge the Flash Center for Computational Science.
   Addition of the following text to the paper acknowledgments
 will be sufficient.
