@@ -9,7 +9,7 @@
 !!
 !!  call Gravity_accelOneRow(integer(IN)  :: pos(2),
 !!                           integer(IN)  :: sweepDir,
-!!                           integer(IN)  :: tileDesc,
+!!                           Grid_tile_t(IN)  :: tileDesc,
 !!                           integer(IN)  :: numCells,
 !!                           real(INOUT)  :: grav(numCells),
 !!                           integer(IN),optional :: potentialIndex,

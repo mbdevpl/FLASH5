@@ -12,8 +12,7 @@
 !!                             integer(in) :: face,
 !!                             real(in)    :: cellCenterSweepCoord(*),
 !!                             real(in)    :: secondCoord,
-!!                             real(in)    :: thirdCoord,
-!!                             integer(in),OPTIONAL :: blockHandle)
+!!                             real(in)    :: thirdCoord)
 !!  
 !!                    
 !!  
@@ -84,17 +83,6 @@
 !!                         of this interface should not attempt to access them) if
 !!                         they do not make sense based on the dimensionality of
 !!                         the problem.
-!!  blockHandle - Handle for the block for which guardcells are to be filled.
-!!              This may be a block actually residing on the local processor,
-!!              or the handle may refer to a block that belong to a remote processor
-!!              but for which cached information is currently available locally.
-!!              The two cases can be distinguished by checking whether 
-!!              (blockHandle .LE. MAXBLOCKS): this is true only for blocks that
-!!              reside on the executing processor.
-!!              The block ID is available for passing on to some handlers for 
-!!              boundary conditions that may need it, ignored in the default 
-!!              implementation.
-!!
 !!
 !!  NOTES 
 !!
@@ -117,15 +105,13 @@
 #endif
 
 subroutine Grid_applyBCEdgeAllUnkVars(bcType,bcDir,guard,dataRow,face,&
-     cellCenterSweepCoord, secondCoord,thirdCoord, blockHandle)
+     cellCenterSweepCoord, secondCoord,thirdCoord)
   implicit none
 #include "Flash.h"
 
   integer,intent(IN):: bcType,bcDir,guard,face
   real,dimension(2*guard,NUNK_VARS),intent(INOUT)::dataRow
   real,intent(IN):: cellCenterSweepCoord(*), secondCoord,thirdCoord
-  integer,intent(IN),OPTIONAL:: blockHandle
-
 
   return
 end subroutine Grid_applyBCEdge

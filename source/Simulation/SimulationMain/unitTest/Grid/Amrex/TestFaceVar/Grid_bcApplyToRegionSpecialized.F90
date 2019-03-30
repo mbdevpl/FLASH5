@@ -4,23 +4,23 @@
 !!  Grid_bcApplyToRegionSpecialized
 !!
 !! SYNOPSIS
-!!  call Grid_bcApplyToRegionSpecialized(integer(IN)          :: bcType, 
-!!                                       integer(IN)          :: gridDataStruct,
-!!                                       integer(IN)          :: guard,
-!!                                       integer(IN)          :: axis,
-!!                                       integer(IN)          :: face,
-!!                                       real(INOUT)          :: regionData(regionSize(BC_DIR),
-!!                                                                          regionSize(SECOND_DIR), 
-!!                                                                          regionSize(THIRD_DIR),
-!!                                                                          regionSize(STRUCTSIZE))
-!!                                       integer(IN)          :: regionSize(REGION_DIM),
-!!                                       logical(IN)          :: mask(STRUCTSIZE),
-!!                                       logical(OUT)         :: applied,
-!!                                       block_metadata_t(IN) :: blockDesc,
-!!                                       integer(IN)          :: secondDir,
-!!                                       integer(IN)          :: thirdDir,
-!!                                       integer(IN)          :: endPoints(LOW:HIGH, MDIM),
-!!                             optional, integer(IN)          :: idest)
+!!  call Grid_bcApplyToRegionSpecialized(integer(IN)  :: bcType, 
+!!                                       integer(IN)  :: gridDataStruct,
+!!                                       integer(IN)  :: level,
+!!                                       integer(IN)  :: guard,
+!!                                       integer(IN)  :: axis,
+!!                                       integer(IN)  :: face,
+!!                                       real(INOUT)  :: regionData(regionSize(BC_DIR),
+!!                                                                  regionSize(SECOND_DIR), 
+!!                                                                  regionSize(THIRD_DIR),
+!!                                                                  regionSize(STRUCTSIZE))
+!!                                       integer(IN)  :: regionSize(REGION_DIM),
+!!                                       logical(IN)  :: mask(STRUCTSIZE),
+!!                                       logical(OUT) :: applied,
+!!                                       integer(IN)  :: secondDir,
+!!                                       integer(IN)  :: thirdDir,
+!!                                       integer(IN)  :: endPoints(LOW:HIGH, MDIM),
+!!                             optional, integer(IN)  :: idest)
 !!
 !! DESCRIPTION
 !!  This is a custom routine for assigning data to the face-centered data that
@@ -43,27 +43,24 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
+subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, level, &
                                            guard, axis, face, &
                                            regionData, regionSize, &
                                            mask, applied, &
-                                           blockDesc, &
-                                           secondDir, thirdDir, &
+                                           axis2, axis3, &
                                            endPoints, idest)
   use Grid_data,        ONLY : gr_globalDomain 
-  use Grid_interface,   ONLY : Grid_getBlkBC, &
-                               Grid_getSingleCellCoords, &
-                               Grid_getBlkBoundBox, &
-                               Grid_getDeltas
-  use block_metadata,   ONLY : block_metadata_t
+  use Grid_interface,   ONLY : Grid_getDeltas
+  use gr_interface,     ONLY : gr_getRegionDataCoordinates
 
   implicit none
 
   integer,                intent(IN)           :: bcType
+  integer,                intent(IN)           :: gridDataStruct
+  integer,                intent(IN)           :: level
+  integer,                intent(IN)           :: guard
   integer,                intent(IN)           :: axis
   integer,                intent(IN)           :: face
-  integer,                intent(IN)           :: guard
-  integer,                intent(IN)           :: gridDataStruct
   integer,                intent(IN)           :: regionSize(REGION_DIM)
   real,                   intent(INOUT)        :: regionData(regionSize(BC_DIR),     &
                                                              regionSize(SECOND_DIR), &
@@ -71,20 +68,18 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
                                                              regionSize(STRUCTSIZE))
   logical,                intent(IN)           :: mask(regionSize(STRUCTSIZE))
   logical,                intent(OUT)          :: applied
-  type(block_metadata_t), intent(IN)           :: blockDesc
-  integer,                intent(IN)           :: secondDir,thirdDir
+  integer,                intent(IN)           :: axis2, axis3
   integer,                intent(IN)           :: endPoints(LOW:HIGH, MDIM)
   integer,                intent(IN), OPTIONAL :: idest
 
   integer :: i, j, k, var
-  integer :: axis2, axis3
   logical :: isOnBoundary
   logical :: containsBoundary(LOW:HIGH, 1:MDIM)
 
   real    :: x0(1:MDIM)
   real    :: blkBounds(LOW:HIGH, 1:MDIM)
   real    :: deltas(1:MDIM)
-  real    :: coord(1:MDIM)
+  real, allocatable :: coordinates(:,:,:,:)
 
 #ifdef DEBUG_GRID
   write(*,*) "Specialized BC Handling"
@@ -114,11 +109,20 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
   end if
   write(*,*) "NGUARD = ", guard
 
-  write(*,*) "Box Low:       ", blockDesc%limits(LOW, :)
-  write(*,*) "Box High:      ", blockDesc%limits(HIGH, :)
+  write(*,*) "endPoints Low:       ", endPoints(LOW, :)
+  write(*,*) "endPoints High:      ", endPoints(HIGH, :)
 #endif
 
-  call Grid_getBlkBoundBox(blockDesc, blkBounds)
+  call Grid_getDeltas(level, deltas)
+
+  blkBounds(:, :) = 1.0
+  x0(:) = gr_globalDomain(LOW, :)
+  associate(lo   => endPoints(LOW,  :), &
+            hi   => endPoints(HIGH, :))
+    blkBounds(LOW,  1:NDIM) = x0(1:NDIM) + (lo(1:NDIM) - 1)*deltas(1:NDIM)
+    blkBounds(HIGH, 1:NDIM) = x0(1:NDIM) + (hi(1:NDIM)    )*deltas(1:NDIM)
+  end associate 
+
   associate(lo => blkBounds(LOW,  :), &
             hi => blkBounds(HIGH, :))
     ! DEV: TODO These should be made inexact
@@ -141,8 +145,6 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
   ! Update data on boundary to see if it is being correctly transferred
   ! back to data structures
   if (isOnBoundary) then
-    call Grid_getSingleCellCoords([1,1,1], blockDesc, CENTER, INTERIOR, x0)
-    call Grid_getDeltas(blockDesc%level, deltas)
 
     ! Set all face-centered values on domain boundary to zero.  Those
     ! coplanar to, but not on the boundary are considered guardcells
@@ -152,36 +154,25 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
       i = regionSize(BC_DIR) - NGUARD
     end if
 
+    allocate(coordinates(SIZE(regionData, 1), &
+                         SIZE(regionData, 2), &
+                         SIZE(regionData, 3), &
+                         1:MDIM))
+
+    call gr_getRegionDataCoordinates(level, gridDataStruct, &
+                                     axis, axis2, axis3, &
+                                     regionSize, endPoints, &
+                                     coordinates)
+
     do     var = 1, regionSize(STRUCTSIZE)
       do     k = 1, regionSize(THIRD_DIR)
         do   j = 1, regionSize(SECOND_DIR)
-          ! Determine location of current face in global index space
-          if      (axis == IAXIS) then
-            coord(IAXIS) = x0(IAXIS) + (i - 1.5)*deltas(IAXIS)
-            coord(JAXIS) = x0(JAXIS) + (j - 1.0)*deltas(JAXIS)
-            coord(KAXIS) = x0(KAXIS) + (k - 1.0)*deltas(KAXIS)
-            axis2 = JAXIS
-            axis3 = KAXIS
-          else if (axis == JAXIS) then
-            coord(IAXIS) = x0(IAXIS) + (j - 1.0)*deltas(IAXIS)
-            coord(JAXIS) = x0(JAXIS) + (i - 1.5)*deltas(JAXIS)
-            coord(KAXIS) = x0(KAXIS) + (k - 1.0)*deltas(KAXIS)
-            axis2 = IAXIS
-            axis3 = KAXIS
-          else
-            coord(IAXIS) = x0(IAXIS) + (j - 1.0)*deltas(IAXIS)
-            coord(JAXIS) = x0(JAXIS) + (k - 1.0)*deltas(JAXIS)
-            coord(KAXIS) = x0(KAXIS) + (i - 1.5)*deltas(KAXIS)
-            axis2 = IAXIS
-            axis3 = JAXIS
-          end if
-
           ! By construction, the face is coplanar to boundary.  Check if
           ! it is actually on boundary.
-          if (      (gr_globalDomain(LOW,  axis2) <= coord(axis2)) &
-              .AND. (coord(axis2) <= gr_globalDomain(HIGH, axis2)) &
-              .AND. (gr_globalDomain(LOW,  axis3) <= coord(axis3)) &
-              .AND. (coord(axis3) <= gr_globalDomain(HIGH, axis3))) then
+          if (      (gr_globalDomain(LOW,  axis2) <= coordinates(i,j,k,axis2)) &
+              .AND. (coordinates(i,j,k,axis2) <= gr_globalDomain(HIGH, axis2)) &
+              .AND. (gr_globalDomain(LOW,  axis3) <= coordinates(i,j,k,axis3)) &
+              .AND. (coordinates(i,j,k,axis3) <= gr_globalDomain(HIGH, axis3))) then
             regionData(i, j, k, var) = 0.0
           else
             regionData(i, j, k, var) = 1.1 * var
@@ -189,6 +180,8 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType, gridDataStruct, &
         end do
       end do
     end do
+
+    deallocate(coordinates)
   end if
 
   ! Write data to points outside of domain and its boundary
