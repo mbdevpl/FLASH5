@@ -71,12 +71,14 @@
 !!***
 
 #include "Flash.h"
+#include "constants.h"
 
 subroutine Grid_moveParticles(dataBuf, propCount, maxCount, localCount, &
      index_list,indexCount,&
      coords_in_blk)
 
   use Particles_data, ONLY : pt_containers
+  use Grid_data,      ONLY : gr_globalMe
 
   implicit none
 
@@ -91,7 +93,7 @@ subroutine Grid_moveParticles(dataBuf, propCount, maxCount, localCount, &
   integer :: i
   
   do i=1, NPART_TYPES
-    print*, "[Grid_moveParticles] Redistributing particles in container ", i
+    if(gr_globalMe==MASTER_PE) print*, "[Grid_moveParticles] Redistributing particles in container ", i
     call pt_containers(i)%redistribute()
   end do
 end subroutine Grid_moveParticles
