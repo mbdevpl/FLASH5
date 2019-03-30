@@ -41,8 +41,11 @@ xmax		= 0.5
 ymin		= -0.5
 ymax		= 0.5
 
-sim_smallestNormRadius = 0.16
-#sim_largestNormRadius  = 1.0
+# Log integral quantities using all levels and all cells
+sim_oneLevelIntegralsOnly = .FALSE.
+sim_smallestNormRadius = -1.0
+sim_largestNormRadius  =  1.0e20
+
 sim_earliestLSTime     = 0.021
 sim_latestLSTime       = 0.026
 
@@ -62,6 +65,9 @@ zr_boundary_type = "periodic"
 
 cfl		= 0.8
 #hy_cflFallbackFactor           = 0.9
+
+flux_correct = .TRUE.
+
 basenm   = "sedov_"
 restart  = .false.
 
@@ -103,6 +109,9 @@ plot_var_10 = "enra"
 plot_var_11 = "temp"
 
 #  Adaptive Grid refinement parameters
+# Fix derefine_cutoff=refine_cutoff for all refinement
+# variables so that we can do a better direct comparison
+# of AMReX- and Paramesh-generated results
 lrefine_max       = 5
 lrefine_min     = 1
 #lrefine_min_init     = 1
@@ -110,6 +119,8 @@ refine_var_1      = "dens"
 refine_var_2      = "pres"
 refine_cutoff_1   = 0.1
 derefine_cutoff_1 = 0.1
+refine_cutoff_2   = 0.1
+derefine_cutoff_2 = 0.1
 #sim_forceCenterDerefine   = .TRUE.
 #sim_centerRefineLevel     = 1
 #sim_derefineRadius     = 0.12
@@ -118,10 +129,7 @@ nblockx                        = 1
 nblocky                        = 2
 #nblockz                        = 1
 
-gr_useTiling = .TRUE.
-gr_tileSizeX = 4
-gr_tileSizeY = 2
-gr_tileSizeZ = 1
+gr_useTiling = .FALSE.
 
 # Uniform Grid specific parameters 
 iGridSize =  256  #global number of gridpoints along x, excluding gcells

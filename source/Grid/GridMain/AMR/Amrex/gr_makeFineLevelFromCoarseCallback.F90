@@ -72,7 +72,8 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     use Grid_data,                 ONLY : gr_doFluxCorrection, &
                                           gr_amrexDidRefinement, &
                                           gr_interpolator, &
-                                          lo_bc_amrex, hi_bc_amrex
+                                          lo_bc_amrex, hi_bc_amrex, &
+                                          gr_meshMe
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_preinterpolationWork, &
                                           gr_postinterpolationWork, &
@@ -202,7 +203,9 @@ subroutine gr_makeFineLevelFromCoarseCallback(lev, time, pba, pdm) bind(c)
     end do
     call amrex_mfiter_destroy(mfi)
 
-    write(*,'(A,I0,A,I0,A)') "Made fine level ", lev + 1, " - ", nFab, " blocks"
+    if (gr_meshMe == MASTER_PE) then
+       write(*,'(A,I0,A,I0,A)') "Made fine level ", lev + 1, " - ", nFab, " blocks"
+    end if
 
 end subroutine gr_makeFineLevelFromCoarseCallback
 
