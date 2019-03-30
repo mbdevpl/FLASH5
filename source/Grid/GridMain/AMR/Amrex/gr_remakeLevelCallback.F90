@@ -86,7 +86,8 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     use Grid_data,                 ONLY : lo_bc_amrex, hi_bc_amrex, &
                                           gr_amrexDidRefinement, &
                                           gr_doFluxCorrection, &
-                                          gr_interpolator
+                                          gr_interpolator, &
+                                          gr_meshMe
     use gr_amrexInterface,         ONLY : gr_clearLevelCallback, &
                                           gr_preinterpolationWork, &
                                           gr_postinterpolationWork, &
@@ -285,7 +286,9 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     end if
 #endif
 
-    write(*,'(A,I0,A,I0,A)') "Remade level ", (lev+1), " - ", nFab, " blocks"
+    if (gr_meshMe == MASTER_PE) then
+       write(*,'(A,I0,A,I0,A)') "Remade level ", (lev+1), " - ", nFab, " blocks"
+    end if
 
 end subroutine gr_remakeLevelCallback
 
