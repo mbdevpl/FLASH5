@@ -8,3 +8,8 @@ An alpha version of the rearchitected FLASH multiphysics, multiscale simulation 
    * Many interfaces for querying the Grid unit are deprecated in favor of making the corresponding information available through the iterators and block/tile objects.
    * Knowledge about blocks and mesh is further abstracted away from physics units. There is no entity called "blockID" unlike in FLASH4. Any paramesh functionality depending upon the knowledge of blockID is now internal to the paramesh implementation of the Grid unit.
 
+Some current known limitations are:
+* Restarting from checkpoints doesn't work.
+* Non-trival tiling only works with AMReX. 
+* Threading with OpenMPI does not work with Paramesh.
+* Threading with OpenMPI is not properly tested.
