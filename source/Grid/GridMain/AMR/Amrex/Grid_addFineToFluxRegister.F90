@@ -302,7 +302,7 @@ subroutine Grid_addFineToFluxRegister(fine_level, isDensity, coefficient, &
                       end if
 #endif
                       fabData(i, j, k, var) =    fluxData(i, j, k, var) &
-                                              * faceAreas(i, j, k) &
+                                              * faceAreas(i, j, k)
                    end do
                 end do
              end do
