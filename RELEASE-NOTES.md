@@ -13,3 +13,4 @@ Some current known limitations are:
 * Non-trival tiling only works with AMReX. 
 * Threading with OpenMPI does not work with Paramesh.
 * Threading with OpenMPI is not properly tested.
+* Masked guard cell filling only works with Paramesh.
