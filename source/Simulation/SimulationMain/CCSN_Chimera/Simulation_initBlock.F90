@@ -7,7 +7,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Simulation_initBlock(integer(IN) :: blockID)
+!!  call Simulation_initBlock(Grid_tile_t(IN) :: tileDesc)
 !!                       
 !!
 !! DESCRIPTION
@@ -16,7 +16,7 @@
 !!
 !! ARGUMENTS
 !!
-!!  blockID - my block number
+!!  tileDesc -           describes the block (or tile) to initialize
 !!
 !! NOTES
 !!  
@@ -29,19 +29,19 @@
 
 !!REORDER(4): solnData
 
-subroutine Simulation_initBlock(solnData,block)
+subroutine Simulation_initBlock(solnData, tileDesc)
 
-  use Simulation_data
   use Driver_interface, ONLY : Driver_abortFlash
+  use Grid_tile, ONLY : Grid_tile_t
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
-       Grid_getCellCoords, Grid_getDeltas, Grid_getBlkPtr, &
-       Grid_putPointData, &
-       Grid_releaseBlkPtr, Grid_getGeometry, Grid_renormAbundance
+       Grid_getCellCoords, Grid_getDeltas, &
+       Grid_getGeometry
   use Eos_interface, ONLY : Eos_wrapped, Eos_getAbarZbar, Eos
   use Multispecies_interface, ONLY : Multispecies_getSumFrac,  Multispecies_getSumInv
+
+  use Simulation_data
   use chimera_model_module
   use model_interp_module
-  use block_metadata, ONLY : block_metadata_t
 
   implicit none
 
@@ -51,7 +51,7 @@ subroutine Simulation_initBlock(solnData,block)
 #include "Multispecies.h"
 
   real,dimension(:,:,:,:),pointer :: solnData
-  type(block_metadata_t), intent(in) :: block
+  type(Grid_tile_t), intent(in)   :: tileDesc
 
   integer :: blockID
   real, allocatable, dimension(:) :: xCenter, xLeft, xRight
@@ -62,10 +62,11 @@ subroutine Simulation_initBlock(solnData,block)
 
   real, dimension(EOS_NUM) :: eosData
 
-  integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM) :: blkLimits
   integer, dimension(MDIM) :: rigid_axis
   integer :: iSize, jSize, kSize
   integer :: iSizeGC, jSizeGC, kSizeGC
+  integer :: level
 
   integer :: meshGeom
 
@@ -81,35 +82,27 @@ subroutine Simulation_initBlock(solnData,block)
   real :: radCenterVol, thtCenterVol, phiCenterVol
 
 !!$#ifndef FLASH_GRID_AMREX
-!!$  blockID = block%id    ! Maybe useful for debugging
+!!$  blockID = tileDesc%id    ! Maybe useful for debugging
 !!$#endif
-  blkLimits = block%limits
-  blkLimitsGC = block%limitsGC
-
-  iSizeGC = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
-  jSizeGC = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
-  kSizeGC = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
-
-  iSize = blkLimits(HIGH,IAXIS)-blkLimits(LOW,IAXIS)+1
-  jSize = blkLimits(HIGH,JAXIS)-blkLimits(LOW,JAXIS)+1
-  kSize = blkLimits(HIGH,KAXIS)-blkLimits(LOW,KAXIS)+1
+  blkLimits = tileDesc%limits
+  level     = tileDesc%level
 
   !! allocate all needed space
-  allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-  allocate(xLeft(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-  allocate(xRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-  allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-  allocate(yLeft(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-  allocate(yRight(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-  allocate(zCenter(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-  allocate(zLeft(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-  allocate(zRight(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+  allocate(xCenter(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)))
+  allocate(xLeft  (blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)))
+  allocate(xRight (blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)))
+  allocate(yCenter(blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)))
+  allocate(yLeft  (blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)))
+  allocate(yRight (blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)))
+  allocate(zCenter(blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
+  allocate(zLeft  (blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
+  allocate(zRight (blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
 
   xCenter(:) = 0.e0
   yCenter(:) = 0.e0
   zCenter(:) = 0.e0
 
-  call Grid_getDeltas(block%level, delta)
+  call Grid_getDeltas(level, delta)
   dx = delta(IAXIS)
   dy = delta(JAXIS)
   dz = delta(KAXIS)
@@ -117,17 +110,17 @@ subroutine Simulation_initBlock(solnData,block)
 ! call Grid_getBlkPtr(blockID,solnData,CENTER)
   call Grid_getGeometry(meshGeom)
 
-  call Grid_getCellCoords(IAXIS,block,CENTER,    .true.,xCenter,iSizeGC)
-  call Grid_getCellCoords(IAXIS,block,LEFT_EDGE, .true.,xLeft,  iSizeGC)
-  call Grid_getCellCoords(IAXIS,block,RIGHT_EDGE,.true.,xRight, iSizeGC)
+  call Grid_getCellCoords(IAXIS,CENTER,     level, blkLimits(LOW,:), blkLimits(HIGH,:), xCenter)
+  call Grid_getCellCoords(IAXIS,LEFT_EDGE,  level, blkLimits(LOW,:), blkLimits(HIGH,:), xLeft  )
+  call Grid_getCellCoords(IAXIS,RIGHT_EDGE, level, blkLimits(LOW,:), blkLimits(HIGH,:), xRight )
 
-  call Grid_getCellCoords(JAXIS,block,CENTER,    .true.,yCenter,jSizeGC)
-  call Grid_getCellCoords(JAXIS,block,LEFT_EDGE, .true.,yLeft,  jSizeGC)
-  call Grid_getCellCoords(JAXIS,block,RIGHT_EDGE,.true.,yRight, jSizeGC)
+  call Grid_getCellCoords(JAXIS,CENTER,     level, blkLimits(LOW,:), blkLimits(HIGH,:), yCenter)
+  call Grid_getCellCoords(JAXIS,LEFT_EDGE,  level, blkLimits(LOW,:), blkLimits(HIGH,:), yLeft  )
+  call Grid_getCellCoords(JAXIS,RIGHT_EDGE, level, blkLimits(LOW,:), blkLimits(HIGH,:), yRight )
 
-  call Grid_getCellCoords(KAXIS,block,CENTER,    .true.,zCenter,kSizeGC)
-  call Grid_getCellCoords(KAXIS,block,LEFT_EDGE, .true.,zLeft,  kSizeGC)
-  call Grid_getCellCoords(KAXIS,block,RIGHT_EDGE,.true.,zRight, kSizeGC)
+  call Grid_getCellCoords(KAXIS,CENTER,     level, blkLimits(LOW,:), blkLimits(HIGH,:), zCenter)
+  call Grid_getCellCoords(KAXIS,LEFT_EDGE,  level, blkLimits(LOW,:), blkLimits(HIGH,:), zLeft  )
+  call Grid_getCellCoords(KAXIS,RIGHT_EDGE, level, blkLimits(LOW,:), blkLimits(HIGH,:), zRight )
 
   do k = blkLimits(LOW,KAXIS),blkLimits(HIGH,KAXIS)
      do j = blkLimits(LOW,JAXIS),blkLimits(HIGH,JAXIS)
@@ -361,18 +354,18 @@ subroutine Simulation_initBlock(solnData,block)
            rigid_axis(JAXIS) = j
            rigid_axis(KAXIS) = k
            if (radCenter <= sim_r_inner) then
-              call Grid_putPointData(block, CENTER, BDRY_VAR, DEFAULTIDX, rigid_axis, 1.0)
-              call Grid_putPointData(block, CENTER, DENS_VAR, DEFAULTIDX, rigid_axis, sim_smlrho*1.2) !maybe 1.e11 because PNS?
-              call Grid_putPointData(block, CENTER, TEMP_VAR, DEFAULTIDX, rigid_axis, sim_smallt*1.2) !something else because PNS?
-!!$              call Grid_putPointData(block, CENTER, DENS_VAR, DEFAULTIDX, rigid_axis, 1.59e+05) !maybe 1.e11 because PNS?
-!!$              call Grid_putPointData(block, CENTER, TEMP_VAR, DEFAULTIDX, rigid_axis, 1.e+6) !something else because PNS?
-              call Grid_putPointData(block, CENTER, VELX_VAR, DEFAULTIDX, rigid_axis, 1.e-100)
-              call Grid_putPointData(block, CENTER, VELY_VAR, DEFAULTIDX, rigid_axis, 1.e-100)
+              solnData(BDRY_VAR,i,j,k) = 1.0
+              solnData(DENS_VAR,i,j,k) = sim_smlrho*1.2 !maybe 1.e11 because PNS?
+              solnData(TEMP_VAR,i,j,k) = sim_smallt*1.2 !something else because PNS?
+!!$              solnData(DENS_VAR,i,j,k) = 1.59e+05 !maybe 1.e11 because PNS?
+!!$              solnData(TEMP_VAR,i,j,k) = 1.e+6 !something else because PNS?
+              solnData(VELX_VAR,i,j,k) = 1.e-100
+              solnData(VELY_VAR,i,j,k) = 1.e-100
            else
-              call Grid_putPointData(block, CENTER, BDRY_VAR, DEFAULTIDX, rigid_axis, -1.0)
+              solnData(BDRY_VAR,i,j,k) = -1.0
            end if
 #endif
-              
+
         end do
      end do
   end do
