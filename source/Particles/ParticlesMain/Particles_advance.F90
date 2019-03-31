@@ -95,10 +95,13 @@ subroutine Particles_advance (dtOld,dtNew)
   select case(pt_typeInfo(PART_ADVMETHOD,i))
   case(RUNGEKUTTA) 
      call pt_advanceRK(dtOld,dtNew, p_begin,p_end,i)
-  case(MIDPOINT)
-     call pt_advanceMidpoint(dtOld,dtNew,p_begin,p_end,i)
-  case(EULER_TRA)
-     call pt_advanceEuler_passive(dtOld,dtNew,p_begin,p_end,i)
+!DevNote :: Following two options to be implemented later
+!  case(MIDPOINT)
+!     call pt_advanceMidpoint(dtOld,dtNew,p_begin,p_end,i)
+!  case(EULER_TRA)
+!     call pt_advanceEuler_passive(dtOld,dtNew,p_begin,p_end,i)
+  case default
+     call Driver_abortFlash("Particles_advance: Not a valid advance method. Please use RUNGEKUTTA method!")
   end select
   
 

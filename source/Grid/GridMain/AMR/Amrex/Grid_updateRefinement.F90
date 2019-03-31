@@ -278,16 +278,15 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
           call itor%next()
        end do
        call Grid_releaseTileIterator(itor)
+
+     !Devnote: call Particles_update refinement in case particle-block association changed
+     call Particles_updateRefinement(i)
      end if
 
      call Timers_stop("Grid_updateRefinement")
 
      ! Only log on the first call
 !     gcMaskArgsLogged = .TRUE.
-
-     ! DEV: TODO What happens with particles here?
-     !Devnote: call Particles_update refinement in case particle-block association changed
-     call Particles_updateRefinement(i)
 
      if (present(gridChanged)) then
         gridChanged = gr_amrexDidRefinement

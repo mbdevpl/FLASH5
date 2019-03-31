@@ -204,10 +204,10 @@ subroutine Driver_evolveFlash()
      
      if (.not. useSTS_local) then
         call IO_output(dr_simTime, &
-             dr_dt, dr_nstep+1, dr_nbegin, endRunPl, PLOTFILE_AND_PARTICLEFILE)
+             dr_dt, dr_nstep+1, dr_nbegin, endRunPl, PLOTFILE_ONLY)
      else
         call IO_output(dr_simTime, &
-             dr_dtSTS, dr_nstep+1, dr_nbegin, endRunPl, PLOTFILE_AND_PARTICLEFILE)
+             dr_dtSTS, dr_nstep+1, dr_nbegin, endRunPl, PLOTFILE_ONLY)
      endif
 
      call Timers_stop("IO_output")
