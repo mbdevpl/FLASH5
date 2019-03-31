@@ -4,20 +4,20 @@
 !!  gr_copyFabInteriorToRegion
 !!
 !! SYNOPSIS
-!!  call gr_copyFabInteriorToRegion(real(IN)    :: fab(:,:,:,:),
-!!                                  integer(IN) :: gds,
-!!                                  integer(IN) :: face,
-!!                                  integer(IN) :: axis,
-!!                                  integer(IN) :: interior(LOW:HIGH, MDIM),
-!!                                  integer(IN) :: scomp,
-!!                                  integer(IN) :: ncomp,
-!!                                  real(INOUT) :: region(:,:,:,:))
+!!  call gr_copyFabInteriorToRegion(real(IN)      :: fab(:,:,:,:),
+!!                                  integer(IN)   :: gds,
+!!                                  integer(IN)   :: face,
+!!                                  integer(IN)   :: axis,
+!!                                  amrex_box(IN) :: interior,
+!!                                  integer(IN)   :: scomp,
+!!                                  integer(IN)   :: ncomp,
+!!                                  real(INOUT)   :: region(:,:,:,:))
 !!
 !! DESCRIPTION 
 !!  This routine is used to populate a special data structure with interior data
 !!  for the purpose of applying BCs to the structure with the 
-!!  Grid_bcApplyToRegion routine.  It copies the interior data (see 
-!!  gr_splitFabAtBoundary) from the source fab into this special data structure.
+!!  Grid_bcApplyToRegion routine.  It copies the interior data, which is assumed
+!!  to be correct, from the source fab into this special data structure.
 !!  If the given index space is face-centered and the fab contains face data
 !!  defined on the boundary, then this data is also copied into the special
 !!  data structure.
@@ -50,6 +50,7 @@
 subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
                                       scomp, ncomp, region)
     use amrex_fort_module, ONLY : wp => amrex_real
+    use amrex_box_module,  ONLY : amrex_box
 
     use Driver_interface,  ONLY : Driver_abortFlash
 
@@ -59,7 +60,7 @@ subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
     integer,                       intent(IN)    :: gds
     integer,                       intent(IN)    :: face
     integer,                       intent(IN)    :: axis
-    integer,                       intent(IN)    :: interior(LOW:HIGH, 1:MDIM)
+    type(amrex_box),               intent(IN)    :: interior
     integer,                       intent(IN)    :: scomp
     integer,                       intent(IN)    :: ncomp
     real(wp), pointer, contiguous, intent(INOUT) :: region(:, :, :, :)
@@ -84,11 +85,10 @@ subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
                                "GDS must be cell- or face-centered")
     end if
 
-    ! Assume boundary extends fully across patch along other directions
     lo(:) = 1
     hi(:) = 1
-    lo(1:NDIM) = interior(LOW,  1:NDIM)
-    hi(1:NDIM) = interior(HIGH, 1:NDIM)
+    lo(1:NDIM) = interior%lo(1:NDIM)
+    hi(1:NDIM) = interior%hi(1:NDIM)
 
     ! Assume that we have cell centers along the BC axis.
     ! Else, we have face centers and must grow by one.
@@ -103,14 +103,12 @@ subroutine gr_copyFabInteriorToRegion(fab, gds, face, axis, interior, &
 
     ! Only need from FAB interior closest NGUARD cells along BC direction
     if (face == LOW) then
-        lo(axis) = interior(LOW, axis)
-        hi(axis) = interior(LOW, axis)  + offset
+        hi(axis) = interior%lo(axis)  + offset
         ! Skip over guardcells
         rStrt = NGUARD + 1
         rFin  = 2*NGUARD + rOffset
     else 
-        lo(axis) = interior(HIGH, axis) - offset
-        hi(axis) = interior(HIGH, axis)
+        lo(axis) = interior%hi(axis) - offset
         ! Ignore guardcells at end
         rStrt = 1
         rFin  = NGUARD + rOffset
