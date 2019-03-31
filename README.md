@@ -42,3 +42,55 @@ first that no other runs are already in progress.  This can be done by consultin
 
 We presently run on a weekly basis the small subset of AMReX-only tests ([Flash-Staged-Intel](https://jenkins-ci.mcs.anl.gov/job/Flash-Staged-Intel/)) that are built in debug mode with the Intel compiler suite.
 
+## Tests on Master Branch
+
+The following are the setup commands of the tests that are currently being run on the Master branch to confirm correctness of the functionality we consider functional in FLASH5.
+
+#### Unit Tests
+* unitTest/Eos/Helmholtz -auto +amrex -3d +noio
+* unitTest/Eos/Helmholtz -auto +pm4dev -3d +noio
+* unitTest/Gravity/Poisson3 -auto -2d +cylindrical +newmpole -debug -maxblocks=600 +noio +pm4dev -parfile=flash_2dcyl.par
+* unitTest/Gravity/Poisson3 -auto -3d +newmpole +uhd -debug -maxblocks=550 -nxb=8 -nyb=8 -nzb=8 -gridinterpolation=monotonic
+* unitTest/Grid/Amrex/TestFluxCorrection -auto -2d -nxb=8 -nyb=8 +noio +amrex
+* unitTest/Grid/Amrex/TestFluxCorrection2 -auto -2d -nxb=8 -nyb=8 +noio +amrex
+* unitTest/Grid/Amrex/TestInit -auto -2d -nxb=8 -nyb=4 +noio +amrex
+* unitTest/Grid/Amrex/TestRefine -auto -2d -nxb=8 -nyb=8 +noio +amrex
+* unitTest/Grid/Amrex/TestCyl2d -auto -2d -nxb=8 -nyb=4 +noio +amrex
+* unitTest/Multigrid_Amrex -auto -3d +amrex +serialio -unit=IO/IOMain/hdf5/serial/AM -maxblocks=1000
+
+#### Regression Tests with Verified Baseline
+* Sod -auto -2d -debug +uhd +ug +nofbs -parfile=test_pseudoug_2d
+* Sod -auto -2d -debug -nxb=8 -nyb=8 +uhd +pm4dev -gridinterpolation=native -parfile=test_pseudoug_2d
+* Sod -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL +pm4dev -gridinterpolation=native -parfile=	test_pseudoug_2d
+* Sod -auto -2d -debug -nxb=8 -nyb=8 +uhd +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_pseudoug_2d
+* Sod -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_pseudoug_2d
+* Sod -auto -2d -debug -nxb=8 -nyb=8 +uhd +pm4dev -gridinterpolation=monotonic -parfile=test_amr_unsplit_2d
+* Sod -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL +pm4dev -gridinterpolation=native -parfile=test_amr_2d
+* Sod -auto -2d -debug -nxb=8 -nyb=8 +uhd +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=	test_amr_unsplit_2d
+* Sod -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_amr_2d
+* Sedov -auto -2d -debug +uhd +ug +nofbs -parfile=	test_pseudoug_2d
+* Sedov -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd +pm4dev -gridinterpolation=native -parfile=test_pseudoug_3d
+* Sedov -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_pseudoug_3d
+* Sedov -auto -2d +cylindrical -debug maxblocks=175 -nxb=16 -nyb=16 +uhd +pm4dev -gridinterpolation=monotonic DoAnalytical=True -parfile=	test_pseudoug_cyl_2d
+* Sedov -auto -2d +cylindrical -debug maxblocks=175 -nxb=16 -nyb=16 +uhd +amrex +serialio -unit=IO/IOMain/hdf5/serial/AM DoAnalytical=True -parfile=test_pseudoug_cyl_2d
+* Sedov -auto -2d -debug -nxb=8 -nyb=8 +uhd +pm4dev -gridinterpolation=native -parfile=test_pseudoug_2d
+* Sedov -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL +pm4dev -gridinterpolation=native -parfile=test_pseudoug_2d
+* Sedov -auto -2d -debug -nxb=8 -nyb=8 +uhd +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_pseudoug_2d
+* Sedov -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_pseudoug_2d
+* Sedov -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd +pm4dev -gridinterpolation=native -parfile=test_amr_unsplit_3d
+* Sedov -auto -3d -debug -nxb=8 -nyb=8 -nzb=8 +uhd +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_amr_unsplit_3d
+* Sedov -auto -2d +cylindrical -debug -nxb=16 -nyb=16 +uhd +pm4dev -gridinterpolation=monotonic DoAnalytical=True -parfile=	test_amr_cyl_2d
+* Sedov -auto -2d +cylindrical -debug -nxb=16 -nyb=16 +uhd +amrex +serialio -unit=IO/IOMain/hdf5/serial/AM DoAnalytical=True -parfile=test_amr_cyl_2d
+* Sedov -auto -2d -debug -nxb=8 -nyb=8 +uhd +pm4dev -gridinterpolation=native -parfile=test_amr_unsplit_2d
+* Sedov -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL +pm4dev -gridinterpolation=native -parfile=test_amr_2d
+* Sedov -auto -2d -debug -nxb=8 -nyb=8 +uhd +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_amr_unsplit_2d
+* Sedov -auto -2d -debug -nxb=8 -nyb=8 -unit=physics/Hydro/HydroMain/simpleUnsplit/HLL +amrex -gridinterpolation=native +serialio -unit=IO/IOMain/hdf5/serial/AM -parfile=test_amr_2d
+* Cellular -auto -2d -debug +a13 +uhd +pm4dev -gridinterpolation=monotonic -parfile=test_amr_2d
+
+#### Regression Tests with Unverified Baseline
+* DustCollapse -auto -3d +cartesian +Mode1 +serialIO +uhd +newMpole -debug -parfile=test_3dcar
+* DustCollapse -auto -3d +cartesian +Mode3 +serialIO +uhd +newMpole -debug -parfile=test_3dcar
+* DustCollapse -auto -2d +cylindrical +Mode1 +serialIO +uhd +newMpole -debug -parfile=	test_2dcyl
+* DustCollapse -auto -2d +cylindrical +Mode3 +serialIO +uhd +newMpole -debug -parfile=test_2dcyl
+* DustCollapse -auto -1d +spherical +Mode1 +serialIO +uhd +newMpole -debug -parfile=test_1dsph
+* DustCollapse -auto -1d +spherical +Mode3 +serialIO +uhd +newMpole -debug -parfile=test_1dsph
