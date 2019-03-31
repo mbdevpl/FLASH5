@@ -395,8 +395,10 @@ subroutine IO_output( simTime, dt, nstep, nbegin, endRun, outputType)
  
     
   !Logic is being moved out of IO_writeParticles.  When it is called, it had better be used!
+!! Devnote :: preprocessors because amrex particles are being handled through amrex grid
+#ifndef FLASH_GRID_AMREX
   if(outputParticleFile) call IO_writeParticles( .false.)
-
+#endif
   
 
   !------------------------------------------------------------------------------
