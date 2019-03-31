@@ -4,19 +4,19 @@
 !!  gr_copyGuardcellRegionToFab
 !!
 !! SYNOPSIS
-!!  call gr_copyGuardcellRegionToFab(real(IN)    :: region(:,:,:,:),
-!!                                   integer(IN) :: gds,
-!!                                   integer(IN) :: face,
-!!                                   integer(IN) :: axis,
-!!                                   integer(IN) :: guardcells(LOW:HIGH, MDIM),
-!!                                   integer(IN) :: scomp,
-!!                                   integer(IN) :: ncomp,
-!!                                   real(INOUT) :: fab(:,:,:,:))
+!!  call gr_copyGuardcellRegionToFab(real(IN)      :: region(:,:,:,:),
+!!                                   integer(IN)   :: gds,
+!!                                   integer(IN)   :: face,
+!!                                   integer(IN)   :: axis,
+!!                                   amrex_box(IN) :: guardcells,
+!!                                   integer(IN)   :: scomp,
+!!                                   integer(IN)   :: ncomp,
+!!                                   real(INOUT)   :: fab(:,:,:,:))
 !!
 !! DESCRIPTION 
 !!  This routine is used to copy guardcell data from a special data structure
-!!  filled by Grid_bcApplyToRegion into the AMReX FAB that manages physical
-!!  data.
+!!  filled by Grid_bcApplyToRegion into the AMReX FAB that is requesting data
+!!  for guardcells that lie outside the domain.
 !!
 !!  This routine assumes that the fab, guardcells, and region data structures
 !!  are all specified with respect to the same index space.
@@ -46,19 +46,20 @@
 subroutine gr_copyGuardcellRegionToFab(region, gds, face, axis, guardcells, &
                                        scomp, ncomp, fab)
     use amrex_fort_module, ONLY : wp => amrex_real
+    use amrex_box_module,  ONLY : amrex_box
 
     use Driver_interface,  ONLY : Driver_abortFlash
 
     implicit none
 
-    real(wp), intent(IN),    pointer, contiguous :: region(:, :, :, :)
-    integer,  intent(IN)                         :: gds
-    integer,  intent(IN)                         :: face
-    integer,  intent(IN)                         :: axis
-    integer,  intent(IN)                         :: guardcells(LOW:HIGH, 1:MDIM)
-    integer,  intent(IN)                         :: scomp
-    integer,  intent(IN)                         :: ncomp
-    real(wp), intent(INOUT), pointer, contiguous :: fab(:, :, :, :)
+    real(wp), pointer, contiguous, intent(IN)    :: region(:, :, :, :)
+    integer,                       intent(IN)    :: gds
+    integer,                       intent(IN)    :: face
+    integer,                       intent(IN)    :: axis
+    type(amrex_box),               intent(IN)    :: guardcells
+    integer,                       intent(IN)    :: scomp
+    integer,                       intent(IN)    :: ncomp
+    real(wp), pointer, contiguous, intent(INOUT) :: fab(:, :, :, :)
 
     integer :: lo(1:MDIM)
     integer :: hi(1:MDIM)
@@ -79,11 +80,10 @@ subroutine gr_copyGuardcellRegionToFab(region, gds, face, axis, guardcells, &
                                "GDS must be cell- or face-centered")
     end if
 
-    ! Assume boundary extends fully across patch along other directions
     lo(:) = 1
     hi(:) = 1
-    lo(1:NDIM) = guardcells(LOW,  1:NDIM)
-    hi(1:NDIM) = guardcells(HIGH, 1:NDIM)
+    lo(1:NDIM) = guardcells%lo(1:NDIM)
+    hi(1:NDIM) = guardcells%hi(1:NDIM)
  
     ! Assume that we have cell centers along the BC axis.
     ! Else, we have face centers and must grow by one.

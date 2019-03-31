@@ -7,6 +7,7 @@
 !!
 !!  call Grid_bcApplyToRegion(integer(IN)      :: bcType,
 !!                            integer(IN)      :: gridDataStruct,
+!!                            integer(IN)           :: level,
 !!                            integer(IN)      :: guard,
 !!                            integer(IN)      :: axis,
 !!                            integer(IN)      :: face,
@@ -14,7 +15,6 @@
 !!                            integer(IN)      :: regionSize(:),
 !!                            logical(IN)      :: mask(:),
 !!                            logical(OUT)     :: applied,
-!!                            Grid_tile_t(IN)  :: tileDesc,
 !!                            integer(IN)      :: secondDir,
 !!                            integer(IN)      :: thirdDir,
 !!                            integer(IN)      :: endPoints(LOW:HIGH,MDIM),
@@ -66,7 +66,7 @@
 !!  other grid information, such as cell coordinates, etc.  Currently
 !!  supported simple boundary conditions include "OUTFLOW", "REFLECTING" and
 !!  "DIODE".
-!!  Additional dummy arguments tileDesc, secondDir, thirdDir, and endPoints
+!!  Additional dummy arguments secondDir, thirdDir, and endPoints
 !!  are not needed for these simple kinds of BCs, but can be
 !!  used by alternative implementations for BC types that do need coordinate
 !!  information, etc.
@@ -82,6 +82,7 @@
 !!  gridDataStruct - the Grid dataStructure, should be given as
 !!                   one of the constants CENTER, FACEX, FACEY, FACEZ
 !!                   (or, with some Grid implementations, WORK).
+!!  level - the 1-based refinement level on which the regionData is defined
 !!  guard -    number of guard cells
 !!  axis  - the direction along which to apply boundary conditions,
 !!          can take values of IAXIS, JAXIS and KAXIS
@@ -172,8 +173,8 @@
 !!
 !!  NOTES 
 !!
-!!   (1)      NOTE that the second indices of the endPoints and
-!!            blkLimitsGC arrays count the (IAXIS, JAXIS, KAXIS)
+!!   (1)      NOTE that the second index of the endPoints
+!!            array counts the (IAXIS, JAXIS, KAXIS)
 !!            directions in the usual order, not permuted as in
 !!            regionSize.
 !!
@@ -204,9 +205,9 @@
 !!
 !!***
 
-subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
+subroutine Grid_bcApplyToRegion(bcType,gridDataStruct, level, &
           guard,axis,face,regionData,regionSize,mask,applied,&
-     tileDesc,secondDir,thirdDir,endPoints,idest)
+          secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -220,7 +221,7 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
 
   implicit none
   
-  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
+  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct, level
   integer,dimension(REGION_DIM),intent(IN) :: regionSize
   real,dimension(regionSize(BC_DIR),&
        regionSize(SECOND_DIR),&
@@ -228,7 +229,6 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
-  type(Grid_tile_t),intent(IN) :: tileDesc
   integer,intent(IN) :: secondDir,thirdDir
   integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest

@@ -8,7 +8,7 @@
 !! SYNOPSIS
 !!
 !!  call Simulation_initBlock(real,pointer :: solnData(:,:,:,:),
-!!                            integer(IN)  :: tileDesc  )
+!!                            Grid_tile_t(IN)  :: tileDesc  )
 !!
 !!
 !!
@@ -27,7 +27,7 @@
 !! ARGUMENTS
 !!
 !!  solnData  -        pointer to solution data
-!!  tileDesc -        describes the block to initialize
+!!  tileDesc -        describes the tile or block to initialize
 !!
 !!
 !! PARAMETERS
