@@ -1,5 +1,0 @@
-LIBRARY HDF5
-
-DEFAULT Gmsh2
-EXCLUSIVE Gmsh2 matlab
-

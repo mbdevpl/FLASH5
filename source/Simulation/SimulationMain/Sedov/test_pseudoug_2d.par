@@ -1,0 +1,128 @@
+#	Runtime parameters for the Sedov explosion problem.
+#       Version for testing simpleUnsplit Hydro with AMR implementations that 
+#       are configured to restrict the mesh to a uniform grid at the finest
+#       refinement level.
+#
+#       It is intended that these results 
+#        - serve as a baseline for true AMR results (see test_amr_2d.par) and
+#        - be used to confirm that different AMR implements yield the same
+#          results in the absence of interpolation.
+#
+
+#	Parameters for initial model
+#		Ambient pressure and density, explosion energy, initial
+#		radius of perturbation, and location of explosion center
+sim_pAmbient	 = 1.E-5
+sim_rhoAmbient	 = 1.
+sim_expEnergy	 = 1.
+sim_rInit		 = 0.013671875
+sim_xctr		 = 0.5
+sim_yctr		 = 0.5
+sim_zctr		 = 0.5
+sim_profFileName = "sedovSolutionModLong.dat"
+
+#		Gas ratio of specific heats
+gamma           = 1.4
+
+#	Computational volume parameters
+#		Grid dimensionality and geometry
+geometry = "cartesian"
+
+#		Size of computational volume
+xmin		= 0.
+xmax		= 1.
+ymin		= 0.
+ymax		= 1.
+zmin		= 0.
+zmax		= 1.
+
+#		Boundary conditions
+xl_boundary_type = "periodic"
+xr_boundary_type = "periodic"
+
+yl_boundary_type = "periodic"
+yr_boundary_type = "periodic"
+
+zl_boundary_type = "periodic"
+zr_boundary_type = "periodic"
+
+flux_correct = .FALSE.
+
+#	Simulation time, I/O  parameters
+cfl		 = 0.45
+basenm   = "sedov_"
+restart  = .false.
+
+#	checkpoint file output parameters
+checkpointFileIntervalTime = 0.01
+checkpointFileIntervalStep = 0
+checkpointFileNumber       = 0
+
+#	plotfile output parameters
+plotfileIntervalTime = 0.
+plotfileIntervalStep = 0
+plotfileNumber       = 0
+
+nend            = 10000
+tmax            = 0.05
+
+# use MeshCalls for now so that we can compare AMReX, which does not have
+# MeshInterp implemented, against Paramesh
+convertToConsvdForMeshCalls = .FALSE.
+convertToConsvdInMeshInterp = .FALSE.
+
+run_comment     = "Sedov explosion"
+log_file        = "sedov.log"
+eintSwitch      = 1.e-4
+flux_correct    = .FALSE.
+
+plot_var_1 = "dens"
+plot_var_2 = "pres"
+plot_var_3 = "temp"
+
+#  Adaptvie Grid refinement parameters
+lrefine_min     = 6
+lrefine_max     = 6
+refine_var_1    = "dens"
+refine_var_2    = "pres"
+
+# Uniform Grid specific parameters
+# This setup should run a UG simulation that is identical to the 
+# pseudo-UG setup
+iProcs = 2	#num procs in i direction
+jProcs = 2	#num procs in j direction
+kProcs = 1
+iGridSize = 256
+jGridSize = 256
+kGridSize = 1
+ 
+## -------------------------------------------------------------##
+##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
+#	I. INTERPOLATION SCHEME:
+order		= 3      # Interpolation order (first/second/third/fifth order)
+slopeLimiter    = "mc"   # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
+LimitedSlopeBeta= 1.     # Slope parameter for the "limited" slope by Toro
+charLimiting	= .true. # Characteristic limiting vs. Primitive limiting
+
+use_avisc	= .true. # use artificial viscosity (originally for PPM)
+#cvisc		= 0.1     # coefficient for artificial viscosity
+use_flattening	= .false. # use flattening (dissipative) (originally for PPM)
+use_steepening	= .false. # use contact steepening (originally for PPM)
+use_upwindTVD	= .false. # use upwind biased TVD slope for PPM (need nguard=6)
+
+#	II. RIEMANN SOLVERS:
+RiemannSolver	= "HLL"       # Roe, HLL, HLLC, LLF, Marquina
+entropy         = .false.     # Entropy fix for the Roe solver
+
+#	III. STRONG SHOCK HANDELING SCHEME:
+shockDetect	= .false.     # Shock Detect for numerical stability
+## -------------------------------------------------------------##
+
+## ---------------------------------------------------------------##
+##  SWITCHES SPECIFIC TO THE SUPER-TIME-STEPPING (STS) ALGORITHM  ##
+##  NOTE: For details on using STS runtime parameters, please     ##
+##        refer to user's guide (Driver chapter).                 ##
+useSTS                  = .false.
+nstepTotalSTS           = 5
+nuSTS                   = 0.2
+## ---------------------------------------------------------------##
