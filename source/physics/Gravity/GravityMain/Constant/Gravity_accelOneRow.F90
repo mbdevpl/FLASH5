@@ -72,12 +72,12 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
 end subroutine Gravity_accelOneRow_blkid
 
 
-subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
-                                potentialIndex, extraAccelVars)
+subroutine Gravity_accelOneRow(pos, sweepDir, tileDesc, lo, hi, grav, Uin, &
+                               potentialIndex, extraAccelVars)
 
 !==============================================================================
 !
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile,    ONLY : Grid_tile_t
 
   use Gravity_data, ONLY : useGravity, grv_vector
   use Driver_interface, ONLY : Driver_abortFlash
@@ -89,21 +89,22 @@ subroutine Gravity_accelOneRow (pos, sweepDir, blockDesc, numCells, grav, Uin, &
 
   integer, dimension(2), intent(IN) :: pos
   integer,INTENT(in) :: sweepDir
-  type(block_metadata_t),intent(IN) :: blockDesc
-  integer,INTENT(in) :: numCells
-  real,dimension(numCells),INTENT(inout) :: grav
+  type(Grid_tile_t),intent(IN) :: tileDesc
+  integer,           intent(IN)                      :: lo
+  integer,           intent(IN)                      :: hi
+  real,   INTENT(inout) :: grav(lo:hi)
   real,    POINTER,   OPTIONAL      :: Uin(:,:,:,:)
   integer,intent(IN),optional :: potentialIndex
   integer,intent(IN),OPTIONAL :: extraAccelVars(MDIM)
 
   real :: grv_val
 
-  call Driver_abortFlash("[Gravity_accelOneRow] Update to work with tiling")
+  !==================================================
 
   if (useGravity) then
      grv_val = grv_vector(sweepDir)
   
-     grav(1:numCells) = grv_val
+     grav(lo:hi) = grv_val
   end if
 
 

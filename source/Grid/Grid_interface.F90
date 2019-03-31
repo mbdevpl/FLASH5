@@ -84,21 +84,19 @@ Module Grid_interface
 
   interface
      subroutine Grid_applyBCEdge(bcType,bcDir,guard,var,dataRow,face,&
-          gridDataStruct, blockHandle, secondCoord, thirdCoord)
+          gridDataStruct, secondCoord, thirdCoord)
        integer,intent(IN):: bcType,bcDir,guard,var,face,gridDataStruct
        real,dimension(:),intent(INOUT)::dataRow
-       integer,intent(IN),OPTIONAL:: blockHandle
        real,intent(IN),OPTIONAL :: secondCoord,thirdCoord
      end subroutine Grid_applyBCEdge
   end interface
 
   interface
      subroutine Grid_applyBCEdgeAllUnkVars(bcType,bcDir,guard,dataRow,face,&
-          cellCenterSweepCoord, secondCoord,thirdCoord, blockHandle)
+          cellCenterSweepCoord, secondCoord,thirdCoord)
        integer,intent(IN):: bcType,bcDir,guard,face
        real,dimension(2*guard,NUNK_VARS),intent(INOUT)::dataRow
        real,intent(IN):: cellCenterSweepCoord(*), secondCoord,thirdCoord
-       integer,intent(IN),OPTIONAL:: blockHandle
      end subroutine Grid_applyBCEdgeAllUnkVars
   end interface
 
@@ -830,13 +828,12 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
+     subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-          tileDesc,secondDir,ThirdDir,endPoints,idest)
-       use Grid_tile, ONLY : Grid_tile_t
+          secondDir,ThirdDir,endPoints,idest)
        implicit none
 
-       integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
+       integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct, level
        integer,dimension(REGION_DIM),intent(IN) :: regionSize
        real,dimension(regionSize(BC_DIR),&
             regionSize(SECOND_DIR),&
@@ -844,7 +841,6 @@ Module Grid_interface
             regionSize(STRUCTSIZE)),intent(INOUT)::regionData
        logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
        logical, intent(OUT) :: applied
-       type(Grid_tile_t),intent(IN) :: tileDesc
        integer,intent(IN) :: secondDir,thirdDir
        integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
        integer,intent(IN),OPTIONAL:: idest
@@ -852,12 +848,11 @@ Module Grid_interface
   end interface
 
   interface
-     subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
+     subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,level,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-          tileDesc,secondDir,ThirdDir,endPoints,idest)
-       use Grid_tile, ONLY : Grid_tile_t
+          secondDir,ThirdDir,endPoints,idest)
        implicit none
-       integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
+       integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct, level
        integer,dimension(REGION_DIM),intent(IN) :: regionSize
        real,dimension(regionSize(BC_DIR),&
             regionSize(SECOND_DIR),&
@@ -865,16 +860,14 @@ Module Grid_interface
             regionSize(STRUCTSIZE)),intent(INOUT)::regionData
        logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
        logical, intent(OUT) :: applied
-       type(Grid_tile_t),intent(IN) :: tileDesc
        integer,intent(IN) :: secondDir,thirdDir
        integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
        integer,intent(IN),OPTIONAL:: idest
-
      end subroutine Grid_bcApplyToRegion
   end interface
 
   interface
-     subroutine Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,&
+     subroutine Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,level,&
           guard,axis,face,&
           regionDataC,regionDataFN,regionDataFT1,regionDataFT2,&
           regionSizeCtr,&
@@ -882,7 +875,7 @@ Module Grid_interface
           tileDesc,secondDir,thirdDir,endPointsCtr,rightHanded,idest)
        use Grid_tile, ONLY : Grid_tile_t
        implicit none
-       integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
+       integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct,level
        integer,dimension(REGION_DIM),intent(IN) :: regionSizeCtr
        real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
        logical, intent(INOUT) :: applied

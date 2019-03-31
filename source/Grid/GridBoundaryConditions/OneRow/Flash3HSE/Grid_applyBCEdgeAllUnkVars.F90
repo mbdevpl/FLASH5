@@ -12,10 +12,7 @@
 !!                             integer(in) :: face,
 !!                             real(in)    :: cellCenterSweepCoord(*),
 !!                             real(in)    :: secondCoord,
-!!                             real(in)    :: thirdCoord,
-!!                             integer(in),OPTIONAL :: blockHandle)
-!!  
-!!                    
+!!                             real(in)    :: thirdCoord)
 !!  
 !! DESCRIPTION 
 !!  
@@ -84,9 +81,6 @@
 !!                         of this interface should not attempt to access them) if
 !!                         they do not make sense based on the dimensionality of
 !!                         the problem.
-!!  blockHandle - available for passing on to some handlers for boundary conditions
-!!                that may need it, ignored in the default BC handling implementations
-!!
 !!
 !!  NOTES 
 !!
@@ -109,7 +103,7 @@
 #endif
 
 subroutine Grid_applyBCEdgeAllUnkVars(bcType,bcDir,guard,dataRow,face,&
-     cellCenterSweepCoord, secondCoord,thirdCoord, blockHandle)
+     cellCenterSweepCoord, secondCoord,thirdCoord)
   use Grid_data, ONLY :gr_meshMe
   use Grid_interface, ONLY : Grid_applyBCEdge
   use Driver_interface, ONLY : Driver_abortFlash
@@ -126,7 +120,6 @@ subroutine Grid_applyBCEdgeAllUnkVars(bcType,bcDir,guard,dataRow,face,&
   integer,intent(IN):: bcType,bcDir,guard,face
   real,dimension(2*guard,NUNK_VARS),intent(INOUT)::dataRow
   real,intent(IN):: cellCenterSweepCoord(*), secondCoord,thirdCoord
-  integer,intent(IN),OPTIONAL:: blockHandle ! passed on in the default implementation - KW
   integer :: ivar
 
 
@@ -144,7 +137,7 @@ subroutine Grid_applyBCEdgeAllUnkVars(bcType,bcDir,guard,dataRow,face,&
 
      do ivar = 1,NUNK_VARS
         if(MASKED_IN(ivar)) then
-           call Grid_applyBCEdge(bcType,bcDir,guard,ivar,dataRow(:,ivar),face,CENTER, blockHandle, secondCoord, thirdCoord)
+           call Grid_applyBCEdge(bcType,bcDir,guard,ivar,dataRow(:,ivar),face,CENTER, secondCoord, thirdCoord)
         endif
      end do
   end if

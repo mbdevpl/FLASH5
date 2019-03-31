@@ -8,6 +8,7 @@
 !!
 !!  call Grid_bcApplyToRegionSpecialized(integer(IN)  :: bcType,
 !!                                       integer(IN)  :: gridDataStruct,
+!!                                       integer(IN)  :: level,
 !!                                       integer(IN)  :: guard,
 !!                                       integer(IN)  :: axis,
 !!                                       integer(IN)  :: face,
@@ -15,11 +16,9 @@
 !!                                       integer(IN)  :: regionSize(:),
 !!                                       logical(IN)  :: mask(:),
 !!                                       logical(OUT) :: applied,
-!!                                       integer(IN)  :: blockHandle,
 !!                                       integer(IN)  :: secondDir,
 !!                                       integer(IN)  :: thirdDir,
 !!                                       integer(IN)  :: endPoints(LOW:HIGH,MDIM),
-!!                                       integer(IN)  :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                              OPTIONAL,integer(IN)  :: idest )
 !!                    
 !!  
@@ -64,6 +63,7 @@
 !!    bcType - the type of boundary condition being applied.
 !!    gridDataStruct - the Grid dataStructure, should be given as
 !!                     one of the contants CENTER, FACEX, FACEY, FACEZ.
+!!    level - the 1-based refinement level on which the regionData is defined
 !!    guard -    number of guardcells
 !!    axis  - the dimension along which to apply boundary conditions,
 !!            can take values of IAXIS, JAXIS and KAXIS
@@ -121,21 +121,6 @@
 !!
 !! 2. ADDITIONAL ARGUMENTS
 !!
-!!  blockHandle - Handle for the block for which guardcells are to be filled.
-!!              In grid implementations other than Paramesh 4, this is always
-!!              a local blockID.
-!!
-!!              With Paramesh 4:
-!!              This may be a block actually residing on the local processor,
-!!              or the handle may refer to a block that belong to a remote processor
-!!              but for which cached information is currently available locally.
-!!              The two cases can be distinguished by checking whether 
-!!              (blockHandle .LE. lnblocks): this is true only for blocks that
-!!              reside on the executing processor.
-!!              The block ID is available for passing on to some handlers for 
-!!              boundary conditions that may need it, ignored in the default 
-!!              implementation.
-!!
 !!  secondDir,thirdDir -   Second and third coordinate directions.
 !!                         These are the transverse directions perpendicular to
 !!                         the sweep direction.
@@ -152,10 +137,6 @@
 !!                          KAXIS   |    IAXIS             JAXIS
 !!
 !!  endPoints - starting and endpoints of the region of interest.
-!!              See also NOTE (1) below.
-!!
-!!  blkLimitsGC - the starting and endpoint of the whole block including
-!!                the guard cells, as returned by Grid_getBlkIndexLimits.
 !!              See also NOTE (1) below.
 !!
 !! NOTES
@@ -190,25 +171,23 @@
 !!***
 
 
-subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
+subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,level,&
      guard,axis,face,regionData,regionSize,mask,&
-     applied,blockHandle,secondDir,thirdDir,endPoints,blkLimitsGC, idest)
+     applied,secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
 
   use Simulation_data, ONLY : sim_gamma, sim_smallX, sim_xyzRef, sim_presRef, &
-       sim_gravVector, sim_gravDirec, sim_gravConst, &
+       sim_gravVector, &
        sim_xyzRef, sim_densRef, sim_tempRef, &
        sim_molarMass, sim_gasconstant
-  use Grid_data, ONLY : gr_myPE => gr_meshMe
 
-  use Grid_interface, ONLY : Grid_applyBCEdge, Grid_applyBCEdgeAllUnkVars
   use Driver_interface, ONLY : Driver_abortFlash
 
   implicit none
 
-  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
+  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct,level
   integer,intent(IN) :: secondDir,thirdDir
   integer,dimension(REGION_DIM),intent(IN) :: regionSize
   real,dimension(regionSize(BC_DIR),&
@@ -216,8 +195,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
        regionSize(THIRD_DIR),&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
-  integer,intent(IN) :: blockHandle
-  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints, blkLimitsGC
+  integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   logical, intent(OUT) :: applied
   integer,intent(IN),OPTIONAL:: idest
 
@@ -229,15 +207,9 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
   integer :: i1, i2, i3, ia, ib, ja, jb, ka, kb
 
   integer :: i, j, k, ivar, n
-  real,allocatable,dimension(:) :: cellCenterSweepCoord, secondCoord,thirdCoord
-  integer :: istrt, iend, jOffset, kOffset
   real :: xx, yy, zz, gh
-  real, allocatable, dimension(:) :: xCoord
-  real, allocatable, dimension(:) :: yCoord
-  real, allocatable, dimension(:) :: zCoord
+  real, allocatable :: coordinates(:,:,:,:)
   real :: rhoZone, presZone, enerZone, ekinZone, tempZone
-
-  integer :: sizeGC
 
 ! ////////////////////////////////////////////////////////////
 
@@ -275,7 +247,7 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
 ! This could probably be done in a much nicer way.  - KW
 
 
-  offsets(1:MDIM) = endPoints(LOW,1:MDIM) - blkLimitsGC(LOW,1:MDIM)
+  offsets(1:MDIM) = endPoints(LOW,1:MDIM) - 1
 
 ! Note: in the following,
 ! i,ia,ib - refer to the IAXIS direction
@@ -326,11 +298,8 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
      call gr_bcGetCoords_internal !implemented below
 
      do k = ka,kb
-        zz = zCoord(k)
         do j = ja,jb
-           yy  = yCoord (j)
            do i = ia,ib
-              xx  = xCoord (i)
               select case (axis)
               case(IAXIS)
                  i1 = i - offsets(IAXIS)
@@ -355,6 +324,9 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
               case(KAXIS)
                  i3 = k - offsets(KAXIS)
               end select
+              xx = coordinates(i1,i2,i3,IAXIS)
+              yy = coordinates(i1,i2,i3,JAXIS)
+              zz = coordinates(i1,i2,i3,KAXIS)
 
 ! If we get here, we are implementing a USER BC for cell-centered data.
 ! In this specific USER method, we want to basically fill guard cells the same
@@ -460,30 +432,26 @@ subroutine Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
 
 contains
   subroutine gr_bcGetCoords_internal
-    integer :: sizesGC(1:MDIM)
+    use gr_interface, ONLY : gr_getRegionDataCoordinates
 
+    allocate(coordinates(SIZE(regionData, 1), &
+                         SIZE(regionData, 2), &
+                         SIZE(regionData, 3), &
+                         1:MDIM))
 
-    sizesGC(1:MDIM) = blkLimitsGC(HIGH,1:MDIM)
+    call gr_getRegionDataCoordinates(level, gridDataStruct, &
+                                     axis, secondDir, thirdDir, &
+                                     regionSize, endPoints, &
+                                     coordinates)
 
-    allocate(zCoord(sizesGC(KAXIS)))
-    if (NDIM == 3) then
-       call gr_extendedGetCellCoords(KAXIS, blockHandle,gr_myPE,CENTER,.true., zCoord, sizesGC(KAXIS))
-    else
-       zCoord = 0.0
+    if (NDIM .NE. 3) then
+       coordinates(:,:,:,KAXIS) = 0.0
     end if
-
-    allocate(yCoord(sizesGC(JAXIS)))
-    call gr_extendedGetCellCoords(JAXIS, blockHandle,gr_myPE,CENTER, .true., yCoord,  sizesGC(JAXIS))
-
-    allocate(xCoord(sizesGC(IAXIS)))
-    call gr_extendedGetCellCoords(IAXIS, blockHandle,gr_myPE,CENTER,.true., xCoord,  sizesGC(IAXIS))
 
   end subroutine gr_bcGetCoords_internal
 
   subroutine deallocateMem_internal
-    if(allocated(xCoord)) deallocate(xCoord)
-    if(allocated(yCoord)) deallocate(yCoord)
-    if(allocated(zCoord)) deallocate(zCoord)
+    if(allocated(coordinates)) deallocate(coordinates)
   end subroutine deallocateMem_internal
 
 end subroutine Grid_bcApplyToRegionSpecialized

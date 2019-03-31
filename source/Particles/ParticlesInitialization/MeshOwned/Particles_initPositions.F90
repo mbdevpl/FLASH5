@@ -118,6 +118,7 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
   type(Grid_tile_t)    :: tileDesc
 !----------------------------------------------------------------------
 
+  nullify(solnData)
   if(.not.useParticles) then
      partPosInitialized = .true.
   end if
@@ -175,7 +176,6 @@ subroutine Particles_initPositions (partPosInitialized,updateRefine)
         pt_typeInfo(PART_LOCAL,i) = numNewLocalThisType + numLocalThisType
         
         call tileDesc%releaseDataPtr(solnData, CENTER)
-        nullify(solnData)
         call itor%next()
      enddo
   call Grid_releaseTileIterator(itor)

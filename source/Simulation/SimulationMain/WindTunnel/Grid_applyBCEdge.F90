@@ -12,7 +12,6 @@
 !!                   real(INOUT),dimension(:) :: dataRow(2*guard),
 !!                   integer(IN)              :: face,
 !!                   integer(IN)              :: gridDataStruct,
-!!                   integer(IN),OPTIONAL     :: blockHandle,
 !!                   real(in),OPTIONAL    :: secondCoord,
 !!                   real(in),OPTIONAL    :: thirdCoord)
 !!  
@@ -62,7 +61,6 @@
 !!                   FACEY  face centered variable on faces along JAXIS
 !!                   FACEZ  face centered variable on faces along IAXIS
 !!
-!!   blockHandle - the identity of the block under consideration
 !!  secondCoord,thirdCoord - scalar coordinate values in the coordinate
 !!                         directions perpendicular to the sweep direction.
 !!                         This is not needed for simple boundary condition types
@@ -78,7 +76,7 @@
 
 
 subroutine Grid_applyBCEdge(bcType,bcDir,guard,var,dataRow,face,&
-     gridDataStruct, blockHandle, secondCoord, thirdCoord)
+     gridDataStruct, secondCoord, thirdCoord)
   use Simulation_data, ONLY: sim_pAmbient, sim_rhoAmbient, sim_windVel, sim_gamma, &
      &  sim_smallP, sim_smallX
   use Driver_interface, ONLY : Driver_abortFlash
@@ -91,7 +89,6 @@ subroutine Grid_applyBCEdge(bcType,bcDir,guard,var,dataRow,face,&
   integer, intent(in):: bcType
   integer,intent(IN) :: var,guard,face,bcDir,gridDataStruct
   real,dimension(:),intent(INOUT)::dataRow
-  integer,intent(IN),OPTIONAL :: blockHandle
   real,intent(IN),OPTIONAL :: secondCoord,thirdCoord
   real :: kine
   integer :: i     !loop counter
