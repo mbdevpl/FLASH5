@@ -96,7 +96,7 @@ subroutine IO_writeParticles( particlesToCheckpoint)
   logical restart
   logical :: forceParticleFile
 
-  real :: currentRedshift
+  real :: currentRedshift = 0.
   integer :: nstep
 
 
