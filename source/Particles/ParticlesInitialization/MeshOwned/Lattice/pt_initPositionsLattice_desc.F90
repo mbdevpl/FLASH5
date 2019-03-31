@@ -161,29 +161,7 @@ subroutine pt_initPositionsLattice_desc (tileDesc,success)
 
            if (IsInBlock .and. IsInSphere) then
               p = p + 1
-              !! Check space allocation
-              if (p > pt_maxPerProc) then
-                 print *,' '
-                 print *,'tile with grid_index', tileDesc%grid_index,' on',pt_meshMe,' would get too many additional particles;'
-                 print *,'                 proc',pt_meshMe,' already had', pt_numLocal,' particles.'
-                 print *,'PARAMETER pt_maxPerProc is set to ',pt_maxPerProc
-                 call Logfile_stamp(pt_meshMe,&
-                      "[pt_initPositionsLattice] This proc would get too many additional particles")
-                 success=.false.
-                 pt_numLocal=0
-                 return
-              endif
-              !! particle is defined, set up data structure
-              
-              
-              particles(BLK_PART_PROP,p) = real(tileDesc%grid_index)
-              particles(PROC_PART_PROP,p) = real(pt_meshMe)
-#ifdef MASS_PART_PROP
-              particles(MASS_PART_PROP,p) = 1.
-#endif
-              particles(POSX_PART_PROP,p) = xpos
-              particles(POSY_PART_PROP,p)  = ypos
-              particles(POSZ_PART_PROP,p)  = zpos
+             !! particle is defined, set up data structure
                 thisParticle%pos(1) = xpos
                 if (NDIM > 1) then
                     thisParticle%pos(2) = ypos
@@ -193,7 +171,6 @@ subroutine pt_initPositionsLattice_desc (tileDesc,success)
                 endif
                 thisParticle%vel = 0.d0
                 thisParticle%id  = amrex_get_next_particle_id()
-                particles(TAG_PART_PROP,p) = thisParticle%id
                 thisParticle%cpu = amrex_get_cpu()  !DevNote :: or = pt_meshMe
                 call pt_containers(1)%add_particle(level_amrex, grd_index, tile_index, thisParticle)  
               
@@ -202,8 +179,6 @@ subroutine pt_initPositionsLattice_desc (tileDesc,success)
         enddo loop_z
      enddo loop_y
   enddo loop_x
-  !       Setting the particle database local number of particles
-  pt_numLocal = p
   !       Now initialize velocity properties for the new particles
   mapType=pt_typeInfo(PART_MAPMETHOD,1)
   call Grid_mapMeshToParticles(particles,&
