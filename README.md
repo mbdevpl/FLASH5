@@ -79,7 +79,7 @@ The following are the setup commands of the tests that are currently being run o
 * DustCollapse -auto -3d +cartesian +Mode1 +serialIO +uhd +newMpole -debug -parfile=test_3dcar.par
 * DustCollapse -auto -3d +cartesian +Mode3 +serialIO +uhd +newMpole -debug -parfile=test_3dcar.par
 * DustCollapse -auto -2d +cylindrical +Mode1 +serialIO +uhd +newMpole -debug -parfile=	test_2dcyl.par
-* DustCollapse -auto -2d +cylindrical +Mode3 +serialIO +uhd +newMpole -debug -parfile=test_2dcyl.par
+* DustCollapse -auto -2d +cylindrical +Mode3 +serialIO +uhd +newMpole -debug -parfile=test_2dcyl.debug.par
 * DustCollapse -auto -1d +spherical +Mode1 +serialIO +uhd +newMpole -debug -parfile=test_1dsph.par
-* DustCollapse -auto -1d +spherical +Mode3 +serialIO +uhd +newMpole -debug -parfile=test_1dsph.par
+* DustCollapse -auto -1d +spherical +Mode3 +serialIO +uhd +newMpole -debug -parfile=test_1dsph.debug.par
 * IsentropicVortex -auto -2d -debug +uhd +amrex +serialIO -unit=IO/IOMain/hdf5/serial/AM withParticles=TRUE
