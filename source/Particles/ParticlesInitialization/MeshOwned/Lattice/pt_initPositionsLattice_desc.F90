@@ -163,12 +163,12 @@ subroutine pt_initPositionsLattice_desc (tileDesc,success)
               p = p + 1
              !! particle is defined, set up data structure
                 thisParticle%pos(1) = xpos
-                if (NDIM > 1) then
+#if NDIM > 1
                     thisParticle%pos(2) = ypos
-                endif
-                if (NDIM == 3) then
+#endif
+#if NDIM == 3
                     thisParticle%pos(3) = zpos
-                endif
+#endif
                 thisParticle%vel = 0.d0
                 thisParticle%id  = amrex_get_next_particle_id()
                 thisParticle%cpu = amrex_get_cpu()  !DevNote :: or = pt_meshMe
