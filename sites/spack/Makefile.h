@@ -16,7 +16,8 @@ MPE_PATH   =
 FCOMP   = mpif90
 CCOMP   = mpicc
 CPPCOMP = mpiCC
-LINK    = mpif90 -std=c++11 -fopenmp
+LINK    = mpif90 -std=c++11
+# -fopenmp
 
 # pre-processor flag
 PP      = -D
@@ -44,6 +45,7 @@ endif
 FFLAGS_OPT = -g -c -O2 -fdefault-real-8 -fdefault-double-8 \
 $(shell echo -I${CPATH} | sed 's|:| -I|g') \
 -Wuninitialized
+# -fopenmp \
 
 FFLAGS_DEBUG = -g -ggdb -c -O0 -fdefault-real-8 -fdefault-double-8 \
 $(shell echo -I${CPATH} | sed 's|:| -I|g') \
@@ -60,10 +62,16 @@ $(shell echo -I${CPATH} | sed 's|:| -I|g') \
 else
 ifneq (${IS_FCOMP_PGI}, 0)
 
-LINK = mpif90 -mp
+LINK = mpif90 \
+-fast -Mvect=simd -Mcache_align -Mflushz -Mpre \
+-acc -ta=tesla:cc60 -ta=tesla:nordc -Minfo=all
+# -mp
 
-FFLAGS_OPT = -g -c -O2 -r8 -i4 \
-$(shell echo -I${CPATH} | sed 's|:| -I|g')
+FFLAGS_OPT = -g -c -O 4 -r8 -i4 \
+$(shell echo -I${CPATH} | sed 's|:| -I|g') \
+-fast -Mvect=simd -Mcache_align -Mflushz -Mpre \
+-acc -ta=tesla:cc60 -ta=tesla:nordc -Minfo=all
+# -mp
 
 FFLAGS_DEBUG = -g -c -O0 -r8 -i4 \
 $(shell echo -I${CPATH} | sed 's|:| -I|g')
