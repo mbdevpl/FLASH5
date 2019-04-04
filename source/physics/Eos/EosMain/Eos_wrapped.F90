@@ -236,7 +236,7 @@ subroutine Eos_wrapped(mode,range,solnData, gridDataStruct)
 
   integer, intent(in) :: mode
   integer, dimension(2,MDIM), intent(in) :: range
-  real, POINTER_INTENT_IN :: solnData(:,:,:,:)
+  real, pointer, intent(in) :: solnData(:,:,:,:)
   integer, optional, intent(IN) :: gridDataStruct
 
 

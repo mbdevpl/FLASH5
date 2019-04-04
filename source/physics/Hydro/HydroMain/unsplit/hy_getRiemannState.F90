@@ -1457,8 +1457,8 @@ contains
     integer,intent(IN)                        :: iDir
     real,   intent(OUT), dimension(:)         :: Wleft,Wright
     real,   intent(IN),  dimension(:)         :: Vc
-    real,   POINTER_INTENT_IN, dimension(:,:,:,:,:),OPTIONAL :: spcL,spcR
-    real,   POINTER_INTENT_IN, dimension(:,:,:,:)  ,OPTIONAL :: U
+    real,   pointer, intent(in), dimension(:,:,:,:,:),OPTIONAL :: spcL,spcR
+    real,   pointer, intent(in), dimension(:,:,:,:)  ,OPTIONAL :: U
     integer,intent(IN),                       OPTIONAL :: i,j,k
 
     Wleft (HY_DENS:HY_END_VARS-kGrav) = Vc(HY_DENS:HY_END_VARS-kGrav)
