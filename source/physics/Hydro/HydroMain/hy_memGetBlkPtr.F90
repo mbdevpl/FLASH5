@@ -143,7 +143,7 @@ subroutine hy_memGetBlkPtr(blockID,dataPtr, gridDataStruct)
 contains
   subroutine AssoMed(pp, mm, leafNo)
     real,POINTER_INTENT_OUT :: pp(:,:,:,:)
-    real,POINTER_INTENT_IN  :: mm(:,:,:,:,:)
+    real,pointer, intent(in)  :: mm(:,:,:,:,:)
     integer,intent(in) :: leafNo
     call AssoFin(pp,mm(:,:,:,:,leafNo),lbound(mm,1),lbound(mm,2),lbound(mm,3),lbound(mm,4))
   end subroutine AssoMed
@@ -233,7 +233,7 @@ subroutine hy_memGetBlk5Ptr(blockID,data5Ptr, gridDataStruct)
 contains
   subroutine AssoMed(pp, mm, leafNo)
     real,POINTER_INTENT_OUT :: pp(:,:,:,:,:)
-    real,POINTER_INTENT_IN  :: mm(:,:,:,:,:,:)
+    real,pointer, intent(in)  :: mm(:,:,:,:,:,:)
     integer,intent(in) :: leafNo
     call AssoFin(pp,mm(:,:,:,:,:,leafNo),lbound(mm,1),lbound(mm,2),lbound(mm,3),lbound(mm,4))
   end subroutine AssoMed

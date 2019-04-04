@@ -23,7 +23,7 @@ Module Eos_interface
      subroutine Eos_wrapped(mode,range,solnData,gridDataStruct)
        integer, intent(in) :: mode
        integer, dimension(2,MDIM), intent(in) :: range
-       real, POINTER_INTENT_IN :: solnData(:,:,:,:)
+       real, pointer, intent(in) :: solnData(:,:,:,:)
        integer,optional,intent(IN) :: gridDataStruct
      end subroutine Eos_wrapped
      subroutine Eos_wrapped_blkid(mode,range,blockNum,gridDataStruct)
