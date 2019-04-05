@@ -82,8 +82,6 @@
 !!
 !!***
 
-!!REORDER(5): unk, facevar[xyz], tfacevar[xyz]
-!!REORDER(4): recvar[xyz]f
 #include "paramesh_preprocessor.fh"
 
       Subroutine amr_morton_order (lnblocks_old,nprocs,mype,           & 
@@ -149,7 +147,7 @@
 !-----sorted list returned by sort_morton such that the work load is 
 !-----balanced across processors.
       ireduce_datain(1) = lnblocks
-      Call MPI_ALLREDUCE (ireduce_datain(1),ireduce_dataout(1),   & 
+      Call MPI_ALLREDUCE (ireduce_datain,ireduce_dataout,         &
                           1,MPI_INTEGER,MPI_SUM,amr_mpi_meshComm,ierr)
       tot_blocks = ireduce_dataout(1)
 
