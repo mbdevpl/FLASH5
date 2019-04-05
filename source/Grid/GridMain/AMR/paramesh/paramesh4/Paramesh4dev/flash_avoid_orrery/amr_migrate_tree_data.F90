@@ -58,8 +58,6 @@
 !!
 !!***
 
-!!REORDER(5): unk, facevar[xyz], tfacevar[xyz]
-!!REORDER(4): recvar[xyz]f
 #include "paramesh_preprocessor.fh"
 
       Subroutine amr_migrate_tree_data (new_loc,nprocs,mype)
@@ -71,12 +69,14 @@
       Use io
       Use paramesh_comm_data
       Use paramesh_interfaces, only : fill_old_loc
+      Use paramesh_mpi_interfaces, only : MPI_int_SSEND
 
       Implicit None
+
       Include 'mpif.h'
 
 !-----Input/Output variables.
-      Integer, Intent(inout) :: new_loc(:,:)
+      Integer, Intent(inout) :: new_loc(2,maxblocks_tr)
       Integer, Intent(in)    :: nprocs,mype
 
 !-----Local variables and arrays
@@ -97,11 +97,12 @@
       Logical :: newchildt(maxblocks_tr)
       Logical :: useFlashCustomVersion
 
-      !Need an interface here because we pass an assumed shape array.
+      !It does not hurt to have an explicit interface here, but keep it consistent!
       interface
          Subroutine amr_migrate_tree_data_flash (new_loc,nprocs,mype)
+           use tree, ONLY: maxblocks_tr
            implicit none
-           Integer, Intent(inout) :: new_loc(:,:)
+           Integer, Intent(inout) :: new_loc(2,maxblocks_tr)
            Integer, Intent(in)    :: nprocs,mype
          End Subroutine amr_migrate_tree_data_flash
       end interface
@@ -327,11 +328,11 @@
 
         If (new_loc(2,i).ne.mype) Then
           nsend = nsend + 1
-          Call MPI_SSEND(buffer(1),buf_size,amr_mpi_real,              & 
+          Call MPI_SSEND(buffer,buf_size,amr_mpi_real,              &
                new_loc(2,i),new_loc(1,i),                              & 
                amr_mpi_meshComm,ierr)
           nsend = nsend + 1
-          Call MPI_SSEND(ibuffer(1),ibuf_size,MPI_INTEGER,             & 
+          Call MPI_SSEND(ibuffer,ibuf_size,MPI_INTEGER,             &
                new_loc(2,i),new_loc(1,i)+maxblocks_tr,                 & 
                amr_mpi_meshComm,ierr)
           nsend = nsend + 1
@@ -424,13 +425,14 @@ Subroutine amr_migrate_tree_data_flash (new_loc,nprocs,mype)
   Use io
   Use paramesh_comm_data
   Use paramesh_interfaces, only : fill_old_loc
+  Use paramesh_mpi_interfaces, only : MPI_int_SSEND
 
   Implicit None
 
   Include 'mpif.h'
 
   !-----Input/Output variables.
-  Integer, Intent(inout) :: new_loc(:,:)
+  Integer, Intent(inout) :: new_loc(2,maxblocks_tr)
   Integer, Intent(in)    :: nprocs,mype
 
   !-----Local variables and arrays
@@ -715,11 +717,11 @@ Subroutine amr_migrate_tree_data_flash (new_loc,nprocs,mype)
 
      If (new_loc(2,i).ne.mype) Then
         nsend = nsend + 1
-        Call MPI_SSEND(buffer(1),buf_size,amr_mpi_real,              & 
+        Call MPI_SSEND(buffer,buf_size,amr_mpi_real,              &
              new_loc(2,i),new_loc(1,i),                              & 
              amr_mpi_meshComm,ierr)
         nsend = nsend + 1
-        Call MPI_SSEND(ibuffer(1),ibuf_size,MPI_INTEGER,             & 
+        Call MPI_SSEND(ibuffer,ibuf_size,MPI_INTEGER,             &
              new_loc(2,i),new_loc(1,i)+maxblocks_tr,                 & 
              amr_mpi_meshComm,ierr)
         nsend = nsend + 1
