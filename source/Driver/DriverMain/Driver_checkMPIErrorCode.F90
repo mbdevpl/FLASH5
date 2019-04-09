@@ -46,8 +46,8 @@ Subroutine Driver_checkMPIErrorCode( errorCode)
 
   use Driver_interface, ONLY : Driver_abortFlash
   use Driver_data, ONLY : dr_globalMe
-  implicit none
-  include "Flash_mpi.h"
+
+# include "Flash_mpi_implicitNone.fh"
   
   integer, intent(IN) :: errorCode
   
