@@ -62,8 +62,6 @@
 !!
 !!***
 
-!!REORDER(5): unk, facevar[xyz], tfacevar[xyz]
-!!REORDER(4): recvar[xyz]f
 #include "paramesh_preprocessor.fh"
 
       subroutine amr_check_refine(nprocs,mype,icontinue)
