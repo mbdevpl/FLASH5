@@ -2,13 +2,13 @@
 
    use mpi_f08
    implicit none
-   integer, parameter :: FLASH_REAL = MPI_DOUBLE_PRECISION
-   integer, parameter :: FLASH_2REAL = MPI_2DOUBLE_PRECISION
-   integer, parameter :: FLASH_INTEGER = MPI_INTEGER
-   integer, parameter :: FLASH_LOGICAL = MPI_LOGICAL
-   integer, parameter :: FLASH_SUM = MPI_SUM
-   integer, parameter :: FLASH_LOR = MPI_LOR
-   integer, parameter :: FLASH_COMM = MPI_COMM_WORLD
+   TYPE(MPI_Datatype), parameter :: FLASH_REAL = MPI_DOUBLE_PRECISION
+   TYPE(MPI_Datatype), parameter :: FLASH_2REAL = MPI_2DOUBLE_PRECISION
+   TYPE(MPI_Datatype), parameter :: FLASH_INTEGER = MPI_INTEGER
+   TYPE(MPI_Datatype), parameter :: FLASH_LOGICAL = MPI_LOGICAL
+   TYPE(MPI_Op),       parameter :: FLASH_SUM = MPI_SUM
+   TYPE(MPI_Op),       parameter :: FLASH_LOR = MPI_LOR
+   TYPE(MPI_Comm),     parameter :: FLASH_COMM = MPI_COMM_WORLD
 
 #elif defined(HAVE_MPI_MODULE)
 
