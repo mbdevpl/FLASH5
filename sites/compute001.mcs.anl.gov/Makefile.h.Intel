@@ -63,7 +63,7 @@ FFLAGS_HYPRE =
 FFLAGS_AMREX = -I${AMREX_PATH}/include
 FFLAGS_AMREX2D = ${FFLAGS_AMREX} -DN_DIM=2 -DNZB=1
 
-F90FLAGS =
+F90FLAGS = -DHAVE_MPI_MODULE
 
 #The macro _FORTIFY_SOURCE adds some lightweight checks for buffer
 #overflows at both compile time and run time (only active at -O1 or higher)
