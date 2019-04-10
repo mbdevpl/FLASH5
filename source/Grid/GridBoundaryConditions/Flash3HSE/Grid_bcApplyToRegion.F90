@@ -7,6 +7,7 @@
 !!
 !!  call Grid_bcApplyToRegion(integer(IN)  :: bcType,
 !!                            integer(IN)  :: gridDataStruct,
+!!                            integer(IN)           :: level,
 !!                            integer(IN)  :: guard,
 !!                            integer(IN)  :: axis,
 !!                            integer(IN)  :: face,
@@ -14,11 +15,9 @@
 !!                            integer(IN)  :: regionSize(:),
 !!                            logical(IN)  :: mask(:),
 !!                            logical(OUT) :: applied,
-!!                            block_metadata_t(IN)  :: blockDesc,
 !!                            integer(IN)  :: secondDir,
 !!                            integer(IN)  :: thirdDir,
 !!                            integer(IN)  :: endPoints(LOW:HIGH,MDIM),
-!!                            integer(IN)  :: blkLimitsGC(LOW:HIGH,MDIM),
 !!                   OPTIONAL,integer(IN)  :: idest)
 !!
 !!
@@ -39,13 +38,14 @@
 !!  for all variables in the gridDataStruct that are not masked out. The 
 !!  argument "mask" has the information about the masked variables.
 !! 
+!!   Where masked(variables)
 !!     If (face=LOW)  
-!!       regionData(1:guard,:,:,masked(variables) =  boundary values
+!!       regionData(1:guard,:,:,variables) =  boundary values
 !!     If (face=HIGH) 
-!!       regionData(regionSize(BC_DIR)-guard+1:regionSize(BC_DIR),:,:,masked(variables) =  boundary values
+!!       regionData(regionSize(BC_DIR)-guard+1:regionSize(BC_DIR),:,:,variables) =  boundary values
 !!
 !!  One reason why information about direction and variable is
-!!  included in this interface is because Velocities need to be
+!!  included in this interface is because velocities need to be
 !!  treated specially for REFLECTING boundary conditions. if
 !!  axis=IAXIS, then the variable VELX_VAR is treated differently,
 !!  same with VELY_VAR if axis=JAXIS and VELZ_VAR if
@@ -53,7 +53,8 @@
 !!  in through the argument "dataRow" from the appropriated blocks,
 !!  and send it to this routine for boundary calculation. The
 !!  PERIODIC boundary is calculated by default when the blocks are
-!!  exchanging data with each other.
+!!  exchanging data with each other, and therefore will not be encountered
+!!  by this routine.
 !!  One possible implementation of this interface passes handling of all other
 !!  boundary condition types on to calls of the old style Grid_applyBCEdge,
 !!  which is called for each of the variables in turn.  However, this implementation
@@ -62,7 +63,7 @@
 !!
 !!  This routine supports simple boundary conditions that are applied strictly
 !!  directionally, and have no need for other grid information such as the coordinates etc.
-!!  Additional dummy arguments blockHandle, secondDir, thirdDir, endPoints, and blkLimitsGC
+!!  Additional dummy arguments secondDir, thirdDir, and endPoints
 !!  are not needed for these simple kinds of BCs, but can be used for BC types that do
 !!  need coordinate information etc.
 !!  Currently supported boundary conditions include "OUTFLOW", "REFLECTING" and "DIODE".
@@ -80,6 +81,7 @@
 !!  gridDataStruct - the Grid dataStructure, should be given as
 !!                   one of the constants CENTER, FACEX, FACEY, FACEZ
 !!                   (or, with some Grid implementations, WORK).
+!!  level - the 1-based refinement level on which the regionData is defined
 !!  guard -    number of guard cells
 !!  axis  - the dimension along which to apply boundary conditions,
 !!          can take values of IAXIS, JAXIS and KAXIS
@@ -88,8 +90,15 @@
 !!             upperface
 !!  regionData     : the extracted region from a block of permanent storage of the 
 !!                   specified data structure. Its size is given by regionSize.
+!!                     NOTE that the first three dimensions of this array do not necessarily
+!!                     correspond to the (IAXIS, JAXIS, KAXIS) directions in this order;
+!!                     rather, the axes are permuted such that the first index
+!!                     of regionData always corresponds to the direction given by axis.
+!!                     See regionSize for more information.
 !!  regionSize     : regionSize(BC_DIR) contains the size of each row of data
-!!                   in the regionData array.  For the common case of guard=4,
+!!                   in the regionData array.  With row we mean here an array slice
+!!                   regionData(:,I2,I3,VAR), corresponding to cells that are situated
+!!                   along a line in the 'axis' direction. For the common case of guard=4,
 !!                   regionSize(BC_DIR) will be 8 for cell-centered data structures
 !!                   (e.g., when gridDataStruct=CENTER) and either 8 or 9 for face-
 !!                   centered data, depending on the direction given by axis.
@@ -97,30 +106,33 @@
 !!                   direction, and regionSize(THIRD_DIR) has the number of rows
 !!                   along the third direction. regionSize(GRID_DATASTRUCT) contains the
 !!                   number of variables in the data structure.
-!!  mask - if present applies boundary conditions to only selected variables
+!!  mask - if present, boundary conditions are to be applied only to selected variables.
+!!         However, an implementation of this interface may ignore the mask argument;
+!!         a mask should be understood as a possible opportunity for optimization which
+!!         an implementation may ignore.
+!!         Specifying a mask does not mean that previous values of other variables in
+!!         guard cells will be left undisturbed.
 !!  applied - is set true if this routine has handled the given bcType, otherwise it is 
 !!            set to false.
 !!
 !!  secondDir,thirdDir -   Second and third coordinate directions.
 !!                         These are the transverse directions perpendicular to
-!!                         the sweep direction.
+!!                         the sweep direction.  SecondDir and thirdDir give
+!!                         the meaning of the second and third dimension,
+!!                         respectively, of the regionData array.
 !!                         This is not needed for simple boundary condition types
 !!                         such as REFLECTIVE or OUTFLOW, It is provided for
 !!                         convenience so that more complex boundary condition
 !!                         can make use of it.
 !!                         The values are currently fully determined by the sweep
-!!                         direction bcDir as follows:
-!!                          bcDir   |    secondDir       thirdDir
+!!                         direction axis as follows:
+!!                          axis   |    secondDir       thirdDir
 !!                          ------------------------------------------
 !!                          IAXIS   |    JAXIS             KAXIS
 !!                          JAXIS   |    IAXIS             KAXIS
 !!                          KAXIS   |    IAXIS             JAXIS
 !!
 !!  endPoints - starting and endpoints of the region of interest.
-!!              See also NOTE (1) below.
-!!
-!!  blkLimitsGC - the starting and endpoint of the whole block including
-!!                the guard cells, as returned by Grid_getBlkIndexLimits.
 !!              See also NOTE (1) below.
 !!
 !!  idest - Only meaningful with PARAMESH 3 or later.  The argument indicates which slot
@@ -146,8 +158,8 @@
 !!
 !!  NOTES 
 !!
-!!   (1)      NOTE that the second index of the endPoints and
-!!            blkLimitsGC arrays count the (IAXIS, JAXIS, KAXIS)
+!!   (1)      NOTE that the second index of the endPoints
+!!            array counts the (IAXIS, JAXIS, KAXIS)
 !!            directions in the usual order, not permuted as in
 !!            regionSize.
 !!
@@ -182,9 +194,9 @@
 !!    Dec-2009   Integrated into more general code     - Klaus Weide
 !!***
 
-subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
+subroutine Grid_bcApplyToRegion(bcType,gridDataStruct, level, &
           guard,axis,face,regionData,regionSize,mask,applied,&
-     blockDesc,secondDir,thirdDir,endPoints,idest)
+          secondDir,thirdDir,endPoints,idest)
 
 #include "constants.h"
 #include "Flash.h"
@@ -194,13 +206,14 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   use Eos_interface, ONLY : Eos
   use Grid_interface, ONLY : Grid_getDeltas
   use gr_bcInterface, ONLY : gr_bcMapBcType, gr_hseStep
-  use Grid_data, ONLY : gr_meshMe, gr_geometry, gr_dirGeom
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_data, ONLY : gr_geometry, gr_dirGeom, &
+       gr_smallrho, gr_smallE
+  use Grid_tile, ONLY : Grid_tile_t
   use gr_bcHseData, ONLY : gr_bcHseDirection, gr_bcHseGravConst, HSE_FORWARD, HSE_BACKWARD, HSE_SETTEMP
 
   implicit none
   
-  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct
+  integer, intent(IN) :: bcType,axis,face,guard,gridDataStruct, level
   integer,dimension(REGION_DIM),intent(IN) :: regionSize
   real,dimension(regionSize(BC_DIR),&
        regionSize(SECOND_DIR),&
@@ -208,7 +221,6 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
        regionSize(STRUCTSIZE)),intent(INOUT)::regionData
   logical,intent(IN),dimension(regionSize(STRUCTSIZE)):: mask
   logical, intent(OUT) :: applied
-  type(block_metadata_t),intent(IN) :: blockDesc
   integer,intent(IN) :: secondDir,thirdDir
   integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   integer,intent(IN),OPTIONAL:: idest
@@ -216,22 +228,17 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
   integer :: i,j, k,ivar,je,ke,n,varCount,bcTypeActual
   logical :: isFace
   integer :: sign
-  integer :: sizeGC, start, iend, step, direction
+  integer :: start, iend, step, direction
   integer :: velVarBcDir, velVarSecondDir, velVarThirdDir
-  real, allocatable, dimension(:) :: cellCenterCoord
+  real    :: smallP
   real, allocatable, dimension(:) :: sumyRow, yeRow
   real    :: del(MDIM), deltaBcDir
   real, dimension(EOS_NUM) :: eosData
   real, dimension(NSPECIES) :: massFrac
 
-  integer :: blkLimitsGC(LOW:HIGH, MDIM)
-  integer :: blockHandle
- 
-  blkLimitsGC = blockDesc%limitsGC
-  blockHandle = blockDesc%id    !Works only with Paramesh!
-
   select case (bcType)
   case(REFLECTING, AXISYMMETRIC, EQTSYMMETRIC, OUTFLOW,DIODE,GRIDBC_MG_EXTRAPOLATE, &
+       GRIDBC_EXTRAPOLATE_NSC, &
        NEUMANN_INS)
      applied = .TRUE.           !will handle these types of BCs below
   case(GRIDBC_ZERO)
@@ -460,6 +467,35 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
                  regionData(guard+1-i,1:je,1:ke,ivar)= (1+i)*regionData(guard+1,1:je,1:ke,ivar) &
                       - i*regionData(guard+2,1:je,1:ke,ivar)
               end do
+           case(GRIDBC_EXTRAPOLATE_NSC)
+              do i = 1,guard
+                 regionData(guard+1-i,1:je,1:ke,ivar)= (1+i)*regionData(guard+1,1:je,1:ke,ivar) &
+                      - i*regionData(guard+2,1:je,1:ke,ivar)
+                 where (regionData(guard+1-i,1:je,1:ke,ivar)*regionData(guard+1,1:je,1:ke,ivar) < 0.0)
+                    regionData(guard+1-i,1:je,1:ke,ivar)= 0.0
+                 end where
+#ifdef PRES_VAR
+                 if (ivar==PRES_VAR) then
+                    smallP = gr_smallRho * gr_smallE
+                    regionData(guard+1-i,1:je,1:ke,ivar)= max(smallP,regionData(guard+1-i,1:je,1:ke,ivar))
+                 end if
+#endif
+#ifdef ENER_VAR
+                 if (ivar==ENER_VAR) then
+                    regionData(guard+1-i,1:je,1:ke,ivar)= max(gr_smallE,regionData(guard+1-i,1:je,1:ke,ivar))
+                 end if
+#endif
+#ifdef EINT_VAR
+                 if (ivar==EINT_VAR) then
+                    regionData(guard+1-i,1:je,1:ke,ivar)= max(gr_smallE,regionData(guard+1-i,1:je,1:ke,ivar))
+                 end if
+#endif
+#ifdef DENS_VAR
+                 if (ivar==DENS_VAR) then
+                    regionData(guard+1-i,1:je,1:ke,ivar)= max(gr_smallRho,regionData(guard+1-i,1:je,1:ke,ivar))
+                 end if
+#endif
+              end do
 
            case(GRIDBC_ZERO)
               do i = 1,guard
@@ -526,6 +562,37 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
               do i = 1,guard
                  regionData(k+i,1:je,1:ke,ivar)= (1+i)*regionData(k,1:je,1:ke,ivar) &
                       - i*regionData(k-1,1:je,1:ke,ivar)
+              end do
+           case(GRIDBC_EXTRAPOLATE_NSC)
+              k=guard
+              if(isFace)k=k+1
+              do i = 1,guard
+                 regionData(k+i,1:je,1:ke,ivar)= (1+i)*regionData(k,1:je,1:ke,ivar) &
+                      - i*regionData(k-1,1:je,1:ke,ivar)
+                 where (regionData(k+i,1:je,1:ke,ivar)*regionData(k,1:je,1:ke,ivar) < 0.0)
+                    regionData(k+i,1:je,1:ke,ivar)= 0.0
+                 end where
+#ifdef PRES_VAR
+                 if (ivar==PRES_VAR) then
+                    smallP = gr_smallRho * gr_smallE
+                    regionData(k+i,1:je,1:ke,ivar)= max(smallP,regionData(k+i,1:je,1:ke,ivar))
+                 end if
+#endif
+#ifdef ENER_VAR
+                 if (ivar==ENER_VAR) then
+                    regionData(k+i,1:je,1:ke,ivar)= max(gr_smallE,regionData(k+i,1:je,1:ke,ivar))
+                 end if
+#endif
+#ifdef EINT_VAR
+                 if (ivar==EINT_VAR) then
+                    regionData(k+i,1:je,1:ke,ivar)= max(gr_smallE,regionData(k+i,1:je,1:ke,ivar))
+                 end if
+#endif
+#ifdef DENS_VAR
+                 if (ivar==DENS_VAR) then
+                    regionData(k+i,1:je,1:ke,ivar)= max(gr_smallRho,regionData(k+i,1:je,1:ke,ivar))
+                 end if
+#endif
               end do
 
            case(GRIDBC_ZERO)
@@ -594,18 +661,9 @@ subroutine Grid_bcApplyToRegion(bcType,gridDataStruct,&
      velVarThirdDir =  VELY_VAR
   end select
 
-#if(1)
-  ! get coordinates
-  sizeGC = blkLimitsGC(HIGH,axis)
-  allocate(cellCenterCoord(sizeGC))
-  call gr_extendedGetCellCoords(axis, blockHandle, gr_meshMe, CENTER, .true., cellCenterCoord, sizeGC)
-  ! assume this is uniform
-  deltaBcDir = cellCenterCoord(2)-cellCenterCoord(1)
-  deallocate(cellCenterCoord)
-#else
-  call Grid_getDeltas(blockHandle,del)
+  call Grid_getDeltas(level,del)
   deltaBcDir = del(axis)
-#endif
+
   allocate(sumyRow(regionSize(BC_DIR)))
   allocate(yeRow(regionSize(BC_DIR)))
 

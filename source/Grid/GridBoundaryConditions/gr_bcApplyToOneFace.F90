@@ -169,13 +169,13 @@ subroutine gr_bcApplyToOneFace(axis,bcType,gridDataStruct,varCount,&
 
   call gr_bcGetRegion(gridDataStruct,axis,endPoints,regionSize,mask,&
        regionData,tileDesc,idest)
-  call Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,&
+  call Grid_bcApplyToRegionSpecialized(bcType,gridDataStruct,tileDesc%level,&
        guard,axis,face,regionData,regionSize,mask,applied,&
-       tileDesc,nextDir(1),nextDir(2),endPoints,idest)
+       nextDir(1),nextDir(2),endPoints,idest)
   if(.not.applied) then
-     call Grid_bcApplyToRegion(bcType,gridDataStruct,&
+     call Grid_bcApplyToRegion(bcType,gridDataStruct,tileDesc%level,&
           guard,axis,face,regionData,regionSize,mask,applied,&
-          tileDesc,nextDir(1),nextDir(2),endPoints,idest)
+          nextDir(1),nextDir(2),endPoints,idest)
   end if
   if(.not.applied) then
      print*,'gr_bcApplyToOneFace: Unhandled boundary type',bcType, 'axis,regionType=',axis,regionType(axis)

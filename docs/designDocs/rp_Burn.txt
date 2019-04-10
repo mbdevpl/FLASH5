@@ -37,3 +37,67 @@ physics/sourceTerms/Burn/BurnMain/nuclearBurn
     useBurnTable [BOOLEAN] [FALSE]
         choice of rate evaluation FALSE = analytic rates TRUE = table
         interpolation
+
+physics/sourceTerms/Burn/BurnMain/nuclearBurn/XNet
+    xnet_changemx [REAL] [1.0e-1]
+        Valid Values: 0.0 to INFTY
+        allowed abundance change used to set the network timestep
+    xnet_changemxt [REAL] [1.0e-2]
+        Valid Values: 0.0 to INFTY
+        allowed temperature change used to set the network timestep
+    xnet_data_dir [STRING] ["Networks/Data_SN160"]
+        Valid Values: Unconstrained
+
+    xnet_iconvc [INTEGER] [3]
+        Valid Values: 0 to 3
+        determines which convergence condition is used
+    xnet_idiag [INTEGER] [-1]
+        Valid Values: -1 to 5
+        sets XNet diagnostic output level
+    xnet_iheat [INTEGER] [1]
+        Valid Values: 0 to 1
+        controls the treatment of self-heating
+    xnet_ijac [INTEGER] [1]
+        Valid Values: 1 to INFTY
+        rebuild jacobian every ijac iterations after the first
+    xnet_iprocess [INTEGER] [1]
+        Valid Values: 0 to 1
+        controls the runtime pre-processing of the network data
+    xnet_iscrn [INTEGER] [1]
+        Valid Values: 0 to 1
+        controls the treatment of nuclear screening
+    xnet_isolv [INTEGER] [3]
+        Valid Values: 1 to 3
+        choice of integration scheme
+    xnet_iweak [INTEGER] [1]
+        Valid Values: 0 to 1
+        controls the treatment of weak reactions
+    xnet_kitmx [INTEGER] [10]
+        Valid Values: 1 to INFTY
+        max Newton-Raphson iterations before retry
+    xnet_kstmx [INTEGER] [6000]
+        Valid Values: 1 to INFTY
+        max timesteps for each zone
+    xnet_nzbatchmx [INTEGER] [16]
+        Valid Values: 1 to INFTY
+        number of zones to batch and pass to burner
+    xnet_tdel_maxmult [REAL] [2.0e+0]
+        Valid Values: 1.0 to INFTY
+        max factor by which the network timestep is changed
+    xnet_tolc [REAL] [1.0e-4]
+        Valid Values: 0.0 to 1.0
+        convergence limit on the iterative abundance change (iconvc=1)
+    xnet_tolm [REAL] [1.0e-6]
+        Valid Values: 0.0 to 1.0
+        mass conservation convergence criterion (iconvc=0)
+    xnet_tolt9 [REAL] [1.0e-4]
+        Valid Values: 0.0 to 1.0
+        convergence limit on the iterative temperature change
+    xnet_writeTimers [BOOLEAN] [FALSE]
+        controls whether to write XNet internal timers to stdout
+    xnet_yacc [REAL] [1.0e-7]
+        Valid Values: 0.0 to 1.0
+        abundances > yacc used for timestep calculation
+    xnet_ymin [REAL] [1.0e-99]
+        Valid Values: 0.0 to 1.0
+        abundance < ymin is set to 0.0

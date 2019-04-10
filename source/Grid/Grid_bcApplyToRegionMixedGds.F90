@@ -7,6 +7,7 @@
 !!
 !!  call Grid_bcApplyToRegionMixedGds(integer(IN)          :: bcType,
 !!                                    integer(IN)          :: gridDataStruct,
+!!                                    integer(IN)          :: level,
 !!                                    integer(IN)          :: guard,
 !!                                    integer(IN)          :: bcDir,
 !!                                    integer(IN)          :: face,
@@ -16,7 +17,6 @@
 !!                            POINTER,real(INOUT)          :: regionDataFT2(:,:,:,:),
 !!                                    integer(IN)          :: regionSizeC(REGION_DIM),
 !!                                    logical(INOUT)       :: apply,
-!!                                    block_metadata_t(IN) :: blockDesc,
 !!                                    integer(IN)          :: secondDir,
 !!                                    integer(IN)          :: thirdDir,
 !!                                    integer(IN)          :: endPoints(LOW:HIGH,MDIM),
@@ -81,6 +81,7 @@
 !!  gridDataStruct - the Grid dataStructure, should be given as
 !!                   one of the constants CENTER, FACEX, FACEY, FACEZ
 !!                   (or, with some Grid implementations, WORK).
+!!  level - the 1-based refinement level on which the regionData is defined
 !!  guard -    number of guard cells
 !!  bcDir  - the dimension along which to apply boundary conditions,
 !!          can take values of IAXIS, JAXIS and KAXIS
@@ -100,21 +101,6 @@
 !!                   number of variables in the data structure.
 !!  apply - Do it.
 !!          !DEV: This dummy arg is quite pointless and should go away. - KW
-!!
-!!  blockDesc - Derived type that encapsulates metadata that uniquely
-!!              characterizes local block to be operated on
-!!
-!!              With Paramesh 4:
-!!              This may be a block actually residing on the local processor,
-!!              or the handle may refer to a block that belong to a remote processor
-!!              but for which cached information is currently available locally.
-!!              The two cases can be distinguished by checking whether 
-!!              (blockHandle .LE. lnblocks): this is true only for blocks that
-!!              reside on the executing processor.
-!!              The block ID is available for passing on to some handlers for 
-!!              boundary conditions that may need it, ignored in the default 
-!!              implementation.
-!!
 !!  secondDir,thirdDir -   Second and third coordinate directions.
 !!                         These are the transverse directions perpendicular to
 !!                         the sweep direction.
@@ -184,25 +170,24 @@
 #include "constants.h"
 #include "Flash.h"
 
-subroutine Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,&
+subroutine Grid_bcApplyToRegionMixedGds(bcType,gridDataStruct,level,&
           guard,bcDir,face,&
           regionDataC,regionDataFN,regionDataFT1,regionDataFT2,&
           regionSizeC,&
           apply,&
-     blockDesc,secondDir,thirdDir,endPoints,rightHanded, idest)
-  use block_metadata, ONLY : block_metadata_t
+          secondDir,thirdDir,endPoints,rightHanded, idest)
 
   implicit none
   
-  integer, intent(IN) :: bcType,bcDir,face,guard,gridDataStruct
+  integer, intent(IN) :: bcType,bcDir,face,guard,gridDataStruct,level
   integer,dimension(REGION_DIM),intent(IN) :: regionSizeC
   real,pointer,dimension(:,:,:,:) :: regionDataFN, regionDataFT1, regionDataFT2, regionDataC
   logical, intent(INOUT) :: apply
-  type(block_metadata_t),intent(IN) :: blockDesc
   integer,intent(IN) :: secondDir,thirdDir
   integer,intent(IN),dimension(LOW:HIGH,MDIM) :: endPoints
   logical, intent(IN) :: rightHanded
   integer,intent(IN),OPTIONAL:: idest
 
-
+  apply = .FALSE.
 end subroutine Grid_bcApplyToRegionMixedGds
+

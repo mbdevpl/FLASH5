@@ -14,9 +14,6 @@ IO/IOMain
     basenm [STRING] ["flash_"]
         Valid Values: Unconstrained
         Base name for checkpoint files
-    bytePack [BOOLEAN] [FALSE]
-        compress plotfile data to bytes !!Only implemented with UG in hdf5 !!!
-        !!Not tested
     checkpointFileIntervalStep [INTEGER] [0]
         Valid Values: Unconstrained
         Checkpoint after this many steps
@@ -220,14 +217,6 @@ IO/IOMain/hdf5/parallel/PM_argonne
 
     packMeshPlotWriteHDF5 [BOOLEAN] [true]
         If true, this specifies that we pack the
-
-IO/IOMain/pnetcdf/typeSelection
-    asyncMeshChkReadPnet [BOOLEAN] [false]
-
-    asyncMeshChkWritePnet [BOOLEAN] [false]
-
-    asyncMeshPlotWritePnet [BOOLEAN] [false]
-        If true, this uses non blocking I/O writes
 
 IO/IOParticles
     particleFileIntervalStep [INTEGER] [0]
