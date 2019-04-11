@@ -42,8 +42,6 @@
 !!   * ptxpos == ptypos == ptzpos in all other cases.
 !!***
 
-!!REORDER(4): Uin
-
 #include "constants.h"
 #include "Flash.h"
 
@@ -103,7 +101,7 @@ subroutine Gravity_unitTest( fileUnit, perfect)
   end if
 
 
-
+  Uin => NULL()
   call Grid_getTileIterator(itor, LEAF)
   do while(itor%isValid())
      call itor%currentTile(tileDesc)
@@ -143,7 +141,7 @@ subroutine Gravity_unitTest( fileUnit, perfect)
                    k, k, zAccel)
 
               accelVec = (/xAccel(i), yAccel(1), zAccel(1)/)
-              accelAbs = NORM2(accelVec)
+              accelAbs = NORM2(accelVec(:maxAccelDir))
               ovec     = (/xCell(i) - grv_ptxpos, &
                            yCell(j) - grv_ptypos, &
                            zCell(k) - grv_ptzpos/)
