@@ -274,7 +274,8 @@ Contains
       angm(inuc) = 2.0*spin + 1.0
 
       ! Check that data entry name matches header
-      If ( adjustl(nam) /= adjustl(nname(inuc)) ) Call xnet_terminate('netwinv data entry name does not match header for inuc=',inuc)
+      If ( adjustl(nam) /= adjustl(nname(inuc)) ) &
+    Call xnet_terminate('netwinv data entry name does not match header for inuc=',inuc)
     EndDo
     Close(lun_winv)
 

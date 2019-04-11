@@ -52,6 +52,7 @@ Module Burn_data
   integer, save :: bn_meshMe
 
   logical, save :: bn_useBurn  
+  logical, save :: bn_enableTiling 
   logical, save :: bn_useShockBurn, bn_useBurnTable
   real, save    :: bn_smallx, bn_enucDtFactor
   real, save    :: bn_nuclearTempMin, bn_nuclearTempMax, bn_nuclearDensMin, &
