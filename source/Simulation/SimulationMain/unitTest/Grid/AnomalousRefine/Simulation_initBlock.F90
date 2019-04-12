@@ -7,25 +7,27 @@
 !!
 !! SYNOPSIS
 !!
-!!  Simulation_initBlock(integer (IN) ::blockId, 
+!!  call Simulation_initBlock(integer(IN) :: tileDesc)
 !!
 !!
 !!
 !!
 !! DESCRIPTION
 !!
-!!  Initializes the Grid with a composit number which is a combination
+!!  Initializes the Grid with a composite number which is a combination
 !!  of the block number and the indices of the cell
 !! 
 !! ARGUMENTS
 !!
-!!  blockId -          the blockId to update
+!!  tileDesc    --   The number of the tile or block to initialize
 !!  
 !!
 !!
 !!***
 
-subroutine Simulation_initBlock(blockId)
+!!REORDER(4): solnData
+subroutine Simulation_initBlock(solnData, tileDesc)
+  use Grid_tile, ONLY : Grid_tile_t
   use Grid_interface, ONLY :  Grid_putPointData, Grid_getBlkIndexLimits
   use Grid_data, ONLY : gr_meshME
 #include "constants.h"
@@ -34,21 +36,22 @@ subroutine Simulation_initBlock(blockId)
   
   implicit none
 
-  ! compute the maximum length of a vector in each coordinate direction 
-  ! (including guardcells)
   
-  integer, intent(in) :: blockId
-  
+  real,pointer, dimension(:,:,:,:) :: solnData
+  type(Grid_tile_t), intent(in)  :: tileDesc
 
 
+  integer :: blockID
   integer :: i, j, k, var
   integer, dimension(LOW:HIGH,MDIM) :: blkLimits, blkLimitsGC
   integer, dimension(MDIM) :: grd,axis
   
   real :: blk,kind,jind,iind,val
 
-  call Grid_getBlkIndexLimits(blockId,blkLimits,blkLimitsGC)
-  grd(:)=blkLimits(LOW,:)-blkLimitsGC(LOW,:)
+  blkLimits  (:,:)=tileDesc%limits(:,:)
+  blkLimitsGC(:,:)=tileDesc%blkLimitsGC(:,:)
+  blockID         =tileDesc%id
+  grd(:)          =blkLimits(LOW,:)-blkLimitsGC(LOW,:)
 
   blk=(gr_MeshMe*10.0+blockID)
   do k = blkLimitsGC(LOW,KAXIS),blkLimitsGC(HIGH,KAXIS)
@@ -62,7 +65,7 @@ subroutine Simulation_initBlock(blockId)
           axis(IAXIS)=i
           do var=UNK_VARS_BEGIN,UNK_VARS_END
              val = kind+jind+iind+blk
-             call Grid_putPointData(blockID, CENTER, var, EXTERIOR, axis, val)
+             solnData(var, i, j, k) = val
           end do
        enddo
     enddo

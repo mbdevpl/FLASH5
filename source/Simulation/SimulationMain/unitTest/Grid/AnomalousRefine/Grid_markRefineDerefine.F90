@@ -14,7 +14,8 @@
 !!  some refinement criterion. The Uniform Grid does not need
 !!  this routine, and uses the stub.
 !!
-!!  This routine is normally called by the implementation of
+!!  With the PARAMESH-based Grid implementation,
+!!  this routine is normally called by the implementation of
 !!  Grid_updateRefinement. It may also get called repeatedly
 !!  during the initial construction of the Grid from
 !!  Grid_initDomain.
@@ -44,6 +45,9 @@
 subroutine Grid_markRefineDerefine()
 
   use Driver_interface, ONLY : Driver_getSimTime
+  use Logfile_interface, ONLY : Logfile_stampVarMask
+  use Grid_interface, ONLY : Grid_fillGuardCells, Grid_markRefineSpecialized, &
+                             Grid_getDeltas
   use Grid_data, ONLY : gr_refine_cutoff, gr_derefine_cutoff,&
                         gr_refine_filter,&
                         gr_numRefineVars,gr_refine_var,gr_refineOnParticleCount,&
@@ -54,12 +58,8 @@ subroutine Grid_markRefineDerefine()
                         gr_lrefineCenterI,gr_lrefineCenterJ,gr_lrefineCenterK,&
                         gr_imin,gr_imax,gr_jmin,gr_jmax,&
                         gr_eosModeNow
+  use gr_interface,   ONLY : gr_markRefineDerefine
   use tree, ONLY : newchild, refine, derefine, stay, nodetype
-!!$  use physicaldata, ONLY : force_consistency
-  use Logfile_interface, ONLY : Logfile_stampVarMask
-  use Grid_interface, ONLY : Grid_fillGuardCells, Grid_markRefineSpecialized, &
-                             Grid_getDeltas
-  use Particles_interface, only: Particles_sinkMarkRefineDerefine
   implicit none
 
 #include "constants.h"
@@ -73,6 +73,7 @@ subroutine Grid_markRefineDerefine()
   logical :: doEos=.true.
   integer,parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
   logical,dimension(maskSize) :: gcMask
+  real, dimension(MAXBLOCKS) :: err
   real :: specs(7)
   real :: delta(MDIM)
   real :: time
@@ -123,7 +124,9 @@ subroutine Grid_markRefineDerefine()
      ref_cut = gr_refine_cutoff(l)
      deref_cut = gr_derefine_cutoff(l)
      ref_filter = gr_refine_filter(l)
-     call gr_markRefineDerefine(iref,ref_cut,deref_cut,ref_filter)
+     err(:)      = 0.0
+     call gr_estimateError(err, iref, ref_filter)
+     call gr_markRefineDerefine(err, ref_cut, deref_cut)
   end do
 
   !---------------------------!
@@ -158,14 +161,6 @@ subroutine Grid_markRefineDerefine()
   end if
 
 
-#ifdef FLASH_GRID_PARAMESH2
-  ! For PARAMESH2, call gr_markRefineDerefine here if it hasn't been called above.
-  ! This is necessary to make sure lrefine_min and lrefine_max are obeyed - KW
-  if (gr_numRefineVars .LE. 0) then
-     call gr_markRefineDerefine(-1, 0.0, 0.0, 0.0)
-  end if
-#endif
-
   if(gr_refineOnParticleCount)call gr_ptMarkRefineDerefine()
 
   if(gr_enforceMaxRefinement) call gr_enforceMaxRefine(gr_maxRefine)
@@ -174,7 +169,6 @@ subroutine Grid_markRefineDerefine()
        call gr_unmarkRefineByLogRadius(gr_lrefineCenterI,&
        gr_lrefineCenterJ,gr_lrefineCenterK)
   
-  call Particles_sinkMarkRefineDerefine()
 
   ! When the flag arrays are passed to Paramesh for processing, only leaf
   ! blocks should be marked. - KW
