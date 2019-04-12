@@ -203,6 +203,7 @@ subroutine Simulation_init()
   end if
 
   sim_wd_vol_tab(sim_wd_npnts+1)  = 4.0*PI/3.0 * sim_wd_rad_tab(sim_wd_npnts+1)**3
-  sim_wd_mass_tab(sim_wd_npnts+1) = sim_wd_mass_tab(sim_wd_npnts) + sim_wd_dens_tab(sim_wd_npnts+1) * ( sim_wd_vol_tab(sim_wd_npnts+1) - sim_wd_volume )
+  sim_wd_mass_tab(sim_wd_npnts+1) = sim_wd_mass_tab(sim_wd_npnts) + &
+      sim_wd_dens_tab(sim_wd_npnts+1) * ( sim_wd_vol_tab(sim_wd_npnts+1) - sim_wd_volume )
 
 end subroutine Simulation_init

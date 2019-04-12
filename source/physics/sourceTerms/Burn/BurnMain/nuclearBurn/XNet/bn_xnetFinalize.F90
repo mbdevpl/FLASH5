@@ -108,7 +108,8 @@ subroutine bn_xnetFinalize()
      t_MPI(9,mythread+1) = timer_scrn
      !$omp end parallel
 
-     call MPI_GATHER(t_MPI, ntimers*nthreads, MPI_DOUBLE_PRECISION, t_ALL, ntimers*nthreads, MPI_DOUBLE_PRECISION, 0, bn_GlobalComm, ierr)
+     call MPI_GATHER(t_MPI, ntimers*nthreads, MPI_DOUBLE_PRECISION, t_ALL, &
+                     ntimers*nthreads, MPI_DOUBLE_PRECISION, 0, bn_GlobalComm, ierr)
 
      if (bn_globalMe == 0) then
         t_ALL_omp_min(:,:) = minval(t_ALL,dim=2)
