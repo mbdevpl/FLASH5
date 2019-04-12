@@ -1,0 +1,11 @@
+geometry = "cylindrical"
+
+xl_boundary_type = "reflecting"
+xr_boundary_type = "outflow"
+
+ptxpos = 0.0
+ptzpos = 25.0
+
+nblockY = 2
+lrefine_min = 2
+lrefine_max = 2

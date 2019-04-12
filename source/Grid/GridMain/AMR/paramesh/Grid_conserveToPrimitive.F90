@@ -35,6 +35,11 @@
 #include "Flash.h"
 
 subroutine Grid_conserveToPrimitive(blkList,count,allCells,force)
+  use Grid_iterator,  ONLY : Grid_iterator_t
+  use Grid_tile,      ONLY : Grid_tile_t
+  use Grid_interface, ONLY : Grid_getTileIterator, &
+                             Grid_releaseTileIterator
+
   use Grid_data, ONLY: gr_convertToConsvdForMeshCalls
 
   implicit none
@@ -43,13 +48,24 @@ subroutine Grid_conserveToPrimitive(blkList,count,allCells,force)
   logical,intent(IN) :: allCells, force
   logical :: tempSwap
 
+  type(Grid_iterator_t) :: itor
+  type(Grid_tile_t)     :: tileDesc
+
   ! DEV: TODO This needs to be rethought or modernized to work with iterators
   tempSwap = (force .and. (.not.gr_convertToConsvdForMeshCalls))
   if (tempSwap) then
      gr_convertToConsvdForMeshCalls = .true.
   end if
 
-  call gr_conserveToPrimitive(blkList,count,allCells)
+  call Grid_getTileIterator(itor, ACTIVE_BLKS, tiling=.FALSE.)
+  do while(itor%isValid())
+     call itor%currentTile(tileDesc)
+
+     call gr_conserveToPrimitive(tileDesc,allCells)
+
+     call itor%next()
+  end do
+  call Grid_releaseTileIterator(itor)
 
   if (tempSwap) then
      gr_convertToConsvdForMeshCalls = .false.

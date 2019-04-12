@@ -6,4 +6,5 @@ PARAMETER ptmass       REAL    10000.
 PARAMETER ptxpos       REAL    1.
 PARAMETER ptypos       REAL    -10.
 PARAMETER ptzpos       REAL    0.
+# unimplemented:
 PARAMETER gravsoft     REAL    0.001

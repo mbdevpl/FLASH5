@@ -36,6 +36,7 @@
 #include "Flash.h"
 #include "constants.h"
 
+#if(0)
 subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
                                 potentialIndex, extraAccelVars)
 
@@ -139,24 +140,27 @@ subroutine Gravity_accelOneRow_blkid (pos, sweepDir, blockID, numCells, grav, &
   return
 
 end subroutine Gravity_accelOneRow_blkid
+#endif
 
-subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
+subroutine Gravity_accelOneRow(pos, sweepDir, tileDesc, lo, hi, grav, Uin, &
                                 potentialIndex, extraAccelVars)
 
 !=======================================================================
 
-  use Gravity_data, ONLY: grv_ptxpos, grv_ptypos, grv_ptzpos, grv_factor, &
-       useGravity
+  use Grid_tile, ONLY : Grid_tile_t
   use Grid_interface, ONLY : Grid_getBlkIndexLimits, &
     Grid_getCellCoords
-  use Grid_tile, ONLY : Grid_tile_t
   use Driver_interface, ONLY : Driver_abortFlash
+  use Gravity_data, ONLY: grv_ptxpos, grv_ptypos, grv_ptzpos, grv_factor, &
+       useGravity
   implicit none
 
   type(Grid_tile_t),intent(in) :: tileDesc
-  integer, intent(IN) :: sweepDir,numCells
+  integer,INTENT(in) :: sweepDir
   integer, dimension(2),INTENT(in) ::pos
-  real, dimension(numCells),INTENT(inout) :: grav
+  integer,           intent(IN)                      :: lo
+  integer,           intent(IN)                      :: hi
+  real,   INTENT(inout) :: grav(lo:hi)
   real,   POINTER,   OPTIONAL :: Uin(:,:,:,:)
   integer,intent(IN),optional :: potentialIndex
   integer,intent(IN),OPTIONAL :: extraAccelVars(MDIM)
@@ -165,41 +169,46 @@ subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
 
 
   real,allocatable,dimension(:) ::xCenter,yCenter,zCenter
-  integer, dimension(LOW:HIGH,MDIM):: blkLimits, blkLimitsGC
+  integer, dimension(LOW:HIGH,MDIM):: blkLimits
   real :: dr32, tmpdr32
 
-  integer :: sizeX,sizeY,sizez
-
-  integer :: i,ii,j,k
-  logical :: gcell = .true.
+  integer :: ii,j,k
 
 !==============================================================================
-
-  call Driver_abortFlash("[Gravity_accelOneRow] Update to work with tiling")
 
   if (.NOT.useGravity) return
 
   j=pos(1)
   k=pos(2)
-  sizeX=numCells
-  sizeY=numCells
-  sizeZ=numCells
-  blkLimits(:,:)   = blockDesc%Limits
-  blkLimitsGC(:,:) = blockDesc%LimitsGC
-  allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(LOW,IAXIS)+sizeX-1))
-  allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(LOW,JAXIS)+sizeY-1))
-  allocate(zCenter(blkLimitsGC(LOW,KAXIS):blkLimitsGC(LOW,KAXIS)+sizeZ-1))
+  blkLimits(:,:)   = tileDesc%Limits
+  if (sweepDir .eq. SWEEP_X) then                       ! x-component
+     blkLimits(:,IAXIS)   = (/ lo, hi/)
+     blkLimits(:,JAXIS)   =    j
+     blkLimits(:,KAXIS)   =    k
+  else if (sweepDir .eq. SWEEP_Y) then          ! y-component
+     blkLimits(:,IAXIS)   =    j
+     blkLimits(:,JAXIS)   = (/ lo, hi/)
+     blkLimits(:,KAXIS)   =    k
+  else if (sweepDir .eq. SWEEP_Z) then          ! z-component
+     blkLimits(:,IAXIS)   =    j
+     blkLimits(:,JAXIS)   =    k
+     blkLimits(:,KAXIS)   = (/ lo, hi/)
+  end if
+
+  allocate(xCenter(blkLimits(LOW,IAXIS):blkLimits(HIGH,IAXIS)))
+  allocate(yCenter(blkLimits(LOW,JAXIS):blkLimits(HIGH,JAXIS)))
+  allocate(zCenter(blkLimits(LOW,KAXIS):blkLimits(HIGH,KAXIS)))
   zCenter = 0.
   yCenter = 0.
   if (NDIM == 3) then 
-     call Grid_getCellCoords(KAXIS, blockDesc, CENTER, gcell, zCenter, sizeZ)
+     call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, blkLimits(LOW, :), blkLimits(HIGH, :), zCenter)
      zCenter = zCenter - grv_ptzpos
   endif
   if (NDIM >= 2) then
-     call Grid_getCellCoords(JAXIS, blockDesc, CENTER, gcell, yCenter, sizeY)
+     call Grid_getCellCoords(JAXIS, CENTER, tileDesc%level, blkLimits(LOW, :), blkLimits(HIGH, :), yCenter)
      yCenter = yCenter - grv_ptypos
   endif
-  call Grid_getCellCoords(IAXIS, blockDesc, CENTER, gcell, xCenter, sizeX)
+  call Grid_getCellCoords(IAXIS, CENTER, tileDesc%level, blkLimits(LOW, :), blkLimits(HIGH, :), xCenter)
   xCenter = xCenter - grv_ptxpos
   
 
@@ -207,13 +216,12 @@ subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
 
      tmpdr32 = yCenter(j)*yCenter(j) + zCenter(k)*zCenter(k) 
 
-     do i = 1, numCells
-        ii = blkLimitsGC(LOW,IAXIS) + i - 1
+     do ii = lo, hi
 
         dr32 = sqrt(xCenter(ii)*xCenter(ii) + tmpdr32)
         dr32 = dr32*dr32*dr32
 
-        grav(i) = grv_factor*xCenter(ii)/dr32
+        grav(ii) = grv_factor*xCenter(ii)/dr32
      enddo
 
 
@@ -221,26 +229,24 @@ subroutine Gravity_accelOneRow (pos, sweepDir, tileDesc, numCells, grav, Uin, &
 
      tmpdr32 = xCenter(j)*xCenter(j) + zCenter(k)*zCenter(k) 
 
-     do i = 1, numCells
-        ii = blkLimitsGC(LOW,JAXIS) + i - 1
+     do ii = lo, hi
         
         dr32 = sqrt(yCenter(ii)*yCenter(ii) + tmpdr32)
         dr32 = dr32*dr32*dr32
 
-        grav(i) = grv_factor*yCenter(ii)/dr32
+        grav(ii) = grv_factor*yCenter(ii)/dr32
      enddo
 
   else if (sweepDir .eq. SWEEP_Z) then          ! z-component
 
      tmpdr32 = xCenter(j)*xCenter(j) + yCenter(k)*yCenter(k) 
 
-     do i = 1, numCells
-        ii = blkLimitsGC(LOW,JAXIS) + i - 1
+     do ii = lo, hi
         
         dr32 = sqrt(zCenter(ii)*zCenter(ii) + tmpdr32)           
         dr32 = dr32*dr32*dr32
         
-        grav(i) = grv_factor*zCenter(ii)/dr32
+        grav(ii) = grv_factor*zCenter(ii)/dr32
      enddo
 
   endif
