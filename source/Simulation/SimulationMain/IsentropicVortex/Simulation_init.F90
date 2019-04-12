@@ -50,18 +50,6 @@ subroutine Simulation_init()
   real :: entropy, dst, dsd
   call Driver_getMype(MESH_COMM,sim_meshMe)
 
-!! Initalize these variables. Caution: If uninitialized vars are not set in flash.par
-!! then some compilers (e.g. intel) that do not autoinitialize throw floating point error 
-!! at first instance
-  sim_xctrTrue = 0.
-  sim_yctrTrue = 0.
-  sim_diDomain = 0.
-  sim_djDomain = 0.
-  sim_imidDomain = 0.
-  sim_jmidDomain = 0.
-  sim_nxSubint = 1
-  sim_nySubint = 1
-  sim_vortexStrength =0.
 
   call RuntimeParameters_get( 'gamma', sim_gamma)
   call RuntimeParameters_get( 'u_ambient',sim_uAmbient  )
@@ -85,6 +73,10 @@ subroutine Simulation_init()
   call RuntimeParameters_get( 'rho_ambient', rhoAmbient  )
   call RuntimeParameters_get( 'p_ambient',   pAmbient  )
   
+  call RuntimeParameters_get( 'diDomain', sim_diDomain)
+  call RuntimeParameters_get( 'djDomain', sim_djDomain)
+  call RuntimeParameters_get( 'imidDomain', sim_imidDomain)
+  call RuntimeParameters_get( 'jmidDomain', sim_jmidDomain)
   
 !   Some checking of the inputs:
   if ( NDIM == 1 ) then

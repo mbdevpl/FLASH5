@@ -62,6 +62,11 @@ ymax            = 10.0
 nx_subint       = 1
 ny_subint       = 1
 
+imidDomain	= 0.
+jmidDomain	= 0.
+diDomain	= 0.
+djDomain	= 0.
+
 geometry        = "cartesian"
 
 xl_boundary_type = "periodic"
