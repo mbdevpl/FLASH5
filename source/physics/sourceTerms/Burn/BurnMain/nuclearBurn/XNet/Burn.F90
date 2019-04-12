@@ -271,6 +271,7 @@ subroutine Burn (  dt  )
         !$omp end parallel do
 
         call tileDesc%releaseDataPtr(solnData, CENTER)
+        nullify(solnData)
         deallocate(xCoord)
         deallocate(yCoord)
         deallocate(zCoord)
@@ -332,6 +333,8 @@ subroutine Burn (  dt  )
 
         ! get dimensions/limits and coordinates
         tileLimits = tileDesc%limits
+        lo(:)=tileDesc%limits(LOW,:)
+        hi(:)=tileDesc%limits(HIGH,:)        
 
         ! Get a pointer to solution data
         call tileDesc%getDataPtr(solnData, CENTER)
