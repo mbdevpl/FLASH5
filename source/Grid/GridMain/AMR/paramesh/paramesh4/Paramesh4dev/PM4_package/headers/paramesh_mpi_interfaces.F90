@@ -630,5 +630,13 @@
       end subroutine amr_morton_process
       end interface
 
+      interface
+         subroutine mpi_int_ssend(buf,count,datatype,dest,tag,comm,ierror)
+           implicit none
+           integer :: buf(*)
+           integer :: count,datatype,dest,tag,comm,ierror
+         end subroutine mpi_int_ssend
+      end interface
+
 
       end module paramesh_mpi_interfaces

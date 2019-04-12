@@ -19,8 +19,6 @@
 !#include <config.h>
 !#endif
 
-!!REORDER(5): unk, facevar[xyz], tfacevar[xyz]
-!!REORDER(4): recvar[xyz]f
 #include "paramesh_preprocessor.fh"
 
       module paramesh_interfaces
@@ -733,9 +731,10 @@
 
       interface
       subroutine amr_migrate_tree_data(new_loc,nprocs,mype)
+      use tree, ONLY: maxblocks_tr
       integer, intent(in)    ::  mype
       integer, intent(in)    ::  nprocs
-      integer, intent(inout) ::  new_loc(:,:)
+      integer, intent(inout) ::  new_loc(2,maxblocks_tr)
       end subroutine amr_migrate_tree_data
       end interface
 

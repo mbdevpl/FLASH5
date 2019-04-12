@@ -75,8 +75,9 @@ subroutine Grid_markRefineDerefine()
                    lrefine,lrefine_max, parent, nchild,child
 
 
-#include "Flash_mpi_implicitNone.fh"
+  implicit none
 
+  include 'Flash_mpi.h'
 #include "constants.h"
 #include "Flash.h"
   

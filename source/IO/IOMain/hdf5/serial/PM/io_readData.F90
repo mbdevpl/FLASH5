@@ -76,9 +76,8 @@ subroutine io_readData()
   use physicaldata, ONLY : unk, facevarx, facevary, facevarz
 
 !  use mpi
-  implicit none
 
-#include "Flash_mpi.h"
+#include "Flash_mpi_implicitNone.fh"
 
   type(tree_data_t) :: tree_data
       
@@ -110,9 +109,15 @@ subroutine io_readData()
   real,allocatable :: faceZBuf(:,:,:,:,:)
 
   integer :: xx, yy
-  
-  integer :: status(MPI_STATUS_SIZE)
-      
+
+#ifdef HAVE_MPIF08_MODULE
+  TYPE(MPI_Comm)   :: myGlobalComm
+  TYPE(MPI_Status) :: status
+#else
+  integer          :: myGlobalComm
+  integer          :: status(MPI_STATUS_SIZE)
+#endif
+
   character(len=4) :: recordLabel
 
   ! for logfile output
@@ -130,6 +135,12 @@ subroutine io_readData()
   logical, parameter :: do_gsurr_blks_read = .true.
 #else
   logical, parameter :: do_gsurr_blks_read = .false.
+#endif
+
+#ifdef HAVE_MPIF08_MODULE
+  myGlobalComm = MPI_Comm(io_globalComm)
+#else
+  myGlobalComm = io_globalComm
 #endif
 
   tree_data % bnd_box => bnd_boxt
@@ -211,7 +222,7 @@ subroutine io_readData()
 
   endif
 
-  call MPI_BARRIER(io_globalComm,ierr)  
+  call MPI_BARRIER(myGlobalComm,ierr)
 
   !all procs call broadcast
   call RuntimeParameters_bcast()
@@ -328,10 +339,10 @@ subroutine io_readData()
         if (jproc /= MASTER_PE) then
            
            call MPI_RECV(localNumBlockst, 1, FLASH_INTEGER, & 
-                jproc, 1, io_globalComm, status, ierr)
+                jproc, 1, myGlobalComm, status, ierr)
            
            call MPI_RECV(globalOffsett, 1, FLASH_INTEGER, & 
-                jproc, 2, io_globalComm, status, ierr)
+                jproc, 2, myGlobalComm, status, ierr)
 
         else
            localNumBlockst = localNumBlocks
@@ -410,41 +421,41 @@ subroutine io_readData()
            if (jproc /= MASTER_PE) then
               
               call MPI_SEND(coordt(1,1), MDIM*localNumBlockst, & 
-                   FLASH_REAL, jproc, 2, io_globalComm, ierr)
+                   FLASH_REAL, jproc, 2, myGlobalComm, ierr)
 
               call MPI_SEND(bsizet(1,1), MDIM*localNumBlockst, & 
-                   FLASH_REAL, jproc, 3, io_globalComm, ierr)
+                   FLASH_REAL, jproc, 3, myGlobalComm, ierr)
 
               call MPI_SEND(bnd_boxt(1,1,1), 2*MDIM*localNumBlockst, & 
-                   FLASH_REAL, jproc, 4, io_globalComm, ierr)
+                   FLASH_REAL, jproc, 4, myGlobalComm, ierr)
 
               call MPI_SEND(lrefinet(1), localNumBlockst, & 
-                   FLASH_INTEGER, jproc, 5, io_globalComm, ierr)
+                   FLASH_INTEGER, jproc, 5, myGlobalComm, ierr)
 
               call MPI_SEND(nodetypet(1), localNumBlockst, & 
-                   FLASH_INTEGER, jproc, 6, io_globalComm, ierr)
+                   FLASH_INTEGER, jproc, 6, myGlobalComm, ierr)
 
               call MPI_SEND (gidt(1,1), localNumBlockst*(nfaces+1+nchild), & 
-                   FLASH_INTEGER, jproc, 7, io_globalComm, ierr)
+                   FLASH_INTEGER, jproc, 7, myGlobalComm, ierr)
 
 #ifdef FLASH_GRID_PARAMESH3OR4
               call MPI_SEND(which_childt(1), localNumBlockst, & 
-                   FLASH_INTEGER, jproc, 8, io_globalComm, ierr)
+                   FLASH_INTEGER, jproc, 8, myGlobalComm, ierr)
 
               call MPI_SEND(bflagst(1,1), localNumBlockst*MFLAGS, & 
-                   FLASH_INTEGER, jproc, 9, io_globalComm, ierr)
+                   FLASH_INTEGER, jproc, 9, myGlobalComm, ierr)
 
               if (do_gsurr_blks_read) then
                  call MPI_SEND(gsurr_blkst(1,1,1,1,1), &
                       2*(1+(K1D*2))*(1+(K2D*2))*(1+(K3D*2))*localNumBlockst, &
-                      FLASH_INTEGER, jproc, 9999, io_globalComm, ierr)
+                      FLASH_INTEGER, jproc, 9999, myGlobalComm, ierr)
               end if
 #endif
 
               do i = UNK_VARS_BEGIN,UNK_VARS_END
                  call MPI_SEND (unkBuf(i,:,:,:,1:localNumBlockst), &
                       NXB*NYB*NZB*localNumBlockst, & 
-                      FLASH_REAL, jproc, 9+i, io_globalComm, ierr)
+                      FLASH_REAL, jproc, 9+i, myGlobalComm, ierr)
               end do
 #ifdef FLASH_GRID_PARAMESH3OR4
 
@@ -453,19 +464,19 @@ subroutine io_readData()
            call MPI_SEND (faceXBuf(i,:,:,:,1:localNumBlockst), &
                           (NXB+1)*NYB*NZB*localNumBlockst, &
                   FLASH_REAL, jproc, &
-                  9+NUNK_VARS+i, io_globalComm, ierr)
+                  9+NUNK_VARS+i, myGlobalComm, ierr)
         if(NDIM .gt. 1) then
            call MPI_SEND (faceYBuf(i,:,:,:,1:localNumBlockst), &
                           NXB*(NYB+1)*NZB*localNumBlockst, &
                   FLASH_REAL, jproc, &
                   9+NUNK_VARS+NFACE_VARS+i, &
-                  io_globalComm, ierr)
+                  myGlobalComm, ierr)
           if(NDIM .gt. 2) then
              call MPI_SEND (faceZBuf(i,:,:,:,1:localNumBlockst), &
                             NXB*NYB*(NZB+1)*localNumBlockst, &
                     FLASH_REAL, jproc, &
                     9+NUNK_VARS+(NFACE_VARS*2)+i, &
-                    io_globalComm, ierr)
+                    myGlobalComm, ierr)
                   end if
         end if
         end do
@@ -521,51 +532,51 @@ subroutine io_readData()
   else !io_globalMe /= MASTER_PE
      
      call MPI_SEND(localNumBlocks, 1, FLASH_INTEGER, & 
-          MASTER_PE, 1, io_globalComm, ierr)
+          MASTER_PE, 1, myGlobalComm, ierr)
      
      call MPI_SEND(gr_globalOffset, 1, FLASH_INTEGER, & 
-          MASTER_PE, 2, io_globalComm, ierr)
+          MASTER_PE, 2, myGlobalComm, ierr)
      
      if (localNumBlocks > 0) then
         
         call MPI_RECV(coord(1,1), MDIM*localNumBlocks, &
              FLASH_REAL, MASTER_PE, 2, & 
-             io_globalComm, status, ierr)
+             myGlobalComm, status, ierr)
         
         call MPI_RECV(bsize(1,1), MDIM*localNumBlocks, & 
              FLASH_REAL, MASTER_PE, 3, & 
-             io_globalComm, status, ierr)
+             myGlobalComm, status, ierr)
         
         call MPI_RECV(bnd_box(1,1,1), 2*MDIM*localNumBlocks, & 
              FLASH_REAL, MASTER_PE, 4, & 
-             io_globalComm, status, ierr)
+             myGlobalComm, status, ierr)
         
         call MPI_RECV(lrefine(1), localNumBlocks, & 
              FLASH_INTEGER, MASTER_PE, 5, & 
-             io_globalComm, status, ierr)
+             myGlobalComm, status, ierr)
         
         call MPI_RECV(nodetype(1), localNumBlocks, & 
              FLASH_INTEGER, MASTER_PE, 6, & 
-             io_globalComm, status, ierr)
+             myGlobalComm, status, ierr)
 
         call MPI_RECV(gr_gid(1,1), localNumBlocks*(nfaces+1+nchild), & 
              FLASH_INTEGER, MASTER_PE, 7, & 
-             io_globalComm, status, ierr)
+             myGlobalComm, status, ierr)
 
 #ifdef FLASH_GRID_PARAMESH3OR4
         call MPI_RECV(which_child(1), localNumBlocks, & 
              FLASH_INTEGER, MASTER_PE, 8, & 
-             io_globalComm, status, ierr)
+             myGlobalComm, status, ierr)
         
         call MPI_RECV(bflags(1,1), localNumBlocks*MFLAGS, & 
              FLASH_INTEGER, MASTER_PE, 9, & 
-             io_globalComm, status, ierr)
+             myGlobalComm, status, ierr)
 
         if (do_gsurr_blks_read) then
            call MPI_RECV(gr_gsurr_blks(1,1,1,1,1), &
                 2*(1+(K1D*2))*(1+(K2D*2))*(1+(K3D*2))*localNumBlocks, &
                 FLASH_INTEGER, MASTER_PE, 9999, & 
-                io_globalComm, status, ierr)
+                myGlobalComm, status, ierr)
         end if
 #endif
 
@@ -574,7 +585,7 @@ subroutine io_readData()
            call MPI_RECV(unkBuf(i,:,:,:,1:localNumBlocks), &
                 NXB*NYB*NZB*localNumBlocks, & 
                 FLASH_REAL, MASTER_PE, 9+i, & 
-                io_globalComm, status, ierr)
+                myGlobalComm, status, ierr)
            
         end do
         
@@ -592,7 +603,7 @@ subroutine io_readData()
                 (NXB+1)*NYB*NZB*localNumBlocks, & 
                 FLASH_REAL, MASTER_PE, &
         9+i+NUNK_VARS, & 
-                io_globalComm, status, ierr)
+                myGlobalComm, status, ierr)
          facevarx(i,io_ilo:io_ihi+1, io_jlo:io_jhi, io_klo:io_khi,1:localNumBlocks) = & 
          faceXBuf(i,1:NXB+1,1:NYB,1:NZB,1:localNumBlocks)
      deallocate(faceXBuf)
@@ -604,7 +615,7 @@ subroutine io_readData()
                 NXB*(NYB+1)*NZB*localNumBlocks, & 
                 FLASH_REAL, MASTER_PE, &
         9+i+NUNK_VARS+NFACE_VARS, & 
-                io_globalComm, status, ierr)
+                myGlobalComm, status, ierr)
     facevary(i,io_ilo:io_ihi, io_jlo:io_jhi+1, io_klo:io_khi,1:localNumBlocks) = & 
          faceYBuf(i,1:NXB,1:NYB+1,1:NZB,1:localNumBlocks)
      deallocate(faceYBuf)
@@ -616,7 +627,7 @@ subroutine io_readData()
                 NXB*NYB*(NZB+1)*localNumBlocks, & 
                 FLASH_REAL, MASTER_PE, &
         9+i+NUNK_VARS+(NFACE_VARS*2), & 
-                io_globalComm, status, ierr)
+                myGlobalComm, status, ierr)
            facevarz(i,io_ilo:io_ihi, io_jlo:io_jhi, io_klo:io_khi+1,1:localNumBlocks) = & 
            faceZBuf(i,1:NXB,1:NYB,1:NZB+1,1:localNumBlocks)
        deallocate(faceZBuf)
@@ -648,7 +659,7 @@ subroutine io_readData()
 #ifdef FLASH_GRID_PARAMESH3OR4
   if (do_gsurr_blks_read) then
      call MPI_Bcast (gr_is_gsurr_blks_initialized, 1, FLASH_LOGICAL, MASTER_PE, & 
-          io_globalComm, ierr)
+          myGlobalComm, ierr)
   else
      gr_is_gsurr_blks_initialized = .false.
   end if
@@ -657,7 +668,7 @@ subroutine io_readData()
   call Grid_receiveInputData(localNumBlocks, alnblocks, xx)
 
 
-  call MPI_BARRIER(io_globalComm,ierr)
+  call MPI_BARRIER(myGlobalComm,ierr)
 
   return  
 end subroutine io_readData

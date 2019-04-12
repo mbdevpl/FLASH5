@@ -51,11 +51,10 @@ subroutine Logfile_create ()
     PhysicalConstants_listUnits, PhysicalConstants_list
   use Multispecies_interface, ONLY : Multispecies_list
 
-  implicit none
+#include "Flash_mpi_implicitNone.fh"
 
 #include "constants.h"
 #include "Flash.h"
-  include "Flash_mpi.h"
 
   character(len=MAX_STRING_LENGTH)   :: names, names2
   integer                            :: i
