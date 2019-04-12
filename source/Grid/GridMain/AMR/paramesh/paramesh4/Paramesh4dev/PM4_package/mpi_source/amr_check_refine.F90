@@ -346,8 +346,8 @@
 !start of new test section
          lrecv=.true.
       if(spherical_pm) then
-         if(j.eq.3.and.abs(bnd_box(2,2,i)-pi).lt.eps) lrecv=.false.
-         if(j.eq.4.and.abs(bnd_box(1,2,i)).lt.eps) lrecv=.false.
+         if(j.eq.4.and.abs(bnd_box(2,2,i)-pi).lt.eps) lrecv=.false.
+         if(j.eq.3.and.abs(bnd_box(1,2,i)).lt.eps) lrecv=.false.
       endif
             if (lrecv) then
             if (neigh(1,j,i).gt.0) then
@@ -374,7 +374,7 @@
                if (neigh(2,jr0,i).eq.mype) then
 ! Note the array ref_testts is larger than is really needed. More careful
 ! coding may reduce the size.
-                  ref_testts(:,:,:,i) = ref_test(:,:,:,i)
+                  ref_testts(:,:,:,neigh(1,jr0,i)) = ref_test(:,:,:,i)
                end if
             end if
             end if
