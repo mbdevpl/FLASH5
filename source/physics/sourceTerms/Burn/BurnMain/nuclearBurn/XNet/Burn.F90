@@ -115,7 +115,7 @@ subroutine Burn (  dt  )
   real :: ei, ek, enuc
   integer :: i, j, k, m, n, ii, jj, kk, mm, nn
 
-  integer :: level, maxLev
+  integer :: level
   type(Grid_iterator_t)  :: itor
   type(Grid_tile_t) :: tileDesc
   logical :: useTiling
@@ -129,12 +129,6 @@ subroutine Burn (  dt  )
   call Timers_start("burn")
 
   call Timers_start("burn_top")
-
-#ifdef FLASH_GRID_UG
-     maxLev = 1
-#else
-     call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
-#endif
 
   blockCount = 0
   iSize_max = 1
@@ -174,13 +168,12 @@ subroutine Burn (  dt  )
 
   nzones = 0
   thisBlock = 0
-  do level = 1, maxLev
-     call Grid_getTileIterator(itor, LEAF, level=level, tiling=.false. )
+     call Grid_getTileIterator(itor, LEAF, tiling=.false. )
      do while(itor%isValid())
         call itor%CurrentTile(tileDesc)
         lo(:)=tileDesc%limits(LOW,:)
         hi(:)=tileDesc%limits(HIGH,:)        
-
+        level = tileDesc%level
         loHalo(:)=tileDesc%grownLimits(LOW,:)
         hihalo(:)=tileDesc%grownLimits(HIGH,:)
        
@@ -281,7 +274,6 @@ subroutine Burn (  dt  )
 
      end do
      call Grid_releaseTileIterator(itor)
-  end do
 
   call Timers_stop("burn_top")
 
@@ -324,8 +316,7 @@ subroutine Burn (  dt  )
   useTiling = bn_enableTiling
   
   thisBlock = 0
-  do level = 1, maxLev
-     call Grid_getTileIterator(itor, LEAF, level=level, tiling=useTiling)
+     call Grid_getTileIterator(itor, LEAF, tiling=useTiling)
      do while(itor%isValid())
         call itor%currentTile(tileDesc)
 
@@ -402,7 +393,6 @@ subroutine Burn (  dt  )
 
      end do
      call Grid_releaseTileIterator(itor)
-  end do
 
   call Timers_stop("burn_bottom")
 
