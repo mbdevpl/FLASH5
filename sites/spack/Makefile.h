@@ -172,6 +172,8 @@ LIB_BLAS   = -lopenblas
 LIB_SUPERLU= -lsuperlu
 LIB_LAPACK = $(LIB_BLAS) $(LIB_SUPERLU)
 
+LIB_CUDA =
+
 LIB_PAPI  =
 LIB_MATH  =
 
