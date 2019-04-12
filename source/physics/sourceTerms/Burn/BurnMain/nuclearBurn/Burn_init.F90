@@ -51,7 +51,7 @@ subroutine Burn_init()
   use Burn_data, ONLY: bn_algebra, bn_odeStepper, bn_useBurnTable, bn_useBurn, bn_meshMe, &
      &    bn_useShockBurn, bn_smallx, &
      &    bn_nuclearTempMin, bn_nuclearTempMax, bn_nuclearDensMin, bn_nuclearDensMax, &
-     &    bn_nuclearNI56Max, bn_enucDtFactor, bn_meshMe
+     &    bn_nuclearNI56Max, bn_enucDtFactor, bn_meshMe, bn_enableTiling
   use Driver_interface, ONLY : Driver_abortFlash, Driver_getMype
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get
 
@@ -109,6 +109,9 @@ subroutine Burn_init()
   call RuntimeParameters_get( 'nuclearNI56Max', bn_nuclearNI56Max)
 
   call RuntimeParameters_get('enucDtFactor', bn_enucDtFactor)
+
+!For tiling 
+  call RuntimeParameters_get("gr_useTiling", bn_enableTiling)
 
 
   !!  Now initialize the network things

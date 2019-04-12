@@ -6,7 +6,7 @@
 
 !!REORDER(4): solnData
 
-subroutine Simulation_initBlock(solnData, block)
+subroutine Simulation_initBlock(solnData, tileDesc)
 
   use Simulation_data
   use sim_local_interface, ONLY : sim_interpolate1dWd
@@ -14,18 +14,18 @@ subroutine Simulation_initBlock(solnData, block)
   use Grid_interface, ONLY : Grid_getDeltas, Grid_getCellCoords, Grid_getGeometry, &
      Grid_renormAbundance
   use Eos_interface, ONLY : Eos_wrapped
-  use block_metadata, ONLY : block_metadata_t
+  use Grid_tile, ONLY : Grid_tile_t
   implicit none
 
 #include "constants.h"
 #include "Flash.h"
 
   real, dimension(:,:,:,:), pointer :: solnData
-  type(block_metadata_t), intent(in) :: block
+  type(Grid_tile_t), intent(in) :: tileDesc
 
   logical, parameter :: useGuardCell = .true.
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
-  integer :: iSizeGC, jSizeGC, kSizeGC
+  integer, dimension(2,MDIM) :: tileLimits, tileLimitsGC
+  integer :: sizeX,sizeY,sizeZ,lev
   real, allocatable, dimension(:) :: xCenter, yCenter, zCenter
   real, allocatable, dimension(:) :: xLeft, yLeft, zLeft
   real, allocatable, dimension(:) :: xRight, yRight, zRight
@@ -44,42 +44,47 @@ subroutine Simulation_initBlock(solnData, block)
 
   allocate(xinitial(sim_wd_nspec))
 
-  ! Get the indices of the blocks
-  blkLimits = block%limits
-  blkLimitsGC = block%limitsGC
-  iSizeGC = blkLimitsGC(HIGH,IAXIS) - blkLimitsGC(LOW,IAXIS) + 1
-  jSizeGC = blkLimitsGC(HIGH,JAXIS) - blkLimitsGC(LOW,JAXIS) + 1
-  kSizeGC = blkLimitsGC(HIGH,KAXIS) - blkLimitsGC(LOW,KAXIS) + 1
-  allocate(xCenter(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-  allocate(xLeft(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-  allocate(xRight(blkLimitsGC(LOW,IAXIS):blkLimitsGC(HIGH,IAXIS)))
-  allocate(yCenter(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-  allocate(yLeft(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-  allocate(yRight(blkLimitsGC(LOW,JAXIS):blkLimitsGC(HIGH,JAXIS)))
-  allocate(zCenter(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-  allocate(zLeft(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
-  allocate(zRight(blkLimitsGC(LOW,KAXIS):blkLimitsGC(HIGH,KAXIS)))
+  ! Get the indices of the tileDescs
+  tileLimits = tileDesc%limits
+  tileLimitsGC = tileDesc%grownLimits
+  lev = tileDesc%level
 
-  call Grid_getDeltas(block%level, delta)
+  allocate(xCenter(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)))
+  allocate(xRight(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)))
+  allocate(xLeft(tileLimits(LOW,IAXIS):tileLimits(HIGH,IAXIS)))
+  allocate(yCenter(tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS)))
+  allocate(yRight(tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS)))
+  allocate(yLeft(tileLimits(LOW,JAXIS):tileLimits(HIGH,JAXIS)))
+  allocate(zCenter(tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)))
+  allocate(zRight(tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)))
+  allocate(zLeft(tileLimits(LOW,KAXIS):tileLimits(HIGH,KAXIS)))
+
+  sizeX=SIZE(xCenter)
+  sizeY=SIZE(yCenter)
+  sizeZ=SIZE(zCenter)
+
+  call Grid_getDeltas(tileDesc%level, delta)
   dx = delta(IAXIS)
   dy = delta(JAXIS)
   dz = delta(KAXIS)
 
-  call Grid_getCellCoords(IAXIS,block,CENTER,    useGuardCell,xCenter,iSizeGC)
-  call Grid_getCellCoords(IAXIS,block,LEFT_EDGE, useGuardCell,xLeft,  iSizeGC)
-  call Grid_getCellCoords(IAXIS,block,RIGHT_EDGE,useGuardCell,xRight, iSizeGC)
+  if (NDIM > 2) then
+     call Grid_getCellCoords (KAXIS, CENTER, lev, tileLimits(LOW,:), tileLimits(HIGH,:), zCenter)
+     call Grid_getCellCoords (KAXIS, LEFT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), zLeft)
+     call Grid_getCellCoords (KAXIS, RIGHT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), zRight)
+  end if
+  if(NDIM>1) then
+     call Grid_getCellCoords (JAXIS, CENTER, lev, tileLimits(LOW,:), tileLimits(HIGH,:), yCenter)
+     call Grid_getCellCoords (JAXIS, LEFT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), yLeft)
+     call Grid_getCellCoords (JAXIS, RIGHT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), yRight)
+  end if
+  call Grid_getCellCoords (IAXIS, CENTER, lev, tileLimits(LOW,:), tileLimits(HIGH,:), xCenter)
+  call Grid_getCellCoords (IAXIS, LEFT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), xLeft)
+  call Grid_getCellCoords (IAXIS, RIGHT_EDGE, lev, tileLimits(LOW,:), tileLimits(HIGH,:), xRight)
 
-  call Grid_getCellCoords(JAXIS,block,CENTER,    useGuardCell,yCenter,jSizeGC)
-  call Grid_getCellCoords(JAXIS,block,LEFT_EDGE, useGuardCell,yLeft,  jSizeGC)
-  call Grid_getCellCoords(JAXIS,block,RIGHT_EDGE,useGuardCell,yRight, jSizeGC)
-
-  call Grid_getCellCoords(KAXIS,block,CENTER,    useGuardCell,zCenter,kSizeGC)
-  call Grid_getCellCoords(KAXIS,block,LEFT_EDGE, useGuardCell,zLeft,  kSizeGC)
-  call Grid_getCellCoords(KAXIS,block,RIGHT_EDGE,useGuardCell,zRight, kSizeGC)
-
-  do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
-     do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
-        do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
+  do k = tileLimits(LOW,KAXIS), tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS), tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS), tileLimits(HIGH,IAXIS)
 
            !-----------------------------------------------
            !  determine state of material at this radius if unburned from external 1-d hyrdostatic model
@@ -236,14 +241,14 @@ subroutine Simulation_initBlock(solnData, block)
      end do
   end do
 
-  call Grid_renormAbundance(block,blkLimits,solnData)
+  call Grid_renormAbundance(tileDesc,tileLimits,solnData)
 
-  call Eos_wrapped(MODE_DENS_TEMP,blkLimits,solnData)
+  call Eos_wrapped(MODE_DENS_TEMP,tileLimits,solnData)
 
   ! Giant traffic cone
-  do k = blkLimits(LOW,KAXIS), blkLimits(HIGH,KAXIS)
-     do j = blkLimits(LOW,JAXIS), blkLimits(HIGH,JAXIS)
-        do i = blkLimits(LOW,IAXIS), blkLimits(HIGH,IAXIS)
+  do k = tileLimits(LOW,KAXIS), tileLimits(HIGH,KAXIS)
+     do j = tileLimits(LOW,JAXIS), tileLimits(HIGH,JAXIS)
+        do i = tileLimits(LOW,IAXIS), tileLimits(HIGH,IAXIS)
            dens = solnData(DENS_VAR,i,j,k)
            temp = solnData(TEMP_VAR,i,j,k)
            pres = solnData(PRES_VAR,i,j,k)
