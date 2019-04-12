@@ -1,0 +1,23 @@
+xmin = 0.0
+xmax = 4.0
+ymin = 0.0
+ymax = 180.0
+xl_boundary_type               = "reflect"
+xr_boundary_type               = "outflow"
+yl_boundary_type               = "reflect"
+yr_boundary_type               = "reflect"
+
+geometry = "spherical"
+#geometry = "polar"
+
+nblockx = 4
+nblocky = 3
+lrefine_max = 3
+#refine_var_1 = "dens"
+#refine_cutoff_1 = 0.01
+#derefine_cutoff_1 = 0.005
+
+nrefs = 1
+
+CheckpointFileIntervalStep = 1
+plot_var_1 = "dens"
