@@ -131,7 +131,10 @@ subroutine IO_writeCheckpoint()
   !if particles are  not included in this simulation this
   !function will be empty
 
+!! Devnote :: preprocessors because amrex particles are being handled through amrex grid
+#ifndef FLASH_GRID_AMREX
   call IO_writeParticles( .true.)
+#endif
 
   call IO_writeUserArray()
 
