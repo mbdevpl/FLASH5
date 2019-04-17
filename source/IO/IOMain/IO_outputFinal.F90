@@ -48,7 +48,10 @@ subroutine IO_outputFinal()
    
      call IO_writePlotfile(.true.)
      
+!! Devnote :: preprocessors because amrex particles are being handled through amrex grid
+#ifndef FLASH_GRID_AMREX
      call IO_writeParticles(.false.)
+#endif
   end if
 
   io_outputInStack = .false.

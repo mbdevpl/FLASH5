@@ -2,7 +2,7 @@
 
 #               AMR parameters
 
-lrefine_max     = 3
+lrefine_max     = 4
 lrefine_min     = 1
 refine_var_1     = "dens"
 
@@ -61,11 +61,6 @@ ymax            = 10.0
 
 nx_subint       = 1
 ny_subint       = 1
-
-imidDomain	= 0.
-jmidDomain	= 0.
-diDomain	= 0.
-djDomain	= 0.
 
 geometry        = "cartesian"
 

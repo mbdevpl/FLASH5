@@ -49,6 +49,8 @@ subroutine Simulation_init()
 
   real :: entropy, dst, dsd
   call Driver_getMype(MESH_COMM,sim_meshMe)
+
+
   call RuntimeParameters_get( 'gamma', sim_gamma)
   call RuntimeParameters_get( 'u_ambient',sim_uAmbient  )
   call RuntimeParameters_get( 'v_ambient',sim_vAmbient  )
@@ -71,6 +73,10 @@ subroutine Simulation_init()
   call RuntimeParameters_get( 'rho_ambient', rhoAmbient  )
   call RuntimeParameters_get( 'p_ambient',   pAmbient  )
   
+  call RuntimeParameters_get( 'diDomain', sim_diDomain)
+  call RuntimeParameters_get( 'djDomain', sim_djDomain)
+  call RuntimeParameters_get( 'imidDomain', sim_imidDomain)
+  call RuntimeParameters_get( 'jmidDomain', sim_jmidDomain)
   
 !   Some checking of the inputs:
   if ( NDIM == 1 ) then

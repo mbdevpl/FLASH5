@@ -81,8 +81,10 @@ subroutine IO_outputInitial( nbegin, initialSimTime)
 
      if( io_restart) forcePlotfile = .true.
      call IO_writePlotfile(forcePlotfile)
-
+!! Devnote :: preprocessors because amrex particles are being handled through amrex grid
+#ifndef FLASH_GRID_AMREX
      call IO_writeParticles( .false.)
+#endif
   else
      io_justCheckpointed = .false.
   end if

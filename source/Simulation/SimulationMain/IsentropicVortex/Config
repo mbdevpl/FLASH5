@@ -61,6 +61,12 @@ PARAMETER nx_subint        INTEGER 10
 D ny_subint number of subintervals along JAXIS
 PARAMETER ny_subint        INTEGER 10
 
+D Four parameter to initialize the domain properly 
+PARAMETER diDomain             REAL    0.0
+PARAMETER djDomain             REAL    0.0
+PARAMETER imidDomain             REAL    0.0
+PARAMETER jmidDomain             REAL    0.0
+
 PARTICLEPROP pdens		REAL
 PARTICLEMAP TO pdens FROM VARIABLE dens
 #! To enable particle tracking of temperature, enable the
