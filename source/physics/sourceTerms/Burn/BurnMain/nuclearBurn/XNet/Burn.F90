@@ -54,7 +54,7 @@ subroutine Burn (  dt  )
   use bn_xnetData, ONLY : xnet_myid, xnet_nzbatchmx, xnet_inuc2unk
   use Burn_data, ONLY : bn_nuclearTempMin, bn_nuclearTempMax, bn_nuclearDensMin, &
        &   bn_nuclearDensMax, bn_nuclearNI56Max, bn_useShockBurn, &
-       &   bn_smallx, bn_useBurn, ionam
+       &   bn_smallx, bn_useBurn, ionam, bn_enableTiling
   use Driver_interface, ONLY : Driver_abortFlash
   use Eos_interface, ONLY : Eos_wrapped
   use Grid_interface, ONLY : Grid_fillGuardCells, &
@@ -91,7 +91,8 @@ subroutine Burn (  dt  )
   
   integer :: iSize, jSize, kSize, iSizeGC, jSizeGC, kSizeGC
   integer :: iSize_max, jSize_max, kSize_max
-  integer,dimension(1:MDIM) :: lo, hi, loGC,hiGC
+  integer,dimension(1:MDIM) :: lo, hi, loGC,hiGC, loHalo, hiHalo
+  integer, dimension(2,MDIM) :: tileLimits
   logical :: okBurnTemp, okBurnDens, okBurnShock, okBurnNickel
   logical, parameter :: getGuardCells = .true.
 
@@ -114,9 +115,10 @@ subroutine Burn (  dt  )
   real :: ei, ek, enuc
   integer :: i, j, k, m, n, ii, jj, kk, mm, nn
 
-  integer :: level, maxLev
+  integer :: level
   type(Grid_iterator_t)  :: itor
   type(Grid_tile_t) :: tileDesc
+  logical :: useTiling
 
   ! ----------------------- check if burning is requested in runtime parameters -------
   if (.not. bn_useBurn) return
@@ -127,12 +129,6 @@ subroutine Burn (  dt  )
   call Timers_start("burn")
 
   call Timers_start("burn_top")
-
-#ifdef FLASH_GRID_UG
-     maxLev = 1
-#else
-     call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
-#endif
 
   blockCount = 0
   iSize_max = 1
@@ -172,16 +168,14 @@ subroutine Burn (  dt  )
 
   nzones = 0
   thisBlock = 0
-  do level = 1, maxLev
-     call Grid_getTileIterator(itor, LEAF, level=level, tiling=.false. )
-     do while(itor%isalid())
+     call Grid_getTileIterator(itor, LEAF, tiling=.false. )
+     do while(itor%isValid())
         call itor%CurrentTile(tileDesc)
         lo(:)=tileDesc%limits(LOW,:)
         hi(:)=tileDesc%limits(HIGH,:)        
-
-        loHalo(1:NDIM) = lo(1:NDIM) - NGUARD
-        hihalo(1:NDIM) = lo(1:NDIM) + NGUARD
-
+        level = tileDesc%level
+        loHalo(:)=tileDesc%grownLimits(LOW,:)
+        hihalo(:)=tileDesc%grownLimits(HIGH,:)
        
         thisBlock = thisBlock + 1
 
@@ -215,7 +209,7 @@ subroutine Burn (  dt  )
 
         ! Shock detector
         if (.NOT. bn_useShockBurn) then
-           call Hydro_shockStrength(solnData, shock, lo,hi, loHalo, hiHalo, (/0,0,0/), &
+           call Hydro_shockStrength(solnData, shock, lo,hi, loHalo, hiHalo, &
               xCoord,yCoord,zCoord,shock_thresh,shock_mode)
         else
            shock(:,:,:) = 0.0
@@ -270,6 +264,7 @@ subroutine Burn (  dt  )
         !$omp end parallel do
 
         call tileDesc%releaseDataPtr(solnData, CENTER)
+        nullify(solnData)
         deallocate(xCoord)
         deallocate(yCoord)
         deallocate(zCoord)
@@ -279,7 +274,6 @@ subroutine Burn (  dt  )
 
      end do
      call Grid_releaseTileIterator(itor)
-  end do
 
   call Timers_stop("burn_top")
 
@@ -319,17 +313,19 @@ subroutine Burn (  dt  )
   call Timers_stop("burn_middle")
 
   call Timers_start("burn_bottom")
-
+  useTiling = bn_enableTiling
+  
   thisBlock = 0
-  do level = 1, maxLev
-     call Grid_getTileIterator(itor, LEAF, level=level, tile=useTiling)
-     do while(itor%is_valid())
+     call Grid_getTileIterator(itor, LEAF, tiling=useTiling)
+     do while(itor%isValid())
         call itor%currentTile(tileDesc)
 
         thisBlock = thisBlock + 1
 
         ! get dimensions/limits and coordinates
-        blkLimits = tileDesc%limits
+        tileLimits = tileDesc%limits
+        lo(:)=tileDesc%limits(LOW,:)
+        hi(:)=tileDesc%limits(HIGH,:)        
 
         ! Get a pointer to solution data
         call tileDesc%getDataPtr(solnData, CENTER)
@@ -383,21 +379,20 @@ subroutine Burn (  dt  )
         if (any(burnedZone(:,:,:,thisBlock))) then
 
 #ifdef FLASH_UHD_3T
-           call Eos_wrapped(MODE_DENS_EI_GATHER,blkLimits,solnData,CENTER) ! modified for 3T
+           call Eos_wrapped(MODE_DENS_EI_GATHER,tileLimits,solnData,CENTER) ! modified for 3T
 #else
-           call Eos_wrapped(MODE_DENS_EI,blkLimits,solnData,CENTER)
+           call Eos_wrapped(MODE_DENS_EI,tileLimits,solnData,CENTER)
 #endif
 
         end if
 
-        call tileDesc%releaseDataPtr(tileDesc,solnData)
+        call tileDesc%releaseDataPtr(solnData, CENTER)
         nullify(solnData)
 
         call itor%next()
 
      end do
      call Grid_releaseTileIterator(itor)
-  end do
 
   call Timers_stop("burn_bottom")
 
