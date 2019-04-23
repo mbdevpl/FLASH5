@@ -149,7 +149,7 @@ subroutine Grid_markRefineDerefine()
   specs(7) = 0.0
   call Grid_markRefineSpecialized(RECTANGLE, 7, specs, gr_maxRefine)
 
-  ! Apply specialized refinement after simuation has started:
+  ! Apply specialized refinement after simulation has started:
   if(time > 0) then
      specs = 0
      specs(1) = 1.48

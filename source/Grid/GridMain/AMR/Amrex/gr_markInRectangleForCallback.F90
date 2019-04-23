@@ -23,7 +23,8 @@
 !!  jc -                                          JAXIS
 !!  kc -                                          KAXIS
 !!               (Coordinates for nonexistent dimensions are ignored.)
-!!  radius -       Radius of the region
+!!   contained - If /= 0, refine only blocks completely contained within
+!!               the rectangle; otherwise refine blocks with any overlap.
 !!  lev - the 0-based level index
 !!  tags - C-pointer to an AMReX tagbox array.  The elements of this are tag
 !!         boxes.  The cells of these tagboxes are set to communicate a need
@@ -110,6 +111,7 @@ subroutine gr_markInRectangleForCallback(ilb, irb, jlb, jrb, klb, krb, contained
 
      call Grid_getBlkCenterCoords(blockDesc, blockCenter)
      call blockDesc % physicalSize(blockSize)
+     blockSize(:)  = 0.5 * blockSize(:)
 
         xl = blockCenter(1) - blockSize(1)
         xr = blockCenter(1) + blockSize(1)
