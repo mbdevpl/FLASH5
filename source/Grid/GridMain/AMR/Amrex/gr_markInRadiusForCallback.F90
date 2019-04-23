@@ -101,6 +101,7 @@ subroutine gr_markInRadiusForCallback(ic, jc, kc, radius, lev, tags, tagval)
 
      call Grid_getBlkCenterCoords(blockDesc, blockCenter)
      call blockDesc % physicalSize(blockSize)
+     blockSize(:)  = 0.5 * blockSize(:)
 
 ! Find minimum distance from (ic,jc,kc) for each dimension.  For each
 ! coordinate, if both "left" and "right" distances have the same sign,
