@@ -5,14 +5,14 @@
 !!
 !! SYNOPSIS
 !!
-!!  gr_markRefineDerefineCallback(integer(IN) :: lev,
+!!  call gr_markRefineDerefineCallback(integer(IN) :: lev,
 !!                                c_ptr(IN)   :: tags,
 !!                                real(IN)    :: time,
 !!                                c_char(IN)  :: tagval,
 !!                                c_char(IN)  :: clearval)
-!!  
+!!
 !!  DESCRIPTION
-!!  
+!!
 !!  This routine is a callback subroutine that is registered with AMReX's
 !!  AMR Core layer at initialization.  AMReX may call this subroutine many times
 !!  during the process of grid refinement so that FLASH may communicate which
@@ -30,7 +30,7 @@
 !!  refinement variable is greater than the variable's associated refinement
 !!  cutoff value.
 !!
-!!  ARGUMENTS 
+!!  ARGUMENTS
 !!
 !!    lev - the 0-based level index
 !!    tags - C-pointer to an AMReX tagbox array.  The elements of this are tag
@@ -41,9 +41,9 @@
 !!             each cell that has insufficient resolution.
 !!    clearval - for full, rich AMReX tagging, this values should be assigned to
 !!               each cell that has sufficient resolution.
-!! 
+!!
 !!  SEE ALSO
-!!  
+!!
 !!    gr_estimateBlkError
 !!
 !!***
