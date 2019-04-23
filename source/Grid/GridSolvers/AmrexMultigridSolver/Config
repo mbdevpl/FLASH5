@@ -1,0 +1,38 @@
+USESETUPVARS Grid
+#IF Grid not in ["AMREX"]
+#   SETUPERROR AmrexMultigridSolver must be run with AMReX grid only!!!
+#ENDIF
+
+D CHILDORDER paramesh UG multiScalar
+
+D EXCLUSIVE paramesh UG
+
+D Params for amrex multigrid solve
+PARAMETER gr_amrexLs_max_level	INTEGER 1
+PARAMETER gr_amrexLs_ref_ratio	INTEGER 2
+PARAMETER gr_amrexLs_n_cell		INTEGER 32 #128
+PARAMETER gr_amrexLs_max_grid_size	INTEGER 16 #64
+
+D composite solve or level by level?
+PARAMETER gr_amrexLs_composite_solve	BOOLEAN	FALSE
+
+D 1=Poisson 2=ABEC
+PARAMETER gr_amrexLs_prob_type	INTEGER 1
+
+D For MLMG
+PARAMETER gr_amrexLs_verbose	INTEGER 2
+PARAMETER gr_amrexLs_cg_verbose	INTEGER 0
+PARAMETER gr_amrexLs_max_iter	INTEGER 100
+
+D number of F-cycles before switching to V.  To do pure V-cycle, set to 0
+PARAMETER gr_amrexLs_max_fmg_iter	INTEGER 0
+PARAMETER gr_amrexLs_linop_maxorder	INTEGER 2
+
+D Do agglomeration on AMR Level 0?
+PARAMETER gr_amrexLs_agglomeration	BOOLEAN TRUE
+
+D Do consolidation?
+PARAMETER gr_amrexLs_consolidation	BOOLEAN TRUE
+
+D Variable for solution of Poisson equation
+VARIABLE phi

@@ -1,0 +1,124 @@
+#	Runtime parameters for the Sedov explosion problem.
+#       Version for testing unsplit Hydro with AMR implementations that 
+#       are configured to allow for dynamic Grid refinement.
+#    
+#       Note that the refine/derefine cutoffs are set equal so that all AMR
+#       implementations reduce to identical refinement operations.  Since the
+#       different implementations likely use different interpolation
+#       implementations, the actual refinement sequence may differ.
+
+#	Parameters for initial model
+#		Ambient pressure and density, explosion energy, initial
+#		radius of perturbation, and location of explosion center
+sim_pAmbient	 = 1.E-5
+sim_rhoAmbient	 = 1.
+sim_expEnergy	 = 1.
+sim_rInit		 = 0.109375
+sim_xctr		 = 0.5
+sim_yctr		 = 0.5
+sim_zctr		 = 0.5
+sim_profFileName = "sedovSolutionModLong.dat"
+
+#		Gas ratio of specific heats
+gamma           = 1.4
+
+#	Computational volume parameters
+#		Grid dimensionality and geometry
+geometry = "cartesian"
+
+#		Size of computational volume
+xmin		= 0.
+xmax		= 1.
+ymin		= 0.
+ymax		= 1.
+
+#		Particles parameters
+useParticles= .true.
+pt_numX = 10
+pt_numY = 10
+pt_numZ = 1
+pt_maxPerProc=200
+pt_maxPerBlock=100
+
+#		Boundary conditions
+xl_boundary_type      = "outflow"
+xr_boundary_type      = "outflow"
+yl_boundary_type      = "outflow"
+yr_boundary_type      = "outflow"
+
+#	Simulation (grid, time, I/O) parameters
+cfl		        = 0.45
+refine_var_1    = "dens"
+refine_var_2    = "pres"
+basenm          = "sedov_"
+restart         = .false.
+
+#	checkpoint file output parameters
+checkpointFileIntervalTime = 0.02
+checkpointFileIntervalStep = 0
+checkpointFileNumber       = 0
+
+#	plotfile output parameters
+plotfileIntervalTime = 0.02
+plotfileIntervalStep = 0
+plotfileNumber       = 0
+
+nend            = 1000
+tmax            = 0.3
+
+run_comment     = "3D Sedov explosion, from t=0 with sim_rInit = 3.5dx_min"
+log_file        = "sedov.log"
+eintSwitch      = 1.e-4
+flux_correct    = .FALSE.
+
+plot_var_1 = "dens"
+plot_var_2 = "pres"
+plot_var_3 = "temp"
+
+#  Adaptive Grid refinement parameters
+lrefine_max       = 4
+refine_var_1      = "dens"
+refine_var_2      = "pres"
+refine_cutoff_1   = 0.75
+derefine_cutoff_1 = 0.75
+
+gr_useTiling = .FALSE.
+gr_tileSizeX = 4
+gr_tileSizeY = 2
+gr_tileSizeZ = 1
+
+# Uniform Grid specific parameters 
+iProcs = 1	#num procs in i direction
+jProcs = 1	#num procs in j direction
+kProcs = 1
+ 
+## -------------------------------------------------------------##
+##  SWITCHES SPECIFIC TO THE UNSPLIT HYDRO SOLVER               ##
+#	I. INTERPOLATION SCHEME:
+order		= 3      # Interpolation order (first/second/third/fifth order)
+slopeLimiter    = "mc"   # Slope limiters (minmod, mc, vanLeer, hybrid, limited)
+LimitedSlopeBeta= 1.     # Slope parameter for the "limited" slope by Toro
+charLimiting	= .true. # Characteristic limiting vs. Primitive limiting
+
+use_avisc	= .true. # use artificial viscosity (originally for PPM)
+#cvisc		= 0.1     # coefficient for artificial viscosity
+use_flattening	= .false. # use flattening (dissipative) (originally for PPM)
+use_steepening	= .false. # use contact steepening (originally for PPM)
+use_upwindTVD	= .false. # use upwind biased TVD slope for PPM (need nguard=6)
+
+#	II. RIEMANN SOLVERS:
+RiemannSolver	= "HLL"       # Roe, HLL, HLLC, LLF, Marquina
+entropy         = .false.     # Entropy fix for the Roe solver
+
+#	III. STRONG SHOCK HANDELING SCHEME:
+shockDetect	= .false.     # Shock Detect for numerical stability
+## -------------------------------------------------------------##
+
+## ---------------------------------------------------------------##
+##  SWITCHES SPECIFIC TO THE SUPER-TIME-STEPPING (STS) ALGORITHM  ##
+##  NOTE: For details on using STS runtime parameters, please     ##
+##        refer to user's guide (Driver chapter).                 ##
+useSTS                  = .false.
+nstepTotalSTS           = 5
+nuSTS                   = 0.2
+## ---------------------------------------------------------------##
