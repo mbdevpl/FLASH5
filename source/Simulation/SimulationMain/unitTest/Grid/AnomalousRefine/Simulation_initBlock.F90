@@ -50,7 +50,11 @@ subroutine Simulation_initBlock(solnData, tileDesc)
 
   blkLimits  (:,:)=tileDesc%limits(:,:)
   blkLimitsGC(:,:)=tileDesc%blkLimitsGC(:,:)
+#ifdef FLASH_GRID_PARAMESH
   blockID         =tileDesc%id
+#else
+  blockID         =tileDesc%grid_index ! just some integer...
+#endif
   grd(:)          =blkLimits(LOW,:)-blkLimitsGC(LOW,:)
 
   blk=(gr_MeshMe*10.0+blockID)
