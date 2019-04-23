@@ -5,14 +5,14 @@
 !!
 !! SYNOPSIS
 !!
-!!  gr_markRefineDerefineCallback(integer(IN) :: lev,
+!!  call gr_markRefineDerefineCallback(integer(IN) :: lev,
 !!                                c_ptr(IN)   :: tags,
 !!                                real(IN)    :: time,
 !!                                c_char(IN)  :: tagval,
 !!                                c_char(IN)  :: clearval)
-!!  
+!!
 !!  DESCRIPTION
-!!  
+!!
 !!  This routine is a callback subroutine that is registered with AMReX's
 !!  AMR Core layer at initialization.  AMReX may call this subroutine many times
 !!  during the process of grid refinement so that FLASH may communicate which
@@ -36,7 +36,7 @@
 !!    tags - C-pointer to an AMReX tagbox array.  The elements of this are tag
 !!           boxes.  The cells of these tagboxes are set to communicate a need
 !!           to refine the associated block.
-!!    time - not used with FLASH
+!!    time - not used in this default implementation of FLASH
 !!    tagval - for full, rich AMReX tagging, this values should be assigned to
 !!             each cell that has insufficient resolution.
 !!    clearval - for full, rich AMReX tagging, this values should be assigned to
@@ -74,19 +74,18 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    use Grid_tile,              ONLY : Grid_tile_t 
 
    implicit none
- 
+
    integer,           intent(IN), value :: lev
-   type(c_ptr),       intent(IN), value :: tags 
+   type(c_ptr),       intent(IN), value :: tags
    real(wp),          intent(IN), value :: time
    character(c_char), intent(IN), value :: tagval
    character(c_char), intent(IN), value :: clearval
 
    type(amrex_tagboxarray) :: tag
-   type(amrex_mfiter)      :: mfi                                                             
+   type(amrex_mfiter)      :: mfi
    type(amrex_box)         :: bx
    type(Grid_tile_t)       :: tileDesc
 
-   real(wp),               contiguous, pointer :: solnData(:,:,:,:)
    character(kind=c_char), contiguous, pointer :: tagData(:,:,:,:)
 
    real :: error
@@ -97,18 +96,17 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
    integer :: iref
    integer :: i, j, k, l
 
-   nullify(solnData)
    nullify(tagData)
 
    ! AMReX uses 0-based spatial indices / FLASH uses 1-based
    ! The indices agree on inactive dimensions.
-   ! Use K[23]D to do shift only on active dimensions 
+   ! Use K[23]D to do shift only on active dimensions
 
 #ifdef DEBUG_GRID
    write(*,'(A,A,I2)') "[gr_markRefineDerefineCallback]", &
                        "      Started on level ", lev + 1
 #endif
- 
+
    tag = tags
 
    if (lev < gr_minRefine - 1) then
@@ -117,7 +115,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
                                 "         derefinement to this level not allowed"
 #endif
 
-      ! Enforce 1-based minimum level contraint
+      ! Enforce 1-based minimum level constraint
       call amrex_mfiter_build(mfi, unk(lev), tiling=.FALSE.)
 
       do while(mfi%next())
@@ -178,15 +176,13 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       tileDesc%blkLimitsGC(HIGH, 1:NDIM) = bx%hi(1:NDIM) + 1
       tileDesc%grownLimits(:, :) = tileDesc%blkLimitsGC(:, :)
 
-      call tileDesc%getDataPtr(solnData, CENTER)
-
       tagData => tag%dataptr(mfi)
-     
+
       associate (lo     => tileDesc%limits(LOW,  :), &
                  hi     => tileDesc%limits(HIGH, :), &
                  lo_tag => lbound(tagData), &
                  hi_tag => ubound(tagData))
-     
+
 #ifdef DEBUG_GRID
         ! Tagbox must contain block
         if (     ((lo_tag(IAXIS) + 1)   > lo(IAXIS))  &
@@ -215,7 +211,7 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
  rloop: do l = 1, gr_numRefineVars
             iref = gr_refine_var(l)
             if (iref < 1)   CYCLE
-    
+
             error = 0.0
             refineFilter = gr_refine_filter(l)
             call gr_estimateBlkError(error, tileDesc, iref, refineFilter)
@@ -263,7 +259,6 @@ subroutine gr_markRefineDerefineCallback(lev, tags, time, tagval, clearval) bind
       end associate
 
       nullify(tagData)
-      call tileDesc%releaseDataPtr(solnData, CENTER)
    end do
    call amrex_mfiter_destroy(mfi)
 
