@@ -109,6 +109,19 @@ module gr_amrexInterface
   end interface
 
   interface
+    subroutine gr_markInRectangleForCallback(ilb, irb, jlb, jrb, klb, krb, contained, &
+                                             lev, tags, &
+                                             tagval)
+      use iso_c_binding,     ONLY : c_ptr, c_char
+      implicit none
+      real,              intent(IN) :: ilb, irb, jlb, jrb, klb, krb
+      integer,           intent(IN) :: lev, contained
+      type(c_ptr),       intent(IN) :: tags
+      character(c_char), intent(IN) :: tagval
+    end subroutine gr_markInRectangleForCallback
+  end interface
+
+  interface
     subroutine gr_fillPhysicalBC(pmf, scomp, ncomp, time, pgeom) bind(c)
       use iso_c_binding,     ONLY : c_ptr, c_int
       use amrex_fort_module, ONLY : wp => amrex_real
