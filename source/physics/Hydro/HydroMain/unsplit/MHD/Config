@@ -96,7 +96,7 @@ PARAMETER conserveAngField     BOOLEAN  FALSE           # Turn on/off alternate 
 
 # Needed for PARAMESH_PREPROCESSOR.FH and amr_set_runtime_parameters
 IF (nDim=='' or nDim > 1) and physicsMode != 'hydro'
- PPDEFINE	FLASH_NFIELD_DIVF 	1 	# Number of variables for divergence-free prolongagion 
+ PPDEFINE	FLASH_NFIELD_DIVF 	1 	# Number of variables for divergence-free prolongation
 						# (only for MAG, not MAGI)
  PPDEFINE	FLASH_MHD_DIM		1
  PPDEFINE	FLASH_NEDGE_VAR		1
